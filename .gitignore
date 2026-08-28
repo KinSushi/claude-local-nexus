@@ -1,4 +1,6 @@
 .env
 backups/
 *.tar.gz
-litellm_config_full_backup.yaml
+*.txt
+*.log
+*.xlsx
