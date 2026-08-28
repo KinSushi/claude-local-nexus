@@ -1,0 +1,13 @@
+Scientific / quantitative evaluation layer
+
+Pour tes usages techniques avancés, j'irais jusqu'à une évaluation statistique des routeurs.
+
+Par exemple :
+
+$$ P(success \mid task, model, profile) $$
+
+et :
+
+$$ E[utility] = P(success)\cdot V - Cost - LatencyPenalty $$
+
+Ce qui permet de remplacer un simple score arbitraire par une estimation de valeur attendue.

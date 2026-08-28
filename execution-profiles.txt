@@ -1,0 +1,75 @@
+# Execution Profiles
+
+profiles:
+
+coding:
+task_class:
+- code
+- debugging
+- refactoring
+
+```
+requirements:
+  context_min: 65536
+  tool_use: required
+  repository_navigation: required
+
+privacy:
+  default: local_preferred
+
+preferred_models:
+  - qwen3-coder-30b-local
+  - glm-4.7-flash-local
+  - claude-sonnet-5
+```
+
+deep-reasoning:
+task_class:
+- architecture
+- mathematical_reasoning
+- difficult_debugging
+
+```
+requirements:
+  reasoning: high
+  context_min: 32768
+
+preferred_models:
+  - claude-opus-5
+  - claude-sonnet-5
+```
+
+lightweight:
+task_class:
+- classification
+- extraction
+- transformation
+
+```
+requirements:
+  context_min: 8192
+
+preferred_models:
+  - gemma4-12b-local
+  - llama3.2-3b-local
+  - phi3-mini-local
+```
+
+multimodal:
+task_class:
+- image
+- screenshot
+- OCR
+- document
+
+```
+requirements:
+  vision: required
+
+preferred_models:
+  - llama3.2-vision-11b-local
+  - llama3.2-vision-90b-local
+  - claude-sonnet-5
+```
+
+

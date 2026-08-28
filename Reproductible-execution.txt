@@ -1,0 +1,23 @@
+Reproductible execution
+
+Une exécution critique devrait pouvoir être reconstruite à partir de :
+
+task_id
+git_commit
+model_id
+provider
+router_version
+policy_version
+prompt_version
+context_profile
+tool_versions
+parameters
+timestamp
+
+C'est une exigence importante pour :
+
+debugging ;
+benchmark ;
+audit ;
+compliance ;
+recherche.

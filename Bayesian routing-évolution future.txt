@@ -1,0 +1,48 @@
+Bayesian routing — évolution future
+
+Une étape suivante peut être :
+
+Thompson Sampling
+
+ou une stratégie bandit contextualisée.
+
+Le contexte serait :
+
+task class
+language
+repository size
+context
+modality
+historical provider reliability
+
+et l'action :
+
+model/provider/profile
+
+La récompense :
+
+success
+- cost
+- latency
+
+Mais attention : je n'autoriserais pas un apprentissage online non borné à modifier immédiatement la production.
+
+Architecture :
+
+telemetry
+   ↓
+offline evaluation
+   ↓
+candidate policy
+   ↓
+simulation
+   ↓
+canary
+   ↓
+promotion
+
+Pas :
+
+production
+→ self modify
+→ production

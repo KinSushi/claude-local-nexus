@@ -1,0 +1,143 @@
+Final target architecture
+
+À ce stade, je définirais la cible de Claude-Local-Nexus comme ceci :
+
+                         ┌─────────────────────┐
+                         │        USER         │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   AGENT INTERFACE   │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   POLICY ENGINE     │
+                         │ security / privacy  │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    TASK CLASSIFIER  │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   CONTEXT ENGINE    │
+                         │ RAG / memory / repo │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   AGENT PLANNER     │
+                         └──────────┬──────────┘
+                                    │
+                   ┌────────────────┼────────────────┐
+                   │                │                │
+                   ▼                ▼                ▼
+             Model Router      Tool Router      Budget Manager
+                   │                │                │
+                   └────────────────┼────────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    EXECUTION        │
+                         │ local / cloud / API │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │     VERIFIER        │
+                         └──────────┬──────────┘
+                                    │
+                           ┌────────┴────────┐
+                           │                 │
+                         FAIL              PASS
+                           │                 │
+                           ▼                 ▼
+                        RECOVER           COMPLETE
+                           │
+                           ▼
+                         REPLAN
+                           
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   OBSERVABILITY     │
+                         │ Langfuse / events   │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ EVALUATION / LEARN  │
+                         └─────────────────────┘
+Le saut conceptuel
+
+Le projet cesse alors d'être :
+
+Docker + Ollama + LiteLLM + quelques modèles
+
+et devient :
+
+AI EXECUTION CONTROL PLANE
+
+avec :
+
+Task → Policy → Context → Plan → Execution → Verification → Telemetry → Evaluation
+
+C'est beaucoup plus proche de la plateforme IA multi-tâches/multimodale que tu vises.
+
+Ordre d'implémentation que je recommande
+
+P0 — intégrité
+
+Model Registry
+Provider Registry
+validate_models.ps1
+validate_routing.ps1
+drift_check.ps1
+
+P1 — gouvernance
+
+Policy Engine
+execution profiles
+tool registry
+privacy classification
+budget policy
+
+P2 — agentique
+
+Agent Planner
+Verifier
+agent contracts
+execution traces
+
+P3 — intelligence
+
+RAG
+memory
+context engine
+confidence
+escalation
+
+P4 — optimisation
+
+adaptive routing
+historical scoring
+canary
+shadow evaluation
+bandits
+
+P5 — plateforme
+
+multi-agent
+MCP/tool gateway
+secret gateway
+event-sourced execution
+self-healing
+continuous evaluation
+
+Le plus urgent, à mon sens, est P0 : tant que model_list.txt, litellm_config.yaml, les fallbacks et les routeurs peuvent diverger, toute couche "adaptive" au-dessus repose sur un registre incohérent. Le cas ultime-recourse-local en est déjà la démonstration concrète.
+
+Ollama et LiteLLM fournissent déjà une grande partie des briques d'exécution ; la valeur à construire dans Claude-Local-Nexus est donc de plus en plus dans la gouvernance, le planning, la politique, la vérification et la boucle d'apprentissage, pas dans un énième wrapper d'API. https://docs.ollama.com/integrations/claude-code

@@ -1,0 +1,137 @@
+# Model Registry Schema
+
+version: 1
+
+models:
+
+* id: qwen3-coder-30b-local
+
+  provider: ollama-local
+
+  source_model: qwen3-coder:30b
+
+  lifecycle: production
+
+  modality:
+  input:
+  - text
+  - code
+  output:
+  - text
+  - code
+
+  capabilities:
+  coding: 0.95
+  reasoning: 0.82
+  tool_use: 0.88
+  repository_navigation: 0.90
+  structured_output: 0.90
+  vision: 0.00
+
+  operational:
+  privacy: local
+  latency_class: medium
+  resource_class: high
+  context_profiles:
+  - coding-standard
+  - coding-large
+
+  routing:
+  eligible:
+  - coding
+  - technical
+  - agentic
+
+  fallback:
+
+  * qwen2.5-coder-32b-local
+  * qwen2.5-coder-14b-local
+  * phi3-mini-local
+
+  validation:
+  healthcheck: true
+  benchmark_required: true
+  canary_required: true
+
+* id: gpt-oss-20b-cloud
+
+  provider: ollama-cloud
+
+  source_model: gpt-oss:20b:cloud
+
+  lifecycle: production
+
+  modality:
+  input:
+  - text
+  - code
+  output:
+  - text
+  - code
+
+  capabilities:
+  coding: 0.80
+  reasoning: 0.78
+  tool_use: 0.82
+  structured_output: 0.85
+  vision: 0.00
+
+  operational:
+  privacy: cloud
+  latency_class: low
+  resource_class: remote
+
+  routing:
+  eligible:
+  - simple
+  - coding
+  - general
+
+  validation:
+  healthcheck: true
+  benchmark_required: true
+  canary_required: false
+
+* id: claude-sonnet-5
+
+  provider: anthropic
+
+  lifecycle: production
+
+  modality:
+  input:
+  - text
+  - code
+  - image
+  output:
+  - text
+  - code
+
+  capabilities:
+  coding: 0.96
+  reasoning: 0.96
+  tool_use: 0.98
+  repository_navigation: 0.96
+  structured_output: 0.95
+  vision: 0.95
+
+  operational:
+  privacy: anthropic
+  latency_class: low
+  resource_class: remote
+
+  reasoning:
+  adaptive_thinking: true
+
+  routing:
+  eligible:
+  - complex
+  - reasoning
+  - coding
+  - agentic
+  - multimodal
+
+  validation:
+  healthcheck: true
+  benchmark_required: true
+  canary_required: true

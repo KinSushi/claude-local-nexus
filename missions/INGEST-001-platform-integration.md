@@ -1,0 +1,724 @@
+# MISSION INGEST-001
+
+# Claude-Local-Nexus — Platform Architecture Ingestion & Integration
+
+## Mission type
+
+ARCHITECTURE MIGRATION / INGESTION / RECONCILIATION / INTEGRATION
+
+## Mission objective
+
+Ingest all newly created YAML and TXT architectural artifacts into the existing Claude-Local-Nexus repository.
+
+The objective is to transform the current collection of design documents, model inventories, policies, routing definitions, execution profiles and agent specifications into a coherent, validated and machine-readable platform architecture.
+
+Do not perform a blind merge.
+
+Do not overwrite existing configuration merely because a newer document exists.
+
+First ingest, classify, normalize, reconcile and validate.
+
+---
+
+# PHASE 0 — REPOSITORY FREEZE & BASELINE
+
+Before changing anything:
+
+```powershell
+git status
+git branch
+git log -10 --oneline
+```
+
+Create a baseline manifest containing:
+
+* commit hash;
+* working tree status;
+* relevant files;
+* existing model inventory;
+* current LiteLLM configuration;
+* current Docker services;
+* current routing definitions;
+* current fallback graph.
+
+No architectural modification is allowed during this phase.
+
+---
+
+# PHASE 1 — DISCOVERY
+
+Scan the entire repository for:
+
+```text
+*.yaml
+*.yml
+*.json
+*.txt
+*.md
+*.ps1
+*.py
+```
+
+Classify each relevant artifact as:
+
+```text
+RUNTIME_CONFIG
+MODEL_INVENTORY
+PROVIDER_CONFIG
+ROUTING
+POLICY
+AGENT
+TOOL
+PROFILE
+DOCUMENTATION
+GENERATED
+SCRIPT
+TEST
+UNKNOWN
+```
+
+Do not infer classification from filename alone.
+
+Inspect file contents.
+
+Generate:
+
+```text
+_registry/manifests/ingestion-manifest.yaml
+```
+
+containing:
+
+```yaml
+file:
+classification:
+sha256:
+size:
+source_of_truth:
+generated:
+dependencies:
+references:
+```
+
+Every ingested source must have a recorded fingerprint.
+
+---
+
+# PHASE 2 — CONTENT EXTRACTION
+
+Extract structured entities from every source.
+
+Minimum entity types:
+
+```text
+MODEL
+PROVIDER
+ROUTER
+FALLBACK
+CAPABILITY
+TOOL
+AGENT
+POLICY
+EXECUTION_PROFILE
+CONTEXT_PROFILE
+BUDGET
+SECURITY_RULE
+OBSERVABILITY_RULE
+```
+
+Do not yet modify production configuration.
+
+---
+
+# PHASE 3 — NORMALIZATION
+
+Normalize identifiers.
+
+Examples:
+
+```text
+Qwen3-Coder 30B
+qwen3-coder:30b
+qwen3-coder-30b-local
+```
+
+must not automatically be treated as three different models.
+
+Determine:
+
+```text
+logical_id
+provider
+source_model
+runtime_alias
+version
+```
+
+Example:
+
+```yaml
+logical_id: qwen3-coder-30b
+provider: ollama-local
+source_model: qwen3-coder:30b
+runtime_alias: qwen3-coder-30b-local
+```
+
+Do not merge entities solely because their names look similar.
+
+Require evidence.
+
+---
+
+# PHASE 4 — SOURCE RECONCILIATION
+
+For each duplicated entity:
+
+```text
+compare
+→ identify differences
+→ classify conflict
+→ resolve according to authority
+```
+
+Conflict types:
+
+```text
+NAME_CONFLICT
+VERSION_CONFLICT
+CAPABILITY_CONFLICT
+PROVIDER_CONFLICT
+CONTEXT_CONFLICT
+ROUTING_CONFLICT
+FALLBACK_CONFLICT
+POLICY_CONFLICT
+STATUS_CONFLICT
+```
+
+Never silently resolve a meaningful conflict.
+
+Generate:
+
+```text
+_registry/manifests/conflict-report.yaml
+```
+
+Each unresolved conflict must contain:
+
+```yaml
+id:
+entity:
+sources:
+values:
+authority:
+resolution:
+confidence:
+status:
+```
+
+---
+
+# PHASE 5 — CANONICAL MODEL
+
+Build the canonical registry:
+
+```text
+_registry/canonical/
+```
+
+The canonical registry becomes the normalized representation of the architecture.
+
+Required files:
+
+```text
+models.yaml
+providers.yaml
+capabilities.yaml
+routing.yaml
+policies.yaml
+profiles.yaml
+agents.yaml
+tools.yaml
+```
+
+The registry must not contain duplicate logical entities.
+
+Every model referenced by:
+
+* router;
+* fallback;
+* execution profile;
+* agent;
+* policy
+
+must exist in `models.yaml`.
+
+---
+
+# PHASE 6 — GRAPH VALIDATION
+
+Construct dependency graphs.
+
+At minimum:
+
+```text
+MODEL GRAPH
+PROVIDER GRAPH
+ROUTING GRAPH
+FALLBACK GRAPH
+AGENT/TOOL GRAPH
+POLICY GRAPH
+```
+
+Validate:
+
+```text
+missing nodes
+duplicate nodes
+cycles
+dead ends
+invalid provider references
+invalid model references
+invalid tool references
+policy violations
+```
+
+Example:
+
+```text
+fallback A → B
+```
+
+is invalid if:
+
+```text
+B does not exist
+```
+
+---
+
+# PHASE 7 — PRIVACY VALIDATION
+
+Validate every execution path against privacy policy.
+
+For each path determine:
+
+```text
+classification
+provider
+network boundary
+allowed/denied
+```
+
+Hard invariant:
+
+```text
+L3 → external provider
+```
+
+must fail validation.
+
+Do not automatically create a cloud fallback for local-only workflows.
+
+---
+
+# PHASE 8 — CAPABILITY VALIDATION
+
+For every route validate:
+
+```text
+task capability
+modality
+context
+tool compatibility
+structured output capability
+```
+
+Examples:
+
+```text
+vision task
+→ vision-capable model
+
+embedding task
+→ embedding model
+
+tool-enabled task
+→ tool-capable model/provider
+
+large-context task
+→ compatible context profile
+```
+
+---
+
+# PHASE 9 — CONTEXT VALIDATION
+
+Validate:
+
+```text
+model capability
+context profile
+hardware profile
+task requirements
+```
+
+Do not simply maximize context.
+
+Flag configurations that are technically valid but operationally unreasonable.
+
+For Claude Code workloads, verify that the selected execution profile is compatible with the large-context requirement.
+
+---
+
+# PHASE 10 — TOOL VALIDATION
+
+For every agent:
+
+```text
+allowed tools
+forbidden tools
+risk level
+approval requirement
+provider compatibility
+```
+
+Validate that:
+
+```text
+agent → tool
+```
+
+is explicitly authorized.
+
+A tool must never become available merely because it exists on the machine.
+
+---
+
+# PHASE 11 — BUDGET VALIDATION
+
+For every execution profile validate:
+
+```text
+maximum cost
+maximum latency
+maximum iterations
+maximum tool calls
+maximum context
+```
+
+No profile may specify an impossible or contradictory budget.
+
+---
+
+# PHASE 12 — GENERATION
+
+Only after canonical validation succeeds may derived configuration be generated.
+
+Potential generated artifacts:
+
+```text
+litellm_config.generated.yaml
+cloud_models.generated.txt
+routing.generated.yaml
+model_inventory.generated.txt
+```
+
+Do not manually edit generated sections.
+
+Generation must be deterministic.
+
+Running the generator twice with the same source state should produce the same output.
+
+---
+
+# PHASE 13 — LITELLM INTEGRATION
+
+Integrate the canonical registry into LiteLLM.
+
+Validate:
+
+```text
+all model aliases exist
+all router candidates exist
+all fallback targets exist
+all providers are resolvable
+```
+
+Do not introduce an alias that is not represented in the canonical registry.
+
+Particular attention:
+
+```text
+ultime-recourse-local
+```
+
+must not remain as an unresolved fallback target.
+
+Resolve it explicitly by:
+
+* defining the model;
+* replacing it with an existing valid model;
+* or removing the invalid fallback.
+
+---
+
+# PHASE 14 — OLLAMA INTEGRATION
+
+Compare:
+
+```text
+canonical local models
+vs
+model_list.txt
+vs
+ollama list
+```
+
+Classify each difference:
+
+```text
+EXPECTED
+MISSING
+STALE
+UNDECLARED
+```
+
+Never automatically delete a local model merely because it is absent from the canonical production pool.
+
+The distinction between:
+
+```text
+installed
+available
+registered
+production-eligible
+```
+
+must remain explicit.
+
+---
+
+# PHASE 15 — CLOUD INTEGRATION
+
+Treat cloud model discovery as provider-driven.
+
+Do not hardcode volatile cloud inventory if an official synchronization mechanism already exists.
+
+Validate:
+
+```text
+cloud_models.txt
+generator
+LiteLLM cloud section
+provider authentication
+```
+
+The cloud generator remains authoritative for generated cloud model sections.
+
+---
+
+# PHASE 16 — AGENT INTEGRATION
+
+Integrate:
+
+```text
+AGENTS.md
+Claude.md
+agent contracts
+tool registry
+execution profiles
+policies
+```
+
+The agent documentation must reference canonical configuration rather than duplicating volatile inventories.
+
+---
+
+# PHASE 17 — POLICY INTEGRATION
+
+Enforce:
+
+```text
+security
+privacy
+provider boundaries
+tool permissions
+budgets
+fallback restrictions
+```
+
+Policies must be testable.
+
+No critical policy should exist solely as prose.
+
+---
+
+# PHASE 18 — TEST GENERATION
+
+Generate or update tests for:
+
+```text
+model references
+provider references
+fallback graph
+routing graph
+privacy
+context
+tools
+budgets
+configuration syntax
+Docker configuration
+LiteLLM startup
+Ollama health
+API health
+```
+
+Minimum negative tests:
+
+```text
+undefined model
+undefined fallback
+invalid provider
+L3 → cloud
+vision → text-only
+embedding → chat
+oversized context profile
+forbidden tool
+budget exceeded
+```
+
+---
+
+# PHASE 19 — RUNTIME VALIDATION
+
+Start or restart only the necessary services.
+
+Validate:
+
+```powershell
+docker compose ps
+docker compose logs litellm --tail 100
+docker exec ollama-server ollama list
+```
+
+Then test:
+
+```text
+local model
+cloud model
+Anthropic model
+local router
+cloud router
+Anthropic router
+global router
+fallback
+embedding
+multimodal path where applicable
+```
+
+---
+
+# PHASE 20 — DRIFT BASELINE
+
+After successful integration, generate:
+
+```text
+_registry/manifests/integration-manifest.yaml
+```
+
+The manifest must contain:
+
+```yaml
+git_commit:
+registry_version:
+policy_version:
+routing_version:
+models:
+providers:
+routers:
+profiles:
+agents:
+tools:
+generated_files:
+validation_results:
+runtime_results:
+timestamp:
+```
+
+This becomes the baseline for future drift detection.
+
+---
+
+# PHASE 21 — FINAL REVIEW
+
+Before declaring success verify:
+
+```text
+[ ] no undefined model aliases
+[ ] no invalid fallbacks
+[ ] no invalid provider references
+[ ] no routing cycles
+[ ] no privacy violations
+[ ] no impossible context profiles
+[ ] no unauthorized tools
+[ ] no secret exposure
+[ ] generated configuration is deterministic
+[ ] Docker stack remains functional
+[ ] LiteLLM health is valid
+[ ] Ollama health is valid
+[ ] API test succeeds
+[ ] Git diff reviewed
+[ ] documentation updated
+[ ] manifests generated
+```
+
+---
+
+# FINAL DELIVERABLES
+
+The mission is complete only when the repository contains:
+
+```text
+_registry/
+├── canonical/
+├── schemas/
+└── manifests/
+
+policies/
+profiles/
+evaluations/
+scripts/
+
+AGENTS.md
+Claude.md
+```
+
+and the integration has passed structural, policy and runtime validation.
+
+---
+
+# PRINCIPLE
+
+Do not merge files.
+
+Merge **knowledge into a canonical architecture**.
+
+Then generate the runtime configuration from that architecture.
+
+The authoritative pipeline is:
+
+```text
+SOURCE
+→ INGEST
+→ NORMALIZE
+→ RECONCILE
+→ CANONICALIZE
+→ VALIDATE
+→ GENERATE
+→ INTEGRATE
+→ TEST
+→ OBSERVE
+→ BASELINE
+```
+
+Never bypass the canonical layer for convenience.

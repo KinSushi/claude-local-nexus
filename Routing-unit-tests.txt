@@ -1,0 +1,37 @@
+Routing unit tests
+
+Exemple :
+
+- test: sensitive_coding_task
+
+  input:
+    task_class: coding
+    classification: L3
+    context_tokens: 70000
+
+  expected:
+    provider: ollama-local
+    vision: false
+    context_min: 65536
+
+Autre :
+
+- test: image_analysis
+
+  input:
+    modality: image
+
+  expected:
+    capability:
+      vision: true
+
+Autre :
+
+- test: large_repository
+
+  input:
+    task_class: coding
+    context_tokens: 120000
+
+  expected:
+    context_profile: coding-large

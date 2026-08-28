@@ -1,0 +1,17 @@
+MCP ne doit pas bypasser la policy
+
+Un outil externe ne doit jamais être une voie de contournement.
+
+Agent
+  ↓
+Tool request
+  ↓
+Policy Engine
+  ↓
+Tool Gateway
+  ↓
+External service
+
+et non :
+
+Agent → MCP server → anything

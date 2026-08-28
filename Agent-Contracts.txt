@@ -1,0 +1,33 @@
+Agent Contracts
+
+Chaque agent spécialisé devrait avoir un contrat :
+
+agent:
+  id: coding-agent
+
+  objective:
+    implement_and_validate_code: true
+
+  allowed_tools:
+    - filesystem.read
+    - filesystem.write
+    - shell.execute
+    - git.diff
+
+  forbidden_tools:
+    - database.delete
+    - credential.rotate
+
+  preferred_models:
+    - qwen3-coder-30b-local
+    - claude-sonnet-5
+
+  output_schema:
+    type: object
+    required:
+      - summary
+      - files_changed
+      - tests
+      - result
+
+Ça permet ensuite d'empêcher un agent spécialisé de devenir un agent omnipotent.

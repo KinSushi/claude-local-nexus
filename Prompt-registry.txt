@@ -1,0 +1,19 @@
+Prompt registry
+
+Même logique pour les prompts système.
+
+prompts/
+├── orchestrator-v1.md
+├── coding-agent-v1.md
+├── verifier-v1.md
+├── researcher-v1.md
+└── rag-agent-v1.md
+
+Avec :
+
+prompt:
+  id: coding-agent
+  version: 3
+  compatible_models:
+    - qwen3-coder
+    - claude-sonnet

@@ -1,0 +1,50 @@
+Agent Planner
+
+avec :
+
+Task
+Context
+Policy
+Capabilities
+Tools
+Models
+Budget
+
+et sortie :
+
+plan:
+  task_class: coding
+  privacy: L2
+
+  context:
+    profile: coding-large
+    target_tokens: 65536
+
+  model:
+    id: qwen3-coder-30b-local
+
+  tools:
+    - filesystem.read
+    - filesystem.write
+    - shell.execute
+
+  fallback:
+    - qwen2.5-coder-32b-local
+    - claude-sonnet-5
+
+  validation:
+    - syntax
+    - unit_tests
+    - integration_test
+
+Le routeur devient ensuite un sous-module :
+
+Planner
+    |
+    +--> Policy Engine
+    |
+    +--> Context Engine
+    |
+    +--> Model Router
+    |
+    +--> Tool Selector

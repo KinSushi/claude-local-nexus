@@ -1,0 +1,32 @@
+Multi-agent orchestration
+
+À terme :
+
+                         ORCHESTRATOR
+                              |
+          +-------------------+-------------------+
+          |                   |                   |
+          v                   v                   v
+     RESEARCHER           CODER              ANALYST
+          |                   |                   |
+          v                   v                   v
+       Web/RAG             Repo/CLI           Python/SQL
+          |                   |                   |
+          +-------------------+-------------------+
+                              |
+                              v
+                         VERIFIER
+                              |
+                              v
+                         FINALIZER
+
+Chaque agent devrait disposer de :
+
+role
+tools
+allowed_models
+allowed_providers
+budget
+output_schema
+
+Cela évite le modèle monolithique qui tente de tout faire.

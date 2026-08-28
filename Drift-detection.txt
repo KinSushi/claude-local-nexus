@@ -1,0 +1,28 @@
+Drift detection
+
+Le futur drift_check.ps1 devrait comparer :
+
+Registry
+vs
+LiteLLM
+vs
+Ollama
+vs
+cloud_models
+vs
+Docker
+
+et produire :
+
+OK
+WARNING
+ERROR
+
+Exemple :
+
+ERROR:
+model alias "ultime-recourse-local"
+referenced by fallback graph
+but absent from model registry.
+
+C'est exactement l'anomalie déjà visible dans la configuration actuelle.

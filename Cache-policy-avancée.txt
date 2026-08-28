@@ -1,0 +1,22 @@
+Cache policy avancée
+
+Le cache doit aussi devenir politique.
+
+Trois catégories :
+
+CACHEABLE
+CONDITIONALLY_CACHEABLE
+NON_CACHEABLE
+
+Exemples :
+
+documentation lookup
+→ CACHEABLE
+
+coding generation
+→ CONDITIONALLY_CACHEABLE
+
+tool execution
+→ NON_CACHEABLE
+
+Le cache sémantique doit être particulièrement surveillé pour les agents car une similarité de prompt ne garantit pas une équivalence de contexte ou d'état.

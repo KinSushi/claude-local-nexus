@@ -1,0 +1,23 @@
+Model lifecycle automation
+
+Je formaliserais :
+
+DISCOVER
+   ↓
+REGISTER
+   ↓
+DOWNLOAD
+   ↓
+HEALTHCHECK
+   ↓
+BENCHMARK
+   ↓
+CANARY
+   ↓
+PROMOTE
+   ↓
+MONITOR
+   ↓
+RETIRE
+
+Chaque transition peut avoir un gate.

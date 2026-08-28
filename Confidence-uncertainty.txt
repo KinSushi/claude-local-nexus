@@ -1,0 +1,16 @@
+Confidence / uncertainty
+
+Le système devrait aussi distinguer :
+
+model confidence
+
+de :
+
+system confidence
+
+Exemple :
+
+model_answer_confidence = 0.78
+verification_confidence = 0.95
+
+Le second peut être supérieur parce qu'un compilateur ou un test vient confirmer le résultat.

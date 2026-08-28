@@ -1,0 +1,31 @@
+Event log
+
+Pour aller encore plus loin, chaque exécution pourrait produire un événement :
+
+{
+  "event": "model_selected",
+  "task_id": "abc123",
+  "model": "qwen3-coder-30b-local",
+  "provider": "ollama-local",
+  "reason": {
+    "privacy": "L2",
+    "task": "coding",
+    "context": 65536
+  }
+}
+
+Puis :
+
+task.created
+task.classified
+context.built
+policy.checked
+model.selected
+tool.called
+tool.returned
+model.responded
+validation.started
+validation.passed
+task.completed
+
+Tu obtiens progressivement un système event-sourced au niveau agentique.

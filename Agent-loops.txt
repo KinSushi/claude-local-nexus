@@ -1,0 +1,48 @@
+Agent loops
+
+Je formaliserais aussi le cycle d'un agent :
+
+PLAN
+ ↓
+ACT
+ ↓
+OBSERVE
+ ↓
+VERIFY
+ ↓
+CONTINUE ?
+ ├── YES → ACT
+ └── NO  → COMPLETE
+
+Avec trois états supplémentaires :
+
+REPLAN
+RECOVER
+ESCALATE
+
+Donc :
+
+               ┌─────────────┐
+               │    PLAN     │
+               └──────┬──────┘
+                      ↓
+               ┌─────────────┐
+          ┌─── │     ACT     │
+          │    └──────┬──────┘
+          │           ↓
+          │    ┌─────────────┐
+          │    │   OBSERVE   │
+          │    └──────┬──────┘
+          │           ↓
+          │    ┌─────────────┐
+          │    │   VERIFY    │
+          │    └──────┬──────┘
+          │           │
+          │     ┌────┴────┐
+          │     ↓         ↓
+          │   FAIL      SUCCESS
+          │     │         │
+          │     ↓         ↓
+          │  RECOVER    COMPLETE
+          │
+          └── REPLAN

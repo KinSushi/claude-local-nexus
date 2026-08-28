@@ -1,0 +1,48 @@
+version: 1
+
+defaults:
+
+privacy:
+classification: L1
+
+routing:
+local_preferred: true
+
+fallback:
+allow_cross_provider: false
+
+execution:
+autonomous: true
+
+rules:
+
+* id: L3-local-only
+  when:
+  classification: L3
+  allow:
+  providers:
+  - ollama-local
+  deny:
+  providers:
+  - ollama-cloud
+  - anthropic
+
+* id: code-large-context
+  when:
+  task_class: coding
+  context_tokens: ">65536"
+  require:
+  context_profile: coding-large
+
+* id: multimodal
+  when:
+  modality: image
+  require:
+  capability:
+  vision: true
+
+* id: sensitive-tools
+  when:
+  tool_class: destructive
+  require:
+  human_approval: true

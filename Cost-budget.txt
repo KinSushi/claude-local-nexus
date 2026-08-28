@@ -1,0 +1,12 @@
+Cost budget
+
+Même principe :
+
+cost:
+  max_request_usd: 1.50
+  max_session_usd: 10.00
+  max_day_usd: 50.00
+
+Tu transformes ainsi Langfuse / LiteLLM en instrumentation d'un budget manager plutôt qu'en simple dashboard.
+
+LiteLLM documente justement la gestion des dépenses, budgets, clés virtuelles et suivi des coûts. https://docs.litellm.ai/

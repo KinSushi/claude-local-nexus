@@ -1,0 +1,22 @@
+Escalation policy
+
+Si :
+
+confidence < threshold
+
+le système peut :
+
+re-run
+second model
+Verifier
+human review
+
+Donc :
+
+uncertainty
+→ escalation
+
+au lieu de :
+
+uncertainty
+→ hallucination

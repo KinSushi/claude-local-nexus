@@ -1,0 +1,31 @@
+tools:
+
+  filesystem.read:
+    class: read
+    risk: R0
+
+  filesystem.write:
+    class: write
+    risk: R2
+
+  shell.execute:
+    class: execute
+    risk: R2
+
+  docker.restart:
+    class: execute
+    risk: R2
+
+  docker.volume_delete:
+    class: destructive
+    risk: R4
+    approval: required
+
+  internet.search:
+    class: network
+    risk: R1
+
+  github.push:
+    class: external_write
+    risk: R3
+    approval: required

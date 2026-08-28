@@ -1,0 +1,11 @@
+Context cache
+
+À terme, je distinguerais :
+
+response cache
+semantic cache
+context cache
+embedding cache
+tool-result cache
+
+Ce sont des problèmes différents.

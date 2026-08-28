@@ -1,0 +1,33 @@
+MCP / external tool layer
+
+Je prévoirais également une abstraction :
+
+Tool Gateway
+
+entre l'agent et les outils externes.
+
+Agent
+  |
+  v
+Tool Gateway
+  |
+  +--- filesystem
+  +--- Docker
+  +--- GitHub
+  +--- PostgreSQL
+  +--- web
+  +--- browser
+  +--- cloud APIs
+
+Pourquoi ?
+
+Parce que tu peux alors centraliser :
+
+permissions ;
+audit ;
+rate limiting ;
+secrets ;
+timeouts ;
+validation des arguments.
+
+Le jour où tu ajoutes plusieurs agents, cette couche devient extrêmement utile.

@@ -1,0 +1,16 @@
+Router versioning
+
+Le routing doit avoir sa propre version :
+
+routing_policy:
+  version: 7
+
+Une trace doit alors contenir :
+
+router_policy_version = 7
+
+Tu peux ainsi répondre à :
+
+Pourquoi cette requête a-t-elle été envoyée à ce modèle ?
+
+avec une réponse reproductible.

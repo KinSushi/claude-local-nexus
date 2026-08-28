@@ -315,6 +315,17 @@ model_list:
           - general
           - factual_lookup
 
+  - model_name: ultime-recourse-local
+    litellm_params:
+      model: ollama/phi3:mini
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 2048
+    model_info:
+      max_input_tokens: 8192
+      description: "ULTIME RECOURS - Phi-3 Mini 3.8B"
+
   # ==========================================================
   # 3. LOCAL — MULTIMODAL
   # ==========================================================
@@ -425,6 +436,7 @@ model_list:
       max_input_tokens: 8192
       description: "all-MiniLM — embedding léger"
 
+  # ==========================================================
   # ==========================================================
   # ==========================================================
   # ==========================================================

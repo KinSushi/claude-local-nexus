@@ -1,0 +1,21 @@
+Policy-as-Code
+
+Toutes les règles importantes devraient progressivement sortir du prose-only.
+
+Exemple :
+
+"Les données L3 ne sortent jamais"
+
+devient une règle machine :
+
+deny:
+  - classification: L3
+    provider: external
+
+Même chose pour :
+
+model capabilities
+tool permissions
+budgets
+fallbacks
+contexts

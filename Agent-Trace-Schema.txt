@@ -1,0 +1,28 @@
+Agent Trace Schema
+
+Je définirais un schéma stable :
+
+trace_id
+task_id
+session_id
+agent_id
+parent_agent_id
+model
+provider
+policy_version
+router_version
+prompt_version
+context_profile
+tool
+iteration
+input_tokens
+output_tokens
+latency_ms
+cost_usd
+status
+error_type
+fallback_from
+fallback_to
+validation_status
+
+C'est beaucoup plus exploitable que de simples logs texte.

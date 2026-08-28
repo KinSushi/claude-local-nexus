@@ -1,0 +1,32 @@
+Verification Agent
+
+Je rajouterais un agent ou une phase spécialisée :
+
+Verifier
+
+Son job n'est pas de refaire le travail.
+
+Il vérifie :
+
+syntax
+tests
+configuration
+security
+tool output
+expected invariants
+
+Exemple :
+
+Coding Agent
+      ↓
+code modification
+      ↓
+Verifier
+      ↓
+tests
+      ↓
+policy checks
+      ↓
+accept / reject
+
+Cela réduit fortement le risque de laisser le premier modèle s'auto-valider.

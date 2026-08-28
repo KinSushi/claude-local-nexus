@@ -1,0 +1,26 @@
+Self-critique contrôlée
+
+Je recommande :
+
+generate
+→ verify
+
+plutôt que :
+
+generate
+→ "are you sure?"
+→ generate again
+
+La seconde méthode consomme des tokens sans nécessairement accroître la fiabilité.
+
+La validation doit être externalisée autant que possible :
+
+compilateur ;
+tests ;
+linter ;
+schema validator ;
+healthcheck ;
+API call ;
+invariant checker.
+
+Le LLM n'est qu'une partie du système de vérification.

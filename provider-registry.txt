@@ -1,0 +1,63 @@
+# Provider Registry
+
+version: 1
+
+providers:
+
+ollama-local:
+trust_zone: local
+network_boundary: host
+privacy_level: L3-capable
+authentication: optional
+supports:
+- chat
+- streaming
+- embeddings
+- tools
+- vision
+- thinking
+
+ollama-cloud:
+trust_zone: cloud
+network_boundary: internet
+privacy_level: L1-capable
+authentication: api_key
+supports:
+- chat
+- streaming
+- tools
+- selected_multimodal
+
+anthropic:
+trust_zone: external-cloud
+network_boundary: internet
+privacy_level: L1-capable
+authentication: api_key
+supports:
+- messages
+- streaming
+- tools
+- vision
+- adaptive_thinking
+
+policies:
+
+L3:
+allowed:
+- ollama-local
+
+L2:
+allowed:
+- ollama-local
+
+L1:
+allowed:
+- ollama-local
+- ollama-cloud
+- anthropic
+
+L0:
+allowed:
+- ollama-local
+- ollama-cloud
+- anthropic

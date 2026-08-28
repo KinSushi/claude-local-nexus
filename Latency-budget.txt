@@ -1,0 +1,9 @@
+Latency budget
+
+Chaque profil devrait posséder un budget :
+
+latency:
+  target_ms: 3000
+  hard_limit_ms: 15000
+
+Le router peut alors exclure un modèle trop lent avant son lancement.

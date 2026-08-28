@@ -1,0 +1,18 @@
+Conformance Tests
+
+Il faut ensuite tester les politiques elles-mêmes.
+
+Exemples :
+
+test_L3_never_reaches_cloud
+test_vision_never_routes_to_text_only
+test_embedding_fallback_stays_embedding
+test_missing_model_alias_is_rejected
+test_fallback_graph_has_no_cycles
+test_router_candidates_exist
+test_cloud_route_requires_api_key
+test_anthropic_route_requires_anthropic_key
+test_context_profile_matches_model
+test_destructive_tool_requires_approval
+
+C'est ici que la plateforme commence réellement à devenir robuste.
