@@ -171,7 +171,11 @@ def appliquer_triplet(contenu, triplet, numero):
     if not anchor_info:
         return None
 
-    for delta in range(-8, 9):
+    # Plage +/- 16 et non +/- 8 : mesure sur ce depot, un corps de boucle
+    # imbrique vit a 12 espaces et le banc rend souvent l'ancre desindentee
+    # a zero. Une plage trop etroite faisait declarer « inventee » une ancre
+    # qui existait bel et bien, ce qui envoie chercher au mauvais endroit.
+    for delta in range(-16, 17):
         if delta == 0:
             continue
         decaled = []

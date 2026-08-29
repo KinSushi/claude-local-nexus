@@ -28,6 +28,7 @@ import hashlib
 import io
 import os
 import sys
+import tempfile
 
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
@@ -170,15 +171,36 @@ def main() -> int:
         "Historique : [PROGRESS.md](PROGRESS.md)",
     ]
 
-    with io.open(OUT_MD, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines) + "\n")
+    # Écriture atomique du fichier Markdown : on écrit d'abord dans un
+    # fichier temporaire, puis on le remplace en une seule opération.
+    # Cela évite qu'un arrêt brutal laisse le fichier d'index tronqué,
+    # ce qui pourrait masquer l'absence de certaines entrées.
+    md_tmp = tempfile.NamedTemporaryFile('w', encoding='utf-8', newline='\n',
+                                         delete=False, dir=os.path.dirname(OUT_MD))
+    try:
+        md_tmp.write("\n".join(lines) + "\n")
+        md_tmp.flush()
+        os.fsync(md_tmp.fileno())
+    finally:
+        md_tmp.close()
+    os.replace(md_tmp.name, OUT_MD)
 
-    with io.open(OUT_CSV, "w", encoding="utf-8-sig", newline="") as fh:
-        writer = csv.writer(fh, delimiter=";")
+    # Écriture atomique du fichier CSV : même principe que pour le Markdown.
+    # Le CSV est lu par des outils externes ; un fichier partiellement écrit
+    # pourrait entraîner des erreurs d'import ou des données manquantes.
+    csv_tmp = tempfile.NamedTemporaryFile('w', encoding='utf-8-sig', newline='',
+                                          delete=False, dir=os.path.dirname(OUT_CSV))
+    try:
+        writer = csv.writer(csv_tmp, delimiter=";")
         writer.writerow(["Role", "Fichier", "Objet", "Taille (o)",
                          "Modifie", "SHA-256 (16)"])
         for row in rows:
             writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5]])
+        csv_tmp.flush()
+        os.fsync(csv_tmp.fileno())
+    finally:
+        csv_tmp.close()
+    os.replace(csv_tmp.name, OUT_CSV)
 
     print("Boussole regeneree : %d fichiers indexes" % len(rows))
     print("  %s" % os.path.relpath(OUT_MD, ROOT))

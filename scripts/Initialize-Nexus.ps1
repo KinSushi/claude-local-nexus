@@ -12,7 +12,7 @@
         2. secrets            .env créé depuis .env.example si absent
         3. profil matériel    CPU, GPU, RAM, disque — et ce qu'ils autorisent
         4. services           démarrage de la pile Docker
-        5. moteur             détection Docker / hôte, et son budget réel
+        5. moteur             detection Docker / hôte, et son budget réel
         6. configuration      génération puis validation bloquante
         7. vérification       smoke test runtime
         8. pont               rappel de l'approbation MCP
@@ -156,6 +156,12 @@ if (-not $SkipPull -and -not $CheckOnly) {
     Write-Host "  Le telechargement suit model_list.txt et respecte le verdict materiel :"
     Write-Host "  un modele que la machine ne peut pas executer n'est pas telecharge."
     & (Join-Path $Scripts "Update-NexusModels.ps1") -SyncLocal
+    # Verifier le code de retour du script de synchronisation locale.
+    # Si le script echoue, le modele local peut etre incomplet ou corrompu,
+    # ce qui evite des erreurs lateres lors du demarrage.
+    if ($LASTEXITCODE -ne 0) {
+        Write-Manque "Update-NexusModels -SyncLocal a echoue (code $LASTEXITCODE)"
+    }
 } else {
     Write-Etape "Inventaire local"
     Write-Host "  Ignore (-SkipPull ou -CheckOnly)." -ForegroundColor DarkGray
@@ -167,8 +173,19 @@ if (-not $SkipPull -and -not $CheckOnly) {
 Write-Etape "Configuration"
 if ($CheckOnly) {
     & (Join-Path $Scripts "Test-NexusConfig.ps1")
+    # Verifier le code de retour du test de configuration.
+    # Un echec indique que la configuration est invalide et que le service
+    # pourrait ne pas demarrer correctement.
+    if ($LASTEXITCODE -ne 0) {
+        Write-Manque "Test-NexusConfig a echoue (code $LASTEXITCODE)"
+    }
 } else {
     & (Join-Path $Scripts "Update-NexusModels.ps1") -Restart
+    # Verifier le code de retour du redemarrage du service.
+    # Un echec du redemarrage laisse le service indisponible.
+    if ($LASTEXITCODE -ne 0) {
+        Write-Manque "Update-NexusModels -Restart a echoue (code $LASTEXITCODE)"
+    }
 }
 
 # ------------------------------------------------------------

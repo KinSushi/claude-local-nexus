@@ -728,7 +728,16 @@ def test_policy(models: list[str]) -> None:
             # Preuve directe : l'adresse contactee doit rester l'Ollama local.
             if endpoint and "ollama.com" in endpoint:
                 leaked.append("sortie vers %s" % endpoint)
-            if endpoint and not endpoint.startswith("http://ollama:"):
+            # Quatre formes, et pas une liste ouverte : la garde doit rester
+            # stricte, sinon elle ne garde plus rien. `host.docker.internal`
+            # a ete ajoute apres la sortie du moteur hors de Docker -- LiteLLM
+            # est encore en conteneur et atteint l'hote par ce nom. Sans lui,
+            # ce test criait au loup a chaque execution, et une garde de
+            # confidentialite qu'on ignore ne garde rien le jour ou elle a
+            # raison.
+            LOCALES = ("http://ollama:", "http://host.docker.internal:",
+                       "http://127.0.0.1:", "http://localhost:")
+            if endpoint and not endpoint.startswith(LOCALES):
                 leaked.append("adresse inattendue %s" % endpoint)
             if selected and not selected.startswith("adaptive-router")                     and domains.get(selected, "local") != "local":
                 leaked.append("modele %s" % selected)

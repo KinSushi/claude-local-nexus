@@ -59,13 +59,27 @@ TRACKED = [
 
 
 def run(args, timeout=60):
+    """
+    Execute une commande externe et renvoie sa sortie standard.
+
+    Retourne ``None`` si l'exécution échoue (ex. commande introuvable,
+    timeout, permission).  Cela évite d'interpréter une erreur comme une
+    sortie vide, ce qui aurait pu masquer un problème d'infrastructure et
+    conduire à un rapport indiquant à tort que l'arbre de travail était
+    propre.
+    """
     try:
-        result = subprocess.run(args, capture_output=True, text=True,
-                                timeout=timeout, encoding="utf-8",
-                                errors="replace")
+        result = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding="utf-8",
+            errors="replace",
+        )
         return result.stdout.strip()
     except Exception:
-        return ""
+        return None
 
 
 def sha256(path):
@@ -138,15 +152,40 @@ def main() -> int:
         else:
             groups["anthropic"].append(alias)
 
-    services = run(["docker", "compose", "ps", "--format",
-                    "{{.Name}}\t{{.Service}}\t{{.Status}}"])
+    services = run(
+        ["docker", "compose", "ps", "--format", "{{.Name}}\t{{.Service}}\t{{.Status}}"]
+    )
 
-    validation = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
-        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # Protection symetrique : on capture les erreurs de l'appel direct à
+    # nexus_validate.py afin que l'absence du script ne fasse pas planter
+    # tout le processus et que la cause soit clairement indiquée.
+    try:
+        validation = subprocess.run(
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except Exception as exc:  # pragma: no cover
+        print(
+            f"Erreur lors de l'execution de nexus_validate.py : {exc}",
+            file=sys.stderr,
+        )
+        # Simuler un échec de validation
+        class DummyResult:
+            returncode = 1
+            stdout = ""
+            stderr = str(exc)
+
+        validation = DummyResult()
+
     verdict = "valide" if validation.returncode == 0 else "INVALIDE"
-    issues = [l.strip() for l in validation.stdout.splitlines()
-              if l.strip().startswith("- ")]
+    issues = [
+        l.strip()
+        for l in validation.stdout.splitlines()
+        if l.strip().startswith("- ")
+    ]
 
     # Version de la politique de routage : elle rattache un resultat aux
     # regles qui l'ont produit.
@@ -161,6 +200,14 @@ def main() -> int:
     branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     dirty = run(["git", "status", "--porcelain"])
 
+    # Distinction entre arbre propre, modifie et echec de la commande git.
+    if dirty is None:
+        worktree_status = "inconnu"
+    elif dirty == "":
+        worktree_status = "propre"
+    else:
+        worktree_status = "modifie"
+
     lines = [
         "# État de la plateforme",
         "",
@@ -174,7 +221,7 @@ def main() -> int:
         "|---|---|",
         "| Branche | `%s` |" % (branch or "?"),
         "| Commit | `%s` |" % (commit or "?"),
-        "| Arbre de travail | %s |" % ("modifié" if dirty else "propre"),
+        "| Arbre de travail | %s |" % worktree_status,
         "| Version de routage | `%s` |" % router_version,
         "",
         "## Services",
@@ -258,15 +305,28 @@ def main() -> int:
         "Historique : voir [PROGRESS.md](PROGRESS.md).",
     ]
 
-    with io.open(STATE, "w", encoding="utf-8", newline="\n") as fh:
+    # Ecriture atomique : on écrit d'abord dans un fichier temporaire puis on
+    # le replace atomiquement.  Ainsi, une interruption ne laisse pas un
+    # STATE.md partiellement ecrit qui pourrait être lu comme valide.
+    temp_path = STATE + ".tmp"
+    with io.open(temp_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines) + "\n")
+    os.replace(temp_path, STATE)
+
     if passerelle_muette:
-        print("STATE.md regenere : PASSERELLE INJOIGNABLE (127.0.0.1:4000), "
-              "configuration %s" % verdict)
+        print(
+            "STATE.md regenere : PASSERELLE INJOIGNABLE (127.0.0.1:4000), "
+            "configuration %s" % verdict
+        )
     else:
-        print("STATE.md regenere : %d modeles exposes, configuration %s"
-              % (len(models), verdict))
-    return 0
+        print(
+            "STATE.md regenere : %d modeles exposes, configuration %s"
+            % (len(models), verdict)
+        )
+    # Propagation du code de retour de la validation : si la validation a
+    # échoué, on renvoie un code d'erreur afin que l'orchestrateur puisse
+    # prendre la bonne décision.
+    return 0 if validation.returncode == 0 else validation.returncode
 
 
 if __name__ == "__main__":

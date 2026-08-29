@@ -175,7 +175,21 @@ Write-Log "Configuration conforme" "OK"
 if ($Restart) {
     Write-Log "Redemarrage de LiteLLM"
     Push-Location $RepoRoot
-    try { docker compose restart litellm 2>&1 | Out-Null } finally { Pop-Location }
+    try {
+        # On ne supprime pas la sortie de docker compose afin de pouvoir
+        # détecter un échec. Le code de retour est vérifié explicitement ;
+        # en cas d'échec on consigne l'erreur et on arrête le script avec
+        # un code non nul, évitant ainsi que le processus continue comme si
+        # le service était opérationnel.
+        $restartOutput = docker compose restart litellm 2>&1
+        $restartExit   = $LASTEXITCODE
+        $restartOutput | Tee-Object -FilePath $LogPath -Append
+        if ($restartExit -ne 0) {
+            Write-Log "Redemarrage en echec : docker compose restart litellm" "ERROR"
+            exit 1
+        }
+    } finally { Pop-Location }
+
     Start-Sleep -Seconds 25
 
     Write-Log "Smoke test"

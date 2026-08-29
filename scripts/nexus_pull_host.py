@@ -67,7 +67,19 @@ def host_models() -> set[str]:
         return set()
 
 
-def free_disk_gb() -> float:
+def free_disk_gb() -> float | None:
+    """
+    Retourne l'espace disque libre (en Go) du répertoire OLLAMA_MODELS ou du
+    répertoire utilisateur par défaut.
+
+    En cas d'échec (ex. point de montage inaccessible, permissions
+    insuffisantes), la fonction renvoie ``None`` au lieu de ``0.0``.
+    Retourner 0.0 masquerait une mesure indéterminée et ferait croire que le
+    disque est plein, ce qui bloquerait indûment les téléchargements même si
+    de l'espace est disponible. En renvoyant ``None`` on indique explicitement
+    que la capacité n'a pas pu être mesurée, laissant l'opérateur décider
+    de la suite.
+    """
     import shutil
     store = os.environ.get(
         "OLLAMA_MODELS",
@@ -81,7 +93,7 @@ def free_disk_gb() -> float:
     try:
         return shutil.disk_usage(probe).free / (1024 ** 3)
     except Exception:
-        return 0.0
+        return None
 
 
 def taille_registre(modele: str) -> float:
@@ -169,6 +181,11 @@ def declares_sans_poids() -> list[str] | None:
     return manquants
 
 
+def _format_free(free: float | None) -> str:
+    """Retourne une représentation texte de l'espace libre ou 'inconnu'."""
+    return f"{free:.0f}" if free is not None else "inconnu"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     # Le comportement par defaut est de combler ce qui MANQUE reellement,
@@ -217,7 +234,8 @@ def main() -> int:
     print("=" * 68)
     print("  Liste          : %d modele(s)" % len(voulus))
     print("  Deja presents  : %d" % len([m for m in voulus if m in presents]))
-    print("  Disque libre   : %.0f Go" % free_disk_gb())
+    free_initial = free_disk_gb()
+    print("  Disque libre   : %s Go" % _format_free(free_initial))
     print()
 
     faits, ignores, echecs = 0, 0, []
@@ -254,7 +272,7 @@ def main() -> int:
         # téléchargements là où un seul tient. Une simulation qui ne prédit
         # pas l'arrêt ne prépare à rien.
         libre = (libre_simule if args.dry_run else free_disk_gb())
-        if taille and libre - taille < RESERVE_GB:
+        if taille and libre is not None and libre - taille < RESERVE_GB:
             print("  [%2d/%d] %-28s ARRET : %.0f Go libres, %.0f Go requis + %.0f de reserve"
                   % (i, len(voulus), modele, libre, taille, RESERVE_GB))
             print("\n  Le reste de la liste attendra que de la place soit liberee.")
@@ -262,9 +280,11 @@ def main() -> int:
             break
 
         if args.dry_run:
-            libre_simule -= taille
+            if libre_simule is not None:
+                libre_simule -= taille
             print("  [%2d/%d] %-28s a telecharger (%.1f Go, resterait %.0f Go)"
-                  % (i, len(voulus), modele, taille, libre_simule))
+                  % (i, len(voulus), modele, taille,
+                     libre_simule if libre_simule is not None else float('nan')))
             continue
 
         print("  [%2d/%d] %-28s telechargement..." % (i, len(voulus), modele), flush=True)
@@ -273,8 +293,9 @@ def main() -> int:
                                 capture_output=True, text=True,
                                 encoding="utf-8", errors="replace", timeout=7200)
         if result.returncode == 0:
-            print("           %-28s termine en %.0f s (%.0f Go libres)"
-                  % ("", time.time() - debut, free_disk_gb()), flush=True)
+            free_now = free_disk_gb()
+            print("           %-28s termine en %.0f s (%s Go libres)"
+                  % ("", time.time() - debut, _format_free(free_now)), flush=True)
             faits += 1
         else:
             # Un echec ne doit pas emporter la liste : les suivants gardent
@@ -288,7 +309,7 @@ def main() -> int:
           % (faits, ignores, len(echecs)))
     if echecs:
         print("  A retenter : %s" % ", ".join(echecs))
-    print("  Disque libre : %.0f Go" % free_disk_gb())
+    print("  Disque libre : %s Go" % _format_free(free_disk_gb()))
     # L'épilogue suit l'état réel du moteur. Il décrivait auparavant la
     # migration vers l'hôte en toutes circonstances : une fois celle-ci
     # faite, il conseillait de la refaire, dont une suppression de volume

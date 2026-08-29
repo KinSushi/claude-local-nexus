@@ -93,16 +93,30 @@ if (-not $conforme) {
 }
 
 # ------------------------------------------------------------
-# 2. Démarrage
+# 2. Demarrage
 # ------------------------------------------------------------
 Push-Location $RepoRoot
 try {
     if ($Restart) {
+        # On ne supprime plus la sortie de docker compose et on vérifie le code retour.
+        # Si la commande échoue, on lève une erreur explicite afin d'éviter que le script
+        # continue comme si le service était opérationnel.
         Write-Host "Redemarrage de LiteLLM..." -ForegroundColor Cyan
-        docker compose restart litellm | Out-Null
+        docker compose restart litellm
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            Write-Host "Erreur: docker compose restart litellm a renvoye un code $exitCode" -ForegroundColor Red
+            exit $exitCode
+        }
     } else {
+        # Même logique pour le démarrage complet : on conserve la sortie et on teste le code.
         Write-Host "Demarrage des conteneurs..." -ForegroundColor Cyan
-        docker compose up -d | Out-Null
+        docker compose up -d
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            Write-Host "Erreur: docker compose up -d a renvoye un code $exitCode" -ForegroundColor Red
+            exit $exitCode
+        }
     }
 } finally { Pop-Location }
 

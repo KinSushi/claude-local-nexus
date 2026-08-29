@@ -33,6 +33,10 @@ param(
     [string]$VhdPath = "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx"
 )
 
+# Forcer l'encodage UTF-8 de la console (comme dans Initialize-Nexus.ps1)
+$OutputEncoding = [System.Text.UTF8Encoding]::new()
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 
@@ -50,10 +54,10 @@ $eleve = ([Security.Principal.WindowsPrincipal] `
 if (-not $eleve) {
     Ecrire "Cette console n'est pas elevee." 'Red'
     Ecrire ""
-    Ecrire "Optimize-VHD refuse de s'executer sans droits administrateur, et"
-    Ecrire "echoue SILENCIEUSEMENT : il rend un code de succes sans avoir"
-    Ecrire "rien compacte. C'est ce qui s'est produit ici -- 553 Go avant,"
-    Ecrire "553 Go apres, aucune erreur."
+    Ecrire "Optimize-VHD refuse de s'executer sans droits administrateur, et" 'Red'
+    Ecrire "echoue SILENCIEUSEMENT : il rend un code de succes sans avoir" 'Red'
+    Ecrire "rien compacte. C'est ce qui s'est produit ici -- 553 Go avant," 'Red'
+    Ecrire "553 Go apres, aucune erreur." 'Red'
     Ecrire ""
     Ecrire "Ouvrez PowerShell en tant qu'administrateur, puis :" 'Yellow'
     Ecrire "    cd '$repo'" 'Yellow'
@@ -73,14 +77,17 @@ Ecrire "Chemin         : $VhdPath"
 Write-Host ""
 
 # --- 1. TRIM depuis l'interieur -----------------------------------------
-# Le conteneur voit le systeme de fichiers que Windows ne sait pas lire.
-# Sans cette etape, Optimize-VHD n'a aucun bloc a recuperer.
 if (-not $SkipTrim) {
     Ecrire "1/4  TRIM depuis l'interieur du moteur..."
     try {
         $sortie = docker run --rm --privileged --pid=host alpine `
             nsenter -t 1 -m -u -i -n fstrim -av 2>&1
-        $sortie | Where-Object { $_ -match 'trimmed' } | ForEach-Object { Ecrire "     $_" 'Green' }
+        $trimLines = $sortie | Where-Object { $_ -match 'trimmed' }
+        if ($trimLines) {
+            $trimLines | ForEach-Object { Ecrire "     $_" 'Green' }
+        } else {
+            Ecrire "     Aucun resultat TRIM detecte." 'Yellow'
+        }
     } catch {
         Ecrire "     TRIM impossible : $_" 'Yellow'
         Ecrire "     Le moteur Docker doit tourner pour cette etape."
@@ -119,37 +126,50 @@ Write-Host ""
 Ecrire "4/4  Redemarrage de la pile..."
 Push-Location $repo
 $pileDebout = $false
+$daemonReady = $false
+
 try {
-    # `wsl --shutdown` arrete aussi le demon Docker : `docker compose up`
-    # lance immediatement apres echoue tant qu'il n'a pas repris. Sans
-    # cette attente, la pile restait a terre -- ce qui est arrive, et en
-    # silence, la boucle suivante s'epuisant sans que personne ne le dise.
+    # Attente du daemon Docker
     for ($d = 0; $d -lt 30; $d++) {
         docker info --format '{{.ServerVersion}}' 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) { break }
+        if ($LASTEXITCODE -eq 0) {
+            $daemonReady = $true
+            break
+        }
         Start-Sleep -Seconds 4
     }
-    docker compose up -d 2>&1 | Out-Null
-    for ($i = 0; $i -lt 25; $i++) {
-        Start-Sleep -Seconds 6
-        try {
-            $r = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
-                -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-            if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
-        } catch { }
+
+    if (-not $daemonReady) {
+        Ecrire "Daemon Docker ne repond pas, abandon du demarrage." 'Red'
+    } else {
+        # Lancer la pile
+        $composeOut = docker compose up -d 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Ecrire "Erreur lors du demarrage de la pile :" 'Red'
+            $composeOut | ForEach-Object { Ecrire "     $_" 'Red' }
+        } else {
+            $composeOut | ForEach-Object { Ecrire "     $_" 'Gray' }
+        }
+
+        for ($i = 0; $i -lt 25; $i++) {
+            Start-Sleep -Seconds 6
+            try {
+                $r = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
+                    -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
+                if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
+            } catch { }
+        }
     }
 } finally { Pop-Location }
 
 if ($pileDebout) {
     Ecrire "     LiteLLM repond." 'Green'
 } else {
-    # L'echec doit s'entendre. La version precedente enchainait sur
-    # "Espace libre : 591 Go" et sur des commandes de suite, donnant a
-    # lire une operation reussie alors que la pile etait arretee.
     Ecrire "     LiteLLM NE REPOND PAS apres 150 s." 'Red'
     Ecrire "     La compaction a reussi, mais la pile est restee a terre." 'Red'
     Ecrire "     Relancez :  .\scripts\start.ps1" 'Yellow'
     Ecrire "     Diagnostic : docker compose logs litellm --tail 80" 'Yellow'
+    exit 1   # code de sortie non nul pour signaler l'echec
 }
 
 $libre = (Get-PSDrive C).Free / 1GB

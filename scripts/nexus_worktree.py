@@ -54,6 +54,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_agent as agent  # noqa: E402
@@ -218,8 +219,8 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
             # Le modèle a rendu la cible inchangée. C'est sa façon de
             # décliner — observé mot pour mot : « Ce n'est pas une erreur
             # de correction car le code est correct. » Compté comme une
-            # pose, cela produisait « 3/3 remplacements appliqués,
-            # vérification OK », lu comme trois corrections réussies alors
+            # pose, cela produisait « 3/3 remplacements appliques,
+            # verification OK », lu comme trois corrections réussies alors
             # que rien n'avait bougé. Un rapport qui compte des non-actions
             # comme des actions ne se relit pas : il se croit.
             rejets.append("#%d : remplacement identique a la cible (le modele decline)" % i)
@@ -234,7 +235,20 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
         source = source.replace(avant, apres, 1)
         poses += 1
     if poses:
-        io.open(chemin, "w", encoding="utf-8", newline="\n").write(source)
+        # Ecriture atomique : on écrit d'abord dans un fichier temporaire puis
+        # on le remplace en une opération atomique. Cela évite que, en cas
+        # d'interruption (ex. coupure d'alimentation), le fichier cible se retrouve
+        # partiellement écrasé et donc invalide.
+        dir_name = os.path.dirname(chemin)
+        fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as tmp_file:
+                tmp_file.write(source)
+            os.replace(tmp_path, chemin)
+        finally:
+            # Si os.replace a échoué, on s'assure de nettoyer le fichier temporaire.
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
     return poses, rejets
 
 
@@ -476,7 +490,10 @@ def main() -> int:
                 print("    git -C %s diff" % arbre_de(nom))
                 print("    python scripts/nexus_worktree.py --fusionner %s" % nom)
         print("=" * 72)
-    return 0 if any(c == 0 for _, _, c in resultats) else 1
+    # Retourne 0 uniquement si toutes les cibles ont été traitées avec succès.
+    # Sinon, le code de sortie indique un échec global, évitant que l'opérateur
+    # ne fusionne des modifications partielles.
+    return 0 if all(c == 0 for _, _, c in resultats) else 1
 
 
 if __name__ == "__main__":
