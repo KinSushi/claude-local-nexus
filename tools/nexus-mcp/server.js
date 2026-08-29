@@ -44,12 +44,21 @@ const SERVER_INFO = { name: "nexus-local", version: "1.0.0" };
 // racine fournie par Claude Code, puis position du fichier. Aucune de ces
 // sources n'est un chemin en dur : le pont doit pouvoir etre repris tel
 // quel dans un autre projet.
-const REPO_ROOT =
+const INSTALL_ROOT =
   process.env.NEXUS_ROOT ||
   process.env.CLAUDE_PROJECT_DIR ||
   path.resolve(__dirname, "..", "..");
+
+// Racine du projet dont on lit les fichiers (WORK_ROOT). Priorité :
+//   1. NEXUS_WORK_ROOT (explicit)
+//   2. CLAUDE_PROJECT_DIR (legacy)
+//   3. répertoire courant. Aucun chemin en dur pour éviter que le serveur
+//      reste prisonnier d'un projet spécifique.
+const WORK_ROOT = process.env.NEXUS_WORK_ROOT ||
+  process.env.CLAUDE_PROJECT_DIR ||
+  process.cwd();
 const LITELLM_URL = process.env.NEXUS_LITELLM_URL || "http://127.0.0.1:4000";
-const INDEX_DIR = path.join(REPO_ROOT, ".nexus");
+const INDEX_DIR = path.join(WORK_ROOT, ".nexus");
 const INDEX_PATH = path.join(INDEX_DIR, "index.json");
 
 // Modèles par défaut. GLM-4.7-Flash est un MoE 30B dont ~3B seulement sont
@@ -112,7 +121,7 @@ function masterKey() {
     cachedKey = process.env.LITELLM_MASTER_KEY;
     return cachedKey;
   }
-  const envFile = path.join(REPO_ROOT, ".env");
+  const envFile = path.join(INSTALL_ROOT, ".env");
   if (fs.existsSync(envFile)) {
     for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
       const m = /^\s*LITELLM_MASTER_KEY\s*=\s*(.*)$/.exec(line);
@@ -141,7 +150,10 @@ function masterKey() {
   // plus loin. Mieux vaut echouer ici, ou la cause est encore lisible.
   throw new Error(
     "LITELLM_MASTER_KEY introuvable : ni dans l'environnement, ni dans " +
-    path.join(REPO_ROOT, ".env")
+    // La cle vit avec l'INSTALLATION, jamais dans le projet courant :
+    // un projet tiers n'a pas a porter la cle de la passerelle, et l'y
+    // chercher ferait echouer le pont partout ailleurs.
+    path.join(INSTALL_ROOT, ".env")
   );
 }
 
@@ -1292,7 +1304,7 @@ const TOOLS = [
 ];
 
 function resolvePath(p) {
-  return path.isAbsolute(p) ? p : path.join(REPO_ROOT, p);
+  return path.isAbsolute(p) ? p : path.join(WORK_ROOT, p);
 }
 
 /**
@@ -1305,7 +1317,7 @@ function resolvePath(p) {
  * simple `../` suffisait, le filtre ne regardant que le nom de fichier.
  */
 function insideRepo(target) {
-  const relative = path.relative(REPO_ROOT, path.resolve(target));
+  const relative = path.relative(WORK_ROOT, path.resolve(target));
   return relative === "" ||
     (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
@@ -1314,7 +1326,7 @@ function requireInsideRepo(target, quoi) {
   if (!insideRepo(target)) {
     throw new Error(
       quoi + " hors du depot refuse : " + target + ". " +
-      "Le pont ne lit que sous " + REPO_ROOT + " ; ses extraits remontent " +
+      "Le pont ne lit que sous " + WORK_ROOT + " ; ses extraits remontent " +
       "a l'orchestrateur et quitteraient donc la machine."
     );
   }
@@ -1732,7 +1744,7 @@ async function callTool(name, args) {
   if (name === "nexus_index_build") {
     const root = args.root
       ? requireInsideRepo(resolvePath(args.root), "racine d'indexation")
-      : REPO_ROOT;
+      : WORK_ROOT;
     const index = await buildIndex(root, args.model || DEFAULT_EMBED_MODEL);
     return (
       `Index construit.\n` +
@@ -1825,13 +1837,13 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_profile") {
-    return await runPython([path.join(REPO_ROOT, "scripts", "nexus_capability.py")]);
+    return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_capability.py")]);
   }
 
   if (name === "nexus_savings") {
     const jours = String(args.jours || 7);
     return await runPython(
-      [path.join(REPO_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
+      [path.join(INSTALL_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
   }
 
   if (name === "nexus_models") {
@@ -1980,7 +1992,7 @@ async function handle(message) {
 }
 
 function main() {
-  log("demarrage — depot " + REPO_ROOT + " — passerelle " + LITELLM_URL);
+  log("demarrage — depot " + WORK_ROOT + " — passerelle " + LITELLM_URL);
   const rl = readline.createInterface({ input: process.stdin, terminal: false });
 
   // Une inference locale dure parfois plusieurs minutes. Sortir des la
