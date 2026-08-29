@@ -28,7 +28,7 @@ Usage
 -----
     # une tâche, un modèle
     python scripts/nexus_agent.py --tache "Relis et signale les defauts" \
-        --fichiers scripts/nexus_validate.py --modele qwen3-coder-30b-local
+        --fichiers scripts/nexus_validate.py --modele codestral-22b-local
 
     # plusieurs tâches en parallèle, décrites dans un JSON
     python scripts/nexus_agent.py --lot taches.json
@@ -39,7 +39,7 @@ Usage
 Format du lot (liste d'objets) :
 
     [
-      {"nom": "validateur", "modele": "qwen3-coder-30b-local",
+      {"nom": "validateur", "modele": "codestral-22b-local",
        "tache": "...", "fichiers": ["scripts/nexus_validate.py"]},
       {"nom": "generateur", "modele": "qwen3-14b-local",
        "tache": "...", "fichiers": ["scripts/nexus_generate.py"]}
@@ -390,7 +390,13 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
 
 def executer(tache: dict, cle: str) -> dict:
     nom = tache.get("nom") or tache.get("modele") or "tache"
-    modele = tache.get("modele") or "qwen3-coder-30b-local"
+    # Le modèle par défaut a été changé de qwen3-coder-30b-local à codestral-22b-local.
+    # Raison : les modèles >=30 B expirent après 900 s, rendant le défaut inutilisable.
+    # codestral-22b-local est un modèle local gratuit (respecte la doctrine « local d'abord »),
+    # il répond en ~38 s à chaud (bien plus rapide que glm-4.7-flash-local) et ne fait
+    # pas sortir les données du dépôt. Le cloud gratuit gpt-oss-120b-cloud est plus rapide
+    # (7‑8 s) mais viole la priorité locale, donc il reste en repli gratuit.
+    modele = tache.get("modele") or "codestral-22b-local"
     consigne = tache.get("tache") or ""
     if not consigne:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
@@ -560,7 +566,8 @@ def main() -> int:
     parseur.add_argument("--tache", help="Consigne adressee au modele.")
     parseur.add_argument("--fichiers", nargs="*", default=[],
                          help="Fichiers du depot a joindre.")
-    parseur.add_argument("--modele", default="qwen3-coder-30b-local")
+    # Le défaut a été mis à jour : voir commentaire dans `executer`.
+    parseur.add_argument("--modele", default="codestral-22b-local")
     parseur.add_argument("--systeme", help="Consigne systeme optionnelle.")
     parseur.add_argument("--max-tokens", type=int, default=1500)
     parseur.add_argument("--temperature", type=float, default=None,

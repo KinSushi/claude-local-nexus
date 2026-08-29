@@ -6,11 +6,11 @@ Le principe
 -----------
 Sauvegarder ce qui peut être reconstitué est du gaspillage ; ne pas
 sauvegarder ce qui ne le peut pas est une perte. La question n'est donc
-jamais « est-ce volumineux » mais « existe-t-il une source pour le
+jamais « est‑ce volumineux » mais « existe‑t‑il une source pour le
 reconstruire ».
 
-Appliqué à cette plateforme, le verdict est net : sur 541 Go occupés par
-Docker, 541 Go se retéléchargent — les poids de modèles ont une source
+Appliqué à cette plateforme, le verdict est net : sur 541 Go occupés par
+Docker, 541 Go se retéléchargent — les poids de modèles ont une source
 publique et un manifeste local. Ce qui ne se retélécharge pas tient dans
 quelques dizaines de mégaoctets : l'historique de dépense, les sessions de
 routage, les clés virtuelles.
@@ -31,12 +31,14 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
+import zipfile
 
-# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
-# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
-# et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
-# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
+# Sans cette ligne, Python écrit dans la page de codes locale de Windows
+# et les accents se dégradent dès que la sortie est capturée — le
+# résultat finissait commité dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -50,18 +52,56 @@ IRREMPLACABLE = "irremplacable"
 
 
 def run(args, timeout=120):
+    """
+    Exécute une commande et renvoie la sortie standard si le retour est 0,
+    sinon renvoie une chaîne vide.
+
+    Cette fonction masque les erreurs liées à l'absence d'exécutable
+    (FileNotFoundError) ou aux dépassements de délai, afin que le script
+    continue son audit même si Docker ou Git ne sont pas installés.
+    """
     try:
-        result = subprocess.run(args, capture_output=True, text=True,
-                                timeout=timeout, encoding="utf-8",
-                                errors="replace")
+        result = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding="utf-8",
+            errors="replace",
+        )
         return result.stdout if result.returncode == 0 else ""
     except (subprocess.SubprocessError, OSError):
-        # `OSError` est indispensable et non décoratif : `docker` ou
-        # `ollama` absents du PATH lèvent `FileNotFoundError`, qui n'est
-        # PAS un `SubprocessError`. L'omettre ferait mourir le script sur
-        # la machine qu'il sert justement à décrire — un poste neuf, ou
-        # celui d'où l'on vient de retirer Docker.
+        # OSError couvre FileNotFoundError qui n’est pas un SubprocessError.
         return ""
+
+
+def _exec_subprocess(args, timeout):
+    """
+    Exécute une commande et renvoie l'objet CompletedProcess.
+
+    En cas d'erreur (exécutable introuvable, timeout, autre SubprocessError)
+    un message explicite est affiché et ``None`` est retourné. Cette fonction
+    permet de différencier les causes d'échec, contrairement à ``run`` qui
+    masque tout.
+    """
+    try:
+        return subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except FileNotFoundError:
+        print(f"  [!] executable introuvable : {' '.join(args)}")
+    except subprocess.TimeoutExpired:
+        print(f"  [!] timeout depasse : {' '.join(args)}")
+    except subprocess.SubprocessError as exc:
+        print(f"  [!] erreur de sous‑processus : {exc}")
+    except OSError as exc:
+        print(f"  [!] erreur OS : {exc}")
+    return None
 
 
 def parse_size(text: str) -> float:
@@ -70,8 +110,17 @@ def parse_size(text: str) -> float:
         return 0.0
     value = float(match.group(1).replace(",", "."))
     unit = match.group(2).lower()
-    scale = {"b": 1e-9, "kb": 1e-6, "mb": 1e-3, "gb": 1.0, "tb": 1e3,
-             "kib": 1.05e-6, "mib": 1.049e-3, "gib": 1.074, "tib": 1100.0}
+    scale = {
+        "b": 1e-9,
+        "kb": 1e-6,
+        "mb": 1e-3,
+        "gb": 1.0,
+        "tb": 1e3,
+        "kib": 1.05e-6,
+        "mib": 1.049e-3,
+        "gib": 1.074,
+        "tib": 1100.0,
+    }
     return value * scale.get(unit, 0.0)
 
 
@@ -94,39 +143,62 @@ def inventory() -> list[dict]:
                 continue
             name, size = parts[0], parts[-1]
             if "ollama" in name:
-                items.append({
-                    "artefact": name, "type": "volume", "taille": parse_size(size),
-                    "verdict": RECONSTRUCTIBLE,
-                    "source": "ollama pull, pilote par model_list.txt",
-                })
+                items.append(
+                    {
+                        "artefact": name,
+                        "type": "volume",
+                        "taille": parse_size(size),
+                        "verdict": RECONSTRUCTIBLE,
+                        "source": "ollama pull, pilote par model_list.txt",
+                    }
+                )
             elif "redis" in name:
-                items.append({
-                    "artefact": name, "type": "volume", "taille": parse_size(size),
-                    "verdict": RECONSTRUCTIBLE,
-                    "source": "cache : se reconstitue a l'usage, par definition",
-                })
+                items.append(
+                    {
+                        "artefact": name,
+                        "type": "volume",
+                        "taille": parse_size(size),
+                        "verdict": RECONSTRUCTIBLE,
+                        "source": "cache : se reconstitue a l'usage, par definition",
+                    }
+                )
             elif "pgdata" in name:
-                items.append({
-                    "artefact": name, "type": "volume", "taille": parse_size(size),
-                    "verdict": IRREMPLACABLE,
-                    "source": "aucune — historique de depense, sessions, cles",
-                })
+                items.append(
+                    {
+                        "artefact": name,
+                        "type": "volume",
+                        "taille": parse_size(size),
+                        "verdict": IRREMPLACABLE,
+                        "source": "aucune — historique de depense, sessions, cles",
+                    }
+                )
             else:
-                items.append({
-                    "artefact": name, "type": "volume", "taille": parse_size(size),
-                    "verdict": IRREMPLACABLE, "source": "origine inconnue : prudence",
-                })
+                items.append(
+                    {
+                        "artefact": name,
+                        "type": "volume",
+                        "taille": parse_size(size),
+                        "verdict": IRREMPLACABLE,
+                        "source": "origine inconnue : prudence",
+                    }
+                )
 
     # --- Images --------------------------------------------------------
-    for line in run(["docker", "images", "--format", "{{.Repository}}:{{.Tag}}\t{{.Size}}"]).splitlines():
+    for line in run(
+        ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}\t{{.Size}}"]
+    ).splitlines():
         if "\t" not in line:
             continue
         name, size = line.split("\t", 1)
-        items.append({
-            "artefact": name, "type": "image", "taille": parse_size(size),
-            "verdict": RECONSTRUCTIBLE,
-            "source": "docker pull, declare dans docker-compose.yml",
-        })
+        items.append(
+            {
+                "artefact": name,
+                "type": "image",
+                "taille": parse_size(size),
+                "verdict": RECONSTRUCTIBLE,
+                "source": "docker pull, declare dans docker-compose.yml",
+            }
+        )
 
     # --- Fichiers du depot ---------------------------------------------
     tracked = run(["git", "-C", ROOT, "ls-files"]).splitlines()
@@ -137,18 +209,17 @@ def inventory() -> list[dict]:
         except Exception:
             pass
     if tracked:
-        items.append({
-            "artefact": "%d fichiers suivis par git" % len(tracked),
-            "type": "source", "taille": total, "verdict": RECONSTRUCTIBLE,
-            "source": "git — l'historique EST la sauvegarde",
-        })
+        items.append(
+            {
+                "artefact": "%d fichiers suivis par git" % len(tracked),
+                "type": "source",
+                "taille": total,
+                "verdict": RECONSTRUCTIBLE,
+                "source": "git — l'historique EST la sauvegarde",
+            }
+        )
 
     # --- Historique git ------------------------------------------------
-    #
-    # `.git` n'est reconstructible que jusqu'au dernier `push`. Au-dela, il
-    # n'existe qu'ici : un `git clone` ne ramenerait pas ce que le distant
-    # n'a jamais recu. Le verdict depend donc de l'etat de synchronisation,
-    # pas de la simple presence d'un remote.
     git_dir = os.path.join(ROOT, ".git")
     if os.path.isdir(git_dir):
         taille = 0.0
@@ -162,20 +233,36 @@ def inventory() -> list[dict]:
 
         remote = run(["git", "-C", ROOT, "remote"]).strip()
         branche = run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"]).strip()
-        amont = run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref",
-                     "--symbolic-full-name", "@{u}"]).strip()
+        amont = run(
+            [
+                "git",
+                "-C",
+                ROOT,
+                "rev-parse",
+                "--abbrev-ref",
+                "--symbolic-full-name",
+                "@{u}",
+            ]
+        ).strip()
         non_pousses = 0
         if remote:
             reference = amont or ("origin/%s" % branche)
-            sortie = run(["git", "-C", ROOT, "log", "--oneline",
-                          "%s..HEAD" % reference])
+            sortie = run(
+                ["git", "-C", ROOT, "log", "--oneline", "%s..HEAD" % reference]
+            )
             non_pousses = len([l for l in sortie.splitlines() if l.strip()])
 
-        modifies = [l for l in run(["git", "-C", ROOT, "status", "--porcelain"]).splitlines()
-                    if l.strip()]
+        modifies = [
+            l
+            for l in run(["git", "-C", ROOT, "status", "--porcelain"]).splitlines()
+            if l.strip()
+        ]
 
         if not remote:
-            verdict, source = IRREMPLACABLE, "aucun depot distant : tout l'historique n'existe qu'ici"
+            verdict, source = (
+                IRREMPLACABLE,
+                "aucun depot distant : tout l'historique n'existe qu'ici",
+            )
         elif non_pousses or modifies:
             details = []
             if non_pousses:
@@ -188,30 +275,52 @@ def inventory() -> list[dict]:
         else:
             verdict, source = RECONSTRUCTIBLE, "git clone %s" % remote
 
-        items.append({"artefact": ".git", "type": "historique",
-                      "taille": taille, "verdict": verdict, "source": source})
+        items.append(
+            {
+                "artefact": ".git",
+                "type": "historique",
+                "taille": taille,
+                "verdict": verdict,
+                "source": source,
+            }
+        )
 
     # --- Secrets -------------------------------------------------------
     env_file = os.path.join(ROOT, ".env")
     if os.path.exists(env_file):
-        items.append({
-            "artefact": ".env", "type": "secret",
-            "taille": os.path.getsize(env_file) / (1024 ** 3),
-            "verdict": IRREMPLACABLE,
-            "source": "aucune — exclu de git a dessein, a sauvegarder hors depot",
-        })
+        items.append(
+            {
+                "artefact": ".env",
+                "type": "secret",
+                "taille": os.path.getsize(env_file) / (1024 ** 3),
+                "verdict": IRREMPLACABLE,
+                "source": "aucune — exclu de git a dessein, a sauvegarder hors depot",
+            }
+        )
 
     # --- Index local ---------------------------------------------------
     index = os.path.join(ROOT, ".nexus", "index.json")
     if os.path.exists(index):
-        items.append({
-            "artefact": ".nexus/index.json", "type": "index",
-            "taille": os.path.getsize(index) / (1024 ** 3),
-            "verdict": RECONSTRUCTIBLE,
-            "source": "nexus_index_build — lent, mais refaisable",
-        })
+        items.append(
+            {
+                "artefact": ".nexus/index.json",
+                "type": "index",
+                "taille": os.path.getsize(index) / (1024 ** 3),
+                "verdict": RECONSTRUCTIBLE,
+                "source": "nexus_index_build — lent, mais refaisable",
+            }
+        )
 
     return items
+
+
+def _atomic_write(temp_path, final_path):
+    """
+    Déplace de façon atomique le fichier temporaire vers son nom définitif.
+    Cette opération garantit qu'aucun fichier incomplet ne porte le nom d'une
+    sauvegarde réussie.
+    """
+    os.replace(temp_path, final_path)
 
 
 def backup_irreplaceable() -> int:
@@ -220,71 +329,120 @@ def backup_irreplaceable() -> int:
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     fait = []
 
-    # PostgreSQL : un dump SQL, pas une archive de volume. Le dump est
-    # lisible, comparable d'une version a l'autre, et se restaure sur une
-    # autre version de PostgreSQL — ce qu'un volume brut ne permet pas.
-    target = os.path.join(BACKUP_DIR, "litellm-db-%s.sql" % stamp)
-    dump = subprocess.run(
-        ["docker", "exec", "litellm-db", "pg_dump", "-U", "litellm_user",
-         "--clean", "--if-exists", "litellm"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=600)
-    if dump.returncode == 0 and dump.stdout:
-        with io.open(target, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(dump.stdout)
-        taille = os.path.getsize(target) / (1024 ** 2)
-        fait.append("base PostgreSQL : %s (%.1f Mo)" % (os.path.basename(target), taille))
-    else:
-        print("  [!] pg_dump a echoue : %s" % (dump.stderr or "")[:200])
+    # ---------- PostgreSQL dump ----------
+    target = os.path.join(BACKUP_DIR, f"litellm-db-{stamp}.sql")
+    dump = _exec_subprocess(
+        [
+            "docker",
+            "exec",
+            "litellm-db",
+            "pg_dump",
+            "-U",
+            "litellm_user",
+            "--clean",
+            "--if-exists",
+            "litellm",
+        ],
+        timeout=600,
+    )
+    if dump is None or dump.returncode != 0 or not dump.stdout:
+        print(f"  [!] pg_dump a echoue : {dump.stderr if dump else ''}")
         return 1
 
-    # Historique git : un bundle contient TOUS les commits en un fichier,
-    # et se clone directement. C'est la forme la plus compacte et la plus
-    # fidele de sauvegarde d'un depot.
-    bundle = os.path.join(BACKUP_DIR, "depot-%s.bundle" % stamp)
-    result = subprocess.run(["git", "-C", ROOT, "bundle", "create", bundle, "--all"],
-                            capture_output=True, text=True, timeout=600)
-    if result.returncode == 0 and os.path.exists(bundle):
-        fait.append("historique git : %s (%.1f Mo, %s)"
-                    % (os.path.basename(bundle),
-                       os.path.getsize(bundle) / (1024 ** 2),
-                       "restaurable par git clone <bundle>"))
+    # ecriture atomique
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", delete=False, dir=BACKUP_DIR, newline="\n"
+    ) as tmp:
+        tmp.write(dump.stdout)
+        temp_name = tmp.name
+    try:
+        _atomic_write(temp_name, target)
+    except OSError as exc:
+        print(f"  [!] echec ecriture dump postgres : {exc}")
+        return 1
 
-    # Un bundle ne contient que ce qui est COMMITE. Le travail en cours
-    # n'y figure pas — or c'est souvent lui le plus recent, donc le plus
-    # couteux a refaire. On l'archive separement.
-    modifies = [l[3:].strip().strip('"')
-                for l in subprocess.run(["git", "-C", ROOT, "status", "--porcelain"],
-                                        capture_output=True, text=True,
-                                        timeout=120).stdout.splitlines()
-                if l.strip() and not l.startswith(" D") and not l.startswith("D ")]
+    if not os.path.getsize(target):
+        print("  [!] dump postgres vide, sauvegarde invalide")
+        return 1
+
+    taille = os.path.getsize(target) / (1024 ** 2)
+    fait.append(f"base PostgreSQL : {os.path.basename(target)} ({taille:.1f} Mo)")
+
+    # ---------- Git bundle ----------
+    bundle_tmp = os.path.join(BACKUP_DIR, f"depot-{stamp}.bundle.tmp")
+    bundle_final = os.path.join(BACKUP_DIR, f"depot-{stamp}.bundle")
+    result = _exec_subprocess(
+        ["git", "-C", ROOT, "bundle", "create", bundle_tmp, "--all"], timeout=600
+    )
+    if result is None or result.returncode != 0 or not os.path.exists(bundle_tmp):
+        print(f"  [!] creation du bundle git a echoue : {result.stderr if result else ''}")
+        return 1
+
+    if os.path.getsize(bundle_tmp) == 0:
+        print("  [!] bundle git vide, sauvegarde invalide")
+        return 1
+
+    try:
+        _atomic_write(bundle_tmp, bundle_final)
+    except OSError as exc:
+        print(f"  [!] echec ecriture bundle git : {exc}")
+        return 1
+
+    fait.append(
+        f"historique git : {os.path.basename(bundle_final)} ({os.path.getsize(bundle_final)/(1024**2):.1f} Mo, restaurable par git clone <bundle>)"
+    )
+
+    # ---------- Travail en cours (fichiers non commités) ----------
+    status = _exec_subprocess(
+        ["git", "-C", ROOT, "status", "--porcelain"], timeout=120
+    )
+    modifies = []
+    if status and status.returncode == 0:
+        modifies = [
+            line[3:].strip().strip('"')
+            for line in status.stdout.splitlines()
+            if line.strip() and not line.startswith(" D") and not line.startswith("D ")
+        ]
+
     if modifies:
-        import zipfile
-        archive = os.path.join(BACKUP_DIR, "travail-en-cours-%s.zip" % stamp)
-        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
-            ajoutes = 0
-            for relative in modifies:
-                chemin = os.path.join(ROOT, relative)
-                if os.path.isfile(chemin):
-                    zf.write(chemin, relative)
-                    ajoutes += 1
-                elif os.path.isdir(chemin):
-                    for base, _, files in os.walk(chemin):
-                        for name in files:
-                            complet = os.path.join(base, name)
-                            zf.write(complet, os.path.relpath(complet, ROOT))
-                            ajoutes += 1
-        fait.append("travail non commite : %s (%d fichiers, %.1f Mo)"
-                    % (os.path.basename(archive), ajoutes,
-                       os.path.getsize(archive) / (1024 ** 2)))
+        archive_tmp = os.path.join(BACKUP_DIR, f"travail-en-cours-{stamp}.zip.tmp")
+        archive_final = os.path.join(BACKUP_DIR, f"travail-en-cours-{stamp}.zip")
+        try:
+            with zipfile.ZipFile(archive_tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+                ajoutes = 0
+                for relative in modifies:
+                    chemin = os.path.join(ROOT, relative)
+                    if os.path.isfile(chemin):
+                        zf.write(chemin, relative)
+                        ajoutes += 1
+                    elif os.path.isdir(chemin):
+                        for base, _, files in os.walk(chemin):
+                            for name in files:
+                                complet = os.path.join(base, name)
+                                zf.write(complet, os.path.relpath(complet, ROOT))
+                                ajoutes += 1
+        except Exception as exc:
+            print(f"  [!] echec creation archive travail en cours : {exc}")
+            return 1
 
-    # .env n'est PAS copie dans backups/ : ce dossier vit a cote du depot,
-    # sur le meme disque, et une copie de secret multiplie les endroits ou
-    # il peut fuir. On rappelle seulement qu'il doit etre sauvegarde
-    # ailleurs, deliberement.
+        if not os.path.getsize(archive_tmp):
+            print("  [!] archive travail en cours vide, sauvegarde invalide")
+            return 1
+
+        try:
+            _atomic_write(archive_tmp, archive_final)
+        except OSError as exc:
+            print(f"  [!] echec ecriture archive travail en cours : {exc}")
+            return 1
+
+        fait.append(
+            f"travail non commite : {os.path.basename(archive_final)} ({ajoutes} fichiers, {os.path.getsize(archive_final)/(1024**2):.1f} Mo)"
+        )
+
+    # ---------- Rapport ----------
     print("\n=== Sauvegarde de l'irremplacable ===")
     for ligne in fait:
-        print("  %s" % ligne)
+        print(f"  {ligne}")
     print("\n  .env n'est volontairement pas copie ici : dupliquer un secret")
     print("  sur le meme disque multiplie les endroits ou il peut fuir.")
     print("  Le sauvegarder hors du depot, dans un gestionnaire de secrets.")
@@ -293,8 +451,11 @@ def backup_irreplaceable() -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backup", action="store_true",
-                        help="sauvegarde ce qui n'a aucune source de reconstruction")
+    parser.add_argument(
+        "--backup",
+        action="store_true",
+        help="sauvegarde ce qui n'a aucune source de reconstruction",
+    )
     args = parser.parse_args()
 
     items = inventory()
@@ -309,36 +470,53 @@ def main() -> int:
     total = poids_r + poids_i
 
     print("=" * 76)
-    print(" Ce qui se retelecharge, et ce qui ne se retelecharge pas")
+    print(" Ce qui se retélécharge, et ce qui ne se retélécharge pas")
     print("=" * 76)
 
     print("\n  RECONSTRUCTIBLE — %.1f Go, aucune sauvegarde justifiee" % poids_r)
     for item in sorted(reconstructible, key=lambda i: -i["taille"]):
-        print("    %-34s %9s   %s"
-              % (item["artefact"][:34],
-                 ("%.1f Go" % item["taille"]) if item["taille"] >= 0.1
-                 else ("%.0f Mo" % (item["taille"] * 1024)),
-                 item["source"]))
+        print(
+            "    %-34s %9s   %s"
+            % (
+                item["artefact"][:34],
+                ("%.1f Go" % item["taille"])
+                if item["taille"] >= 0.1
+                else ("%.0f Mo" % (item["taille"] * 1024)),
+                item["source"],
+            )
+        )
 
     print("\n  IRREMPLACABLE — %.0f Mo, a sauvegarder" % (poids_i * 1024))
     for item in sorted(irremplacable, key=lambda i: -i["taille"]):
-        print("    %-34s %9s   %s"
-              % (item["artefact"][:34],
-                 ("%.1f Go" % item["taille"]) if item["taille"] >= 0.1
-                 else ("%.1f Mo" % (item["taille"] * 1024)),
-                 item["source"]))
+        print(
+            "    %-34s %9s   %s"
+            % (
+                item["artefact"][:34],
+                ("%.1f Go" % item["taille"])
+                if item["taille"] >= 0.1
+                else ("%.1f Mo" % (item["taille"] * 1024)),
+                item["source"],
+            )
+        )
 
     if total:
         part = poids_i / total * 100
         print("\n" + "-" * 76)
         print("  L'irremplacable represente %.3f %% du volume total." % part)
-        print("  Autrement dit : %.0f Mo meritent une sauvegarde, %.0f Go n'en"
-              % (poids_i * 1024, poids_r))
-        print("  meritent aucune. Archiver les seconds couterait plus de disque")
-        print("  qu'il n'en reste libre, pour reconstituer ce qu'une commande")
+        print(
+            "  Autrement dit : %.0f Mo meritent une sauvegarde, %.0f Go n'en"
+            % (poids_i * 1024, poids_r)
+        )
+        print(
+            "  meritent aucune. Archiver les seconds couterait plus de disque"
+        )
+        print(
+            "  qu'il n'en reste libre, pour reconstituer ce qu'une commande"
+        )
         print("  reconstitue seule.")
 
-    print("""
+    print(
+        """
   Consequence sur l'implantation :
 
     reste dans Docker    PostgreSQL   son volume est le seul irremplacable
@@ -346,8 +524,10 @@ def main() -> int:
                          LiteLLM      la passerelle, sa valeur est sa config
 
     sort de Docker       Ollama       et ses %0.0f Go de poids, tous
-                                      retelechargeables depuis model_list.txt
-""" % (next((i["taille"] for i in items if "ollama" in i["artefact"]), 0)))
+                                      retéléchargeables depuis model_list.txt
+"""
+        % (next((i["taille"] for i in items if "ollama" in i["artefact"]), 0))
+    )
 
     if args.backup:
         return backup_irreplaceable()
