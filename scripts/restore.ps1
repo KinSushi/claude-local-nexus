@@ -12,6 +12,29 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# Le prérequis est vérifié AVANT toute destruction.
+#
+# L'ordre était inverse : les volumes étaient supprimés, puis seulement
+# ensuite l'absence de .env était constatée — et le script invitait alors à
+# le renseigner « avant de relancer ce script », en sortant 0. Sur une
+# machine neuve, c'est-à-dire le cas d'usage nominal que ce message décrit
+# lui-même, PostgreSQL, Redis et les poids Ollama venaient d'être détruits,
+# rien n'était redémarré, et le code de sortie disait succès.
+if (-not (Test-Path .env)) {
+    # Test-Path sur la SOURCE, comme backup.ps1 le fait pour chaque fichier :
+    # sans lui, un .env.example manquant produisait une erreur non bloquante,
+    # aucun .env créé, et une sortie affirmant pourtant l'avoir créé.
+    if (Test-Path .env.example) {
+        Copy-Item .env.example .env
+        Write-Host "Fichier .env créé depuis .env.example. Renseignez vos clés API, puis relancez ce script."
+    } else {
+        Write-Error "Ni .env ni .env.example ne sont présents. Rien n'a été détruit."
+    }
+    # 1 et non 0 : rien n'a été restauré. Un appelant automatisé doit pouvoir
+    # distinguer « restauration faite » de « prérequis manquant ».
+    exit 1
+}
+
 # Avertissement : suppression des volumes
 Write-Host "⚠️  Attention : cette opération va supprimer les volumes Docker (données PostgreSQL, modèles Ollama, cache Redis)."
 Write-Host "Appuyez sur Ctrl+C pour annuler, ou Entrée pour continuer..."
@@ -19,13 +42,6 @@ Read-Host
 
 # Arrêter et supprimer les conteneurs et volumes
 docker compose down -v
-
-# Créer le fichier .env à partir de .env.example si absent
-if (-not (Test-Path .env)) {
-    Copy-Item .env.example .env
-    Write-Host "Fichier .env créé depuis .env.example. Veuillez éditer .env et renseigner vos clés API avant de relancer ce script."
-    exit 0
-}
 
 # Démarrer la stack
 docker compose up -d
