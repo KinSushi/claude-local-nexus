@@ -1,6 +1,6 @@
 # Claude-Local-Nexus
 
-![Banner](https://raw.githubusercontent.com/KinSushi/Claude-Local-Nexus/main/images/banner.png)
+![Banner](https://raw.githubusercontent.com/KinSushi/claude-local-nexus/main/images/banner.png)
 
 > **Passerelle d'orchestration LLM hybride — locale, cloud et Anthropic —
 > avec garde-fous matériels et politique de confidentialité vérifiée par des tests.**
@@ -99,7 +99,7 @@ devient le temps, qui en local ne coûte rien.
 Prérequis : Docker Desktop, Node 18+, Python 3.10+ avec PyYAML.
 
 ```powershell
-git clone https://github.com/KinSushi/Claude-Local-Nexus.git
+git clone https://github.com/KinSushi/claude-local-nexus.git
 cd Claude-Local-Nexus
 Copy-Item .env.example .env      # puis renseigner les clés
 
