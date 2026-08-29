@@ -212,6 +212,104 @@ def controle_disque() -> None:
           "%.0f Go libres%s" % (libre, "" if libre >= 15 else " — insuffisant pour un pull"))
 
 
+def substitution_imbriquee(valeur: str) -> str | None:
+    """
+    Une substitution `${...}` en contient-elle une autre ?
+
+    L'expansion des variables d'un fichier de configuration se fait en une
+    passe : la valeur par défaut d'un `${A:-...}` n'est pas ré-examinée.
+    Écrire `${A:-${B:-.}}` ne rend donc pas la valeur de B mais la chaîne
+    littérale `${B:-.}` — que le programme reçoit ensuite comme un nom de
+    répertoire, lequel n'existe pas.
+
+    La panne qui en découle est de la pire espèce : silencieuse et
+    d'apparence saine. Ici, le pont MCP démarrait, s'annonçait « connected,
+    12 outils », et tout ce qui touchait le disque était mort — la lecture
+    de fichiers, l'indexation, la recherche, la vision, le profil matériel.
+    Rien ne le signalait, et cette porte affichait ses huit contrôles au
+    vert pendant ce temps, parce qu'aucun ne regardait le pont.
+
+    Rend le fragment fautif, ou None si la valeur est saine.
+    """
+    i = valeur.find("${")
+    while i != -1:
+        j = valeur.find("}", i)
+        if j == -1:
+            # Accolade jamais fermée : tout aussi inexpansible.
+            return valeur[i:i + 60]
+        if "${" in valeur[i + 2:j]:
+            return valeur[i:j + 1]
+        i = valeur.find("${", j)
+    return None
+
+
+def _chaines(noeud, chemin: str = ""):
+    """Parcourt un JSON et rend (emplacement, chaîne) pour chaque texte."""
+    if isinstance(noeud, dict):
+        for cle, valeur in noeud.items():
+            yield from _chaines(valeur, "%s.%s" % (chemin, cle) if chemin else str(cle))
+    elif isinstance(noeud, list):
+        for rang, valeur in enumerate(noeud):
+            yield from _chaines(valeur, "%s[%d]" % (chemin, rang))
+    elif isinstance(noeud, str):
+        yield chemin, noeud
+
+
+def controle_pont_mcp() -> None:
+    """
+    Le pont MCP lit-il réellement le dépôt, ou seulement en apparence ?
+
+    Le contrôle est statique à dessein : il doit répondre passerelle et
+    serveur éteints, c'est-à-dire avant le démarrage, là où la correction
+    coûte le moins. Il ne demande donc rien au serveur — dont l'aveu
+    « connected » ne prouve que le transport, jamais l'accès aux fichiers.
+
+    Deux assertions, toutes deux vérifiables sans rien lancer :
+
+        1. aucune substitution `${...}` n'en contient une autre ;
+        2. le point d'entrée déclaré existe réellement sur le disque.
+    """
+    chemin = os.path.join(ROOT, ".mcp.json")
+    if not os.path.exists(chemin):
+        noter("pont MCP", False, AVERTISSEMENT,
+              ".mcp.json absent — aucun outil local n'est expose a Claude Code")
+        return
+    try:
+        declaration = json.loads(io.open(chemin, encoding="utf-8").read())
+    except Exception as exc:
+        noter("pont MCP", False, BLOQUANT, ".mcp.json illisible : %s" % exc)
+        return
+
+    serveurs = declaration.get("mcpServers") or {}
+    defauts = []
+    for nom, corps in serveurs.items():
+        for ou, valeur in _chaines(corps, str(nom)):
+            fautif = substitution_imbriquee(valeur)
+            if fautif:
+                defauts.append("%s : substitution inexpansible %s" % (ou, fautif))
+        for arg in (corps.get("args") or []):
+            if not isinstance(arg, str) or ("/" not in arg and "\\" not in arg):
+                continue
+            cible = (arg.replace("${CLAUDE_PROJECT_DIR:-.}", ROOT)
+                        .replace("${CLAUDE_PROJECT_DIR}", ROOT))
+            # Une substitution non résolue ici n'est pas un défaut : elle
+            # peut être légitimement fournie par l'environnement. La
+            # première assertion a déjà écarté celles qui ne peuvent pas
+            # l'être.
+            if "${" in cible:
+                continue
+            if not os.path.exists(cible):
+                defauts.append("%s : point d'entree absent (%s)" % (nom, cible))
+
+    if not serveurs:
+        noter("pont MCP", False, AVERTISSEMENT, ".mcp.json ne declare aucun serveur")
+        return
+    noter("pont MCP", not defauts, BLOQUANT,
+          "; ".join(defauts) if defauts
+          else "%d serveur(s), substitutions expansibles, points d'entree presents"
+               % len(serveurs))
+
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -248,7 +346,8 @@ def main() -> int:
 
     for controle in (controle_config_valide, controle_moteur_coherent,
                      controle_moteur_joignable, controle_marqueurs_autogen,
-                     controle_secrets, controle_env_hors_git, controle_disque):
+                     controle_secrets, controle_env_hors_git, controle_disque,
+                     controle_pont_mcp):
         try:
             controle()
         except Exception as exc:
