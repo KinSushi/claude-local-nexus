@@ -64,14 +64,29 @@ ROLES = [
 
 
 def docker_models() -> list[tuple[str, str, float]]:
-    """(nom, identifiant de blob, taille) tel que vu dans le conteneur."""
+    """
+    (nom, identifiant de blob, taille) tels que vus par le moteur servant.
+
+    La commande etait `docker exec ollama-server ollama list`, ecrite en
+    dur. Une fois le moteur sorti de Docker et le conteneur supprime, elle
+    a echoue en silence et le script a conclu "aucun modele lisible" --
+    diagnostic faux, puisque vingt-deux modeles etaient servis depuis
+    l'hote. C'est `ollama_location()` qui sait ou regarder ; l'ignorer
+    revient a decrire une machine qui n'existe plus.
+    """
+    lieu = capability.ollama_location()
+    commande = (["ollama", "list"] if lieu.get("host_native")
+                else ["docker", "exec", "ollama-server", "ollama", "list"])
     try:
         result = subprocess.run(
-            ["docker", "exec", "ollama-server", "ollama", "list"],
+            commande,
             capture_output=True, text=True, timeout=60,
             encoding="utf-8", errors="replace",
         )
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
+        # `OSError` couvre l'absence de l'executable du PATH, qui n'est pas
+        # un `SubprocessError` : sans lui le script mourrait la ou il doit
+        # simplement rendre une liste vide.
         return []
     rows = []
     for line in result.stdout.splitlines()[1:]:
@@ -91,7 +106,7 @@ def main() -> int:
     profile = capability.build_profile()
     rows = docker_models()
     if not rows:
-        print("Aucun modèle lisible dans le conteneur Ollama.")
+        print("Aucun modele lisible sur le moteur Ollama servant.")
         return 1
 
     # Un même blob peut porter deux noms (codestral:latest et codestral:22b
@@ -100,8 +115,11 @@ def main() -> int:
     by_blob: dict[str, list[tuple[str, float]]] = {}
     for name, blob, size in rows:
         by_blob.setdefault(blob, []).append((name, size))
-    unique = [(sorted(names)[0], names[0][1]) for blob, names in by_blob.items()
-              for names in [sorted(names)]]
+    # Une première version de ce calcul subsistait juste au-dessus, écrasée
+    # à la ligne suivante sans avoir jamais servi. Elle produisait en outre
+    # des paires là où la suite attend des triplets : quiconque aurait
+    # supprimé la seconde affectation en croyant dédoublonner aurait cassé
+    # `total_unique` d'une manière difficile à rattacher à sa cause.
     unique = []
     for blob, names in by_blob.items():
         canonical = sorted(names, key=lambda n: (len(n[0]), n[0]))[0]
@@ -197,6 +215,22 @@ def main() -> int:
 
     if args.write:
         target = args.write if os.path.isabs(args.write) else os.path.join(ROOT, args.write)
+        # `--write ../../ailleurs.txt` écrivait hors du dépôt sans un mot.
+        # La comparaison se fait par `commonpath` et non par `startswith` :
+        # un répertoire voisin nommé `local-llm-docker-prive` commence par
+        # la racine sans être dedans, et un contrôle par préfixe l'aurait
+        # accepté — c'est-à-dire précisément le cas qu'il prétend couvrir.
+        try:
+            dedans = os.path.commonpath(
+                [os.path.realpath(target), os.path.realpath(ROOT)]
+            ) == os.path.realpath(ROOT)
+        except ValueError:
+            # Lecteurs différents sous Windows : `commonpath` lève plutôt que
+            # de rendre un résultat trompeur. C'est donc un refus.
+            dedans = False
+        if not dedans:
+            print("Refus : %s est hors du depot." % target)
+            return 1
         lines = [
             "# Inventaire local a telecharger sur l'hote.",
             "# Genere par scripts/nexus_migration_plan.py — %d modeles, %.0f Go."

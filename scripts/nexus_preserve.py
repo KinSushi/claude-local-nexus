@@ -55,7 +55,12 @@ def run(args, timeout=120):
                                 timeout=timeout, encoding="utf-8",
                                 errors="replace")
         return result.stdout if result.returncode == 0 else ""
-    except Exception:
+    except (subprocess.SubprocessError, OSError):
+        # `OSError` est indispensable et non décoratif : `docker` ou
+        # `ollama` absents du PATH lèvent `FileNotFoundError`, qui n'est
+        # PAS un `SubprocessError`. L'omettre ferait mourir le script sur
+        # la machine qu'il sert justement à décrire — un poste neuf, ou
+        # celui d'où l'on vient de retirer Docker.
         return ""
 
 
