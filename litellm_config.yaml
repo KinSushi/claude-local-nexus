@@ -332,9 +332,18 @@ model_list:
           - general
           - factual_lookup
 
+  # Dernier recours de toute la chaine locale. Il pointait sur phi3:mini --
+  # le MEME modele que phi3-mini-local, sur le meme moteur. Or phi3-mini-local
+  # se replie precisement sur lui : le dernier recours tombait donc exactement
+  # en meme temps que ce qu'il devait secourir, et la chaine se terminait sur
+  # rien.
+  #
+  # llama3.2:1b est retenu pour sa legerete, 1,3 Go contre 2,2 : un dernier
+  # recours doit etre celui qui charge le plus vite, pas le plus capable --
+  # on l'atteint quand tout le reste a deja echoue.
   - model_name: ultime-recourse-local
     litellm_params:
-      model: ollama_chat/phi3:mini
+      model: ollama_chat/llama3.2:1b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 8192

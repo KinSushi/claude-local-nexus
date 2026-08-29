@@ -111,9 +111,23 @@ def main() -> int:
     seen: set[str] = set()
     for alias in declared:
         if alias in seen:
-            errors.append("alias dupliqué dans model_list : %s" % alias)
+            errors.append("alias duplique dans model_list : %s" % alias)
         seen.add(alias)
     known = set(declared)
+
+    # Construction d'une table alias -> (model, api_base) pour le futur test
+    # de repli identique. Cette table permet de détecter le cas où deux
+    # alias différents pointent vers le même couple (model, api_base) et
+    # sont reliés par un arc de fallback. Un tel repli ne fournit aucune
+    # redondance : si le modèle sous-jacent tombe, les deux alias tombent
+    # simultanément, poussant le système vers un plan payant, ce qui est le
+    # comportement que l'on veut absolument interdire.
+    alias_to_pair: dict[str, tuple[str, str]] = {}
+    for m in model_list:
+        params = m.get("litellm_params") or {}
+        model = str(params.get("model", ""))
+        api_base = str(params.get("api_base", ""))
+        alias_to_pair[m["model_name"]] = (model, api_base)
 
     # --- 2. Références des routeurs adaptatifs ---------------------------
     #
@@ -218,6 +232,43 @@ def main() -> int:
                     errors.append("%s : '%s' retombe sur '%s' qui n'existe pas"
                                   % (label, source, target))
                     continue
+
+                # --- Nouveau contrôle : repli vers le même modele/engine ----
+                # Si source et cible résolvent vers le même couple (model, api_base)
+                # le repli ne fournit aucune redondance : la panne d'un modèle
+                # affecte les deux alias simultanément. Cela conduit à un
+                # basculement involontaire vers un plan payant, ce qui contrevient
+                # à l'objectif de la plateforme.
+                #
+                # EXCLUSION 1 : les alias dont le champ `model` commence par
+                # `auto_router/` ne sont pas de vrais modèles mais des mécanismes
+                # de routage. Les comparer génère un faux positif (ex. les
+                # routeurs adaptatifs partageant le même mécanisme). Ils doivent
+                # donc être ignorés.
+                #
+                # EXCLUSION 2 : si `api_base` est vide ou absent, l'alias ne
+                # désigne aucun moteur réel. Deux alias avec un `api_base` vide
+                # ne constituent pas un repli redondant et doivent être exclus
+                # du contrôle. Sans ces exclusions, le validateur refusait tout
+                # démarrage parce que les routeurs adaptatifs étaient signalés
+                # comme des doublons.
+                if source != "*" and source in alias_to_pair and target in alias_to_pair:
+                    src_model, src_api = alias_to_pair[source]
+                    tgt_model, tgt_api = alias_to_pair[target]
+
+                    # Ignorer les mécanismes de routeur et les alias sans api_base.
+                    if src_model.startswith("auto_router/") or tgt_model.startswith("auto_router/"):
+                        pass
+                    elif not src_api or not tgt_api:
+                        pass
+                    elif src_model == tgt_model and src_api == tgt_api:
+                        errors.append(
+                            "%s : '%s' et '%s' pointent vers le meme modele '%s' et api_base '%s' - un repli vers le meme modele sur le meme moteur tombe en meme temps que sa source"
+                            % (label, source, target, src_model, src_api)
+                        )
+                        # Pas besoin de poursuivre les autres contrôles pour cet arc.
+                        continue
+
                 # Modalité : un embedding ne retombe que sur un embedding,
                 # une vision que sur une vision (§17).
                 # La regle est symetrique : un embedding ne retombe pas sur
@@ -226,7 +277,7 @@ def main() -> int:
                 # laissait passer gemma4-12b-local -> all-minilm-local.
                 src_kind, dst_kind = classify(source), classify(target)
                 if src_kind != dst_kind:
-                    errors.append("%s : '%s' (%s) retombe sur '%s' (%s) — modalité incompatible"
+                    errors.append("%s : '%s' (%s) retombe sur '%s' (%s) — modalite incompatible"
                                   % (label, source, src_kind, target, dst_kind))
 
                 # Direction du repli. La règle est asymétrique à dessein :
@@ -241,7 +292,7 @@ def main() -> int:
                         and dst_domain != "local":
                     errors.append(
                         "%s : '%s' (%s) retombe sur '%s' (%s) — un repli ne "
-                        "peut aller que vers plus de confidentialité"
+                        "peut aller que vers plus de confidentialite"
                         % (label, source, src_domain, target, dst_domain))
             # Un graphe PAR LISTE, et non un graphe unique.
             #
@@ -294,7 +345,7 @@ def main() -> int:
             if isinstance(value, str) and value.startswith("os.environ/"):
                 name = value.split("/", 1)[1]
                 if name not in env_present:
-                    errors.append("modèle %s : variable %s non définie"
+                    errors.append("modele %s : variable %s non definie"
                                   % (m["model_name"], name))
 
     # --- 6. Inventaire Ollama vs configuration --------------------------
@@ -304,8 +355,8 @@ def main() -> int:
     # Un seul inventaire, celui du moteur qui sert réellement. Le
     # validateur en relançait un second, `docker exec ollama-server` écrit
     # en dur : après la sortie du moteur hors de Docker, il a continué de
-    # décrire un conteneur supprimé, échoué, et — parce qu'un inventaire
-    # vide entrait dans le même `if installed:` qu'un inventaire réussi —
+    # décrire un conteneur supprimé, échoué, et — parce qu'un inventaire vide
+    # entrait dans le même `if installed:` qu'un inventaire réussi —
     # s'est tu. Toute la section 6 a disparu sans un mot, au moment précis
     # où huit alias venaient de perdre leurs poids. Un inventaire illisible
     # n'est pas un inventaire vide : il doit s'entendre.
@@ -332,7 +383,7 @@ def main() -> int:
             ):
                 referenced_local.add(base)
                 if base not in installed and base + ":latest" not in installed:
-                    errors.append("modèle %s : '%s' déclaré mais absent d'Ollama"
+                    errors.append("modele %s : '%s' declare mais absent d'Ollama"
                                   % (m["model_name"], base))
         # ':latest' n'est qu'un tag implicite : 'codestral:latest' installé et
         # 'codestral' référencé désignent le même modèle. Comparer les deux
@@ -352,9 +403,9 @@ def main() -> int:
             taille = tailles_installees.get(base, 0.0)
             etat, motif = capability.verdict(taille, profile_materiel)
             if etat == capability.REJECT:
-                warnings.append("non exposé à dessein : %s — %s" % (base, motif))
+                warnings.append("non expose a dessein : %s — %s" % (base, motif))
             else:
-                warnings.append("installé mais non exposé : %s" % base)
+                warnings.append("installe mais non expose : %s" % base)
 
     # --- 7. Garde-fou materiel ------------------------------------------
     # La machine est mesuree, pas supposee. Un modele plus lourd que la
@@ -373,7 +424,7 @@ def main() -> int:
     for candidates in routers.values():
         selectable.update(candidates)
     # Toutes les listes de repli, et pas seulement `fallbacks` : un modèle
-    # inexécutable restait accepté comme cible de `context_window_fallbacks`.
+    # inexecutable restait accepté comme cible de `context_window_fallbacks`.
     # `flatten_fallbacks` plutôt qu'un `entry.values()` direct : la même
     # boucle plantait sur une liste plate de noms, forme que LiteLLM
     # accepte pour `default_fallbacks`. Deux endroits lisaient ces listes,
@@ -420,15 +471,15 @@ def main() -> int:
     cache_params = (cfg.get("litellm_settings") or {}).get("cache_params") or {}
     if cache_params.get("type") == "redis-semantic":
         warnings.append(
-            "cache sémantique actif : risque de réponse erronée sur les appels "
-            "d'outils et les étapes d'agent (§27)"
+            "cache semantique actif : risque de reponse erronnee sur les appels "
+            "d'outils et les etapes d'agent (§27)"
         )
 
     # --- Rapport ---------------------------------------------------------
     print("=" * 60)
     print(" Validation de la configuration Claude-Local-Nexus")
     print("=" * 60)
-    print("  Modèles déclarés  : %d" % len(declared))
+    print("  Modeles declares  : %d" % len(declared))
     print("  Routeurs          : %d" % len(routers))
     print("  Arcs de fallback  : %d" % sum(len(v) for v in graph.values()))
 
@@ -441,7 +492,7 @@ def main() -> int:
         print("\n  ERREURS (%d)" % len(errors))
         for e in errors:
             print("    - %s" % e)
-        print("\n  => Configuration INVALIDE : ne pas redémarrer LiteLLM.")
+        print("\n  => Configuration INVALIDE : ne pas redemarrer LiteLLM.")
         return 1
 
     print("\n  => Configuration valide.")
