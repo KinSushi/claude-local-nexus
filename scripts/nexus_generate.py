@@ -161,8 +161,24 @@ def quality_tier(rank: int) -> int:
 # Découverte du catalogue cloud
 # ----------------------------------------------------------------------
 def discover_cloud() -> list[str]:
-    with urllib.request.urlopen(TAGS_URL, timeout=30) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+    """
+    Catalogue Ollama Cloud.
+
+    La lecture est gardée comme celle de `discover_local`, et pour la même
+    raison : une trace nue au milieu d'une régénération laisse la
+    configuration dans un état à moitié réécrit, alors qu'un message clair
+    permet de recommencer. La différence de contrat est voulue — ici
+    l'échec est levé plutôt que rendu comme None, parce qu'un catalogue
+    cloud vide ne doit jamais servir de base à une régénération : ce
+    serait effacer la zone CLOUD_MODELS au premier incident réseau.
+    """
+    try:
+        with urllib.request.urlopen(TAGS_URL, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(
+            "catalogue cloud illisible sur %s (%s) — regeneration interrompue "
+            "plutot que d'ecrire une zone CLOUD_MODELS vide" % (TAGS_URL, exc))
     names = sorted({m["name"] for m in payload.get("models", [])})
     if not names:
         raise RuntimeError("catalogue cloud vide")
