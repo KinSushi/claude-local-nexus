@@ -1,0 +1,101 @@
+name: Vérification
+
+# Ce projet fait de la validation automatique son argument central. Ne pas
+# exécuter ses propres contrôles en intégration continue serait la plus
+# contradictoire des omissions.
+#
+# Seules les familles qui ne demandent NI pile démarrée NI secrets tournent
+# ici : la validation d'intégrité et la famille « code » de la suite. Les
+# familles forward, reverse et policy exigent LiteLLM, Ollama et des clés
+# d'API — elles restent locales, et le README le dit.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verification:
+    name: Intégrité et code
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dépendances
+        run: python -m pip install --quiet -r requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Le serveur MCP est-il analysable ?
+        run: node --check tools/nexus-mcp/server.js
+
+      - name: Les scripts Python sont-ils analysables ?
+        run: |
+          for f in scripts/*.py; do
+            python -m py_compile "$f" || exit 1
+          done
+
+      - name: La configuration est-elle un YAML valide ?
+        run: |
+          python - <<'PY'
+          import yaml, io, sys
+          config = yaml.safe_load(io.open("litellm_config.yaml", encoding="utf-8"))
+          modeles = config.get("model_list") or []
+          if not modeles:
+              print("model_list vide"); sys.exit(1)
+          print("%d modeles declares" % len(modeles))
+          PY
+
+      - name: Les zones générées sont-elles bien délimitées ?
+        run: |
+          python - <<'PY'
+          import io, re, sys
+          lignes = io.open("litellm_config.yaml", encoding="utf-8").read().split("\n")
+          ouverts, fermes = {}, {}
+          for l in lignes:
+              o = re.match(r"^\s*# >>> AUTOGEN:(\S+)", l)
+              f = re.match(r"^\s*# <<< AUTOGEN:(\S+)\s*$", l)
+              if o: ouverts[o.group(1)] = ouverts.get(o.group(1), 0) + 1
+              if f: fermes[f.group(1)] = fermes.get(f.group(1), 0) + 1
+          probleme = False
+          for nom, n in ouverts.items():
+              if fermes.get(nom) != n:
+                  print("marqueur desequilibre : %s (%d ouverts, %d fermes)"
+                        % (nom, n, fermes.get(nom, 0)))
+                  probleme = True
+              if n > 1:
+                  # Une zone dupliquee ferait ecrire le generateur dans une
+                  # seule des deux, et produirait des alias en double.
+                  print("marqueur duplique : %s (%d fois)" % (nom, n))
+                  probleme = True
+          print("%d zones AUTOGEN, equilibrees" % len(ouverts))
+          sys.exit(1 if probleme else 0)
+          PY
+
+      - name: Aucun secret n'est-il écrit en dur ?
+        run: |
+          python - <<'PY'
+          import io, re, subprocess, sys
+          suivis = subprocess.run(["git", "ls-files"], capture_output=True,
+                                  text=True).stdout.split()
+          motif = re.compile(r"sk-ant-api[0-9]|ghp_[A-Za-z0-9]{30}|"
+                             r"github_pat_[A-Za-z0-9_]{50}|AKIA[0-9A-Z]{16}")
+          trouves = []
+          for f in suivis:
+              try:
+                  if motif.search(io.open(f, encoding="utf-8", errors="ignore").read()):
+                      trouves.append(f)
+              except Exception:
+                  pass
+          if trouves:
+              print("secrets possibles : %s" % ", ".join(trouves)); sys.exit(1)
+          print("%d fichiers suivis, aucun secret" % len(suivis))
+          PY

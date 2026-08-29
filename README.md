@@ -21,7 +21,7 @@ Claude semble la voie évidente. Elle ne fonctionne pas :
 > *« While a gateway credential variable or `apiKeyHelper` is active, a
 > developer's claude.ai subscription isn't used : the credential replaces the
 > subscription login for that session. That traffic is billed per token. »*
-> — documentation Anthropic
+> — Anthropic, [*Other LLM gateways*](https://code.claude.com/docs/en/llm-gateway)
 
 Poser un jeton de passerelle **désactive l'abonnement** et bascule la
 facturation au token. Anthropic ne prend par ailleurs pas en charge le
@@ -46,7 +46,7 @@ lui donner les modèles **comme outils**.
    ┌────┴──────────────┬──────────────────┐
    ▼                   ▼                  ▼
  LOCAL              OLLAMA CLOUD       ANTHROPIC
- 41 alias           9 alias            4 alias
+ 40 alias           6 alias            4 alias
  coût 0             abonnement Ollama  crédits API
  rien ne sort       sort vers          facturé au token
                     ollama.com
@@ -68,11 +68,17 @@ automatiquement à chaque modèle :
 |---|---|---|
 | `ACCEPT` | poids ≤ 60 % de la mémoire du moteur | éligible au routage automatique |
 | `DEGRADED` | ≤ 85 % | adressable, mais hors des pools et des chaînes de repli |
-| `REJECT` | > 85 % | ni déclaré, ni téléchargé |
+| `REJECT` | > 85 % | jamais généré ni téléchargé automatiquement |
 
 Un modèle trop lourd n'échoue pas franchement : il pagine, et la réponse
 n'arrive jamais utilement. Le laisser sélectionnable automatiquement revient
 à tirer au sort une réponse qui ne viendra pas.
+
+Le verdict gouverne la génération, les pools, les chaînes de repli et les
+téléchargements. Il ne supprime pas rétroactivement une déclaration écrite à
+la main avant lui : deux alias hérités subsistent, hors de tout pool et de
+toute chaîne, et le validateur les signale à chaque exécution plutôt que de
+les taire.
 
 **Le repli est asymétrique, par principe.** Un repli est subi, jamais
 choisi : il ne doit ni élargir l'exposition des données, ni engager une
@@ -100,7 +106,7 @@ Prérequis : Docker Desktop, Node 18+, Python 3.10+ avec PyYAML.
 
 ```powershell
 git clone https://github.com/KinSushi/claude-local-nexus.git
-cd Claude-Local-Nexus
+cd claude-local-nexus
 Copy-Item .env.example .env      # puis renseigner les clés
 
 .\scripts\Initialize-Nexus.ps1   # prérequis, services, modèles, vérification
@@ -133,7 +139,7 @@ candidat réellement exposé **et exécutable**, en privilégiant le local.
 ## Vérification
 
 ```powershell
-python scripts/nexus_test.py                   # suite complète
+python scripts/nexus_test.py                   # suite complète (~10 min, pile démarrée)
 python scripts/nexus_test.py --only reverse    # chemins interdits
 .\scripts\Test-NexusSmoke.ps1 -IncludeRouters  # runtime de bout en bout
 ```

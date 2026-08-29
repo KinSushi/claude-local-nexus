@@ -33,6 +33,16 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
 
+# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
+# et les accents se degradent des que la sortie est capturee -- le
+# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# il manquait ici.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Marge laissée au disque : un système qui frôle la saturation devient

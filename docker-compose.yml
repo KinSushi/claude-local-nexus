@@ -84,7 +84,13 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-litellm_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-litellm}"
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY must be set}
+      # `:-` et non `:?` : la plateforme est locale d'abord, elle doit
+      # demarrer sans cle Anthropic. L'operateur `:?` echouait sur une
+      # variable vide, donc exactement dans le cas que .env.example
+      # decrit comme normal — « laisser vide desactive le plan Anthropic ».
+      # Le depot ne pouvait alors pas demarrer sans payer, ce qui
+      # contredisait sa promesse centrale.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OLLAMA_CLOUD_API_KEY: ${OLLAMA_CLOUD_API_KEY:-}       # Même variable que dans Ollama
       PYTHONUTF8: "1"
       REDIS_HOST: "redis"

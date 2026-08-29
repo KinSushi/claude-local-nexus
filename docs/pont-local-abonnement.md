@@ -62,7 +62,7 @@ doit pas passer par le plan d'authentification.
     +---------+-----------+------------------+
     v                     v                  v
   LOCAL                OLLAMA CLOUD       ANTHROPIC
-  41 alias             6 alias            4 alias
+  40 alias             6 alias            4 alias
   coût 0               abonnement Ollama  crédits API
   rien ne sort         sort vers          facturé au token
                        ollama.com

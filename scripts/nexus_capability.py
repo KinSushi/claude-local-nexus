@@ -36,6 +36,16 @@ import shutil
 import subprocess
 import sys
 
+# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
+# et les accents se degradent des que la sortie est capturee -- le
+# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# il manquait ici.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Fractions de la mémoire utilisable. Les poids ne sont pas seuls en
@@ -218,17 +228,37 @@ def model_store_free_gb(location: dict) -> tuple[str, float]:
         return store, 0.0
 
 
-def installed_models() -> dict[str, float]:
-    """Modèles présents et leur poids, quelle que soit l'implantation."""
+def installed_models() -> dict[str, float] | None:
+    """
+    Modèles présents et leur poids, quelle que soit l'implantation.
+
+    Renvoie **None** si aucun inventaire n'a pu être lu — et cette
+    distinction est le coeur du garde-fou.
+
+    Un dictionnaire vide se confondait avec « aucun modèle mesuré » :
+    conteneur renommé, Docker arrêté, `ollama` hors du PATH, et toutes
+    les tailles valaient 0. Or `verdict(0)` répond ACCEPT. Le générateur
+    déclarait alors un modèle de 54 Go en tête de chaîne sur un moteur de
+    32 Go, et le validateur — qui appelle la même fonction — l'approuvait.
+    Les deux échouaient *ouverts*, ensemble, exactement là où le module
+    prétend fermer.
+
+    Un inventaire illisible n'est pas un inventaire vide : l'appelant doit
+    s'arrêter, pas supposer.
+    """
     sizes: dict[str, float] = {}
+    lu = False
     for args in (["docker", "exec", "ollama-server", "ollama", "list"],
                  ["ollama", "list"]):
         out = _run(args)
+        if not out.strip():
+            continue
+        lu = True
         for line in out.splitlines()[1:]:
             parts = line.split()
             if len(parts) >= 4 and parts[2] != "-":
                 sizes.setdefault(parts[0], parse_size(parts[2] + parts[3]))
-    return sizes
+    return sizes if lu else None
 
 
 # ----------------------------------------------------------------------
@@ -299,10 +329,19 @@ def build_profile() -> dict:
     }
 
 
+UNKNOWN = "INCONNU"
+
+
 def verdict(size_gb: float, profile: dict) -> tuple[str, str]:
-    """Verdict et motif, pour un modèle d'un poids donné."""
+    """
+    Verdict et motif, pour un modèle d'un poids donné.
+
+    Un poids nul ou négatif signifie « non mesuré », jamais « léger ».
+    Le verdict est alors INCONNU : c'est à l'appelant de décider, et non
+    au module de trancher en faveur de l'acceptation.
+    """
     if size_gb <= 0:
-        return ACCEPT, "poids inconnu, aucun motif de rejet"
+        return UNKNOWN, "poids non mesure : verdict impossible"
     if size_gb > profile["runnable_budget_gb"]:
         return REJECT, ("%.0f Go de poids pour %.0f Go de memoire d'inference"
                         % (size_gb, profile["inference_memory_gb"]))
@@ -333,6 +372,10 @@ def main() -> int:
 
     profile = build_profile()
     models = installed_models()
+    if models is None:
+        print("Inventaire illisible : Docker et Ollama sont-ils joignables ?")
+        print("Aucun verdict n'est rendu — supposer serait pire que se taire.")
+        return 1
 
     if args.json:
         payload = dict(profile)
@@ -380,7 +423,7 @@ def main() -> int:
         print("\n  Aucun modele detecte.")
         return 0
 
-    buckets: dict[str, list] = {ACCEPT: [], DEGRADED: [], REJECT: []}
+    buckets: dict[str, list] = {ACCEPT: [], DEGRADED: [], REJECT: [], UNKNOWN: []}
     for name, size in models.items():
         state, reason = verdict(size, profile)
         buckets[state].append((name, size, reason))
@@ -388,7 +431,10 @@ def main() -> int:
     print("\n" + "-" * 68)
     for state, label in ((ACCEPT, "ACCEPTES — eligibles au routage automatique"),
                          (DEGRADED, "DEGRADES — adressables, hors des pools"),
-                         (REJECT, "REJETES — inexecutables sur cette machine")):
+                         (REJECT, "REJETES — inexecutables sur cette machine"),
+                         (UNKNOWN, "NON MESURES — verdict impossible")):
+        if not buckets[state]:
+            continue
         rows = sorted(buckets[state], key=lambda r: -r[1])
         print("\n  %s (%d)" % (label, len(rows)))
         for name, size, reason in rows:

@@ -36,6 +36,16 @@ import time
 import urllib.error
 import urllib.request
 
+# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
+# et les accents se degradent des que la sortie est capturee -- le
+# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# il manquait ici.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 try:
     import yaml
 except ImportError:
@@ -55,18 +65,34 @@ SKIPPED: list[tuple[str, str]] = []
 # Utilitaires
 # ----------------------------------------------------------------------
 def master_key() -> str:
+    """Clé maîtresse, ou chaîne vide si les secrets ne sont pas configurés."""
     if os.environ.get("LITELLM_MASTER_KEY"):
         return os.environ["LITELLM_MASTER_KEY"]
     env_file = os.path.join(ROOT, ".env")
+    if not os.path.exists(env_file):
+        return ""
     with io.open(env_file, encoding="utf-8", errors="replace") as fh:
         for line in fh:
             match = re.match(r"^\s*LITELLM_MASTER_KEY\s*=\s*(.*)$", line)
             if match and match.group(1).strip():
-                return match.group(1).strip()
-    raise RuntimeError("LITELLM_MASTER_KEY introuvable")
+                # Guillemets et commentaire de fin de ligne retires : sinon
+                # la valeur part telle quelle dans l'en-tete Authorization
+                # et produit un 401 que rien n'explique.
+                valeur = match.group(1).strip()
+                if valeur[:1] in "\"'" and valeur[-1:] == valeur[:1]:
+                    valeur = valeur[1:-1]
+                return valeur.split("#")[0].strip()
+    return ""
 
 
 KEY = master_key()
+
+# Un clone frais n'a pas de .env, et ce n'est pas une panne : c'est une
+# etape d'installation. Faire echouer la suite dans ce cas ferait conclure
+# au lecteur que « les tests de l'auteur ne passent pas », alors que rien
+# n'est casse. Les verifications qui dependent des secrets sont donc
+# ignorees, avec leur motif.
+SECRETS_ABSENTS = not KEY
 
 
 def call(path: str, payload=None, key: str | None = None, timeout: int = 300,
@@ -480,6 +506,16 @@ def test_reverse(models: list[str]) -> None:
         for source, targets in entry.items():
             graph.setdefault(source, []).extend(targets or [])
 
+    # Les candidats d'un routeur sont des aretes au meme titre que ses
+    # replis : c'est par eux qu'il choisit. Les omettre laissait passer un
+    # modele cloud glisse dans le pool de adaptive-router-local -- le test
+    # concluait alors « fermeture transitive propre » sur une fuite reelle.
+    for model in config.get("model_list") or []:
+        params = model.get("litellm_params") or {}
+        if str(params.get("model", "")).startswith("auto_router/"):
+            pool = (params.get("adaptive_router_config") or {}).get("available_models") or []
+            graph.setdefault(model["model_name"], []).extend(pool)
+
     def reachable(start: str) -> set[str]:
         seen: set[str] = set()
         stack = list(graph.get(start, []))
@@ -587,13 +623,23 @@ def test_reverse(models: list[str]) -> None:
 # POLICY — les frontières tiennent-elles ?
 # ----------------------------------------------------------------------
 def domains_of(config: dict) -> dict[str, str]:
-    """Domaine d'exécution de chaque alias : local, cloud ou anthropic."""
+    """
+    Domaine d'exécution de chaque alias : local, cloud ou anthropic.
+
+    Les routeurs en reçoivent un aussi — le moins confidentiel de leur
+    pool, car c'est ce qu'ils peuvent réellement exposer. Les exclure,
+    comme c'était le cas, rendait muet tout contrôle portant sur eux :
+    or c'est exactement là que la frontière locale est promise.
+    """
     domains: dict[str, str] = {}
+    routeurs: dict[str, list[str]] = {}
     for model in config.get("model_list") or []:
         alias = model["model_name"]
         params = model.get("litellm_params") or {}
         raw = str(params.get("model", ""))
         if raw.startswith("auto_router/"):
+            routeurs[alias] = list(
+                (params.get("adaptive_router_config") or {}).get("available_models") or [])
             continue
         if raw.startswith("anthropic/"):
             domains[alias] = "anthropic"
@@ -601,6 +647,12 @@ def domains_of(config: dict) -> dict[str, str]:
             domains[alias] = "cloud"
         else:
             domains[alias] = "local"
+
+    rang = {"local": 0, "cloud": 1, "anthropic": 2}
+    for alias, pool in routeurs.items():
+        presents = [domains[c] for c in pool if c in domains]
+        if presents:
+            domains[alias] = max(presents, key=lambda d: rang.get(d, 0))
     return domains
 
 
@@ -786,8 +838,9 @@ def test_code() -> None:
     # Le validateur doit accepter la configuration reellement deployee.
     result = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
                             capture_output=True, text=True, timeout=180)
-    check("configuration deployee valide", result.returncode == 0,
-          "code %s" % result.returncode)
+    if not SECRETS_ABSENTS:
+        check("configuration deployee valide", result.returncode == 0,
+              "code %s" % result.returncode)
 
     # Regression : les modeles de chat doivent utiliser ollama_chat/
     # (l'endpoint generate laisse fuir les marqueurs de role et ne gere
@@ -878,6 +931,10 @@ def test_code() -> None:
           ", ".join(broken_imports) if broken_imports
           else "%d modules" % len(py_modules))
 
+    if SECRETS_ABSENTS:
+        skip("pile minimale valide sans Ollama", ".env absent")
+        skip("profil 'embedded' rallume Ollama", ".env absent")
+        skip("configuration deployee valide", ".env absent")
     # La pile minimale doit rester demarrable sans Ollama : c'est la cible
     # de la migration, et une cible qui ne se valide pas n'en est pas une.
     env_sans_profil = dict(os.environ)
@@ -886,9 +943,10 @@ def test_code() -> None:
                              cwd=ROOT, capture_output=True, text=True,
                              env=env_sans_profil, timeout=180)
     services_min = set(minimal.stdout.split()) if minimal.returncode == 0 else set()
-    check("pile minimale valide sans Ollama",
-          services_min == {"db", "redis", "litellm"},
-          ", ".join(sorted(services_min)) or "compose en echec")
+    if not SECRETS_ABSENTS:
+        check("pile minimale valide sans Ollama",
+              services_min == {"db", "redis", "litellm"},
+              ", ".join(sorted(services_min)) or "compose en echec")
 
     # Et le profil doit rester capable de le rallumer, sans quoi la
     # bascule ne serait pas reversible.
@@ -898,8 +956,9 @@ def test_code() -> None:
                              cwd=ROOT, capture_output=True, text=True,
                              env=env_avec_profil, timeout=180)
     services_all = set(complet.stdout.split()) if complet.returncode == 0 else set()
-    check("profil 'embedded' rallume Ollama", "ollama" in services_all,
-          ", ".join(sorted(services_all)) or "compose en echec")
+    if not SECRETS_ABSENTS:
+        check("profil 'embedded' rallume Ollama", "ollama" in services_all,
+              ", ".join(sorted(services_all)) or "compose en echec")
 
     # Aucun volume irremplacable ne doit etre absent de la sauvegarde, et
     # aucun volume retelechargeable ne doit y figurer : archiver 541 Go

@@ -172,6 +172,18 @@ switch ($Mode) {
             Write-Warn2 "Le modele '$selected' n'est pas expose. Selection automatique."
             $selected = ""
         }
+        # Le mode Local doit tenir sa promesse. Sans ce controle,
+        # -Mode Local -Model gpt-oss-120b-cloud etait accepte, puis annonce
+        # « local, cout 0, aucune donnee ne sort » alors que toute la
+        # session partait vers ollama.com. Un mode qui ment sur son plan
+        # est pire qu'un mode absent.
+        if ($selected -and $Mode -eq "Local" -and
+            ($selected -like "*-cloud" -or $selected -like "claude-*")) {
+            Write-Error ("Le modele '$selected' n'est pas local. En mode Local, " +
+                         "seuls les modeles locaux sont acceptes : la promesse " +
+                         "« aucune donnee ne sort » doit rester vraie.")
+            exit 1
+        }
         if (-not $selected) {
             if ($Mode -eq "Local") {
                 # 'releve-locale' vient en tete : c'est le seul profil

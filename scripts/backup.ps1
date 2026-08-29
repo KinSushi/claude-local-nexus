@@ -32,8 +32,18 @@ $configFiles = @(
     "litellm_config.yaml",
     "model_list.txt",
     "cloud_models.txt",
-    ".env.example",
-    ".env"       # inclus si présent, mais pensez à le sécuriser
+    ".env.example"
+    # .env est volontairement ABSENT de cette liste.
+    #
+    # Il était copié dans le dossier de sauvegarde, qui hérite de l'ACL de
+    # la racine du disque : le groupe Utilisateurs y dispose de
+    # ReadAndExecute avec héritage. Autrement dit, tout compte local
+    # pouvait lire la clé maîtresse, le mot de passe PostgreSQL et les
+    # clés API. Le commentaire d'origine — « pensez à le sécuriser » —
+    # reconnaissait le problème sans le traiter.
+    #
+    # Un secret ne se sauvegarde pas à côté du dépôt : il se conserve
+    # ailleurs, délibérément, dans un gestionnaire de secrets.
 )
 
 foreach ($file in $configFiles) {

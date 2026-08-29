@@ -1,0 +1,25 @@
+# Inventaire local a telecharger sur l'hote.
+# Genere par scripts/nexus_migration_plan.py — 21 modeles, 119 Go.
+# Les modeles inexecutables sur cette machine en sont absents.
+
+qwen3-coder:30b
+nomic-embed-text:latest
+qwen2.5-coder:14b
+gemma4:12b
+llava:7b
+llama3.2:1b
+all-minilm:latest
+llama3.2:3b
+phi3:mini
+deepseek-coder:6.7b
+mistral:7b
+qwen2.5-coder:7b
+qwen3-embedding:8b
+llama3.1:8b
+qwen3:8b
+qwen3-vl:8b
+qwen3.5:9b
+llama3.2-vision:11b
+phi3:medium
+llava:13b
+qwen3:14b

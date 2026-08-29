@@ -77,13 +77,12 @@ aujourd'hui implémentés.
 | [`MCP-external-tool-layer.txt`](MCP-external-tool-layer.txt) | Une passerelle d'outils centralisant permissions, audit et limitation de débit |
 | [`Model-lifecycle-automation.txt`](Model-lifecycle-automation.txt) | Du modèle découvert au modèle retiré, avec une porte à chaque étape |
 | [`Prompt-registry.txt`](Prompt-registry.txt) | Prompts versionnés, avec la liste des modèles compatibles |
-| [`SKILLS.txt`](SKILLS.txt) | Compétences et ressources mobilisables par les agents |
 
 ## Vision d'ensemble
 
 | Note | Objet |
 |---|---|
 | [`Final-target-architecture.txt`](Final-target-architecture.txt) | L'architecture cible complète, composants et plan par phases |
+| [`Mission-P0.txt`](Mission-P0.txt) | Transcription de travail sur l'ingestion et la normalisation des artefacts |
 | [`Architecture_documentaire.md`](Architecture_documentaire.md) | L'organisation documentaire du projet |
 | [`missions/`](missions/) | Missions d'ingestion et de migration |
-| [`policies/`](policies/) | Emplacement prévu pour les politiques exécutables |

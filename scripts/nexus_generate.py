@@ -43,6 +43,16 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
 
+# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
+# et les accents se degradent des que la sortie est capturee -- le
+# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# il manquait ici.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
 CLOUD_LIST = os.path.join(ROOT, "cloud_models.txt")
@@ -136,8 +146,15 @@ def local_alias(base: str) -> str:
     return base.replace(":", "-") + "-local"
 
 
-def discover_local() -> list[str]:
-    """Inventaire réel du conteneur Ollama. Vide si Ollama est injoignable."""
+def discover_local() -> list[str] | None:
+    """
+    Inventaire réel du moteur Ollama.
+
+    Renvoie **None** si l'inventaire n'a pas pu être lu — jamais une liste
+    vide. La confusion coûtait cher : la zone LOCAL_MODELS_EXTRA était
+    alors régénérée à vide, supprimant d'un coup dix-huit déclarations,
+    sans un mot.
+    """
     try:
         result = subprocess.run(
             ["docker", "exec", "ollama-server", "ollama", "list"],
@@ -145,10 +162,10 @@ def discover_local() -> list[str]:
         )
     except Exception as exc:
         print("  [!] inventaire local illisible (%s)" % exc)
-        return []
+        return None
     if result.returncode != 0:
         print("  [!] ollama list a echoue")
-        return []
+        return None
     names = []
     for line in result.stdout.splitlines()[1:]:
         if line.strip():
@@ -206,8 +223,8 @@ def render_local_extra(installed: list[str], declared: set[str],
     for base in extra:
         if profile:
             state, reason = capability.verdict(sizes.get(base, 0.0), profile)
-            if state == capability.REJECT:
-                print("  [rejet] %s : %s" % (base, reason))
+            if state in (capability.REJECT, capability.UNKNOWN):
+                print("  [ecarte] %s : %s" % (base, reason))
                 continue
         else:
             state, reason = capability.ACCEPT, ""
@@ -666,8 +683,19 @@ def main() -> int:
     config = yaml.safe_load(raw)
 
     # Garde-fou materiel : mesure avant toute decision de routage.
+    #
+    # Une mesure absente n'est pas une mesure nulle. Sans ce controle, un
+    # Docker arrete faisait peser 0 Go a tous les modeles, donc ACCEPT a
+    # tous : la generation ecrivait alors des modeles inexecutables en tete
+    # des chaines de repli, et le validateur, partageant l'angle mort, les
+    # approuvait.
     profile = capability.build_profile()
     sizes = capability.installed_models()
+    if sizes is None:
+        print("\nInventaire des modeles illisible : Docker et Ollama sont-ils")
+        print("joignables ? La generation s'arrete — supposer que tous les")
+        print("modeles tiennent en memoire serait pire que ne rien ecrire.")
+        return 1
     print("  Moteur %s — %.0f Go de memoire d'inference, budget pool %.0f Go"
           % (profile["ollama"]["mode"], profile["inference_memory_gb"],
              profile["pool_budget_gb"]))
@@ -704,9 +732,11 @@ def main() -> int:
     local_extra = (render_local_extra(installed, declared_aliases, profile, sizes)
                    if installed else [])
     if installed:
-        exposed_extra = len([b for b in installed if local_alias(b) not in declared_aliases])
+        # Compte des blocs REELLEMENT ecrits, et non des candidats : c'est
+        # cette ligne que l'operateur lit pour verifier ce qui s'est passe.
+        ecrits = len([l for l in local_extra if l.startswith("  - model_name:")])
         print("  %d modele(s) installes, %d exposes automatiquement"
-              % (len(installed), exposed_extra))
+              % (len(installed), ecrits))
 
     # Terminal de repli : les meilleurs modeles locaux. Toute chaine
     # externe s'y acheve, pour qu'un quota epuise degrade la capacite

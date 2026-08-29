@@ -130,10 +130,29 @@ function requestJson(pathname, payload, timeoutMs = DEFAULT_TIMEOUT_MS) {
       (res) => {
         const chunks = [];
         res.on("data", (c) => chunks.push(c));
+        // Une coupure APRES les en-tetes emet l'erreur sur la reponse, pas
+        // sur la requete. Sans cet ecouteur, la promesse n'etait jamais
+        // reglee : l'appel ne recevait ni resultat ni erreur, la reprise ne
+        // voyait rien alors qu'ECONNRESET est justement classe passager, et
+        // le compteur d'appels en vol ne redescendait plus a zero — donc le
+        // serveur ne pouvait plus se fermer proprement.
+        res.on("error", (err) => reject(
+          new Error("reponse interrompue : " + err.message)));
         res.on("end", () => {
+          // `complete` vaut false si la connexion a ete coupee avant la fin
+          // du corps annonce : un JSON tronque parserait parfois sans erreur.
+          if (res.complete === false) {
+            reject(new Error("reponse interrompue avant la fin du corps"));
+            return;
+          }
           const text = Buffer.concat(chunks).toString("utf8");
           if (res.statusCode < 200 || res.statusCode >= 300) {
-            reject(new Error("LiteLLM HTTP " + res.statusCode + " : " + text.slice(0, 400)));
+            const erreur = new Error(
+              "LiteLLM HTTP " + res.statusCode + " : " + text.slice(0, 400));
+            // Le code porte la verite ; le texte du corps peut mentionner
+            // ECONNRESET pour une erreur pourtant definitive.
+            erreur.statusCode = res.statusCode;
+            reject(erreur);
             return;
           }
           try {
@@ -269,6 +288,12 @@ async function embed(model, inputs) {
 const SKIP_DIRS = new Set([
   ".git", "node_modules", ".nexus", "backups", "logs", "__pycache__",
   ".venv", "venv", "dist", "build", ".idea", ".vscode",
+  // Repertoires de secrets. Le filtre par nom de fichier ne suffisait
+  // pas : il refusait bien `.env`, mais laissait indexer
+  // `.config/gh/hosts.yml`, `.docker/config.json` ou `secrets/db.yml`,
+  // dont les noms ne declenchent rien.
+  ".ssh", ".aws", ".gnupg", ".docker", ".kube", ".azure", ".gcloud",
+  "secrets", "secret", "credentials", ".credentials", ".config",
 ]);
 
 const TEXT_EXT = new Set([
@@ -290,6 +315,9 @@ const CHUNK_OVERLAP = 200;
 const SECRET_FILES = new Set([
   ".env", ".env.local", ".env.production", ".npmrc", ".netrc",
   "credentials", "id_rsa", "id_ed25519", ".htpasswd",
+  // Noms anodins qui portent pourtant des jetons.
+  "hosts.yml", "known_hosts", "config.json", "auth.json",
+  "credentials.json", "service-account.json", ".dockercfg",
 ]);
 const SECRET_PATTERNS = [
   /^\.env($|\.)/i,
@@ -994,6 +1022,32 @@ function resolvePath(p) {
   return path.isAbsolute(p) ? p : path.join(REPO_ROOT, p);
 }
 
+/**
+ * Refuse tout chemin sortant du depot.
+ *
+ * Sans cette borne, `nexus_index_build {root:"C:/Users/moi"}` embarquait
+ * le repertoire personnel : chaque fragment partait vers /v1/embeddings,
+ * atterrissait en clair dans .nexus/index.json, et nexus_search le
+ * restituait verbatim a l'orchestrateur -- donc hors de la machine. Un
+ * simple `../` suffisait, le filtre ne regardant que le nom de fichier.
+ */
+function insideRepo(target) {
+  const relative = path.relative(REPO_ROOT, path.resolve(target));
+  return relative === "" ||
+    (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function requireInsideRepo(target, quoi) {
+  if (!insideRepo(target)) {
+    throw new Error(
+      quoi + " hors du depot refuse : " + target + ". " +
+      "Le pont ne lit que sous " + REPO_ROOT + " ; ses extraits remontent " +
+      "a l'orchestrateur et quitteraient donc la machine."
+    );
+  }
+  return target;
+}
+
 async function callTool(name, args) {
   args = args || {};
 
@@ -1038,9 +1092,10 @@ async function callTool(name, args) {
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
     const result = await chat(router, messages, args.max_tokens || 2048);
-    // On rapporte le modele reellement retenu : une decision de routage
-    // qui ne peut pas s'expliquer est operationnellement incomplete (§89).
-    const billed = plane === "anthropic" ? "credits API Anthropic" : plane === "cloud" ? "abonnement Ollama Cloud" : "cout 0";
+    // La facturation se deduit du modele SERVI, pas du plan demande.
+    // Deduite du plan, elle annoncait « cout 0 » pour plane:"all", dont le
+    // pool contient pourtant des modeles Ollama Cloud.
+    const billed = planOf(result.model);
     return `[${router} -> ${result.model} · plan ${plane} · ${result.tokens} tokens · ${billed}]\n\n${result.text}`;
   }
 
@@ -1053,6 +1108,10 @@ async function callTool(name, args) {
     const sources = [];
     for (const raw of args.paths || []) {
       const full = resolvePath(raw);
+      if (!insideRepo(full)) {
+        sources.push(`${raw} (refuse : hors du depot)`);
+        continue;
+      }
       if (isSecretFile(path.basename(full))) {
         sources.push(`${raw} (refuse : secrets)`);
         continue;
@@ -1086,7 +1145,7 @@ async function callTool(name, args) {
 
   if (name === "nexus_vision") {
     if (!args.path) throw new Error("parametre 'path' requis");
-    const full = resolvePath(args.path);
+    const full = requireInsideRepo(resolvePath(args.path), "image");
     if (!fs.existsSync(full)) throw new Error("image introuvable : " + args.path);
     const extension = path.extname(full).toLowerCase().replace(".", "") || "png";
     const mime = { jpg: "jpeg", jpeg: "jpeg", png: "png", webp: "webp", gif: "gif" }[extension];
@@ -1135,6 +1194,11 @@ async function callTool(name, args) {
       const full = resolvePath(raw);
       // Meme interdiction que pour l'index : une synthese remonte vers
       // l'orchestrateur et quitte donc la machine.
+      if (!insideRepo(full)) {
+        parts.push(`### ${raw}
+(refuse : hors du depot)`);
+        continue;
+      }
       if (isSecretFile(path.basename(full))) {
         parts.push(`### ${raw}\n(refuse : fichier susceptible de contenir des secrets)`);
         continue;
@@ -1178,7 +1242,9 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_index_build") {
-    const root = args.root ? resolvePath(args.root) : REPO_ROOT;
+    const root = args.root
+      ? requireInsideRepo(resolvePath(args.root), "racine d'indexation")
+      : REPO_ROOT;
     const index = await buildIndex(root, args.model || DEFAULT_EMBED_MODEL);
     return (
       `Index construit.\n` +

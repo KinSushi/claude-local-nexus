@@ -27,13 +27,26 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
 
+# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
+# et les accents se degradent des que la sortie est capturee -- le
+# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# il manquait ici.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
 
 errors: list[str] = []
 warnings: list[str] = []
 
-VISION = re.compile(r"vision|llava")
+# `-vl` couvre les Qwen-VL, que `vision|llava` laissait passer : ils
+# étaient classés « texte », et un repli les faisant tomber sur un modèle
+# aveugle n'aurait déclenché aucune erreur.
+VISION = re.compile(r"vision|llava|-vl[-:]|-vl$")
 EMBED = re.compile(r"embed|minilm")
 
 
@@ -74,6 +87,25 @@ def main() -> int:
     known = set(declared)
 
     # --- 2. Références des routeurs adaptatifs ---------------------------
+    #
+    # Domaines qu'un routeur a le droit de contenir. L'intention est portée
+    # par son nom : `adaptive-router-local` promet du local, et c'est
+    # précisément la promesse qu'il faut vérifier.
+    #
+    # Ce contrôle manquait, et son absence était démontrable : un modèle
+    # cloud glissé dans le pool de `adaptive-router-local` passait la
+    # validation sans un mot, parce que les routeurs étaient exclus du
+    # calcul des domaines. Le trou se trouvait exactement là où la
+    # frontière est annoncée.
+    ROUTER_DOMAINS = {
+        "adaptive-router-local": {"local"},
+        "adaptive-router-cloud": {"cloud"},
+        "adaptive-router-anthropic": {"anthropic"},
+        # Le routeur global couvre local et cloud, jamais Anthropic :
+        # engager une dépense n'est pas une décision de routage.
+        "adaptive-router": {"local", "cloud"},
+    }
+
     routers: dict[str, list[str]] = {}
     for m in model_list:
         params = m.get("litellm_params") or {}
@@ -94,6 +126,9 @@ def main() -> int:
         elif default and default not in candidates:
             warnings.append("routeur %s : default_model '%s' hors du pool" % (alias, default))
 
+    # Le contrôle de domaine du pool a besoin de `domains`, calculé plus
+    # bas : il est donc appliqué juste après, section 2 bis.
+
     # --- 3. Graphe de fallback ------------------------------------------
     router_settings = cfg.get("router_settings") or {}
     graph: dict[str, list[str]] = {}
@@ -111,6 +146,27 @@ def main() -> int:
             domains[m["model_name"]] = "cloud"
         else:
             domains[m["model_name"]] = "local"
+
+    # --- 2 bis. Le pool d'un routeur respecte-t-il sa promesse ? --------
+    for alias, candidates in routers.items():
+        autorises = ROUTER_DOMAINS.get(alias)
+        if not autorises:
+            warnings.append("routeur %s : nom inconnu, domaine non verifiable" % alias)
+            continue
+        for cand in candidates:
+            domaine = domains.get(cand)
+            if domaine and domaine not in autorises:
+                errors.append(
+                    "routeur %s : le pool contient '%s' (%s), hors des domaines "
+                    "annonces par son nom (%s)"
+                    % (alias, cand, domaine, ", ".join(sorted(autorises))))
+        # Un routeur porte le domaine le moins confidentiel de son pool :
+        # c'est ce qu'il peut réellement exposer, et donc ce qu'il faut
+        # opposer aux contrôles de direction de repli.
+        rang = {"local": 0, "cloud": 1, "anthropic": 2}
+        presents = [domains[c] for c in candidates if c in domains]
+        if presents:
+            domains[alias] = max(presents, key=lambda d: rang.get(d, 0))
 
     for label, entries in (
         ("fallbacks", router_settings.get("fallbacks")),
@@ -187,6 +243,9 @@ def main() -> int:
                                   % (m["model_name"], name))
 
     # --- 6. Inventaire Ollama vs configuration --------------------------
+    # Le profil sert des la section 6, pour distinguer un modele oublie
+    # d'un modele deliberement ecarte.
+    profile_materiel = capability.build_profile()
     try:
         raw = subprocess.run(
             ["docker", "exec", "ollama-server", "ollama", "list"],
@@ -218,7 +277,17 @@ def main() -> int:
 
         canonical_refs = {canonical(b) for b in referenced_local}
         for base in sorted(installed):
-            if canonical(base) not in canonical_refs:
+            if canonical(base) in canonical_refs:
+                continue
+            # Distinguer « oublié » de « refusé ». Reprocher à un modèle de
+            # ne pas être exposé alors que le garde-fou vient de l'écarter
+            # produisait un avertissement inextinguible : l'opérateur ne
+            # pouvait ni le corriger, ni le faire taire.
+            taille = (capability.installed_models() or {}).get(base, 0.0)
+            etat, motif = capability.verdict(taille, profile_materiel)
+            if etat == capability.REJECT:
+                warnings.append("non exposé à dessein : %s — %s" % (base, motif))
+            else:
                 warnings.append("installé mais non exposé : %s" % base)
 
     # --- 7. Garde-fou materiel ------------------------------------------
@@ -226,8 +295,11 @@ def main() -> int:
     # memoire du moteur ne rate pas franchement : il pagine, et la reponse
     # n'arrive jamais utilement. Le laisser selectionnable automatiquement
     # revient a tirer au sort une reponse qui ne viendra pas (§26).
-    profile = capability.build_profile()
+    profile = profile_materiel
     sizes = capability.installed_models()
+    if sizes is None:
+        errors.append("inventaire des modeles illisible : verdict materiel impossible")
+        sizes = {}
 
     # Tout ce qui peut etre choisi SANS decision humaine : candidats de
     # routeur et cibles de fallback.
