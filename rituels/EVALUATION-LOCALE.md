@@ -82,6 +82,45 @@ exactement reviendrait à deviner.
 
 ---
 
+## 2026-08-29 — `qwen2.5-coder:14b`, quatre fichiers : seuil non atteint
+
+Même protocole, même consigne, quatre scripts Python du dépôt.
+**Trois tentatives, trois échecs, et cette fois la faute n'est pas dans
+l'outillage.**
+
+Le modèle n'a jamais produit un seul bloc `@@`. Il a rendu :
+
+- une description scolaire du module `concurrent.futures`, sans rapport
+  avec la consigne de relecture ;
+- un bloc ```` ```plaintext ```` contenant une phrase inventée — « Fichier
+  JSON a été fusionné avec succès » — alors qu'aucune fusion n'avait été
+  demandée ni effectuée ;
+- une troisième réponse de même nature.
+
+Ce n'est pas une faute de forme rattrapable par un analyseur plus
+tolérant : le modèle **n'exécute pas la tâche demandée**. Il décrit le
+fichier au lieu de le critiquer.
+
+### Conséquence pour le routage
+
+| Modèle | Suivi du protocole | Détection de défauts | Verdict |
+| --- | --- | --- | --- |
+| `qwen3-coder:30b` | oui, dès le premier essai | réelle, vérifiée | **apte** à la relecture structurée |
+| `qwen2.5-coder:14b` | non, 0 sur 3 | non évaluable | **inapte** à cette tâche |
+
+La frontière ne passe donc pas entre « local » et « distant » mais à
+l'intérieur du local. Une tâche exigeant un format de sortie strict a un
+seuil de taille, et `14b` est en dessous. Le confier à un modèle
+sous-dimensionné ne coûte pas seulement un échec : il coûte 138 s
+d'occupation CPU, pendant lesquelles le modèle apte est privé de machine.
+
+**Règle retenue** : réserver `qwen2.5-coder:14b` et les modèles plus
+légers aux tâches à sortie libre — résumé, extraction, classification —
+et n'engager `qwen3-coder:30b` que seul, sans second modèle chargé en
+parallèle.
+
+---
+
 ## Comment reproduire
 
 ```powershell

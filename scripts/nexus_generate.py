@@ -64,7 +64,44 @@ TAGS_URL = "https://ollama.com/api/tags"
 # Sortir Ollama de Docker n'est pas cosmétique : dans le conteneur, le
 # moteur est plafonné par la mémoire allouée à la VM WSL2 — sur cette
 # machine, la moitié de la RAM lui est inaccessible.
-OLLAMA_ENDPOINT = os.environ.get("NEXUS_OLLAMA_ENDPOINT", "http://ollama:11434")
+SONDES = {
+    "http://ollama:11434": "http://127.0.0.1:11435",
+    "http://host.docker.internal:11434": "http://127.0.0.1:11434",
+}
+
+
+def _endpoint_par_defaut() -> str:
+    """
+    Adresse du moteur, déduite de la configuration en place.
+
+    La valeur était auparavant `http://ollama:11434` en dur, à charge pour
+    l'appelant de poser `NEXUS_OLLAMA_ENDPOINT`. Après la sortie du moteur
+    hors de Docker, une régénération lancée sans cette variable a réécrit
+    dix déclarations vers le conteneur supprimé — silencieusement, puisque
+    le fichier restait syntaxiquement valide. Un défaut qui ne se
+    manifeste qu'à travers une variable d'environnement oubliée est un
+    défaut qui se reproduira.
+
+    La configuration sait déjà où LiteLLM envoie ses requêtes : c'est elle
+    qui décide, et la variable ne sert plus qu'à forcer une bascule.
+
+    Le moteur est celui de la MAJORITÉ des déclarations, pas le premier
+    rencontré. Une configuration peut être partiellement réécrite — c'est
+    exactement l'état laissé par la régénération fautive, dix adresses
+    Docker parmi vingt adresses hôte. Trancher sur la première occurrence
+    aurait alors désigné le moteur minoritaire, et figé l'erreur au lieu
+    de la corriger.
+    """
+    try:
+        texte = io.open(CONFIG, encoding="utf-8").read()
+    except Exception:
+        return "http://host.docker.internal:11434"
+    compte = {a: texte.count(a) for a in SONDES}
+    gagnant = max(compte, key=lambda a: compte[a])
+    return gagnant if compte[gagnant] else "http://host.docker.internal:11434"
+
+
+OLLAMA_ENDPOINT = os.environ.get("NEXUS_OLLAMA_ENDPOINT") or _endpoint_par_defaut()
 
 # Classement de capacité du catalogue cloud. Plus le rang est bas, plus le
 # modèle est considéré capable. Un modèle inconnu tombe en fin de chaîne
@@ -146,6 +183,24 @@ def local_alias(base: str) -> str:
     return base.replace(":", "-") + "-local"
 
 
+# Adresse du moteur telle qu'ecrite dans la configuration, et adresse
+# equivalente vue depuis cette machine. La premiere sert aux conteneurs,
+# la seconde a ce script -- qui tourne sur l'hote et ne resout ni
+# `ollama` ni `host.docker.internal`. La table double celle de
+# nexus_switch_engine.py : elles doivent rester alignees.
+
+
+def sonde_moteur() -> str:
+    """
+    Adresse a interroger pour inventorier le moteur local.
+
+    Elle est déduite de la même façon que l'adresse écrite dans la
+    configuration : les deux doivent désigner le même moteur, sinon le
+    script inventorie une machine et configure l'autre.
+    """
+    return SONDES.get(OLLAMA_ENDPOINT, "http://127.0.0.1:11434")
+
+
 def discover_local() -> list[str] | None:
     """
     Inventaire réel du moteur Ollama.
@@ -154,23 +209,30 @@ def discover_local() -> list[str] | None:
     vide. La confusion coûtait cher : la zone LOCAL_MODELS_EXTRA était
     alors régénérée à vide, supprimant d'un coup dix-huit déclarations,
     sans un mot.
+
+    L'inventaire suit le moteur CONFIGURE, pas un emplacement en dur. La
+    version precedente appelait `docker exec ollama-server ollama list` :
+    apres la sortie du moteur hors de Docker, elle a continue de decrire
+    le conteneur pendant que LiteLLM servait depuis l'hote. Les deux
+    inventaires divergeaient de dix-huit modeles ; la configuration
+    generee aurait declare des alias que le moteur servant ne connaissait
+    plus, soit dix-huit 404 differes.
     """
+    url = sonde_moteur() + "/api/tags"
     try:
-        result = subprocess.run(
-            ["docker", "exec", "ollama-server", "ollama", "list"],
-            capture_output=True, text=True, timeout=60,
-        )
+        with urllib.request.urlopen(url, timeout=30) as reponse:
+            charge = json.loads(reponse.read().decode("utf-8"))
+        noms = [m["name"] for m in charge.get("models", []) if m.get("name")]
+        if noms:
+            # Les modeles cloud apparaissent dans le meme inventaire depuis
+            # qu'Ollama les expose localement ; ils relevent du pool cloud,
+            # pas du pool local, et ne doivent pas etre declares deux fois.
+            return sorted({n for n in noms if not n.endswith(":cloud")})
+        print("  [!] inventaire vide sur %s" % url)
+        return None
     except Exception as exc:
-        print("  [!] inventaire local illisible (%s)" % exc)
+        print("  [!] inventaire local illisible sur %s (%s)" % (url, exc))
         return None
-    if result.returncode != 0:
-        print("  [!] ollama list a echoue")
-        return None
-    names = []
-    for line in result.stdout.splitlines()[1:]:
-        if line.strip():
-            names.append(line.split()[0])
-    return sorted(set(names))
 
 
 def local_context(base: str, profile: dict | None = None) -> int:
