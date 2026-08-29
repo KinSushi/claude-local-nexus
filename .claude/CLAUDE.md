@@ -3540,6 +3540,7 @@ the pool by itself at the next update.
 .\scripts\Update-NexusModels.ps1 -Validate -Restart   # full cycle
 .\scripts\Test-NexusConfig.ps1                        # integrity gate
 .\scripts\Test-NexusSmoke.ps1 -IncludeRouters         # runtime check
+python scripts/nexus_valide.py --base main            # validation, cout zero
 .\scripts\Register-NexusAutoUpdate.ps1                # daily task, 04:00
 python scripts/nexus_test.py                          # full test suite
 ```
