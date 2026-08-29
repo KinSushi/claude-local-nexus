@@ -77,6 +77,13 @@ aujourd'hui implémentés.
 | [`MCP-external-tool-layer.txt`](MCP-external-tool-layer.txt) | Une passerelle d'outils centralisant permissions, audit et limitation de débit |
 | [`Model-lifecycle-automation.txt`](Model-lifecycle-automation.txt) | Du modèle découvert au modèle retiré, avec une porte à chaque étape |
 | [`Prompt-registry.txt`](Prompt-registry.txt) | Prompts versionnés, avec la liste des modèles compatibles |
+| [`SKILLS.txt`](SKILLS.txt) | Veille : dépôts de *skills* à explorer pour étendre les capacités des agents |
+
+> `SKILLS.txt` est une note de veille recopiée d'une publication tierce, et
+> conservée telle quelle comme source d'inspiration. Les chiffres qu'elle
+> cite sont ceux de la publication d'origine et n'ont pas été vérifiés ; les
+> liens sont des redirections. À traiter comme une piste, pas comme une
+> référence.
 
 ## Vision d'ensemble
 
