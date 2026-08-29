@@ -6,14 +6,14 @@
     Enchaîne le cycle complet, dans l'ordre imposé par le contrat
     d'exploitation (§44) : INSPECTER -> GENERER -> VALIDER -> APPLIQUER -> TESTER.
 
-        1. synchronisation de l'inventaire local (Ollama)
+        1. rapatriement des modeles declares mais absents du moteur
         2. découverte du catalogue Ollama Cloud
         3. validation réelle des droits du compte (par défaut)
         4. régénération des zones AUTOGEN de litellm_config.yaml
-        5. validation d'intégrité de la configuration
+        5. contrôle de conformité (configuration, moteur, secrets)
         6. redémarrage de LiteLLM et smoke test (option -Restart)
 
-    LiteLLM n'est JAMAIS redémarré si la validation d'intégrité échoue :
+    LiteLLM n'est JAMAIS redémarré si le contrôle de conformité échoue :
     une configuration douteuse ne remplace pas une configuration qui tourne.
 
     Le pool cloud n'est pas figé. La validation étant rejouée à chaque
@@ -30,7 +30,8 @@
     Désactive la vérification des droits Ollama Cloud. Déconseillé : le pool
     peut alors contenir des modèles que le compte ne peut pas exécuter.
 .PARAMETER SyncLocal
-    Télécharge dans Ollama les modèles de model_list.txt encore absents.
+    Rapatrie sur le moteur les modèles que la configuration déclare
+    sans qu'ils y soient présents.
 .PARAMETER Restart
     Redémarre LiteLLM puis exécute le smoke test.
 .PARAMETER LogPath
@@ -96,29 +97,27 @@ Write-Log "Demarrage de la mise a jour (journal : $LogPath)"
 # 1. Inventaire local
 # ------------------------------------------------------------
 if ($SyncLocal) {
-    Write-Log "Synchronisation de l'inventaire local Ollama"
-    $health = docker inspect --format "{{.State.Health.Status}}" ollama-server 2>$null
-    if ($health -ne "healthy") {
-        Write-Log "Conteneur ollama-server indisponible ($health) : synchronisation ignoree" "WARN"
-    } else {
-        $present = @(docker exec ollama-server ollama list |
-                     Select-Object -Skip 1 |
-                     ForEach-Object { ($_ -split '\s+')[0] })
-        $wanted = @(Get-Content (Join-Path $RepoRoot "model_list.txt") |
-                    Where-Object { $_ -notmatch '^\s*#' -and $_.Trim() -ne "" } |
-                    ForEach-Object { $_.Trim() })
-        $missing = @($wanted | Where-Object { $present -notcontains $_ })
-        if (-not $missing) {
-            Write-Log "Inventaire local deja complet ($($present.Count) modeles)" "OK"
-        } elseif ($DryRun) {
-            Write-Log "[Simulation] a telecharger : $($missing -join ', ')" "WARN"
-        } else {
-            foreach ($model in $missing) {
-                Write-Log "Telechargement de $model"
-                docker exec ollama-server ollama pull $model
-                if ($LASTEXITCODE -ne 0) { Write-Log "Echec du telechargement de $model" "WARN" }
-            }
-        }
+    # Le rapatriement est delegue a nexus_pull_host.py, pour trois raisons
+    # dont chacune a deja cause un incident ici :
+    #
+    #   - il suit le moteur SERVANT. Ce bloc appelait `docker exec
+    #     ollama-server` en dur ; le conteneur supprime, il journalisait
+    #     "synchronisation ignoree" et ne telechargeait plus rien --
+    #     panne silencieuse, deguisee en comportement normal ;
+    #   - il connait la place. Un `ollama pull` qui sature le disque
+    #     laisse un blob incomplet ; ici rien ne mesurait quoi que ce soit
+    #     avant de tirer ;
+    #   - il derive la liste de la CONFIGURATION et non de model_list.txt,
+    #     de sorte que "ce que le validateur declare manquant" et "ce que
+    #     l'on telecharge" ne peuvent plus diverger.
+    Write-Log "Rapatriement des modeles declares mais absents"
+    $pullArgs = @((Join-Path $PSScriptRoot "nexus_pull_host.py"), "--manquants")
+    if ($DryRun) { $pullArgs += "--dry-run" }
+    & $python @pullArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    if ($LASTEXITCODE -ne 0) {
+        # Non bloquant : un modele de second rang manquant ne doit pas
+        # empecher la mise a jour du reste. La conformite, elle, tranchera.
+        Write-Log "Rapatriement incomplet : voir la conformite plus bas" "WARN"
     }
 }
 
@@ -152,16 +151,23 @@ if ($DryRun) {
 }
 
 # ------------------------------------------------------------
-# 5. Validation d'intégrité — garde-fou avant tout redémarrage
+# 5. Conformité — garde-fou avant tout redémarrage
 # ------------------------------------------------------------
-Write-Log "Validation d'integrite"
-& $python (Join-Path $PSScriptRoot "nexus_validate.py") 2>&1 | Tee-Object -FilePath $LogPath -Append
+# La conformite couvre plus large que la validation YAML : moteur
+# coherent, moteur joignable, marqueurs AUTOGEN, secrets, .env hors de
+# git. Le defaut qui a le plus coute ici n'etait PAS une invalidite YAML
+# -- dix declarations visaient un conteneur supprime dans un fichier
+# parfaitement valide, et les dix modeles rendaient 404 un par un sans
+# que rien ne relie ces echecs entre eux.
+Write-Log "Controle de conformite"
+& $python (Join-Path $PSScriptRoot "nexus_conformite.py") --avant-demarrage 2>&1 |
+    Tee-Object -FilePath $LogPath -Append
 if ($LASTEXITCODE -ne 0) {
-    Write-Log "Configuration invalide : LiteLLM n'a PAS ete redemarre" "ERROR"
+    Write-Log "Non conforme : LiteLLM n'a PAS ete redemarre" "ERROR"
     Write-Log "Restauration possible depuis $backup" "WARN"
     exit 1
 }
-Write-Log "Configuration valide" "OK"
+Write-Log "Configuration conforme" "OK"
 
 # ------------------------------------------------------------
 # 6. Application et vérification runtime
