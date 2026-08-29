@@ -193,13 +193,21 @@ def main() -> int:
         stats["cout"] += float(entry.get("spend") or 0.0)
         par_modele[entry.get("model_group") or entry.get("model") or "?"] += 1
 
-    reference = prices.get(REFERENCE, (0.000002, 0.000010))
+    # Sans tarif de référence configuré, il n'y a pas de contrefactuel à
+    # calculer. La version précédente substituait un tarif écrit en dur :
+    # le rapport annonçait alors une économie en dollars construite sur un
+    # prix inventé, sans le dire. Un chiffre faux présenté comme mesuré est
+    # pire qu'une case vide — il se cite, se compare et se propage.
+    # Les tokens, eux, restent comptés : ils ne dépendent d'aucun tarif.
+    reference = prices.get(REFERENCE)
+    chiffrable = reference is not None
     delegue = {k: v for k, v in par_plan.items() if k in ("local", "cloud")}
     tokens_delegues_entree = sum(v["entree"] for v in delegue.values())
     tokens_delegues_sortie = sum(v["sortie"] for v in delegue.values())
     cout_delegue_reel = sum(v["cout"] for v in delegue.values())
-    cout_contrefactuel = (tokens_delegues_entree * reference[0]
-                          + tokens_delegues_sortie * reference[1])
+    cout_contrefactuel = (
+        (tokens_delegues_entree * reference[0]
+         + tokens_delegues_sortie * reference[1]) if chiffrable else None)
     cout_anthropic = par_plan.get("anthropic", {}).get("cout", 0.0)
 
     total_tokens = sum(v["entree"] + v["sortie"] for v in par_plan.values())
@@ -213,8 +221,15 @@ def main() -> int:
             "tokens_delegues": tokens_delegues,
             "part_deleguee_pct": round(part_deleguee, 1),
             "cout_delegue_reel": round(cout_delegue_reel, 4),
-            "cout_contrefactuel": round(cout_contrefactuel, 4),
-            "economie": round(cout_contrefactuel - cout_delegue_reel, 4),
+            "cout_contrefactuel":
+                round(cout_contrefactuel, 4) if chiffrable else None,
+            "economie":
+                round(cout_contrefactuel - cout_delegue_reel, 4) if chiffrable else None,
+            # Un `null` sans explication serait lu comme « zéro économie ».
+            # Le motif accompagne donc la case vide.
+            "economie_indisponible":
+                None if chiffrable else
+                "tarif de reference '%s' absent de litellm_config.yaml" % REFERENCE,
         }, indent=2, ensure_ascii=False))
         return 0
 
@@ -236,10 +251,15 @@ def main() -> int:
     print("\n  Part deleguee : %.1f %% des tokens (%d sur %d)"
           % (part_deleguee, tokens_delegues, total_tokens))
 
-    print("\n  Contrefactuel — ce que le volume delegue aurait coute sur %s :" % REFERENCE)
-    print("    cout evite    : %.4f $" % cout_contrefactuel)
-    print("    cout reel     : %.4f $" % cout_delegue_reel)
-    print("    economie      : %.4f $" % (cout_contrefactuel - cout_delegue_reel))
+    if chiffrable:
+        print("\n  Contrefactuel — ce que le volume delegue aurait coute sur %s :" % REFERENCE)
+        print("    cout evite    : %.4f $" % cout_contrefactuel)
+        print("    cout reel     : %.4f $" % cout_delegue_reel)
+        print("    economie      : %.4f $" % (cout_contrefactuel - cout_delegue_reel))
+    else:
+        print("\n  Contrefactuel indisponible : le tarif de '%s' n'est pas" % REFERENCE)
+        print("  declare dans litellm_config.yaml. Le volume delegue ci-dessus")
+        print("  reste exact ; seule sa conversion en dollars manque.")
     if cout_anthropic:
         print("    depense API   : %.4f $ (Anthropic, hors abonnement)" % cout_anthropic)
 

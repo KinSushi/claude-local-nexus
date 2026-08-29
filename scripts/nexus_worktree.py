@@ -12,13 +12,23 @@ un risque. L'isolement résout le dilemme — le modèle travaille dans un
 passe la validation, et l'arbre principal n'est jamais touché tant que ce
 n'est pas le cas.
 
-Le format d'échange n'est pas un diff. Un diff unifié suppose que le
-modèle compte correctement les lignes de contexte, ce qu'un modèle de
-14 milliards de paramètres rate régulièrement ; l'échec est alors silencieux
-(le patch ne s'applique pas) ou pire, s'applique au mauvais endroit. Le
-modèle rend donc des remplacements littéraux `{avant, apres}`, que le
-script applique lui-même après avoir vérifié que `avant` apparaît
-exactement une fois. Une occurrence ambiguë est un refus, pas un pari.
+Le format d'échange n'est ni un diff, ni du JSON — les deux ont été
+écartés par la mesure, pas par principe.
+
+Un diff unifié suppose que le modèle compte correctement ses lignes de
+contexte, ce qu'un modèle local rate régulièrement ; l'échec est alors
+soit silencieux, soit appliqué au mauvais endroit.
+
+Le JSON échoue autrement : un remplacement transporte du code multi-ligne,
+qu'il faut alors échapper caractère par caractère. Sur les deux premières
+tâches réelles, qwen3-coder:30b a produit une analyse pertinente dans un
+JSON invalide, faute d'avoir échappé les sauts de ligne — le travail était
+juste, la mise en forme le rendait inutilisable.
+
+Le modèle rend donc des blocs délimités par des marqueurs `@@` en début de
+ligne, où le code passe tel quel. Le script applique lui-même chaque
+remplacement, après avoir vérifié que l'extrait cible apparaît exactement
+une fois. Une occurrence ambiguë est un refus, pas un pari.
 
 Usage
 -----
@@ -58,23 +68,41 @@ ROOT = agent.ROOT
 # exactement l'accident déjà survenu une fois sur ce dépôt.
 ARBRES = os.path.join(os.path.dirname(ROOT), ".nexus-arbres")
 
+# Le protocole n'est PAS du JSON, et ce choix vient d'une mesure. Un
+# remplacement transporte du code multi-ligne ; place dans une chaine JSON,
+# il exige d'echapper chaque saut de ligne, chaque guillemet et chaque
+# antislash. qwen3-coder:30b a rendu deux fois de suite une analyse
+# pertinente dans un JSON invalide, faute d'avoir echappe les sauts de
+# ligne — le travail etait bon, la mise en forme le rendait inutilisable.
+# Des delimiteurs en debut de ligne n'ont aucune de ces contraintes : le
+# code passe tel quel, et l'analyse du modele n'est plus perdue pour une
+# question de ponctuation.
 SYSTEME = (
-    "Tu es un relecteur de code rigoureux. Tu reponds UNIQUEMENT par un objet "
-    "JSON valide, sans texte avant ni apres, sans balises de code.\n\n"
-    "Format exact :\n"
-    '{"analyse": "<ce que tu as constate, en francais, 3 phrases maximum>",\n'
-    ' "remplacements": [{"avant": "<extrait EXACT du fichier>", '
-    '"apres": "<le remplacement>", "pourquoi": "<la defaillance evitee>"}]}\n\n'
+    "Tu es un relecteur de code rigoureux. Tu reponds en francais et tu suis "
+    "EXACTEMENT le format ci-dessous, sans rien ajouter avant ni apres, et "
+    "sans balises de code.\n\n"
+    "@@ANALYSE\n"
+    "<ce que tu as constate, 3 phrases maximum>\n"
+    "@@CORRECTION\n"
+    "@@AVANT\n"
+    "<extrait copie caractere pour caractere depuis le fichier>\n"
+    "@@APRES\n"
+    "<le remplacement complet>\n"
+    "@@POURQUOI\n"
+    "<la defaillance concrete que la correction evite>\n"
+    "@@FIN\n\n"
+    "Repete le bloc @@CORRECTION ... @@FIN pour chaque correction.\n\n"
     "Regles imperatives :\n"
-    "- 'avant' doit etre un extrait COPIE CARACTERE POUR CARACTERE du fichier "
+    "- l'extrait apres @@AVANT est COPIE CARACTERE POUR CARACTERE du fichier "
     "fourni, indentation comprise. S'il ne correspond pas exactement, ta "
-    "proposition sera rejetee.\n"
-    "- 'avant' doit etre assez long pour n'apparaitre QU'UNE SEULE FOIS dans "
-    "le fichier.\n"
-    "- Ne propose que des corrections dont tu es sur. Une liste vide est une "
-    "reponse acceptable et preferable a une invention.\n"
-    "- Les commentaires que tu ecris expliquent POURQUOI le code est ainsi, "
-    "jamais ce qu'il fait. Ils sont en francais."
+    "proposition est rejetee sans etre examinee ;\n"
+    "- il doit etre assez long pour n'apparaitre QU'UNE SEULE FOIS dans le "
+    "fichier ;\n"
+    "- n'ecris jamais une ligne commencant par @@ a l'interieur d'un extrait ;\n"
+    "- ne propose que des corrections dont tu es sur. Aucune correction est "
+    "une reponse acceptable, et preferable a une invention ;\n"
+    "- les commentaires que tu ecris expliquent POURQUOI le code est ainsi, "
+    "jamais ce qu'il fait, et sont en francais."
 )
 
 
@@ -110,47 +138,65 @@ def creer_arbre(nom: str) -> str:
     return chemin
 
 
-def extraire_json(texte: str) -> dict | None:
+def analyser_reponse(texte: str) -> dict | None:
     """
-    Récupère l'objet JSON d'une réponse.
+    Découpe la réponse selon les délimiteurs @@.
 
-    Les modèles locaux encadrent volontiers leur JSON de ```json, ou le
-    font précéder d'une phrase d'introduction malgré la consigne. Refuser
-    ces réponses reviendrait à jeter un travail correct pour un défaut de
-    forme, donc on cherche le premier objet équilibré plutôt que d'exiger
-    une réponse nue.
+    Le découpage se fait sur des lignes ENTIÈRES commençant par `@@` : un
+    `@@AVANT` apparaissant au milieu d'une ligne de code ne doit pas
+    ouvrir une section. Les blocs incomplets — un `@@AVANT` sans `@@APRES`
+    parce que la réponse a été coupée — sont écartés plutôt que devinés :
+    appliquer la moitié d'une correction est pire que n'en appliquer
+    aucune, car le fichier reste syntaxiquement valide tout en ayant
+    perdu son sens.
+
+    Les balises de code éventuelles sont retirées : les modèles en
+    ajoutent malgré la consigne, et jeter un travail correct pour trois
+    accents graves serait absurde.
     """
     texte = texte.strip()
-    bloc = re.search(r"```(?:json)?\s*(.+?)```", texte, re.S)
-    if bloc:
-        texte = bloc.group(1).strip()
-    debut = texte.find("{")
-    if debut < 0:
+    if texte.startswith("```"):
+        texte = re.sub(r"^```[a-zA-Z]*\n", "", texte)
+        texte = re.sub(r"\n```\s*$", "", texte)
+
+    sections: list[tuple[str, list[str]]] = []
+    for ligne in texte.splitlines():
+        marque = re.match(r"^@@([A-Z]+)\s*$", ligne.strip())
+        if marque:
+            sections.append((marque.group(1), []))
+        elif sections:
+            sections[-1][1].append(ligne)
+
+    if not sections:
         return None
-    profondeur, dans_chaine, echappe = 0, False, False
-    for i in range(debut, len(texte)):
-        c = texte[i]
-        if echappe:
-            echappe = False
-            continue
-        if c == "\\":
-            echappe = True
-            continue
-        if c == '"':
-            dans_chaine = not dans_chaine
-            continue
-        if dans_chaine:
-            continue
-        if c == "{":
-            profondeur += 1
-        elif c == "}":
-            profondeur -= 1
-            if profondeur == 0:
-                try:
-                    return json.loads(texte[debut:i + 1])
-                except Exception:
-                    return None
-    return None
+
+    analyse, remplacements = "", []
+    courant: dict[str, str] = {}
+    for nom, lignes in sections:
+        corps = "\n".join(lignes).strip("\n")
+        if nom == "ANALYSE":
+            analyse = corps.strip()
+        elif nom == "CORRECTION":
+            courant = {}
+        elif nom == "AVANT":
+            courant["avant"] = corps
+        elif nom == "APRES":
+            courant["apres"] = corps
+        elif nom == "POURQUOI":
+            courant["pourquoi"] = corps.strip()
+        elif nom == "FIN":
+            if "avant" in courant and "apres" in courant:
+                remplacements.append(courant)
+            courant = {}
+    # Un dernier bloc complet mais sans @@FIN reste exploitable : l'oubli
+    # du marqueur final est la faute de forme la plus fréquente, et elle
+    # n'enlève rien à la validité de ce qui précède.
+    if "avant" in courant and "apres" in courant:
+        remplacements.append(courant)
+
+    if not analyse and not remplacements:
+        return None
+    return {"analyse": analyse, "remplacements": remplacements}
 
 
 def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
@@ -223,9 +269,19 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
     if plan == "anthropic":
         print("  [!] servi par Anthropic : cette tache a ete FACTUREE.")
 
-    charge = extraire_json(resultat["texte"])
+    charge = analyser_reponse(resultat["texte"])
     if charge is None:
-        print("  Reponse inexploitable (aucun JSON valide). Debut de la reponse :")
+        if resultat.get("tronque"):
+            # La distinction n'est pas cosmétique : elle désigne qui doit
+            # être corrigé. Un JSON coupé net accuse le plafond de sortie,
+            # pas le modèle, et la réponse consiste à relancer plus haut —
+            # pas à changer de modèle ni à réécrire la consigne.
+            print("  Reponse COUPEE par le plafond de sortie (%d tokens demandes)."
+                  % max_tokens)
+            print("  Relancez avec --max-tokens %d, ou restreignez la consigne."
+                  % (max_tokens * 2))
+        else:
+            print("  Reponse inexploitable (aucun bloc @@ reconnu). Debut de la reponse :")
         print("  " + resultat["texte"].strip()[:400].replace("\n", "\n  "))
         return 1
 
@@ -317,7 +373,10 @@ def main() -> int:
     p.add_argument("--modele", default="qwen3-coder-30b-local")
     p.add_argument("--consigne", help="Ce que le modele doit corriger.")
     p.add_argument("--verifier", help="Commande de validation, '{fichier}' est substitue.")
-    p.add_argument("--max-tokens", type=int, default=3000)
+    # Une proposition de remplacement recopie des extraits entiers du
+    # fichier : elle est structurellement volumineuse. 3000 tokens ont
+    # suffi à couper la toute première tâche réelle en plein JSON.
+    p.add_argument("--max-tokens", type=int, default=8000)
     p.add_argument("--lister", action="store_true")
     p.add_argument("--fusionner", metavar="NOM")
     p.add_argument("--jeter", metavar="NOM")

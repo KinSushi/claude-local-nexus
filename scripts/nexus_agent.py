@@ -183,8 +183,15 @@ def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str) -> dic
         corps = json.loads(reponse.read().decode("utf-8"))
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
+    choix = (corps.get("choices") or [{}])[0]
     return {
-        "texte": (corps.get("choices") or [{}])[0].get("message", {}).get("content", ""),
+        "texte": choix.get("message", {}).get("content", ""),
+        # Distinguer une réponse coupée d'une réponse fautive. Sans cette
+        # information, un plafond `max_tokens` trop bas se présentait comme
+        # une défaillance du modèle : la première tâche réelle a ainsi
+        # rendu une analyse juste dans un JSON tronqué, rapportée comme
+        # « réponse inexploitable ». Le défaut était dans l'appelant.
+        "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
         # Le nom demandé peut être un routeur ; seuls ces en-têtes disent ce
         # qui a réellement répondu, et par quelle adresse.
