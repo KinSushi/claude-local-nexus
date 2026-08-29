@@ -208,8 +208,19 @@ def switch(target: str, dry_run: bool) -> int:
         print("Aucune adresse a reecrire — configuration deja neutre ?")
         return 1
 
+    # `installed_on` rend None quand l'inventaire n'a pas pu etre lu, et
+    # `not None` vaut True : le moteur simplement injoignable declenchait
+    # donc un avertissement AFFIRMANT qu'il n'a aucun modele. C'etait le
+    # dernier message avant une bascule qui reecrit la configuration, et
+    # l'operateur pouvait renoncer -- ou pire, poursuivre -- sur la foi d'un
+    # fait qui n'a jamais ete mesure.
     models = installed_on(target)
-    if not models:
+    if models is None:
+        print("\nAvertissement : l'inventaire du moteur '%s' n'a pas pu etre lu."
+              % target)
+        print("Ce que la bascule couterait est donc inconnu. Rien n'est affirme")
+        print("sur les modeles presents ou absents de ce cote.")
+    elif not models:
         print("\nAvertissement : le moteur '%s' n'a aucun modele local installe."
               % target)
         print("La bascule aboutira a une plateforme sans modele local tant que")
