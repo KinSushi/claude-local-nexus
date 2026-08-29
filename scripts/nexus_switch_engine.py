@@ -84,8 +84,18 @@ def current_engine(text: str) -> str:
     return "inconnu"
 
 
-def installed_on(engine: str) -> set[str]:
-    """Inventaire du moteur visé, pour mesurer ce qu'une bascule coûterait."""
+def installed_on(engine: str) -> set[str] | None:
+    """
+    Inventaire du moteur visé, pour mesurer ce qu'une bascule coûterait.
+
+    Renvoie **None** quand l'inventaire n'a pas pu être lu — jamais un
+    ensemble vide. Les deux se lisent autrement pareil, et la confusion
+    est ici dangereuse : `show_status` soustrait ces deux inventaires pour
+    annoncer ce qu'une bascule laisserait en arrière. Un moteur
+    injoignable rendu comme « aucun modèle » fait dire soit que tout
+    serait perdu, soit — bien pire — que rien ne le serait, juste avant
+    une bascule dont le rattrapage se compte en dizaines de gigaoctets.
+    """
     import subprocess
     args = (["ollama", "list"] if engine == "host"
             else ["docker", "exec", "ollama-server", "ollama", "list"])
@@ -93,11 +103,11 @@ def installed_on(engine: str) -> set[str]:
         result = subprocess.run(args, capture_output=True, text=True, timeout=60,
                                 encoding="utf-8", errors="replace")
         if result.returncode != 0:
-            return set()
+            return None
         return {line.split()[0] for line in result.stdout.splitlines()[1:]
                 if line.strip() and not line.split()[0].endswith(":cloud")}
     except Exception:
-        return set()
+        return None
 
 
 def show_status() -> int:
@@ -113,12 +123,24 @@ def show_status() -> int:
         version = probe(cfg["probe"])
         models = installed_on(name)
         state = ("repond (v%s)" % version) if version else "ne repond pas"
-        print("  %-7s %-32s %-18s %d modele(s)"
-              % (name, cfg["label"], state, len(models)))
+        print("  %-7s %-32s %-18s %s"
+              % (name, cfg["label"], state,
+                 "inventaire illisible" if models is None
+                 else "%d modele(s)" % len(models)))
 
     if active in ENGINES:
         other = "host" if active == "docker" else "docker"
         here, there = installed_on(active), installed_on(other)
+        if here is None or there is None:
+            # Sans les deux inventaires, l'ecart n'est pas calculable. Se
+            # taire vaut mieux que l'inventer : annoncer « rien ne serait
+            # perdu » sur une mesure absente est precisement le message
+            # qui ferait basculer sans precaution.
+            print()
+            print("  Ecart non calculable : l'inventaire du moteur '%s' n'a pas pu"
+                  % (active if here is None else other))
+            print("  etre lu. Rien n'est affirme sur ce qu'une bascule couterait.")
+            return 1
         missing = sorted(here - there)
         if missing:
             print("\n  Une bascule vers '%s' laisserait %d modele(s) en arriere :"
