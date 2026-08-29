@@ -74,11 +74,31 @@ def load_config() -> dict:
 
 
 def flatten_fallbacks(entries) -> list[tuple[str, list[str]]]:
-    """Les fallbacks LiteLLM sont une liste de dicts à une seule clé."""
+    """
+    Aplatit une liste de repli LiteLLM, quelle que soit sa forme.
+
+    `fallbacks` et `context_window_fallbacks` sont des listes de dicts à
+    une seule clé — `{source: [cibles]}`. Mais `default_fallbacks` est une
+    liste PLATE de noms : ce sont les modèles vers lesquels n'importe
+    quelle source peut retomber. Appeler `.items()` dessus lève un
+    `AttributeError`.
+
+    Les deux autres listes étant vides sur cette installation, le défaut
+    est aujourd'hui dormant. Il se réveillerait au premier
+    `default_fallbacks` ajouté — et le simple fait de l'ignorer, plutôt
+    que de le lire, serait pire : la liste la plus universelle de toutes
+    échapperait alors à tout contrôle de domaine et de modalité.
+
+    La source implicite est notée `*`, ce qui laisse les contrôles de
+    cycle et de direction s'appliquer sans se tromper de responsable.
+    """
     out = []
     for entry in entries or []:
-        for source, targets in entry.items():
-            out.append((source, list(targets or [])))
+        if isinstance(entry, dict):
+            for source, targets in entry.items():
+                out.append((source, list(targets or [])))
+        elif isinstance(entry, str):
+            out.append(("*", [entry]))
     return out
 
 
@@ -354,10 +374,13 @@ def main() -> int:
         selectable.update(candidates)
     # Toutes les listes de repli, et pas seulement `fallbacks` : un modèle
     # inexécutable restait accepté comme cible de `context_window_fallbacks`.
+    # `flatten_fallbacks` plutôt qu'un `entry.values()` direct : la même
+    # boucle plantait sur une liste plate de noms, forme que LiteLLM
+    # accepte pour `default_fallbacks`. Deux endroits lisaient ces listes,
+    # un seul savait les lire.
     for _, entries in listes_de_repli:
-        for entry in (entries or []):
-            for targets in entry.values():
-                selectable.update(targets or [])
+        for _source, targets in flatten_fallbacks(entries):
+            selectable.update(targets)
     # Le `default_model` est le chemin le plus servi quand le routeur ne
     # tranche pas : il doit subir le même budget que les candidats du pool.
     for m in model_list:

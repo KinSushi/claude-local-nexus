@@ -214,6 +214,16 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
         if not isinstance(avant, str) or not isinstance(apres, str) or not avant:
             rejets.append("#%d : champs 'avant'/'apres' absents ou non textuels" % i)
             continue
+        if apres == avant:
+            # Le modèle a rendu la cible inchangée. C'est sa façon de
+            # décliner — observé mot pour mot : « Ce n'est pas une erreur
+            # de correction car le code est correct. » Compté comme une
+            # pose, cela produisait « 3/3 remplacements appliqués,
+            # vérification OK », lu comme trois corrections réussies alors
+            # que rien n'avait bougé. Un rapport qui compte des non-actions
+            # comme des actions ne se relit pas : il se croit.
+            rejets.append("#%d : remplacement identique a la cible (le modele decline)" % i)
+            continue
         n = source.count(avant)
         if n == 0:
             rejets.append("#%d : extrait 'avant' introuvable (le modele a paraphrase)" % i)
