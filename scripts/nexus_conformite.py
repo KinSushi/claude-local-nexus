@@ -357,6 +357,67 @@ def controle_runtime(avant_demarrage: bool) -> None:
           ligne or "voir python scripts/nexus_releve.py")
 
 
+def controle_delegation(avant_demarrage: bool) -> None:
+    """
+    La plateforme tient-elle encore sa promesse ?
+
+    Tout le reste de cette porte verifie que le systeme peut demarrer. Ce
+    controle-ci verifie qu'il sert encore a quelque chose : detourner du
+    volume de l'abonnement vers des modeles gratuits est la raison d'etre du
+    depot, et rien ne le mesurait. Une plateforme parfaitement conforme dont
+    la part deleguee s'effondre est en panne, meme si tous ses voyants sont
+    verts.
+
+    Le detail rapporte aussi les requetes du plan `anthropic`, seules
+    facturees au token. Une part globale flatteuse peut masquer leur
+    augmentation : la moyenne se laisse porter par le volume gratuit.
+
+    Jamais BLOQUANT. Une part qui baisse n'empeche pas de demarrer, elle
+    signale une derive -- et refuser le demarrage sur ce motif punirait
+    precisement l'operateur qui vient corriger la situation.
+    """
+    if avant_demarrage:
+        ignorer("part deleguee", "controle avant demarrage")
+        return
+    if not passerelle_vivante():
+        # Non mesurable n'est ni bon ni mauvais. Le journal de depense vit
+        # dans la passerelle : eteinte, elle ne prouve rien dans un sens ni
+        # dans l'autre.
+        ignorer("part deleguee", "passerelle eteinte sur %s" % PASSERELLE)
+        return
+
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_savings.py"),
+             "--jours", "7", "--json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=120)
+    except Exception as exc:
+        ignorer("part deleguee", "releve des depenses injoignable : %s" % exc)
+        return
+    if r.returncode != 0:
+        ignorer("part deleguee", "releve des depenses en erreur (code %d)" % r.returncode)
+        return
+    try:
+        mesure = json.loads(r.stdout)
+    except Exception as exc:
+        ignorer("part deleguee", "releve des depenses illisible : %s" % exc)
+        return
+
+    part = mesure.get("part_deleguee_pct")
+    # `is None` et non une comparaison a zero : une part mesuree a 0 % est une
+    # mesure, et parmi les plus alarmantes. La confondre avec une absence de
+    # mesure ferait taire le seul cas qui exige une reaction immediate.
+    if part is None:
+        ignorer("part deleguee", "aucune mesure disponible sur 7 jours")
+        return
+
+    payantes = ((mesure.get("par_plan") or {}).get("anthropic") or {}).get("requetes", 0)
+    noter("part deleguee", part >= 90.0, AVERTISSEMENT,
+          "%.1f%% delegue sur 7 jours, %d requete(s) facturee(s) au token%s"
+          % (part, payantes, "" if part >= 90.0 else " — sous le plancher de 90%"))
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--avant-demarrage", action="store_true",
@@ -375,6 +436,7 @@ def main() -> int:
             # réussi : il devient bloquant, faute de pouvoir conclure.
             noter(controle.__name__, False, BLOQUANT, "controle en erreur : %s" % exc)
     controle_runtime(a.avant_demarrage)
+    controle_delegation(a.avant_demarrage)
 
     if a.json:
         print(json.dumps(resultats, ensure_ascii=False, indent=2))
