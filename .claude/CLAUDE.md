@@ -1164,13 +1164,13 @@ Fix the generator when the generator is the source of the problem.
 Configuration-only backup:
 
 ```powershell
-.\backup.ps1
+.\scripts\backup.ps1
 ```
 
 Full volume backup:
 
 ```powershell
-.\backup.ps1 -IncludeVolumes
+.\scripts\backup.ps1 -IncludeVolumes
 ```
 
 A full backup should be considered before destructive changes involving:
@@ -1196,8 +1196,8 @@ Copy-Item .env.example .env
 
 docker compose up -d
 
-.\update_local_models.ps1
-.\update_cloud_models.ps1
+.\scripts\update_local_models.ps1
+.\scripts\update_cloud_models.ps1
 ```
 
 Then validate:
@@ -1706,7 +1706,7 @@ APPLY
 Example:
 
 ```powershell
-.\update_local_models.ps1 -WhatIf
+.\scripts\update_local_models.ps1 -WhatIf
 ```
 
 is preferable to blindly changing model state.
