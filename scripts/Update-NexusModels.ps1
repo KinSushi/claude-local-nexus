@@ -180,6 +180,25 @@ if ($Restart) {
         exit 1
     }
     Write-Log "Smoke test reussi" "OK"
+
+    # La releve est verifiee A CHAQUE mise a jour, et non une fois pour
+    # toutes. C'est precisement une mise a jour qui peut la casser : un
+    # modele retire de l'inventaire, un alias regenere vers un autre poids,
+    # une chaine de repli redessinee. Une releve dont on croit a tort
+    # qu'elle fonctionne est pire qu'une releve absente -- on ne s'apercoit
+    # de rien jusqu'au jour ou l'abonnement s'arrete.
+    Write-Log "Verification de la releve locale"
+    & $python (Join-Path $PSScriptRoot "nexus_releve.py") 2>&1 |
+        Tee-Object -FilePath $LogPath -Append
+    if ($LASTEXITCODE -ne 0) {
+        # Avertissement et non arret : la passerelle reste utilisable, et
+        # bloquer la mise a jour laisserait une configuration a moitie
+        # appliquee. Mais le message doit etre sans ambiguite.
+        Write-Log "RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement" "ERROR"
+        Write-Log "Diagnostic : python scripts/nexus_releve.py --tous" "ERROR"
+    } else {
+        Write-Log "Releve operationnelle" "OK"
+    }
 }
 
 Write-Log "Mise a jour terminee" "OK"

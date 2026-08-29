@@ -85,10 +85,18 @@ def master_key():
     env_file = os.path.join(ROOT, ".env")
     if not os.path.exists(env_file):
         return ""
-    with io.open(env_file, encoding="utf-8", errors="replace") as fh:
-        for line in fh:
-            if line.startswith("LITELLM_MASTER_KEY="):
-                return line.split("=", 1)[1].strip()
+    # `os.path.exists` puis `open` laisse un intervalle : le fichier peut
+    # disparaître entre les deux, et un .env illisible par permission
+    # passe le premier test pour échouer au second. Ce script produit un
+    # état ; il ne doit pas mourir parce qu'un secret est inaccessible —
+    # tout le reste de l'état, lui, reste parfaitement calculable.
+    try:
+        with io.open(env_file, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if line.startswith("LITELLM_MASTER_KEY="):
+                    return line.split("=", 1)[1].strip()
+    except OSError:
+        return ""
     return ""
 
 

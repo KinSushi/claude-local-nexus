@@ -121,6 +121,74 @@ parallèle.
 
 ---
 
+## 2026-08-29 — `qwen3-coder:30b` sur `scripts/nexus_state.py` : le piège de la bonne pratique
+
+Trois corrections proposées, **une seule retenue**. Les deux autres
+portaient l'apparence d'une bonne pratique et étaient l'une une
+régression, l'autre du bruit.
+
+### La régression déguisée
+
+```python
+-    except Exception:
++    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+```
+
+Rétrécir une capture trop large est un réflexe juste — sauf ici.
+**Vérifié en exécutant le cas** plutôt qu'en raisonnant :
+
+```
+FileNotFoundError n'est PAS capturé par SubprocessError
+(c'est un OSError)
+```
+
+Or `run()` appelle `docker` et `ollama`. Sur une machine où l'un des deux
+manque du PATH — le cas d'un poste neuf, exactement celui que
+`nexus_state.py` sert à décrire — le script serait mort au lieu de
+rapporter un état partiel. La capture large était **délibérée**, et le
+modèle n'avait aucun moyen de le savoir : rien ne le disait dans le code.
+
+*Enseignement portable* : une capture large mérite un commentaire disant
+pourquoi elle l'est. Sans quoi le prochain relecteur — humain ou modèle —
+la « corrigera ».
+
+### Le bruit
+
+`sha256()` renvoyait `None` en cas d'échec ; le modèle proposait `""`.
+L'unique appelant écrit `digest[:32] if digest else "absent"` : les deux
+sont faux, le comportement est identique. Et `(IOError, OSError)` est un
+doublon, `IOError` étant un alias d'`OSError` depuis Python 3. Changement
+sans effet, donc rejeté — un diff qui ne change rien coûte quand même une
+relecture.
+
+### La bonne
+
+```python
++    try:
+         with io.open(env_file, ...) as fh:
+             ...
++    except OSError:
++        return ""
+```
+
+`os.path.exists` puis `open` laisse un intervalle, et un `.env` illisible
+par permission passe le premier test pour échouer au second. Le script
+produit un état : il ne doit pas mourir parce qu'un secret est
+inaccessible, tout le reste restant calculable. **Retenue.**
+
+### Bilan cumulé sur `qwen3-coder:30b`
+
+| | Propositions | Retenues | Rejetées |
+| --- | --- | --- | --- |
+| `nexus_savings.py` | 3 | 1 (remède réécrit) | 2 |
+| `nexus_state.py` | 3 | 1 | 2 |
+
+Un tiers de rendement, sur des défauts que le modèle **a réellement
+trouvés**. La valeur est dans la détection ; l'arbitrage ne peut pas
+descendre — deux des quatre rejets auraient introduit une panne.
+
+---
+
 ## Comment reproduire
 
 ```powershell
