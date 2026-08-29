@@ -102,8 +102,27 @@ Invoke-Check "Inventaire expose" {
     # 90 s : juste apres un redemarrage, l'inventaire de plusieurs dizaines
     # de modeles n'est pas servi instantanement.
     $r = Invoke-RestMethod -Uri "$BaseUrl/v1/models" -Headers $headers -TimeoutSec 90
-    $script:exposed = @($r.data.id)
-    if ($script:exposed.Count -lt 1) { throw "aucun modele expose" }
+
+    # 1️⃣ Vérifier que la réponse possède bien la propriété « data » et qu'elle n'est pas $null
+    if (-not ($r.PSObject.Properties.Name -contains 'data') -or $null -eq $r.data) {
+        throw "réponse du endpoint /v1/models ne contient pas de propriété 'data'"
+    }
+
+    # 2️⃣ Extraire les identifiants des modèles uniquement lorsqu'ils existent
+    $script:exposed = @(
+        foreach ($item in $r.data) {
+            # $item peut être un objet PSCustomObject ou un hashtable
+            if ($null -ne $item -and ($item.PSObject.Properties.Name -contains 'id')) {
+                $item.id
+            }
+        }
+    )
+
+    # 3️⃣ S'assurer qu'on a réellement au moins un identifiant valide
+    if ($script:exposed.Count -eq 0) {
+        throw "aucun modèle exposé détecté"
+    }
+
     return "$($script:exposed.Count) modeles"
 }
 
