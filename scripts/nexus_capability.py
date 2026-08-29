@@ -106,8 +106,17 @@ def parse_size(text: str) -> float:
 # ----------------------------------------------------------------------
 # Mesures
 # ----------------------------------------------------------------------
-def host_memory_gb() -> float:
-    """Mémoire physique de la machine, en gigaoctets décimaux."""
+def host_memory_gb() -> float | None:
+    """
+    Mémoire physique de la machine, en gigaoctets décimaux.
+
+    Rend **None** quand aucune des deux voies n'a pu mesurer — jamais 0.
+    Zéro gigaoctet n'est pas une mesure : c'est l'aveu qu'on n'a pas su
+    interroger la machine. Les confondre faisait rendre un verdict
+    catégorique — « aucun modèle exécutable ici » — sur un hôte
+    parfaitement capable mais momentanément muet, et ce verdict décide
+    quels modèles sont téléchargés et routés automatiquement.
+    """
     out = _run(["powershell", "-NoProfile", "-Command",
                 "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory"])
     try:
@@ -123,7 +132,7 @@ def host_memory_gb() -> float:
                     return float(line.split()[1]) * 1024 / 1e9
     except Exception:
         pass
-    return 0.0
+    return None
 
 
 def cpu_cores() -> tuple[int, int]:
@@ -328,6 +337,14 @@ def build_profile() -> dict:
     usable = (host_ram if location["host_native"]
               else location["container_limit_gb"] or host_ram)
 
+    # `usable` vaut None quand la mémoire n'a pas pu être mesurée. Les
+    # budgets ne sont alors pas calculables, et il faut le dire plutôt que
+    # de porter un 0 : un budget nul ferait rejeter TOUS les modèles et
+    # rendrait la plateforme inutilisable sur une machine parfaitement
+    # capable, sans que rien ne signale que la cause est une mesure
+    # manquée et non un manque de mémoire.
+    memoire_mesuree = usable is not None
+
     # Un GPU discret change la nature du budget, pas seulement sa taille.
     #
     #   iGPU        la VRAM annoncée est prélevée sur la RAM système : il
@@ -342,8 +359,12 @@ def build_profile() -> dict:
     # MAXIMAL (la RAM) délimite ce qui reste exécutable, en dégradé.
     # Ajouter une carte plus tard ne demandera donc aucune réécriture :
     # les seuils suivront la mesure.
+    # `discrete` reste calculé hors du cas non mesuré : il décrit le
+    # matériel, pas le budget, et il est lu plus bas quoi qu'il arrive.
     discrete = bool(gpu["vram_gb"] >= 6 and not gpu["integrated"])
-    if discrete:
+    if not memoire_mesuree:
+        fast_budget = max_budget = None
+    elif discrete:
         fast_budget = gpu["vram_gb"] * POOL_FRACTION
         max_budget = max(gpu["vram_gb"], usable) * RUNNABLE_FRACTION
     else:
@@ -351,19 +372,23 @@ def build_profile() -> dict:
         max_budget = usable * RUNNABLE_FRACTION
 
     return {
-        "host_ram_gb": round(host_ram, 1),
+        "host_ram_gb": None if host_ram is None else round(host_ram, 1),
         # Conservée séparément, et non recalculée depuis la valeur arrondie :
         # 66,2 Go réarrondis donnent 61,7 Gio là où Windows en affiche 61,6,
         # et un dixième d'écart suffit à faire douter de la mesure entière.
-        "host_ram_gib": round(host_ram * 1e9 / 1024 ** 3, 1),
+        "host_ram_gib": (None if host_ram is None
+                         else round(host_ram * 1e9 / 1024 ** 3, 1)),
         "cpu_cores": physical,
         "cpu_threads": logical,
         "gpu": gpu,
         "gpu_usable_for_offload": discrete,
         "ollama": location,
-        "inference_memory_gb": round(usable, 1),
-        "pool_budget_gb": round(fast_budget, 1),
-        "runnable_budget_gb": round(max_budget, 1),
+        # None et non 0 : un consommateur doit pouvoir distinguer « la
+        # machine a 0 Go » — impossible — de « on ne sait pas ».
+        "memoire_mesuree": memoire_mesuree,
+        "inference_memory_gb": None if usable is None else round(usable, 1),
+        "pool_budget_gb": None if fast_budget is None else round(fast_budget, 1),
+        "runnable_budget_gb": None if max_budget is None else round(max_budget, 1),
         "model_store": store,
         "free_disk_gb": round(free_disk, 1),
     }
