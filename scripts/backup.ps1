@@ -2,7 +2,8 @@
 # backup.ps1 - Sauvegarde de la configuration et des volumes
 # ============================================================
 # Crée une archive horodatée contenant :
-#   - les fichiers essentiels (docker-compose.yml, .env, litellm_config.yaml, model_list.txt, cloud_models.txt, .env.example)
+#   - les fichiers essentiels (docker-compose.yml, litellm_config.yaml, model_list.txt, cloud_models.txt, .env.example, .mcp.json)
+#     .env est volontairement exclu : voir le commentaire de $configFiles
 #   - en option (-IncludeVolumes), les volumes Docker (PostgreSQL, Ollama, Redis)
 # Utilisation :
 #   .\backup.ps1                # sauvegarde des fichiers uniquement
@@ -32,7 +33,14 @@ $configFiles = @(
     "litellm_config.yaml",
     "model_list.txt",
     "cloud_models.txt",
-    ".env.example"
+    ".env.example",
+    # .mcp.json manquait a cette liste alors qu'il declare le pont par
+    # lequel Claude Code atteint les modeles locaux. Sa corruption ne
+    # produit aucune erreur visible : le serveur demarre, s'annonce
+    # connecte, et sept outils sur douze cessent d'atteindre le disque.
+    # Une sauvegarde qui omet le fichier dont la panne est silencieuse
+    # protege precisement du mauvais risque.
+    ".mcp.json"
     # .env est volontairement ABSENT de cette liste.
     #
     # Il était copié dans le dossier de sauvegarde, qui hérite de l'ACL de
