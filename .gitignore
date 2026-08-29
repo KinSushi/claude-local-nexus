@@ -1,6 +1,16 @@
+# Secrets
 .env
+
+# Artefacts d'exploitation
 backups/
-*.tar.gz
-*.txt
+logs/
+.nexus/
 *.log
+*.tar.gz
+
+# Fichiers de travail bureautiques
 *.xlsx
+
+# Python
+__pycache__/
+*.pyc

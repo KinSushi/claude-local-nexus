@@ -2,279 +2,267 @@
 
 ![Banner](https://raw.githubusercontent.com/KinSushi/Claude-Local-Nexus/main/images/banner.png)
 
-> Plateforme locale d'orchestration IA – Dockerisée, souveraine, reproductible.
+> **Passerelle d'orchestration LLM hybride — locale, cloud et Anthropic —
+> avec garde-fous matériels et politique de confidentialité vérifiée par des tests.**
 
-Architecture complète de proxy IA pour modèles locaux (Ollama), cloud (Anthropic, Ollama Cloud) et routeurs adaptatifs, avec PostgreSQL, Redis, Langfuse Cloud pour le tracing, et Claude Code comme client possible.
+Claude Code garde son abonnement et orchestre ; les modèles locaux et cloud
+deviennent des outils qu'il appelle. Le volume part en local, gratuitement ;
+les tokens payants ne financent que le raisonnement. Quand un quota s'épuise,
+la plateforme dégrade au lieu de s'interrompre — jusqu'à remplacer
+l'orchestrateur lui-même par un modèle local.
 
-## Pourquoi ce projet ?
+---
 
-- **Souveraineté** : les modèles locaux ne quittent pas votre machine.
-- **Flexibilité** : basculez entre modèles locaux et cloud selon la charge et le coût.
-- **Reproductibilité** : une seule commande pour reconstruire l'infrastructure.
-- **Observabilité** : traces complètes via Langfuse Cloud.
-- **Automatisation** : scripts de synchronisation pour rester à jour.
+## Le problème
 
-## Configuration de la machine
+Router Claude Code vers une passerelle pour arbitrer entre local, cloud et
+Claude semble la voie évidente. Elle ne fonctionne pas :
 
-- **OS** : Windows 11 (ou 10) 64-bit
-- **CPU** : AMD Ryzen AI 9 HX 370 (24 threads, jusqu'à 5,1 GHz)
-- **RAM** : 62 Go
-- **GPU** : AMD Radeon 890M (iGPU intégrée) – utilisée uniquement par Ollama en mode CPU pour éviter les problèmes de pilotes Vulkan ; la mise à jour des pilotes AMD peut réactiver le GPU si souhaité
-- **Stockage** : SSD NVMe recommandé pour les volumes Docker (modèles volumineux)
-- **Docker Desktop** : dernière version stable
-- **PowerShell** : 7.x recommandé pour les scripts et commandes
+> *« While a gateway credential variable or `apiKeyHelper` is active, a
+> developer's claude.ai subscription isn't used : the credential replaces the
+> subscription login for that session. That traffic is billed per token. »*
+> — documentation Anthropic
 
-## Services inclus
+Poser un jeton de passerelle **désactive l'abonnement** et bascule la
+facturation au token. Anthropic ne prend par ailleurs pas en charge le
+routage de Claude Code vers des modèles non-Claude à travers une passerelle.
 
-| Service   | Image                                | Description                             |
-|-----------|--------------------------------------|-----------------------------------------|
-| `db`      | `postgres:16`                        | Base de données LiteLLM (logs, budgets) |
-| `redis`   | `redis:7-alpine`                     | Cache sémantique pour LiteLLM           |
-| `ollama`  | `ollama/ollama:latest`               | Serveur Ollama local (CPU)              |
-| `litellm` | `ghcr.io/berriai/litellm:main-latest`| Proxy LiteLLM avec routeurs adaptatifs  |
+## La solution retenue
 
-## Prérequis
+Prendre le problème par l'autre bout : ne pas router l'orchestrateur, mais
+lui donner les modèles **comme outils**.
 
-- Docker Desktop installé et fonctionnel
-- Accès à un terminal PowerShell (ou bash)
-- Clés API :
-  - Anthropic (optionnel)
-  - Ollama Cloud (pour les modèles cloud gratuits, ex: `gpt-oss:20b`)
-  - Langfuse Cloud (pour le tracing)
-
-## Fichiers importants
-
-- `docker-compose.yml` : définition des services et volumes
-- `litellm_config.yaml` : configuration des modèles, routeurs, cache, callbacks
-- `model_list.txt` : liste des modèles **locaux** à télécharger dans Ollama
-- `cloud_models.txt` : liste des modèles **cloud** (Ollama Cloud) utilisables avec votre clé ; actuellement `gpt-oss:20b:cloud`
-- `.env.example` : modèle de fichier d'environnement (à copier en `.env` et personnaliser)
-- `.gitignore` : pour exclure `.env` et les sauvegardes du versionnement
-- `update_cloud_models.ps1` : script pour synchroniser automatiquement les modèles cloud avec l'API officielle
-- `update_local_models.ps1` : script pour télécharger automatiquement les modèles locaux listés dans `model_list.txt`
-- `backup.ps1` : script de sauvegarde (fichiers de configuration, et volumes Docker avec l'option `-IncludeVolumes`)
-- `start.ps1`, `stop.ps1`, `restore.ps1` : scripts utilitaires pour la gestion de la stack
-
-## Installation / Reconstruction sur une nouvelle machine
-
-1. **Cloner le dépôt** :
-
-   ```powershell
-   git clone https://github.com/KinSushi/Claude-Local-Nexus.git
-   cd Claude-Local-Nexus
-   ```
-
-2. **Créer le fichier `.env`** :
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-   Puis éditez `.env` et renseignez vos vraies clés API.
-
-3. **Démarrer la stack** :
-
-   ```powershell
-   docker compose up -d
-   ```
-
-4. **Télécharger les modèles locaux** :
-
-   ```powershell
-   .\update_local_models.ps1
-   ```
-
-5. **Synchroniser les modèles cloud** :
-
-   ```powershell
-   .\update_cloud_models.ps1
-   ```
-
-   Ce script interroge l'API officielle, filtre les modèles cloud accessibles avec votre clé, met à jour `cloud_models.txt` et la section `OLLAMA CLOUD` de `litellm_config.yaml`.
-
-6. **Vérifier l'état** :
-
-   ```powershell
-   docker compose ps
-   ```
-
-7. **Tester le healthcheck** :
-
-   ```powershell
-   curl.exe --max-time 30 -H "Authorization: Bearer $($env:LITELLM_MASTER_KEY)" http://localhost:4000/health
-   ```
-
-## Configuration des clés API
-
-Le fichier `.env` doit contenir :
-
-```ini
-LITELLM_MASTER_KEY=ma-cle-tres-secrete-2025
-ANTHROPIC_API_KEY=sk-ant-...
-OLLAMA_CLOUD_API_KEY=...
-REDIS_PASSWORD=
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=https://cloud.langfuse.com
+```
+   Claude Code  ·  abonnement claude.ai, natif  ·  orchestre
+        │
+        │  MCP (stdio, 12 outils, zéro dépendance npm)
+        ▼
+   nexus-local
+        │
+        │  HTTP
+        ▼
+   LiteLLM  127.0.0.1:4000
+        │
+   ┌────┴──────────────┬──────────────────┐
+   ▼                   ▼                  ▼
+ LOCAL              OLLAMA CLOUD       ANTHROPIC
+ 41 alias           9 alias            4 alias
+ coût 0             abonnement Ollama  crédits API
+ rien ne sort       sort vers          facturé au token
+                    ollama.com
 ```
 
-- **Anthropic** : depuis [console.anthropic.com](https://console.anthropic.com/)
-- **Ollama Cloud** : depuis [ollama.com](https://ollama.com/) → Settings → API Keys
-- **Langfuse** : depuis [cloud.langfuse.com](https://cloud.langfuse.com/) → projet → Settings → API Keys
+L'arbitrage coût / confidentialité / capacité redevient une décision
+explicite, prise appel par appel — et chaque réponse annonce le modèle
+réellement retenu, son plan et son mode de facturation.
 
-## Mise à jour des modèles cloud
+---
 
-Les modèles cloud évoluent régulièrement. Pour maintenir votre configuration à jour :
+## Ce qui distingue ce projet
+
+**Rien n'est supposé, tout est mesuré.** La machine est profilée — RAM
+offerte au moteur d'inférence, CPU, GPU, disque — et son verdict s'impose
+automatiquement à chaque modèle :
+
+| Verdict | Condition | Effet |
+|---|---|---|
+| `ACCEPT` | poids ≤ 60 % de la mémoire du moteur | éligible au routage automatique |
+| `DEGRADED` | ≤ 85 % | adressable, mais hors des pools et des chaînes de repli |
+| `REJECT` | > 85 % | ni déclaré, ni téléchargé |
+
+Un modèle trop lourd n'échoue pas franchement : il pagine, et la réponse
+n'arrive jamais utilement. Le laisser sélectionnable automatiquement revient
+à tirer au sort une réponse qui ne viendra pas.
+
+**Le repli est asymétrique, par principe.** Un repli est subi, jamais
+choisi : il ne doit ni élargir l'exposition des données, ni engager une
+dépense que personne n'a demandée.
+
+| Direction | Verdict |
+|---|---|
+| `cloud → local`, `anthropic → local` | autorisé — ne coûte que de la capacité |
+| `local → cloud`, `local → anthropic` | interdit — les données sortiraient |
+
+**Les graphes de routage sont dérivés, jamais écrits à la main.** Ils sont
+donc acycliques par construction et incapables de franchir une frontière de
+modalité. Une validation bloquante refuse tout redémarrage sur une
+configuration douteuse.
+
+**Le contexte n'a pas de plafond.** Aucun modèle local n'offre 1 M de
+contexte ; `nexus_context` l'obtient par découpage et réduction — le plafond
+devient le temps, qui en local ne coûte rien.
+
+---
+
+## Démarrage
+
+Prérequis : Docker Desktop, Node 18+, Python 3.10+ avec PyYAML.
 
 ```powershell
-cd C:\local-llm-docker
-.\update_cloud_models.ps1
+git clone https://github.com/KinSushi/Claude-Local-Nexus.git
+cd Claude-Local-Nexus
+Copy-Item .env.example .env      # puis renseigner les clés
+
+.\scripts\Initialize-Nexus.ps1   # prérequis, services, modèles, vérification
 ```
 
-Ce script :
-- Interroge l'API officielle `https://ollama.com/api/tags`.
-- Vérifie les modèles listés dans `cloud_models.txt`.
-- Met à jour automatiquement `cloud_models.txt`.
-- Régénère la section `OLLAMA CLOUD` de `litellm_config.yaml` avec `api_base: https://ollama.com`.
-
-Vous pouvez l'exécuter manuellement ou le planifier (tâche Windows) pour une synchronisation régulière.
-
-## Mise à jour des modèles locaux
-
-Les modèles locaux sont listés dans `model_list.txt`. Pour télécharger automatiquement ceux qui manquent dans le conteneur Ollama, utilisez le script **`update_local_models.ps1`** :
+Puis lancer `claude` et approuver le serveur MCP `nexus-local`.
 
 ```powershell
-cd C:\local-llm-docker
-.\update_local_models.ps1           # Télécharge uniquement les modèles absents
-.\update_local_models.ps1 -Force    # Force le retéléchargement de tous les modèles
+.\scripts\Initialize-Nexus.ps1 -CheckOnly   # diagnostic sans rien modifier
+.\rituels\RESUME.ps1                        # état mesuré et sujets ouverts
 ```
 
-Ce script vérifie l'état du conteneur, ignore les commentaires/lignes vides, et fournit un récapitulatif clair.
+---
 
-## Sauvegarde et restauration
+## Les outils exposés à Claude Code
 
-### Sauvegarde automatisée
+| Famille | Outils |
+|---|---|
+| **Exécution** | `nexus_ask` (modèle ou profil de tâche), `nexus_route`, `nexus_batch`, `nexus_compare` |
+| **Contexte** | `nexus_context`, `nexus_summarize`, `nexus_index_build`, `nexus_search` |
+| **Modalité** | `nexus_vision` |
+| **Inspection** | `nexus_models`, `nexus_profile`, `nexus_savings` |
 
-Pour sauvegarder les fichiers de configuration uniquement :
+`nexus_ask` accepte un **profil** plutôt qu'un modèle — `coding`,
+`reasoning`, `rapide`, `multimodal` — et la plateforme retient le premier
+candidat réellement exposé **et exécutable**, en privilégiant le local.
+
+---
+
+## Vérification
 
 ```powershell
-.\backup.ps1
+python scripts/nexus_test.py                   # suite complète
+python scripts/nexus_test.py --only reverse    # chemins interdits
+.\scripts\Test-NexusSmoke.ps1 -IncludeRouters  # runtime de bout en bout
 ```
 
-Pour sauvegarder également les volumes Docker (données PostgreSQL, modèles Ollama, cache Redis) :
+Quatre familles, aux questions volontairement distinctes :
+
+| Famille | Question posée |
+|---|---|
+| **Forward** | Le chemin nominal produit-il le bon résultat ? |
+| **Reverse** | Les chemins interdits échouent-ils **proprement, sans emprunter d'autre voie** ? |
+| **Policy** | Les frontières de coût et de confidentialité tiennent-elles ? |
+| **Code** | Les scripts de la plateforme se tiennent-ils ? |
+
+Quelques garanties que ces tests établissent : aucune **fuite transitive**
+dans la fermeture du graphe de repli ; la preuve de non-sortie par
+`x-litellm-model-api-base`, qui dit où la requête est réellement partie ;
+l'**idempotence du générateur** ; le refus d'indexer ou de résumer un fichier
+susceptible de contenir des secrets ; et le rejet franc d'une image envoyée à
+un modèle textuel, plutôt qu'une description inventée.
+
+---
+
+## Mise à jour automatique
 
 ```powershell
-.\backup.ps1 -IncludeVolumes
+.\scripts\Update-NexusModels.ps1 -Restart      # cycle complet
+.\scripts\Register-NexusAutoUpdate.ps1         # tous les jours à 04:00
 ```
 
-Les sauvegardes sont horodatées et placées dans `C:\backups`.
+Découverte → validation des droits réels → régénération → **contrôle
+d'intégrité bloquant** → redémarrage → smoke test. LiteLLM n'est jamais
+redémarré sur une configuration invalide.
 
-### Restauration des volumes
+Deux propriétés qui évitent la dérive :
+
+- **Le pool cloud n'est pas figé.** Chaque exécution teste réellement les
+  droits du compte. Un `402` écarte un modèle ; un `429` ou un délai dépassé
+  ne l'écarte **pas** — un quota momentanément épuisé ne prouve rien sur les
+  droits, et amputer le pool sur la foi d'un incident terminé serait faux.
+- **L'inventaire local n'a pas de plafond.** Tout modèle présent dans Ollama
+  est exposé automatiquement, dans la limite de ce que la machine peut
+  exécuter.
+
+---
+
+## Sauvegarde : ce qui se retélécharge, et ce qui ne se retélécharge pas
 
 ```powershell
-# Créer les volumes vides
-docker volume create local-llm-docker_pgdata
-docker volume create local-llm-docker_ollama_data
-docker volume create local-llm-docker_redis_data
-
-# Restaurer
-docker run --rm -v local-llm-docker_pgdata:/volume -v C:\backups:/backup alpine sh -c "cd /volume && tar xzf /backup/pgdata.tar.gz"
-docker run --rm -v local-llm-docker_ollama_data:/volume -v C:\backups:/backup alpine sh -c "cd /volume && tar xzf /backup/ollama_data.tar.gz"
-docker run --rm -v local-llm-docker_redis_data:/volume -v C:\backups:/backup alpine sh -c "cd /volume && tar xzf /backup/redis_data.tar.gz"
+python scripts/nexus_preserve.py             # audit
+python scripts/nexus_preserve.py --backup    # sauvegarde l'irremplaçable
 ```
 
-## Tester l'API
+La question n'est jamais « est-ce volumineux » mais **« existe-t-il une
+source pour le reconstruire »**. Sur cette installation, 552 Go se
+retéléchargent — poids de modèles, images Docker, caches — tandis que
+**85 Mo n'ont aucune source** : l'historique de dépense, l'historique git non
+poussé, les secrets. L'irremplaçable représente 0,015 % du volume, et c'est
+lui seul qui mérite une sauvegarde.
 
-> **Note** : les modèles cloud utilisent désormais `api_base: https://ollama.com` et sont appelés directement avec la clé `OLLAMA_CLOUD_API_KEY`. Ils ne passent plus par le conteneur Ollama local.
+C'est ce même critère qui décide de l'implantation : PostgreSQL reste
+conteneurisé, Ollama en sort.
 
-### Chat avec un modèle local (ex: `ultime-recourse-local`)
+---
 
-```powershell
-$headers = @{ "Authorization" = "Bearer $($env:LITELLM_MASTER_KEY)" }
-$bodyJson = @{ model = "ultime-recourse-local"; messages = @(@{ role = "user"; content = "Bonjour" }) } | ConvertTo-Json -Depth 5
-$bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
-Invoke-RestMethod -Uri "http://localhost:4000/v1/chat/completions" -Method Post -Headers $headers -ContentType "application/json; charset=utf-8" -Body $bodyBytes
+## Structure
+
+```
+├── docker-compose.yml         Services : LiteLLM, PostgreSQL, Redis, Ollama (profil)
+├── litellm_config.yaml        Configuration — zones AUTOGEN + blocs curés à la main
+├── model_list.txt             Inventaire local souhaité
+├── cloud_models.txt           Catalogue Ollama Cloud, généré, droits annotés
+├── Set-ClaudeModel.ps1        Choix explicite du mode d'exécution
+├── Start-Claude.ps1           Lance Claude Code, bascule en relève si le quota s'épuise
+├── scripts/                   Génération, validation, tests, migration, sauvegarde
+├── tools/nexus-mcp/           Serveur MCP — les modèles comme outils
+├── docs/                      Documentation et notes d'architecture
+└── rituels/                   État mesuré, sujets ouverts, historique, boussole
 ```
 
-### Chat avec le modèle cloud gratuit (ex: `gpt-oss-20b-cloud`)
+Les zones délimitées par `# >>> AUTOGEN:<NOM>` sont réécrites à chaque mise
+à jour. Les profils de capacité, les fenêtres de contexte et l'appartenance
+aux pools restent curés à la main : **être installé ne vaut pas être éligible
+au routage automatique**.
 
-```powershell
-$bodyJson = @{ model = "gpt-oss-20b-cloud"; messages = @(@{ role = "user"; content = "Bonjour" }) } | ConvertTo-Json -Depth 5
-$bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
-Invoke-RestMethod -Uri "http://localhost:4000/v1/chat/completions" -Method Post -Headers $headers -ContentType "application/json; charset=utf-8" -Body $bodyBytes
-```
+---
 
-### Utiliser Claude Code
+## Limites connues
 
-Claude Code peut être connecté à votre proxy LiteLLM pour bénéficier des modèles locaux et cloud sans dépendre uniquement de l'API Anthropic.
+Elles sont documentées plutôt que tues.
 
-#### Configuration
+- **Hôte CPU.** Un modèle de 30 milliards de paramètres répond en dizaines de
+  secondes. Le choix par défaut est un MoE dont peu de paramètres sont
+  actifs ; la latence reste la contrainte dominante.
+- **Ollama dans Docker est plafonné** par la mémoire allouée à la VM WSL2 —
+  sur la machine de référence, la moitié de la RAM lui est inaccessible. La
+  sortie du moteur hors du conteneur est outillée et réversible.
+- **La relève locale prend la suite, pas la place.** 64K de contexte contre
+  1 M, sur CPU.
+- **La bascule de l'orchestrateur se fait entre deux sessions**, pas au
+  milieu de l'une d'elles : un jeton de passerelle remplace la connexion
+  claude.ai, ce qui ne se décide pas en cours de route.
 
-Dans votre terminal PowerShell, avant de lancer `claude`, définissez les variables d'environnement :
+---
 
-```powershell
-$env:ANTHROPIC_BASE_URL = "http://localhost:4000"
-$env:ANTHROPIC_AUTH_TOKEN = $env:LITELLM_MASTER_KEY   # ou la clé maîtresse directement
-```
+## Documentation
 
-#### Lancer Claude Code
-
-```powershell
-claude
-```
-
-Toutes les requêtes seront envoyées à votre proxy LiteLLM, qui utilisera le routeur adaptatif (`adaptive-router`) pour choisir le meilleur modèle parmi les modèles locaux et cloud disponibles.
-
-#### Utiliser un modèle spécifique
-
-Vous pouvez forcer l'utilisation d'un modèle précis avec l'option `--model` :
-
-- Modèle local léger :  
-  ```powershell
-  claude --model "ultime-recourse-local"
-  ```
-- Modèle cloud gratuit :  
-  ```powershell
-  claude --model "gpt-oss-20b-cloud"
-  ```
-- Modèle Anthropic (si clé API disponible) :  
-  ```powershell
-  claude --model "claude-sonnet-5"
-  ```
-
-#### Vérifier que ça passe par LiteLLM
-
-Ouvrez un second terminal et consultez les logs :
-
-```powershell
-docker logs litellm-proxy -f
-```
-
-Vous verrez les requêtes de Claude Code arriver sur le proxy.
-
-## Commandes utiles
-
-```powershell
-docker compose up -d                 # Démarrer tous les services
-docker compose down                  # Arrêter et supprimer les conteneurs (garde les volumes)
-docker compose down -v               # Arrêter et supprimer conteneurs + volumes (données perdues)
-docker compose logs -f litellm       # Suivre les logs de LiteLLM
-docker exec -it ollama-server /bin/sh # Shell dans le conteneur Ollama
-```
-
-## Dépannage
-
-- **Port occupé** : changez le port hôte dans `docker-compose.yml`.
-- **Conteneur ne démarre pas** : `docker logs <service>`.
-- **Erreur 401** : vérifiez l'en-tête `Authorization: Bearer ...`.
-- **Modèle local en erreur** : vérifiez `docker exec ollama-server ollama list`, sinon `ollama pull`.
-- **Modèle cloud 401** : vérifiez `OLLAMA_CLOUD_API_KEY` ou `ANTHROPIC_API_KEY`.
-- **Langfuse ne remonte pas** : vérifiez `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`.
+| Document | Contenu |
+|---|---|
+| [Associer local et abonnement](docs/pont-local-abonnement.md) | La contrainte, les trois montages, ce qui est déployé |
+| [Notes d'architecture](docs/architecture/README.md) | La cible et les idées où puiser |
+| [Set-ClaudeModel](docs/set-claude-model.md) | Basculer délibérément toute une session |
+| [État mesuré](rituels/STATE.md) | Généré, jamais saisi à la main |
+| [Sujets ouverts](rituels/CHECKLIST_COCKPIT.MD) | Ce qui reste à faire, et pourquoi |
 
 ---
 
 ## Licence
 
-Ce projet est destiné à un usage personnel. Adaptez selon vos besoins.
+Copyright © 2026 Sovralys LLC — distribué sous [GNU AGPL v3.0](LICENSE).
 
-**Auteur** : KinSushi – Enzo – Sovralys LLC
+Le code est ouvert et vérifiable. En contrepartie, toute personne qui
+propose ce logiciel — ou un dérivé — **comme service en réseau** doit en
+publier le code source modifié sous la même licence.
+
+Pour un usage sous d'autres conditions, notamment une intégration
+propriétaire ou une exploitation commerciale sans obligation de
+publication, une licence distincte peut être négociée : **contactez
+l'auteur**.
+
+---
+
+**Auteur** — KinSushi · Enzo · Sovralys LLC

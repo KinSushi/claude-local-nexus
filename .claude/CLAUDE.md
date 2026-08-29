@@ -718,21 +718,28 @@ Before adding:
 
 verify that the logical model appears in the active `model_list`.
 
-Example of a known repository risk:
+This invariant is now enforced mechanically rather than by discipline.
 
-```text
-ultime-recourse-local
+```powershell
+.\scripts\Test-NexusConfig.ps1
 ```
 
-is referenced by fallback configuration but is not present in the model inventory currently inspected.
+fails with exit code 1 on any dangling reference, any fallback cycle, any
+modality mismatch, any empty router pool and any missing environment
+variable. `Update-NexusModels.ps1` refuses to restart LiteLLM when it fails.
 
-Do not reproduce this pattern.
+Historical note, corrected: earlier revisions of this document stated that
+`ultime-recourse-local` was referenced without being declared. It **is**
+declared (`ollama_chat/phi3:mini`). The real defects were elsewhere and are
+now fixed:
 
-Either:
+* eleven Ollama Cloud aliases referenced by the routers and never declared;
+* five vision models falling back to a text-only model;
+* eight cycles in the fallback graph.
 
-1. define the missing model correctly;
-2. replace the alias with an existing model;
-3. remove the invalid fallback.
+Fallback graphs are no longer written by hand at all. They are derived from
+the declared inventory, which makes them acyclic by construction and
+incapable of crossing a modality or provider boundary. See section 105.
 
 ---
 
@@ -3478,3 +3485,183 @@ LEARN
 The system should always prefer the **minimum sufficient intelligence** required to complete the task correctly while respecting privacy, context, reliability, latency and cost constraints.
 
 That is the governing principle of Claude-Local-Nexus.
+
+---
+
+# 105. Generated configuration contract
+
+`litellm_config.yaml` is now part hand-maintained and part generated. The
+boundary is explicit and must be respected.
+
+## 105.1 Generated zones
+
+Delimited by markers. Never edit between them — the next update overwrites.
+
+```text
+# >>> AUTOGEN:<NAME>
+        ... generated ...
+# <<< AUTOGEN:<NAME>
+```
+
+| Marker | Content |
+| --- | --- |
+| `LOCAL_MODELS_EXTRA` | every Ollama model not declared by hand |
+| `CLOUD_MODELS` | Ollama Cloud model blocks |
+| `CLOUD_POOL_CLOUD` / `CLOUD_POOL_GLOBAL` | cloud candidates of the routers |
+| `ANTHROPIC_FALLBACKS` / `LOCAL_FALLBACKS` / `CLOUD_FALLBACKS` | fallback chains |
+| `ROUTER_FALLBACKS` | router fallbacks |
+| `*_CTX_FALLBACKS` | context-window fallbacks |
+
+## 105.2 Hand-maintained
+
+Capability profiles, context windows and router pool membership. Being
+installed does not make a model eligible for automatic routing (§76):
+auto-exposed models carry `model_info.nexus_pool: false` and stay out of
+every pool and every fallback chain. Promote one by declaring it by hand.
+
+## 105.3 Live sources of truth
+
+```text
+docker exec ollama-server ollama list   ->  local inventory (no ceiling)
+https://ollama.com/api/tags             ->  cloud catalogue
+a real request per cloud model          ->  what the account may actually run
+```
+
+Entitlement is re-tested on every run. A `402` excludes a model; a `429`,
+a `5xx` or a timeout does **not** — a momentarily exhausted quota proves
+nothing about entitlement, and shrinking the pool over a finished incident
+would be wrong. Subscribing to a higher Ollama Cloud tier therefore widens
+the pool by itself at the next update.
+
+## 105.4 Operating commands
+
+```powershell
+.\scripts\Update-NexusModels.ps1 -DryRun              # simulate
+.\scripts\Update-NexusModels.ps1 -Validate -Restart   # full cycle
+.\scripts\Test-NexusConfig.ps1                        # integrity gate
+.\scripts\Test-NexusSmoke.ps1 -IncludeRouters         # runtime check
+.\scripts\Register-NexusAutoUpdate.ps1                # daily task, 04:00
+python scripts/nexus_test.py                          # full test suite
+```
+
+## 105.5 Observability of routing decisions
+
+Behind an adaptive router, the response body reports only the router name.
+The selected model is in the headers:
+
+```text
+x-litellm-adaptive-router-model   model the router selected
+x-litellm-model-name              upstream model that actually answered
+x-litellm-model-api-base          endpoint actually contacted
+x-litellm-attempted-fallbacks     whether a fallback was used
+```
+
+`x-litellm-model-api-base` is the direct proof of non-leakage: it shows
+whether a request left the machine, whatever alias was chosen.
+
+---
+
+# 106. Subscription boundary
+
+`ANTHROPIC_BASE_URL` alone does **not** replace the claude.ai subscription;
+`ANTHROPIC_AUTH_TOKEN` (or `apiKeyHelper`) does, and switches billing to
+per-token API credits. Anthropic does not support routing Claude Code to
+non-Claude models through a gateway.
+
+Consequence: the supported way to combine the subscription with local models
+is the `nexus-local` MCP server (`.mcp.json`). Claude Code stays on the
+subscription and orchestrates; the gateway becomes a bench of models it calls
+as tools — `nexus_ask`, `nexus_route`, `nexus_summarize`, `nexus_search`,
+`nexus_index_build`, `nexus_models`. Those six are a deliberate baseline and
+are expected to grow.
+
+Never state that a request is local without checking the endpoint actually
+contacted.
+
+
+---
+
+# 107. Hardware budget is a hard constraint
+
+The machine is measured, never assumed. `scripts/nexus_capability.py`
+produces a profile and a verdict per model:
+
+| Verdict | Condition | Effect |
+| --- | --- | --- |
+| `ACCEPT` | weights <= 60% of engine memory | eligible for automatic routing |
+| `DEGRADED` | <= 85% | addressable, but out of pools and fallback chains |
+| `REJECT` | > 85% | not declared at all, and not downloaded |
+
+A model heavier than the engine's memory does not fail cleanly: it pages,
+and the answer never usefully arrives. Leaving it automatically selectable
+is drawing lots for a response that will not come. This was observed here:
+the router had picked `llama3.3:70b` (42 GB) while the engine had 32.
+
+The verdict gates declaration, pool membership, fallback chains and
+downloads. It is not advisory.
+
+---
+
+# 108. Fallback direction
+
+The earlier rule — "no fallback crosses a provider boundary" — was too
+rigid: it removed the very fallback that matters when a quota runs out.
+
+| Direction | Verdict | Reason |
+| --- | --- | --- |
+| `cloud -> local` | allowed | costs only capability |
+| `anthropic -> local` | allowed | same, and avoids an outage |
+| `local -> cloud` | forbidden | data would leave the machine |
+| `local -> anthropic` | forbidden | same, and commits spend |
+
+A fallback is **suffered, never chosen**. It must not widen data exposure,
+nor decide on spending in the user's place. Both the validator and the
+policy tests enforce the direction, not the absence of crossing.
+
+---
+
+# 109. Execution profiles
+
+`nexus_ask` accepts a `profile` instead of a `model`, so a caller asks for
+a class of task rather than naming a model:
+
+```text
+coding      implementation, debugging, refactoring
+reasoning   architecture, trade-offs
+rapide      classification, extraction, short transformation
+multimodal  image, screenshot, OCR
+```
+
+The first candidate actually exposed wins, local first, and the hardware
+verdict applies. Remote models come last, so spend is committed only for
+lack of a local alternative.
+
+---
+
+# 110. Distributed context
+
+No local model offers 1M context, and allocating it would cost memory the
+machine does not have. `nexus_context` gets the equivalent differently: the
+corpus is cut into windows that actually fit, each is analysed separately
+(MAP), then results are merged in tiers until one window suffices (REDUCE).
+
+The ceiling is therefore no longer the window but the time — which, locally,
+costs nothing else. This is what makes the platform usable without any
+subscription.
+
+---
+
+# 111. Measuring what delegation saves
+
+`scripts/nexus_savings.py` reports volume by plane and the counterfactual
+cost on Claude.
+
+Two honesty constraints, both learned the hard way:
+
+* Internal health-check traffic is excluded. On an ordinary day it was
+  2552 requests out of 2730 — including it produced a flattering rate that
+  measured the platform observing itself.
+* Subscription traffic never passes through the gateway, so it is invisible
+  here. The figure is "volume diverted from the subscription", not
+  "subscription remaining". There is no threshold to reach: the delegated
+  share is a quantity to maximise.
