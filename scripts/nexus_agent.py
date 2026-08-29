@@ -64,6 +64,21 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
+# ----------------------------------------------------------------------
+def racine_travail() -> str:
+    """
+    Retourne la racine de travail selon l'ordre de priorité suivant :
+    1. Variable d'environnement NEXUS_WORK_ROOT (réglage explicite).
+    2. Variable d'environnement CLAUDE_PROJECT_DIR (fourni par l'hôte).
+    3. Répertoire courant (os.getcwd()).
+    Aucun chemin en dur n'est utilisé afin que le banc reste utilisable
+    depuis n'importe quel projet.
+    """
+    for var in ("NEXUS_WORK_ROOT", "CLAUDE_PROJECT_DIR"):
+        val = os.getenv(var)
+        if val:
+            return val
+    return os.getcwd()
 
 # Un modèle local non chargé met 60 à 120 s à répondre au premier appel, et
 # davantage pour les gros poids. Un délai court ne protège de rien : il
@@ -130,30 +145,40 @@ def est_secret(chemin: str) -> bool:
     return base.lower() in FICHIERS_SECRETS or bool(MOTIFS_SECRETS.search(base))
 
 
-def dans_depot(chemin: str) -> bool:
+def sous_racine(chemin: str, racine: str) -> bool:
     """
-    Le fichier est-il sous la racine du dépôt ?
+    Le fichier est-il sous la racine spécifiée ?
 
-    `os.path.commonpath` plutôt qu'une comparaison de préfixe : un chemin
-    voisin nommé `C:\\local-llm-docker-prive` commence par la racine sans
-    être dedans, et aurait donc été accepté par un `startswith`.
+    Utilise `os.path.commonpath` pour éviter les faux positifs (ex.
+    C:\\local-llm-docker-prive). En cas de lecteurs différents sous Windows,
+    `commonpath` lève `ValueError` qui est interprété comme un refus.
     """
     try:
-        return os.path.commonpath([os.path.realpath(chemin), os.path.realpath(ROOT)]) == \
-            os.path.realpath(ROOT)
+        return os.path.commonpath([os.path.realpath(chemin), os.path.realpath(racine)]) == \
+            os.path.realpath(racine)
     except ValueError:
-        # Lecteurs différents sous Windows : commonpath lève plutôt que de
-        # rendre un résultat trompeur. C'est donc un refus.
         return False
 
+# Compatibilité : l'ancienne fonction conserve le même comportement avec ROOT.
+def dans_depot(chemin: str) -> bool:
+    """Alias conservé pour compatibilité interne."""
+    return sous_racine(chemin, ROOT)
 
-def charger_fichiers(chemins: list[str]) -> tuple[str, list[str]]:
-    """Assemble le corpus et rend aussi la liste de ce qui a été refusé."""
+
+def charger_fichiers(chemins: list[str], racine: str | None = None) -> tuple[str, list[str]]:
+    """Assemble le corpus et rend aussi la liste de ce qui a été refusé.
+
+    Le paramètre `racine` désigne la racine de travail. S'il n'est pas fourni,
+    il est déterminé par `racine_travail()`. Les chemins relatifs sont résolus
+    depuis cette racine.
+    """
+    if racine is None:
+        racine = racine_travail()
     morceaux, refus = [], []
     for brut in chemins:
-        complet = brut if os.path.isabs(brut) else os.path.join(ROOT, brut)
-        if not dans_depot(complet):
-            refus.append("%s (hors du depot)" % brut)
+        complet = brut if os.path.isabs(brut) else os.path.join(racine, brut)
+        if not sous_racine(complet, racine):
+            refus.append("%s (hors de la racine de travail %s)" % (brut, racine))
             continue
         if est_secret(complet):
             refus.append("%s (susceptible de contenir un secret)" % brut)
@@ -283,7 +308,8 @@ def executer(tache: dict, cle: str) -> dict:
     consigne = tache.get("tache") or ""
     if not consigne:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
-    corpus, refus = charger_fichiers(tache.get("fichiers") or [])
+    racine_tache = tache.get("racine")
+    corpus, refus = charger_fichiers(tache.get("fichiers") or [], racine=racine_tache)
     systeme = tache.get("systeme") or (
         "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
         "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
@@ -422,6 +448,7 @@ def main() -> int:
     parseur.add_argument("--temperature", type=float, default=None,
                          help="Defaut %.1f. Ne monter au-dessus de 0.5 que "
                               "pour une redaction libre." % TEMPERATURE_DEFAUT)
+    parseur.add_argument("--racine", help="Racine de travail explicite (remplace le calcul par défaut).")
     parseur.add_argument("--lot", help="Fichier JSON decrivant plusieurs taches.")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
@@ -446,7 +473,8 @@ def main() -> int:
                    "fichiers": args.fichiers, "systeme": args.systeme,
                    "max_tokens": args.max_tokens,
                    "temperature": (args.temperature if args.temperature is not None
-                                   else TEMPERATURE_DEFAUT)}]
+                                   else TEMPERATURE_DEFAUT),
+                   "racine": args.racine}]
     else:
         parseur.print_help()
         return 1
