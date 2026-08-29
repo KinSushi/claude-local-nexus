@@ -12,6 +12,43 @@
 
 ---
 
+## Reprise immédiate — à lire en premier dans une nouvelle session
+
+Trois commandes suffisent à savoir où l'on en est. Aucune ne suppose quoi
+que ce soit :
+
+```powershell
+python scripts/nexus_conformite.py    # peut-on démarrer ? et sinon, pourquoi
+python scripts/nexus_releve.py        # le local remplace-t-il l'orchestrateur ?
+python scripts/nexus_pull_host.py     # ce qui manque encore, relançable
+```
+
+**La seule action qui vous revient** : approuver le serveur MCP
+`nexus-local` au démarrage de `claude` dans ce dossier. Tant qu'il est en
+`⏸ Pending approval`, l'orchestrateur lit les fichiers lui-même — sur
+l'abonnement — au lieu de les faire lire gratuitement en local. C'est le
+plus gros levier d'économie encore fermé.
+
+**Deux secrets à faire tourner**, passés en clair dans une conversation :
+la clé Ollama Cloud (ollama.com) et un jeton GitHub.
+
+**Travailler gratuitement**, en arbre isolé, sans toucher l'arbre principal :
+
+```powershell
+python scripts/nexus_worktree.py --fichiers <cible.py> `
+    --consigne "..." --modele qwen3-coder-30b-local
+python scripts/nexus_worktree.py --fusionner <nom>   # retenir
+python scripts/nexus_worktree.py --jeter <nom>       # jeter
+```
+
+Ce que valent réellement ces relectures est mesuré dans
+[`EVALUATION-LOCALE.md`](EVALUATION-LOCALE.md) : **5 propositions retenues
+sur 15**, et **3 des 10 rejets auraient introduit une panne**. La règle qui
+en découle : le local détecte, l'orchestrateur arbitre — et l'analyse d'un
+modèle ne garantit pas que son diff porte sur la même chose.
+
+---
+
 ## 0. Objectif directeur
 
 Trois exigences, dans cet ordre :
@@ -30,22 +67,33 @@ rejet automatique selon CPU, GPU, RAM et disque.
 
 ## 1. Migration du moteur hors de Docker
 
-| # | Sujet | Statut | Prochaine action |
+**Migration terminée.** Le moteur sert depuis l'hôte, le volume Docker
+est supprimé, le disque virtuel est compacté.
+
+| # | Sujet | Statut | Preuve |
 |---|---|---|---|
-| 1.1 | Plan de migration chiffré | `FAIT` | `python scripts/nexus_migration_plan.py` |
-| 1.2 | Bascule du moteur, réversible | `PRÊT` | `python scripts/nexus_switch_engine.py --to host` |
-| 1.3 | Téléchargement des 22 modèles retenus (128 Go) sur l'hôte | `OUVERT` | `--write model_list.host.txt` puis `ollama pull` |
-| 1.4 | Vérification post-bascule | `OUVERT` | `Update-NexusModels.ps1 -Restart` + suite de tests |
-| 1.5 | Suppression du service et du volume Docker (541 Go) | `OUVERT` | **Seulement après 1.4 validée** — irréversible |
-| 1.6 | Retéléchargement des 240 Go reportés | `OUVERT` | Après 1.5, avec la place libérée |
+| 1.1 | Plan de migration chiffré | `FAIT` | `model_list.host.txt` |
+| 1.2 | Bascule du moteur | `FAIT` | `x-litellm-model-api-base: http://host.docker.internal:11434` sur une inférence réelle |
+| 1.3 | Téléchargement sur l'hôte | `FAIT` | 19 téléchargés, 0 échec |
+| 1.4 | Vérification post-bascule | `FAIT` | forward 11/0, reverse 15/0, policy 5/0, relève 5/0 |
+| 1.5 | Suppression du volume Docker | `FAIT` — irréversible | 541 Go, après vérification que les 17 modèles restants sont publiés au registre |
+| 1.6 | Compaction du disque virtuel | `FAIT` | 553 Go → 12,9 Go, **540 Go rendus** |
+| 1.7 | Retéléchargement des 6 modèles reportés | `EN COURS` | `python scripts/nexus_pull_host.py` — relançable, il reprend où il s'est arrêté |
 
-**Chiffres établis** — volume Docker 541 Go (`docker_data.vhdx` : 553 Go),
-disque C: 155 Go libres, budget de migration 130 Go après réserve.
-On ne peut donc pas tout sortir d'un coup : l'ordre des étapes est ce qui
-rend la migration possible.
+**Ce qu'il reste à voir arriver seul** : les 4 derniers modèles
+(`deepseek-coder:33b`, `codestral`, `qwen2.5:32b`, `llava:34b`). Tant
+qu'ils manquent, `nexus_conformite.py` marque la configuration **non
+conforme**, ce qui interdit tout redémarrage — comportement voulu, la
+panne étant réelle. Elle se résout d'elle-même à la fin du téléchargement.
 
-**Ordre impératif** : télécharger → basculer → vérifier → *seulement alors*
-supprimer. Tant que 1.5 n'est pas franchie, le retour arrière est immédiat.
+**Deux enseignements de la compaction**, à ne pas réapprendre :
+
+* `Optimize-VHD` seul ne libère **rien** — Windows ignore quels blocs sont
+  libres dans l'ext4. Il faut `fstrim` depuis l'intérieur d'abord. Mesuré :
+  553 Go avant, 553 Go après, sans erreur ;
+* sans élévation, `Optimize-VHD` échoue **silencieusement** en rendant un
+  code de succès. `Compact-NexusDisk.ps1` refuse donc de démarrer plutôt
+  que d'abandonner le disque entre deux états.
 
 ---
 
