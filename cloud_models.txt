@@ -1,24 +1,25 @@
-# Catalogue Ollama Cloud — généré le 2026-08-29 12:09 par scripts/nexus_generate.py
+# Catalogue Ollama Cloud — généré le 2026-08-29 12:39 par scripts/nexus_generate.py
 # Actifs : exécutables avec l'abonnement Ollama Cloud actuel.
 # Commentés : publiés mais non autorisés — ils redeviendront actifs
 # automatiquement dès qu'un palier supérieur sera souscrit.
 
-qwen3.5:397b
-deepseek-v4-pro:0813
-kimi-k3
-glm-5.3
-mistral-large-3:675b
-minimax-m3
 nemotron-3-ultra
-kimi-k2.7-code
-glm-5.2
-deepseek-v4-flash:0731
 gpt-oss:120b
 nemotron-3-super
-glm-5.3-flash
-minimax-m2.7
-kimi-k2.6
-glm-5.1
 gpt-oss:20b
 nemotron-3-nano:30b
 gemma4:31b
+
+# qwen3.5:397b             # 402 palier non souscrit
+# deepseek-v4-pro:0813     # 402 palier non souscrit
+# kimi-k3                  # 402 palier non souscrit
+# glm-5.3                  # 402 palier non souscrit
+# mistral-large-3:675b     # 402 palier non souscrit
+# minimax-m3               # 402 palier non souscrit
+# kimi-k2.7-code           # 402 palier non souscrit
+# glm-5.2                  # 402 palier non souscrit
+# deepseek-v4-flash:0731   # 402 palier non souscrit
+# glm-5.3-flash            # 402 palier non souscrit
+# minimax-m2.7             # 402 palier non souscrit
+# kimi-k2.6                # 402 palier non souscrit
+# glm-5.1                  # 402 palier non souscrit

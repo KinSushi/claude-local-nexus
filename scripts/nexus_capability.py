@@ -22,9 +22,24 @@ Le même profil sert de garde-fou au téléchargement : rien ne sert de tirer
 40 Go de poids sur un disque qui n'a pas la place, ni de les tirer pour un
 moteur qui ne pourra pas les charger.
 
+Unités
+------
+Tout ce module compte en **gigaoctets décimaux** (Go = 10^9 octets), parce
+que c'est l'unité dans laquelle `ollama list` publie le poids des modèles.
+Les octets rendus par Windows ou par le système de fichiers sont donc
+divisés par 1e9, jamais par 1024**3.
+
+Le mélange des deux n'était pas une coquette imprécision : un poids
+décimal était comparé à un budget binaire, ce qui rétrécissait le budget
+de 7 % — 61,6 au lieu de 66,2 Go ici. L'erreur allait dans le sens
+prudent, mais un chiffre faux dans le bon sens reste faux, et en mode
+« docker+host » la même expression soustrayait un Gio d'un Go décimal,
+où la prudence n'était plus garantie du tout.
+
 Usage :
     python scripts/nexus_capability.py            # rapport lisible
     python scripts/nexus_capability.py --json     # profil exploitable
+    python scripts/nexus_capability.py --can-download qwen3-coder:30b
 """
 from __future__ import annotations
 
@@ -78,9 +93,12 @@ def parse_size(text: str) -> float:
     if not match:
         return 0.0
     value = float(match.group(1).replace(",", "."))
+    # 1 KiB vaut 1024 octets, donc 1.024e-6 Go. La valeur 1.049e-6 qui
+    # figurait ici était le carré du facteur — juste pour le Mio, faux
+    # pour le Kio.
     scale = {
         "b": 1e-9, "kb": 1e-6, "mb": 1e-3, "gb": 1.0, "tb": 1e3,
-        "kib": 1.049e-6, "mib": 1.049e-3, "gib": 1.074, "tib": 1099.5,
+        "kib": 1.024e-6, "mib": 1.049e-3, "gib": 1.074, "tib": 1099.5,
     }
     return value * scale.get(match.group(2).lower(), 0.0)
 
@@ -89,17 +107,20 @@ def parse_size(text: str) -> float:
 # Mesures
 # ----------------------------------------------------------------------
 def host_memory_gb() -> float:
+    """Mémoire physique de la machine, en gigaoctets décimaux."""
     out = _run(["powershell", "-NoProfile", "-Command",
                 "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory"])
     try:
-        return float(out.strip()) / (1024 ** 3)
+        return float(out.strip()) / 1e9
     except Exception:
         pass
-    try:  # Linux / WSL
+    # Sous Linux / WSL, `MemTotal` s'affiche en « kB » mais compte des
+    # kibioctets : d'où le passage par 1024 avant la conversion décimale.
+    try:
         with open("/proc/meminfo") as fh:
             for line in fh:
                 if line.startswith("MemTotal:"):
-                    return float(line.split()[1]) / (1024 ** 2)
+                    return float(line.split()[1]) * 1024 / 1e9
     except Exception:
         pass
     return 0.0
@@ -132,8 +153,13 @@ def gpu_info() -> dict:
         if "," in first:
             name, mib = first.split(",", 1)
             try:
+                # `nvidia-smi` compte en mébioctets ; la VRAM est ensuite
+                # comparée à des poids de modèles en Go décimaux, donc elle
+                # se convertit dans la même unité qu'eux. Une carte annoncée
+                # « 16 Go » en affichera 17,2 : c'est sa taille réelle, et
+                # c'est celle à laquelle un modèle de 17 Go doit se mesurer.
                 return {"name": name.strip(),
-                        "vram_gb": round(float(mib.strip()) / 1024, 1),
+                        "vram_gb": round(float(mib.strip()) * 1.049e-3, 1),
                         "integrated": False, "vendor": "nvidia"}
             except Exception:
                 pass
@@ -147,7 +173,7 @@ def gpu_info() -> dict:
     if "|" in out:
         name, raw = out.strip().split("|", 1)
         try:
-            vram = float(raw) / (1024 ** 3)
+            vram = float(raw) / 1e9
         except Exception:
             vram = 0.0
 
@@ -173,14 +199,8 @@ def ollama_location() -> dict:
       - dans Docker : plafonné par la mémoire allouée à la VM WSL2 ;
       - sur l'hôte  : toute la mémoire de la machine.
     """
-    # Conteneur ?
-    stats = _run(["docker", "stats", "--no-stream", "--format",
-                  "{{.MemUsage}}", "ollama-server"])
-    container_limit = 0.0
-    if "/" in stats:
-        container_limit = parse_size(stats.split("/")[1])
-
-    # Hôte ?
+    # L'hôte d'abord : c'est l'implantation courante depuis la sortie du
+    # moteur hors de Docker, et la sonde HTTP coûte 40 ms.
     native = False
     version = _run(["ollama", "--version"], timeout=20)
     if version.strip():
@@ -191,6 +211,16 @@ def ollama_location() -> dict:
             native = True
         except Exception:
             native = False
+
+    # Le conteneur reste sondé, à dessein : `docker-compose.yml` déclare
+    # toujours le service sous le profil « embedded », qui est le chemin de
+    # retour documenté. La sonde ne coûte que 0,13 s quand le conteneur
+    # n'existe plus, et son absence est une information — pas une panne.
+    stats = _run(["docker", "stats", "--no-stream", "--format",
+                  "{{.MemUsage}}", "ollama-server"])
+    container_limit = 0.0
+    if "/" in stats:
+        container_limit = parse_size(stats.split("/")[1])
 
     if container_limit and not native:
         mode = "docker"
@@ -223,14 +253,14 @@ def model_store_free_gb(location: dict) -> tuple[str, float]:
             break
         probe = parent
     try:
-        return store, shutil.disk_usage(probe).free / (1024 ** 3)
+        return store, shutil.disk_usage(probe).free / 1e9
     except Exception:
         return store, 0.0
 
 
-def installed_models() -> dict[str, float] | None:
+def installed_models(location: dict | None = None) -> dict[str, float] | None:
     """
-    Modèles présents et leur poids, quelle que soit l'implantation.
+    Modèles présents et leur poids, sur le moteur qui sert réellement.
 
     Renvoie **None** si aucun inventaire n'a pu être lu — et cette
     distinction est le coeur du garde-fou.
@@ -245,20 +275,32 @@ def installed_models() -> dict[str, float] | None:
 
     Un inventaire illisible n'est pas un inventaire vide : l'appelant doit
     s'arrêter, pas supposer.
+
+    Un seul moteur est interrogé, celui que `ollama_location()` désigne
+    comme servant. Les deux inventaires étaient auparavant fusionnés, et
+    `setdefault` donnait la priorité au conteneur : un modèle présent dans
+    le seul volume Docker était attribué au moteur de l'hôte, qui ne
+    l'avait pas — donc un verdict rendu sur un poids que ce moteur-là
+    n'aurait jamais pu charger. Le budget de `build_profile()` vient
+    désormais du même moteur que cet inventaire : les deux ne peuvent plus
+    décrire des machines différentes.
     """
+    if location is None:
+        location = ollama_location()
+    source = (["ollama", "list"] if location["host_native"]
+              else ["docker", "exec", "ollama-server", "ollama", "list"])
+    out = _run(source)
+    if not out.strip():
+        return None
     sizes: dict[str, float] = {}
-    lu = False
-    for args in (["docker", "exec", "ollama-server", "ollama", "list"],
-                 ["ollama", "list"]):
-        out = _run(args)
-        if not out.strip():
-            continue
-        lu = True
-        for line in out.splitlines()[1:]:
-            parts = line.split()
-            if len(parts) >= 4 and parts[2] != "-":
-                sizes.setdefault(parts[0], parse_size(parts[2] + parts[3]))
-    return sizes if lu else None
+    for line in out.splitlines()[1:]:
+        parts = line.split()
+        # Les modèles Ollama Cloud apparaissent sans poids (« - ») : ils ne
+        # pèsent rien ici, et leur donner un poids nul les ferait entrer
+        # dans l'inventaire local comme s'ils y étaient chargeables.
+        if len(parts) >= 4 and parts[2] != "-":
+            sizes.setdefault(parts[0], parse_size(parts[2] + parts[3]))
+    return sizes
 
 
 # ----------------------------------------------------------------------
@@ -271,26 +313,20 @@ def build_profile() -> dict:
     gpu = gpu_info()
     store, free_disk = model_store_free_gb(location)
 
-    # Mémoire réellement offerte au moteur d'inférence.
+    # Mémoire offerte au moteur qui SERT, jamais au mieux doté des deux.
     #
-    # Cas des deux moteurs simultanés : ils ne s'additionnent PAS. La VM
-    # WSL2 prélève sa mémoire sur celle de la machine — faire tourner deux
-    # Ollama partitionne les 62 Go, il n'en crée pas 94. Le plus grand
-    # modèle exécutable reste donc borné par le plus grand des deux
-    # budgets, jamais par leur somme.
+    # Les deux implantations ne s'additionnent pas : la VM WSL2 prélève sa
+    # mémoire sur celle de la machine, faire tourner deux Ollama partitionne
+    # les 62 Go, il n'en crée pas 94.
     #
-    # Ce qu'on y gagne réellement est ailleurs : la résidence simultanée
-    # de deux modèles sans éviction, et la continuité de service pendant
-    # une migration.
-    if location["mode"] == "host":
-        usable = host_ram
-    elif location["mode"] == "docker+host":
-        usable = max(host_ram - location["container_limit_gb"],
-                     location["container_limit_gb"])
-    elif location["container_limit_gb"]:
-        usable = location["container_limit_gb"]
-    else:
-        usable = host_ram
+    # Surtout, l'ancienne expression prenait le maximum des deux budgets.
+    # Le verdict dépendait donc de l'état du démon Docker à l'instant de la
+    # génération : quatre modèles passaient de DEGRADED à ACCEPT selon que
+    # le conteneur tournait, pour être ensuite servis par un moteur de
+    # 32 Go. Un verdict qui change parce qu'un démon a démarré n'est pas un
+    # verdict. Le budget suit maintenant le moteur d'où vient l'inventaire.
+    usable = (host_ram if location["host_native"]
+              else location["container_limit_gb"] or host_ram)
 
     # Un GPU discret change la nature du budget, pas seulement sa taille.
     #
@@ -316,6 +352,10 @@ def build_profile() -> dict:
 
     return {
         "host_ram_gb": round(host_ram, 1),
+        # Conservée séparément, et non recalculée depuis la valeur arrondie :
+        # 66,2 Go réarrondis donnent 61,7 Gio là où Windows en affiche 61,6,
+        # et un dixième d'écart suffit à faire douter de la mesure entière.
+        "host_ram_gib": round(host_ram * 1e9 / 1024 ** 3, 1),
         "cpu_cores": physical,
         "cpu_threads": logical,
         "gpu": gpu,
@@ -330,6 +370,28 @@ def build_profile() -> dict:
 
 
 UNKNOWN = "INCONNU"
+
+
+def profile_signature(profile: dict) -> str:
+    """
+    Empreinte des seules valeurs dont dépend un verdict.
+
+    Un verdict est calculé à l'instant de la génération, puis figé dans la
+    configuration : rien n'y signale ensuite que la machine a changé. Une
+    barrette retirée, un GPU ajouté, un moteur redéployé ailleurs, et les
+    pools continuent de reposer sur un budget qui n'existe plus.
+
+    L'empreinte est volontairement lisible plutôt que hachée : elle tient
+    dans un commentaire YAML, et une divergence dit *laquelle* des valeurs
+    a bougé au lieu d'annoncer seulement qu'il y en a une.
+    """
+    return "%s/%.1f/%.1f/%.1f/%s" % (
+        profile["ollama"]["mode"],
+        profile["inference_memory_gb"],
+        profile["pool_budget_gb"],
+        profile["runnable_budget_gb"],
+        "gpu" if profile["gpu_usable_for_offload"] else "cpu",
+    )
 
 
 def verdict(size_gb: float, profile: dict) -> tuple[str, str]:
@@ -368,17 +430,42 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true",
                         help="sortie exploitable par un autre script")
+    parser.add_argument("--can-download", metavar="MODELE|TAILLE_GO",
+                        help="arbitre un telechargement avant de le lancer : "
+                             "code 0 autorise, 1 refuse, 2 poids inconnu")
     args = parser.parse_args()
 
     profile = build_profile()
-    models = installed_models()
+    location = profile["ollama"]
+    models = installed_models(location)
     if models is None:
         print("Inventaire illisible : Docker et Ollama sont-ils joignables ?")
         print("Aucun verdict n'est rendu — supposer serait pire que se taire.")
         return 1
 
+    # Le garde-fou n'existait que sous forme de fonction, appelée par le
+    # seul banc de tests : aucun `ollama pull` de la plateforme ne passait
+    # par lui, alors que `model_list.txt` contient des modèles déjà classés
+    # REJECT. Cette entrée le rend appelable depuis PowerShell, où se
+    # trouvent les téléchargements.
+    if args.can_download:
+        cible = args.can_download
+        try:
+            taille = float(cible.replace(",", "."))
+        except ValueError:
+            taille = models.get(cible, 0.0)
+        if taille <= 0:
+            print("Poids inconnu pour '%s' : ni le disque ni la memoire ne"
+                  " peuvent etre arbitres." % cible)
+            print("Le module se tait plutot que de trancher a l'aveugle.")
+            return 2
+        ok, motif = can_download(taille, profile)
+        print(("AUTORISE : " if ok else "REFUSE : ") + motif)
+        return 0 if ok else 1
+
     if args.json:
         payload = dict(profile)
+        payload["signature"] = profile_signature(profile)
         payload["models"] = {
             name: {"size_gb": round(size, 1), "verdict": verdict(size, profile)[0],
                    "reason": verdict(size, profile)[1]}
@@ -398,17 +485,22 @@ def main() -> int:
     print("  Offload GPU      : %s"
           % ("possible" if profile["gpu_usable_for_offload"]
              else "non — inference en RAM systeme"))
-    print("  RAM machine      : %.1f Go" % profile["host_ram_gb"])
+    # Le rappel en gibioctets n'est pas decoratif : Windows affiche 61,6
+    # la ou ce module compte 66,2, et sans cette equivalence le lecteur
+    # conclut a une erreur de mesure au lieu d'un changement d'unite.
+    print("  RAM machine      : %.1f Go (%.1f Gio affiches par Windows)"
+          % (profile["host_ram_gb"], profile["host_ram_gib"]))
     print("  Moteur Ollama    : %s" % profile["ollama"]["mode"])
     print("  Memoire moteur   : %.1f Go" % profile["inference_memory_gb"])
     mode = profile["ollama"]["mode"]
     if mode == "docker+host":
         print("                     deux moteurs actifs : %.1f Go plafonnes cote"
-              " Docker," % profile["ollama"]["container_limit_gb"])
-        print("                     le reste cote hote. Les budgets ne"
-              " s'additionnent pas :")
-        print("                     la VM preleve sa memoire sur celle de la"
-              " machine.")
+              " Docker." % profile["ollama"]["container_limit_gb"])
+        print("                     Le budget affiche est celui de l'hote, d'ou"
+              " vient l'inventaire ;")
+        print("                     les deux ne s'additionnent pas : la VM"
+              " preleve sa memoire")
+        print("                     sur celle de la machine.")
     elif mode.startswith("docker"):
         perdu = profile["host_ram_gb"] - profile["inference_memory_gb"]
         if perdu > 1:
@@ -417,7 +509,8 @@ def main() -> int:
     print("  Budget pool      : %.1f Go" % profile["pool_budget_gb"])
     print("  Budget maximal   : %.1f Go" % profile["runnable_budget_gb"])
     print("  Stockage modeles : %s" % profile["model_store"])
-    print("  Disque libre     : %.1f Go" % profile["free_disk_gb"])
+    print("  Disque libre     : %.1f Go (%.1f Gio)"
+          % (profile["free_disk_gb"], profile["free_disk_gb"] * 1e9 / 1024 ** 3))
 
     if not models:
         print("\n  Aucun modele detecte.")

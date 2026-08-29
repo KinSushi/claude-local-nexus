@@ -35,6 +35,7 @@ const path = require("node:path");
 const http = require("node:http");
 const https = require("node:https");
 const readline = require("node:readline");
+const { AsyncLocalStorage } = require("node:async_hooks");
 
 const PROTOCOL_VERSION = "2025-06-18";
 const SERVER_INFO = { name: "nexus-local", version: "1.0.0" };
@@ -71,6 +72,36 @@ function log(...args) {
 }
 
 // ---------------------------------------------------------------------------
+// Annulation
+// ---------------------------------------------------------------------------
+
+/**
+ * Signal d'annulation de l'appel MCP en cours.
+ *
+ * `notifications/cancelled` etait accepte puis jete : l'inference continuait
+ * jusqu'a son terme. Combine a l'attente sans borne des appels en vol quand
+ * stdin se ferme, un serveur devenu orphelin pouvait occuper la passerelle
+ * -- partagee avec le reste de la plateforme -- pendant des dizaines de
+ * minutes, pour produire une reponse que plus personne n'attend.
+ *
+ * Le signal voyage par AsyncLocalStorage plutot que par un parametre ajoute
+ * aux dizaines de sites d'appel intermediaires : le contexte survit a await,
+ * a setTimeout et aux handlers d'evenement de socket, ce qui couvre tout le
+ * trajet d'une requete HTTP. Verifie sur cette version de Node, pas suppose.
+ */
+const contexteAppel = new AsyncLocalStorage();
+
+function signalCourant() {
+  const store = contexteAppel.getStore();
+  return store ? store.signal : undefined;
+}
+
+// Appels en cours, indexes par identifiant JSON-RPC converti en chaine : un
+// client qui renvoie `requestId: "3"` la ou il avait emis `id: 3` ne doit pas
+// voir son annulation silencieusement perdue.
+const appelsEnCours = new Map();
+
+// ---------------------------------------------------------------------------
 // Accès à LiteLLM
 // ---------------------------------------------------------------------------
 
@@ -86,7 +117,22 @@ function masterKey() {
     for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
       const m = /^\s*LITELLM_MASTER_KEY\s*=\s*(.*)$/.exec(line);
       if (m && m[1].trim()) {
-        cachedKey = m[1].trim();
+        let valeur = m[1].trim();
+        // Guillemets et commentaire de fin de ligne retires, comme le fait
+        // deja nexus_test.py. Sans cela, `KEY="sk-..."` partait guillemets
+        // compris dans l'en-tete Authorization et produisait un 401 que
+        // rien n'explique -- exactement l'echec opaque que le garde-fou
+        // plus bas pretend eviter. Le commentaire n'est retire que sur une
+        // valeur NON citee : entre guillemets, un `#` appartient a la cle.
+        const quote = valeur.slice(0, 1);
+        if ((quote === '"' || quote === "'") && valeur.slice(-1) === quote &&
+            valeur.length >= 2) {
+          valeur = valeur.slice(1, -1);
+        } else {
+          valeur = valeur.split("#")[0].trim();
+        }
+        if (!valeur) continue;
+        cachedKey = valeur;
         return cachedKey;
       }
     }
@@ -126,6 +172,9 @@ function requestJson(pathname, payload, timeoutMs = DEFAULT_TIMEOUT_MS) {
           "Content-Length": body.length,
           Authorization: "Bearer " + masterKey(),
         },
+        // Une annulation doit couper la connexion, pas seulement cesser
+        // d'attendre : sans cela l'inference reste engagee cote passerelle.
+        signal: signalCourant(),
       },
       (res) => {
         const chunks = [];
@@ -185,6 +234,7 @@ function getJson(pathname, timeoutMs = 30000) {
         path: url.pathname,
         method: "GET",
         headers: { Authorization: "Bearer " + masterKey() },
+        signal: signalCourant(),
       },
       (res) => {
         const chunks = [];
@@ -235,6 +285,18 @@ function estRejouable(err) {
   return REJOUABLE.test(err.message);
 }
 
+// Une requete annulee ne doit JAMAIS etre rejouee. L'abort ferme le socket,
+// et une socket fermee ressemble a s'y meprendre a un incident passager : la
+// reprise relancerait trois inferences apres que le client a demande
+// l'arret, ce qui transforme l'annulation en aggravation. Node signale
+// l'abort par name=AbortError / code=ABORT_ERR sur la requete ; on interroge
+// aussi le signal lui-meme, au cas ou l'erreur remonterait deja reemballee.
+function estAnnule(err) {
+  if (err && (err.name === "AbortError" || err.code === "ABORT_ERR")) return true;
+  const signal = signalCourant();
+  return Boolean(signal && signal.aborted);
+}
+
 async function withRetry(operation, attempts = 3) {
   let last;
   for (let i = 0; i < attempts; i++) {
@@ -242,7 +304,7 @@ async function withRetry(operation, attempts = 3) {
       return await operation();
     } catch (err) {
       last = err;
-      if (!estRejouable(err) || i === attempts - 1) throw err;
+      if (estAnnule(err) || !estRejouable(err) || i === attempts - 1) throw err;
       // Attente croissante : une passerelle qui redemarre met quelques
       // secondes, pas quelques millisecondes.
       const pause = 2000 * Math.pow(2, i);
@@ -545,11 +607,40 @@ async function buildIndex(root, embedModel) {
   return index;
 }
 
+// Index garde en memoire entre deux recherches. Il etait relu et reparse a
+// chaque appel : mesure a 54 994 octets par extrait, un index complet du
+// depot represente pres de 100 Mo de JSON reanalyses pour repondre a une
+// question -- plus long que l'embedding de la requete lui-meme.
+//
+// L'invalidation se fait sur (mtime, taille) du fichier, jamais sur une
+// duree : une reconstruction par nexus_index_build doit etre visible a la
+// recherche suivante, et une expiration au temps rendrait le moment ou
+// l'ancien index cesse de repondre imprevisible. La taille complete le
+// mtime parce que la resolution de l'horodatage ne separe pas toujours deux
+// ecritures rapprochees.
+let indexCache = null;
+
 function loadIndex() {
-  if (!fs.existsSync(INDEX_PATH)) return null;
+  let stat;
   try {
-    return JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
+    stat = fs.statSync(INDEX_PATH);
   } catch {
+    indexCache = null;
+    return null;
+  }
+  if (indexCache &&
+      indexCache.mtimeMs === stat.mtimeMs &&
+      indexCache.size === stat.size) {
+    return indexCache.index;
+  }
+  try {
+    const index = JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
+    indexCache = { mtimeMs: stat.mtimeMs, size: stat.size, index };
+    return index;
+  } catch {
+    // Un index illisible ne doit pas laisser en place le precedent : la
+    // recherche repondrait sur un etat que le disque ne contient plus.
+    indexCache = null;
     return null;
   }
 }
@@ -778,8 +869,32 @@ function splitIntoWindows(text, budget) {
   return windows;
 }
 
+// Pour que la fusion converge, il faut qu'au moins trois analyses tiennent
+// ensemble dans une fenetre. Si chaque analyse pesait autant qu'une fenetre,
+// chaque palier recopierait ses entrees sans jamais reduire : la boucle
+// s'arretait alors sur `next.length >= level.length` et rendait une simple
+// concatenation -- plus volumineuse que le corpus d'origine -- en la
+// presentant comme une synthese. Le plafond de sortie derive donc du budget
+// reel au lieu d'etre la constante 1536.
+const REDUCTION_FACTOR = 3;
+
+function mapReduceBudgets(contextTokens) {
+  const window = windowChars(contextTokens, 2048);
+  const mapTokens = Math.floor(window / CHARS_PER_TOKEN / REDUCTION_FACTOR);
+  return { window, mapTokens };
+}
+
 async function mapReduce(text, instruction, model, contextTokens, onProgress) {
-  const budget = windowChars(contextTokens, 2048);
+  const { window: budget, mapTokens } = mapReduceBudgets(contextTokens);
+  if (mapTokens < 256) {
+    // En dessous, une analyse ne tient plus en quelques phrases utiles :
+    // mieux vaut le dire que rendre un resultat degrade sans le signaler.
+    throw new Error(
+      `fenetre de ${contextTokens} tokens trop etroite pour une fusion par paliers ` +
+      `(il en faut ~5700). Choisissez un modele a plus grand contexte, ou passez ` +
+      `par nexus_search pour ne remonter que les passages utiles.`
+    );
+  }
   const windows = splitIntoWindows(text, budget);
   let tokens = 0;
 
@@ -803,7 +918,7 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
             `--- fragment ${i + 1}/${windows.length} ---\n${windows[i]}`,
         },
       ],
-      1536
+      mapTokens
     );
     tokens += result.tokens;
     const body = (result.text || "").trim();
@@ -813,7 +928,7 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
 
   if (!mapped.length) {
     return { text: "Aucun fragment pertinent.", windows: windows.length,
-             passes: 1, tokens, model };
+             passes: 1, tokens, model, converge: true };
   }
 
   // --- REDUCE --------------------------------------------------------
@@ -824,6 +939,7 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
 
   let level = mapped;
   let passes = 1;
+  let converge = true;
   while (level.length > 1) {
     const next = [];
     let group = [];
@@ -844,7 +960,7 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
                 group.map((t, i) => `--- analyse ${i + 1} ---\n${t}`).join("\n\n"),
             },
           ],
-          2048
+          mapTokens
         );
         tokens += result.tokens;
         next.push((result.text || "").trim());
@@ -861,14 +977,18 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
     passes++;
     if (onProgress) onProgress("reduce", next.length, level.length);
     if (next.length >= level.length) {
-      // Aucune réduction possible : on s'arrête plutôt que de boucler.
+      // Aucune réduction possible : on s'arrête plutôt que de boucler. Ce
+      // qu'on rend n'est alors PAS une synthèse mais une concaténation, et
+      // l'appelant doit le savoir — sans quoi il accorderait à un collage
+      // le crédit d'un texte fusionné et vérifié.
       level = [next.join("\n\n")];
+      converge = false;
       break;
     }
     level = next;
   }
 
-  return { text: level[0], windows: windows.length, passes, tokens, model };
+  return { text: level[0], windows: windows.length, passes, tokens, model, converge };
 }
 
 const TOOLS = [
@@ -1000,8 +1120,10 @@ const TOOLS = [
     description:
       "Lit des fichiers du depot et en produit une synthese via un modele local. " +
       "Sert a reduire le contexte AVANT de raisonner : le volume est absorbe gratuitement " +
-      "en local, seul le resultat distille remonte. Chaque fichier est traite separement " +
-      "puis les syntheses sont fusionnees.",
+      "en local, seul le resultat distille remonte. Chaque fichier est traite separement, " +
+      "un fichier plus large que la fenetre passe par une fusion par paliers plutot que " +
+      "d'etre tronque, puis une synthese fusionnee est produite au-dessus du detail " +
+      "par fichier des qu'il y a plus d'un fichier.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1015,6 +1137,18 @@ const TOOLS = [
           description: "Ce qu'il faut extraire ou resumer. Defaut : synthese technique.",
         },
         model: { type: "string", description: "Alias LiteLLM. Defaut " + DEFAULT_CHAT_MODEL + "." },
+        context_tokens: {
+          type: "number",
+          description:
+            "Fenetre reelle du modele choisi, en tokens. Defaut 32768. Determine a " +
+            "partir de quelle taille un fichier est decoupe.",
+        },
+        fusionner: {
+          type: "boolean",
+          description:
+            "Produire la synthese fusionnee en tete (defaut true). false economise " +
+            "un appel quand seul le detail par fichier est utile.",
+        },
       },
       required: ["paths"],
     },
@@ -1188,6 +1322,25 @@ function requireInsideRepo(target, quoi) {
 }
 
 /**
+ * Faute de PROTOCOLE, par opposition a un echec d'execution.
+ *
+ * MCP separe les deux, et cette separation porte une information que
+ * l'appelant ne peut reconstituer autrement. Un outil qui echoue rend un
+ * resultat marque `isError` que le modele peut lire et corriger ; un nom
+ * d'outil inexistant ou un argument manquant sont des fautes de l'appelant,
+ * que JSON-RPC signale par -32602. Les confondre -- ce que faisait ce
+ * serveur -- rendait « le modele a mal appele » indiscernable de « le
+ * modele a mal repondu ».
+ */
+class ErreurProtocole extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ErreurProtocole";
+    this.code = -32602;
+  }
+}
+
+/**
  * Verifications de type des arguments.
  *
  * Les schemas declarent `array`, mais rien ne le verifiait : `{"paths":"a.md"}`
@@ -1197,7 +1350,7 @@ function requireInsideRepo(target, quoi) {
  */
 function exigerTableau(valeur, nom) {
   if (!Array.isArray(valeur)) {
-    throw new Error(
+    throw new ErreurProtocole(
       "parametre '" + nom + "' : un tableau est attendu, recu " +
       (valeur === undefined ? "rien" : typeof valeur)
     );
@@ -1207,12 +1360,119 @@ function exigerTableau(valeur, nom) {
 
 function exigerTexte(valeur, nom) {
   if (typeof valeur !== "string" || !valeur.trim()) {
-    throw new Error(
+    throw new ErreurProtocole(
       "parametre '" + nom + "' : une chaine non vide est attendue, recu " +
       (valeur === undefined ? "rien" : typeof valeur)
     );
   }
   return valeur;
+}
+
+// ---------------------------------------------------------------------------
+// Scripts Python du dépôt
+// ---------------------------------------------------------------------------
+
+// Interpreteur retenu au premier succes. Reessayer les deux candidats a
+// chaque appel doublait l'attente sur une machine ou seul `python` existe,
+// et le second essai n'apprenait rien que le premier n'ait deja etabli.
+let pythonRetenu = null;
+
+/**
+ * Execute un script Python du depot sans geler la boucle d'evenements.
+ *
+ * `spawnSync` la gelait : un `ping` emis a t+0,7 s n'etait honore qu'a
+ * t+10,8 s, et deux interpreteurs a 300 s chacun pouvaient rendre stdin
+ * illisible pendant dix minutes -- bien au-dela du delai apres lequel un
+ * client MCP conclut que le serveur est mort.
+ *
+ * ENOENT est le SEUL motif de passer au candidat suivant : un script qui
+ * sort en erreur prouve que l'interpreteur existe. L'ancienne version
+ * confondait les deux et annoncait « Python introuvable » alors que Python
+ * fonctionnait ; la cause reelle etait dans stderr, que le code jetait.
+ */
+function runPython(args, timeoutMs = 300000) {
+  const { spawn } = require("node:child_process");
+  const candidats = pythonRetenu ? [pythonRetenu] : ["python", "python3"];
+
+  return new Promise((resolve, reject) => {
+    // Un spawn qui echoue emet `error` PUIS `close` (code -4058 sur Windows).
+    // Sans ces deux gardes, le `close` du candidat introuvable rejetait la
+    // promesse pendant que le candidat suivant demarrait, et memorisait au
+    // passage un interpreteur qui n'existe pas -- verifie, pas suppose.
+    let regle = false;
+    const rendre = (fn, valeur) => { if (!regle) { regle = true; fn(valeur); } };
+
+    const essayer = (rang) => {
+      const commande = candidats[rang];
+      let abandonne = false;
+      const enfant = spawn(commande, args, {
+        // Sans PYTHONIOENCODING, Python ecrit dans la page de codes de la
+        // console Windows : les accents des rapports revenaient en mojibake
+        // et les filets des tableaux en points d'interrogation.
+        env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+        // Une annulation ou une fermeture de stdin doit aussi arreter le
+        // script : sinon il continue de lire la passerelle pour personne.
+        signal: signalCourant(),
+      });
+
+      const sortie = [];
+      const erreurs = [];
+      let expire = false;
+      enfant.stdout.on("data", (c) => sortie.push(c));
+      enfant.stderr.on("data", (c) => erreurs.push(c));
+
+      const borne = setTimeout(() => {
+        expire = true;
+        enfant.kill();
+      }, timeoutMs);
+
+      enfant.on("error", (err) => {
+        clearTimeout(borne);
+        if (err.code === "ENOENT" && rang + 1 < candidats.length) {
+          abandonne = true;
+          essayer(rang + 1);
+          return;
+        }
+        if (err.code === "ENOENT") {
+          rendre(reject, new Error(
+            "Python introuvable : aucun de " + candidats.join(", ") +
+            " n'existe dans le PATH de ce processus"));
+          return;
+        }
+        rendre(reject, err);
+      });
+
+      enfant.on("close", (code) => {
+        if (abandonne) return;
+        clearTimeout(borne);
+        const texte = Buffer.concat(sortie).toString("utf8");
+        const detail = Buffer.concat(erreurs).toString("utf8").trim();
+        if (expire) {
+          rendre(reject, new Error(
+            path.basename(args[0]) + " interrompu apres " +
+            Math.round(timeoutMs / 1000) + "s"));
+          return;
+        }
+        // L'interpreteur a demarre : inutile de retenter l'autre au prochain
+        // appel, meme si le script lui-meme a echoue.
+        pythonRetenu = commande;
+        if (code === 0 && texte) {
+          rendre(resolve, texte);
+          return;
+        }
+        // stderr est remonte : c'est la seule chose qui distingue « le
+        // script a plante » de « Python n'est pas installe », et le
+        // diagnostic tenait entierement dans ces lignes-la.
+        rendre(reject, new Error(
+          path.basename(args[0]) +
+          (code === 0
+            ? " s'est termine sans rien ecrire sur stdout"
+            : " a echoue (code " + code + ")") +
+          (detail ? " : " + detail.slice(0, 500) : "")));
+      });
+    };
+    essayer(0);
+  });
 }
 
 async function callTool(name, args) {
@@ -1224,7 +1484,7 @@ async function callTool(name, args) {
   await chargerPlans();
 
   if (name === "nexus_ask") {
-    if (!args.prompt) throw new Error("parametre 'prompt' requis");
+    if (!args.prompt) throw new ErreurProtocole("parametre 'prompt' requis");
 
     // Un modele explicite l'emporte sur un profil : demander un modele
     // precis est une decision, la laisser deduire n'en est pas une.
@@ -1310,6 +1570,14 @@ async function callTool(name, args) {
       `~${approxTokens} tokens traites en ${contextTokens} de fenetre · ` +
       `${result.tokens} tokens factures 0]\n` +
       (sources.length ? `Sources : ${sources.join(", ")}\n` : "") +
+      // Le drapeau n'est pas décoratif : sans lui, une concaténation de
+      // fragments serait lue comme une synthèse fusionnée, donc traitée
+      // comme fiable et complète alors qu'elle est ni l'un ni l'autre.
+      (result.converge === false
+        ? "\n[!] Fusion non convergente : ce qui suit est la juxtaposition " +
+          "des analyses de fragments, pas une synthese unifiee. Les redites " +
+          "et contradictions entre fragments n'ont pas ete arbitrees.\n"
+        : "") +
       `\n${result.text}`
     );
   }
@@ -1334,31 +1602,36 @@ async function callTool(name, args) {
     }
     const encoded = fs.readFileSync(full).toString("base64");
     const model = args.model || DEFAULT_VISION_MODEL;
-    const { body, headers } = await requestJson("/v1/chat/completions", {
-      model,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: args.prompt || "Decris cette image precisement." },
-          { type: "image_url", image_url: { url: `data:image/${mime};base64,${encoded}` } },
-        ],
-      }],
-      max_tokens: 1024,
-    });
-    const choice = body.choices && body.choices[0];
-    if (!choice) throw new Error("aucune reponse du modele");
-    const served = headers["x-litellm-model-group"] || model;
-    const kb = Math.round(fs.statSync(full).size / 1024);
-    return `[${served} · ${planOf(served)} · image ${kb} Ko]\n\n${choice.message.content}`;
+    // Seul outil qui appelait requestJson en direct : une coupure de socket
+    // perdait donc l'encodage base64 d'une image de plusieurs mega-octets et
+    // l'inference deja engagee, la ou tous les autres outils rejouent. Passer
+    // par chat() aligne aussi la resolution du modele : derriere un routeur
+    // adaptatif, x-litellm-model-group ne rend que le nom du routeur, et
+    // annoncer un plan faux est le pire defaut de cette plateforme.
+    const messages = [{
+      role: "user",
+      content: [
+        { type: "text", text: args.prompt || "Decris cette image precisement." },
+        { type: "image_url", image_url: { url: `data:image/${mime};base64,${encoded}` } },
+      ],
+    }];
+    const result = await chat(model, messages, 1024);
+    const kb = Math.round(taille / 1024);
+    const coupe = result.tronquee ? " · REPONSE TRONQUEE a max_tokens" : "";
+    return `[${result.model} · ${planOf(result.model)} · image ${kb} Ko${coupe}]\n\n${result.text}`;
   }
 
   if (name === "nexus_summarize") {
     const paths = exigerTableau(args.paths, "paths");
-    if (!paths.length) throw new Error("parametre 'paths' : tableau vide");
+    if (!paths.length) throw new ErreurProtocole("parametre 'paths' : tableau vide");
     const instruction =
       args.instruction || "Fais une synthese technique fidele, structuree et concise.";
     const model = args.model || DEFAULT_CHAT_MODEL;
+    const contextTokens = args.context_tokens || 32768;
+    const fenetreChars = mapReduceBudgets(contextTokens).window;
+    const fusionner = args.fusionner !== false;
     const parts = [];
+    const resumes = [];
     let totalTokens = 0;
 
     for (const raw of paths) {
@@ -1385,31 +1658,75 @@ async function callTool(name, args) {
         parts.push(`### ${raw}\n(illisible : ${err.message})`);
         continue;
       }
-      // Le contexte local est etroit : on tronque explicitement plutot
-      // que de laisser le modele deborder silencieusement.
-      const budget = 24000;
-      const truncated = content.length > budget;
-      const body = truncated ? content.slice(0, budget) : content;
-      const result = await chat(
+      // Un fichier plus large que la fenêtre passe par la fusion par
+      // paliers au lieu d'être tronqué. La troncature à 24 000 caractères
+      // rendait un résumé d'apparence normale à partir des seules
+      // premières pages : sur un fichier de 3 000 lignes, elle décrivait
+      // le premier tiers et taisait le reste. Un résumé partiel non
+      // signalé est plus nuisible qu'une erreur, parce qu'il se lit comme
+      // un résumé complet.
+      let texte;
+      if (content.length > fenetreChars) {
+        const decoupe = await mapReduce(content, instruction, model, contextTokens);
+        totalTokens += decoupe.tokens;
+        texte =
+          (decoupe.converge === false
+            ? "(fusion non convergente : juxtaposition, pas synthese)\n"
+            : `(${decoupe.windows} fenetres fusionnees)\n`) + decoupe.text.trim();
+      } else {
+        const result = await chat(
+          model,
+          [
+            {
+              role: "system",
+              content:
+                "Tu es un analyste technique. Tu resumes fidelement, sans inventer. " +
+                "Si une information est absente, tu le dis.",
+            },
+            { role: "user", content: `${instruction}\n\n--- ${raw} ---\n${content}` },
+          ],
+          1024
+        );
+        totalTokens += result.tokens;
+        texte = result.text.trim();
+      }
+      parts.push(`### ${raw}\n${texte}`);
+      resumes.push({ chemin: raw, texte });
+    }
+
+    // La fusion annoncée par la description doit exister. Elle ne
+    // remplace pas les sections par fichier — les deux servent : la
+    // synthèse pour décider, le détail pour vérifier.
+    let entete = "";
+    if (fusionner && resumes.length > 1) {
+      const fusion = await chat(
         model,
         [
           {
             role: "system",
             content:
-              "Tu es un analyste technique. Tu resumes fidelement, sans inventer. " +
-              "Si une information est absente, tu le dis.",
+              "Tu fusionnes des resumes de fichiers d'un meme depot en une synthese " +
+              "unique. Degage ce qui relie les fichiers entre eux. N'ajoute aucune " +
+              "information absente des resumes fournis.",
           },
-          { role: "user", content: `${instruction}\n\n--- ${raw} ---\n${body}` },
+          {
+            role: "user",
+            content:
+              `Consigne d'origine : ${instruction}\n\n` +
+              resumes.map((r) => `--- ${r.chemin} ---\n${r.texte}`).join("\n\n"),
+          },
         ],
         1024
       );
-      totalTokens += result.tokens;
-      parts.push(
-        `### ${raw}${truncated ? " (tronque)" : ""}\n${result.text.trim()}`
-      );
+      totalTokens += fusion.tokens;
+      entete = `## Synthese fusionnee\n${fusion.text.trim()}\n\n## Par fichier\n\n`;
     }
 
-    return `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n${parts.join("\n\n")}`;
+    return (
+      `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n` +
+      entete +
+      parts.join("\n\n")
+    );
   }
 
   if (name === "nexus_index_build") {
@@ -1449,7 +1766,7 @@ async function callTool(name, args) {
 
   if (name === "nexus_batch") {
     const tasks = exigerTableau(args.tasks, "tasks");
-    if (!tasks.length) throw new Error("parametre 'tasks' : tableau vide");
+    if (!tasks.length) throw new ErreurProtocole("parametre 'tasks' : tableau vide");
     const parts = [];
     let total = 0;
     for (let i = 0; i < tasks.length; i++) {
@@ -1485,7 +1802,7 @@ async function callTool(name, args) {
   if (name === "nexus_compare") {
     exigerTexte(args.prompt, "prompt");
     const models = exigerTableau(args.models, "models");
-    if (models.length < 2) throw new Error("parametre 'models' : au moins deux modeles");
+    if (models.length < 2) throw new ErreurProtocole("parametre 'models' : au moins deux modeles");
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
@@ -1508,26 +1825,13 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_profile") {
-    const { spawnSync } = require("node:child_process");
-    for (const python of ["python", "python3"]) {
-      const run = spawnSync(python,
-        [path.join(REPO_ROOT, "scripts", "nexus_capability.py")],
-        { encoding: "utf8", timeout: 300000 });
-      if (run.status === 0 && run.stdout) return run.stdout;
-    }
-    throw new Error("profil materiel indisponible : Python introuvable ou en echec");
+    return await runPython([path.join(REPO_ROOT, "scripts", "nexus_capability.py")]);
   }
 
   if (name === "nexus_savings") {
-    const { spawnSync } = require("node:child_process");
     const jours = String(args.jours || 7);
-    for (const python of ["python", "python3"]) {
-      const run = spawnSync(python,
-        [path.join(REPO_ROOT, "scripts", "nexus_savings.py"), "--jours", jours],
-        { encoding: "utf8", timeout: 300000 });
-      if (run.status === 0 && run.stdout) return run.stdout;
-    }
-    throw new Error("rapport indisponible : Python introuvable ou en echec");
+    return await runPython(
+      [path.join(REPO_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
   }
 
   if (name === "nexus_models") {
@@ -1561,7 +1865,7 @@ async function callTool(name, args) {
     );
   }
 
-  throw new Error("outil inconnu : " + name);
+  throw new ErreurProtocole("outil inconnu : " + name);
 }
 
 // ---------------------------------------------------------------------------
@@ -1599,8 +1903,25 @@ async function handle(message) {
     return;
   }
 
-  if (method === "notifications/initialized" || method === "notifications/cancelled") {
+  if (method === "notifications/initialized") {
     return; // notification : aucune reponse
+  }
+
+  if (method === "notifications/cancelled") {
+    // Accepter cette notification puis la jeter -- ce que faisait ce
+    // serveur -- laissait l'inference courir jusqu'a son terme sur une
+    // passerelle partagee, alors meme que le client avait renonce a la
+    // reponse. L'annulation est desormais reelle : le socket est coupe et
+    // le script Python eventuel recoit un kill.
+    const cible = params && params.requestId;
+    const controleur =
+      cible === undefined ? undefined : appelsEnCours.get(String(cible));
+    if (controleur) {
+      log("annulation de l'appel " + cible +
+          (params.reason ? " : " + String(params.reason).slice(0, 120) : ""));
+      controleur.abort();
+    }
+    return;
   }
 
   if (method === "ping") {
@@ -1615,16 +1936,40 @@ async function handle(message) {
 
   if (method === "tools/call") {
     const name = params && params.name;
+    const controleur = new AbortController();
+    const cle = String(id);
+    appelsEnCours.set(cle, controleur);
     try {
-      const text = await callTool(name, params && params.arguments);
+      const text = await contexteAppel.run(
+        { signal: controleur.signal },
+        () => callTool(name, params && params.arguments));
       reply(id, { content: [{ type: "text", text }], isError: false });
     } catch (err) {
+      // Une requete annulee ne recoit pas de reponse : le client a deja
+      // libere son identifiant, et MCP demande explicitement le silence.
+      // Repondre reviendrait a lui apprendre l'echec d'un appel qu'il a
+      // lui-meme interrompu.
+      if (controleur.signal.aborted) {
+        log("appel " + name + " (" + cle + ") interrompu");
+        return;
+      }
+      // Faute de protocole : nom d'outil inexistant, argument absent ou du
+      // mauvais type. Elle ne se corrige pas en relisant le message, elle
+      // se corrige en changeant l'appel -- d'ou -32602 plutot qu'un
+      // resultat marque isError, que le client lit comme un echec du
+      // modele et non de l'appelant.
+      if (err instanceof ErreurProtocole) {
+        replyError(id, err.code, err.message);
+        return;
+      }
       // Erreur d'execution : elle revient dans le resultat, pas en erreur
       // protocole, pour que le modele puisse la lire et s'adapter.
       reply(id, {
         content: [{ type: "text", text: "Echec de " + name + " : " + err.message }],
         isError: true,
       });
+    } finally {
+      appelsEnCours.delete(cle);
     }
     return;
   }
@@ -1640,7 +1985,11 @@ function main() {
 
   // Une inference locale dure parfois plusieurs minutes. Sortir des la
   // fermeture de stdin avorterait les appels en vol et perdrait leur
-  // reponse : on attend qu'ils se terminent.
+  // reponse : on attend qu'ils se terminent -- mais pas indefiniment. Le
+  // client est parti, donc plus personne ne lira le resultat, tandis que
+  // l'inference, elle, continue d'occuper la passerelle partagee. Passe ce
+  // delai, un serveur orphelin coute plus qu'il ne rapporte.
+  const GRACE_MS = Number(process.env.NEXUS_GRACE_MS || 120000);
   let inFlight = 0;
   let closing = false;
 
@@ -1675,6 +2024,15 @@ function main() {
   rl.on("close", () => {
     closing = true;
     maybeExit();
+    if (inFlight > 0) {
+      log(inFlight + " appel(s) en vol — sortie dans au plus "
+          + Math.round(GRACE_MS / 1000) + "s");
+      setTimeout(() => {
+        log("fermeture forcee : " + inFlight + " appel(s) toujours en vol");
+        for (const controleur of appelsEnCours.values()) controleur.abort();
+        process.exit(0);
+      }, GRACE_MS);
+    }
   });
 }
 
