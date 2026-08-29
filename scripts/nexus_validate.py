@@ -281,15 +281,26 @@ def main() -> int:
     # Le profil sert des la section 6, pour distinguer un modele oublie
     # d'un modele deliberement ecarte.
     profile_materiel = capability.build_profile()
-    try:
-        raw = subprocess.run(
-            ["docker", "exec", "ollama-server", "ollama", "list"],
-            capture_output=True, text=True, timeout=60,
+    # Un seul inventaire, celui du moteur qui sert réellement. Le
+    # validateur en relançait un second, `docker exec ollama-server` écrit
+    # en dur : après la sortie du moteur hors de Docker, il a continué de
+    # décrire un conteneur supprimé, échoué, et — parce qu'un inventaire
+    # vide entrait dans le même `if installed:` qu'un inventaire réussi —
+    # s'est tu. Toute la section 6 a disparu sans un mot, au moment précis
+    # où huit alias venaient de perdre leurs poids. Un inventaire illisible
+    # n'est pas un inventaire vide : il doit s'entendre.
+    tailles_installees = capability.installed_models()
+    if tailles_installees is None:
+        errors.append(
+            "inventaire du moteur illisible : impossible de verifier qu'un "
+            "modele declare existe reellement. Verifiez que le moteur Ollama "
+            "designe par la configuration repond."
         )
-        installed = {line.split()[0] for line in raw.stdout.splitlines()[1:] if line.strip()}
-    except Exception as exc:  # Ollama indisponible : non bloquant
-        installed = set()
-        warnings.append("inventaire Ollama illisible (%s)" % exc)
+        installed: set[str] = set()
+    else:
+        installed = set(tailles_installees)
+        if not installed:
+            warnings.append("le moteur ne sert aucun modele local")
 
     if installed:
         referenced_local: set[str] = set()
@@ -318,7 +329,7 @@ def main() -> int:
             # ne pas être exposé alors que le garde-fou vient de l'écarter
             # produisait un avertissement inextinguible : l'opérateur ne
             # pouvait ni le corriger, ni le faire taire.
-            taille = (capability.installed_models() or {}).get(base, 0.0)
+            taille = tailles_installees.get(base, 0.0)
             etat, motif = capability.verdict(taille, profile_materiel)
             if etat == capability.REJECT:
                 warnings.append("non exposé à dessein : %s — %s" % (base, motif))
