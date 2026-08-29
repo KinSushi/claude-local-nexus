@@ -654,10 +654,17 @@ def test_reverse(models: list[str]) -> None:
         replies = [json.loads(l) for l in result.stdout.splitlines() if l.strip().startswith("{")]
         unknown = next((r for r in replies if r.get("id") == 2), None)
         survived = any(r.get("id") == 3 for r in replies)
-        check("MCP : outil inconnu signale sans crash",
-              bool(unknown) and unknown["result"].get("isError") is True and survived,
-              "isError=%s, survit=%s" % (
-                  unknown["result"].get("isError") if unknown else "?", survived))
+        # La specification MCP reserve `-32602` aux erreurs de PROTOCOLE --
+        # outil inconnu, argument absent ou du mauvais type -- et laisse
+        # `isError` aux echecs d'EXECUTION d'un outil qui existe. Le
+        # serveur rendait autrefois `isError`, ce qui faisait passer une
+        # faute d'appelant pour un incident d'execution : l'appelant ne
+        # pouvait pas distinguer "cet outil n'existe pas" de "cet outil a
+        # echoue", et reessayait donc indefiniment.
+        code = (unknown or {}).get("error", {}).get("code")
+        check("MCP : outil inconnu rend -32602 sans crash",
+              bool(unknown) and code == -32602 and survived,
+              "code=%s, survit=%s" % (code if unknown else "?", survived))
     except Exception as exc:
         check("MCP : outil inconnu signale sans crash", False, str(exc))
 
