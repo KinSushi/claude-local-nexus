@@ -22,6 +22,15 @@
 #   - LANGFUSE_* doit être configuré si les callbacks Langfuse restent actifs.
 # ============================================================
 
+# ============================================================
+# NEXUS-ROUTER-VERSION: rbe9e348efb
+# Version de la politique de routage. Elle change des que les
+# pools, les chaines de fallback ou les seuils materiels
+# changent — donc des qu'une meme requete pourrait etre servie
+# par un autre modele. Sans elle, un resultat d'hier ne peut
+# pas etre rattache aux regles qui l'ont produit.
+# ============================================================
+
 model_list:
 
   # ==========================================================
@@ -111,7 +120,7 @@ model_list:
   # ---- GLM 4.7 Flash ----------------------------------------
   - model_name: glm-4.7-flash-local
     litellm_params:
-      model: ollama/glm-4.7-flash
+      model: ollama_chat/glm-4.7-flash
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 32768
@@ -127,10 +136,36 @@ model_list:
           - technical_design
           - analytical_reasoning
 
+  # ---- Releve locale : remplacer l'orchestrateur -------------
+  # Profil dedie au cas ou l'abonnement Claude expire ou que son quota
+  # est atteint. Claude Code est gourmand en contexte : Ollama recommande
+  # au moins 64K pour cette classe de charge, et 8K rendrait la relève
+  # inutilisable des la premiere lecture de depot.
+  #
+  # Dimensionnement mesure, pas estime : glm-4.7-flash charge a 65536
+  # occupe 23 Go (19 Go de poids + ~4 Go de cache KV), releve par
+  # `ollama ps`. C'est le meilleur compromis disponible ici — un MoE
+  # 30B-A3B dont peu de parametres sont actifs, donc utilisable sur CPU,
+  # et qui supporte l'appel d'outils indispensable a la boucle agentique.
+  #
+  # Volontairement hors des pools : ce n'est pas un candidat de routage
+  # mais un role, choisi explicitement par Set-ClaudeModel.ps1 -Mode Local.
+  - model_name: releve-locale
+    litellm_params:
+      model: ollama_chat/glm-4.7-flash
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 65536
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 65536
+      description: "Releve locale — 64K de contexte, prend la suite sans abonnement"
+      nexus_pool: false
+
   # ---- Gemma 4 31B ------------------------------------------
   - model_name: gemma4-31b-local
     litellm_params:
-      model: ollama/gemma4:31b
+      model: ollama_chat/gemma4:31b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -148,7 +183,7 @@ model_list:
   # ---- Qwen Coder 30B ---------------------------------------
   - model_name: qwen3-coder-30b-local
     litellm_params:
-      model: ollama/qwen3-coder:30b
+      model: ollama_chat/qwen3-coder:30b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -166,7 +201,7 @@ model_list:
   # ---- Qwen 2.5 Coder 32B -----------------------------------
   - model_name: qwen2.5-coder-32b-local
     litellm_params:
-      model: ollama/qwen2.5-coder:32b
+      model: ollama_chat/qwen2.5-coder:32b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -183,7 +218,7 @@ model_list:
   # ---- Qwen 2.5 Coder 14B -----------------------------------
   - model_name: qwen2.5-coder-14b-local
     litellm_params:
-      model: ollama/qwen2.5-coder:14b
+      model: ollama_chat/qwen2.5-coder:14b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -200,7 +235,7 @@ model_list:
   # ---- DeepSeek Coder 33B -----------------------------------
   - model_name: deepseek-coder-33b-local
     litellm_params:
-      model: ollama/deepseek-coder:33b
+      model: ollama_chat/deepseek-coder:33b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -217,7 +252,7 @@ model_list:
   # ---- Codestral --------------------------------------------
   - model_name: codestral-local
     litellm_params:
-      model: ollama/codestral
+      model: ollama_chat/codestral
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -234,7 +269,7 @@ model_list:
   # ---- Généralistes -----------------------------------------
   - model_name: qwen2.5-32b-local
     litellm_params:
-      model: ollama/qwen2.5:32b
+      model: ollama_chat/qwen2.5:32b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -249,16 +284,20 @@ model_list:
           - analytical_reasoning
           - factual_lookup
 
+  # Hors des pools de routage automatique : 42 Go de poids pour ~32 Go
+  # alloues au conteneur Ollama. Il reste adressable explicitement, mais
+  # l'y router automatiquement produirait une reponse inexploitable.
   - model_name: llama3.3-70b-local
     litellm_params:
-      model: ollama/llama3.3:70b
+      model: ollama_chat/llama3.3:70b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "Llama 3.3 70B"
+      description: "Llama 3.3 70B — adressable explicitement, hors routage automatique"
+      nexus_pool: false
       adaptive_router_preferences:
         quality_tier: 2
         strengths:
@@ -269,7 +308,7 @@ model_list:
   # ---- Rapides ----------------------------------------------
   - model_name: gemma4-12b-local
     litellm_params:
-      model: ollama/gemma4:12b
+      model: ollama_chat/gemma4:12b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -285,7 +324,7 @@ model_list:
 
   - model_name: llama3.2-3b-local
     litellm_params:
-      model: ollama/llama3.2:3b
+      model: ollama_chat/llama3.2:3b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -301,7 +340,7 @@ model_list:
 
   - model_name: phi3-mini-local
     litellm_params:
-      model: ollama/phi3:mini
+      model: ollama_chat/phi3:mini
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -317,7 +356,7 @@ model_list:
 
   - model_name: ultime-recourse-local
     litellm_params:
-      model: ollama/phi3:mini
+      model: ollama_chat/phi3:mini
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -332,7 +371,7 @@ model_list:
 
   - model_name: llama3.2-vision-11b-local
     litellm_params:
-      model: ollama/llama3.2-vision:11b
+      model: ollama_chat/llama3.2-vision:11b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -347,7 +386,7 @@ model_list:
 
   - model_name: llama3.2-vision-90b-local
     litellm_params:
-      model: ollama/llama3.2-vision:90b
+      model: ollama_chat/llama3.2-vision:90b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -362,7 +401,7 @@ model_list:
 
   - model_name: llava-34b-local
     litellm_params:
-      model: ollama/llava:34b
+      model: ollama_chat/llava:34b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -377,7 +416,7 @@ model_list:
 
   - model_name: llava-13b-local
     litellm_params:
-      model: ollama/llava:13b
+      model: ollama_chat/llava:13b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -392,7 +431,7 @@ model_list:
 
   - model_name: llava-7b-local
     litellm_params:
-      model: ollama/llava:7b
+      model: ollama_chat/llava:7b
       api_base: http://ollama:11434
       litellm_health_check: true
       num_ctx: 8192
@@ -437,24 +476,349 @@ model_list:
       description: "all-MiniLM — embedding léger"
 
   # ==========================================================
+  # LOCAL — EXPOSITION AUTOMATIQUE
   # ==========================================================
-  # ==========================================================
-  # ==========================================================
-  # ==========================================================
-  # ==========================================================
-  # ==========================================================
-  # OLLAMA CLOUD (auto-généré par update_cloud_models.ps1)
-  # ==========================================================
-  - model_name: gpt-oss-20b-cloud
+  # Tout modele present dans Ollama mais non declare a la main
+  # ci-dessus est expose ici automatiquement, afin de pouvoir
+  # etre adresse explicitement. Ces modeles ne sont volontairement
+  # PAS versés aux pools des routeurs adaptatifs ni aux chaines de
+  # fallback : etre installe ne vaut pas etre eligible au routage
+  # automatique (§76). Pour en promouvoir un, le declarer a la
+  # main plus haut avec son profil de capacite.
+  # >>> AUTOGEN:LOCAL_MODELS_EXTRA
+  - model_name: codestral-22b-local
     litellm_params:
-      model: ollama/gpt-oss:20b:cloud
+      model: ollama_chat/codestral:22b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "codestral:22b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: deepseek-coder-6.7b-local
+    litellm_params:
+      model: ollama_chat/deepseek-coder:6.7b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "deepseek-coder:6.7b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: gemma4-26b-local
+    litellm_params:
+      model: ollama_chat/gemma4:26b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "gemma4:26b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: gemma4-local
+    litellm_params:
+      model: ollama_chat/gemma4:latest
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "gemma4:latest (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: gpt-oss-20b-local
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "gpt-oss:20b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: llama3.1-8b-local
+    litellm_params:
+      model: ollama_chat/llama3.1:8b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "llama3.1:8b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: llama3.2-1b-local
+    litellm_params:
+      model: ollama_chat/llama3.2:1b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "llama3.2:1b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: mistral-7b-local
+    litellm_params:
+      model: ollama_chat/mistral:7b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "mistral:7b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: mixtral-8x7b-local
+    litellm_params:
+      model: ollama_chat/mixtral:8x7b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "mixtral:8x7b (expose automatiquement — hors pool : 26 Go sur 32 Go : chargeable, mais sans marge pour le contexte et le cache)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: phi3-medium-local
+    litellm_params:
+      model: ollama_chat/phi3:medium
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "phi3:medium (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen2.5-coder-7b-local
+    litellm_params:
+      model: ollama_chat/qwen2.5-coder:7b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen2.5-coder:7b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-vl-32b-local
+    litellm_params:
+      model: ollama_chat/qwen3-vl:32b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "qwen3-vl:32b (expose automatiquement — hors pool : 20 Go sur 32 Go : chargeable, mais sans marge pour le contexte et le cache)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-vl-8b-local
+    litellm_params:
+      model: ollama_chat/qwen3-vl:8b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3-vl:8b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3.5-9b-local
+    litellm_params:
+      model: ollama_chat/qwen3.5:9b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3.5:9b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3.6-27b-local
+    litellm_params:
+      model: ollama_chat/qwen3.6:27b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "qwen3.6:27b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-14b-local
+    litellm_params:
+      model: ollama_chat/qwen3:14b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "qwen3:14b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-32b-local
+    litellm_params:
+      model: ollama_chat/qwen3:32b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "qwen3:32b (expose automatiquement — hors pool : 20 Go sur 32 Go : chargeable, mais sans marge pour le contexte et le cache)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-8b-local
+    litellm_params:
+      model: ollama_chat/qwen3:8b
+      api_base: http://ollama:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3:8b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+  # <<< AUTOGEN:LOCAL_MODELS_EXTRA
+
+  # >>> AUTOGEN:CLOUD_MODELS  (genere par scripts/Update-NexusModels.ps1 - NE PAS EDITER)
+  - model_name: nemotron-3-ultra-cloud
+    litellm_params:
+      model: ollama_chat/nemotron-3-ultra
       api_base: https://ollama.com
       api_key: os.environ/OLLAMA_CLOUD_API_KEY
       num_ctx: 131072
-      num_predict: 4096
+      num_predict: 8192
     model_info:
       max_input_tokens: 131072
-      description: "gpt-oss:20b (cloud)"
+      description: "nemotron-3-ultra (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: gpt-oss-120b-cloud
+    litellm_params:
+      model: ollama_chat/gpt-oss:120b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "gpt-oss:120b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: nemotron-3-super-cloud
+    litellm_params:
+      model: ollama_chat/nemotron-3-super
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "nemotron-3-super (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: gpt-oss-20b-cloud
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "gpt-oss:20b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: nemotron-3-nano-30b-cloud
+    litellm_params:
+      model: ollama_chat/nemotron-3-nano:30b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "nemotron-3-nano:30b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: gemma4-31b-cloud
+    litellm_params:
+      model: ollama_chat/gemma4:31b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "gemma4:31b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
+        strengths:
+          - general
+          - analytical_reasoning
+  # <<< AUTOGEN:CLOUD_MODELS
+
   # ==========================================================
   # 7. ROUTEURS ADAPTATIFS
   # ==========================================================
@@ -489,7 +853,6 @@ model_list:
           - qwen3-coder-30b-local
           - qwen2.5-coder-32b-local
           - qwen2.5-32b-local
-          - llama3.3-70b-local
           - gemma4-12b-local
           - llama3.2-3b-local
         weights:
@@ -501,21 +864,17 @@ model_list:
   - model_name: adaptive-router-cloud
     litellm_params:
       model: auto_router/adaptive_router
-      adaptive_router_default_model: qwen3-coder-480b-cloud
+      adaptive_router_default_model: nemotron-3-ultra-cloud
       adaptive_router_config:
         available_models:
-          - glm-5.2-cloud
-          - glm-5.3-flash-cloud
-          - deepseek-v4-flash-cloud
-          - deepseek-v3.1-cloud
-          - qwen3-coder-480b-cloud
+          # >>> AUTOGEN:CLOUD_POOL_CLOUD
+          - nemotron-3-ultra-cloud
           - gpt-oss-120b-cloud
+          - nemotron-3-super-cloud
           - gpt-oss-20b-cloud
-          - kimi-k2.7-code-cloud
-          - kimi-k3-cloud
-          - devstral-2-123b-cloud
-          - mistral-large-3-675b-cloud
-          - cogito-2.1-671b-cloud
+          - nemotron-3-nano-30b-cloud
+          - gemma4-31b-cloud
+          # <<< AUTOGEN:CLOUD_POOL_CLOUD
         weights:
           quality: 1.0
           cost: 0.0
@@ -549,20 +908,15 @@ model_list:
           - qwen3-coder-30b-local
           - qwen2.5-coder-32b-local
           - qwen2.5-32b-local
-          - llama3.3-70b-local
           - gemma4-12b-local
-          - glm-5.2-cloud
-          - glm-5.3-flash-cloud
-          - deepseek-v4-flash-cloud
-          - deepseek-v3.1-cloud
-          - qwen3-coder-480b-cloud
+          # >>> AUTOGEN:CLOUD_POOL_GLOBAL
+          - nemotron-3-ultra-cloud
           - gpt-oss-120b-cloud
+          - nemotron-3-super-cloud
           - gpt-oss-20b-cloud
-          - kimi-k2.7-code-cloud
-          - kimi-k3-cloud
-          - devstral-2-123b-cloud
-          - mistral-large-3-675b-cloud
-          - cogito-2.1-671b-cloud
+          - nemotron-3-nano-30b-cloud
+          - gemma4-31b-cloud
+          # <<< AUTOGEN:CLOUD_POOL_GLOBAL
         weights:
           quality: 1.0
           cost: 0.0
@@ -584,67 +938,64 @@ router_settings:
   cooldown_time: 120
 
   fallbacks:
-    # ---- Anthropic : uniquement Anthropic pour éviter de transporter
-    #      des états/thinking blocks vers un provider incompatible.
+    # >>> AUTOGEN:ANTHROPIC_FALLBACKS
     - claude-fable-5:
         - claude-opus-5
         - claude-sonnet-5
 
     - claude-opus-5:
         - claude-sonnet-5
-        - claude-fable-5
-
-    - claude-sonnet-5:
-        - claude-opus-5
         - claude-haiku-4-5
 
-    - claude-haiku-4-5:
-        - claude-sonnet-5
-
-    # ---- Local ------------------------------------------------
-    - glm-4.7-flash-local:
+    - claude-sonnet-5:
+        - claude-haiku-4-5
+        - glm-4.7-flash-local
         - gemma4-31b-local
-        - qwen2.5-32b-local
-        - ultime-recourse-local
 
-    - gemma4-31b-local:
-        - qwen2.5-32b-local
-        - gemma4-12b-local
-        - ultime-recourse-local
+    - claude-haiku-4-5:
+        - glm-4.7-flash-local
+        - gemma4-31b-local
+
+    # <<< AUTOGEN:ANTHROPIC_FALLBACKS
+
+    # >>> AUTOGEN:LOCAL_FALLBACKS
+    - glm-4.7-flash-local:
+        - qwen3-coder-30b-local
+        - qwen2.5-coder-32b-local
 
     - qwen3-coder-30b-local:
         - qwen2.5-coder-32b-local
-        - qwen2.5-coder-14b-local
-        - ultime-recourse-local
+        - deepseek-coder-33b-local
 
     - qwen2.5-coder-32b-local:
-        - qwen2.5-coder-14b-local
         - deepseek-coder-33b-local
-        - ultime-recourse-local
+        - codestral-local
 
     - deepseek-coder-33b-local:
-        - qwen2.5-coder-32b-local
-        - qwen2.5-coder-14b-local
-        - ultime-recourse-local
+        - codestral-local
+        - qwen2.5-32b-local
 
     - codestral-local:
-        - qwen2.5-coder-32b-local
+        - qwen2.5-32b-local
         - qwen2.5-coder-14b-local
-        - ultime-recourse-local
 
     - qwen2.5-32b-local:
-        - gemma4-31b-local
-        - llama3.3-70b-local
-        - ultime-recourse-local
+        - qwen2.5-coder-14b-local
 
-    - llama3.3-70b-local:
-        - qwen2.5-32b-local
-        - gemma4-31b-local
-        - ultime-recourse-local
+    - qwen3-embedding-8b-local:
+        - nomic-embed-text-local
+        - all-minilm-local
+
+    - nomic-embed-text-local:
+        - all-minilm-local
+
+    - gemma4-31b-local:
+        - gemma4-12b-local
+        - llama3.2-3b-local
 
     - gemma4-12b-local:
         - llama3.2-3b-local
-        - ultime-recourse-local
+        - phi3-mini-local
 
     - llama3.2-3b-local:
         - phi3-mini-local
@@ -653,119 +1004,63 @@ router_settings:
     - phi3-mini-local:
         - ultime-recourse-local
 
-    # ---- Cloud Ollama ----------------------------------------
-    - glm-5.2-cloud:
-        - glm-5.3-flash-cloud
-        - deepseek-v4-flash-cloud
-        - adaptive-router-cloud
-
-    - glm-5.3-flash-cloud:
-        - glm-5.2-cloud
-        - deepseek-v4-flash-cloud
-        - adaptive-router-cloud
-
-    - deepseek-v4-flash-cloud:
-        - deepseek-v3.1-cloud
-        - glm-5.3-flash-cloud
-        - adaptive-router-cloud
-
-    - deepseek-v3.1-cloud:
-        - deepseek-v4-flash-cloud
-        - glm-5.2-cloud
-        - adaptive-router-cloud
-
-    - qwen3-coder-480b-cloud:
-        - devstral-2-123b-cloud
-        - kimi-k2.7-code-cloud
-        - adaptive-router-cloud
-
-    - gpt-oss-120b-cloud:
-        - cogito-2.1-671b-cloud
-        - mistral-large-3-675b-cloud
-        - adaptive-router-cloud
-
-    - gpt-oss-20b-cloud:
-        - gpt-oss-120b-cloud
-        - glm-5.3-flash-cloud
-        - adaptive-router-cloud
-
-    - kimi-k2.7-code-cloud:
-        - qwen3-coder-480b-cloud
-        - devstral-2-123b-cloud
-        - adaptive-router-cloud
-
-    - kimi-k3-cloud:
-        - mistral-large-3-675b-cloud
-        - cogito-2.1-671b-cloud
-        - adaptive-router-cloud
-
-    - devstral-2-123b-cloud:
-        - qwen3-coder-480b-cloud
-        - kimi-k2.7-code-cloud
-        - adaptive-router-cloud
-
-    - mistral-large-3-675b-cloud:
-        - cogito-2.1-671b-cloud
-        - gpt-oss-120b-cloud
-        - adaptive-router-cloud
-
-    - cogito-2.1-671b-cloud:
-        - mistral-large-3-675b-cloud
-        - gpt-oss-120b-cloud
-        - adaptive-router-cloud
-
-    # ---- Multimodal ------------------------------------------
     - llama3.2-vision-11b-local:
-        - llama3.2-vision-90b-local
-        - llava-34b-local
-        - ultime-recourse-local
-
-    - llama3.2-vision-90b-local:
-        - llava-34b-local
-        - llama3.2-vision-11b-local
-        - ultime-recourse-local
-
-    - llava-34b-local:
-        - llama3.2-vision-11b-local
         - llava-13b-local
-        - ultime-recourse-local
+        - llava-7b-local
 
     - llava-13b-local:
         - llava-7b-local
-        - ultime-recourse-local
 
-    - llava-7b-local:
-        - ultime-recourse-local
+    # <<< AUTOGEN:LOCAL_FALLBACKS
 
-    # ---- Routers ---------------------------------------------
+    # >>> AUTOGEN:CLOUD_FALLBACKS
+    - nemotron-3-ultra-cloud:
+        - gpt-oss-120b-cloud
+        - nemotron-3-super-cloud
+
+    - gpt-oss-120b-cloud:
+        - nemotron-3-super-cloud
+        - gpt-oss-20b-cloud
+
+    - nemotron-3-super-cloud:
+        - gpt-oss-20b-cloud
+        - nemotron-3-nano-30b-cloud
+
+    - gpt-oss-20b-cloud:
+        - nemotron-3-nano-30b-cloud
+        - gemma4-31b-cloud
+
+    - nemotron-3-nano-30b-cloud:
+        - gemma4-31b-cloud
+        - glm-4.7-flash-local
+        - gemma4-31b-local
+
+    - gemma4-31b-cloud:
+        - glm-4.7-flash-local
+        - gemma4-31b-local
+
+    # <<< AUTOGEN:CLOUD_FALLBACKS
+
+    # >>> AUTOGEN:ROUTER_FALLBACKS
+    - adaptive-router-local:
+        - glm-4.7-flash-local
+        - gemma4-31b-local
+
+    - adaptive-router-cloud:
+        - nemotron-3-ultra-cloud
+        - gpt-oss-120b-cloud
+        - adaptive-router-local
+
+    - adaptive-router-anthropic:
+        - claude-fable-5
+        - claude-opus-5
+        - adaptive-router-local
+
     - adaptive-router:
         - adaptive-router-local
         - adaptive-router-cloud
-        - adaptive-router-anthropic
 
-    - adaptive-router-local:
-        - gemma4-12b-local
-        - glm-4.7-flash-local
-        - ultime-recourse-local
-
-    - adaptive-router-cloud:
-        - glm-5.3-flash-cloud
-        - qwen3-coder-480b-cloud
-        - gpt-oss-120b-cloud
-
-    - adaptive-router-anthropic:
-        - claude-sonnet-5
-        - claude-opus-5
-        - claude-haiku-4-5
-
-    # ---- Embeddings ------------------------------------------
-    # Le fallback d'un embedding doit rester un embedding.
-    - qwen3-embedding-8b-local:
-        - nomic-embed-text-local
-        - all-minilm-local
-
-    - nomic-embed-text-local:
-        - all-minilm-local
+    # <<< AUTOGEN:ROUTER_FALLBACKS
 
 # ============================================================
 # 9. CONTEXT-WINDOW FALLBACKS
@@ -776,55 +1071,51 @@ router_settings:
 
 context_window_fallbacks:
 
-  - claude-fable-5:
-      - claude-opus-5
-      - claude-sonnet-5
-
-  - claude-opus-5:
-      - claude-sonnet-5
+  # >>> AUTOGEN:ANTHROPIC_CTX_FALLBACKS
+  - claude-haiku-4-5:
       - claude-fable-5
-
-  - claude-sonnet-5:
       - claude-opus-5
-      - claude-fable-5
 
-  - deepseek-v4-flash-cloud:
-      - kimi-k3-cloud
-      - glm-5.2-cloud
+  # <<< AUTOGEN:ANTHROPIC_CTX_FALLBACKS
 
-  - kimi-k3-cloud:
-      - deepseek-v4-flash-cloud
-      - mistral-large-3-675b-cloud
-
-  - qwen3-coder-480b-cloud:
-      - kimi-k2.7-code-cloud
-      - devstral-2-123b-cloud
-
-  - glm-5.2-cloud:
-      - glm-5.3-flash-cloud
-      - deepseek-v4-flash-cloud
-
-  - glm-5.3-flash-cloud:
-      - glm-5.2-cloud
-      - deepseek-v4-flash-cloud
-
+  # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
   - gemma4-31b-local:
       - glm-4.7-flash-local
 
   - qwen3-coder-30b-local:
-      - qwen2.5-coder-32b-local
+      - glm-4.7-flash-local
 
   - qwen2.5-coder-32b-local:
-      - qwen3-coder-30b-local
+      - glm-4.7-flash-local
+
+  - deepseek-coder-33b-local:
+      - glm-4.7-flash-local
+
+  - codestral-local:
+      - glm-4.7-flash-local
 
   - qwen2.5-32b-local:
-      - gemma4-31b-local
+      - glm-4.7-flash-local
 
-  - llama3.3-70b-local:
-      - qwen2.5-32b-local
+  - qwen2.5-coder-14b-local:
+      - glm-4.7-flash-local
 
-  - glm-4.7-flash-local:
-      - gemma4-31b-local
+  - gemma4-12b-local:
+      - glm-4.7-flash-local
+
+  - llama3.2-3b-local:
+      - glm-4.7-flash-local
+
+  - phi3-mini-local:
+      - glm-4.7-flash-local
+
+  - ultime-recourse-local:
+      - glm-4.7-flash-local
+
+  # <<< AUTOGEN:LOCAL_CTX_FALLBACKS
+
+  # >>> AUTOGEN:CLOUD_CTX_FALLBACKS
+  # <<< AUTOGEN:CLOUD_CTX_FALLBACKS
 
 # ============================================================
 # 10. GENERAL SETTINGS
@@ -832,8 +1123,19 @@ context_window_fallbacks:
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
+
+  # Intervalle relevé, pas choisi au hasard : à 30 s, les journaux
+  # montraient `background_health_check_cycle_duration_exceeded_interval`
+  # avec des cycles de 60 s. Autrement dit, la sonde tournait en
+  # permanence et chargeait les modèles en boucle dans Ollama — sur un
+  # hôte CPU, elle volait la machine au travail réel.
+  #
+  # Avec 40 modèles locaux et un cycle d'une minute, 900 s ramènent la
+  # sonde à quelques pour cent d'occupation. Une panne est détectée en
+  # quinze minutes au pire ; le coût de la détecter en trente secondes
+  # était de ne plus rien pouvoir calculer d'autre.
   background_health_checks: true
-  health_check_interval: 30
+  health_check_interval: 900
   enable_health_check_routing: true
   health_check_ignore_transient_errors: true
 
@@ -846,12 +1148,14 @@ litellm_settings:
   set_verbose: false
 
   cache: true
+  # Cache exact uniquement. Le cache sémantique a été retiré : sur des
+  # étapes d'agent et des appels d'outils, deux prompts « proches » n'ont
+  # pas la même réponse correcte (§27).
   cache_params:
-    type: redis-semantic
-    redis_url: "redis://redis:6379"
+    type: redis
+    host: redis
+    port: 6379
     ttl: 3600
-    similarity_threshold: 0.95
-    redis_semantic_cache_embedding_model: ollama/nomic-embed-text
 
   success_callback:
     - langfuse

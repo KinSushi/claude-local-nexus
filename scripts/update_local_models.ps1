@@ -1,4 +1,28 @@
 # ============================================================
+# SCRIPT REMPLACE - NE PLUS UTILISER
+# ============================================================
+# litellm_config.yaml est desormais regenere par zones delimitees
+# (marqueurs AUTOGEN). Ce script reecrit un bloc entier repere par
+# de simples commentaires : il detruit les marqueurs et duplique la
+# configuration. Il souffrait par ailleurs d'un defaut d'idempotence
+# qui reinjectait une ligne de commentaire a chaque execution.
+#
+# Utiliser a la place :
+#     .\scripts\Update-NexusModels.ps1 -Validate -Restart
+# ============================================================
+
+$__config = Join-Path (Split-Path -Parent $PSScriptRoot) "litellm_config.yaml"
+if ((Test-Path $__config) -and (Select-String -Path $__config -Pattern "AUTOGEN:" -Quiet)) {
+    Write-Host ""
+    Write-Host "  Script remplace et desactive." -ForegroundColor Yellow
+    Write-Host "  litellm_config.yaml utilise des zones AUTOGEN que ce script detruirait." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Utiliser :  .\scripts\Update-NexusModels.ps1 -Validate -Restart" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
+# ============================================================
 # update_local_models.ps1
 # Télécharge les modèles locaux listés dans model_list.txt
 # dans le conteneur Ollama.
