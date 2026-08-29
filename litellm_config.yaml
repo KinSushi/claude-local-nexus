@@ -23,7 +23,7 @@
 # ============================================================
 
 # ============================================================
-# NEXUS-ROUTER-VERSION: rbe9e348efb
+# NEXUS-ROUTER-VERSION: r4f878da11b
 # Version de la politique de routage. Elle change des que les
 # pools, les chaines de fallback ou les seuils materiels
 # changent — donc des qu'une meme requete pourrait etre servie
@@ -448,6 +448,19 @@ model_list:
   # automatique (§76). Pour en promouvoir un, le declarer a la
   # main plus haut avec son profil de capacite.
   # >>> AUTOGEN:LOCAL_MODELS_EXTRA
+  - model_name: codestral-22b-local
+    litellm_params:
+      model: ollama_chat/codestral:22b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "codestral:22b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: deepseek-coder-6.7b-local
     litellm_params:
       model: ollama_chat/deepseek-coder:6.7b
@@ -458,6 +471,19 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "deepseek-coder:6.7b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: gpt-oss-20b-local
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "gpt-oss:20b (expose automatiquement)"
       nexus_generated: true
       nexus_pool: false
 
@@ -562,6 +588,19 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "qwen3:14b (expose automatiquement)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-32b-local
+    litellm_params:
+      model: ollama_chat/qwen3:32b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "qwen3:32b (expose automatiquement)"
       nexus_generated: true
       nexus_pool: false
 
@@ -862,6 +901,10 @@ router_settings:
         - ultime-recourse-local
 
     - llama3.2-vision-11b-local:
+        - llava-34b-local
+        - llava-13b-local
+
+    - llava-34b-local:
         - llava-13b-local
         - llava-7b-local
 

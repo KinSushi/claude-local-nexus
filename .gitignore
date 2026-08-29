@@ -21,3 +21,8 @@ __pycache__/
 # il est ecrase au prochain essai et ne doit jamais etre confondu avec
 # le fichier reel, ni encombrer `git status` au moment ou l'on diagnostique.
 *.candidat
+
+# Diffs temporaires ecrits par l'outillage de validation, pour que le
+# fenetrage MAP-REDUCE s'applique. Un residu ne doit jamais encombrer
+# `git status` au moment ou l'on diagnostique.
+temp_diff_*.txt

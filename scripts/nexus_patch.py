@@ -47,7 +47,7 @@ def ecrire_fichier_atomique(chemin, contenu):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as tmp:
             tmp.write(contenu)
-        sauvegarde = chemin + ".bak"
+        sauvegarde = chemin + ".candidat"
         shutil.copy2(chemin, sauvegarde)
         os.replace(tmp_path, chemin)
     finally:
