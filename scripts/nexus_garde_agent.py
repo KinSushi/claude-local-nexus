@@ -61,6 +61,12 @@ TYPES_INTERDITS = {"fork"}
 RAPPEL = (
     "",
     "Avant tout sous-agent : le banc gratuit peut-il faire ce travail seul ?",
+    "",
+    "  VALIDER un correctif ne demande AUCUN agent :",
+    "      python scripts/nexus_valide.py --base main",
+    "  batterie mecanique, recherche de regressions, jugement par le banc",
+    "  gratuit, verdict et code de sortie. Cout facture : zero.",
+    "",
     "    python scripts/nexus_agent.py --tache \"...\" --fichiers f1 f2 \\",
     "        --modele gpt-oss-120b-cloud --max-tokens 2000",
     "Un sous-agent ne se justifie que s'il faut une boucle d'outils, du",
