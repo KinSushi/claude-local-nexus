@@ -198,13 +198,19 @@ def epreuve_exploite_retour(modele: str, cle: str, appel: dict | None) -> dict:
     la foi d'une demande d'outil restée sans suite.
     """
     if appel is None:
-        return {"ok": False, "detail": "epreuve precedente echouee, rien a enchainer",
+        # Non mesurable, et non « raté » : faute d'une demande d'outil à
+        # renvoyer, l'aptitude à exploiter un résultat n'a pas été mise à
+        # l'épreuve. La compter en échec imputerait au modèle un défaut
+        # que rien n'établit, et afficherait 1/4 là où la mesure ne porte
+        # que sur deux épreuves.
+        return {"ok": None, "detail": "epreuve precedente echouee, rien a enchainer",
                 "duree": 0}
     try:
         premiere = io.open(os.path.join(ROOT, "README.md"),
                            encoding="utf-8").readline().strip()
     except Exception as exc:
-        return {"ok": False, "detail": "README.md illisible : %s" % exc, "duree": 0}
+        # Le banc de test est en cause, pas le modèle : c'est non mesurable.
+        return {"ok": None, "detail": "README.md illisible : %s" % exc, "duree": 0}
 
     r = messages({
         "model": modele,
@@ -268,7 +274,14 @@ def epreuve_enchainement(modele: str, cle: str) -> dict:
                 "detail": "mauvais outil choisi : %s au lieu de compter_lignes"
                           % appels[0].get("name")}
 
-    nb = sum(1 for _ in io.open(os.path.join(ROOT, "README.md"), encoding="utf-8"))
+    # Gardé comme la lecture jumelle d'`epreuve_exploite_retour` : sans
+    # cela, un README absent faisait remonter une trace nue au milieu
+    # d'un script dont tout le reste diagnostique soigneusement.
+    try:
+        nb = sum(1 for _ in io.open(os.path.join(ROOT, "README.md"), encoding="utf-8"))
+    except Exception as exc:
+        return {"ok": None, "detail": "README.md illisible : %s" % exc,
+                "duree": time.time() - depart}
     r2 = messages({
         "model": modele,
         "max_tokens": 200,
@@ -318,8 +331,8 @@ def juger(modele: str, cle: str) -> dict:
             appel = r.get("appel")
         if r.get("adresse"):
             adresse, servi = r["adresse"], r.get("servi", "?")
-        etat = "OK  " if r["ok"] else "ECHEC"
-        print("  [%s] %d/4 %-34s %5.0f s" % (etat, i, titre, r.get("duree", 0)))
+        etat = "OK" if r["ok"] else ("IGNORE" if r["ok"] is None else "ECHEC")
+        print("  [%-6s] %d/4 %-34s %5.0f s" % (etat, i, titre, r.get("duree", 0)))
         if not r["ok"] or os.environ.get("NEXUS_VERBEUX"):
             print("         %s" % str(r.get("detail", ""))[:200])
         resultats.append({"epreuve": titre, **{k: v for k, v in r.items() if k != "appel"}})
@@ -328,6 +341,8 @@ def juger(modele: str, cle: str) -> dict:
     # pas" envoie au mauvais endroit.
     codes = {r.get("code_http") for r in resultats if r.get("code_http")}
     reussies = sum(1 for r in resultats if r["ok"])
+    ignorees = sum(1 for r in resultats if r["ok"] is None)
+    echouees = sum(1 for r in resultats if r["ok"] is False)
     # Le plan vient du catalogue, pas de l'en-tete : /v1/messages ne pose
     # pas x-litellm-model-api-base, et en deduire "inconnu" ferait conclure
     # que la releve n'est pas locale alors qu'elle l'est. Le catalogue,
@@ -355,10 +370,20 @@ def juger(modele: str, cle: str) -> dict:
         print("  codes HTTP rencontres : %s"
               % ", ".join("%s (%s)" % (c, motifs.get(c, "voir le detail"))
                           for c in sorted(codes)))
-    print("  %d/4 epreuves reussies" % reussies)
+    # La sous-chaine « epreuves reussies » est lue par nexus_conformite.py :
+    # le complement s'ajoute apres, il ne la coupe pas.
+    print("  %d/4 epreuves reussies%s"
+          % (reussies, "" if not ignorees
+             else " (%d echec(s), %d non mesurable(s))" % (echouees, ignorees)))
     if reussies == 4:
         print("  => La releve peut orchestrer : outils demandes, resultats exploites,")
         print("     enchainement tenu.")
+    elif ignorees and not echouees:
+        # Aucune epreuve n'a echoue, mais toutes n'ont pas ete tentees.
+        # Conclure « ne tient pas » serait aussi faux que conclure l'inverse.
+        print("  => Mesure incomplete : aucune epreuve n'a echoue, mais %d n'a pas"
+              % ignorees)
+        print("     pu etre tentee. Rien n'est prouve, rien n'est infirme.")
     elif reussies >= 2:
         print("  => La releve repond mais n'orchestre pas de bout en bout.")
         print("     Elle peut servir de repondeur, pas de remplacant.")
@@ -373,8 +398,16 @@ def candidats_locaux(cle: str) -> list[str]:
     """Alias locaux exposés, hors embeddings et hors modèles de vision."""
     requete = urllib.request.Request(
         PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle})
-    with urllib.request.urlopen(requete, timeout=30) as reponse:
-        donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
+    # `agent.plans_par_alias` interroge le MÊME endpoint et se garde ; ici
+    # la garde manquait. Passerelle éteinte, `--tous` rendait une trace nue
+    # au lieu du diagnostic que tout le reste du fichier construit.
+    try:
+        with urllib.request.urlopen(requete, timeout=30) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
+    except Exception as exc:
+        print("  Catalogue injoignable sur %s : %s" % (PASSERELLE, exc))
+        print("  Verifier la passerelle : python scripts/nexus_conformite.py")
+        return []
     noms = []
     for entree in donnees:
         nom = entree.get("model_name", "")
@@ -401,6 +434,11 @@ def main() -> int:
     cle = agent.cle_maitre()
     if a.tous:
         cibles = candidats_locaux(cle)
+        if not cibles:
+            # Zero candidat n'est pas « zero apte » : c'est une absence de
+            # mesure. Le code 1 dit que rien n'a pu etre etabli.
+            print("Aucun candidat local a eprouver.")
+            return 1
     else:
         cibles = [a.modele or RELEVE]
 
