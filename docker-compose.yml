@@ -30,7 +30,19 @@ services:
       retries: 10
       start_period: 5s
 
+  # Moteur d'inference embarque.
+  #
+  # Place sous profil parce qu'il est le seul service dont TOUT se
+  # retelecharge : l'image, et les 541 Go de poids que model_list.txt
+  # reconstitue. Rien n'y merite d'etre preserve, et le conteneur le
+  # plafonne a la memoire de la VM WSL2 — la moitie de la machine.
+  #
+  # Tant que COMPOSE_PROFILES=embedded figure dans .env, il demarre comme
+  # avant. Retirer cette ligne, apres avoir installe Ollama sur l'hote et
+  # bascule les api_base, suffit a le sortir de la pile :
+  #     python scripts/nexus_switch_engine.py --to host
   ollama:
+    profiles: ["embedded"]
     image: ollama/ollama:latest
     container_name: ollama-server
     restart: unless-stopped
@@ -54,12 +66,14 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm-proxy
     restart: unless-stopped
+    # Ollama n'est plus une dependance de demarrage : LiteLLM ne le
+    # contacte qu'au moment d'une requete, et le moteur peut desormais
+    # vivre hors de la pile. Exiger sa sante au demarrage empecherait la
+    # passerelle de tourner avec un Ollama installe sur l'hote.
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-litellm_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-litellm}"
