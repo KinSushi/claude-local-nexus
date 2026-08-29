@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-08-29 12:01.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-08-29 12:10.
 > Localiser sans chercher, vérifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -11,11 +11,11 @@
 | Infrastructure | `docker-compose.yml` | Définition des services et volumes | 4 Ko | 2026-08-29 | `d60af63eaaa60b59` |
 | Configuration | `.env.example` | Modèle de fichier d'environnement | 3 Ko | 2026-08-29 | `f70ad0c51a6d67ab` |
 | Configuration | `litellm_config.yaml` | Modèles, routeurs, fallbacks — mi-généré, mi-manuel | 35 Ko | 2026-08-29 | `83cfc30789cc46d8` |
-| Inventaire | `cloud_models.txt` | Catalogue Ollama Cloud, généré, droits annotés | 551 o | 2026-08-29 | `e29b58052f38e9ee` |
+| Inventaire | `cloud_models.txt` | Catalogue Ollama Cloud, généré, droits annotés | 551 o | 2026-08-29 | `058c58ca406ff748` |
 | Inventaire | `model_list.txt` | Modèles locaux à télécharger | 583 o | 2026-08-27 | `7ad5bf3484b00918` |
 | Pont | `.mcp.json` | Déclaration du serveur MCP pour Claude Code | 311 o | 2026-08-29 | `3d8aee915dd1ab43` |
 | Pont | `Set-ClaudeModel.ps1` | Choix explicite du mode d'exécution de Claude Code | 10 Ko | 2026-08-29 | `e22aede9ce5d3331` |
-| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 55 Ko | 2026-08-29 | `f9e4937a55a45775` |
+| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 62 Ko | 2026-08-29 | `3f041a0567cad3ec` |
 | Génération | `scripts/Update-NexusModels.ps1` | Orchestrateur de mise à jour | 7 Ko | 2026-08-29 | `4bc2d37e81a479fa` |
 | Génération | `scripts/nexus_generate.py` | Régénère les zones AUTOGEN | 33 Ko | 2026-08-29 | `896c91105886be35` |
 | Vérification | `scripts/Test-NexusConfig.ps1` | Enveloppe du validateur | 1 Ko | 2026-08-29 | `ffb1d223bd5b23d5` |
@@ -31,11 +31,11 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 2 Ko | 2026-08-27 | `c28037d99bfe2eab` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 2 Ko | 2026-08-27 | `04cbd12224ec63e5` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 929 o | 2026-08-27 | `c9a0c2e767975eb5` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 10 Ko | 2026-08-29 | `639e85609993bfa0` |
-| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 14 Ko | 2026-08-29 | `8366a41b25f80861` |
-| Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 7 Ko | 2026-08-29 | `62fdc016bd80f901` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 24 Ko | 2026-08-29 | `c5973dcb667bf3cf` |
+| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 14 Ko | 2026-08-29 | `013b5b576bee7efa` |
+| Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 9 Ko | 2026-08-29 | `12e90e1e05c99d5c` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
-| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-08-29 | `323e8256a46fd37a` |
+| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-08-29 | `17b9752787e0494a` |
 | Rituel | `scripts/nexus_boussole.py` | Régénère cette boussole | 8 Ko | 2026-08-29 | `24acb7c304f608f5` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 8 Ko | 2026-08-29 | `6c9ef6d86143d6fe` |
 | Documentation | `README.md` | Vue d'ensemble et installation | 11 Ko | 2026-08-29 | `1d896517383e8a2e` |
@@ -155,10 +155,11 @@
 | Architecture | `docs/architecture/Multi-agent-orchestration.txt` | Note d'architecture | 974 o | 2026-08-28 | `c75d80063f115ce4` |
 | Architecture | `docs/architecture/Policy-as-code.txt` | Note d'architecture | 329 o | 2026-08-28 | `e1bfd525e738057c` |
 | Architecture | `docs/architecture/Prompt-registry.txt` | Note d'architecture | 329 o | 2026-08-28 | `306b5c96dcf1b63f` |
-| Architecture | `docs/architecture/README.md` | — | 6 Ko | 2026-08-29 | `3ebd7116ef1b4d7d` |
+| Architecture | `docs/architecture/README.md` | — | 6 Ko | 2026-08-29 | `ccb68aed4113a6b4` |
 | Architecture | `docs/architecture/Reproductible-execution.txt` | Note d'architecture | 349 o | 2026-08-28 | `83527ed316590ac0` |
 | Architecture | `docs/architecture/Router-versioning.txt` | Note d'architecture | 294 o | 2026-08-28 | `47a980e9d0ca5f9f` |
 | Architecture | `docs/architecture/Routing-unit-tests.txt` | Note d'architecture | 512 o | 2026-08-28 | `f0af939d3d90d215` |
+| Architecture | `docs/architecture/SKILLS.txt` | Note d'architecture | 2 Ko | 2026-08-29 | `58e8945d605c42e7` |
 | Architecture | `docs/architecture/Scientific-quantitative-evaluation-layer.txt` | Note d'architecture | 372 o | 2026-08-28 | `db4adee680ca3f04` |
 | Architecture | `docs/architecture/Secrets-Gateway.txt` | Note d'architecture | 396 o | 2026-08-28 | `49ae4c63ae8930f3` |
 | Architecture | `docs/architecture/Self-critique-contrôlée.txt` | Note d'architecture | 455 o | 2026-08-28 | `6f791cd036ba0a11` |
@@ -174,8 +175,9 @@
 | Architecture | `docs/set-claude-model.md` | — | 3 Ko | 2026-08-29 | `43c15596721de2c3` |
 | Architecture | `model_list.host.txt` | Note d'architecture | 471 o | 2026-08-29 | `9dbc42c010b604af` |
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 8 Ko | 2026-08-29 | `7498c76a74ff77d6` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 20 Ko | 2026-08-29 | `11549d97b0d53fdc` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
+| Architecture | `rituels/RESTE-A-FAIRE.md` | — | 12 Ko | 2026-08-29 | `bc4c948befe40a94` |
 | Architecture | `scripts/Initialize-Nexus.ps1` | — | 7 Ko | 2026-08-29 | `2ad5c08de5db3923` |
 | Architecture | `scripts/nexus_preserve.py` | — | 15 Ko | 2026-08-29 | `bd3127c5de5f2093` |
 | Architecture | `scripts/nexus_pull_host.py` | — | 6 Ko | 2026-08-29 | `867271d991c9bffa` |
@@ -199,7 +201,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 140 |
+| Architecture | 142 |
 | Obsolète | 2 |
 
 ---

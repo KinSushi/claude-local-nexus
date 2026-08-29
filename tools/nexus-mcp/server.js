@@ -212,7 +212,28 @@ function getJson(pathname, timeoutMs = 30000) {
 // Erreurs qui ne disent rien du fond de la requete : un redemarrage de la
 // passerelle, une coupure de socket, un delai depasse. Les rejouer est
 // legitime ; rejouer un 400 ou un 404 ne le serait pas.
-const TRANSIENT = /socket hang up|ECONNRESET|ECONNREFUSED|EPIPE|ETIMEDOUT|delai depasse|HTTP 5\d\d|HTTP 429/i;
+// Erreurs rejouables : celles qui ne disent rien du fond de la requete ET
+// dont on sait qu'elle n'a pas ete traitee.
+//
+// `delai depasse` en est volontairement ABSENT. Le delai porte sur
+// l'inactivite du socket, pas sur un traitement : la requete a tres bien pu
+// etre executee entierement cote serveur. La rejouer facturerait trois
+// generations sur un modele Claude, ou lancerait trois inferences
+// concurrentes du meme prompt sur un hote CPU -- exactement la contention
+// que nexus_batch dit vouloir eviter.
+const REJOUABLE = /socket hang up|ECONNRESET|ECONNREFUSED|EPIPE|ETIMEDOUT/i;
+
+// Codes HTTP rejouables. Le CODE fait foi, jamais le texte : un 400
+// definitif dont le corps mentionne ECONNRESET -- frequent quand LiteLLM
+// recopie l'erreur amont -- etait rejoue trois fois pour rien.
+const CODES_REJOUABLES = new Set([429, 500, 502, 503, 504]);
+
+function estRejouable(err) {
+  if (typeof err.statusCode === "number") {
+    return CODES_REJOUABLES.has(err.statusCode);
+  }
+  return REJOUABLE.test(err.message);
+}
 
 async function withRetry(operation, attempts = 3) {
   let last;
@@ -221,7 +242,7 @@ async function withRetry(operation, attempts = 3) {
       return await operation();
     } catch (err) {
       last = err;
-      if (!TRANSIENT.test(err.message) || i === attempts - 1) throw err;
+      if (!estRejouable(err) || i === attempts - 1) throw err;
       // Attente croissante : une passerelle qui redemarre met quelques
       // secondes, pas quelques millisecondes.
       const pause = 2000 * Math.pow(2, i);
@@ -240,8 +261,19 @@ async function withRetry(operation, attempts = 3) {
  * plateforme : l'appelant croirait ses donnees restees sur la machine. Le
  * plan se deduit donc du modele reellement servi, jamais d'une constante.
  */
+const LIBELLE_PLAN = {
+  local: "local, cout 0",
+  cloud: "Ollama Cloud, les donnees sortent",
+  anthropic: "Anthropic, facture au token",
+  routeur: "routeur",
+};
+
 function planOf(alias) {
   if (!alias) return "plan inconnu";
+  // La table lue a la source prime toujours ; le suffixe n'est qu'un repli
+  // pour le cas ou la passerelle n'aurait pas encore repondu.
+  const connu = plansConnus && plansConnus.get(alias);
+  if (connu) return LIBELLE_PLAN[connu] || connu;
   if (alias.endsWith("-cloud")) return "Ollama Cloud, les donnees sortent";
   if (alias.startsWith("claude-")) return "Anthropic, facture au token";
   return "local, cout 0";
@@ -256,8 +288,12 @@ async function chat(model, messages, maxTokens, timeoutMs) {
     timeoutMs
   ));
   const choice = body.choices && body.choices[0];
-  if (!choice) throw new Error("aucune reponse du modele");
+  if (!choice) throw new Error("aucune reponse du modele " + model);
   const usage = body.usage || {};
+  // Une generation coupee par max_tokens remontait comme une reponse
+  // normale : l'appelant recevait un texte tronque sans le savoir, et
+  // pouvait conclure sur une phrase interrompue.
+  const tronquee = choice.finish_reason === "length";
   // Derriere un routeur adaptatif, le corps et x-litellm-model-group ne
   // renvoient que le nom du routeur. Seul x-litellm-adaptive-router-model
   // designe le modele que le routeur a choisi.
@@ -271,6 +307,10 @@ async function chat(model, messages, maxTokens, timeoutMs) {
     model: resolved,
     upstream: headers["x-litellm-model-name"] || "",
     tokens: (usage.prompt_tokens || 0) + (usage.completion_tokens || 0),
+    tronquee,
+    // Le cout reel, tel que la passerelle le calcule. Preferable a une
+    // affirmation « cout 0 » deduite du nom du modele.
+    cout: Number(headers["x-litellm-response-cost-original"] || 0),
   };
 }
 
@@ -278,6 +318,15 @@ async function embed(model, inputs) {
   const { body } = await withRetry(() => requestJson(
     "/v1/embeddings", { model, input: inputs }, DEFAULT_TIMEOUT_MS
   ));
+  // Sans cette garde, une reponse mal formee produisait
+  // « Cannot read properties of undefined » -- message que l'appelant ne
+  // peut ni diagnostiquer ni corriger.
+  if (!body || !Array.isArray(body.data)) {
+    throw new Error(
+      "reponse d'embeddings inattendue du modele " + model +
+      " : champ 'data' absent"
+    );
+  }
   return body.data.map((d) => d.embedding);
 }
 
@@ -407,7 +456,27 @@ function cosine(a, b) {
 }
 
 async function buildIndex(root, embedModel) {
+  // Une racine invalide faisait echouer readdirSync, le catch renvoyait une
+  // liste vide, et l'index EXISTANT etait ecrase par un index a zero
+  // extrait -- annonce « Index construit. » sans la moindre erreur. On
+  // refuse donc en amont plutot que de detruire en silence.
+  let stat;
+  try {
+    stat = fs.statSync(root);
+  } catch {
+    throw new Error("racine introuvable : " + root);
+  }
+  if (!stat.isDirectory()) {
+    throw new Error("racine invalide : " + root + " n'est pas un repertoire");
+  }
+
   const files = walk(root, []);
+  if (!files.length) {
+    throw new Error(
+      "aucun fichier indexable sous " + root + " : index inchange. " +
+      "Ecraser l'index existant par un index vide serait une perte, pas un resultat."
+    );
+  }
   const records = [];
   const pending = [];
 
@@ -442,6 +511,18 @@ async function buildIndex(root, embedModel) {
     log("indexation " + Math.min(i + BATCH, pending.length) + "/" + pending.length);
   }
 
+  // Une reponse d'embeddings plus courte que le lot decalerait tous les
+  // vecteurs suivants et laisserait la queue sans vecteur -- cle que
+  // JSON.stringify supprime silencieusement. L'index serait alors annonce
+  // « construit », et la recherche renverrait des scores faux ou echouerait
+  // entierement. Mieux vaut refuser d'ecrire.
+  if (vectors.length !== records.length) {
+    throw new Error(
+      "embeddings incomplets : " + vectors.length + " vecteurs pour " +
+      records.length + " extraits. Index non ecrit."
+    );
+  }
+
   for (let i = 0; i < records.length; i++) {
     records[i].vector = vectors[i];
   }
@@ -455,7 +536,12 @@ async function buildIndex(root, embedModel) {
     records,
   };
   fs.mkdirSync(INDEX_DIR, { recursive: true });
-  fs.writeFileSync(INDEX_PATH, JSON.stringify(index), "utf8");
+  // Ecriture atomique : une interruption pendant writeFileSync laisserait
+  // un index tronque, que loadIndex ne saurait pas distinguer d'un index
+  // valide. Le renommage, lui, est indivisible.
+  const provisoire = INDEX_PATH + ".tmp";
+  fs.writeFileSync(provisoire, JSON.stringify(index), "utf8");
+  fs.renameSync(provisoire, INDEX_PATH);
   return index;
 }
 
@@ -558,11 +644,64 @@ const PROFILES = {
 };
 
 let cachedExposed = null;
+// Duree de validite des inventaires mis en cache. Sans elle, un inventaire
+// vide lu une seule fois au demarrage de la passerelle restait vrai pour
+// toute la duree du processus -- et un `Set` vide etant truthy, le cache ne
+// se reparait jamais. Deux outils du meme serveur se contredisaient alors.
+const CACHE_MS = 60000;
+let cacheExpire = 0;
+let plansConnus = null;
+let plansExpire = 0;
+
 async function exposedModels() {
-  if (cachedExposed) return cachedExposed;
+  if (cachedExposed && cachedExposed.size && Date.now() < cacheExpire) {
+    return cachedExposed;
+  }
   const data = await getJson("/v1/models");
-  cachedExposed = new Set((data.data || []).map((d) => d.id));
-  return cachedExposed;
+  const ensemble = new Set((data.data || []).map((d) => d.id));
+  // Un inventaire vide n'est pas mis en cache : c'est un symptome, pas un
+  // etat stable.
+  if (ensemble.size) {
+    cachedExposed = ensemble;
+    cacheExpire = Date.now() + CACHE_MS;
+  }
+  return ensemble;
+}
+
+/**
+ * Plan d'execution de chaque alias, lu a la source.
+ *
+ * `/v1/model/info` renvoie les `litellm_params` reels : le fournisseur et
+ * l'`api_base`. C'est la seule source qui fasse autorite. Deduire le plan du
+ * suffixe du nom se trompait des qu'un alias sortait de la convention --
+ * `releve-locale` etait classe « Anthropic, facture au token » alors qu'il
+ * est 100 % local, et c'est le premier candidat du profil `coding`.
+ */
+async function chargerPlans() {
+  if (plansConnus && Date.now() < plansExpire) return plansConnus;
+  try {
+    const data = await getJson("/v1/model/info");
+    const items = data.data || data || [];
+    const table = new Map();
+    for (const m of items) {
+      const alias = m.model_name;
+      const params = m.litellm_params || {};
+      const raw = String(params.model || "");
+      const base = String(params.api_base || "");
+      if (!alias) continue;
+      if (raw.startsWith("auto_router/")) table.set(alias, "routeur");
+      else if (raw.startsWith("anthropic/")) table.set(alias, "anthropic");
+      else if (base.includes("ollama.com")) table.set(alias, "cloud");
+      else table.set(alias, "local");
+    }
+    if (table.size) {
+      plansConnus = table;
+      plansExpire = Date.now() + CACHE_MS;
+    }
+  } catch (err) {
+    log("plans indisponibles (" + err.message.slice(0, 60) + ") — repli sur le nom");
+  }
+  return plansConnus;
 }
 
 async function resolveProfile(profile) {
@@ -1048,8 +1187,41 @@ function requireInsideRepo(target, quoi) {
   return target;
 }
 
+/**
+ * Verifications de type des arguments.
+ *
+ * Les schemas declarent `array`, mais rien ne le verifiait : `{"paths":"a.md"}`
+ * etait itere caractere par caractere et renvoyait un succes vide --
+ * `### a (introuvable)`, `### . (illisible)`, `### m`. L'appelant recevait
+ * `isError: false` sur une demande qui n'avait aucun sens.
+ */
+function exigerTableau(valeur, nom) {
+  if (!Array.isArray(valeur)) {
+    throw new Error(
+      "parametre '" + nom + "' : un tableau est attendu, recu " +
+      (valeur === undefined ? "rien" : typeof valeur)
+    );
+  }
+  return valeur;
+}
+
+function exigerTexte(valeur, nom) {
+  if (typeof valeur !== "string" || !valeur.trim()) {
+    throw new Error(
+      "parametre '" + nom + "' : une chaine non vide est attendue, recu " +
+      (valeur === undefined ? "rien" : typeof valeur)
+    );
+  }
+  return valeur;
+}
+
 async function callTool(name, args) {
   args = args || {};
+
+  // La table des plans est chargee avant tout appel : sans elle, planOf
+  // retombe sur le suffixe du nom et peut annoncer un plan faux -- ce qui,
+  // sur cette plateforme, est le pire des defauts.
+  await chargerPlans();
 
   if (name === "nexus_ask") {
     if (!args.prompt) throw new Error("parametre 'prompt' requis");
@@ -1072,14 +1244,12 @@ async function callTool(name, args) {
 
     // Le plan est annonce, pas sous-entendu : ce qui a ete facture et ce
     // qui est sorti de la machine doit se lire sans enquete.
-    const plan = result.model.endsWith("-cloud") ? "Ollama Cloud"
-      : result.model.startsWith("claude-") ? "Anthropic, facture au token"
-      : "local, cout 0";
-    return `[${result.model} · ${plan}${note} · ${result.tokens} tokens]\n\n${result.text}`;
+    const coupe = result.tronquee ? " · REPONSE TRONQUEE a max_tokens" : "";
+    return `[${result.model} · ${planOf(result.model)}${note} · ${result.tokens} tokens${coupe}]\n\n${result.text}`;
   }
 
   if (name === "nexus_route") {
-    if (!args.prompt) throw new Error("parametre 'prompt' requis");
+    exigerTexte(args.prompt, "prompt");
     const plane = args.plane || "local";
     const router = {
       local: "adaptive-router-local",
@@ -1100,7 +1270,8 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_context") {
-    if (!args.instruction) throw new Error("parametre 'instruction' requis");
+    exigerTexte(args.instruction, "instruction");
+    if (args.paths !== undefined) exigerTableau(args.paths, "paths");
     const model = args.model || DEFAULT_CHAT_MODEL;
     const contextTokens = args.context_tokens || 32768;
 
@@ -1144,7 +1315,7 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_vision") {
-    if (!args.path) throw new Error("parametre 'path' requis");
+    exigerTexte(args.path, "path");
     const full = requireInsideRepo(resolvePath(args.path), "image");
     if (!fs.existsSync(full)) throw new Error("image introuvable : " + args.path);
     const extension = path.extname(full).toLowerCase().replace(".", "") || "png";
@@ -1182,8 +1353,8 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_summarize") {
-    const paths = args.paths || [];
-    if (!paths.length) throw new Error("parametre 'paths' requis");
+    const paths = exigerTableau(args.paths, "paths");
+    if (!paths.length) throw new Error("parametre 'paths' : tableau vide");
     const instruction =
       args.instruction || "Fais une synthese technique fidele, structuree et concise.";
     const model = args.model || DEFAULT_CHAT_MODEL;
@@ -1257,8 +1428,13 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_search") {
-    if (!args.query) throw new Error("parametre 'query' requis");
-    const hits = await searchIndex(args.query, args.k || 8, args.model);
+    exigerTexte(args.query, "query");
+    // k borne : `k: -1` renvoyait l'index entier moins un extrait, soit
+    // plusieurs mega-octets deverses dans le contexte de l'appelant --
+    // exactement ce que cet outil existe pour eviter.
+    const demande = Number.isFinite(args.k) ? Math.trunc(args.k) : 8;
+    const k = Math.min(Math.max(demande, 1), 50);
+    const hits = await searchIndex(args.query, k, args.model);
     if (!hits.length) return "Aucun resultat.";
     const blocks = hits.map((hit, i) => {
       const r = hit.record;
@@ -1272,8 +1448,8 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_batch") {
-    const tasks = args.tasks || [];
-    if (!tasks.length) throw new Error("parametre 'tasks' requis");
+    const tasks = exigerTableau(args.tasks, "tasks");
+    if (!tasks.length) throw new Error("parametre 'tasks' : tableau vide");
     const parts = [];
     let total = 0;
     for (let i = 0; i < tasks.length; i++) {
@@ -1307,9 +1483,9 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_compare") {
-    if (!args.prompt) throw new Error("parametre 'prompt' requis");
-    const models = args.models || [];
-    if (models.length < 2) throw new Error("au moins deux modeles sont requis");
+    exigerTexte(args.prompt, "prompt");
+    const models = exigerTableau(args.models, "models");
+    if (models.length < 2) throw new Error("parametre 'models' : au moins deux modeles");
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
@@ -1357,9 +1533,18 @@ async function callTool(name, args) {
   if (name === "nexus_models") {
     const data = await getJson("/v1/models");
     const ids = (data.data || []).map((d) => d.id).sort();
+    // Classer d'apres les litellm_params reels, et non d'apres le suffixe :
+    // `releve-locale` etait annonce « facture au token » alors qu'il est
+    // local -- l'orchestrateur l'evitait donc pour du confidentiel, ou
+    // renoncait au profil coding dont il est le premier candidat.
+    const plans = await chargerPlans();
     const groups = { local: [], cloud: [], anthropic: [], routeurs: [] };
     for (const id of ids) {
-      if (id.startsWith("adaptive-router")) groups.routeurs.push(id);
+      const plan = plans && plans.get(id);
+      if (plan === "routeur" || id.startsWith("adaptive-router")) groups.routeurs.push(id);
+      else if (plan === "local") groups.local.push(id);
+      else if (plan === "cloud") groups.cloud.push(id);
+      else if (plan === "anthropic") groups.anthropic.push(id);
       else if (id.endsWith("-local")) groups.local.push(id);
       else if (id.endsWith("-cloud")) groups.cloud.push(id);
       else groups.anthropic.push(id);

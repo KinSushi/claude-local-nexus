@@ -5,6 +5,10 @@
 >
 > Statuts : `FAIT` vérifié par un test · `PRÊT` livré, pas encore exécuté ·
 > `OUVERT` à traiter · `DÉCIDÉ` tranché, sans action requise.
+>
+> **Les correctifs identifiés mais non appliqués sont détaillés dans
+> [`RESTE-A-FAIRE.md`](RESTE-A-FAIRE.md)** — 27 entrées, chacune vérifiée par
+> exécution lors des audits, avec sa gravité et sa correction.
 
 ---
 

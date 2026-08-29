@@ -4,11 +4,11 @@ Contrat;AGENTS.md;Contrat d'agent universel;3540;2026-08-28;e258b3cc90de2a14
 Infrastructure;docker-compose.yml;Définition des services et volumes;4166;2026-08-29;d60af63eaaa60b59
 Configuration;.env.example;Modèle de fichier d'environnement;3051;2026-08-29;f70ad0c51a6d67ab
 Configuration;litellm_config.yaml;Modèles, routeurs, fallbacks — mi-généré, mi-manuel;35871;2026-08-29;83cfc30789cc46d8
-Inventaire;cloud_models.txt;Catalogue Ollama Cloud, généré, droits annotés;551;2026-08-29;e29b58052f38e9ee
+Inventaire;cloud_models.txt;Catalogue Ollama Cloud, généré, droits annotés;551;2026-08-29;058c58ca406ff748
 Inventaire;model_list.txt;Modèles locaux à télécharger;583;2026-08-27;7ad5bf3484b00918
 Pont;.mcp.json;Déclaration du serveur MCP pour Claude Code;311;2026-08-29;3d8aee915dd1ab43
 Pont;Set-ClaudeModel.ps1;Choix explicite du mode d'exécution de Claude Code;9776;2026-08-29;e22aede9ce5d3331
-Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;55884;2026-08-29;f9e4937a55a45775
+Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;63507;2026-08-29;3f041a0567cad3ec
 Génération;scripts/Update-NexusModels.ps1;Orchestrateur de mise à jour;7331;2026-08-29;4bc2d37e81a479fa
 Génération;scripts/nexus_generate.py;Régénère les zones AUTOGEN;33508;2026-08-29;896c91105886be35
 Vérification;scripts/Test-NexusConfig.ps1;Enveloppe du validateur;1152;2026-08-29;ffb1d223bd5b23d5
@@ -24,11 +24,11 @@ Exploitation;scripts/backup.ps1;Sauvegarde configuration et volumes;4118;2026-08
 Exploitation;scripts/restore.ps1;Restauration;2235;2026-08-27;c28037d99bfe2eab
 Exploitation;scripts/start.ps1;Démarrage de la pile;1918;2026-08-27;04cbd12224ec63e5
 Exploitation;scripts/stop.ps1;Arrêt de la pile;929;2026-08-27;c9a0c2e767975eb5
-Rituel;rituels/BOUSSOLE.md;Cet index;9983;2026-08-29;639e85609993bfa0
-Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;13922;2026-08-29;8366a41b25f80861
-Rituel;rituels/PROGRESS.md;Historique des décisions et des erreurs;7341;2026-08-29;62fdc016bd80f901
+Rituel;rituels/BOUSSOLE.md;Cet index;24117;2026-08-29;c5973dcb667bf3cf
+Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;14145;2026-08-29;013b5b576bee7efa
+Rituel;rituels/PROGRESS.md;Historique des décisions et des erreurs;9645;2026-08-29;12e90e1e05c99d5c
 Rituel;rituels/RESUME.ps1;Reprise de session;2848;2026-08-29;7714dfe8b4c7c548
-Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;2724;2026-08-29;323e8256a46fd37a
+Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;2723;2026-08-29;17b9752787e0494a
 Rituel;scripts/nexus_boussole.py;Régénère cette boussole;8600;2026-08-29;24acb7c304f608f5
 Rituel;scripts/nexus_state.py;Régénère STATE.md par mesure;8511;2026-08-29;6c9ef6d86143d6fe
 Documentation;README.md;Vue d'ensemble et installation;11260;2026-08-29;1d896517383e8a2e
@@ -148,10 +148,11 @@ Architecture;docs/architecture/Model-lifecycle-automation.txt;Note d'architectur
 Architecture;docs/architecture/Multi-agent-orchestration.txt;Note d'architecture;974;2026-08-28;c75d80063f115ce4
 Architecture;docs/architecture/Policy-as-code.txt;Note d'architecture;329;2026-08-28;e1bfd525e738057c
 Architecture;docs/architecture/Prompt-registry.txt;Note d'architecture;329;2026-08-28;306b5c96dcf1b63f
-Architecture;docs/architecture/README.md;;5880;2026-08-29;3ebd7116ef1b4d7d
+Architecture;docs/architecture/README.md;;6317;2026-08-29;ccb68aed4113a6b4
 Architecture;docs/architecture/Reproductible-execution.txt;Note d'architecture;349;2026-08-28;83527ed316590ac0
 Architecture;docs/architecture/Router-versioning.txt;Note d'architecture;294;2026-08-28;47a980e9d0ca5f9f
 Architecture;docs/architecture/Routing-unit-tests.txt;Note d'architecture;512;2026-08-28;f0af939d3d90d215
+Architecture;docs/architecture/SKILLS.txt;Note d'architecture;2169;2026-08-29;58e8945d605c42e7
 Architecture;docs/architecture/Scientific-quantitative-evaluation-layer.txt;Note d'architecture;372;2026-08-28;db4adee680ca3f04
 Architecture;docs/architecture/Secrets-Gateway.txt;Note d'architecture;396;2026-08-28;49ae4c63ae8930f3
 Architecture;docs/architecture/Self-critique-contrôlée.txt;Note d'architecture;455;2026-08-28;6f791cd036ba0a11
@@ -167,8 +168,9 @@ Architecture;docs/architecture/tool-registry.txt;Note d'architecture;451;2026-08
 Architecture;docs/set-claude-model.md;;2947;2026-08-29;43c15596721de2c3
 Architecture;model_list.host.txt;Note d'architecture;471;2026-08-29;9dbc42c010b604af
 Architecture;requirements.txt;Note d'architecture;12;2026-08-29;71749243f84428fe
-Architecture;rituels/BOUSSOLE.csv;;7725;2026-08-29;7498c76a74ff77d6
+Architecture;rituels/BOUSSOLE.csv;;20030;2026-08-29;11549d97b0d53fdc
 Architecture;rituels/README.md;;1756;2026-08-29;dac6503c1883887f
+Architecture;rituels/RESTE-A-FAIRE.md;;11809;2026-08-29;bc4c948befe40a94
 Architecture;scripts/Initialize-Nexus.ps1;;7360;2026-08-29;2ad5c08de5db3923
 Architecture;scripts/nexus_preserve.py;;15113;2026-08-29;bd3127c5de5f2093
 Architecture;scripts/nexus_pull_host.py;;6545;2026-08-29;867271d991c9bffa

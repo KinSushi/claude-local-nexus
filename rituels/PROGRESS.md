@@ -140,7 +140,48 @@ quatre défauts réels — transport HTTP figé, clé vide envoyée en Bearer,
 image sans plafond de taille, cosinus sans garde — et trois faux positifs.
 Le rendement vient du tri.
 
+### Audits croisés — quatre agents, périmètres disjoints
+
+Quatre audits ont été conduits en worktrees isolés : sécurité, robustesse du
+serveur MCP, correction de la chaîne génération/validation, qualité perçue du
+dépôt. Ils ont trouvé nettement plus que l'inspection directe, et surtout des
+défauts d'une autre nature.
+
+**La fuite Langfuse.** `success_callback` s'appliquait à toutes les requêtes,
+les 40 modèles locaux compris, sans masquage : chaque prompt et chaque
+réponse partaient vers cloud.langfuse.com pendant que les outils annonçaient
+« aucune donnée ne quitte la machine ». C'est le défaut le plus grave de
+toute la refonte, et il était antérieur à celle-ci — mais les outils bâtis
+par-dessus le rendaient mensonger.
+
+**Deux échecs ouverts.** Les routeurs étaient exclus du calcul des domaines :
+un modèle cloud glissé dans le pool `adaptive-router-local` passait la
+validation *et* le test de fuite transitive — démontré en exécutant le
+validateur sur une configuration piégée. Et `installed_models()` renvoyait un
+dictionnaire vide quand Docker était arrêté, donc tous les modèles pesaient
+0 Go, donc tous passaient en ACCEPT : générateur et validateur échouaient
+ouverts, ensemble.
+
+**L'indexation sortait du dépôt.** `nexus_index_build` acceptait une racine
+absolue : le répertoire personnel était indexable, `.ssh` et `.aws` compris,
+et `nexus_search` en restituait le contenu verbatim.
+
+**Le README mentait sur ses propres chiffres** — « 41 alias local / 9 cloud »
+pour 40 et 6. Un dépôt qui proclame « rien n'est supposé, tout est mesuré »
+ne peut pas se tromper sur un comptage que ses propres outils produisent.
+
+Sur l'ensemble, plusieurs signalements ont été **écartés après vérification** :
+une boucle infinie impossible (le plancher de `windowChars` l'interdit), un
+compteur d'appels en vol mal analysé, un `||` jugé dangereux qui fait ce
+qu'il doit. Le rendement d'un audit vient du tri, pas de l'acceptation.
+
+**Erreur commise** : j'ai retiré `SKILLS.txt` en le jugeant sur sa forme —
+c'était une source d'inspiration voulue. Restauré, avec une réserve explicite
+sur ses chiffres et ses liens.
+
 ### Suite
 
 Migration du moteur hors de Docker, par étapes et réversible jusqu'à la
-dernière. Voir la section 1 du cockpit.
+dernière. Voir la section 1 du cockpit, et
+[`RESTE-A-FAIRE.md`](RESTE-A-FAIRE.md) pour les 27 correctifs identifiés
+et non encore appliqués.
