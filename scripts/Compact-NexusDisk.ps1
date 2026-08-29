@@ -136,5 +136,6 @@ Ecrire ("Espace libre sur C: : {0:N0} Go" -f $libre)
 Write-Host ""
 Ecrire "Suite -- rapatrier les modeles dont les poids manquent :" 'Cyan'
 Ecrire "    python scripts/nexus_pull_host.py" 'Cyan'
-Ecrire "    python scripts/nexus_validate.py" 'Cyan'
+Ecrire "    python scripts/nexus_conformite.py" 'Cyan'
+Ecrire "    .\scripts\start.ps1 -Restart" 'Cyan'
 Write-Host ""

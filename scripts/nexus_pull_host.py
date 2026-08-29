@@ -20,7 +20,9 @@ Le script est relançable : ce qui est déjà présent est ignoré, ce qui a
 échoué est retenté au passage suivant.
 
 Usage :
-    python scripts/nexus_pull_host.py [--liste model_list.host.txt] [--dry-run]
+    python scripts/nexus_pull_host.py               # comble ce qui manque
+    python scripts/nexus_pull_host.py --dry-run     # simule
+    python scripts/nexus_pull_host.py --liste model_list.host.txt
 """
 from __future__ import annotations
 
@@ -169,15 +171,25 @@ def declares_sans_poids() -> list[str] | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--liste", default="model_list.host.txt")
+    # Le comportement par defaut est de combler ce qui MANQUE reellement,
+    # deduit de la configuration. La liste figee est devenue l'option
+    # explicite, et l'inversion vient d'un incident : lancee sans option,
+    # la version precedente lisait `model_list.host.txt` -- produit quand
+    # le disque etait plein, donc reduit a quatre entrees toutes deja
+    # presentes -- et annoncait "0 a telecharger, 4 deja presents" pendant
+    # que le validateur listait six absents. Rien n'etait faux dans ce
+    # message, et il induisait pourtant en erreur : le chemin le plus
+    # court doit etre le chemin correct.
+    parser.add_argument("--liste", metavar="FICHIER",
+                        help="Lire une liste figee au lieu de deduire les "
+                             "manquants de la configuration.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--manquants", action="store_true",
-        help="Deduire la liste de litellm_config.yaml : tout modele declare "
-             "dont les poids manquent sur le moteur.")
+        help="Comportement par defaut, conserve pour compatibilite.")
     args = parser.parse_args()
 
-    if args.manquants:
+    if not args.liste:
         voulus = declares_sans_poids()
         if voulus is None:
             print("Inventaire du moteur illisible : impossible de savoir ce qui manque.")
@@ -295,8 +307,8 @@ def main() -> int:
     elif echecs or interrompu:
         print("""
   Suite :
-    python scripts/nexus_validate.py          ce qui manque encore
-    python scripts/nexus_pull_host.py --manquants   relancer apres liberation
+    python scripts/nexus_conformite.py        ce qui manque encore
+    python scripts/nexus_pull_host.py         relancer apres liberation
 """)
     else:
         print("""
