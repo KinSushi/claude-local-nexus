@@ -1000,8 +1000,17 @@ def test_code() -> None:
           str(wrong) if wrong else "ACCEPT / DEGRADED / REJECT distingues")
 
     # Un modele plus lourd que le disque libre ne doit pas etre telecharge.
-    ok, reason = capability.can_download(profile["free_disk_gb"] * 3, profile)
-    check("telechargement refuse hors budget disque", not ok, reason[:60])
+    #
+    # `free_disk_gb` vaut None quand la mesure a echoue. La multiplier levait,
+    # et `not ok` sur l'etat indetermine (None) aurait fait PASSER le test sur
+    # une mesure absente -- soit exactement la confusion que ce test existe
+    # pour interdire ailleurs.
+    if not profile.get("disque_mesure"):
+        skip("telechargement refuse hors budget disque",
+             "capacite disque non mesuree")
+    else:
+        ok, reason = capability.can_download(profile["free_disk_gb"] * 3, profile)
+        check("telechargement refuse hors budget disque", ok is False, reason[:60])
 
     # Chaque script Python de la plateforme doit s'importer sans effet de bord.
     py_modules = ["nexus_capability", "nexus_generate", "nexus_switch_engine",

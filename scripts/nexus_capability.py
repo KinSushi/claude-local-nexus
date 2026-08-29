@@ -111,8 +111,8 @@ def host_memory_gb() -> float | None:
     Mémoire physique de la machine, en gigaoctets décimaux.
 
     Rend **None** quand aucune des deux voies n'a pu mesurer — jamais 0.
-    Zéro gigaoctet n'est pas une mesure : c'est l'aveu qu'on n'a pas su
-    interroger la machine. Les confondre faisait rendre un verdict
+    Zéro gigaoctet n'est pas une mesure : c'est l'aveu qu'on n'a pas
+    su interroger la machine. Les confondre faisait rendre un verdict
     catégorique — « aucun modèle exécutable ici » — sur un hôte
     parfaitement capable mais momentanément muet, et ce verdict décide
     quels modèles sont téléchargés et routés automatiquement.
@@ -245,8 +245,18 @@ def ollama_location() -> dict:
             "host_native": native}
 
 
-def model_store_free_gb(location: dict) -> tuple[str, float]:
-    """Disque qui reçoit réellement les poids, et sa place libre."""
+def model_store_free_gb(location: dict) -> tuple[str, float | None]:
+    """
+    Disque qui reçoit réellement les poids, et sa place libre.
+
+    Retourne **None** pour la capacité libre quand la mesure échoue
+    (ex. permission refusée, chemin inexistant). 0.0 n'est pas une mesure
+    fiable : il signifierait que le disque ne possède aucune place libre,
+    ce qui est rarement vrai et masquerait le fait que la requête a
+    échoué. En renvoyant None, l'appelant peut distinguer « pas de place »
+    de « mesure manquante » et éviter de refuser à tort tous les
+    téléchargements.
+    """
     if location["mode"] == "host":
         store = os.environ.get(
             "OLLAMA_MODELS",
@@ -264,7 +274,7 @@ def model_store_free_gb(location: dict) -> tuple[str, float]:
     try:
         return store, shutil.disk_usage(probe).free / 1e9
     except Exception:
-        return store, 0.0
+        return store, None
 
 
 def installed_models(location: dict | None = None) -> dict[str, float] | None:
@@ -304,7 +314,7 @@ def installed_models(location: dict | None = None) -> dict[str, float] | None:
     sizes: dict[str, float] = {}
     for line in out.splitlines()[1:]:
         parts = line.split()
-        # Les modèles Ollama Cloud apparaissent sans poids (« - ») : ils ne
+        # Les modèles Ollama Cloud apparaissent sans poids (« - ») : ils
         # pèsent rien ici, et leur donner un poids nul les ferait entrer
         # dans l'inventaire local comme s'ils y étaient chargeables.
         if len(parts) >= 4 and parts[2] != "-":
@@ -371,6 +381,8 @@ def build_profile() -> dict:
         fast_budget = usable * POOL_FRACTION
         max_budget = usable * RUNNABLE_FRACTION
 
+    disque_mesure = free_disk is not None
+
     return {
         "host_ram_gb": None if host_ram is None else round(host_ram, 1),
         # Conservée séparément, et non recalculée depuis la valeur arrondie :
@@ -386,11 +398,12 @@ def build_profile() -> dict:
         # None et non 0 : un consommateur doit pouvoir distinguer « la
         # machine a 0 Go » — impossible — de « on ne sait pas ».
         "memoire_mesuree": memoire_mesuree,
+        "disque_mesure": disque_mesure,
         "inference_memory_gb": None if usable is None else round(usable, 1),
         "pool_budget_gb": None if fast_budget is None else round(fast_budget, 1),
         "runnable_budget_gb": None if max_budget is None else round(max_budget, 1),
         "model_store": store,
-        "free_disk_gb": round(free_disk, 1),
+        "free_disk_gb": None if free_disk is None else round(free_disk, 1),
     }
 
 
@@ -439,7 +452,18 @@ def verdict(size_gb: float, profile: dict) -> tuple[str, str]:
     return ACCEPT, "%.0f Go, dans le budget" % size_gb
 
 
-def can_download(size_gb: float, profile: dict) -> tuple[bool, str]:
+def can_download(size_gb: float, profile: dict) -> tuple[bool | None, str]:
+    """
+    Détermine si le téléchargement d'un modèle de `size_gb` Go est possible.
+
+    - Si la capacité disque n'a pas pu être mesurée (`disque_mesure` est False),
+      la fonction renvoie **None** pour l'état, afin d'indiquer l'indétermination.
+      Refuser automatiquement serait faux (on pourrait avoir assez d'espace),
+      autoriser automatiquement serait également faux (on pourrait ne pas en avoir).
+    - Sinon, la logique existante s'applique.
+    """
+    if not profile.get("disque_mesure"):
+        return None, "capacite disque non mesuree : indetermine"
     needed = size_gb * DISK_MARGIN
     if needed > profile["free_disk_gb"]:
         return False, ("%.0f Go requis (marge comprise) pour %.0f Go libres sur %s"
@@ -485,6 +509,10 @@ def main() -> int:
             print("Le module se tait plutot que de trancher a l'aveugle.")
             return 2
         ok, motif = can_download(taille, profile)
+        if ok is None:
+            # Indétermination due à une mesure disque manquante.
+            print("INDETERMINE : " + motif)
+            return 2
         print(("AUTORISE : " if ok else "REFUSE : ") + motif)
         return 0 if ok else 1
 
@@ -534,8 +562,11 @@ def main() -> int:
     print("  Budget pool      : %.1f Go" % profile["pool_budget_gb"])
     print("  Budget maximal   : %.1f Go" % profile["runnable_budget_gb"])
     print("  Stockage modeles : %s" % profile["model_store"])
-    print("  Disque libre     : %.1f Go (%.1f Gio)"
-          % (profile["free_disk_gb"], profile["free_disk_gb"] * 1e9 / 1024 ** 3))
+    if profile["free_disk_gb"] is None:
+        print("  Disque libre     : inconnu")
+    else:
+        print("  Disque libre     : %.1f Go (%.1f Gio)"
+              % (profile["free_disk_gb"], profile["free_disk_gb"] * 1e9 / 1024 ** 3))
 
     if not models:
         print("\n  Aucun modele detecte.")
