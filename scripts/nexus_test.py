@@ -18,7 +18,7 @@ Trois familles de tests, volontairement distinctes :
            Un routeur « local » ne doit jamais répondre depuis le cloud.
 
 Usage :
-    python scripts/nexus_test.py [--include-slow] [--only forward|reverse|policy]
+    python scripts/nexus_test.py [--include-slow] [--only forward|reverse|policy|code|releve]
 """
 from __future__ import annotations
 
@@ -797,6 +797,45 @@ def test_policy(models: list[str]) -> None:
 # ----------------------------------------------------------------------
 # CODE — le code de la plateforme lui-meme
 # ----------------------------------------------------------------------
+def test_releve() -> None:
+    """
+    Le local prend-il réellement le relais si l'abonnement s'arrête ?
+
+    C'est la promesse centrale de la plateforme, et la seule qu'aucun autre
+    test ne couvre : les familles forward et policy vérifient que les
+    modèles répondent et que les frontières tiennent, jamais qu'un modèle
+    local sait *orchestrer* — demander un outil, exploiter le résultat,
+    enchaîner. Un modèle qui répond n'orchestre pas, et la différence ne se
+    découvre qu'au moment où l'on aurait eu besoin de la relève.
+
+    Les quatre épreuves vivent dans nexus_releve.py, qui sert aussi de
+    commande autonome. Les dupliquer ici les ferait diverger.
+    """
+    print("\n--- RELEVE : le local peut-il remplacer l'orchestrateur ? ---")
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    try:
+        import nexus_agent as agent
+        import nexus_releve as releve
+    except Exception as exc:
+        check("module de releve importable", False, str(exc))
+        return
+
+    try:
+        cle = agent.cle_maitre()
+    except SystemExit as exc:
+        SKIPPED.append(("releve", "cle absente : %s" % exc))
+        print("  [SKIP] releve  (LITELLM_MASTER_KEY absente)")
+        return
+
+    rapport = releve.juger(releve.RELEVE, cle)
+    for e in rapport["epreuves"]:
+        check("releve : %s" % e["epreuve"], e["ok"], str(e.get("detail", ""))[:160])
+    # Servie par le cloud ou par Anthropic, la releve ne releve de rien :
+    # elle depend precisement de ce dont on cherche a s'affranchir.
+    check("releve servie en local", rapport["plan"] == "local",
+          "plan reel : %s" % rapport["plan"])
+
+
 def test_code() -> None:
     print("\n--- CODE : les scripts de la plateforme se tiennent-ils ? ---")
 
@@ -1053,7 +1092,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "code"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "code", "releve"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1072,6 +1111,8 @@ def main() -> int:
         test_policy(models)
     if args.only in (None, "code"):
         test_code()
+    if args.only in (None, "releve"):
+        test_releve()
 
     print("\n" + "=" * 72)
     print("  Reussis : %d    Echecs : %d    Ignores : %d"

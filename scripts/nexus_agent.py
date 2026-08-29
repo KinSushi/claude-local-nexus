@@ -202,6 +202,45 @@ def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str) -> dic
     }
 
 
+def plans_par_alias(cle: str) -> dict[str, str]:
+    """
+    Plan d'exécution de chaque alias, lu dans le catalogue de la passerelle.
+
+    L'en-tête `x-litellm-model-api-base` est la preuve la plus directe,
+    mais il n'est renvoyé que par `/v1/chat/completions` : `/v1/messages`,
+    l'API que Claude Code emploie, ne le pose pas. Déduire le plan de son
+    absence donnerait « inconnu » pour tout le chemin de relève — et
+    conclurait donc que la relève n'est pas locale, alors qu'elle l'est.
+
+    Le catalogue dit la même chose de façon déterministe : c'est lui qui
+    décrit où chaque alias enverra ses requêtes.
+    """
+    requete = urllib.request.Request(
+        PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle})
+    try:
+        with urllib.request.urlopen(requete, timeout=30) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
+    except Exception:
+        return {}
+    plans: dict[str, str] = {}
+    for entree in donnees:
+        nom = entree.get("model_name")
+        if not nom:
+            continue
+        params = entree.get("litellm_params") or {}
+        cible = str(params.get("model", ""))
+        base = str(params.get("api_base", ""))
+        if cible.startswith("anthropic/"):
+            plans[nom] = "anthropic"
+        elif "ollama.com" in base:
+            plans[nom] = "cloud"
+        elif cible.startswith("ollama"):
+            plans[nom] = "local"
+        else:
+            plans[nom] = "inconnu"
+    return plans
+
+
 def plan_de(adresse: str) -> str:
     """Plan d'exécution déduit de l'adresse réellement servie."""
     if not adresse or adresse == "?":

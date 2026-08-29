@@ -323,6 +323,32 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
     return 0
 
 
+VERIFICATEURS: dict[str, str] = {
+    ".py": "python -c \"import ast,io;ast.parse(io.open('{fichier}',encoding='utf-8').read())\"",
+    ".js": "node --check {fichier}",
+    ".mjs": "node --check {fichier}",
+    ".ps1": "powershell -NoProfile -Command \"$e=$null;"
+            "[void][System.Management.Automation.Language.Parser]::ParseFile("
+            "(Resolve-Path '{fichier}'),[ref]$null,[ref]$e); if($e){exit 1}\"",
+    ".yaml": "python -c \"import yaml,io;yaml.safe_load(io.open('{fichier}',encoding='utf-8'))\"",
+    ".yml": "python -c \"import yaml,io;yaml.safe_load(io.open('{fichier}',encoding='utf-8'))\"",
+    ".json": "python -c \"import json,io;json.load(io.open('{fichier}',encoding='utf-8'))\"",
+}
+
+
+def verificateur_par_defaut(fichier: str) -> str | None:
+    """
+    Commande de contrôle déduite de l'extension.
+
+    Sans elle, chaque appel devait porter un `--verifier` écrit à la main,
+    et l'oublier laissait passer une proposition jamais compilée. Un
+    garde-fou qu'il faut penser à activer n'est pas un garde-fou : la
+    fois où on l'oublie est exactement celle où le modèle a cassé le
+    fichier.
+    """
+    return VERIFICATEURS.get(os.path.splitext(fichier)[1].lower())
+
+
 def lister() -> int:
     r = git(["worktree", "list"])
     print(r.stdout.strip() or "(aucun arbre)")
@@ -370,6 +396,10 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--nom", help="Nom de la tache, donc de l'arbre et de la branche.")
     p.add_argument("--fichier", help="Fichier a relire, relatif a la racine.")
+    p.add_argument("--fichiers", nargs="+", metavar="CHEMIN",
+                   help="Plusieurs fichiers, traites en chaine. Le modele reste "
+                        "charge d'un fichier a l'autre : les appels suivants "
+                        "coutent quelques secondes au lieu d'une minute.")
     p.add_argument("--modele", default="qwen3-coder-30b-local")
     p.add_argument("--consigne", help="Ce que le modele doit corriger.")
     p.add_argument("--verifier", help="Commande de validation, '{fichier}' est substitue.")
@@ -388,10 +418,47 @@ def main() -> int:
         return fusionner(a.fusionner)
     if a.jeter:
         return jeter(a.jeter)
-    if not (a.nom and a.fichier and a.consigne):
+    cibles = a.fichiers or ([a.fichier] if a.fichier else [])
+    if not (cibles and a.consigne):
         p.print_help()
         return 1
-    return lancer(a.nom, a.fichier, a.modele, a.consigne, a.verifier, a.max_tokens)
+
+    resultats: list[tuple[str, str, int]] = []
+    for cible in cibles:
+        # Un nom d'arbre par fichier : deux relectures partageant le même
+        # arbre écriraient l'une par-dessus l'autre, et la fusion mêlerait
+        # deux propositions dont une seule a peut-être été validée.
+        nom = a.nom if (a.nom and len(cibles) == 1) else \
+            re.sub(r"[^a-zA-Z0-9_-]", "-",
+                   os.path.splitext(os.path.basename(cible))[0])
+        if a.nom and len(cibles) > 1:
+            nom = "%s-%s" % (a.nom, nom)
+        # Le vérificateur se déduit de l'extension quand il n'est pas donné.
+        # L'exiger à chaque appel revenait à le rendre facultatif en
+        # pratique, et la fois où on l'oublie est celle où le modèle casse
+        # le fichier.
+        verif = a.verifier or verificateur_par_defaut(cible)
+        if len(cibles) > 1:
+            print("\n" + "#" * 72)
+            print("#  %s" % cible)
+            print("#" * 72)
+        code = lancer(nom, cible, a.modele, a.consigne, verif, a.max_tokens)
+        resultats.append((cible, nom, code))
+
+    if len(cibles) > 1:
+        print("\n" + "=" * 72)
+        retenus = [r for r in resultats if r[2] == 0]
+        print("  %d fichier(s) traites, %d proposition(s) exploitables"
+              % (len(resultats), len(retenus)))
+        for cible, nom, code in resultats:
+            print("    %-40s %s" % (cible, "retenue" if code == 0 else "sans suite"))
+        if retenus:
+            print("\n  Examiner puis retenir :")
+            for _, nom, _ in retenus:
+                print("    git -C %s diff" % arbre_de(nom))
+                print("    python scripts/nexus_worktree.py --fusionner %s" % nom)
+        print("=" * 72)
+    return 0 if any(c == 0 for _, _, c in resultats) else 1
 
 
 if __name__ == "__main__":
