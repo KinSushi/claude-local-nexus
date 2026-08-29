@@ -30,8 +30,25 @@ import re
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import nexus_capability as capability  # noqa: E402
+# ---------------------------------------------------------------------------
+# Gestion de la dépendance externe ``nexus_capability``.
+# Si le module est absent, on indique clairement le problème et on quitte
+# avec un code d'erreur explicite.  Cela évite une trace de type
+# ``ModuleNotFoundError`` qui ne serait pas compréhensible pour l'utilisateur.
+# ---------------------------------------------------------------------------
+try:
+    import nexus_capability as capability  # noqa: E402
+except ImportError as exc:  # pragma: no cover
+    print("Erreur : le module requis 'nexus_capability' est introuvable.")
+    sys.exit(2)
+
+# ---------------------------------------------------------------------------
+# Configuration flexible du nom du conteneur Docker contenant Ollama.
+# Le nom était codé en dur (« ollama-server »).  En le rendant paramétrable
+# via une variable d'environnement, on évite l'échec du script lorsqu'un
+# utilisateur a choisi un autre nom dans son ``docker‑compose.yml``.
+# ---------------------------------------------------------------------------
+OLLAMA_CONTAINER = os.getenv("OLLAMA_CONTAINER", "ollama-server")
 
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
@@ -63,6 +80,17 @@ ROLES = [
 ]
 
 
+def _extract_size(text: str) -> str | None:
+    """
+    Extrait la chaîne représentant la taille d'un modèle dans la sortie
+    de ``ollama list``.  Le format peut être « 4.7 GB », « 4.7GB » ou
+    toute variante contenant un suffixe d'unité (K, M, G, T) suivi de
+    ``B``.  Retourne ``None`` si aucune correspondance n'est trouvée.
+    """
+    match = re.search(r"(\d+(?:[.,]\d+)?\s*[KMGT]?B)", text, re.IGNORECASE)
+    return match.group(1).replace(" ", "") if match else None
+
+
 def docker_models() -> list[tuple[str, str, float]]:
     """
     (nom, identifiant de blob, taille) tels que vus par le moteur servant.
@@ -76,7 +104,7 @@ def docker_models() -> list[tuple[str, str, float]]:
     """
     lieu = capability.ollama_location()
     commande = (["ollama", "list"] if lieu.get("host_native")
-                else ["docker", "exec", "ollama-server", "ollama", "list"])
+                else ["docker", "exec", OLLAMA_CONTAINER, "ollama", "list"])
     try:
         result = subprocess.run(
             commande,
@@ -91,18 +119,19 @@ def docker_models() -> list[tuple[str, str, float]]:
     rows = []
     for line in result.stdout.splitlines()[1:]:
         parts = line.split()
-        if len(parts) < 4:
+        if len(parts) < 2:
             continue
-        # Ollama liste ses modèles cloud au milieu des modèles locaux, sans
-        # poids. Rien n'est téléchargeable derrière ces noms : les laisser
-        # entrer produisait une liste de migration contenant trois
-        # `ollama pull glm-5.x:cloud`, commandes vides qui auraient été
-        # exécutées sans qu'on comprenne pourquoi rien n'arrivait — et,
-        # comptés à poids nul, ils occupaient des places dans le budget au
-        # détriment de modèles réellement transférables.
+        # Ignorer les modèles cloud qui n'ont pas de poids local.
         if parts[0].endswith(":cloud"):
             continue
-        taille = capability.parse_size(parts[2] + parts[3])
+        size_str = _extract_size(line)
+        if not size_str:
+            continue
+        try:
+            taille = capability.parse_size(size_str)
+        except Exception:  # pragma: no cover
+            # Si le parsing échoue, on ignore simplement ce modèle.
+            continue
         if taille <= 0:
             continue
         rows.append((parts[0], parts[1], taille))
@@ -112,10 +141,20 @@ def docker_models() -> list[tuple[str, str, float]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", metavar="FICHIER",
-                        help="écrit la liste retenue, prête pour ollama pull")
+                        help="ecrit la liste retenue, prête pour ollama pull")
     args = parser.parse_args()
 
-    profile = capability.build_profile()
+    # -----------------------------------------------------------------------
+    # Construction du profil matériel avec gestion d'erreur.
+    # En cas d'échec (ex. permissions, disque inaccessible), on informe
+    # l'utilisateur plutôt que de laisser une traceback s'afficher.
+    # -----------------------------------------------------------------------
+    try:
+        profile = capability.build_profile()
+    except Exception as exc:  # pragma: no cover
+        print("Erreur lors de la construction du profil : %s" % exc)
+        return 1
+
     rows = docker_models()
     if not rows:
         print("Aucun modele lisible sur le moteur Ollama servant.")
@@ -128,7 +167,7 @@ def main() -> int:
     for name, blob, size in rows:
         by_blob.setdefault(blob, []).append((name, size))
     # Une première version de ce calcul subsistait juste au-dessus, écrasée
-    # à la ligne suivante sans avoir jamais servi. Elle produisait en outre
+    # à la ligne suivante sans jamais servi. Elle produisait en outre
     # des paires là où la suite attend des triplets : quiconque aurait
     # supprimé la seconde affectation en croyant dédoublonner aurait cassé
     # `total_unique` d'une manière difficile à rattacher à sa cause.
@@ -180,17 +219,17 @@ def main() -> int:
     print("=" * 72)
     print(" Plan de sortie des modèles hors de Docker")
     print("=" * 72)
-    print("  Poids listés         : %.0f Go" % total_raw)
-    print("  Poids réels (dédoublonnés) : %.0f Go" % total_unique)
+    print("  Poids listes         : %.0f Go" % total_raw)
+    print("  Poids reels (dedoublonnes) : %.0f Go" % total_unique)
     print("  Disque libre         : %.0f Go sur %s"
           % (profile["free_disk_gb"], profile["model_store"]))
-    print("  Budget de migration  : %.0f Go (réserve de %.0f Go)"
+    print("  Budget de migration  : %.0f Go (reserve de %.0f Go)"
           % (budget, DISK_RESERVE_GB))
-    print("  Mémoire du moteur    : %.0f Go (%s)"
+    print("  Memoire du moteur    : %.0f Go (%s)"
           % (profile["inference_memory_gb"], profile["ollama"]["mode"]))
 
     print("\n" + "-" * 72)
-    print("\n  A MIGRER — %d modèles, %.0f Go" % (len(chosen), used))
+    print("\n  A MIGRER — %d modeles, %.0f Go" % (len(chosen), used))
     for name, size, label in chosen:
         print("    %-28s %6.1f Go   %s" % (name, size, label))
 
@@ -208,8 +247,8 @@ def main() -> int:
             print("    %-28s %6.1f Go" % (name, size))
         if len(left) > 10:
             print("    ... et %d autres" % (len(left) - 10))
-        print("\n  Ils redeviendront téléchargeables une fois le volume Docker")
-        print("  supprimé : c'est lui qui occupe la place aujourd'hui.")
+        print("\n  Ils redeviendront telechargeables une fois le volume Docker")
+        print("  supprime : c'est lui qui occupe la place aujourd'hui.")
 
     print("\n" + "-" * 72)
     print("""
@@ -227,7 +266,7 @@ def main() -> int:
 
     if args.write:
         target = args.write if os.path.isabs(args.write) else os.path.join(ROOT, args.write)
-        # `--write ../../ailleurs.txt` écrivait hors du dépôt sans un mot.
+        # `--write ../../ailleurs.txt` ecrivait hors du depot sans un mot.
         # La comparaison se fait par `commonpath` et non par `startswith` :
         # un répertoire voisin nommé `local-llm-docker-prive` commence par
         # la racine sans être dedans, et un contrôle par préfixe l'aurait

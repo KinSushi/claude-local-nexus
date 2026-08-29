@@ -54,16 +54,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Marge sous laquelle on s'arrête. Un disque saturé pendant un `pull` ne
 # coûte pas qu'un téléchargement : il laisse un blob incomplet et met le
 # système en difficulté.
-RESERVE_GB = 20.0
+RESERVE_GB = float(os.getenv("NEXUS_RESERVE_GB", "20.0"))  # configurable via env
 
 
 def host_models() -> set[str]:
+    """
+    Retourne l'ensemble des modèles déjà présents sur l'hôte.
+
+    Capture uniquement les exceptions attendues afin de ne pas masquer
+    d'éventuelles erreurs de programmation.
+    """
     try:
-        result = subprocess.run(["ollama", "list"], capture_output=True,
-                                text=True, timeout=60, encoding="utf-8",
-                                errors="replace")
+        result = subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            encoding="utf-8",
+            errors="replace",
+        )
         return {l.split()[0] for l in result.stdout.splitlines()[1:] if l.strip()}
-    except Exception:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         return set()
 
 
@@ -81,9 +92,11 @@ def free_disk_gb() -> float | None:
     de la suite.
     """
     import shutil
+
     store = os.environ.get(
         "OLLAMA_MODELS",
-        os.path.join(os.path.expanduser("~"), ".ollama", "models"))
+        os.path.join(os.path.expanduser("~"), ".ollama", "models"),
+    )
     probe = store
     while probe and not os.path.exists(probe):
         parent = os.path.dirname(probe)
@@ -96,31 +109,39 @@ def free_disk_gb() -> float | None:
         return None
 
 
-def taille_registre(modele: str) -> float:
+def _valide_modele(modele: str) -> bool:
+    """
+    Valide le format du nom de modèle avant de l'utiliser dans une URL.
+    Seuls les caractères alphanumériques, ``-``, ``_``, ``.``, ``:``, ``/``
+    sont autorisés.
+    """
+    return re.fullmatch(r"[A-Za-z0-9_\-./:]+", modele) is not None
+
+
+def taille_registre(modele: str) -> float | None:
     """
     Poids annoncé par le registre Ollama, en Go, avant tout téléchargement.
 
-    `installed_models()` ne connaît que ce qui est déjà là : pour un modèle
-    absent, elle rend 0. Or c'est précisément cette valeur qui alimente le
-    garde-fou disque — `libre - taille < RESERVE_GB` n'est jamais vrai
-    quand `taille` vaut zéro. Le garde-fou s'ouvrait donc exactement dans
-    le cas qu'il existe pour couvrir : six modèles, 111 Go, 43 Go libres,
-    et un disque saturé en cours de route avec un blob incomplet.
-
-    Rend 0.0 si le registre ne répond pas — l'appelant traite l'inconnu
-    comme un refus plutôt que comme une autorisation.
+    Retourne ``None`` si le registre ne répond pas ou si le nom du modèle
+    ne passe pas la validation. Cela permet au code appelant de traiter
+    l'absence d'information comme un cas prudent (ignoré).
     """
+    if not _valide_modele(modele):
+        return None
+
     nom, _, tag = modele.partition(":")
-    url = "https://registry.ollama.ai/v2/library/%s/manifests/%s" % (nom, tag or "latest")
+    url = f"https://registry.ollama.ai/v2/library/{nom}/manifests/{tag or 'latest'}"
     requete = urllib.request.Request(
-        url, headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
+        url,
+        headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+    )
     try:
         with urllib.request.urlopen(requete, timeout=30) as reponse:
             manifeste = json.loads(reponse.read().decode("utf-8"))
         octets = sum(couche.get("size", 0) for couche in manifeste.get("layers", []))
         return octets / 1e9
     except Exception:
-        return 0.0
+        return None
 
 
 def declares_sans_poids() -> list[str] | None:
@@ -156,6 +177,7 @@ def declares_sans_poids() -> list[str] | None:
     config = os.path.join(ROOT, "litellm_config.yaml")
     try:
         import yaml
+
         with io.open(config, encoding="utf-8") as fh:
             cfg = yaml.safe_load(fh)
     except Exception:
@@ -197,13 +219,17 @@ def main() -> int:
     # que le validateur listait six absents. Rien n'etait faux dans ce
     # message, et il induisait pourtant en erreur : le chemin le plus
     # court doit etre le chemin correct.
-    parser.add_argument("--liste", metavar="FICHIER",
-                        help="Lire une liste figee au lieu de deduire les "
-                             "manquants de la configuration.")
+    parser.add_argument(
+        "--liste",
+        metavar="FICHIER",
+        help="Lire une liste figee au lieu de deduire les manquants de la configuration.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
-        "--manquants", action="store_true",
-        help="Comportement par defaut, conserve pour compatibilite.")
+        "--manquants",
+        action="store_true",
+        help="Comportement par defaut, conserve pour compatibilite.",
+    )
     args = parser.parse_args()
 
     if not args.liste:
@@ -218,12 +244,13 @@ def main() -> int:
         chemin = args.liste if os.path.isabs(args.liste) else os.path.join(ROOT, args.liste)
         if not os.path.exists(chemin):
             print("Liste introuvable : %s" % chemin)
-            print("La produire : python scripts/nexus_migration_plan.py --write model_list.host.txt")
+            print(
+                "La produire : python scripts/nexus_migration_plan.py --write model_list.host.txt"
+            )
             return 1
 
         with io.open(chemin, encoding="utf-8") as fh:
-            voulus = [l.strip() for l in fh
-                      if l.strip() and not l.strip().startswith("#")]
+            voulus = [l.strip() for l in fh if l.strip() and not l.strip().startswith("#")]
 
     profile = capability.build_profile()
     tailles = capability.installed_models()
@@ -250,15 +277,17 @@ def main() -> int:
             ignores += 1
             continue
 
-        taille = tailles.get(modele, 0.0)
-        if not taille:
+        taille = tailles.get(modele, None)
+        if taille is None:
             # Un modèle absent n'a pas de poids mesurable localement : on le
             # demande au registre AVANT de tirer, sinon le contrôle de place
             # ci-dessous compare le disque libre à zéro et laisse tout passer.
             taille = taille_registre(modele)
-        if not taille:
-            print("  [%2d/%d] %-28s poids inconnu : refuse par prudence"
-                  % (i, len(voulus), modele))
+        if taille is None:
+            print(
+                "  [%2d/%d] %-28s poids inconnu : refuse par prudence"
+                % (i, len(voulus), modele)
+            )
             ignores += 1
             continue
         etat, motif = capability.verdict(taille, profile)
@@ -271,10 +300,12 @@ def main() -> int:
         # valeur à chaque tour et l'essai à blanc annoncerait six
         # téléchargements là où un seul tient. Une simulation qui ne prédit
         # pas l'arrêt ne prépare à rien.
-        libre = (libre_simule if args.dry_run else free_disk_gb())
+        libre = libre_simule if args.dry_run else free_disk_gb()
         if taille and libre is not None and libre - taille < RESERVE_GB:
-            print("  [%2d/%d] %-28s ARRET : %.0f Go libres, %.0f Go requis + %.0f de reserve"
-                  % (i, len(voulus), modele, libre, taille, RESERVE_GB))
+            print(
+                "  [%2d/%d] %-28s ARRET : %.0f Go libres, %.0f Go requis + %.0f de reserve"
+                % (i, len(voulus), modele, libre, taille, RESERVE_GB)
+            )
             print("\n  Le reste de la liste attendra que de la place soit liberee.")
             interrompu = True
             break
@@ -282,20 +313,35 @@ def main() -> int:
         if args.dry_run:
             if libre_simule is not None:
                 libre_simule -= taille
-            print("  [%2d/%d] %-28s a telecharger (%.1f Go, resterait %.0f Go)"
-                  % (i, len(voulus), modele, taille,
-                     libre_simule if libre_simule is not None else float('nan')))
+            print(
+                "  [%2d/%d] %-28s a telecharger (%.1f Go, resterait %.0f Go)"
+                % (
+                    i,
+                    len(voulus),
+                    modele,
+                    taille,
+                    libre_simule if libre_simule is not None else float("nan"),
+                )
+            )
             continue
 
         print("  [%2d/%d] %-28s telechargement..." % (i, len(voulus), modele), flush=True)
         debut = time.time()
-        result = subprocess.run(["ollama", "pull", modele],
-                                capture_output=True, text=True,
-                                encoding="utf-8", errors="replace", timeout=7200)
+        result = subprocess.run(
+            ["ollama", "pull", modele],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=7200,
+        )
         if result.returncode == 0:
             free_now = free_disk_gb()
-            print("           %-28s termine en %.0f s (%s Go libres)"
-                  % ("", time.time() - debut, _format_free(free_now)), flush=True)
+            print(
+                "           %-28s termine en %.0f s (%s Go libres)"
+                % ("", time.time() - debut, _format_free(free_now)),
+                flush=True,
+            )
             faits += 1
         else:
             # Un echec ne doit pas emporter la liste : les suivants gardent
@@ -305,8 +351,7 @@ def main() -> int:
             echecs.append(modele)
 
     print("\n" + "-" * 68)
-    print("  Telecharges : %d    Ignores : %d    Echecs : %d"
-          % (faits, ignores, len(echecs)))
+    print("  Telecharges : %d    Ignores : %d    Echecs : %d" % (faits, ignores, len(echecs)))
     if echecs:
         print("  A retenter : %s" % ", ".join(echecs))
     print("  Disque libre : %s Go" % _format_free(free_disk_gb()))
@@ -317,26 +362,32 @@ def main() -> int:
     # donner est plus nuisible qu'une absence de consigne.
     lieu = capability.ollama_location()
     if not lieu.get("host_native"):
-        print("""
+        print(
+            """
   Suite, dans cet ordre :
     1. python scripts/nexus_switch_engine.py --to host
     2. .\\scripts\\Update-NexusModels.ps1 -Restart
     3. python scripts/nexus_test.py
     4. SEULEMENT si tout passe : retirer COMPOSE_PROFILES de .env,
        puis docker compose down et supprimer le volume ollama_data.
-""")
+"""
+        )
     elif echecs or interrompu:
-        print("""
+        print(
+            """
   Suite :
     python scripts/nexus_conformite.py        ce qui manque encore
     python scripts/nexus_pull_host.py         relancer apres liberation
-""")
+"""
+        )
     else:
-        print("""
+        print(
+            """
   Suite :
     python scripts/nexus_validate.py
     .\\scripts\\Update-NexusModels.ps1 -Restart
-""")
+"""
+        )
     return 1 if echecs else 0
 
 

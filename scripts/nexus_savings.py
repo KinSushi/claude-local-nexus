@@ -30,6 +30,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
@@ -45,7 +46,7 @@ if hasattr(sys.stdout, "reconfigure"):
 try:
     import yaml
 except ImportError:
-    print("ERREUR: PyYAML est requis")
+    print("ERREUR: PyYAML requis")
     sys.exit(1)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -58,6 +59,12 @@ REFERENCE = "claude-sonnet-5"
 
 
 def master_key() -> str:
+    """Retourne la clé maître LITELLM_MASTER_KEY.
+
+    La clé peut être fournie via la variable d'environnement ou le fichier
+    .env à la racine du projet. Si aucune clé n'est trouvée, une exception
+    explicite est levée.
+    """
     if os.environ.get("LITELLM_MASTER_KEY"):
         return os.environ["LITELLM_MASTER_KEY"]
     with io.open(os.path.join(ROOT, ".env"), encoding="utf-8",
@@ -69,42 +76,57 @@ def master_key() -> str:
     raise RuntimeError("LITELLM_MASTER_KEY introuvable")
 
 
+def _safe_int(value) -> int:
+    """Convertit en int, renvoie 0 si la conversion échoue."""
+    try:
+        return int(value)
+    except Exception:
+        return 0
+
+
+def _safe_float(value) -> float:
+    """Convertit en float, renvoie 0.0 si la conversion échoue."""
+    try:
+        return float(value)
+    except Exception:
+        return 0.0
+
+
 def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | None:
     """
     Domaine et tarif de chaque alias, lus dans la configuration.
 
-    Rend `None` — jamais un couple vide — quand la configuration est
-    illisible, pour deux raisons distinctes. Sans garde, un
-    `litellm_config.yaml` corrompu remontait une trace `yaml` nue : le
-    rapport de délégation mourait sur une pile d'appels au lieu de dire
-    quel fichier relire. Et un repli sur des dictionnaires vides serait
-    pire que la trace, car il produirait un rapport d'apparence normale :
-    chaque requête tomberait dans « inconnu », le contrefactuel Claude
-    vaudrait zéro, et le chiffre d'économie serait faux sans que rien ne
-    le signale. Sa jumelle `declares_sans_poids`, dans nexus_pull_host.py,
-    garde déjà la même lecture de la même façon.
+    Retourne ``None`` lorsqu'une erreur de lecture ou de format empêche
+    l'extraction fiable des données. Les erreurs de schéma sont signalées
+    de façon précise afin d'éviter de masquer un bug réel.
     """
     try:
         with io.open(CONFIG, encoding="utf-8") as fh:
             config = yaml.safe_load(fh)
-    except Exception as exc:
-        # La cause n'est connue qu'ici : l'appelant ne verrait qu'un `None`
-        # et ne pourrait pas nommer le fichier ni la ligne fautive.
+    except yaml.YAMLError as exc:
         print("Configuration illisible (%s) : %s" % (CONFIG, exc))
         return None
-    # Un fichier tronqué s'analyse sans erreur et rend `None` : la garde
-    # ci-dessus le laisserait passer, et c'est `config.get` qui lèverait la
-    # trace nue qu'on vient précisément de supprimer.
+    except Exception as exc:
+        print("Erreur lors de la lecture de la configuration (%s) : %s"
+              % (CONFIG, exc))
+        return None
+
     if not isinstance(config, dict):
         print("Configuration illisible (%s) : document vide ou non conforme"
               % CONFIG)
         return None
+
     domains: dict[str, str] = {}
     prices: dict[str, tuple[float, float]] = {}
+
     for model in config.get("model_list") or []:
-        alias = model["model_name"]
+        # Protection contre les entrées malformées
+        alias = model.get("model_name")
+        if not isinstance(alias, str):
+            continue
         params = model.get("litellm_params") or {}
         raw = str(params.get("model", ""))
+
         if raw.startswith("auto_router/"):
             continue
         if raw.startswith("anthropic/"):
@@ -113,13 +135,19 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
             domains[alias] = "cloud"
         else:
             domains[alias] = "local"
-        # Les tarifs sont indexés sur les deux formes : l'alias et le nom
-        # amont, car les journaux emploient tantôt l'un tantôt l'autre.
+
+        # Extraction des tarifs ; on ignore les modèles dont le tarif est
+        # invalide afin de ne pas interrompre le traitement complet.
         if params.get("input_cost_per_token"):
-            price = (float(params["input_cost_per_token"]),
-                     float(params.get("output_cost_per_token") or 0.0))
-            prices[alias] = price
-            prices[raw] = price
+            try:
+                price = (float(params["input_cost_per_token"]),
+                         float(params.get("output_cost_per_token") or 0.0))
+                prices[alias] = price
+                prices[raw] = price
+            except Exception:
+                # Tarif invalide : on le consigne mais on poursuit.
+                print("Tarif invalide pour le modele %s, ignore." % alias)
+
     return domains, prices
 
 
@@ -128,23 +156,30 @@ def fetch_logs(days: int) -> list[dict]:
     Journal des requêtes, filtré côté client.
 
     Le filtre par dates de l'API s'est révélé peu fiable ; on récupère donc
-    une fenêtre large et on tranche sur `startTime`, qui est présent dans
+    une fenêtre large et on tranche sur ``startTime``, qui est présent dans
     chaque enregistrement.
     """
     key = master_key()
     request = urllib.request.Request("%s/spend/logs?limit=5000" % BASE_URL)
     request.add_header("Authorization", "Bearer " + key)
-    with urllib.request.urlopen(request, timeout=90) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError("Erreur HTTP %s lors de la récupération des logs"
+                           % exc.code) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError("Erreur réseau lors de la récupération des logs: %s"
+                           % exc.reason) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Réponse JSON invalide : %s" % exc) from exc
+
     entries = payload if isinstance(payload, list) else payload.get("data", [])
 
     limite = datetime.datetime.now() - datetime.timedelta(days=days)
     retenus = []
     for entry in entries:
-        # Le trafic de sonde est ecarte, et ce n'est pas un detail : sur une
-        # journee ordinaire il represente 93 % des requetes. L'inclure
-        # produirait un taux de delegation flatteur mesurant la plateforme
-        # en train de s'observer elle-meme.
         tags = [str(t) for t in (entry.get("request_tags") or [])]
         if any("health-check" in t for t in tags):
             continue
@@ -153,7 +188,8 @@ def fetch_logs(days: int) -> list[dict]:
             moment = datetime.datetime.fromisoformat(
                 stamp.replace("Z", "").split(".")[0])
         except Exception:
-            retenus.append(entry)  # horodatage illisible : on ne l'écarte pas
+            # Horodatage illisible : on ignore l'entrée plutôt que de la
+            # conserver et fausser les statistiques.
             continue
         if moment >= limite:
             retenus.append(entry)
@@ -162,9 +198,9 @@ def fetch_logs(days: int) -> list[dict]:
 
 def domain_of(entry: dict, domains: dict[str, str]) -> str:
     """
-    Plan d'exécution d'une requête.
+    Détermine le plan d'exécution d'une requête.
 
-    `api_base` prime sur le nom : il dit où la requête est réellement
+    ``api_base`` prime sur le nom : il indique où la requête est réellement
     partie, ce qu'aucun alias ne garantit.
     """
     api_base = str(entry.get("api_base") or "")
@@ -221,17 +257,11 @@ def main() -> int:
         plan = domain_of(entry, domains)
         stats = par_plan[plan]
         stats["requetes"] += 1
-        stats["entree"] += int(entry.get("prompt_tokens") or 0)
-        stats["sortie"] += int(entry.get("completion_tokens") or 0)
-        stats["cout"] += float(entry.get("spend") or 0.0)
+        stats["entree"] += _safe_int(entry.get("prompt_tokens"))
+        stats["sortie"] += _safe_int(entry.get("completion_tokens"))
+        stats["cout"] += _safe_float(entry.get("spend"))
         par_modele[entry.get("model_group") or entry.get("model") or "?"] += 1
 
-    # Sans tarif de référence configuré, il n'y a pas de contrefactuel à
-    # calculer. La version précédente substituait un tarif écrit en dur :
-    # le rapport annonçait alors une économie en dollars construite sur un
-    # prix inventé, sans le dire. Un chiffre faux présenté comme mesuré est
-    # pire qu'une case vide — il se cite, se compare et se propage.
-    # Les tokens, eux, restent comptés : ils ne dépendent d'aucun tarif.
     reference = prices.get(REFERENCE)
     chiffrable = reference is not None
     delegue = {k: v for k, v in par_plan.items() if k in ("local", "cloud")}
@@ -258,8 +288,6 @@ def main() -> int:
                 round(cout_contrefactuel, 4) if chiffrable else None,
             "economie":
                 round(cout_contrefactuel - cout_delegue_reel, 4) if chiffrable else None,
-            # Un `null` sans explication serait lu comme « zéro économie ».
-            # Le motif accompagne donc la case vide.
             "economie_indisponible":
                 None if chiffrable else
                 "tarif de reference '%s' absent de litellm_config.yaml" % REFERENCE,

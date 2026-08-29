@@ -24,15 +24,24 @@ import subprocess
 import sys
 import urllib.request
 
+# --------------------------------------------------------------------------- #
+# Constantes de configuration
+# --------------------------------------------------------------------------- #
+TIMEOUT_RUN = 60          # Timeout pour les appels subprocess
+TIMEOUT_URL = 20          # Timeout pour la requête HTTP vers la passerelle
+ROUTER_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "litellm_config.yaml",
+)
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
 
-# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
-# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
-# et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
-# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
-# il manquait ici.
+# La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
+# Sans cette ligne, Python écrit dans la page de codes locale de Windows
+# et les accents se dégradent dès que la sortie est capturée – le résultat
+# finissait commité dans rituels/STATE.md, donc visible sur GitHub.
+# PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ; il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -41,7 +50,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(ROOT, "rituels", "STATE.md")
 
 # Fichiers qui commandent le comportement : leur empreinte permet de dire
-# si l'etat decrit ici correspond encore a la plateforme installee.
+# si l'état décrit ici correspond encore à la plateforme installée.
 TRACKED = [
     "docker-compose.yml",
     "litellm_config.yaml",
@@ -58,12 +67,12 @@ TRACKED = [
 ]
 
 
-def run(args, timeout=60):
+def run(args, timeout=TIMEOUT_RUN):
     """
-    Execute une commande externe et renvoie sa sortie standard.
+    Exécute une commande externe et renvoie sa sortie standard.
 
     Retourne ``None`` si l'exécution échoue (ex. commande introuvable,
-    timeout, permission).  Cela évite d'interpréter une erreur comme une
+    timeout, permission). Cela évite d'interpréter une erreur comme une
     sortie vide, ce qui aurait pu masquer un problème d'infrastructure et
     conduire à un rapport indiquant à tort que l'arbre de travail était
     propre.
@@ -128,7 +137,7 @@ def exposed_models():
     try:
         request = urllib.request.Request("http://127.0.0.1:4000/v1/models")
         request.add_header("Authorization", "Bearer " + master_key())
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_URL) as response:
             data = json.loads(response.read().decode("utf-8"))
         return sorted(d["id"] for d in data.get("data", []))
     except Exception:
@@ -136,7 +145,10 @@ def exposed_models():
 
 
 def main() -> int:
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    # Horodatage avec fuseau horaire afin d'éviter toute ambiguïté.
+    now = datetime.datetime.now(datetime.timezone.utc).astimezone().strftime(
+        "%Y-%m-%d %H:%M %Z"
+    )
     profile = capability.build_profile()
     models = exposed_models()
     passerelle_muette = models is None
@@ -156,7 +168,7 @@ def main() -> int:
         ["docker", "compose", "ps", "--format", "{{.Name}}\t{{.Service}}\t{{.Status}}"]
     )
 
-    # Protection symetrique : on capture les erreurs de l'appel direct à
+    # Protection symétrique : on capture les erreurs de l'appel direct à
     # nexus_validate.py afin que l'absence du script ne fasse pas planter
     # tout le processus et que la cause soit clairement indiquée.
     try:
@@ -187,20 +199,24 @@ def main() -> int:
         if l.strip().startswith("- ")
     ]
 
-    # Version de la politique de routage : elle rattache un resultat aux
-    # regles qui l'ont produit.
+    # Version de la politique de routage : elle rattache un résultat aux
+    # règles qui l'ont produit.
     router_version = "?"
-    with io.open(os.path.join(ROOT, "litellm_config.yaml"), encoding="utf-8") as fh:
-        for line in fh:
-            if line.startswith("# NEXUS-ROUTER-VERSION:"):
-                router_version = line.split(":", 1)[1].strip()
-                break
+    try:
+        with io.open(ROUTER_CONFIG_PATH, encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("# NEXUS-ROUTER-VERSION:"):
+                    router_version = line.split(":", 1)[1].strip()
+                    break
+    except Exception:
+        # Absence ou lecture impossible du fichier de configuration.
+        router_version = "?"
 
     commit = run(["git", "rev-parse", "--short", "HEAD"])
     branch = run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     dirty = run(["git", "status", "--porcelain"])
 
-    # Distinction entre arbre propre, modifie et echec de la commande git.
+    # Distinction entre arbre propre, modifié et échec de la commande git.
     if dirty is None:
         worktree_status = "inconnu"
     elif dirty == "":
@@ -275,7 +291,8 @@ def main() -> int:
         "|---|---|---|",
         "| Local | %d | aucune, rien ne quitte la machine |" % len(groups["local"]),
         "| Ollama Cloud | %d | abonnement Ollama |" % len(groups["cloud"]),
-        "| Anthropic | %d | crédits API, distincts de l'abonnement claude.ai |" % len(groups["anthropic"]),
+        "| Anthropic | %d | crédits API, distincts de l'abonnement claude.ai |"
+        % len(groups["anthropic"]),
         "| Routeurs | %d | selon le plan retenu |" % len(groups["routeurs"]),
         "",
         "## Intégrité de la configuration",
@@ -305,9 +322,12 @@ def main() -> int:
         "Historique : voir [PROGRESS.md](PROGRESS.md).",
     ]
 
-    # Ecriture atomique : on écrit d'abord dans un fichier temporaire puis on
-    # le replace atomiquement.  Ainsi, une interruption ne laisse pas un
-    # STATE.md partiellement ecrit qui pourrait être lu comme valide.
+    # S'assurer que le répertoire cible existe avant d'écrire le fichier temporaire.
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+
+    # Écriture atomique : on écrit d'abord dans un fichier temporaire puis on
+    # le replace atomiquement. Ainsi, une interruption ne laisse pas un
+    # STATE.md partiellement écrit qui pourrait être lu comme valide.
     temp_path = STATE + ".tmp"
     with io.open(temp_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines) + "\n")

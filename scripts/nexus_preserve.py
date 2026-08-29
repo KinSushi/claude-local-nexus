@@ -54,11 +54,10 @@ IRREMPLACABLE = "irremplacable"
 def run(args, timeout=120):
     """
     Exécute une commande et renvoie la sortie standard si le retour est 0,
-    sinon renvoie une chaîne vide.
-
-    Cette fonction masque les erreurs liées à l'absence d'exécutable
-    (FileNotFoundError) ou aux dépassements de délai, afin que le script
-    continue son audit même si Docker ou Git ne sont pas installés.
+    sinon renvoie ``None``.
+    Cette fonction signale les erreurs (exécutable absent, timeout, code
+    de retour non nul) afin que l'appelant puisse réagir de façon
+    explicite.
     """
     try:
         result = subprocess.run(
@@ -69,10 +68,13 @@ def run(args, timeout=120):
             encoding="utf-8",
             errors="replace",
         )
-        return result.stdout if result.returncode == 0 else ""
-    except (subprocess.SubprocessError, OSError):
-        # OSError couvre FileNotFoundError qui n’est pas un SubprocessError.
-        return ""
+        if result.returncode == 0:
+            return result.stdout
+        print(f"  [!] commande {' '.join(args)} a retourne {result.returncode}", file=sys.stderr)
+        return None
+    except (subprocess.SubprocessError, OSError) as exc:
+        print(f"  [!] erreur lors de l'exécution de {' '.join(args)} : {exc}", file=sys.stderr)
+        return None
 
 
 def _exec_subprocess(args, timeout):
@@ -105,7 +107,12 @@ def _exec_subprocess(args, timeout):
 
 
 def parse_size(text: str) -> float:
-    match = re.match(r"([\d.,]+)\s*([kKmMgGtT]?[iI]?[bB])", text.strip())
+    """
+    Convertit une chaîne de taille Docker (ex. ``1.2GiB``) en nombre de
+    gigaoctets (float). Les facteurs binaires sont exacts afin d'éviter
+    les écarts de plusieurs gigaoctets sur de gros volumes.
+    """
+    match = re.match(r"([\d.,]+)\s*([kKmMgGtT]?[iI]?[bB]?)", text.strip())
     if not match:
         return 0.0
     value = float(match.group(1).replace(",", "."))
@@ -116,12 +123,20 @@ def parse_size(text: str) -> float:
         "mb": 1e-3,
         "gb": 1.0,
         "tb": 1e3,
-        "kib": 1.05e-6,
-        "mib": 1.049e-3,
-        "gib": 1.074,
-        "tib": 1100.0,
+        "kib": 1.024e-6,
+        "mib": 1.048576e-3,
+        "gib": 1.073741824,
+        "tib": 1099.511627776,
     }
     return value * scale.get(unit, 0.0)
+
+
+def _format_size(gb: float) -> str:
+    """Retourne une représentation lisible en Go ou Mo."""
+    if gb >= 0.1:
+        return f"{gb:.1f} Go"
+    else:
+        return f"{gb * 1024:.0f} Mo"
 
 
 def inventory() -> list[dict]:
@@ -130,6 +145,8 @@ def inventory() -> list[dict]:
 
     # --- Volumes -------------------------------------------------------
     output = run(["docker", "system", "df", "-v"])
+    if output is None:
+        output = ""
     in_volumes = False
     for line in output.splitlines():
         if line.startswith("VOLUME NAME"):
@@ -142,46 +159,25 @@ def inventory() -> list[dict]:
             if len(parts) < 3:
                 continue
             name, size = parts[0], parts[-1]
-            if "ollama" in name:
-                items.append(
-                    {
-                        "artefact": name,
-                        "type": "volume",
-                        "taille": parse_size(size),
-                        "verdict": RECONSTRUCTIBLE,
-                        "source": "ollama pull, pilote par model_list.txt",
-                    }
-                )
-            elif "redis" in name:
-                items.append(
-                    {
-                        "artefact": name,
-                        "type": "volume",
-                        "taille": parse_size(size),
-                        "verdict": RECONSTRUCTIBLE,
-                        "source": "cache : se reconstitue a l'usage, par definition",
-                    }
-                )
-            elif "pgdata" in name:
-                items.append(
-                    {
-                        "artefact": name,
-                        "type": "volume",
-                        "taille": parse_size(size),
-                        "verdict": IRREMPLACABLE,
-                        "source": "aucune — historique de depense, sessions, cles",
-                    }
-                )
-            else:
-                items.append(
-                    {
-                        "artefact": name,
-                        "type": "volume",
-                        "taille": parse_size(size),
-                        "verdict": IRREMPLACABLE,
-                        "source": "origine inconnue : prudence",
-                    }
-                )
+            verdict = RECONSTRUCTIBLE if any(k in name for k in ("ollama", "redis")) else IRREMPLACABLE
+            source = (
+                "ollama pull, pilote par model_list.txt"
+                if "ollama" in name
+                else "cache : se reconstitue a l'usage, par definition"
+                if "redis" in name
+                else "aucune — historique de depense, sessions, cles"
+                if "pgdata" in name
+                else "origine inconnue : prudence"
+            )
+            items.append(
+                {
+                    "artefact": name,
+                    "type": "volume",
+                    "taille": parse_size(size),
+                    "verdict": verdict,
+                    "source": source,
+                }
+            )
 
     # --- Images --------------------------------------------------------
     for line in run(
@@ -201,7 +197,10 @@ def inventory() -> list[dict]:
         )
 
     # --- Fichiers du depot ---------------------------------------------
-    tracked = run(["git", "-C", ROOT, "ls-files"]).splitlines()
+    tracked = run(["git", "-C", ROOT, "ls-files"])
+    if tracked is None:
+        tracked = ""
+    tracked = tracked.splitlines()
     total = 0.0
     for relative in tracked:
         try:
@@ -211,7 +210,7 @@ def inventory() -> list[dict]:
     if tracked:
         items.append(
             {
-                "artefact": "%d fichiers suivis par git" % len(tracked),
+                "artefact": f"{len(tracked)} fichiers suivis par git",
                 "type": "source",
                 "taille": total,
                 "verdict": RECONSTRUCTIBLE,
@@ -231,8 +230,10 @@ def inventory() -> list[dict]:
                     pass
         taille /= 1024 ** 3
 
-        remote = run(["git", "-C", ROOT, "remote"]).strip()
-        branche = run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+        remote = run(["git", "-C", ROOT, "remote"])
+        remote = remote.strip() if remote else ""
+        branche = run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"])
+        branche = branche.strip() if branche else ""
         amont = run(
             [
                 "git",
@@ -243,20 +244,26 @@ def inventory() -> list[dict]:
                 "--symbolic-full-name",
                 "@{u}",
             ]
-        ).strip()
-        non_pousses = 0
-        if remote:
-            reference = amont or ("origin/%s" % branche)
-            sortie = run(
-                ["git", "-C", ROOT, "log", "--oneline", "%s..HEAD" % reference]
-            )
-            non_pousses = len([l for l in sortie.splitlines() if l.strip()])
+        )
+        amont = amont.strip() if amont else ""
 
-        modifies = [
-            l
-            for l in run(["git", "-C", ROOT, "status", "--porcelain"]).splitlines()
-            if l.strip()
-        ]
+        non_pousses = 0
+        if remote and amont:
+            reference = amont
+            sortie = run(
+                ["git", "-C", ROOT, "log", "--oneline", f"{reference}..HEAD"]
+            )
+            if sortie:
+                non_pousses = len([l for l in sortie.splitlines() if l.strip()])
+
+        status = run(["git", "-C", ROOT, "status", "--porcelain"])
+        modifies = []
+        if status:
+            modifies = [
+                l
+                for l in status.splitlines()
+                if l.strip() and not l.startswith(" D") and not l.startswith("D ")
+            ]
 
         if not remote:
             verdict, source = (
@@ -266,14 +273,14 @@ def inventory() -> list[dict]:
         elif non_pousses or modifies:
             details = []
             if non_pousses:
-                details.append("%d commit(s) non pousse(s)" % non_pousses)
+                details.append(f"{non_pousses} commit(s) non pousse(s)")
             if modifies:
-                details.append("%d fichier(s) non commite(s)" % len(modifies))
+                details.append(f"{len(modifies)} fichier(s) non commite(s)")
             if not amont:
-                details.append("aucun amont configure pour '%s'" % branche)
+                details.append(f"aucun amont configure pour '{branche}'")
             verdict, source = IRREMPLACABLE, " ; ".join(details)
         else:
-            verdict, source = RECONSTRUCTIBLE, "git clone %s" % remote
+            verdict, source = RECONSTRUCTIBLE, f"git clone {remote}"
 
         items.append(
             {
@@ -325,7 +332,12 @@ def _atomic_write(temp_path, final_path):
 
 def backup_irreplaceable() -> int:
     """Sauvegarde ce qui n'a aucune source de reconstruction."""
-    os.makedirs(BACKUP_DIR, exist_ok=True)
+    try:
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+    except PermissionError as exc:
+        print(f"  [!] impossible de creer le repertoire de sauvegarde : {exc}")
+        return 1
+
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     fait = []
 
@@ -349,7 +361,6 @@ def backup_irreplaceable() -> int:
         print(f"  [!] pg_dump a echoue : {dump.stderr if dump else ''}")
         return 1
 
-    # ecriture atomique
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", delete=False, dir=BACKUP_DIR, newline="\n"
     ) as tmp:
@@ -357,6 +368,7 @@ def backup_irreplaceable() -> int:
         temp_name = tmp.name
     try:
         _atomic_write(temp_name, target)
+        os.chmod(target, 0o600)  # permissions restrictives
     except OSError as exc:
         print(f"  [!] echec ecriture dump postgres : {exc}")
         return 1
@@ -384,6 +396,7 @@ def backup_irreplaceable() -> int:
 
     try:
         _atomic_write(bundle_tmp, bundle_final)
+        os.chmod(bundle_final, 0o600)
     except OSError as exc:
         print(f"  [!] echec ecriture bundle git : {exc}")
         return 1
@@ -401,7 +414,10 @@ def backup_irreplaceable() -> int:
         modifies = [
             line[3:].strip().strip('"')
             for line in status.stdout.splitlines()
-            if line.strip() and not line.startswith(" D") and not line.startswith("D ")
+            if line.strip()
+            and not line.startswith(" D")
+            and not line.startswith("D ")
+            and line[3:].strip() != ".env"  # exclure le secret
         ]
 
     if modifies:
@@ -479,9 +495,7 @@ def main() -> int:
             "    %-34s %9s   %s"
             % (
                 item["artefact"][:34],
-                ("%.1f Go" % item["taille"])
-                if item["taille"] >= 0.1
-                else ("%.0f Mo" % (item["taille"] * 1024)),
+                _format_size(item["taille"]),
                 item["source"],
             )
         )
@@ -492,9 +506,7 @@ def main() -> int:
             "    %-34s %9s   %s"
             % (
                 item["artefact"][:34],
-                ("%.1f Go" % item["taille"])
-                if item["taille"] >= 0.1
-                else ("%.1f Mo" % (item["taille"] * 1024)),
+                _format_size(item["taille"]),
                 item["source"],
             )
         )
@@ -521,7 +533,7 @@ def main() -> int:
 
     reste dans Docker    PostgreSQL   son volume est le seul irremplacable
                          Redis        cache, mais lie a LiteLLM et minuscule
-                         LiteLLM      la passerelle, sa valeur est sa config
+                         LiteLLM      la passerelle, sa config
 
     sort de Docker       Ollama       et ses %0.0f Go de poids, tous
                                       retéléchargeables depuis model_list.txt

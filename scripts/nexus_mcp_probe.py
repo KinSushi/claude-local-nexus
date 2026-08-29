@@ -21,6 +21,7 @@ import json
 import os
 import subprocess
 import sys
+from json import JSONDecodeError
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SERVER = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
@@ -32,25 +33,31 @@ SERVER = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
-    pass
+except Exception as e:
+    # avertir si la reconfiguration échoue
+    print(f"ERROR: failed to reconfigure stdout/stderr ({type(e).__name__}: {e})", file=sys.stderr)
 
 
-def call_tool(name: str, arguments: dict, timeout: int = 3600) -> str:
+def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
     """
     Appelle le serveur Node via le protocole JSON‑RPC.
 
     En cas d'échec du sous‑processus, la fonction renvoie un message
     diagnostique sans accents, préfixé par ``ERROR:`` et contenant le chemin
-    du serveur. Les trois cas distincts sont :
+    du serveur. Les cas distincts sont :
 
-    * executable introuvable (FileNotFoundError)
+    * exécutable introuvable (FileNotFoundError)
     * délai d'attente dépassé (subprocess.TimeoutExpired)
-    * toute autre exception inattendue
+    * arguments invalides
+    * toute autre exception inattendue (type d'exception indiqué)
 
     Le format de la réponse serveur (payload) est conservé : si le serveur
     indique une erreur, le texte retourné commence par `` [ERREUR]``.
     """
+    # validation des paramètres
+    if not name or not isinstance(arguments, dict):
+        return f"ERROR: invalid arguments (SERVER={SERVER})"
+
     messages = "\n".join([
         json.dumps({
             "jsonrpc": "2.0",
@@ -88,28 +95,34 @@ def call_tool(name: str, arguments: dict, timeout: int = 3600) -> str:
         return f"ERROR: timeout expired after {timeout}s (SERVER={SERVER})"
     except Exception as e:  # pragma: no cover
         # toute autre erreur inattendue
-        return f"ERROR: unexpected error {e} (SERVER={SERVER})"
+        return f"ERROR: unexpected error {type(e).__name__}: {e} (SERVER={SERVER})"
 
     # Analyse de la sortie du serveur
     for line in result.stdout.splitlines():
         if not line.strip().startswith("{"):
             continue
-        message = json.loads(line)
+        try:
+            message = json.loads(line)
+        except JSONDecodeError as e:
+            return f"ERROR: malformed json from server ({type(e).__name__}: {e}) (SERVER={SERVER})"
+        # vérifier que le message possède les clés attendues
+        if not isinstance(message, dict) or "id" not in message:
+            continue
         if message.get("id") == 2:
             payload = message.get("result", {})
+            if not isinstance(payload, dict):
+                return f"ERROR: unexpected payload format (SERVER={SERVER})"
             flag = " [ERREUR]" if payload.get("isError") else ""
-            # Le texte retourné peut être vide ou ne contenir que des espaces.
-            # Une réponse vide signifie qu'aucune mesure n'a pu être obtenue ;
-            # la considérer comme un succès masquerait un problème de collecte
-            # de données et ferait croire à l'appelant que le pont fonctionne.
-            # On renvoie donc un message explicite sans accents afin que
-            # _probe_success le traite comme une erreur.
             content = payload.get("content", [{}])[0].get("text", "")
             if not flag and not content.strip():
                 return "NO CONTENT: nothing could be measured"
             return flag + "\n" + content
+
     # Aucun message JSON valide reçu
-    return "aucune reponse\n" + result.stderr[-800:]
+    stderr_tail = result.stderr[-800:]
+    stderr_len = len(result.stderr)
+    trunc_info = f" (truncated, {stderr_len} bytes)" if stderr_len > 800 else ""
+    return f"ERROR: aucune reponse{trunc_info}\n{stderr_tail}"
 
 
 def _probe_success(output: str) -> bool:
@@ -124,20 +137,11 @@ def _probe_success(output: str) -> bool:
 
     Dans tous les cas ci‑dessus, la fonction renvoie ``False``.
     """
-    # Une sortie vide ou faite d'espaces n'est pas une reponse : c'est une
-    # absence de mesure. La compter comme un succes ferait conclure a un pont
-    # fonctionnel alors que rien n'a ete mesure -- exactement le defaut que
-    # cet outil de diagnostic existe pour aider a trouver ailleurs.
     if not output or not output.strip():
         return False
-    # `call_tool` produit ce temoin quand le serveur repond sans contenu.
-    # Sans cette ligne, les deux fonctions du meme fichier ne s'accordaient
-    # pas, et le temoin passait pour une reponse valide.
     if output.startswith("NO CONTENT:"):
         return False
     if output.startswith("ERROR:"):
-        return False
-    if output.startswith("aucune reponse"):
         return False
     if " [ERREUR]" in output:
         return False
@@ -158,11 +162,16 @@ def main() -> int:
         print(out)
         exit_code = 0 if _probe_success(out) else 1
     elif action == "search":
+        try:
+            k_val = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+        except ValueError:
+            print(f"ERROR: invalid integer for k (SERVER={SERVER})", file=sys.stderr)
+            return 1
         out = call_tool(
             "nexus_search",
             {
                 "query": sys.argv[2],
-                "k": int(sys.argv[3]) if len(sys.argv) > 3 else 5,
+                "k": k_val,
             },
         )
         print(out)
@@ -173,10 +182,15 @@ def main() -> int:
         exit_code = 0 if _probe_success(out) else 1
     elif action == "context":
         # context <instruction> <modele> <fenetre> <fichier...>
+        try:
+            context_tokens = int(sys.argv[4])
+        except ValueError:
+            print(f"ERROR: invalid integer for context_tokens (SERVER={SERVER})", file=sys.stderr)
+            return 1
         args = {
             "instruction": sys.argv[2],
             "model": sys.argv[3],
-            "context_tokens": int(sys.argv[4]),
+            "context_tokens": context_tokens,
             "paths": sys.argv[5:],
         }
         out = call_tool("nexus_context", args)

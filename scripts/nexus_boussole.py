@@ -26,19 +26,24 @@ import csv
 import datetime
 import hashlib
 import io
+import logging
 import os
 import sys
 import tempfile
 
-# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
-# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
-# et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
-# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
+# Sans cette ligne, Python écrit dans la page de codes locale de Windows
+# et les accents se dégradent dès que la sortie est capturée -- le
+# résultat finissait commité dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+# Configuration du logger minimaliste.
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_MD = os.path.join(ROOT, "rituels", "BOUSSOLE.md")
@@ -96,7 +101,24 @@ ORDER = ["Contrat", "Infrastructure", "Configuration", "Inventaire", "Pont",
 
 
 def sha256(path: str) -> str:
+    """
+    Calcule le hachage SHA‑256 complet d'un fichier.
+
+    Paramètres
+    ----------
+    path: str
+        Chemin absolu du fichier à hacher.
+
+    Retour
+    ------
+    str
+        Hexadécimal du hachage complet (64 caractères).
+    """
     digest = hashlib.sha256()
+    # Vérification préalable des droits de lecture.
+    if not os.access(path, os.R_OK):
+        logger.debug("Accès en lecture refusé pour %s", path)
+        return ""
     with open(path, "rb") as fh:
         for block in iter(lambda: fh.read(65536), b""):
             digest.update(block)
@@ -104,26 +126,44 @@ def sha256(path: str) -> str:
 
 
 def walk() -> list[tuple[str, str, str, int, str, str]]:
-    rows = []
+    """
+    Parcourt l'arborescence du dépôt et collecte les métadonnées utiles.
+
+    Retour
+    ------
+    list[tuple[str, str, str, int, str, str]]
+        Chaque tuple contient :
+        (catégorie, chemin relatif, rôle, taille en octets,
+         date de modification (YYYY‑MM‑DD), empreinte SHA‑256 tronquée à 16 caractères)
+    """
+    rows: list[tuple[str, str, str, int, str, str]] = []
     for base, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
             full = os.path.join(base, name)
-            relative = os.path.relpath(full, ROOT).replace("\\", "/")
+            # Normalisation portable du chemin relatif.
+            relative = os.path.relpath(full, ROOT)
+            relative = os.path.normpath(relative).replace(os.sep, "/")
             if os.path.splitext(name)[1].lower() in SKIP_EXT:
                 continue
-            if relative == ".env":  # jamais indexe, jamais empreinte
+            if relative == ".env":  # jamais indexé, jamais empreinté
                 continue
             category, role = ROLES.get(relative, ("Architecture", ""))
             if not role and relative.endswith(".txt"):
                 role = "Note d'architecture"
             try:
                 stat = os.stat(full)
-                rows.append((category, relative, role, stat.st_size,
-                             datetime.datetime.fromtimestamp(stat.st_mtime)
-                             .strftime("%Y-%m-%d"),
-                             sha256(full)[:16]))
-            except Exception:
+                rows.append((
+                    category,
+                    relative,
+                    role,
+                    stat.st_size,
+                    datetime.datetime.fromtimestamp(stat.st_mtime)
+                    .strftime("%Y-%m-%d"),
+                    sha256(full)[:16],
+                ))
+            except Exception as exc:
+                logger.debug("Erreur lors du traitement de %s : %s", full, exc)
                 continue
     return rows
 
@@ -138,7 +178,7 @@ def main() -> int:
         "# Boussole",
         "",
         "> Index du dépôt, généré par `python scripts/nexus_boussole.py` le %s." % now,
-        "> Localiser sans chercher, vérifier sans commande jetable.",
+        "> Localiser sans chercher, verifier sans commande jetable.",
         "> `.env` en est volontairement absent : ni indexé, ni empreinté.",
         "",
         "| Rôle | Fichier | Objet | Taille | Modifié | SHA-256 |",
@@ -171,25 +211,28 @@ def main() -> int:
         "Historique : [PROGRESS.md](PROGRESS.md)",
     ]
 
-    # Écriture atomique du fichier Markdown : on écrit d'abord dans un
-    # fichier temporaire, puis on le remplace en une seule opération.
-    # Cela évite qu'un arrêt brutal laisse le fichier d'index tronqué,
-    # ce qui pourrait masquer l'absence de certaines entrées.
-    md_tmp = tempfile.NamedTemporaryFile('w', encoding='utf-8', newline='\n',
-                                         delete=False, dir=os.path.dirname(OUT_MD))
+    # Écriture atomique du fichier Markdown.
+    md_tmp = tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", newline="\n", delete=False,
+        dir=os.path.dirname(OUT_MD)
+    )
     try:
         md_tmp.write("\n".join(lines) + "\n")
         md_tmp.flush()
         os.fsync(md_tmp.fileno())
     finally:
         md_tmp.close()
-    os.replace(md_tmp.name, OUT_MD)
+    try:
+        os.replace(md_tmp.name, OUT_MD)
+    except Exception:
+        os.remove(md_tmp.name)
+        raise
 
-    # Écriture atomique du fichier CSV : même principe que pour le Markdown.
-    # Le CSV est lu par des outils externes ; un fichier partiellement écrit
-    # pourrait entraîner des erreurs d'import ou des données manquantes.
-    csv_tmp = tempfile.NamedTemporaryFile('w', encoding='utf-8-sig', newline='',
-                                          delete=False, dir=os.path.dirname(OUT_CSV))
+    # Écriture atomique du fichier CSV.
+    csv_tmp = tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8-sig", newline="", delete=False,
+        dir=os.path.dirname(OUT_CSV)
+    )
     try:
         writer = csv.writer(csv_tmp, delimiter=";")
         writer.writerow(["Role", "Fichier", "Objet", "Taille (o)",
@@ -200,7 +243,11 @@ def main() -> int:
         os.fsync(csv_tmp.fileno())
     finally:
         csv_tmp.close()
-    os.replace(csv_tmp.name, OUT_CSV)
+    try:
+        os.replace(csv_tmp.name, OUT_CSV)
+    except Exception:
+        os.remove(csv_tmp.name)
+        raise
 
     print("Boussole regeneree : %d fichiers indexes" % len(rows))
     print("  %s" % os.path.relpath(OUT_MD, ROOT))
