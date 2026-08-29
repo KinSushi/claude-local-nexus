@@ -87,13 +87,24 @@ if ($IncludeVolumes) {
         @{ Name = "local-llm-docker_redis_data";  File = "redis_data.tar.gz" }
     )
 
+    # `${...}` est la syntaxe de NOM de variable : `${($vol.Name)}` faisait
+    # chercher une variable litteralement appelee `($vol.Name)`, qui n'existe
+    # pas, et interpolait le VIDE. L'argument de montage devenait `:/volume`,
+    # docker refusait, et AUCUN volume n'a jamais ete archive -- alors que la
+    # derniere ligne annoncait « Sauvegarde terminee » et sortait 0.
+    # Le contrat (§32, §36) fait reposer sur ce script la sauvegarde prealable
+    # a toute operation destructive : cette garantie etait vide.
+    # La forme correcte, `$(...)`, etait deja employee deux arguments plus loin
+    # sur la meme ligne.
+    $volumeEchoue = $false
     foreach ($vol in $volumes) {
         Write-Host "  Archivage du volume $($vol.Name)..."
-        docker run --rm -v "${($vol.Name)}:/volume" -v "${volumeDir}:/backup" alpine tar czf "/backup/$($vol.File)" -C /volume .
+        docker run --rm -v "$($vol.Name):/volume" -v "${volumeDir}:/backup" alpine tar czf "/backup/$($vol.File)" -C /volume .
         if ($LASTEXITCODE -eq 0) {
             Write-Host "    ✔ $($vol.File)"
         } else {
             Write-Warning "    ❌ Échec de sauvegarde du volume $($vol.Name)"
+            $volumeEchoue = $true
         }
     }
 
@@ -102,4 +113,13 @@ if ($IncludeVolumes) {
     Write-Host "  Sauvegarde de l'irremplaçable : python scripts\nexus_preserve.py --backup" -ForegroundColor DarkGray
 }
 
+# Annoncer un succes apres un archivage rate est le pire des deux etats :
+# l'operateur enchaine alors sur l'operation destructive que cette sauvegarde
+# etait censee couvrir.
+if ($IncludeVolumes -and $volumeEchoue) {
+    Write-Host "`n❌ Sauvegarde INCOMPLETE dans $backupDir : au moins un volume n'a pas ete archive."
+    exit 1
+}
+
 Write-Host "`n✅ Sauvegarde terminée dans $backupDir"
+exit 0
