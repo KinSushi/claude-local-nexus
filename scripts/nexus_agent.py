@@ -71,6 +71,21 @@ PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
 # recharger. Mieux vaut attendre.
 DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 
+# Temperature par defaut. 0.2 et non le defaut des modeles, souvent 0.7 a
+# 0.8 : le travail dominant ici est de la relecture de code, de l'extraction
+# et des sorties au format strict, ou une temperature haute produit de la
+# vraisemblance plutot que de l'exactitude. Mesure du jour ou elle a ete
+# posee : trois echecs consecutifs du banc sur des taches a sortie stricte
+# -- une reponse vide apres 19 000 jetons, une reponse tronquee dont le code
+# etait reecrit de memoire, et une boucle de repetition de 589 secondes.
+TEMPERATURE_DEFAUT = float(os.environ.get("NEXUS_TEMPERATURE", "0.2"))
+
+# Ordre de repli entre plans GRATUITS uniquement. Aucun alias Claude n'y
+# figure et aucun ne doit y figurer : retomber sur le paye reviendrait a
+# facturer au jeton ce qui devait etre gratuit, sans que personne l'ait
+# decide.
+REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
+
 # Mêmes règles que le serveur MCP : ce qui ne doit pas remonter vers un
 # modèle ne doit pas davantage remonter parce que le canal a changé.
 FICHIERS_SECRETS = {
@@ -155,20 +170,28 @@ def charger_fichiers(chemins: list[str]) -> tuple[str, list[str]]:
     return "\n\n".join(morceaux), refus
 
 
-def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str) -> dict:
+def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str,
+            temperature: float | None = None) -> dict:
     """
     Un appel à la passerelle, avec la preuve du plan réellement servi.
 
     `no-cache` est posé volontairement : une réponse de cache mesurerait la
     latence de Redis, pas celle du modèle, et ferait croire à un travail
     accompli qui ne l'a pas été.
+
+    La température était jusqu'ici laissée au défaut du modèle. Voir
+    `TEMPERATURE_DEFAUT` : ce défaut, trop haut pour les tâches d'ici,
+    faisait passer le banc pour incapable alors qu'il était mal réglé.
     """
-    charge = json.dumps({
+    corps_requete = {
         "model": modele,
         "messages": messages,
         "max_tokens": max_tokens,
         "cache": {"no-cache": True},
-    }).encode("utf-8")
+    }
+    if temperature is not None:
+        corps_requete["temperature"] = temperature
+    charge = json.dumps(corps_requete).encode("utf-8")
     requete = urllib.request.Request(
         PASSERELLE + "/v1/chat/completions",
         data=charge,
@@ -267,22 +290,57 @@ def executer(tache: dict, cle: str) -> dict:
         "que tu n'as pas lu, et tu dis explicitement quand tu n'es pas sur."
     )
     contenu = consigne if not corpus else "%s\n\n%s" % (consigne, corpus)
-    try:
-        resultat = appeler(
-            modele,
-            [{"role": "system", "content": systeme},
-             {"role": "user", "content": contenu}],
-            int(tache.get("max_tokens") or 1500),
-            cle,
-        )
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", "replace")[:300]
-        return {"nom": nom, "modele": modele, "erreur": "HTTP %s : %s" % (exc.code, detail)}
-    except Exception as exc:
-        return {"nom": nom, "modele": modele, "erreur": str(exc)}
-    resultat.update({"nom": nom, "modele": modele, "refus": refus,
-                     "plan": plan_de(resultat["adresse"])})
-    return resultat
+    messages = [{"role": "system", "content": systeme},
+                {"role": "user", "content": contenu}]
+    plafond = int(tache.get("max_tokens") or 1500)
+    temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
+
+    # Les plans gratuits s'enchainent SEULS. Un quota epuise, un refus ou
+    # une reponse vide obligeaient quelqu'un a s'en apercevoir et a relancer
+    # a la main sur un autre modele -- et ce quelqu'un etait le plan payant.
+    # Une bascule est SUBIE, jamais choisie : elle ne coute que de la
+    # capacite, n'elargit pas l'exposition des donnees, et n'atteint jamais
+    # un alias facture au jeton.
+    essais, echecs = [], []
+    for candidat in [modele] + REPLIS_GRATUITS:
+        if candidat in essais or candidat.startswith("claude-"):
+            continue
+        essais.append(candidat)
+        try:
+            resultat = appeler(candidat, messages, plafond, cle, temperature)
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:300]
+            # Certains modeles refusent tout parametre d'echantillonnage non
+            # defaut. Reessayer sans, plutot que de perdre le candidat.
+            if temperature is not None and "temperature" in detail.lower():
+                try:
+                    resultat = appeler(candidat, messages, plafond, cle, None)
+                except Exception as second:
+                    echecs.append("%s : %s" % (candidat, second))
+                    continue
+            else:
+                echecs.append("%s : HTTP %s : %s" % (candidat, exc.code, detail))
+                continue
+        except Exception as exc:
+            echecs.append("%s : %s" % (candidat, exc))
+            continue
+        # Une reponse vide n'est pas une reponse : la compter comme telle
+        # ferait conclure a un travail accompli qui ne l'a pas ete.
+        if not (resultat.get("texte") or "").strip():
+            echecs.append("%s : reponse vide (%d jetons consommes)"
+                          % (candidat, resultat.get("tokens", 0)))
+            continue
+        resultat.update({"nom": nom, "modele": candidat, "refus": refus,
+                         "plan": plan_de(resultat["adresse"])})
+        # Une reponse servie par un autre modele que celui demande, sans le
+        # dire, est un mensonge sur la mesure.
+        if candidat != modele:
+            resultat["bascule"] = "%s -> %s apres : %s" % (
+                modele, candidat, " | ".join(echecs))
+        return resultat
+
+    return {"nom": nom, "modele": modele,
+            "erreur": "tous les replis gratuits ont echoue : " + " | ".join(echecs)}
 
 
 def rendre(resultat: dict) -> None:
@@ -292,6 +350,10 @@ def rendre(resultat: dict) -> None:
         print("  ECHEC : %s" % resultat["erreur"])
         print("=" * 72)
         return
+    if resultat.get("bascule"):
+        # Une bascule tue est une mesure faussee : le lecteur croirait le
+        # modele demande capable de ce qu'un autre a produit.
+        print("  BASCULE : %s" % resultat["bascule"])
     print("  demande : %s" % resultat["modele"])
     print("  servi   : %s  [%s]  %s" %
           (resultat["servi_par"], resultat["plan"], resultat["adresse"]))
@@ -357,6 +419,9 @@ def main() -> int:
     parseur.add_argument("--modele", default="qwen3-coder-30b-local")
     parseur.add_argument("--systeme", help="Consigne systeme optionnelle.")
     parseur.add_argument("--max-tokens", type=int, default=1500)
+    parseur.add_argument("--temperature", type=float, default=None,
+                         help="Defaut %.1f. Ne monter au-dessus de 0.5 que "
+                              "pour une redaction libre." % TEMPERATURE_DEFAUT)
     parseur.add_argument("--lot", help="Fichier JSON decrivant plusieurs taches.")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
@@ -379,7 +444,9 @@ def main() -> int:
     elif args.tache:
         taches = [{"nom": args.modele, "modele": args.modele, "tache": args.tache,
                    "fichiers": args.fichiers, "systeme": args.systeme,
-                   "max_tokens": args.max_tokens}]
+                   "max_tokens": args.max_tokens,
+                   "temperature": (args.temperature if args.temperature is not None
+                                   else TEMPERATURE_DEFAUT)}]
     else:
         parseur.print_help()
         return 1
