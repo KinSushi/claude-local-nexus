@@ -91,9 +91,21 @@ def docker_models() -> list[tuple[str, str, float]]:
     rows = []
     for line in result.stdout.splitlines()[1:]:
         parts = line.split()
-        if len(parts) >= 4:
-            rows.append((parts[0], parts[1],
-                         capability.parse_size(parts[2] + parts[3])))
+        if len(parts) < 4:
+            continue
+        # Ollama liste ses modèles cloud au milieu des modèles locaux, sans
+        # poids. Rien n'est téléchargeable derrière ces noms : les laisser
+        # entrer produisait une liste de migration contenant trois
+        # `ollama pull glm-5.x:cloud`, commandes vides qui auraient été
+        # exécutées sans qu'on comprenne pourquoi rien n'arrivait — et,
+        # comptés à poids nul, ils occupaient des places dans le budget au
+        # détriment de modèles réellement transférables.
+        if parts[0].endswith(":cloud"):
+            continue
+        taille = capability.parse_size(parts[2] + parts[3])
+        if taille <= 0:
+            continue
+        rows.append((parts[0], parts[1], taille))
     return rows
 
 

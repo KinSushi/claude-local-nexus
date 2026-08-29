@@ -1,11 +1,8 @@
 # Inventaire local a telecharger sur l'hote.
-# Genere par scripts/nexus_migration_plan.py — 7 modeles, 20 Go.
+# Genere par scripts/nexus_migration_plan.py — 4 modeles, 20 Go.
 # Les modeles inexecutables sur cette machine en sont absents.
 
 qwen3-coder:30b
 nomic-embed-text:latest
 llama3.2:1b
-glm-5.3-flash:cloud
-glm-5.2:cloud
-glm-5.1:cloud
 all-minilm:latest
