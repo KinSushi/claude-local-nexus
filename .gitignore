@@ -16,3 +16,8 @@ __pycache__/
 # Worktrees temporaires des agents : ce sont des depots imbriques,
 # reconstruits a la demande et sans valeur en dehors de leur session.
 .claude/worktrees/
+
+# Candidats d'ecriture atomique. Un echec en laisse un sur le disque ;
+# il est ecrase au prochain essai et ne doit jamais etre confondu avec
+# le fichier reel, ni encombrer `git status` au moment ou l'on diagnostique.
+*.candidat

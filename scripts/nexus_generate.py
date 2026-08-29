@@ -982,8 +982,18 @@ def main() -> int:
         for name in published:
             if name in rejected:
                 inventory.append("# %-24s # %s" % (name, rejected[name]))
-    with io.open(CLOUD_LIST, "w", encoding="utf-8", newline="\n") as fh:
+    # Meme precaution que pour la configuration, vingt lignes plus haut :
+    # un candidat, puis un remplacement atomique. L'ecriture etait ici
+    # faite en place, alors que ce fichier est une source de verite --
+    # c'est lui qui documente quels modeles cloud l'abonnement autorise
+    # reellement. Interrompue a mi-chemin, elle laissait un inventaire
+    # tronque qu'aucun controle ne relit : la generation suivante s'y
+    # fierait, et des modeles pourtant autorises disparaitraient du pool
+    # sans que rien ne signale pourquoi.
+    candidat_inventaire = CLOUD_LIST + ".candidat"
+    with io.open(candidat_inventaire, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(inventory) + "\n")
+    os.replace(candidat_inventaire, CLOUD_LIST)
 
     print("\n=== Génération terminée ===")
     for name, content in blocks.items():
