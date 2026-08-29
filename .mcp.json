@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "nexus-local": {
+      "command": "node",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/tools/nexus-mcp/server.js"],
+      "env": {
+        "NEXUS_ROOT": "${NEXUS_ROOT:-${CLAUDE_PROJECT_DIR:-.}}",
+        "NEXUS_LITELLM_URL": "${NEXUS_LITELLM_URL:-http://127.0.0.1:4000}"
+      }
+    }
+  }
+}
