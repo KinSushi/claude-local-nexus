@@ -52,10 +52,21 @@ if ($IncludeVolumes) {
     $volumeDir = Join-Path $backupDir "volumes"
     New-Item -ItemType Directory -Path $volumeDir -Force | Out-Null
 
+    # Le volume Ollama est volontairement absent de cette liste.
+    #
+    # Il pèse 541 Go pour 155 Go de disque libre : l'archiver échouerait, et
+    # réussirait-il qu'il serait inutile. Les poids de modèles ont une source
+    # publique et un manifeste local — `model_list.txt` les reconstitue par
+    # `ollama pull`. Sauvegarder ce qui se retélécharge coûte du disque pour
+    # ne rien préserver.
+    #
+    # Ce qui n'a aucune source de reconstruction — l'historique de dépense,
+    # les sessions de routage, les clés — tient dans 84 Mo et se sauvegarde
+    # mieux en dump SQL qu'en archive de volume :
+    #     python scripts/nexus_preserve.py --backup
     $volumes = @(
-        @{ Name = "local-llm-docker_pgdata";        File = "pgdata.tar.gz" },
-        @{ Name = "local-llm-docker_ollama_data";   File = "ollama_data.tar.gz" },
-        @{ Name = "local-llm-docker_redis_data";    File = "redis_data.tar.gz" }
+        @{ Name = "local-llm-docker_pgdata";      File = "pgdata.tar.gz" },
+        @{ Name = "local-llm-docker_redis_data";  File = "redis_data.tar.gz" }
     )
 
     foreach ($vol in $volumes) {
@@ -67,6 +78,10 @@ if ($IncludeVolumes) {
             Write-Warning "    ❌ Échec de sauvegarde du volume $($vol.Name)"
         }
     }
+
+    Write-Host ""
+    Write-Host "  Volume Ollama non archivé : 541 Go retéléchargeables depuis model_list.txt." -ForegroundColor DarkGray
+    Write-Host "  Sauvegarde de l'irremplaçable : python scripts\nexus_preserve.py --backup" -ForegroundColor DarkGray
 }
 
 Write-Host "`n✅ Sauvegarde terminée dans $backupDir"
