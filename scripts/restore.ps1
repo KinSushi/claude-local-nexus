@@ -56,17 +56,40 @@ do {
     $ollamaStatus = docker inspect --format='{{.State.Health.Status}}' ollama-server 2>$null
 } while ($ollamaStatus -ne "healthy" -and $attempt -lt $maxAttempts)
 
+# Vérifier que le conteneur Ollama est bien en état « healthy » après la boucle d'attente.
 if ($ollamaStatus -ne "healthy") {
-    Write-Warning "Ollama n'est pas prêt après $($maxAttempts * 2) secondes. Vérifiez les logs avec 'docker logs ollama-server'."
+    Write-Error "Ollama n'est pas en état 'healthy' après $($maxAttempts * 2) secondes. Vérifiez les logs avec 'docker logs ollama-server'."
+    exit 1
 }
 
 # Télécharger les modèles locaux
 $models = Get-Content model_list.txt | Where-Object { $_ -notmatch '^NAME$' -and $_ -notmatch ':cloud$' -and $_ -notmatch '^\s*$' }
+$successCount = 0
+$failCount = 0
 foreach ($model in $models) {
     $model = $model.Trim()
     if ($model -eq "") { continue }
     Write-Host "Téléchargement de $model..."
     docker exec ollama-server ollama pull $model
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "   ✔ Téléchargement réussi."
+        $successCount++
+    } else {
+        Write-Warning "   ❌ Échec du téléchargement de $model."
+        $failCount++
+    }
+}
+
+Write-Host ""
+Write-Host "============================================================"
+Write-Host " Bilan du téléchargement des modèles locaux"
+Write-Host "   Réussis : $successCount"
+Write-Host "   Échecs  : $failCount"
+Write-Host "============================================================"
+
+if ($failCount -gt 0) {
+    exit 1
 }
 
 Write-Host "✅ Restauration terminée."
