@@ -100,7 +100,7 @@ DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 # posee : trois echecs consecutifs du banc sur taches a sortie stricte
 # -- une reponse vide apres 19 000 jetons, une reponse tronquee dont le code
 # etait reecrit de memoire, et une boucle de repetition de 589 secondes.
-TEMPERATURE_DEFAUT = float(os.environ.get("NEXUS_TEMPERATURE", "0.2"))
+TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 
 # Ordre de repli entre plans GRATUITS uniquement. Aucun alias Claude n'y
 # figure et aucun ne doit y figurer : retomber sur le paye reviendrait a
@@ -441,10 +441,27 @@ def executer(tache: dict, cle: str) -> dict:
         except Exception as exc:
             echecs.append("%s : %s" % (candidat, exc))
             continue
-        if not (resultat.get("texte") or "").strip():
-            echecs.append("%s : reponse vide (%d jetons consommes)"
-                          % (candidat, resultat.get("tokens", 0)))
-            continue
+
+        # Gestion du cas ou la reponse est vide
+        texte_vide = not (resultat.get("texte") or "").strip()
+        if texte_vide:
+            if resultat.get("tronque"):
+                # Le modele a atteint son plafond sans produire de texte.
+                # On signale le probleme sans basculer.
+                resultat.update({
+                    "nom": nom,
+                    "modele": candidat,
+                    "refus": refus,
+                    "plan": plan_de(resultat.get("adresse", "?")),
+                    "plafond_insuffisant": True,
+                    "detail": f"demande {plafond} jetons, augmenter le plafond"
+                })
+                return resultat
+            else:
+                echecs.append("%s : reponse vide (%d jetons consommes)"
+                              % (candidat, resultat.get("tokens", 0)))
+                continue
+
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "plan": plan_de(resultat["adresse"])})
         if candidat != modele:
@@ -472,6 +489,9 @@ def rendre(resultat: dict) -> None:
            resultat.get("adresse", "?")))
     print("  %d tokens, %.0f s, cout %s" %
           (resultat.get("tokens", 0), resultat.get("duree", 0.0), resultat.get("cout", "0")))
+    # Message specifique lorsqu'un plafond est insuffisant
+    if resultat.get("plafond_insuffisant"):
+        print("  [!] Plafond insuffisant : le modele a consomme tout son budget sans produire de texte. %s" % resultat.get("detail", ""))
     for r in resultat.get("refus") or []:
         print("  [refuse] %s" % r)
 
