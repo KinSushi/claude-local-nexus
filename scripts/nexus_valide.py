@@ -197,7 +197,14 @@ def free_plan_judgment(diff_text, callers):
 
 def main():
     parser = argparse.ArgumentParser(description="Validation Nexus sans coût")
-    parser.add_argument("--base", default="main", help="Branche de base pour le diff")
+    # Defaut HEAD~1 et non main : juger toute l'histoire d'une branche en un
+    # seul appel produit un diff de plus de 100 000 caracteres, que le jugement
+    # ne peut pas rendre -- et un code 2 pousse alors vers un agent PAYE pour un
+    # defaut d'unite, pas de capacite. Mesure : 112 553 caracteres sur 30
+    # commits, echec ; le dernier commit seul, code 0. `--base main` reste
+    # disponible pour une revue complete.
+    parser.add_argument("--base", default="HEAD~1",
+                        help="Base de comparaison git (defaut HEAD~1).")
     parser.add_argument("--json", action="store_true", help="Sortie JSON détaillée")
     args = parser.parse_args()
 
