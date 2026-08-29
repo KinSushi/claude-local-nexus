@@ -45,10 +45,18 @@ def run_git(args):
     )
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
-    # Une sortie absente n'est pas une sortie vide : la rendre telle quelle
-    # ferait analyser un diff inexistant et conclure « aucune regression ».
-    if result.stdout is None:
-        raise RuntimeError(f"git {' '.join(args)} : sortie illisible")
+    # Aucune garde sur une sortie vide, et c'est delibere.
+    #
+    # Une version precedente testait `result.stdout is None` : du code mort,
+    # puisque `text=True` garantit une chaine. La remplacer par un test sur une
+    # sortie vide a introduit pire -- `git diff HEAD` rend legitimement une
+    # chaine vide sur un arbre propre, et lever la aurait empeche le repli sur
+    # le dernier commit.
+    #
+    # Git rend 0 et une chaine vide aussi bien pour un arbre propre que pour
+    # une plage mal formee : ici, les deux cas sont indiscernables. Simuler une
+    # verification impossible serait pire que de s'en passer, c'est l'appelant
+    # qui decide ce que signifie un diff vide.
     return result.stdout
 
 def get_modified_files_from_base(base):

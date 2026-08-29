@@ -95,8 +95,8 @@ DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 
 # Temperature par defaut. 0.2 et non le defaut des modeles, souvent 0.7 a
 # 0.8 : le travail dominant ici est de la relecture de code, de l'extraction
-# et des sorties au format strict, ou une temperature haute produit de la
-# vraisemblance plutot que de l'exactitude. Mesure du jour ou elle a ete
+# et des sorties au format strict, ou une temperature haute produit la
+# vraisemblance plutot que l'exactitude. Mesure du jour ou elle a ete
 # posee : trois echecs consecutifs du banc sur taches a sortie stricte
 # -- une reponse vide apres 19 000 jetons, une reponse tronquee dont le code
 # etait reecrit de memoire, et une boucle de repetition de 589 secondes.
@@ -448,13 +448,16 @@ def executer(tache: dict, cle: str) -> dict:
             if resultat.get("tronque"):
                 # Le modele a atteint son plafond sans produire de texte.
                 # On signale le probleme sans basculer.
+                # Ajout de la cle `erreur` pour que les appelants qui ne
+                # testent que `erreur` détectent correctement le problème.
                 resultat.update({
                     "nom": nom,
                     "modele": candidat,
                     "refus": refus,
                     "plan": plan_de(resultat.get("adresse", "?")),
                     "plafond_insuffisant": True,
-                    "detail": f"demande {plafond} jetons, augmenter le plafond"
+                    "detail": f"demande {plafond} jetons, augmenter le plafond",
+                    "erreur": f"plafond insuffisant : demande {plafond} jetons, augmenter le plafond"
                 })
                 return resultat
             else:
