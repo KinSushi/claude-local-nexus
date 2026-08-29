@@ -3665,3 +3665,87 @@ Two honesty constraints, both learned the hard way:
   here. The figure is "volume diverted from the subscription", not
   "subscription remaining". There is no threshold to reach: the delegated
   share is a quantity to maximise.
+
+---
+
+# 112. Token economy is the product, not a preference
+
+The platform exists to move volume off a paid subscription and onto free
+models. A change that improves everything else while degrading that ratio has
+made the system worse.
+
+Three rules follow, and they are enforced mechanically because discipline
+already failed: the instruction had to be repeated four times in one session
+before it was wired in.
+
+```text
+1. Any unnecessary use of paid tokens violates the purpose of the project.
+2. The orchestrator arbitrates and audits. It does not draft.
+   Corrections are produced by the free plane, then arbitrated.
+3. LAW 1 — never validate your own work. Validation belongs to an
+   independent agent that did not author the change.
+```
+
+Law 1 paid for itself on first use. It found a real regression: `switch()` in
+`scripts/nexus_switch_engine.py` still treated an unreachable engine as an
+engine with no models, and printed that claim as the last message before
+rewriting the configuration.
+
+## 112.1 The trap is the orchestration shell, not the model
+
+A Claude subagent costs **twice**: its own reasoning, billed per token, and
+what it delegates, free. Only the second half serves the purpose.
+
+Launched without an explicit `model`, a subagent **inherits the parent's
+model** — the most expensive one — and nothing says so.
+
+Measured 2026-08-29, across four subagents:
+
+| | Tokens |
+| --- | --- |
+| Billed, spent on subagent reasoning | ~475 000 |
+| Free, delegated to Ollama Cloud | ~126 000 |
+
+That is the inverse of the goal. The metric to watch is therefore not
+"was the free plane used" but **how many billed tokens were spent driving
+free ones**.
+
+## 112.2 Mechanisms
+
+| Mechanism | What it enforces |
+| --- | --- |
+| `scripts/nexus_garde_agent.py` | `PreToolUse` hook. Refuses a subagent whose `model` is absent or not allowed, and refuses `subagent_type: fork`, whose parent model is inherited whatever is requested — letting it through while believing it capped would be a false guarantee, worse than none. Any anomaly (unreadable JSON, missing field) passes: a guard that crashes must never stop work. Override: `NEXUS_AGENT_LIBRE=1`. |
+| `.claude/settings.json` | Wires the hook. |
+| `.claude/agents/nexus-delegue.md` | The economical agent, cheap by construction: fixed model, delegation protocol, caps on tool calls and report length. |
+| `controle_delegation` in `scripts/nexus_conformite.py` | Measures the delegated share over 7 days. Floor 90%, WARNING and never BLOCKING — a falling share does not prevent starting, and refusing to start would punish the operator who came to fix it. Reports `anthropic` requests separately: they alone are billed per token, and a flattering average is carried by free volume. |
+
+## 112.3 The bench, as measured
+
+| Model | Latency | Cost | Note |
+| --- | --- | --- | --- |
+| `gpt-oss-120b-cloud` | 20–35 s for 10–30k tokens | 0 | Ollama Cloud subscription. Data leaves to ollama.com; the repository is public, so this is acceptable. The workhorse. |
+| `glm-4.7-flash-local` | slower | 0 | Free **and** private. Also the declared local relay: 4/4 on protocol, tool request, result use, chaining. |
+| any local >= 30B | **times out at 900 s** | — | Measured on `qwen3-coder-30b-local` and `qwen2.5-coder-32b-local`. Do not delegate to them. |
+
+The call path that survives a broken MCP root, because it derives its own root
+from `__file__`:
+
+```powershell
+python scripts/nexus_agent.py --tache "..." --fichiers f1 f2 `
+    --modele gpt-oss-120b-cloud --max-tokens 2000
+```
+
+## 112.4 What the free plane cannot replace
+
+A model is often wrong, and wrong in ways that read as right. Rejected in one
+session: a comment that described the code instead of the damage avoided; an
+empty anchor that matched nothing; a nine-commit split presented as
+independently revertible when five touched the same file; and — worst — a
+documentation section that **invented its measurements**, including a blocked
+invocation count, a token saving, a wrong delegated share and a code excerpt
+that was not the repository's.
+
+Hence: the analysis is the signal, never the proof. Verify every finding in
+the real code. Doctrine that states measured facts must be written by whoever
+holds the measurements. The choice of remedy stays with the orchestrator,
+which alone weighs side effects.
