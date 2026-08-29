@@ -107,16 +107,36 @@ def controle_moteur_coherent() -> None:
     except Exception as exc:
         noter("moteur coherent", False, BLOQUANT, "configuration illisible : %s" % exc)
         return
-    docker = texte.count("http://ollama:11434")
-    hote = texte.count("host.docker.internal:11434")
-    if docker and hote:
+    # Recensement de TOUTES les adresses declarees, plutot que le comptage
+    # de deux formes connues d'avance. L'ancienne version comparait
+    # `http://ollama:11434` a `host.docker.internal:11434` et ignorait
+    # tout le reste : une configuration melangeant `http://127.0.0.1:11434`
+    # a l'une des deux passait pour coherente, alors que c'est exactement
+    # la panne decrite ci-dessus. Un controle qui ne connait que les
+    # formes deja vues ne protege que du passe.
+    adresses: dict[str, int] = {}
+    for brut in re.findall(r"api_base:\s*(\S+)", texte):
+        # `,}]` retires en plus des guillemets : une declaration ecrite en
+        # flux YAML (`{... api_base: http://hote:11434}`) ferait sinon de
+        # l'accolade fermante un morceau de l'adresse, et deux ecritures de
+        # la MEME adresse compteraient pour deux moteurs distincts.
+        adresse = brut.strip().strip("\"'").rstrip(",}]")
+        if "ollama.com" in adresse or "anthropic" in adresse:
+            continue                      # plan distant : hors sujet ici
+        adresses[adresse] = adresses.get(adresse, 0) + 1
+
+    if not adresses:
+        noter("moteur coherent", False, AVERTISSEMENT,
+              "aucune declaration locale dans la configuration")
+    elif len(adresses) > 1:
         noter("moteur coherent", False, BLOQUANT,
-              "configuration partagee : %d declaration(s) vers le conteneur, "
-              "%d vers l'hote" % (docker, hote))
+              "configuration partagee entre %d moteurs : %s" % (
+                  len(adresses),
+                  ", ".join("%s (%d)" % (a, n) for a, n in sorted(adresses.items()))))
     else:
+        adresse, nombre = next(iter(adresses.items()))
         noter("moteur coherent", True, BLOQUANT,
-              "%d declaration(s) vers %s" % (docker or hote,
-                                             "le conteneur" if docker else "l'hote"))
+              "%d declaration(s) vers %s" % (nombre, adresse))
 
 
 def controle_moteur_joignable() -> None:
