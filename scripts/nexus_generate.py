@@ -156,21 +156,37 @@ def discover_local() -> list[str]:
     return sorted(set(names))
 
 
-def local_context(base: str) -> int:
+def local_context(base: str, profile: dict | None = None) -> int:
     """
     Fenêtre attribuée aux modèles exposés automatiquement.
 
-    Volontairement conservatrice : sur un hôte CPU, le contexte se paie en
-    RAM et en latence, et la capacité annoncée d'un modèle ne rend pas son
-    allocation raisonnable (§26). Un modèle qui mérite mieux se promeut en
-    le déclarant à la main.
+    Elle suit le matériel plutôt qu'une constante. Sur un hôte CPU, le
+    contexte se paie en RAM et en latence, et la capacité annoncée d'un
+    modèle ne rend pas son allocation raisonnable (§26) : on reste donc
+    conservateur. Avec une VRAM dédiée, le cache KV cesse d'être le
+    facteur limitant et les fenêtres s'élargissent d'elles-mêmes.
+
+    C'est ce qui permet d'ajouter une carte graphique plus tard sans
+    réécrire quoi que ce soit : les seuils suivent la mesure.
     """
     if EMBED_HINT.search(base):
         return 8192
+
     match = re.search(r"(\d+(?:\.\d+)?)b", base.lower())
-    if match and float(match.group(1)) <= 9:
-        return 16384
-    return 8192
+    petit = bool(match and float(match.group(1)) <= 9)
+
+    if profile and profile.get("gpu_usable_for_offload"):
+        # VRAM dédiée : la fenêtre devient abordable. On reste en deçà de
+        # ce que le modèle annonce, car le cache KV doit tenir à côté des
+        # poids dans la même VRAM.
+        vram = profile["gpu"]["vram_gb"]
+        if vram >= 24:
+            return 131072 if petit else 65536
+        if vram >= 12:
+            return 65536 if petit else 32768
+        return 32768 if petit else 16384
+
+    return 16384 if petit else 8192
 
 
 def render_local_extra(installed: list[str], declared: set[str],
@@ -199,7 +215,7 @@ def render_local_extra(installed: list[str], declared: set[str],
 
     for i, (base, state, reason) in enumerate(rendered):
         alias = local_alias(base)
-        ctx = local_context(base)
+        ctx = local_context(base, profile)
         is_embed = bool(EMBED_HINT.search(base))
         note = "expose automatiquement"
         if state == capability.DEGRADED:

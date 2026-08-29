@@ -214,6 +214,20 @@ async function withRetry(operation, attempts = 3) {
   throw last;
 }
 
+/**
+ * Plan d'execution d'un alias, et ce qu'il implique.
+ *
+ * Annoncer « local » sans le verifier serait le pire des defauts pour cette
+ * plateforme : l'appelant croirait ses donnees restees sur la machine. Le
+ * plan se deduit donc du modele reellement servi, jamais d'une constante.
+ */
+function planOf(alias) {
+  if (!alias) return "plan inconnu";
+  if (alias.endsWith("-cloud")) return "Ollama Cloud, les donnees sortent";
+  if (alias.startsWith("claude-")) return "Anthropic, facture au token";
+  return "local, cout 0";
+}
+
 async function chat(model, messages, maxTokens, timeoutMs) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
@@ -1062,7 +1076,7 @@ async function callTool(name, args) {
       (phase, done, total) => log(`${phase} ${done}/${total}`));
 
     return (
-      `[${result.model} · local · ${result.windows} fenetres, ${result.passes} passes · ` +
+      `[${result.model} · ${planOf(result.model)} · ${result.windows} fenetres, ${result.passes} passes · ` +
       `~${approxTokens} tokens traites en ${contextTokens} de fenetre · ` +
       `${result.tokens} tokens factures 0]\n` +
       (sources.length ? `Sources : ${sources.join(", ")}\n` : "") +
@@ -1105,7 +1119,7 @@ async function callTool(name, args) {
     if (!choice) throw new Error("aucune reponse du modele");
     const served = headers["x-litellm-model-group"] || model;
     const kb = Math.round(fs.statSync(full).size / 1024);
-    return `[${served} · local · image ${kb} Ko · cout 0]\n\n${choice.message.content}`;
+    return `[${served} · ${planOf(served)} · image ${kb} Ko]\n\n${choice.message.content}`;
   }
 
   if (name === "nexus_summarize") {
@@ -1160,7 +1174,7 @@ async function callTool(name, args) {
       );
     }
 
-    return `[${model} · local · ${totalTokens} tokens · cout 0]\n\n${parts.join("\n\n")}`;
+    return `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n${parts.join("\n\n")}`;
   }
 
   if (name === "nexus_index_build") {

@@ -106,8 +106,32 @@ def cpu_cores() -> tuple[int, int]:
 
 
 def gpu_info() -> dict:
+    """
+    Carte graphique et VRAM réellement dédiée.
+
+    Le cas d'un GPU discret ajouté plus tard est prévu ici : `nvidia-smi`
+    est interrogé en premier car il rapporte la VRAM exacte, là où
+    `Win32_VideoController.AdapterRAM` sature à 4 Go sur beaucoup de
+    pilotes et sous-estimerait une carte récente.
+    """
+    # 1. GPU NVIDIA discret — la source la plus fiable quand elle existe.
+    out = _run(["nvidia-smi", "--query-gpu=name,memory.total",
+                "--format=csv,noheader,nounits"], timeout=30)
+    if out.strip():
+        first = out.strip().splitlines()[0]
+        if "," in first:
+            name, mib = first.split(",", 1)
+            try:
+                return {"name": name.strip(),
+                        "vram_gb": round(float(mib.strip()) / 1024, 1),
+                        "integrated": False, "vendor": "nvidia"}
+            except Exception:
+                pass
+
+    # 2. À défaut, l'inventaire Windows.
     out = _run(["powershell", "-NoProfile", "-Command",
-                "$g=Get-CimInstance Win32_VideoController|Select-Object -First 1;"
+                "$g=Get-CimInstance Win32_VideoController|"
+                "Sort-Object AdapterRAM -Descending|Select-Object -First 1;"
                 "\"$($g.Name)|$($g.AdapterRAM)\""])
     name, vram = "", 0.0
     if "|" in out:
@@ -116,13 +140,19 @@ def gpu_info() -> dict:
             vram = float(raw) / (1024 ** 3)
         except Exception:
             vram = 0.0
+
     # Un iGPU ne dispose pas d'une VRAM propre : la valeur annoncée est une
-    # réservation, la mémoire réelle est partagée avec le système. On ne la
-    # compte donc pas comme un budget d'inférence distinct.
-    integrated = bool(re.search(r"radeon\s*\d{3}m|iris|uhd|vega|integrated",
-                                name, re.I))
+    # réservation prélevée sur la mémoire système, pas un budget distinct.
+    # La distinction n'est pas cosmétique — mesuré sur Radeon 890M, passer
+    # du CPU au GPU intégré ne gagne que 7 %, parce que le goulot est la
+    # bande passante mémoire, que les deux partagent.
+    integrated = bool(re.search(r"radeon\s*\d{3}m|iris|uhd|vega|integrated|"
+                                r"graphics$", name, re.I))
+    vendor = ("amd" if re.search(r"radeon|amd", name, re.I)
+              else "intel" if re.search(r"intel|iris|uhd", name, re.I)
+              else "inconnu")
     return {"name": name.strip(), "vram_gb": round(vram, 1),
-            "integrated": integrated}
+            "integrated": integrated, "vendor": vendor}
 
 
 def ollama_location() -> dict:
@@ -232,18 +262,38 @@ def build_profile() -> dict:
     else:
         usable = host_ram
 
+    # Un GPU discret change la nature du budget, pas seulement sa taille.
+    #
+    #   iGPU        la VRAM annoncée est prélevée sur la RAM système : il
+    #               n'y a qu'un seul budget, et la bande passante mémoire
+    #               reste le goulot. Mesuré : +7 % seulement.
+    #   GPU discret la VRAM est une mémoire distincte, à bande passante
+    #               bien supérieure. Un modèle qui y tient est rapide ;
+    #               un modèle qui déborde retombe à la vitesse du CPU.
+    #
+    # D'où deux budgets quand un GPU discret existe : le budget RAPIDE
+    # (la VRAM) commande l'éligibilité au routage automatique, le budget
+    # MAXIMAL (la RAM) délimite ce qui reste exécutable, en dégradé.
+    # Ajouter une carte plus tard ne demandera donc aucune réécriture :
+    # les seuils suivront la mesure.
+    discrete = bool(gpu["vram_gb"] >= 6 and not gpu["integrated"])
+    if discrete:
+        fast_budget = gpu["vram_gb"] * POOL_FRACTION
+        max_budget = max(gpu["vram_gb"], usable) * RUNNABLE_FRACTION
+    else:
+        fast_budget = usable * POOL_FRACTION
+        max_budget = usable * RUNNABLE_FRACTION
+
     return {
         "host_ram_gb": round(host_ram, 1),
         "cpu_cores": physical,
         "cpu_threads": logical,
         "gpu": gpu,
-        # Un iGPU sans VRAM propre n'apporte pas de budget mémoire : toute
-        # l'inférence tient dans la RAM système.
-        "gpu_usable_for_offload": bool(gpu["vram_gb"] >= 8 and not gpu["integrated"]),
+        "gpu_usable_for_offload": discrete,
         "ollama": location,
         "inference_memory_gb": round(usable, 1),
-        "pool_budget_gb": round(usable * POOL_FRACTION, 1),
-        "runnable_budget_gb": round(usable * RUNNABLE_FRACTION, 1),
+        "pool_budget_gb": round(fast_budget, 1),
+        "runnable_budget_gb": round(max_budget, 1),
         "model_store": store,
         "free_disk_gb": round(free_disk, 1),
     }

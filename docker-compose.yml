@@ -48,8 +48,14 @@ services:
     restart: unless-stopped
     environment:
       OLLAMA_HOST: "0.0.0.0:11434"
-      OLLAMA_LLM_LIBRARY: cpu            # Force CPU pour éviter les problèmes Vulkan
-      OLLAMA_VULKAN: "false"             # Désactive Vulkan
+      # Backend d'inference. CPU par defaut, parce que le conteneur n'a pas
+      # acces au GPU sous Windows et que Vulkan y provoquait des erreurs.
+      #
+      # Ces deux valeurs sont parametrees, et non figees : ajouter une carte
+      # graphique plus tard ne doit demander aucune reecriture. Pour un GPU
+      # NVIDIA, surcharger avec docker-compose.gpu.yml.
+      OLLAMA_LLM_LIBRARY: ${OLLAMA_LLM_LIBRARY:-cpu}
+      OLLAMA_VULKAN: ${OLLAMA_VULKAN:-false}
       OLLAMA_CLOUD_API_KEY: ${OLLAMA_CLOUD_API_KEY:-}   # Clé pour les modèles cloud
     volumes:
       - ollama_data:/root/.ollama

@@ -1,0 +1,27 @@
+# Surcharge pour machine equipee d'un GPU NVIDIA.
+#
+# Ce fichier n'est pas charge par defaut : reserver un peripherique absent
+# ferait echouer le demarrage. Il s'active explicitement :
+#
+#     docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Prerequis : pilotes NVIDIA a jour et NVIDIA Container Toolkit installe.
+# Verifier d'abord que Docker voit la carte :
+#
+#     docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
+#
+# Le profil materiel s'adapte seul ensuite : avec une VRAM dediee, le
+# budget d'eligibilite au routage devient la VRAM et non la RAM systeme,
+# et les fenetres de contexte suivent. Aucune autre modification requise.
+services:
+  ollama:
+    environment:
+      OLLAMA_LLM_LIBRARY: cuda
+      OLLAMA_VULKAN: "false"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
