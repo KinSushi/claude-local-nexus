@@ -260,6 +260,14 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
         )
     except Exception as exc:
         print("  ECHEC de l'appel : %s" % exc)
+        # Le code Windows brut (10061) ne dit pas quoi faire. La passerelle
+        # eteinte est de loin la cause la plus frequente ici, et l'arbre
+        # est deja cree : sans cette ligne on relance la meme commande sans
+        # savoir qu'il fallait d'abord remonter la pile.
+        if "10061" in str(exc) or "refus" in str(exc).lower() \
+                or "refused" in str(exc).lower():
+            print("  La passerelle ne repond pas sur %s." % agent.PASSERELLE)
+            print("  Remonter la pile :  .\\scripts\\start.ps1")
         return 1
 
     plan = agent.plan_de(resultat["adresse"])
