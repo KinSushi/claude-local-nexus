@@ -912,7 +912,6 @@ router_settings:
     - claude-sonnet-5:
         - claude-haiku-4-5
         - glm-4.7-flash-local
-        - gemma4-31b-local
 
     - claude-haiku-4-5:
         - glm-4.7-flash-local
@@ -995,7 +994,6 @@ router_settings:
     - nemotron-3-nano-30b-cloud:
         - gemma4-31b-cloud
         - glm-4.7-flash-local
-        - gemma4-31b-local
 
     - gemma4-31b-cloud:
         - glm-4.7-flash-local

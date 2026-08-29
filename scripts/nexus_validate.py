@@ -6,6 +6,9 @@ Vérifie que la configuration LiteLLM est cohérente AVANT tout redémarrage :
 aucune référence pendante, aucun cycle de fallback, aucune incompatibilité
 de modalité, aucun secret manquant.
 
+Usage :
+    python scripts/nexus_validate.py [--config <fichier>]
+
 Codes de sortie :
     0  configuration valide (des avertissements restent possibles)
     1  au moins une erreur bloquante
@@ -38,7 +41,13 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Le fichier a juger peut etre un candidat, pas encore en place : c'est ce
+# qui permet de valider AVANT de remplacer une configuration qui tourne.
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
+for _i, _a in enumerate(sys.argv):
+    if _a == "--config" and _i + 1 < len(sys.argv):
+        CONFIG = sys.argv[_i + 1]
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -131,7 +140,7 @@ def main() -> int:
 
     # --- 3. Graphe de fallback ------------------------------------------
     router_settings = cfg.get("router_settings") or {}
-    graph: dict[str, list[str]] = {}
+    graphes: dict[str, dict[str, list[str]]] = {}
 
     # Domaine d'exécution de chaque alias, pour juger la direction des replis.
     domains: dict[str, str] = {}
@@ -168,10 +177,17 @@ def main() -> int:
         if presents:
             domains[alias] = max(presents, key=lambda d: rang.get(d, 0))
 
-    for label, entries in (
+    # LiteLLM connait plusieurs listes de repli. N'en inspecter que deux
+    # laissait passer des alias pendants ET une fuite local -> cloud dans
+    # les autres, sans un mot.
+    listes_de_repli = (
         ("fallbacks", router_settings.get("fallbacks")),
         ("context_window_fallbacks", cfg.get("context_window_fallbacks")),
-    ):
+        ("default_fallbacks", router_settings.get("default_fallbacks")),
+        ("content_policy_fallbacks", router_settings.get("content_policy_fallbacks")),
+        ("context_window_fallbacks (router)", router_settings.get("context_window_fallbacks")),
+    )
+    for label, entries in listes_de_repli:
         for source, targets in flatten_fallbacks(entries):
             if source not in known:
                 errors.append("%s : source inexistante '%s'" % (label, source))
@@ -184,8 +200,12 @@ def main() -> int:
                     continue
                 # Modalité : un embedding ne retombe que sur un embedding,
                 # une vision que sur une vision (§17).
+                # La regle est symetrique : un embedding ne retombe pas sur
+                # un modele de chat, et un modele de chat ne retombe pas sur
+                # un embedding. Restreindre le controle au sens descendant
+                # laissait passer gemma4-12b-local -> all-minilm-local.
                 src_kind, dst_kind = classify(source), classify(target)
-                if src_kind != dst_kind and src_kind in ("embedding", "vision"):
+                if src_kind != dst_kind:
                     errors.append("%s : '%s' (%s) retombe sur '%s' (%s) — modalité incompatible"
                                   % (label, source, src_kind, target, dst_kind))
 
@@ -203,27 +223,42 @@ def main() -> int:
                         "%s : '%s' (%s) retombe sur '%s' (%s) — un repli ne "
                         "peut aller que vers plus de confidentialité"
                         % (label, source, src_domain, target, dst_domain))
-            if label == "fallbacks":
-                graph.setdefault(source, []).extend(t for t in targets if t in known)
+            # Un graphe PAR LISTE, et non un graphe unique.
+            #
+            # `fallbacks` descend en capacite, `context_window_fallbacks`
+            # remonte vers une fenetre plus large : les fusionner fabrique
+            # des cycles qui n'en sont pas, puisque LiteLLM n'emprunte
+            # jamais les deux types d'arcs dans la meme defaillance. Mais
+            # les ignorer laissait passer un vrai cycle place ailleurs que
+            # dans `fallbacks`.
+            graphes.setdefault(label, {}).setdefault(source, []).extend(
+                t for t in targets if t in known)
 
-    # --- 4. Cycles dans le graphe de fallback ---------------------------
+    # --- 4. Cycles, liste par liste -------------------------------------
     WHITE, GREY, BLACK = 0, 1, 2
-    color: dict[str, int] = {}
 
-    def visit(node: str, path: list[str]) -> None:
-        color[node] = GREY
-        for nxt in graph.get(node, []):
-            state = color.get(nxt, WHITE)
-            if state == GREY:
-                cycle = path[path.index(nxt):] if nxt in path else [nxt]
-                errors.append("cycle de fallback : %s" % " -> ".join(cycle + [nxt]))
-            elif state == WHITE:
-                visit(nxt, path + [nxt])
-        color[node] = BLACK
+    for label, graph in graphes.items():
+        color: dict[str, int] = {}
 
-    for node in list(graph):
-        if color.get(node, WHITE) == WHITE:
-            visit(node, [node])
+        def visit(node: str, path: list[str]) -> None:
+            color[node] = GREY
+            for nxt in graph.get(node, []):
+                state = color.get(nxt, WHITE)
+                if state == GREY:
+                    cycle = path[path.index(nxt):] if nxt in path else [nxt]
+                    errors.append("cycle dans %s : %s"
+                                  % (label, " -> ".join(cycle + [nxt])))
+                elif state == WHITE:
+                    visit(nxt, path + [nxt])
+            color[node] = BLACK
+
+        for node in list(graph):
+            if color.get(node, WHITE) == WHITE:
+                visit(node, [node])
+
+    # Le graphe des replis proprement dits sert aussi a la fermeture
+    # transitive de la section suivante.
+    graph = graphes.get("fallbacks", {})
 
     # --- 5. Variables d'environnement référencées -----------------------
     env_present: set[str] = set(os.environ)
@@ -306,9 +341,18 @@ def main() -> int:
     selectable: set[str] = set()
     for candidates in routers.values():
         selectable.update(candidates)
-    for entry in (router_settings.get("fallbacks") or []):
-        for targets in entry.values():
-            selectable.update(targets or [])
+    # Toutes les listes de repli, et pas seulement `fallbacks` : un modèle
+    # inexécutable restait accepté comme cible de `context_window_fallbacks`.
+    for _, entries in listes_de_repli:
+        for entry in (entries or []):
+            for targets in entry.values():
+                selectable.update(targets or [])
+    # Le `default_model` est le chemin le plus servi quand le routeur ne
+    # tranche pas : il doit subir le même budget que les candidats du pool.
+    for m in model_list:
+        defaut = (m.get("litellm_params") or {}).get("adaptive_router_default_model")
+        if defaut:
+            selectable.add(defaut)
 
     for m in model_list:
         alias = m["model_name"]

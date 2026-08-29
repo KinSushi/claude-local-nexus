@@ -277,7 +277,30 @@ def read_env(name: str) -> str | None:
     return None
 
 
-def validate_cloud(names: list[str]) -> tuple[list[str], dict[str, str]]:
+def pool_precedent() -> set[str]:
+    """
+    Modèles cloud déjà déclarés dans la configuration en place.
+
+    Ils constituent les « titulaires » : eux seuls sont conservés lorsqu'une
+    sonde échoue sans conclure. Un entrant, lui, doit avoir été prouvé.
+    """
+    try:
+        with io.open(CONFIG, encoding="utf-8") as fh:
+            config = yaml.safe_load(fh)
+    except Exception:
+        return set()
+    titulaires = set()
+    for model in (config.get("model_list") or []):
+        params = model.get("litellm_params") or {}
+        if "ollama.com" in str(params.get("api_base", "")):
+            raw = str(params.get("model", ""))
+            if "/" in raw:
+                titulaires.add(raw.split("/", 1)[1])
+    return titulaires
+
+
+def validate_cloud(names: list[str],
+                   titulaires: set[str] | None = None) -> tuple[list[str], dict[str, str]]:
     """
     Ne conserve que les modèles réellement exécutables par CE compte.
 
@@ -305,6 +328,7 @@ def validate_cloud(names: list[str]) -> tuple[list[str], dict[str, str]]:
     if not key:
         raise RuntimeError("OLLAMA_CLOUD_API_KEY absente : validation impossible")
 
+    titulaires = titulaires or set()
     accepted: list[str] = []
     rejected: dict[str, str] = {}
     for name in names:
@@ -339,11 +363,26 @@ def validate_cloud(names: list[str]) -> tuple[list[str], dict[str, str]]:
                 }[code]
                 rejected[name] = reason
                 print("  [ecart] %s : %s" % (name, reason))
-            else:
-                # Incident passager : on conserve le modèle plutôt que
-                # d'amputer le pool sur la foi d'un echec deja termine.
+            elif name in titulaires:
+                # Incident passager sur un modèle DÉJÀ dans le pool : on le
+                # conserve plutôt que d'amputer le pool sur la foi d'un
+                # échec déjà terminé.
                 accepted.append(name)
-                print("  [garde] %s : %s (echec passager, modele conserve)"
+                print("  [garde] %s : %s (echec passager, titulaire conserve)"
+                      % (name, code or exc))
+            else:
+                # Mais un modèle JAMAIS prouvé exécutable n'entre pas sur une
+                # sonde non concluante.
+                #
+                # Sans cette distinction, une coupure réseau — ou le simple
+                # délai de 120 s sur les 19 sondes — faisait entrer tout le
+                # catalogue publié. Le biais était défavorable : les plus
+                # gros modèles sont à la fois les plus susceptibles de
+                # dépasser un démarrage à froid **et** les mieux classés,
+                # donc `cloud[0]` devenait le modèle par défaut du routeur
+                # et la tête de chaîne de repli.
+                rejected[name] = "%s (non concluant, jamais prouve)" % (code or "echec")
+                print("  [attente] %s : %s — entrant non prouve, ecarte ce tour"
                       % (name, code or exc))
     return accepted, rejected
 
@@ -498,14 +537,22 @@ def render_chain(groups: dict, indent: int, width: int = 2,
     """
     pad = " " * indent
     out: list[str] = []
-    for _, chain in sorted(groups.items()):
+    for cle, chain in sorted(groups.items()):
+        # Le terminal est composé de modèles locaux TEXTUELS. Le greffer sur
+        # une chaîne d'embeddings ou de vision produirait exactement le
+        # franchissement de modalité que la plateforme interdit ailleurs :
+        # une image envoyée à un modèle aveugle ne renvoie pas d'erreur,
+        # elle renvoie une réponse fausse.
+        modalite = chain[0].modality if chain else "text"
+        terminal_valide = terminal if modalite == "text" else None
+
         for i, entry in enumerate(chain):
             targets = [e.alias for e in chain[i + 1:i + 1 + width]]
-            if terminal and len(targets) < width:
-                for extra in terminal:
+            if terminal_valide and len(targets) < width:
+                for extra in terminal_valide:
                     if extra not in targets and extra != entry.alias:
                         targets.append(extra)
-                    if len(targets) >= width + 1:
+                    if len(targets) >= width:
                         break
             if not targets:
                 continue
@@ -666,7 +713,7 @@ def main() -> int:
     rejected: dict[str, str] = {}
     if args.validate:
         print("\n=== Validation par requête réelle ===")
-        cloud, rejected = validate_cloud(cloud)
+        cloud, rejected = validate_cloud(cloud, pool_precedent())
         if not cloud:
             print("\nAucun modèle cloud utilisable : configuration inchangée.")
             return 1
@@ -709,8 +756,19 @@ def main() -> int:
     anthropic_groups = ranked(entries, "anthropic")
     local_groups = ranked(entries, "local")
 
+    def modalite_cloud(base: str) -> str:
+        # Les memes indices que pour le local. Figer « text » aurait declare
+        # un embedding cloud en ollama_chat/ avec num_ctx 131072, et l'aurait
+        # verse dans les deux pools de routage -- dont la modalite n'est
+        # controlee nulle part.
+        if EMBED_HINT.search(base):
+            return "embedding"
+        if VISION_HINT.search(base):
+            return "vision"
+        return "text"
+
     cloud_chain = [
-        Entry(cloud_alias(b), "cloud", "text", "text",
+        Entry(cloud_alias(b), "cloud", modalite_cloud(b), modalite_cloud(b),
               quality_tier(cloud_rank(b)), 131072, i)
         for i, b in enumerate(cloud)
     ]
@@ -748,8 +806,13 @@ def main() -> int:
     blocks = {
         "LOCAL_MODELS_EXTRA": local_extra,
         "CLOUD_MODELS": render_cloud_models(cloud),
-        "CLOUD_POOL_CLOUD": ["          - %s" % cloud_alias(b) for b in cloud],
-        "CLOUD_POOL_GLOBAL": ["          - %s" % cloud_alias(b) for b in cloud],
+        # Seuls les modeles textuels entrent dans un pool de routage : un
+        # embedding ou une vision n'y a pas sa place, et rien d'autre ne
+        # verifie la modalite d'un pool.
+        "CLOUD_POOL_CLOUD": ["          - %s" % cloud_alias(b) for b in cloud
+                             if modalite_cloud(b) == "text"],
+        "CLOUD_POOL_GLOBAL": ["          - %s" % cloud_alias(b) for b in cloud
+                              if modalite_cloud(b) == "text"],
         # Les chaines externes s'achevent en local ; la chaine locale,
         # elle, ne sort jamais.
         "ANTHROPIC_FALLBACKS": render_chain(anthropic_groups, 4,
@@ -796,8 +859,33 @@ def main() -> int:
         if line.startswith("# NEXUS-ROUTER-VERSION:"):
             lines[i] = "# NEXUS-ROUTER-VERSION: %s" % router_version
 
-    with io.open(CONFIG, "w", encoding="utf-8", newline="\n") as fh:
+    # Écriture en deux temps : un candidat, puis le remplacement.
+    #
+    # Écrire directement la configuration avant de la valider laissait, en
+    # cas d'échec, un fichier invalide sur disque. LiteLLM tournait encore
+    # sur sa copie chargée, donc rien ne paraissait cassé — jusqu'au
+    # prochain redémarrage, qui la chargeait sans repasser par aucun
+    # contrôle. La garantie ne portait donc que sur *ce* redémarrage-là,
+    # pas sur l'état du dépôt.
+    candidat = CONFIG + ".candidat"
+    with io.open(candidat, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines).rstrip() + "\n")
+
+    verdict = subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py"),
+         "--config", candidat],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=600)
+    if verdict.returncode != 0:
+        os.remove(candidat)
+        print("\nLa configuration produite est invalide : elle n'a pas ete")
+        print("mise en place, et l'existante reste intacte.\n")
+        for ligne in verdict.stdout.splitlines():
+            if ligne.strip().startswith("- ") or "=>" in ligne:
+                print("  " + ligne.strip())
+        return 1
+
+    os.replace(candidat, CONFIG)
     # cloud_models.txt documente le catalogue COMPLET : les modèles actifs
     # en clair, ceux qu'un palier supérieur débloquerait en commentaire.
     # Rien n'est à décommenter à la main — la prochaine validation les

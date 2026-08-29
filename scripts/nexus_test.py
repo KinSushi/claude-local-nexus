@@ -468,6 +468,49 @@ def test_reverse(models: list[str]) -> None:
           code == 1 and "incompatible" in output.lower(),
           "code %s" % code)
 
+    # Un cycle place ailleurs que dans `fallbacks` doit etre vu aussi.
+    broken = copy.deepcopy(config)
+    broken.setdefault("context_window_fallbacks", []).insert(
+        0, {"phi3-mini-local": ["llama3.2-3b-local"]})
+    broken["context_window_fallbacks"].insert(
+        0, {"llama3.2-3b-local": ["phi3-mini-local"]})
+    code, output = run_validator_on(broken)
+    check("cycle hors de fallbacks detecte aussi",
+          code == 1 and "context_window_fallbacks" in output,
+          "code %s" % code)
+
+    # Le pool d'un routeur doit respecter le domaine annonce par son nom :
+    # c'est la promesse sur laquelle repose toute la politique locale.
+    broken = copy.deepcopy(config)
+    for model in broken["model_list"]:
+        params = model.get("litellm_params") or {}
+        if model["model_name"] == "adaptive-router-local":
+            params["adaptive_router_config"]["available_models"].append(
+                "gpt-oss-120b-cloud")
+            break
+    code, output = run_validator_on(broken)
+    check("modele cloud refuse dans le pool local",
+          code == 1 and "hors des domaines" in output, "code %s" % code)
+
+    # Un modele que la machine ne peut pas executer ne doit pas etre le
+    # default_model d'un routeur -- c'est le chemin le plus servi quand le
+    # routeur ne tranche pas.
+    broken = copy.deepcopy(config)
+    broken["model_list"].append({
+        "model_name": "modele-trop-lourd-local",
+        "litellm_params": {"model": "ollama_chat/llama4:scout",
+                           "api_base": "http://ollama:11434"},
+        "model_info": {"max_input_tokens": 8192},
+    })
+    for model in broken["model_list"]:
+        params = model.get("litellm_params") or {}
+        if model["model_name"] == "adaptive-router-local":
+            params["adaptive_router_default_model"] = "modele-trop-lourd-local"
+            break
+    code, output = run_validator_on(broken)
+    check("modele hors budget refuse comme default_model",
+          code == 1 and "modele-trop-lourd-local" in output, "code %s" % code)
+
     # Le validateur doit refuser un pool de routeur vide.
     broken = copy.deepcopy(config)
     for model in broken["model_list"]:
