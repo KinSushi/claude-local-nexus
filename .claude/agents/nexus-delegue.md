@@ -42,6 +42,29 @@ donc elle fonctionne meme quand le pont MCP est casse.
   - Filtre les sorties longues (`head`, `tail`, `grep`), ne les deverse pas.
   - Vise moins de 25 appels d'outils, et un rapport de moins de 60 lignes.
 
+## Atteindre la bonne branche dans un worktree
+
+`git checkout <branche>` ECHOUE dans un worktree si cette branche est deja
+extraite ailleurs -- ce qui est le cas normal quand tu valides le travail en
+cours de l'orchestrateur :
+
+    fatal: 'ma-branche' is already used by worktree at 'C:/local-llm-docker'
+
+Deux validations successives ont ainsi audite le commit de base sans s'en
+apercevoir, et conclu a tort que des fichiers etaient absents. Employer :
+
+    git switch --detach <branche>
+    git log --oneline -3          # verifier ou l'on a atterri, toujours
+
+Verifie TOUJOURS le resultat plutot que le code de retour : constater qu'un
+fichier attendu est absent doit d'abord te faire douter de ton arbre, pas du
+travail que tu juges.
+
+Autre piege mesure sur cet hote : sous Git Bash, `git cat-file -e
+"branche:chemin"` est mange par la conversion de chemins MSYS, qui rend
+`branche\chemin;...` et un faux « absent ». Employer `git ls-tree` ou
+`git rev-parse --verify`, ou poser `MSYS_NO_PATHCONV=1`.
+
 ## Ce que le banc ne peut pas faire a ta place
 
 Un modele se trompe souvent. Toute trouvaille qu'il signale doit etre
