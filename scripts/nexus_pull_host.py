@@ -26,10 +26,13 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
+import re
 import subprocess
 import sys
 import time
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
@@ -79,21 +82,119 @@ def free_disk_gb() -> float:
         return 0.0
 
 
+def taille_registre(modele: str) -> float:
+    """
+    Poids annoncé par le registre Ollama, en Go, avant tout téléchargement.
+
+    `installed_models()` ne connaît que ce qui est déjà là : pour un modèle
+    absent, elle rend 0. Or c'est précisément cette valeur qui alimente le
+    garde-fou disque — `libre - taille < RESERVE_GB` n'est jamais vrai
+    quand `taille` vaut zéro. Le garde-fou s'ouvrait donc exactement dans
+    le cas qu'il existe pour couvrir : six modèles, 111 Go, 43 Go libres,
+    et un disque saturé en cours de route avec un blob incomplet.
+
+    Rend 0.0 si le registre ne répond pas — l'appelant traite l'inconnu
+    comme un refus plutôt que comme une autorisation.
+    """
+    nom, _, tag = modele.partition(":")
+    url = "https://registry.ollama.ai/v2/library/%s/manifests/%s" % (nom, tag or "latest")
+    requete = urllib.request.Request(
+        url, headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"})
+    try:
+        with urllib.request.urlopen(requete, timeout=30) as reponse:
+            manifeste = json.loads(reponse.read().decode("utf-8"))
+        octets = sum(couche.get("size", 0) for couche in manifeste.get("layers", []))
+        return octets / 1e9
+    except Exception:
+        return 0.0
+
+
+def declares_sans_poids() -> list[str] | None:
+    """
+    Modèles que la configuration déclare et que le moteur ne sert pas.
+
+    La liste figée `model_list.host.txt` décrit une intention prise à un
+    instant donné ; la configuration, elle, décrit ce que LiteLLM va
+    réellement router. Les deux ont divergé dès la première suppression de
+    volume : le validateur signalait six alias sans poids pendant que le
+    script de téléchargement annonçait « rien à faire ». Deux sources pour
+    une même question, et donc deux réponses.
+
+    Cette fonction pose la question à la même source que le validateur, ce
+    qui rend le désaccord impossible plutôt que simplement improbable.
+
+    Renvoie None si l'inventaire est illisible — jamais une liste vide,
+    qui se lirait comme « tout est là ».
+    """
+    presents = capability.installed_models()
+    if presents is None:
+        return None
+    canon = {n[:-len(":latest")] if n.endswith(":latest") else n for n in presents}
+    canon |= set(presents)
+
+    # La configuration est analysée, pas balayée par expression régulière.
+    # Une première version cherchait `model: ollama_chat/...` suivi de ses
+    # lignes indentées : le motif débordait sur les blocs voisins, y
+    # trouvait un `api_base: https://ollama.com`, et classait donc TOUT
+    # comme cloud — le script annonçait « rien ne manque » pendant que le
+    # validateur listait six absents. Le YAML dit sans ambiguïté où
+    # commence et finit un bloc.
+    config = os.path.join(ROOT, "litellm_config.yaml")
+    try:
+        import yaml
+        with io.open(config, encoding="utf-8") as fh:
+            cfg = yaml.safe_load(fh)
+    except Exception:
+        return None
+
+    manquants: list[str] = []
+    for entree in (cfg.get("model_list") or []):
+        params = entree.get("litellm_params") or {}
+        cible = str(params.get("model", ""))
+        if not cible.startswith(("ollama/", "ollama_chat/")):
+            continue
+        # Les modèles Ollama Cloud portent la même syntaxe et ne s'installent
+        # pas localement : les inclure ferait télécharger sans fin des poids
+        # qui n'existent pas côté hôte.
+        if "ollama.com" in str(params.get("api_base", "")):
+            continue
+        cible = cible.split("/", 1)[1]
+        base = cible[:-len(":latest")] if cible.endswith(":latest") else cible
+        if cible in canon or base in canon:
+            continue
+        if cible not in manquants:
+            manquants.append(cible)
+    return manquants
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--liste", default="model_list.host.txt")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--manquants", action="store_true",
+        help="Deduire la liste de litellm_config.yaml : tout modele declare "
+             "dont les poids manquent sur le moteur.")
     args = parser.parse_args()
 
-    chemin = args.liste if os.path.isabs(args.liste) else os.path.join(ROOT, args.liste)
-    if not os.path.exists(chemin):
-        print("Liste introuvable : %s" % chemin)
-        print("La produire : python scripts/nexus_migration_plan.py --write model_list.host.txt")
-        return 1
+    if args.manquants:
+        voulus = declares_sans_poids()
+        if voulus is None:
+            print("Inventaire du moteur illisible : impossible de savoir ce qui manque.")
+            return 1
+        if not voulus:
+            print("Aucun modele declare ne manque sur le moteur.")
+            return 0
+    else:
+        chemin = args.liste if os.path.isabs(args.liste) else os.path.join(ROOT, args.liste)
+        if not os.path.exists(chemin):
+            print("Liste introuvable : %s" % chemin)
+            print("La produire : python scripts/nexus_migration_plan.py --write model_list.host.txt")
+            return 1
 
-    with io.open(chemin, encoding="utf-8") as fh:
-        voulus = [l.strip() for l in fh
-                  if l.strip() and not l.strip().startswith("#")]
+        with io.open(chemin, encoding="utf-8") as fh:
+            voulus = [l.strip() for l in fh
+                      if l.strip() and not l.strip().startswith("#")]
 
     profile = capability.build_profile()
     tailles = capability.installed_models()
@@ -108,6 +209,11 @@ def main() -> int:
     print()
 
     faits, ignores, echecs = 0, 0, []
+    # Un arret par manque de place ne remplit ni `ignores` ni
+    # `echecs` : sans ce drapeau, l'epilogue concluait "tout est en
+    # place" apres s'etre arrete au premier modele.
+    interrompu = False
+    libre_simule = free_disk_gb()
     for i, modele in enumerate(voulus, 1):
         if modele in presents:
             print("  [%2d/%d] %-28s deja present" % (i, len(voulus), modele))
@@ -115,22 +221,38 @@ def main() -> int:
             continue
 
         taille = tailles.get(modele, 0.0)
+        if not taille:
+            # Un modèle absent n'a pas de poids mesurable localement : on le
+            # demande au registre AVANT de tirer, sinon le contrôle de place
+            # ci-dessous compare le disque libre à zéro et laisse tout passer.
+            taille = taille_registre(modele)
+        if not taille:
+            print("  [%2d/%d] %-28s poids inconnu : refuse par prudence"
+                  % (i, len(voulus), modele))
+            ignores += 1
+            continue
         etat, motif = capability.verdict(taille, profile)
         if etat == capability.REJECT:
             print("  [%2d/%d] %-28s ecarte : %s" % (i, len(voulus), modele, motif))
             ignores += 1
             continue
 
-        libre = free_disk_gb()
+        # En simulation, rien n'est écrit : `free_disk_gb()` rendrait la même
+        # valeur à chaque tour et l'essai à blanc annoncerait six
+        # téléchargements là où un seul tient. Une simulation qui ne prédit
+        # pas l'arrêt ne prépare à rien.
+        libre = (libre_simule if args.dry_run else free_disk_gb())
         if taille and libre - taille < RESERVE_GB:
             print("  [%2d/%d] %-28s ARRET : %.0f Go libres, %.0f Go requis + %.0f de reserve"
                   % (i, len(voulus), modele, libre, taille, RESERVE_GB))
             print("\n  Le reste de la liste attendra que de la place soit liberee.")
+            interrompu = True
             break
 
         if args.dry_run:
-            print("  [%2d/%d] %-28s a telecharger (%.1f Go)"
-                  % (i, len(voulus), modele, taille))
+            libre_simule -= taille
+            print("  [%2d/%d] %-28s a telecharger (%.1f Go, resterait %.0f Go)"
+                  % (i, len(voulus), modele, taille, libre_simule))
             continue
 
         print("  [%2d/%d] %-28s telechargement..." % (i, len(voulus), modele), flush=True)
@@ -155,14 +277,32 @@ def main() -> int:
     if echecs:
         print("  A retenter : %s" % ", ".join(echecs))
     print("  Disque libre : %.0f Go" % free_disk_gb())
-    print("""
+    # L'épilogue suit l'état réel du moteur. Il décrivait auparavant la
+    # migration vers l'hôte en toutes circonstances : une fois celle-ci
+    # faite, il conseillait de la refaire, dont une suppression de volume
+    # déjà supprimé. Une consigne périmée qui se présente comme la suite à
+    # donner est plus nuisible qu'une absence de consigne.
+    lieu = capability.ollama_location()
+    if not lieu.get("host_native"):
+        print("""
   Suite, dans cet ordre :
     1. python scripts/nexus_switch_engine.py --to host
-    2. $env:NEXUS_OLLAMA_ENDPOINT = "http://host.docker.internal:11434"
-       .\\scripts\\Update-NexusModels.ps1 -Restart
+    2. .\\scripts\\Update-NexusModels.ps1 -Restart
     3. python scripts/nexus_test.py
     4. SEULEMENT si tout passe : retirer COMPOSE_PROFILES de .env,
        puis docker compose down et supprimer le volume ollama_data.
+""")
+    elif echecs or interrompu:
+        print("""
+  Suite :
+    python scripts/nexus_validate.py          ce qui manque encore
+    python scripts/nexus_pull_host.py --manquants   relancer apres liberation
+""")
+    else:
+        print("""
+  Suite :
+    python scripts/nexus_validate.py
+    .\\scripts\\Update-NexusModels.ps1 -Restart
 """)
     return 1 if echecs else 0
 
