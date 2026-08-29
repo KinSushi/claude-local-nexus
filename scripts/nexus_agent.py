@@ -4,7 +4,7 @@ Lanceur d'agents gratuits.
 
 Pourquoi ce script existe
 -------------------------
-Déléguer une analyse à un sous-agent Claude consomme l'abonnement : c'est
+Déléguer une analyse à un sous‑agent Claude consomme l'abonnement : c'est
 le contraire du but poursuivi. Ce script fait exécuter le même travail par
 les modèles servis par la passerelle — locaux ou Ollama Cloud — dont le
 coût est nul. L'orchestrateur ne dépense alors que ce qu'il faut pour
@@ -15,7 +15,7 @@ Ce qu'il apporte par rapport à un `curl` à la main :
   - plusieurs tâches partent en parallèle sur des modèles différents, ce
     qui est le seul moyen d'amortir les 60 à 120 s de chargement à froid
     d'un modèle local ;
-  - le plan réellement servi est PROUVÉ par l'en-tête de réponse plutôt
+  - le plan réellement servi est PROUVÉ par l'en‑tête de réponse plutôt
     que déduit du nom demandé — un routeur peut basculer, un alias peut
     pointer ailleurs, et une réponse « locale » venue du cloud n'est pas
     une économie mais une fuite ;
@@ -57,6 +57,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from typing import List, Dict, Any
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -64,7 +65,13 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
+
 # ----------------------------------------------------------------------
+# Taille maximale d'une fenetre (en caractères) pour un appel modele.
+# La marge est necessaire car le corpus n'est pas seul dans la fenetre :
+# il y a la consigne, la consigne systeme et la reponse attendue.
+FENETRE_CARACTERES = int(os.getenv("NEXUS_FENETRE", "96000"))
+
 def racine_travail() -> str:
     """
     Retourne la racine de travail selon l'ordre de priorité suivant :
@@ -90,7 +97,7 @@ DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 # 0.8 : le travail dominant ici est de la relecture de code, de l'extraction
 # et des sorties au format strict, ou une temperature haute produit de la
 # vraisemblance plutot que de l'exactitude. Mesure du jour ou elle a ete
-# posee : trois echecs consecutifs du banc sur des taches a sortie stricte
+# posee : trois echecs consecutifs du banc sur taches a sortie stricte
 # -- une reponse vide apres 19 000 jetons, une reponse tronquee dont le code
 # etait reecrit de memoire, et une boucle de repetition de 589 secondes.
 TEMPERATURE_DEFAUT = float(os.environ.get("NEXUS_TEMPERATURE", "0.2"))
@@ -116,11 +123,11 @@ MOTIFS_SECRETS = re.compile(
 
 def cle_maitre() -> str:
     """
-    Clé de la passerelle, lue dans l'environnement puis dans .env.
+    Cle de la passerelle, lue dans l'environnement puis dans .env.
 
-    La valeur n'est jamais journalisée ni renvoyée : elle ne sert qu'à
-    remplir un en-tête. Les guillemets et le commentaire de fin de ligne
-    sont retirés parce que .env les tolère et que la clé, elle, non.
+    La valeur n'est jamais journalisee ni renvoyee : elle ne sert qu'a
+    remplir un en-tete. Les guillemets et le commentaire de fin de ligne
+    sont retires parce que .env les tolere et que la cle, elle, non.
     """
     valeur = os.environ.get("LITELLM_MASTER_KEY")
     if not valeur:
@@ -147,11 +154,11 @@ def est_secret(chemin: str) -> bool:
 
 def sous_racine(chemin: str, racine: str) -> bool:
     """
-    Le fichier est-il sous la racine spécifiée ?
+    Le fichier est-il sous la racine specifie ?
 
-    Utilise `os.path.commonpath` pour éviter les faux positifs (ex.
-    C:\\local-llm-docker-prive). En cas de lecteurs différents sous Windows,
-    `commonpath` lève `ValueError` qui est interprété comme un refus.
+    Utilise `os.path.commonpath` pour eviter les faux positifs (ex.
+    C:\\local-llm-docker-prive). En cas de lecteurs differents sous Windows,
+    `commonpath` lève `ValueError` qui est interprete comme un refus.
     """
     try:
         return os.path.commonpath([os.path.realpath(chemin), os.path.realpath(racine)]) == \
@@ -159,17 +166,18 @@ def sous_racine(chemin: str, racine: str) -> bool:
     except ValueError:
         return False
 
-# Compatibilité : l'ancienne fonction conserve le même comportement avec ROOT.
+
+# Compatibilite : l'ancienne fonction conserve le meme comportement avec ROOT.
 def dans_depot(chemin: str) -> bool:
-    """Alias conservé pour compatibilité interne."""
+    """Alias conserve pour compatibilite interne."""
     return sous_racine(chemin, ROOT)
 
 
-def charger_fichiers(chemins: list[str], racine: str | None = None) -> tuple[str, list[str]]:
-    """Assemble le corpus et rend aussi la liste de ce qui a été refusé.
+def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str, List[str]]:
+    """Assemble le corpus et rend aussi la liste de ce qui a ete refuse.
 
-    Le paramètre `racine` désigne la racine de travail. S'il n'est pas fourni,
-    il est déterminé par `racine_travail()`. Les chemins relatifs sont résolus
+    Le parametre `racine` designant la racine de travail. S'il n'est pas fourni,
+    il est determine par `racine_travail()`. Les chemins relatifs sont resolves
     depuis cette racine.
     """
     if racine is None:
@@ -195,18 +203,14 @@ def charger_fichiers(chemins: list[str], racine: str | None = None) -> tuple[str
     return "\n\n".join(morceaux), refus
 
 
-def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str,
-            temperature: float | None = None) -> dict:
+def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
+            cle: str, temperature: float | None = None) -> Dict[str, Any]:
     """
-    Un appel à la passerelle, avec la preuve du plan réellement servi.
+    Un appel a la passerelle, avec la preuve du plan réellement servi.
 
-    `no-cache` est posé volontairement : une réponse de cache mesurerait la
-    latence de Redis, pas celle du modèle, et ferait croire à un travail
-    accompli qui ne l'a pas été.
-
-    La température était jusqu'ici laissée au défaut du modèle. Voir
-    `TEMPERATURE_DEFAUT` : ce défaut, trop haut pour les tâches d'ici,
-    faisait passer le banc pour incapable alors qu'il était mal réglé.
+    `no-cache` est pose volontairement : une reponse de cache mesurerait la
+    latence de Redis, pas celle du modele, et ferait croire a un travail
+    accompli qui ne l'a pas ete.
     """
     corps_requete = {
         "model": modele,
@@ -234,15 +238,8 @@ def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str,
     choix = (corps.get("choices") or [{}])[0]
     return {
         "texte": choix.get("message", {}).get("content", ""),
-        # Distinguer une réponse coupée d'une réponse fautive. Sans cette
-        # information, un plafond `max_tokens` trop bas se présentait comme
-        # une défaillance du modèle : la première tâche réelle a ainsi
-        # rendu une analyse juste dans un JSON tronqué, rapportée comme
-        # « réponse inexploitable ». Le défaut était dans l'appelant.
         "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
-        # Le nom demandé peut être un routeur ; seuls ces en-têtes disent ce
-        # qui a réellement répondu, et par quelle adresse.
         "servi_par": entetes.get("x-litellm-model-name", "?"),
         "adresse": entetes.get("x-litellm-model-api-base", "?"),
         "cout": entetes.get("x-litellm-response-cost", "0"),
@@ -250,18 +247,9 @@ def appeler(modele: str, messages: list[dict], max_tokens: int, cle: str,
     }
 
 
-def plans_par_alias(cle: str) -> dict[str, str]:
+def plans_par_alias(cle: str) -> Dict[str, str]:
     """
-    Plan d'exécution de chaque alias, lu dans le catalogue de la passerelle.
-
-    L'en-tête `x-litellm-model-api-base` est la preuve la plus directe,
-    mais il n'est renvoyé que par `/v1/chat/completions` : `/v1/messages`,
-    l'API que Claude Code emploie, ne le pose pas. Déduire le plan de son
-    absence donnerait « inconnu » pour tout le chemin de relève — et
-    conclurait donc que la relève n'est pas locale, alors qu'elle l'est.
-
-    Le catalogue dit la même chose de façon déterministe : c'est lui qui
-    décrit où chaque alias enverra ses requêtes.
+    Plan d'execution de chaque alias, lu dans le catalogue de la passerelle.
     """
     requete = urllib.request.Request(
         PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle})
@@ -270,7 +258,7 @@ def plans_par_alias(cle: str) -> dict[str, str]:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
     except Exception:
         return {}
-    plans: dict[str, str] = {}
+    plans: Dict[str, str] = {}
     for entree in donnees:
         nom = entree.get("model_name")
         if not nom:
@@ -290,7 +278,7 @@ def plans_par_alias(cle: str) -> dict[str, str]:
 
 
 def plan_de(adresse: str) -> str:
-    """Plan d'exécution déduit de l'adresse réellement servie."""
+    """Plan d'execution deduit de l'adresse réellement servie."""
     if not adresse or adresse == "?":
         return "inconnu"
     if "ollama.com" in adresse:
@@ -300,6 +288,104 @@ def plan_de(adresse: str) -> str:
     if "11434" in adresse or "11435" in adresse or "ollama" in adresse:
         return "local"
     return "inconnu"
+
+
+def _decouper_en_fenetres(corpus: str) -> List[str]:
+    """
+    Decoupe le corpus en fenetres de taille maximale FENETRE_CARACTERES.
+    Preference est donne a la coupe sur une fin de ligne afin de ne pas
+    tronquer une instruction.
+    """
+    fenetres = []
+    start = 0
+    while start < len(corpus):
+        fin = min(start + FENETRE_CARACTERES, len(corpus))
+        # chercher le dernier \n avant fin
+        coupe = corpus.rfind("\n", start, fin)
+        if coupe == -1 or coupe <= start:
+            # pas de \n ou trop proche du debut, on coupe a la limite
+            coupe = fin
+        fenetres.append(corpus[start:coupe])
+        start = coupe
+    return fenetres
+
+
+def carte_reduction(corpus: str, consigne: str, modele: str,
+                   cle: str, plafond: int) -> Dict[str, Any]:
+    """
+    MAP-REDUCE du corpus trop volumineux.
+
+    MAP : le corpus est decoupe en fenetres (max FENETRE_CARACTERES). Chaque
+    fenetre est analysee separement, le modele recevant une indication
+    du type "Fragment i sur n. Ne concluez pas sur ce que vous n'avez pas vu."
+
+    REDUCE : les resultats sont concatenees. Si la concatenation tient dans
+    une seule fenetre, on effectue une reduction (une seconde passe) pour
+    obtenir une synthese. Sinon on renvoie la concatenation telle quelle et
+    on indique que la fusion n'a pas converge.
+
+    Retourne un dictionnaire contenant le texte final, le nombre de tokens,
+    la duree totale, le nombre de fenetres (MAP), le nombre de paliers
+    (REDUCE) et le flag converge.
+    """
+    fenetres = _decouper_en_fenetres(corpus)
+    n = len(fenetres)
+    map_resultats = []
+    total_tokens = 0
+    total_duree = 0.0
+
+    for i, fragment in enumerate(fenetres, start=1):
+        # on ajoute l'indication de fragment dans le contenu utilisateur
+        contenu_user = f"{consigne}\n\n[Fragment {i}/{n}]\n\n{fragment}"
+        messages = [
+            {"role": "system", "content": consigne},
+            {"role": "user", "content": contenu_user}
+        ]
+        res = appeler(modele, messages, plafond, cle, None)
+        map_resultats.append(res)
+        total_tokens += res.get("tokens", 0)
+        total_duree += res.get("duree", 0.0)
+
+    # Concatenation des textes obtenus
+    texte_concat = "\n\n".join(r.get("texte", "") for r in map_resultats)
+
+    # Si la concatenation tient dans une fenetre, on fait une reduction.
+    if len(texte_concat) <= FENETRE_CARACTERES:
+        # Reduction : on demande au modele de synthétiser le tout.
+        messages = [
+            {"role": "system", "content": consigne},
+            {"role": "user", "content": texte_concat}
+        ]
+        reduction = appeler(modele, messages, plafond, cle, None)
+        total_tokens += reduction.get("tokens", 0)
+        total_duree += reduction.get("duree", 0.0)
+        final_texte = reduction.get("texte", "")
+        converge = True
+        paliers = 1
+        # on conserve les metadonnees de la reduction pour le rendu
+        meta = reduction
+    else:
+        # Pas de reduction possible : on renvoie la concatenation brute.
+        final_texte = texte_concat
+        converge = False
+        paliers = 0
+        meta = {}
+
+    resultat = {
+        "texte": final_texte,
+        "tokens": total_tokens,
+        "duree": total_duree,
+        "fenetres": n,
+        "paliers": paliers,
+        "converge": converge,
+    }
+    # on ajoute les champs du dernier appel (ou de la reduction) s'ils existent
+    resultat.update({
+        "servi_par": meta.get("servi_par", "?"),
+        "adresse": meta.get("adresse", "?"),
+        "cout": meta.get("cout", "0"),
+    })
+    return resultat
 
 
 def executer(tache: dict, cle: str) -> dict:
@@ -321,12 +407,19 @@ def executer(tache: dict, cle: str) -> dict:
     plafond = int(tache.get("max_tokens") or 1500)
     temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
 
-    # Les plans gratuits s'enchainent SEULS. Un quota epuise, un refus ou
-    # une reponse vide obligeaient quelqu'un a s'en apercevoir et a relancer
-    # a la main sur un autre modele -- et ce quelqu'un etait le plan payant.
-    # Une bascule est SUBIE, jamais choisie : elle ne coute que de la
-    # capacite, n'elargit pas l'exposition des donnees, et n'atteint jamais
-    # un alias facture au jeton.
+    # Si le corpus depasse la taille d'une fenetre, on utilise le MAP-REDUCE.
+    if corpus and len(corpus) > FENETRE_CARACTERES:
+        resultat = carte_reduction(corpus, consigne, modele, cle, plafond)
+        # on ajoute les champs communs attendus par le reste du code
+        resultat.update({
+            "nom": nom,
+            "modele": modele,
+            "refus": refus,
+            "plan": plan_de(resultat.get("adresse", "?")),
+        })
+        return resultat
+
+    # Sinon appel direct (chemin existant)
     essais, echecs = [], []
     for candidat in [modele] + REPLIS_GRATUITS:
         if candidat in essais or candidat.startswith("claude-"):
@@ -336,8 +429,6 @@ def executer(tache: dict, cle: str) -> dict:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:300]
-            # Certains modeles refusent tout parametre d'echantillonnage non
-            # defaut. Reessayer sans, plutot que de perdre le candidat.
             if temperature is not None and "temperature" in detail.lower():
                 try:
                     resultat = appeler(candidat, messages, plafond, cle, None)
@@ -350,16 +441,12 @@ def executer(tache: dict, cle: str) -> dict:
         except Exception as exc:
             echecs.append("%s : %s" % (candidat, exc))
             continue
-        # Une reponse vide n'est pas une reponse : la compter comme telle
-        # ferait conclure a un travail accompli qui ne l'a pas ete.
         if not (resultat.get("texte") or "").strip():
             echecs.append("%s : reponse vide (%d jetons consommes)"
                           % (candidat, resultat.get("tokens", 0)))
             continue
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "plan": plan_de(resultat["adresse"])})
-        # Une reponse servie par un autre modele que celui demande, sans le
-        # dire, est un mensonge sur la mesure.
         if candidat != modele:
             resultat["bascule"] = "%s -> %s apres : %s" % (
                 modele, candidat, " | ".join(echecs))
@@ -377,16 +464,24 @@ def rendre(resultat: dict) -> None:
         print("=" * 72)
         return
     if resultat.get("bascule"):
-        # Une bascule tue est une mesure faussee : le lecteur croirait le
-        # modele demande capable de ce qu'un autre a produit.
         print("  BASCULE : %s" % resultat["bascule"])
     print("  demande : %s" % resultat["modele"])
     print("  servi   : %s  [%s]  %s" %
-          (resultat["servi_par"], resultat["plan"], resultat["adresse"]))
+          (resultat.get("servi_par", "?"),
+           resultat.get("plan", "?"),
+           resultat.get("adresse", "?")))
     print("  %d tokens, %.0f s, cout %s" %
-          (resultat["tokens"], resultat["duree"], resultat["cout"]))
+          (resultat.get("tokens", 0), resultat.get("duree", 0.0), resultat.get("cout", "0")))
     for r in resultat.get("refus") or []:
         print("  [refuse] %s" % r)
+
+    # Affichage specifique du MAP-REDUCE le cas echeant
+    if "fenetres" in resultat:
+        print("  MAP-REDUCE : %d fenetres, %d paliers" %
+              (resultat.get("fenetres", 0), resultat.get("paliers", 0)))
+        if not resultat.get("converge", True):
+            print("  [!] Fusion non convergee, resultat juxtapose.")
+
     print("-" * 72)
     print(resultat["texte"].strip())
     print("=" * 72)
@@ -395,11 +490,11 @@ def rendre(resultat: dict) -> None:
 
 def lister_modeles(cle: str) -> int:
     """
-    Modèles exposés, séparés par plan.
+    Modeles exposes, separes par plan.
 
-    Un modèle Anthropic n'est pas gratuit ; les mélanger dans une même
-    liste inviterait à en choisir un par inadvertance, ce qui est
-    exactement ce que ce script cherche à éviter.
+    Un modele Anthropic n'est pas gratuit ; les melanger dans une meme
+    liste inviterait a en choisir un par inadvertance, ce qui est exactement
+    ce que ce script cherche a eviter.
     """
     requete = urllib.request.Request(
         PASSERELLE + "/v1/model/info",
@@ -411,7 +506,7 @@ def lister_modeles(cle: str) -> int:
     except Exception as exc:
         print("Passerelle injoignable sur %s (%s)" % (PASSERELLE, exc))
         return 1
-    plans: dict[str, list[str]] = {"local": [], "cloud": [], "anthropic": [], "inconnu": []}
+    plans: dict[str, List[str]] = {"local": [], "cloud": [], "anthropic": [], "inconnu": []}
     for entree in donnees:
         nom = entree.get("model_name", "?")
         params = entree.get("litellm_params") or {}
@@ -484,7 +579,7 @@ def main() -> int:
     # et l'ensemble ralentit au lieu d'accélérer.
     largeur = max(1, min(args.parallele, len(taches)))
     depart = time.time()
-    resultats: list[dict] = []
+    resultats: List[dict] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
         futurs = {pool.submit(executer, t, cle): t for t in taches}
         for futur in concurrent.futures.as_completed(futurs):
@@ -504,8 +599,6 @@ def main() -> int:
     print("  %d tache(s), %d token(s), %.0f s au total, %d echec(s)"
           % (len(resultats), total, time.time() - depart, len(echecs)))
     if factures:
-        # Signalé, jamais tu : une tâche partie chez Anthropic sans qu'on
-        # l'ait voulu est précisément la dépense que ce script évite.
         print("  [!] %d tache(s) servies par Anthropic, donc FACTUREES : %s"
               % (len(factures), ", ".join(r["nom"] for r in factures)))
     return 1 if echecs else 0
