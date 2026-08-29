@@ -1,0 +1,31 @@
+# Normalisation des fins de ligne.
+#
+# Sans cette declaration, git applique la conversion de la machine locale :
+# un depot edite sous Windows puis relu sous Linux produit des diffs de
+# fichiers entiers, ou aucune ligne n'a pourtant change. Le depot fixe donc
+# lui-meme la regle, plutot que de la laisser a la configuration de chacun.
+#
+# LF partout dans le depot. PowerShell 5.1 comme 7 lisent le LF sans
+# difficulte : conserver le CRLF n'apporterait rien et rendrait chaque
+# contribution croisee illisible.
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion, aucun diff textuel.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.pdf  binary
+*.xlsx binary
+*.zip  binary
+*.gz   binary
+*.tar  binary
+*.bundle binary
+
+# Fichiers generes : exclus des statistiques de langage, pour que la page
+# du depot reflete le code ecrit et non le code produit.
+docs/architecture/** linguist-documentation
+rituels/BOUSSOLE.csv linguist-generated
+rituels/STATE.md     linguist-generated
+cloud_models.txt     linguist-generated
