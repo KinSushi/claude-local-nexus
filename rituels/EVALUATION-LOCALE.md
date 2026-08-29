@@ -189,6 +189,61 @@ descendre — deux des quatre rejets auraient introduit une panne.
 
 ---
 
+## 2026-08-29 — `qwen3-coder:30b`, troisième passe : 1 retenue sur 5
+
+Relecture de `nexus_conformite.py`, `nexus_releve.py`, `nexus_boussole.py`.
+Le premier n'a rien produit d'exploitable ; les deux autres, cinq
+propositions.
+
+### La seule qui vaille — et seulement une fois exploitée
+
+Conserver le **code HTTP** séparément du message d'erreur. Proposée telle
+quelle, c'était une donnée morte : rien ne la lisait. Retenue en la
+faisant remonter jusqu'au verdict, elle change ce que le test apprend —
+`401` met en cause la clé, `402` le palier souscrit, `400` un alias absent
+du catalogue, `5xx` le moteur. Sans elle, « la relève ne répond pas »
+envoie chercher au mauvais endroit, et une relève qu'on croit cassée
+alors qu'une clé a expiré ne se répare jamais.
+
+Mesure au passage, contre l'attente : LiteLLM rend **400** et non 404 pour
+un alias inconnu. Guetter un 404 aurait laissé le cas le plus fréquent
+sans explication.
+
+### Les quatre rejets
+
+| Proposition | Motif |
+| --- | --- |
+| `os.path.exists()` avant un `open()` déjà dans un `try` | Ajoute une course au lieu d'en retirer une : `FileNotFoundError` était déjà capturé. |
+| `ROOT = os.path.abspath(os.path.join(dirname, ".."))` | Strictement équivalent à l'existant. Un diff qui ne change rien coûte quand même une relecture. |
+| `except Exception` → `except (OSError, IOError)` dans une boucle de parcours | `IOError` est un alias d'`OSError` depuis Python 3, donc un doublon ; et `datetime.fromtimestamp` peut lever `ValueError` sur un horodatage aberrant, qui s'échapperait. Même piège que la première passe. |
+| `"Boussole regeneree"` → `"Boussole regénérée"` | **Introduit une faute** : l'orthographe correcte est « régénérée ». Et le changement n'a aucun rapport avec l'analyse que le modèle avait lui-même énoncée — il disait vouloir refléter le succès ou l'échec. |
+
+Le dernier cas mérite d'être noté : **l'analyse du modèle et sa correction
+ne portaient pas sur la même chose**. Il a diagnostiqué un message
+insuffisamment informatif, puis proposé un changement d'accents. Lire
+l'analyse sans vérifier le diff aurait fait accepter la seconde en croyant
+appliquer la première.
+
+### Bilan cumulé
+
+| Fichier | Propositions | Retenues |
+| --- | --- | --- |
+| `nexus_savings.py` | 3 | 1 (remède réécrit) |
+| `nexus_state.py` | 3 | 1 |
+| `nexus_migration_plan.py` + `nexus_preserve.py` | 4 | 2 (dont 1 réimplémentée) |
+| `nexus_releve.py` + `nexus_boussole.py` | 5 | 1 (réimplémentée) |
+| **Total** | **15** | **5** |
+
+Un tiers, stable sur quatre passes. Et sur les dix rejets, **trois
+auraient introduit une panne** — un `NameError` pendant le traitement
+d'une erreur, un crash sur machine sans Docker, un `ValueError` échappé.
+
+**La règle qui en découle** : ne jamais appliquer une proposition locale
+sur la foi de son analyse. L'analyse est le signal ; le diff est la
+proposition ; les deux ne coïncident pas toujours.
+
+---
+
 ## Comment reproduire
 
 ```powershell

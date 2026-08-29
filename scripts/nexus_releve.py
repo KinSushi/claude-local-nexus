@@ -108,7 +108,14 @@ def messages(charge: dict, cle: str) -> dict:
             entetes = {k.lower(): v for k, v in reponse.getheaders()}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:400]
+        # Le code est conservé séparément parce qu'il désigne le
+        # responsable, ce que le texte du message ne fait pas toujours :
+        # 401 met en cause la clé, 402 le palier souscrit, 404 l'alias
+        # demandé, 5xx le moteur. Sans lui, « la relève ne répond pas »
+        # envoie chercher au mauvais endroit — et une relève qu'on croit
+        # cassée alors qu'une clé a expiré ne se répare jamais.
         return {"echec": "HTTP %s : %s" % (exc.code, detail),
+                "code_http": exc.code,
                 "duree": time.time() - debut}
     except Exception as exc:
         return {"echec": str(exc), "duree": time.time() - debut}
@@ -139,7 +146,8 @@ def epreuve_protocole(modele: str, cle: str) -> dict:
                       "content": "Repete ce mot et rien d'autre : %s" % jeton}],
     }, cle)
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0)}
+        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
+                "code_http": r.get("code_http")}
     corps = texte_de(r)
     return {
         "ok": jeton in corps,
@@ -161,7 +169,8 @@ def epreuve_demande_outil(modele: str, cle: str) -> dict:
                                  "Utilise l'outil pour le lire."}],
     }, cle)
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0)}
+        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
+                "code_http": r.get("code_http")}
     appels = blocs(r, "tool_use")
     if not appels:
         return {"ok": False, "duree": r.get("_duree", 0),
@@ -214,7 +223,8 @@ def epreuve_exploite_retour(modele: str, cle: str, appel: dict | None) -> dict:
         ],
     }, cle)
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0)}
+        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
+                "code_http": r.get("code_http")}
     corps = texte_de(r)
     # La comparaison porte sur le contenu de la ligne, pas sur une reprise
     # mot pour mot : un modèle qui répond « le titre est Claude-Local-Nexus »
@@ -247,7 +257,8 @@ def epreuve_enchainement(modele: str, cle: str) -> dict:
                                  "Choisis l'outil approprie."}],
     }, cle)
     if r1.get("echec"):
-        return {"ok": False, "detail": r1["echec"], "duree": time.time() - depart}
+        return {"ok": False, "detail": r1["echec"], "duree": time.time() - depart,
+                "code_http": r1.get("code_http")}
     appels = blocs(r1, "tool_use")
     if not appels:
         return {"ok": False, "duree": time.time() - depart,
@@ -274,7 +285,8 @@ def epreuve_enchainement(modele: str, cle: str) -> dict:
         ],
     }, cle)
     if r2.get("echec"):
-        return {"ok": False, "detail": r2["echec"], "duree": time.time() - depart}
+        return {"ok": False, "detail": r2["echec"], "duree": time.time() - depart,
+                "code_http": r2.get("code_http")}
     corps = texte_de(r2)
     return {
         "ok": str(nb) in corps,
@@ -312,6 +324,9 @@ def juger(modele: str, cle: str) -> dict:
             print("         %s" % str(r.get("detail", ""))[:200])
         resultats.append({"epreuve": titre, **{k: v for k, v in r.items() if k != "appel"}})
 
+    # Un code HTTP recurrent dit ou chercher, la ou "la releve ne repond
+    # pas" envoie au mauvais endroit.
+    codes = {r.get("code_http") for r in resultats if r.get("code_http")}
     reussies = sum(1 for r in resultats if r["ok"])
     # Le plan vient du catalogue, pas de l'en-tete : /v1/messages ne pose
     # pas x-litellm-model-api-base, et en deduire "inconnu" ferait conclure
@@ -327,6 +342,19 @@ def juger(modele: str, cle: str) -> dict:
         # indépendant.
         print("  [!] La releve n'a PAS ete servie en local : le test ne prouve rien")
         print("      sur l'autonomie de la machine.")
+    if codes:
+        # 400 et non 404 pour un alias inconnu : mesure sur LiteLLM, qui
+        # traite un nom de modele absent du catalogue comme une requete
+        # malformee. Chercher un 404 aurait laisse le cas le plus frequent
+        # sans explication.
+        motifs = {400: "alias absent du catalogue de la passerelle",
+                  401: "cle refusee", 402: "palier non souscrit",
+                  404: "route inconnue", 429: "quota epuise",
+                  500: "moteur en erreur", 502: "moteur injoignable",
+                  504: "moteur trop lent"}
+        print("  codes HTTP rencontres : %s"
+              % ", ".join("%s (%s)" % (c, motifs.get(c, "voir le detail"))
+                          for c in sorted(codes)))
     print("  %d/4 epreuves reussies" % reussies)
     if reussies == 4:
         print("  => La releve peut orchestrer : outils demandes, resultats exploites,")
