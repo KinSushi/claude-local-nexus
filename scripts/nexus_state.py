@@ -101,6 +101,16 @@ def master_key():
 
 
 def exposed_models():
+    """
+    Alias exposés, ou **None** si la passerelle n'a pas répondu.
+
+    La distinction n'est pas théorique : ce script a écrit « 0 modèles
+    exposés » dans STATE.md alors que la passerelle était simplement
+    éteinte. L'état commis affirmait donc une panne catastrophique — plus
+    aucun modèle — là où rien n'était cassé. Un état qui ment est pire
+    qu'un état absent, parce qu'il fait chercher une cause qui n'existe
+    pas.
+    """
     try:
         request = urllib.request.Request("http://127.0.0.1:4000/v1/models")
         request.add_header("Authorization", "Bearer " + master_key())
@@ -108,16 +118,17 @@ def exposed_models():
             data = json.loads(response.read().decode("utf-8"))
         return sorted(d["id"] for d in data.get("data", []))
     except Exception:
-        return []
+        return None
 
 
 def main() -> int:
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     profile = capability.build_profile()
     models = exposed_models()
+    passerelle_muette = models is None
 
     groups = {"local": [], "cloud": [], "anthropic": [], "routeurs": []}
-    for alias in models:
+    for alias in (models or []):
         if alias.startswith("adaptive-router"):
             groups["routeurs"].append(alias)
         elif alias.endswith("-local") or alias == "releve-locale":
@@ -200,7 +211,18 @@ def main() -> int:
             ]
 
     lines += [
-        "## Inventaire exposé — %d modèles" % len(models),
+        ("## Inventaire exposé — PASSERELLE INJOIGNABLE"
+         if passerelle_muette else
+         "## Inventaire exposé — %d modèles" % len(models)),
+        "",
+        # Un zéro et une absence de mesure se ressemblent dans un tableau,
+        # et ne veulent pas du tout dire la même chose : le premier annonce
+        # une panne totale, le second qu'on n'a rien demandé à personne.
+        ("> La passerelle n'a pas répondu sur `127.0.0.1:4000`. Ce qui suit "
+         "n'est donc **pas** un inventaire vide : c'est une absence de "
+         "mesure. Relancer `.\\scripts\\start.ps1` avant d'en conclure quoi "
+         "que ce soit."
+         if passerelle_muette else ""),
         "",
         "| Plan | Nombre | Facturation |",
         "|---|---|---|",
@@ -238,8 +260,12 @@ def main() -> int:
 
     with io.open(STATE, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines) + "\n")
-    print("STATE.md regenere : %d modeles exposes, configuration %s"
-          % (len(models), verdict))
+    if passerelle_muette:
+        print("STATE.md regenere : PASSERELLE INJOIGNABLE (127.0.0.1:4000), "
+              "configuration %s" % verdict)
+    else:
+        print("STATE.md regenere : %d modeles exposes, configuration %s"
+              % (len(models), verdict))
     return 0
 
 

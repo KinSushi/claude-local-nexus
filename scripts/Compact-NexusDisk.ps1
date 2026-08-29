@@ -118,17 +118,39 @@ Write-Host ""
 # --- 4. Remise en route --------------------------------------------------
 Ecrire "4/4  Redemarrage de la pile..."
 Push-Location $repo
+$pileDebout = $false
 try {
+    # `wsl --shutdown` arrete aussi le demon Docker : `docker compose up`
+    # lance immediatement apres echoue tant qu'il n'a pas repris. Sans
+    # cette attente, la pile restait a terre -- ce qui est arrive, et en
+    # silence, la boucle suivante s'epuisant sans que personne ne le dise.
+    for ($d = 0; $d -lt 30; $d++) {
+        docker info --format '{{.ServerVersion}}' 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { break }
+        Start-Sleep -Seconds 4
+    }
     docker compose up -d 2>&1 | Out-Null
-    for ($i = 0; $i -lt 20; $i++) {
+    for ($i = 0; $i -lt 25; $i++) {
         Start-Sleep -Seconds 6
         try {
             $r = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
                 -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-            if ($r.StatusCode -eq 200) { Ecrire "     LiteLLM repond." 'Green'; break }
+            if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
         } catch { }
     }
 } finally { Pop-Location }
+
+if ($pileDebout) {
+    Ecrire "     LiteLLM repond." 'Green'
+} else {
+    # L'echec doit s'entendre. La version precedente enchainait sur
+    # "Espace libre : 591 Go" et sur des commandes de suite, donnant a
+    # lire une operation reussie alors que la pile etait arretee.
+    Ecrire "     LiteLLM NE REPOND PAS apres 150 s." 'Red'
+    Ecrire "     La compaction a reussi, mais la pile est restee a terre." 'Red'
+    Ecrire "     Relancez :  .\scripts\start.ps1" 'Yellow'
+    Ecrire "     Diagnostic : docker compose logs litellm --tail 80" 'Yellow'
+}
 
 $libre = (Get-PSDrive C).Free / 1GB
 Write-Host ""

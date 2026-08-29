@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-29 12:10.
+> Généré par `python scripts/nexus_state.py` le 2026-08-29 14:15.
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,55 +9,54 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `2170c10` |
+| Commit | `2f9613c` |
 | Arbre de travail | modifié |
 | Version de routage | `rbe9e348efb` |
 
 ## Services
 
 ```
-litellm-db	db	Up 23 hours (healthy)
-litellm-proxy	litellm	Up 26 minutes
-litellm-redis	redis	Up 23 hours (healthy)
-ollama-server	ollama	Up 23 hours (healthy)
+litellm-db	db	Up 37 seconds (healthy)
+litellm-proxy	litellm	Up 32 seconds
+litellm-redis	redis	Up 37 seconds (healthy)
 ```
 
 ## Moteur d'inférence
 
 | | |
 |---|---|
-| Implantation | `docker+host` |
-| Mémoire d'inférence | 32.4 Go |
-| RAM machine | 61.6 Go |
-| Budget pool | 19.4 Go |
-| Budget maximal | 27.5 Go |
+| Implantation | `host` |
+| Mémoire d'inférence | 66.2 Go |
+| RAM machine | 66.2 Go |
+| Budget pool | 39.7 Go |
+| Budget maximal | 56.2 Go |
 | CPU | 12 cœurs / 24 threads |
-| GPU | AMD Radeon(TM) 890M Graphics (2.0 Go) |
+| GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
-| Stockage modèles | `C:\` |
-| Disque libre | 92.4 Go |
+| Stockage modèles | `C:\Users\dibac\.ollama\models` |
+| Disque libre | 610.5 Go |
 
-> 29 Go des 62 Go de la machine restent hors d'atteinte de
-> l'inférence tant que le moteur tourne dans Docker.
+## Inventaire exposé — 44 modèles
 
-## Inventaire exposé — 54 modèles
+
 
 | Plan | Nombre | Facturation |
 |---|---|---|
-| Local | 40 | aucune, rien ne quitte la machine |
+| Local | 30 | aucune, rien ne quitte la machine |
 | Ollama Cloud | 6 | abonnement Ollama |
 | Anthropic | 4 | crédits API, distincts de l'abonnement claude.ai |
 | Routeurs | 4 | selon le plan retenu |
 
 ## Intégrité de la configuration
 
-Verdict : **valide**
+Verdict : **INVALIDE**
 
 ```
-- non exposé à dessein : llama3.2-vision:90b — 54 Go de poids pour 32 Go de memoire d'inference
-- non exposé à dessein : llama3.3:70b — 42 Go de poids pour 32 Go de memoire d'inference
-- non exposé à dessein : llama4:scout — 67 Go de poids pour 32 Go de memoire d'inference
-- moteur dans Docker : 29 Go des 62 Go de la machine sont hors d'atteinte de l'inference
+- modèle qwen2.5-coder-32b-local : 'qwen2.5-coder:32b' déclaré mais absent d'Ollama
+- modèle deepseek-coder-33b-local : 'deepseek-coder:33b' déclaré mais absent d'Ollama
+- modèle codestral-local : 'codestral' déclaré mais absent d'Ollama
+- modèle qwen2.5-32b-local : 'qwen2.5:32b' déclaré mais absent d'Ollama
+- modèle llava-34b-local : 'llava:34b' déclaré mais absent d'Ollama
 ```
 
 ## Empreintes SHA-256
@@ -65,17 +64,17 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `83cfc30789cc46d868a92a9e184990f4` |
+| `litellm_config.yaml` | `96c602b7fce82bf74cbdae75300cbfa8` |
 | `model_list.txt` | `7ad5bf3484b009187e8d130b4fc33289` |
-| `cloud_models.txt` | `058c58ca406ff7489bdc785af19be1d3` |
+| `cloud_models.txt` | `28d73b327162ed4a55736b7753ddecc3` |
 | `.mcp.json` | `3d8aee915dd1ab43456d15ba17cb7685` |
 | `Set-ClaudeModel.ps1` | `e22aede9ce5d33311e8a95c3ee7ee8cf` |
-| `tools/nexus-mcp/server.js` | `3f041a0567cad3ec446cc78ce17821bd` |
-| `scripts/nexus_generate.py` | `896c91105886be358aace27fae4e3986` |
-| `scripts/nexus_validate.py` | `cd2a9c9f5a90d410d75f290de3ebbec6` |
-| `scripts/nexus_capability.py` | `9f1fb5052abb98d31dae9ce6d06ca4e8` |
-| `scripts/nexus_test.py` | `24d2ed49be58e3410b34be904144e00c` |
-| `scripts/Update-NexusModels.ps1` | `4bc2d37e81a479fa59621b597221266e` |
+| `tools/nexus-mcp/server.js` | `83ea15431cd8bef72106a78641139355` |
+| `scripts/nexus_generate.py` | `313b11a242f4cdc705d07863a55a2558` |
+| `scripts/nexus_validate.py` | `388a1c1ca8fc161a1b77d1a2f46c59a0` |
+| `scripts/nexus_capability.py` | `aa1349a15c746e1914b6fa5cb8794478` |
+| `scripts/nexus_test.py` | `ea2c0d41181ed56be68fef447be262a2` |
+| `scripts/Update-NexusModels.ps1` | `d48fc00a503f02db5ff9746cdc2e1535` |
 
 ---
 
