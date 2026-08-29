@@ -119,14 +119,36 @@ def show_status() -> int:
     print(" Moteur d'inference local")
     print("=" * 66)
     print("  Configure : %s" % active)
+    # La sonde est un appel reseau : son resultat est retenu au lieu d'etre
+    # rejoue plus bas pour le code de retour. Deux sondes successives
+    # peuvent differer, et le code de retour contredirait alors la ligne
+    # qui vient d'etre affichee -- un diagnostic qui se dement lui-meme
+    # coute plus de temps qu'il n'en fait gagner.
+    versions: dict[str, str | None] = {}
     for name, cfg in ENGINES.items():
         version = probe(cfg["probe"])
+        versions[name] = version
         models = installed_on(name)
         state = ("repond (v%s)" % version) if version else "ne repond pas"
         print("  %-7s %-32s %-18s %s"
               % (name, cfg["label"], state,
                  "inventaire illisible" if models is None
                  else "%d modele(s)" % len(models)))
+
+    # L'alerte est placee juste sous le tableau, et non en fin de sortie :
+    # RESUME.ps1 tronque a `Select-Object -First 8` et Initialize-Nexus.ps1
+    # a `-First 6`, si bien qu'un avertissement final ne serait jamais lu
+    # par les deux seuls appelants du mode --status.
+    #
+    # Seul le moteur CONFIGURE comme actif compte. L'autre est muet en
+    # permanence dans une installation normale, et le signaler ferait
+    # echouer chaque reprise sur un fait sans consequence.
+    muet = active in ENGINES and not versions[active]
+    if muet:
+        print("  ATTENTION : le moteur configure ('%s') ne repond pas sur %s."
+              % (active, ENGINES[active]["probe"]))
+        print("  LiteLLM pointe vers %s : tout appel local echouera."
+              % ENGINES[active]["api_base"])
 
     if active in ENGINES:
         other = "host" if active == "docker" else "docker"
@@ -153,7 +175,14 @@ def show_status() -> int:
                   % other)
             print("  pas transferables d'un moteur a l'autre par simple copie de")
             print("  configuration : c'est model_list.txt qui les reconstitue.")
-    return 0
+
+    # Rendre 0 quel que soit l'etat constate revient a dire « tout va bien »
+    # a un appelant automatise, et c'est le seul signal dont il dispose : ni
+    # RESUME.ps1 ni Initialize-Nexus.ps1 ne testent $LASTEXITCODE, faute
+    # d'avoir quoi que ce soit a tester. Un moteur disparu -- conteneur
+    # arrete, service de l'hote non redemarre apres Windows -- passait ainsi
+    # inapercu jusqu'au premier appel de modele.
+    return 1 if muet else 0
 
 
 def switch(target: str, dry_run: bool) -> int:
