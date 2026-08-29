@@ -14,3 +14,7 @@ logs/
 # Python
 __pycache__/
 *.pyc
+
+# Worktrees temporaires des agents : ce sont des depots imbriques,
+# reconstruits a la demande et sans valeur en dehors de leur session.
+.claude/worktrees/
