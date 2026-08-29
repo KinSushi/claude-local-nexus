@@ -69,10 +69,36 @@ def master_key() -> str:
     raise RuntimeError("LITELLM_MASTER_KEY introuvable")
 
 
-def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]]:
-    """Domaine et tarif de chaque alias, lus dans la configuration."""
-    with io.open(CONFIG, encoding="utf-8") as fh:
-        config = yaml.safe_load(fh)
+def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | None:
+    """
+    Domaine et tarif de chaque alias, lus dans la configuration.
+
+    Rend `None` — jamais un couple vide — quand la configuration est
+    illisible, pour deux raisons distinctes. Sans garde, un
+    `litellm_config.yaml` corrompu remontait une trace `yaml` nue : le
+    rapport de délégation mourait sur une pile d'appels au lieu de dire
+    quel fichier relire. Et un repli sur des dictionnaires vides serait
+    pire que la trace, car il produirait un rapport d'apparence normale :
+    chaque requête tomberait dans « inconnu », le contrefactuel Claude
+    vaudrait zéro, et le chiffre d'économie serait faux sans que rien ne
+    le signale. Sa jumelle `declares_sans_poids`, dans nexus_pull_host.py,
+    garde déjà la même lecture de la même façon.
+    """
+    try:
+        with io.open(CONFIG, encoding="utf-8") as fh:
+            config = yaml.safe_load(fh)
+    except Exception as exc:
+        # La cause n'est connue qu'ici : l'appelant ne verrait qu'un `None`
+        # et ne pourrait pas nommer le fichier ni la ligne fautive.
+        print("Configuration illisible (%s) : %s" % (CONFIG, exc))
+        return None
+    # Un fichier tronqué s'analyse sans erreur et rend `None` : la garde
+    # ci-dessus le laisserait passer, et c'est `config.get` qui lèverait la
+    # trace nue qu'on vient précisément de supprimer.
+    if not isinstance(config, dict):
+        print("Configuration illisible (%s) : document vide ou non conforme"
+              % CONFIG)
+        return None
     domains: dict[str, str] = {}
     prices: dict[str, tuple[float, float]] = {}
     for model in config.get("model_list") or []:
@@ -168,7 +194,14 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    domains, prices = load_domains()
+    charge = load_domains()
+    if charge is None:
+        print("Sans les domaines ni les tarifs, aucun plan ne peut etre")
+        print("attribue : le rapport s'arrete plutot que d'annoncer une")
+        print("economie nulle sur une configuration qu'il n'a pas su lire.")
+        return 1
+    domains, prices = charge
+
     try:
         logs = fetch_logs(args.jours)
     except Exception as exc:
