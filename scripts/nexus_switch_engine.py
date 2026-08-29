@@ -178,9 +178,13 @@ def switch(target: str, dry_run: bool) -> int:
 
     print("\n%d adresse(s) reecrites vers %s" % (occurrences, source["api_base"]))
     print("Sauvegarde : %s" % backup)
+    # La variable d'environnement n'est plus necessaire : le generateur
+    # deduit le moteur de la configuration en place. La conseiller ici
+    # entretenait l'idee inverse, et l'oublier une fois a suffi pour que
+    # dix declarations soient reecrites vers un conteneur supprime.
     print("\nSuite :")
-    print("    $env:NEXUS_OLLAMA_ENDPOINT = \"%s\"" % source["api_base"])
-    print("    .\\scripts\\Update-NexusModels.ps1 -Restart")
+    print("    python scripts/nexus_conformite.py    verifier avant de demarrer")
+    print("    .\\scripts\\start.ps1 -Restart         redemarrer sous controle")
     return 0
 
 
