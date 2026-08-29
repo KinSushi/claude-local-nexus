@@ -73,18 +73,47 @@ function Invoke-Chat {
     # local paie son chargement en memoire (plusieurs dizaines de Go). Un
     # delai serre ferait echouer un test qui n'a rien de defaillant.
     param([string]$Model, [int]$TimeoutSec = 900)
+
+    # Le plafond de 16 jetons était suffisant tant que le pool ne contenait
+    # que des modèles ordinaires. Les modèles à raisonnement (ex : kimi-k3,
+    # deepseek-v4, qwen3.5) utilisent le champ `reasoning_content` et épuisent
+    # rapidement ce budget, ce qui provoque des faux négatifs. Les jetons
+    # supplémentaires sont gratuits, on les augmente donc à 512 pour
+    # éviter que le test échoue à cause d'un budget trop court.
+    $maxTokens = 512
+
     $body = @{
         model      = $Model
         messages   = @(@{ role = "user"; content = "Reponds exactement: OK" })
-        max_tokens = 16
+        max_tokens = $maxTokens
     } | ConvertTo-Json -Depth 6
+
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
     $response = Invoke-RestMethod -Uri "$BaseUrl/v1/chat/completions" -Method Post `
         -Headers $headers -ContentType "application/json; charset=utf-8" `
         -Body $bytes -TimeoutSec $TimeoutSec
-    $text = $response.choices[0].message.content
-    if (-not $text) { throw "reponse vide" }
-    return "<- $($text -replace '\s+', ' ')".Trim()
+
+    $msg = $response.choices[0].message
+    $content = $msg.content
+
+    # Acces a reasoning_content peut lever une exception sous Set-StrictMode
+    # si le champ n'existe pas (modèles ordinaires). On teste son existence
+    # avant d'y accéder pour éviter que le smoke échoue inutilement.
+    $reasoning = if ($msg.PSObject.Properties.Name -contains 'reasoning_content') {
+        $msg.reasoning_content
+    } else {
+        $null
+    }
+
+    # Un modèle qui a raisonné (reasoning_content non vide) mais n'a pas pu
+    # écrire dans `content` a bien produit une réponse. Le smoke doit donc
+    # accepter l'un ou l'autre comme preuve de fonctionnement.
+    if (-not $content -and -not $reasoning) {
+        throw "reponse vide (content et reasoning_content vides) - plafond max_tokens=$maxTokens"
+    }
+
+    $display = if ($content) { $content } else { $reasoning }
+    return "<- $($display -replace '\s+', ' ')".Trim()
 }
 
 Write-Host "`n============================================================"
@@ -105,7 +134,7 @@ Invoke-Check "Inventaire expose" {
 
     # 1️⃣ Vérifier que la réponse possède bien la propriété « data » et qu'elle n'est pas $null
     if (-not ($r.PSObject.Properties.Name -contains 'data') -or $null -eq $r.data) {
-        throw "réponse du endpoint /v1/models ne contient pas de propriété 'data'"
+        throw "reponse du endpoint /v1/models ne contient pas de propriete 'data'"
     }
 
     # 2️⃣ Extraire les identifiants des modèles uniquement lorsqu'ils existent
@@ -120,7 +149,7 @@ Invoke-Check "Inventaire expose" {
 
     # 3️⃣ S'assurer qu'on a réellement au moins un identifiant valide
     if ($script:exposed.Count -eq 0) {
-        throw "aucun modèle exposé détecté"
+        throw "aucun modele expose detecte"
     }
 
     return "$($script:exposed.Count) modeles"

@@ -216,7 +216,11 @@ def verifier_syntaxe(chemin, contenu):
         except SyntaxError:
             return False
     elif ext == ".js":
-        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as tf:
+        # `encoding` explicite : sans lui, Python retombe sur la page de code
+        # du systeme, cp1252 sous Windows, et l'ecriture leve des qu'un
+        # commentaire porte un accent -- ce que ce depot exige partout.
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False,
+                                         encoding="utf-8") as tf:
             tf.write(contenu)
             tf_path = tf.name
         try:
@@ -230,12 +234,20 @@ def verifier_syntaxe(chemin, contenu):
         finally:
             os.unlink(tf_path)
     elif ext == ".ps1":
-        with tempfile.NamedTemporaryFile("w", suffix=".ps1", delete=False) as tf:
+        with tempfile.NamedTemporaryFile("w", suffix=".ps1", delete=False,
+                                         encoding="utf-8") as tf:
             tf.write(contenu)
             tf_path = tf.name
         try:
             result = subprocess.run(
-                ["pwsh", "-NoProfile", "-Command", f"Set-StrictMode -Version Latest; . '{tf_path}'"],
+                # ParseFile et NON un point-sourcing. `. 'fichier'` EXECUTE le
+                # script : sur un smoke test ou un script de sauvegarde, une
+                # simple verification syntaxique aurait donc lance le travail
+                # pour de bon. Le parseur analyse sans executer.
+                ["pwsh", "-NoProfile", "-Command",
+                 "$e=$null; $null=[System.Management.Automation.Language.Parser]"
+                 "::ParseFile('%s',[ref]$null,[ref]$e); "
+                 "if ($e.Count -gt 0) { exit 1 } else { exit 0 }" % tf_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,

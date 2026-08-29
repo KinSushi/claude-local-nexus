@@ -23,7 +23,7 @@
 # ============================================================
 
 # ============================================================
-# NEXUS-ROUTER-VERSION: r4f878da11b
+# NEXUS-ROUTER-VERSION: rdb210b95d0
 # Version de la politique de routage. Elle change des que les
 # pools, les chaines de fallback ou les seuils materiels
 # changent — donc des qu'une meme requete pourrait etre servie
@@ -628,6 +628,104 @@ model_list:
   # <<< AUTOGEN:LOCAL_MODELS_EXTRA
 
   # >>> AUTOGEN:CLOUD_MODELS  (genere par scripts/Update-NexusModels.ps1 - NE PAS EDITER)
+  - model_name: qwen3.5-397b-cloud
+    litellm_params:
+      model: ollama_chat/qwen3.5:397b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "qwen3.5:397b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+          - code_generation
+          - code_understanding
+
+  - model_name: deepseek-v4-pro-0813-cloud
+    litellm_params:
+      model: ollama_chat/deepseek-v4-pro:0813
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "deepseek-v4-pro:0813 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: kimi-k3-cloud
+    litellm_params:
+      model: ollama_chat/kimi-k3
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "kimi-k3 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: glm-5.3-cloud
+    litellm_params:
+      model: ollama_chat/glm-5.3
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "glm-5.3 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: mistral-large-3-675b-cloud
+    litellm_params:
+      model: ollama_chat/mistral-large-3:675b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "mistral-large-3:675b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: minimax-m3-cloud
+    litellm_params:
+      model: ollama_chat/minimax-m3
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "minimax-m3 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 3
+        strengths:
+          - general
+          - analytical_reasoning
+
   - model_name: nemotron-3-ultra-cloud
     litellm_params:
       model: ollama_chat/nemotron-3-ultra
@@ -638,6 +736,56 @@ model_list:
     model_info:
       max_input_tokens: 131072
       description: "nemotron-3-ultra (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: kimi-k2.7-code-cloud
+    litellm_params:
+      model: ollama_chat/kimi-k2.7-code
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "kimi-k2.7-code (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+          - code_generation
+          - code_understanding
+
+  - model_name: glm-5.2-cloud
+    litellm_params:
+      model: ollama_chat/glm-5.2
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "glm-5.2 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: deepseek-v4-flash-0731-cloud
+    litellm_params:
+      model: ollama_chat/deepseek-v4-flash:0731
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "deepseek-v4-flash:0731 (Ollama Cloud)"
       adaptive_router_preferences:
         quality_tier: 2
         strengths:
@@ -672,6 +820,70 @@ model_list:
       description: "nemotron-3-super (Ollama Cloud)"
       adaptive_router_preferences:
         quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: glm-5.3-flash-cloud
+    litellm_params:
+      model: ollama_chat/glm-5.3-flash
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "glm-5.3-flash (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: minimax-m2.7-cloud
+    litellm_params:
+      model: ollama_chat/minimax-m2.7
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "minimax-m2.7 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 2
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: kimi-k2.6-cloud
+    litellm_params:
+      model: ollama_chat/kimi-k2.6
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "kimi-k2.6 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: glm-5.1-cloud
+    litellm_params:
+      model: ollama_chat/glm-5.1
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "glm-5.1 (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
         strengths:
           - general
           - analytical_reasoning
@@ -770,13 +982,26 @@ model_list:
   - model_name: adaptive-router-cloud
     litellm_params:
       model: auto_router/adaptive_router
-      adaptive_router_default_model: nemotron-3-ultra-cloud
+      adaptive_router_default_model: qwen3.5-397b-cloud
       adaptive_router_config:
         available_models:
           # >>> AUTOGEN:CLOUD_POOL_CLOUD
+          - qwen3.5-397b-cloud
+          - deepseek-v4-pro-0813-cloud
+          - kimi-k3-cloud
+          - glm-5.3-cloud
+          - mistral-large-3-675b-cloud
+          - minimax-m3-cloud
           - nemotron-3-ultra-cloud
+          - kimi-k2.7-code-cloud
+          - glm-5.2-cloud
+          - deepseek-v4-flash-0731-cloud
           - gpt-oss-120b-cloud
           - nemotron-3-super-cloud
+          - glm-5.3-flash-cloud
+          - minimax-m2.7-cloud
+          - kimi-k2.6-cloud
+          - glm-5.1-cloud
           - gpt-oss-20b-cloud
           - nemotron-3-nano-30b-cloud
           - gemma4-31b-cloud
@@ -816,9 +1041,22 @@ model_list:
           - qwen2.5-32b-local
           - gemma4-12b-local
           # >>> AUTOGEN:CLOUD_POOL_GLOBAL
+          - qwen3.5-397b-cloud
+          - deepseek-v4-pro-0813-cloud
+          - kimi-k3-cloud
+          - glm-5.3-cloud
+          - mistral-large-3-675b-cloud
+          - minimax-m3-cloud
           - nemotron-3-ultra-cloud
+          - kimi-k2.7-code-cloud
+          - glm-5.2-cloud
+          - deepseek-v4-flash-0731-cloud
           - gpt-oss-120b-cloud
           - nemotron-3-super-cloud
+          - glm-5.3-flash-cloud
+          - minimax-m2.7-cloud
+          - kimi-k2.6-cloud
+          - glm-5.1-cloud
           - gpt-oss-20b-cloud
           - nemotron-3-nano-30b-cloud
           - gemma4-31b-cloud
@@ -923,15 +1161,67 @@ router_settings:
     # <<< AUTOGEN:LOCAL_FALLBACKS
 
     # >>> AUTOGEN:CLOUD_FALLBACKS
+    - qwen3.5-397b-cloud:
+        - deepseek-v4-pro-0813-cloud
+        - kimi-k3-cloud
+
+    - deepseek-v4-pro-0813-cloud:
+        - kimi-k3-cloud
+        - glm-5.3-cloud
+
+    - kimi-k3-cloud:
+        - glm-5.3-cloud
+        - mistral-large-3-675b-cloud
+
+    - glm-5.3-cloud:
+        - mistral-large-3-675b-cloud
+        - minimax-m3-cloud
+
+    - mistral-large-3-675b-cloud:
+        - minimax-m3-cloud
+        - nemotron-3-ultra-cloud
+
+    - minimax-m3-cloud:
+        - nemotron-3-ultra-cloud
+        - kimi-k2.7-code-cloud
+
     - nemotron-3-ultra-cloud:
+        - kimi-k2.7-code-cloud
+        - glm-5.2-cloud
+
+    - kimi-k2.7-code-cloud:
+        - glm-5.2-cloud
+        - deepseek-v4-flash-0731-cloud
+
+    - glm-5.2-cloud:
+        - deepseek-v4-flash-0731-cloud
+        - gpt-oss-120b-cloud
+
+    - deepseek-v4-flash-0731-cloud:
         - gpt-oss-120b-cloud
         - nemotron-3-super-cloud
 
     - gpt-oss-120b-cloud:
         - nemotron-3-super-cloud
-        - gpt-oss-20b-cloud
+        - glm-5.3-flash-cloud
 
     - nemotron-3-super-cloud:
+        - glm-5.3-flash-cloud
+        - minimax-m2.7-cloud
+
+    - glm-5.3-flash-cloud:
+        - minimax-m2.7-cloud
+        - kimi-k2.6-cloud
+
+    - minimax-m2.7-cloud:
+        - kimi-k2.6-cloud
+        - glm-5.1-cloud
+
+    - kimi-k2.6-cloud:
+        - glm-5.1-cloud
+        - gpt-oss-20b-cloud
+
+    - glm-5.1-cloud:
         - gpt-oss-20b-cloud
         - nemotron-3-nano-30b-cloud
 
@@ -955,8 +1245,8 @@ router_settings:
         - gemma4-31b-local
 
     - adaptive-router-cloud:
-        - nemotron-3-ultra-cloud
-        - gpt-oss-120b-cloud
+        - qwen3.5-397b-cloud
+        - deepseek-v4-pro-0813-cloud
         - adaptive-router-local
 
     - adaptive-router-anthropic:
