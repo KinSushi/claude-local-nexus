@@ -22,7 +22,7 @@ Trois niveaux, et la distinction compte :
 
     BLOQUANT      démarrer causerait un dommage ou une panne silencieuse
     AVERTISSEMENT démarrer fonctionnera, mais quelque chose se dégrade
-    IGNORE        non vérifiable dans l'état actuel — jamais « réussi »
+    IGNORE        non vérifiable dans l'état actuelle — jamais « réussi »
 
 Usage :
     python scripts/nexus_conformite.py            # verdict complet
@@ -62,8 +62,13 @@ BLOQUANT, AVERTISSEMENT, IGNORE = "BLOQUANT", "AVERT", "IGNORE"
 # Secrets sans lesquels la passerelle démarre mais ne sert rien d'utile.
 # `ANTHROPIC_API_KEY` n'y figure pas : son absence est un choix de coût
 # légitime, pas un défaut de conformité.
-SECRETS_REQUIS = ["LITELLM_MASTER_KEY", "REDIS_PASSWORD",
-                  "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"]
+SECRETS_REQUIS = [
+    "LITELLM_MASTER_KEY",
+    "REDIS_PASSWORD",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_DB",
+]
 
 resultats: list[dict] = []
 
@@ -82,12 +87,23 @@ def ignorer(nom: str, motif: str) -> None:
 # ----------------------------------------------------------------------
 def controle_config_valide() -> None:
     """Le validateur d'intégrité, tel quel : il est déjà la référence."""
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    r = subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     erreurs = [l.strip() for l in r.stdout.splitlines() if l.strip().startswith("- ")]
-    noter("configuration valide", r.returncode == 0, BLOQUANT,
-          "%d erreur(s) : %s" % (len(erreurs), "; ".join(e[2:] for e in erreurs[:3]))
-          if r.returncode != 0 else "")
+    noter(
+        "configuration valide",
+        r.returncode == 0,
+        BLOQUANT,
+        "%d erreur(s) : %s"
+        % (len(erreurs), "; ".join(e[2:] for e in erreurs[:3]))
+        if r.returncode != 0
+        else "",
+    )
 
 
 def controle_moteur_coherent() -> None:
@@ -103,40 +119,55 @@ def controle_moteur_coherent() -> None:
     d'environnement.
     """
     try:
-        texte = io.open(CONFIG, encoding="utf-8").read()
+        with io.open(CONFIG, encoding="utf-8") as f:
+            texte = f.read()
     except Exception as exc:
         noter("moteur coherent", False, BLOQUANT, "configuration illisible : %s" % exc)
         return
-    # Recensement de TOUTES les adresses declarees, plutot que le comptage
+    # Recensement de TOUTES les adresses déclarées, plutôt que le comptage
     # de deux formes connues d'avance. L'ancienne version comparait
-    # `http://ollama:11434` a `host.docker.internal:11434` et ignorait
-    # tout le reste : une configuration melangeant `http://127.0.0.1:11434`
-    # a l'une des deux passait pour coherente, alors que c'est exactement
-    # la panne decrite ci-dessus. Un controle qui ne connait que les
-    # formes deja vues ne protege que du passe.
+    # `http://ollama:11434` à `host.docker.internal:11434` et ignorait
+    # tout le reste : une configuration mélangeant `http://127.0.0.1:11434`
+    # à l'une des deux passait pour cohérente, alors que c'est exactement
+    # la panne décrite ci-dessus. Un contrôle qui ne connaît que les
+    # formes déjà vues ne protège que du passé.
     adresses: dict[str, int] = {}
     for brut in re.findall(r"api_base:\s*(\S+)", texte):
-        # `,}]` retires en plus des guillemets : une declaration ecrite en
+        # `,}]` retire en plus des guillemets : une déclaration écrite en
         # flux YAML (`{... api_base: http://hote:11434}`) ferait sinon de
-        # l'accolade fermante un morceau de l'adresse, et deux ecritures de
-        # la MEME adresse compteraient pour deux moteurs distincts.
+        # l'accolade fermante un morceau de l'adresse, et deux écritures de
+        # la MÊME adresse compteraient pour deux moteurs distincts.
         adresse = brut.strip().strip("\"'").rstrip(",}]")
         if "ollama.com" in adresse or "anthropic" in adresse:
-            continue                      # plan distant : hors sujet ici
+            continue  # plan distant : hors sujet ici
         adresses[adresse] = adresses.get(adresse, 0) + 1
 
     if not adresses:
-        noter("moteur coherent", False, AVERTISSEMENT,
-              "aucune declaration locale dans la configuration")
+        noter(
+            "moteur coherent",
+            False,
+            AVERTISSEMENT,
+            "aucune declaration locale dans la configuration",
+        )
     elif len(adresses) > 1:
-        noter("moteur coherent", False, BLOQUANT,
-              "configuration partagee entre %d moteurs : %s" % (
-                  len(adresses),
-                  ", ".join("%s (%d)" % (a, n) for a, n in sorted(adresses.items()))))
+        noter(
+            "moteur coherent",
+            False,
+            BLOQUANT,
+            "configuration partagee entre %d moteurs : %s"
+            % (
+                len(adresses),
+                ", ".join("%s (%d)" % (a, n) for a, n in sorted(adresses.items())),
+            ),
+        )
     else:
         adresse, nombre = next(iter(adresses.items()))
-        noter("moteur coherent", True, BLOQUANT,
-              "%d declaration(s) vers %s" % (nombre, adresse))
+        noter(
+            "moteur coherent",
+            True,
+            BLOQUANT,
+            "%d declaration(s) vers %s" % (nombre, adresse),
+        )
 
 
 def controle_moteur_joignable() -> None:
@@ -148,16 +179,23 @@ def controle_moteur_joignable() -> None:
     puisqu'elle a l'air en marche.
     """
     lieu = capability.ollama_location()
-    sonde = ("http://127.0.0.1:11434" if lieu.get("host_native")
-             else "http://127.0.0.1:11435")
+    sonde = ("http://127.0.0.1:11434" if lieu.get("host_native") else "http://127.0.0.1:11435")
     try:
         with urllib.request.urlopen(sonde + "/api/version", timeout=10) as reponse:
             version = json.loads(reponse.read().decode("utf-8")).get("version", "?")
-        noter("moteur joignable", True, BLOQUANT,
-              "%s sur %s (Ollama %s)" % (lieu.get("mode"), sonde, version))
+        noter(
+            "moteur joignable",
+            True,
+            BLOQUANT,
+            "%s sur %s (Ollama %s)" % (lieu.get("mode"), sonde, version),
+        )
     except Exception as exc:
-        noter("moteur joignable", False, BLOQUANT,
-              "%s injoignable (%s)" % (sonde, exc))
+        noter(
+            "moteur joignable",
+            False,
+            BLOQUANT,
+            "%s injoignable (%s)" % (sonde, exc),
+        )
 
 
 def controle_marqueurs_autogen() -> None:
@@ -170,7 +208,8 @@ def controle_marqueurs_autogen() -> None:
     se voit qu'à l'exécution.
     """
     try:
-        texte = io.open(CONFIG, encoding="utf-8").read()
+        with io.open(CONFIG, encoding="utf-8") as f:
+            texte = f.read()
     except Exception as exc:
         noter("marqueurs AUTOGEN", False, BLOQUANT, str(exc))
         return
@@ -179,34 +218,45 @@ def controle_marqueurs_autogen() -> None:
     soucis = []
     for nom in set(ouverts) | set(fermes):
         if ouverts.count(nom) != 1 or fermes.count(nom) != 1:
-            soucis.append("%s (%d ouvrant, %d fermant)"
-                          % (nom, ouverts.count(nom), fermes.count(nom)))
-    noter("marqueurs AUTOGEN", not soucis, BLOQUANT,
-          "; ".join(soucis) if soucis else "%d zone(s) appariees" % len(set(ouverts)))
+            soucis.append("%s (%d ouvrant, %d fermant)" % (nom, ouverts.count(nom), fermes.count(nom)))
+    noter(
+        "marqueurs AUTOGEN",
+        not soucis,
+        BLOQUANT,
+        "; ".join(soucis) if soucis else "%d zone(s) appariees" % len(set(ouverts)),
+    )
 
 
 def controle_secrets() -> None:
     """Les variables sans lesquelles la pile démarre sans servir."""
     if not os.path.exists(ENV):
-        noter("secrets presents", False, BLOQUANT,
-              ".env absent — copier .env.example et le remplir")
+        noter(
+            "secrets presents",
+            False,
+            BLOQUANT,
+            ".env absent — copier .env.example et le remplir",
+        )
         return
     try:
-        contenu = io.open(ENV, encoding="utf-8", errors="replace").read()
+        with io.open(ENV, encoding="utf-8", errors="replace") as f:
+            contenu = f.read()
     except OSError as exc:
         noter("secrets presents", False, BLOQUANT, ".env illisible : %s" % exc)
         return
     manquants = []
     for nom in SECRETS_REQUIS:
         m = re.search(r"^\s*%s\s*=\s*(.*)$" % re.escape(nom), contenu, re.M)
-        # Une variable declaree vide ne vaut pas mieux qu'absente : elle
-        # part telle quelle dans l'en-tete et produit un 401 que rien
+        # Une variable déclarée vide ne vaut pas mieux qu'absente : elle
+        # part telle quelle dans l'en-tête et produit un 401 que rien
         # n'explique.
         if not m or not m.group(1).strip().strip("\"'"):
             manquants.append(nom)
-    noter("secrets presents", not manquants, BLOQUANT,
-          "manquants ou vides : %s" % ", ".join(manquants) if manquants
-          else "%d variable(s) renseignees" % len(SECRETS_REQUIS))
+    noter(
+        "secrets presents",
+        not manquants,
+        BLOQUANT,
+        "manquants ou vides : %s" % ", ".join(manquants) if manquants else "%d variable(s) renseignees" % len(SECRETS_REQUIS),
+    )
 
 
 def controle_env_hors_git() -> None:
@@ -217,19 +267,30 @@ def controle_env_hors_git() -> None:
     toutes : un `git add -A` suffit à l'y faire entrer, et une fois
     poussé, un secret est compromis même supprimé au commit suivant.
     """
-    r = subprocess.run(["git", "ls-files", "--error-unmatch", ".env"],
-                       cwd=ROOT, capture_output=True, text=True)
+    r = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", ".env"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
     suivi = r.returncode == 0
-    noter(".env hors de git", not suivi, BLOQUANT,
-          "SUIVI PAR GIT — retirer avec 'git rm --cached .env'" if suivi
-          else "non suivi")
+    noter(
+        ".env hors de git",
+        not suivi,
+        BLOQUANT,
+        "SUIVI PAR GIT — retirer avec 'git rm --cached .env'" if suivi else "non suivi",
+    )
 
 
 def controle_disque() -> None:
     profil = capability.build_profile()
     libre = profil.get("free_disk_gb", 0.0)
-    noter("espace disque", libre >= 15.0, AVERTISSEMENT,
-          "%.0f Go libres%s" % (libre, "" if libre >= 15 else " — insuffisant pour un pull"))
+    noter(
+        "espace disque",
+        libre >= 15.0,
+        AVERTISSEMENT,
+        "%.0f Go libres%s" % (libre, "" if libre >= 15 else " — insuffisant pour un pull"),
+    )
 
 
 def substitution_imbriquee(valeur: str) -> str | None:
@@ -256,9 +317,9 @@ def substitution_imbriquee(valeur: str) -> str | None:
         j = valeur.find("}", i)
         if j == -1:
             # Accolade jamais fermée : tout aussi inexpansible.
-            return valeur[i:i + 60]
-        if "${" in valeur[i + 2:j]:
-            return valeur[i:j + 1]
+            return valeur[i : i + 60]
+        if "${" in valeur[i + 2 : j]:
+            return valeur[i : j + 1]
         i = valeur.find("${", j)
     return None
 
@@ -267,10 +328,10 @@ def _chaines(noeud, chemin: str = ""):
     """Parcourt un JSON et rend (emplacement, chaîne) pour chaque texte."""
     if isinstance(noeud, dict):
         for cle, valeur in noeud.items():
-            yield from _chaines(valeur, "%s.%s" % (chemin, cle) if chemin else str(cle))
+            yield from _chaines(valeur, f"{chemin}.{cle}" if chemin else str(cle))
     elif isinstance(noeud, list):
         for rang, valeur in enumerate(noeud):
-            yield from _chaines(valeur, "%s[%d]" % (chemin, rang))
+            yield from _chaines(valeur, f"{chemin}[{rang}]")
     elif isinstance(noeud, str):
         yield chemin, noeud
 
@@ -291,11 +352,16 @@ def controle_pont_mcp() -> None:
     """
     chemin = os.path.join(ROOT, ".mcp.json")
     if not os.path.exists(chemin):
-        noter("pont MCP", False, AVERTISSEMENT,
-              ".mcp.json absent — aucun outil local n'est expose a Claude Code")
+        noter(
+            "pont MCP",
+            False,
+            AVERTISSEMENT,
+            ".mcp.json absent — aucun outil local n'est expose a Claude Code",
+        )
         return
     try:
-        declaration = json.loads(io.open(chemin, encoding="utf-8").read())
+        with io.open(chemin, encoding="utf-8") as f:
+            declaration = json.loads(f.read())
     except Exception as exc:
         noter("pont MCP", False, BLOQUANT, ".mcp.json illisible : %s" % exc)
         return
@@ -310,11 +376,13 @@ def controle_pont_mcp() -> None:
         for arg in (corps.get("args") or []):
             if not isinstance(arg, str) or ("/" not in arg and "\\" not in arg):
                 continue
-            cible = (arg.replace("${CLAUDE_PROJECT_DIR:-.}", ROOT)
-                        .replace("${CLAUDE_PROJECT_DIR}", ROOT))
+            cible = (
+                arg.replace("${CLAUDE_PROJECT_DIR:-.}", ROOT)
+                .replace("${CLAUDE_PROJECT_DIR}", ROOT)
+            )
             # Une substitution non résolue ici n'est pas un défaut : elle
             # peut être légitimement fournie par l'environnement. La
-            # première assertion a déjà écarté celles qui ne peuvent pas
+            # première assertion a déjà écarté celles qui ne peuvent pas être
             # l'être.
             if "${" in cible:
                 continue
@@ -324,10 +392,14 @@ def controle_pont_mcp() -> None:
     if not serveurs:
         noter("pont MCP", False, AVERTISSEMENT, ".mcp.json ne declare aucun serveur")
         return
-    noter("pont MCP", not defauts, BLOQUANT,
-          "; ".join(defauts) if defauts
-          else "%d serveur(s), substitutions expansibles, points d'entree presents"
-               % len(serveurs))
+    noter(
+        "pont MCP",
+        not defauts,
+        BLOQUANT,
+        "; ".join(defauts)
+        if defauts
+        else "%d serveur(s), substitutions expansibles, points d'entree presents" % len(serveurs),
+    )
 
 
 # ----------------------------------------------------------------------
@@ -350,11 +422,21 @@ def controle_runtime(avant_demarrage: bool) -> None:
         # à une relève opérationnelle parce que personne n'a pu la tester.
         ignorer("releve operationnelle", "passerelle eteinte sur %s" % PASSERELLE)
         return
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_releve.py")],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_releve.py")],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+    except Exception as exc:
+        # Timeout ou autre problème d'exécution rend le contrôle non vérifiable.
+        ignorer("releve operationnelle", "releve operationnelle injoignable : %s" % exc)
+        return
     ligne = next((l.strip() for l in r.stdout.splitlines() if "epreuves reussies" in l), "")
-    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT,
-          ligne or "voir python scripts/nexus_releve.py")
+    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT, ligne or "voir python scripts/nexus_releve.py")
 
 
 def controle_delegation(avant_demarrage: bool) -> None:
@@ -388,10 +470,19 @@ def controle_delegation(avant_demarrage: bool) -> None:
 
     try:
         r = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "scripts", "nexus_savings.py"),
-             "--jours", "7", "--json"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=120)
+            [
+                sys.executable,
+                os.path.join(ROOT, "scripts", "nexus_savings.py"),
+                "--jours",
+                "7",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
     except Exception as exc:
         ignorer("part deleguee", "releve des depenses injoignable : %s" % exc)
         return
@@ -413,22 +504,35 @@ def controle_delegation(avant_demarrage: bool) -> None:
         return
 
     payantes = ((mesure.get("par_plan") or {}).get("anthropic") or {}).get("requetes", 0)
-    noter("part deleguee", part >= 90.0, AVERTISSEMENT,
-          "%.1f%% delegue sur 7 jours, %d requete(s) facturee(s) au token%s"
-          % (part, payantes, "" if part >= 90.0 else " — sous le plancher de 90%"))
+    noter(
+        "part deleguee",
+        part >= 90.0,
+        AVERTISSEMENT,
+        "%.1f%% delegue sur 7 jours, %d requete(s) facturee(s) au token%s"
+        % (part, payantes, "" if part >= 90.0 else " — sous le plancher de 90%"),
+    )
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--avant-demarrage", action="store_true",
-                   help="ignore les controles exigeant la passerelle en marche")
+    p.add_argument(
+        "--avant-demarrage",
+        action="store_true",
+        help="ignore les controles exigeant la passerelle en marche",
+    )
     p.add_argument("--json", action="store_true")
     a = p.parse_args()
 
-    for controle in (controle_config_valide, controle_moteur_coherent,
-                     controle_moteur_joignable, controle_marqueurs_autogen,
-                     controle_secrets, controle_env_hors_git, controle_disque,
-                     controle_pont_mcp):
+    for controle in (
+        controle_config_valide,
+        controle_moteur_coherent,
+        controle_moteur_joignable,
+        controle_marqueurs_autogen,
+        controle_secrets,
+        controle_env_hors_git,
+        controle_disque,
+        controle_pont_mcp,
+    ):
         try:
             controle()
         except Exception as exc:

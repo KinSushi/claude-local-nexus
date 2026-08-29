@@ -6,90 +6,141 @@
 # Utilisation : exécuter depuis le dossier contenant docker-compose.yml
 # ============================================================
 
+# ------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------
+# Chemins absolus basés sur le répertoire du script
+$scriptDir      = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$envFile        = Join-Path $scriptDir '.env'
+$envExampleFile = Join-Path $scriptDir '.env.example'
+$modelListFile  = Join-Path $scriptDir 'model_list.txt'
+
+# Nom du conteneur Ollama (modifiable dans docker-compose.yml)
+$ollamaContainer = 'ollama-server'
+
+# Détermination de la commande docker compose (v2 ou v1)
+$dockerComposeCmd = 'docker compose'
+try {
+    & docker compose version *>$null
+} catch {
+    $dockerComposeCmd = 'docker-compose'
+}
+
+# ------------------------------------------------------------
 # Vérifier que Docker est disponible
+# ------------------------------------------------------------
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Error "Docker n'est pas installé ou pas dans le PATH."
     exit 1
 }
 
-# Le prérequis est vérifié AVANT toute destruction.
-#
-# L'ordre était inverse : les volumes étaient supprimés, puis seulement
-# ensuite l'absence de .env était constatée — et le script invitait alors à
-# le renseigner « avant de relancer ce script », en sortant 0. Sur une
-# machine neuve, c'est-à-dire le cas d'usage nominal que ce message décrit
-# lui-même, PostgreSQL, Redis et les poids Ollama venaient d'être détruits,
-# rien n'était redémarré, et le code de sortie disait succès.
-if (-not (Test-Path .env)) {
-    # Test-Path sur la SOURCE, comme backup.ps1 le fait pour chaque fichier :
-    # sans lui, un .env.example manquant produisait une erreur non bloquante,
-    # aucun .env créé, et une sortie affirmant pourtant l'avoir créé.
-    if (Test-Path .env.example) {
-        Copy-Item .env.example .env
-        Write-Host "Fichier .env créé depuis .env.example. Renseignez vos clés API, puis relancez ce script."
+# ------------------------------------------------------------
+# Vérifier les prérequis avant toute destruction
+# ------------------------------------------------------------
+if (-not (Test-Path $envFile)) {
+    if (Test-Path $envExampleFile) {
+        Copy-Item $envExampleFile $envFile
+        Write-Host "Fichier .env cree depuis .env.example. Renseignez vos cles API, puis relancez ce script."
     } else {
-        Write-Error "Ni .env ni .env.example ne sont présents. Rien n'a été détruit."
+        Write-Error "Ni .env ni .env.example ne sont presentes. Rien n'a ete detruit."
     }
-    # 1 et non 0 : rien n'a été restauré. Un appelant automatisé doit pouvoir
-    # distinguer « restauration faite » de « prérequis manquant ».
     exit 1
 }
 
-# Avertissement : suppression des volumes
-Write-Host "⚠️  Attention : cette opération va supprimer les volumes Docker (données PostgreSQL, modèles Ollama, cache Redis)."
-Write-Host "Appuyez sur Ctrl+C pour annuler, ou Entrée pour continuer..."
-Read-Host
+if (-not (Test-Path $modelListFile)) {
+    Write-Error "Fichier model_list.txt introuvable. Abort."
+    exit 1
+}
 
+# ------------------------------------------------------------
+# Confirmation explicite de la suppression des volumes
+# ------------------------------------------------------------
+Write-Host "⚠️  Attention : cette operation va supprimer les volumes Docker (donnees PostgreSQL, modeles Ollama, cache Redis)."
+Write-Host "Tapez 'OUI' pour confirmer, ou toute autre chose pour annuler."
+$confirmation = Read-Host
+if ($confirmation -ne 'OUI') {
+    Write-Host "Operation annulee par l'utilisateur."
+    exit 0
+}
+
+# ------------------------------------------------------------
 # Arrêter et supprimer les conteneurs et volumes
-docker compose down -v
+# ------------------------------------------------------------
+& $dockerComposeCmd down -v
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Echec lors du docker compose down."
+    exit 1
+}
 
+# ------------------------------------------------------------
 # Démarrer la stack
-docker compose up -d
+# ------------------------------------------------------------
+& $dockerComposeCmd up -d
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Echec lors du docker compose up. La pile n'est pas demarree."
+    exit 1
+}
 
-# Attendre que le conteneur Ollama soit prêt
-Write-Host "Attente du démarrage d'Ollama..."
+# ------------------------------------------------------------
+# Attendre que le conteneur Ollama soit ready
+# ------------------------------------------------------------
+Write-Host "Attente du demarrage d'Ollama..."
 $maxAttempts = 30
 $attempt = 0
 do {
     $attempt++
     Start-Sleep -Seconds 2
-    $ollamaStatus = docker inspect --format='{{.State.Health.Status}}' ollama-server 2>$null
-} while ($ollamaStatus -ne "healthy" -and $attempt -lt $maxAttempts)
+    $ollamaStatus = docker inspect --format='{{.State.Health.Status}}' $ollamaContainer 2>$null
+} while ($ollamaStatus -ne 'healthy' -and $attempt -lt $maxAttempts)
 
-# Vérifier que le conteneur Ollama est bien en état « healthy » après la boucle d'attente.
-if ($ollamaStatus -ne "healthy") {
-    Write-Error "Ollama n'est pas en état 'healthy' après $($maxAttempts * 2) secondes. Vérifiez les logs avec 'docker logs ollama-server'."
+if ($ollamaStatus -ne 'healthy') {
+    Write-Error "Ollama n'est pas en etat 'healthy' après $($maxAttempts * 2) secondes. Verifiez les logs avec 'docker logs $ollamaContainer'."
     exit 1
 }
 
+# ------------------------------------------------------------
 # Télécharger les modèles locaux
-$models = Get-Content model_list.txt | Where-Object { $_ -notmatch '^NAME$' -and $_ -notmatch ':cloud$' -and $_ -notmatch '^\s*$' }
+# ------------------------------------------------------------
+$models = Get-Content -Path $modelListFile -Encoding UTF8 |
+          Where-Object { $_ -notmatch '^NAME$' -and $_ -notmatch ':cloud$' -and $_ -notmatch '^\s*$' }
+
 $successCount = 0
-$failCount = 0
+$failCount    = 0
+
 foreach ($model in $models) {
     $model = $model.Trim()
-    if ($model -eq "") { continue }
-    Write-Host "Téléchargement de $model..."
-    docker exec ollama-server ollama pull $model
+    if ($model -eq '') { continue }
+
+    Write-Host "Telechargement de $model..."
+    docker exec $ollamaContainer ollama pull "$model"
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ✔ Téléchargement réussi."
+        Write-Host "   ✔ Telechargement reussi."
         $successCount++
     } else {
-        Write-Warning "   ❌ Échec du téléchargement de $model."
+        Write-Warning "   ❌ Echec du telechargement de $model."
         $failCount++
     }
 }
 
+# ------------------------------------------------------------
+# Bilan du telechargement
+# ------------------------------------------------------------
 Write-Host ""
 Write-Host "============================================================"
-Write-Host " Bilan du téléchargement des modèles locaux"
-Write-Host "   Réussis : $successCount"
-Write-Host "   Échecs  : $failCount"
+Write-Host " Bilan du telechargement des modeles locaux"
+Write-Host "   Reussis : $successCount"
+Write-Host "   Echecs  : $failCount"
 Write-Host "============================================================"
 
 if ($failCount -gt 0) {
     exit 1
 }
 
-Write-Host "✅ Restauration terminée."
+# ------------------------------------------------------------
+# Etat final de la stack (observabilite)
+# ------------------------------------------------------------
+Write-Host "Etat final de la stack :"
+& $dockerComposeCmd ps
+
+Write-Host "✅ Restauration terminee."

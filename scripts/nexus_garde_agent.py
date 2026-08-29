@@ -91,6 +91,11 @@ def main() -> int:
     try:
         charge = json.load(sys.stdin)
     except Exception:
+        # JSON illisible → aucune décision, on rend 0
+        return 0
+
+    # La charge doit être un dictionnaire ; sinon on ne peut pas interpréter les champs.
+    if not isinstance(charge, dict):
         return 0
 
     if os.environ.get("NEXUS_AGENT_LIBRE") == "1":
@@ -103,6 +108,9 @@ def main() -> int:
         return 0
 
     genre = entree.get("subagent_type")
+    # Si le type n'est pas une chaîne, on ne peut pas le comparer correctement → aucune décision.
+    if not isinstance(genre, str):
+        return 0
     if genre in TYPES_INTERDITS:
         return bloquer(
             "Sous-agent refuse : subagent_type='%s' herite du modele du parent," % genre,
@@ -110,6 +118,9 @@ def main() -> int:
             "garantie fausse, plus nuisible qu'aucune garantie.")
 
     modele = entree.get("model")
+    # Le champ model doit être une chaîne pour pouvoir le valider.
+    if not isinstance(modele, str):
+        return 0
     if modele is None:
         return bloquer(
             "Sous-agent refuse : aucun modele choisi.",

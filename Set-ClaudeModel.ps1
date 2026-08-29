@@ -67,8 +67,14 @@ function Get-MasterKey {
     if ($env:LITELLM_MASTER_KEY) { return $env:LITELLM_MASTER_KEY }
     $envFile = Join-Path $PSScriptRoot ".env"
     if (Test-Path $envFile) {
-        foreach ($line in Get-Content $envFile) {
-            if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') { return $matches[1].Trim() }
+        try {
+            foreach ($line in Get-Content $envFile -ErrorAction Stop) {
+                if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') { return $matches[1].Trim() }
+            }
+        } catch {
+            # Erreur de lecture du fichier .env : on ne bloque pas le script, on retourne $null
+            Write-Warn2 "Impossible de lire le fichier .env : $($_.Exception.Message)"
+            return $null
         }
     }
     return $null
@@ -79,8 +85,13 @@ function Get-ExposedModels {
     try {
         $response = Invoke-RestMethod -Uri "$BaseUrl/v1/models" `
             -Headers @{ Authorization = "Bearer $Key" } -TimeoutSec 15
+        if ($null -eq $response.data) {
+            return @()
+        }
         return @($response.data.id)
     } catch {
+        # On conserve l'information de l'erreur sans masquer le type (auth, timeout, etc.)
+        Write-Warn2 "Erreur lors de la recuperation des modeles : $($_.Exception.Message)"
         return @()
     }
 }
@@ -95,7 +106,7 @@ function Show-Status {
     $hasToken = [bool]$env:ANTHROPIC_AUTH_TOKEN
     $hasKey   = [bool]$env:ANTHROPIC_API_KEY
 
-    if ($hasToken -or $hasKey) {
+    if ($hasToken) {
         Write-Warn2 "Mode PASSERELLE : l'abonnement claude.ai n'est PAS utilise."
         Write-Warn2 "Le trafic est facture au token sur la cle active."
         if ($hasBase) { Write-Info "ANTHROPIC_BASE_URL  = $env:ANTHROPIC_BASE_URL" }
@@ -145,9 +156,19 @@ switch ($Mode) {
     "Status" { Show-Status; break }
 
     "Subscription" {
-        Remove-Item Env:ANTHROPIC_BASE_URL   -ErrorAction SilentlyContinue
-        Remove-Item Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue
-        Remove-Item Env:ANTHROPIC_API_KEY    -ErrorAction SilentlyContinue
+        # Suppression des variables de passerelle avec avertissement
+        if ($env:ANTHROPIC_BASE_URL) {
+            Write-Warn2 "Suppression de ANTHROPIC_BASE_URL"
+            Remove-Item Env:ANTHROPIC_BASE_URL -ErrorAction SilentlyContinue
+        }
+        if ($env:ANTHROPIC_AUTH_TOKEN) {
+            Write-Warn2 "Suppression de ANTHROPIC_AUTH_TOKEN"
+            Remove-Item Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue
+        }
+        if ($env:ANTHROPIC_API_KEY) {
+            Write-Warn2 "Suppression de ANTHROPIC_API_KEY"
+            Remove-Item Env:ANTHROPIC_API_KEY -ErrorAction SilentlyContinue
+        }
         Write-Section "Mode ABONNEMENT"
         Write-Ok "Variables de passerelle retirees de cette session."
         Write-Ok "Claude Code utilise a nouveau la connexion claude.ai."
@@ -158,13 +179,11 @@ switch ($Mode) {
     { $_ -in @("Gateway", "Local") } {
         $key = Get-MasterKey
         if (-not $key) {
-            Write-Error "LITELLM_MASTER_KEY introuvable : impossible de configurer la passerelle."
-            exit 1
+            throw "LITELLM_MASTER_KEY introuvable : impossible de configurer la passerelle."
         }
         $models = Get-ExposedModels -Key $key
         if (-not $models) {
-            Write-Error "Proxy injoignable sur $BaseUrl. Demarrer : docker compose up -d"
-            exit 1
+            throw "Proxy injoignable sur $BaseUrl. Demarrer : docker compose up -d"
         }
 
         $selected = $Model
@@ -172,24 +191,13 @@ switch ($Mode) {
             Write-Warn2 "Le modele '$selected' n'est pas expose. Selection automatique."
             $selected = ""
         }
-        # Le mode Local doit tenir sa promesse. Sans ce controle,
-        # -Mode Local -Model gpt-oss-120b-cloud etait accepte, puis annonce
-        # « local, cout 0, aucune donnee ne sort » alors que toute la
-        # session partait vers ollama.com. Un mode qui ment sur son plan
-        # est pire qu'un mode absent.
+        # Controle du mode Local : on accepte uniquement les modeles locaux
         if ($selected -and $Mode -eq "Local" -and
             ($selected -like "*-cloud" -or $selected -like "claude-*")) {
-            Write-Error ("Le modele '$selected' n'est pas local. En mode Local, " +
-                         "seuls les modeles locaux sont acceptes : la promesse " +
-                         "« aucune donnee ne sort » doit rester vraie.")
-            exit 1
+            throw "Le modele '$selected' n'est pas local. En mode Local, seuls les modeles locaux sont acceptes."
         }
         if (-not $selected) {
             if ($Mode -eq "Local") {
-                # 'releve-locale' vient en tete : c'est le seul profil
-                # declare a 64K, la fenetre minimale pour que Claude Code
-                # reste utilisable. Les suivants sont a 8K/32K et ne
-                # tiennent que pour du depannage court.
                 $preference = @(
                     "releve-locale",
                     "glm-4.7-flash-local",
@@ -206,11 +214,20 @@ switch ($Mode) {
             foreach ($candidate in $preference) {
                 if ($models -contains $candidate) { $selected = $candidate; break }
             }
-            if (-not $selected) { $selected = if ($Mode -eq "Local") { "adaptive-router-local" } else { "adaptive-router" } }
+            if (-not $selected) {
+                $fallback = if ($Mode -eq "Local") { "adaptive-router-local" } else { "adaptive-router" }
+                if ($models -contains $fallback) {
+                    $selected = $fallback
+                } else {
+                    throw "Aucun modele disponible pour le mode $Mode et le fallback $fallback n'est pas expose."
+                }
+            }
         }
 
         $env:ANTHROPIC_BASE_URL   = $BaseUrl
         $env:ANTHROPIC_AUTH_TOKEN = $key
+        # Appliquer le modele retenu explicitement
+        $env:ANTHROPIC_MODEL = $selected
 
         Write-Section "Mode PASSERELLE ($Mode)"
         Write-Warn2 "L'abonnement claude.ai n'est plus utilise dans cette session."
@@ -232,3 +249,4 @@ switch ($Mode) {
 }
 
 Write-Host ""
+</#>

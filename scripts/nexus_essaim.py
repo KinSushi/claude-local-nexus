@@ -16,7 +16,7 @@ Le script :
 4. lance ``nexus_patch.py`` en sous‑processus avec ce fichier comme consigne ;
 5. vérifie la syntaxe du fichier corrigé ;
 6. restaure la version d'origine en cas d'échec ;
-7. produit un rapport d'une ligne par cible.
+7. produit un rapport d'une ligne par cible, incluant le PLAN réellement employé.
 
 Toutes les fonctions sont documentées en français avec les accents.
 Les messages affichés sur la console sont sans accents (compatibilité Windows).
@@ -156,10 +156,16 @@ def restaurer_backup(cible: Path, backup_path: Path) -> None:
 def traiter_cible(
     cible_str: str,
     args: argparse.Namespace,
-) -> Tuple[str, bool]:
+    plan: str,
+    modele_audit: str,
+) -> Tuple[str, bool, bool]:
     """
-    Exécute le cycle complet sur une cible.
-    Retourne une chaîne de rapport et un booléen indiquant le succès (True) ou l'échec (False).
+    Exécute le cycle complet sur une cible en fonction du plan indiqué.
+    Retourne :
+
+    - une chaîne de rapport,
+    - un booléen de succès,
+    - un booléen indiquant si une fuite (local -> cloud) a été détectée.
     """
     cible = Path(cible_str).resolve()
     nom_cible = cible.name
@@ -171,7 +177,7 @@ def traiter_cible(
         shutil.copy2(cible, backup_path)
     except Exception as e:
         print(f"Erreur lors de la sauvegarde de {nom_cible}: {e}")
-        return f"{nom_cible},echec,0,0,none", False
+        return f"{nom_cible},echec,0,0,none,{plan}", False, False
 
     # 2. audit
     consigne_audit = (
@@ -179,23 +185,22 @@ def traiter_cible(
         if args.consigne_audit
         else f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
     )
-    audit_res = executer_audit(cible, consigne_audit, args.modele_audit)
+    audit_res = executer_audit(cible, consigne_audit, modele_audit)
 
     # Gestion d'éventuelles erreurs d'audit
     if audit_res.get("erreur"):
         print(f"Audit error for {nom_cible}")
         restaurer_backup(cible, backup_path)
-        return f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')}", False
+        return f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
 
     audit_texte = audit_res.get("texte", "").strip()
     nb_trouvailles = len(audit_texte.splitlines()) if audit_texte else 0
 
-    # 3. tri : aucune trouvaille
+    # 3. aucune trouvaille
     if not audit_texte:
         print(f"{nom_cible} sans trouvaille")
-        # aucune modification, on garde la sauvegarde pour le futur (ou on la supprime)
         backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')}", True
+        return f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", True, False
 
     # 4. création du fichier de consigne pour la correction
     consigne_path = creer_consigne_temp(cible, audit_texte)
@@ -213,7 +218,6 @@ def traiter_cible(
         cmd.extend(["--modele", args.modele_correction])
     if args.simuler:
         print(f"Simulation: {' '.join(cmd)}")
-        # on ne lance pas la correction réelle
         correction_ok = True
     else:
         res = subprocess.run(
@@ -231,18 +235,27 @@ def traiter_cible(
         print(f"Correction failed for {nom_cible}")
         restaurer_backup(cible, backup_path)
         backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')}", False
+        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
 
     # 6. vérification syntaxe
     if not verifier_syntaxe(cible):
         print(f"Verification failed for {nom_cible}")
         restaurer_backup(cible, backup_path)
         backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')}", False
+        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
 
     # 7. succès : on supprime le backup
     backup_path.unlink(missing_ok=True)
-    return f"{nom_cible},ok,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')}", True
+
+    # Détection d'une fuite : cible prévue locale mais audit exécuté avec le modèle cloud
+    fuite = False
+    modele_observe = audit_res.get("modele", "")
+    if plan == "local" and modele_observe == args.modele_audit:
+        # le modèle cloud a été utilisé alors que le plan local était requis
+        fuite = True
+        print(f"Fuite detectee: {nom_cible} devait etre traite en local mais a utilise le modele cloud")
+
+    return f"{nom_cible},ok,{nb_trouvailles},{audit_res.get('tokens',0)},{modele_observe},{plan}", True, fuite
 
 # --------------------------------------------------------------------------- #
 # Fonction principale
@@ -265,7 +278,12 @@ def analyser_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--modele-audit",
         default="adaptive-router-cloud",
-        help="Alias du modèle à utiliser pour l'audit.",
+        help="Alias du modèle à utiliser pour l'audit (plan cloud).",
+    )
+    parser.add_argument(
+        "--modele-audit-local",
+        default="codestral-22b-local",
+        help="Alias du modèle à utiliser pour l'audit (plan local).",
     )
     parser.add_argument(
         "--modele-correction",
@@ -276,7 +294,19 @@ def analyser_arguments() -> argparse.Namespace:
         "--parallele",
         type=int,
         default=3,
-        help="Nombre maximal de cibles traitées en parallèle.",
+        help="Nombre maximal de cibles traitées en parallèle (plan cloud).",
+    )
+    parser.add_argument(
+        "--parallele-local",
+        type=int,
+        default=2,
+        help="Nombre maximal de cibles traitées en parallèle (plan local).",
+    )
+    parser.add_argument(
+        "--plans",
+        choices=["cloud", "local", "deux"],
+        default="deux",
+        help="Plan à employer : cloud, local ou deux (par défaut deux).",
     )
     parser.add_argument(
         "--simuler",
@@ -285,28 +315,89 @@ def analyser_arguments() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+def repartir_cibles(cibles: List[str]) -> Tuple[List[str], List[str]]:
+    """
+    Sépare les cibles en deux listes :
+
+    - locales : le nom contient un indice de secret ou de configuration sensible,
+    - cloud   : le reste.
+
+    Les mots-clés sensibles sont : preserve, secret, env, cle, key, auth.
+    """
+    mots_cles = ["preserve", "secret", "env", "cle", "key", "auth"]
+    locales = []
+    cloud = []
+    for c in cibles:
+        nom = Path(c).name.lower()
+        if any(mot in nom for mot in mots_cles):
+            locales.append(c)
+        else:
+            cloud.append(c)
+    return cloud, locales
+
 def main() -> int:
     args = analyser_arguments()
 
     rapports: List[str] = []
     echec = False
+    fuite_detectee = False
 
-    with ThreadPoolExecutor(max_workers=args.parallele) as executor:
-        futures = {
-            executor.submit(traiter_cible, cible, args): cible for cible in args.cibles
-        }
-        for future in as_completed(futures):
-            rapport, ok = future.result()
-            rapports.append(rapport)
-            if not ok:
-                echec = True
+    # Détermination des listes de cibles selon le plan choisi
+    if args.plans == "cloud":
+        cloud_cibles = args.cibles
+        local_cibles = []
+    elif args.plans == "local":
+        cloud_cibles = []
+        local_cibles = args.cibles
+    else:  # deux
+        cloud_cibles, local_cibles = repartir_cibles(args.cibles)
+
+    # Traitement du plan cloud
+    if cloud_cibles:
+        with ThreadPoolExecutor(max_workers=args.parallele) as executor:
+            futures = {
+                executor.submit(
+                    traiter_cible,
+                    cible,
+                    args,
+                    "cloud",
+                    args.modele_audit,
+                ): cible for cible in cloud_cibles
+            }
+            for future in as_completed(futures):
+                rapport, ok, fuite = future.result()
+                rapports.append(rapport)
+                if not ok:
+                    echec = True
+                if fuite:
+                    fuite_detectee = True
+
+    # Traitement du plan local
+    if local_cibles:
+        with ThreadPoolExecutor(max_workers=args.parallele_local) as executor:
+            futures = {
+                executor.submit(
+                    traiter_cible,
+                    cible,
+                    args,
+                    "local",
+                    args.modele_audit_local,
+                ): cible for cible in local_cibles
+            }
+            for future in as_completed(futures):
+                rapport, ok, fuite = future.result()
+                rapports.append(rapport)
+                if not ok:
+                    echec = True
+                if fuite:
+                    fuite_detectee = True
 
     # Affichage du rapport
     for ligne in rapports:
         print(ligne)
 
-    # Code de sortie
-    if echec or not rapports:
+    # Code de sortie : 1 si échec général ou fuite détectée
+    if echec or fuite_detectee or not rapports:
         return 1
     return 0
 

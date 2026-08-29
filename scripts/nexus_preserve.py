@@ -73,7 +73,7 @@ def run(args, timeout=120):
         print(f"  [!] commande {' '.join(args)} a retourne {result.returncode}", file=sys.stderr)
         return None
     except (subprocess.SubprocessError, OSError) as exc:
-        print(f"  [!] erreur lors de l'exécution de {' '.join(args)} : {exc}", file=sys.stderr)
+        print(f"  [!] erreur lors de l'execution de {' '.join(args)} : {exc}", file=sys.stderr)
         return None
 
 
@@ -536,7 +536,7 @@ def main() -> int:
                          LiteLLM      la passerelle, sa config
 
     sort de Docker       Ollama       et ses %0.0f Go de poids, tous
-                                      retéléchargeables depuis model_list.txt
+                                      retelechargeables depuis model_list.txt
 """
         % (next((i["taille"] for i in items if "ollama" in i["artefact"]), 0))
     )

@@ -19,6 +19,7 @@ import argparse
 import ast
 import json
 import re
+import tokenize
 
 # ---------------------------------------------------------------------------
 
@@ -77,17 +78,23 @@ def get_modified_files_uncommitted():
 
 def check_python_syntax(file_path):
     """Vérifie que le fichier Python se parse sans erreur."""
-    with open(file_path, "r", encoding="utf-8") as f:
+    # Détection de l’encodage déclaré dans le fichier pour éviter les
+    # erreurs lorsqu’il n’est pas UTF‑8.
+    with open(file_path, "rb") as f:
+        encoding, _ = tokenize.detect_encoding(f.readline)
+    with open(file_path, "r", encoding=encoding, errors="replace") as f:
         source = f.read()
     ast.parse(source, filename=file_path)
 
 def check_powershell_syntax(file_path):
     """Utilise le parseur PowerShell pour vérifier la syntaxe."""
+    # Échapper les apostrophes afin d’éviter l’injection de commande.
+    safe_path = file_path.replace("'", "''")
     cmd = [
         "pwsh",
         "-NoProfile",
         "-Command",
-        f"$e=$null; $null=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '{file_path}'),[ref]$null,[ref]$e); $e.Count",
+        f"$e=$null; $null=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '{safe_path}'),[ref]$null,[ref]$e); $e.Count",
     ]
     result = subprocess.run(
         cmd,
@@ -159,7 +166,9 @@ def find_callers(func_names):
         # git grep recherche les appels, exclut les définitions
         try:
             out = run_git(["grep", "-n", f"{fn}\\s*\\(", "--", "."])
-        except RuntimeError:
+        except RuntimeError as e:
+            # Loguer l’erreur pour ne pas la masquer silencieusement.
+            print(f"Warning: git grep failed for {fn} : {e}", file=sys.stderr)
             continue
         for line in out.splitlines():
             # format: path:line:content
@@ -337,8 +346,6 @@ def main():
         else:
             print("Aucune regression detectee.")
             return 0
-
-    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -51,6 +51,7 @@ import argparse
 import concurrent.futures
 import io
 import json
+import logging
 import os
 import re
 import sys
@@ -58,6 +59,9 @@ import time
 import urllib.error
 import urllib.request
 from typing import List, Dict, Any
+
+# Configuration du logger minimal pour les diagnostics.
+logging.basicConfig(level=logging.ERROR, format="%(levelname)s: %(message)s")
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -160,6 +164,9 @@ def sous_racine(chemin: str, racine: str) -> bool:
     C:\\local-llm-docker-prive). En cas de lecteurs differents sous Windows,
     `commonpath` lève `ValueError` qui est interprete comme un refus.
     """
+    # Vérification d'existence avant la résolution du chemin réel.
+    if not os.path.exists(chemin):
+        return False
     try:
         return os.path.commonpath([os.path.realpath(chemin), os.path.realpath(racine)]) == \
             os.path.realpath(racine)
@@ -256,7 +263,8 @@ def plans_par_alias(cle: str) -> Dict[str, str]:
     try:
         with urllib.request.urlopen(requete, timeout=30) as reponse:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
-    except Exception:
+    except Exception as exc:
+        logging.error("Erreur lors de la récupération des plans d'alias : %s", exc)
         return {}
     plans: Dict[str, str] = {}
     for entree in donnees:
@@ -305,13 +313,16 @@ def _decouper_en_fenetres(corpus: str) -> List[str]:
         if coupe == -1 or coupe <= start:
             # pas de \n ou trop proche du debut, on coupe a la limite
             coupe = fin
+        # Garantir la progression pour éviter boucle infinie
+        if coupe <= start:
+            coupe = min(start + 1, len(corpus))
         fenetres.append(corpus[start:coupe])
         start = coupe
     return fenetres
 
 
 def carte_reduction(corpus: str, consigne: str, modele: str,
-                   cle: str, plafond: int) -> Dict[str, Any]:
+                   cle: str, plafond: int, temperature: float | None = None) -> Dict[str, Any]:
     """
     MAP-REDUCE du corpus trop volumineux.
 
@@ -330,46 +341,55 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     """
     fenetres = _decouper_en_fenetres(corpus)
     n = len(fenetres)
-    map_resultats = []
+
+    # Utilisation d'un ThreadPoolExecutor pour paralléliser les appels MAP.
+    map_textes: List[str] = []
     total_tokens = 0
     total_duree = 0.0
+    last_map_result: Dict[str, Any] = {}
 
-    for i, fragment in enumerate(fenetres, start=1):
-        # on ajoute l'indication de fragment dans le contenu utilisateur
+    def _appel_map(i: int, fragment: str) -> Dict[str, Any]:
         contenu_user = f"{consigne}\n\n[Fragment {i}/{n}]\n\n{fragment}"
         messages = [
             {"role": "system", "content": consigne},
             {"role": "user", "content": contenu_user}
         ]
-        res = appeler(modele, messages, plafond, cle, None)
-        map_resultats.append(res)
-        total_tokens += res.get("tokens", 0)
-        total_duree += res.get("duree", 0.0)
+        return appeler(modele, messages, plafond, cle, temperature)
 
-    # Concatenation des textes obtenus
-    texte_concat = "\n\n".join(r.get("texte", "") for r in map_resultats)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, n)) as executor:
+        futures = {
+            executor.submit(_appel_map, i, fragment): i
+            for i, fragment in enumerate(fenetres, start=1)
+        }
+        for fut in concurrent.futures.as_completed(futures):
+            res = fut.result()
+            map_textes.append(res.get("texte", ""))
+            total_tokens += res.get("tokens", 0)
+            total_duree += res.get("duree", 0.0)
+            last_map_result = res  # garde le dernier résultat pour les métadonnées
 
-    # Si la concatenation tient dans une fenetre, on fait une reduction.
+    texte_concat = "\n\n".join(map_textes)
+
     if len(texte_concat) <= FENETRE_CARACTERES:
         # Reduction : on demande au modele de synthétiser le tout.
         messages = [
             {"role": "system", "content": consigne},
             {"role": "user", "content": texte_concat}
         ]
-        reduction = appeler(modele, messages, plafond, cle, None)
+        reduction = appeler(modele, messages, plafond, cle, temperature)
         total_tokens += reduction.get("tokens", 0)
         total_duree += reduction.get("duree", 0.0)
         final_texte = reduction.get("texte", "")
         converge = True
         paliers = 1
-        # on conserve les metadonnees de la reduction pour le rendu
         meta = reduction
     else:
         # Pas de reduction possible : on renvoie la concatenation brute.
         final_texte = texte_concat
         converge = False
         paliers = 0
-        meta = {}
+        # Conserver les métadonnées du dernier appel MAP.
+        meta = last_map_result
 
     resultat = {
         "texte": final_texte,
@@ -415,7 +435,7 @@ def executer(tache: dict, cle: str) -> dict:
 
     # Si le corpus depasse la taille d'une fenetre, on utilise le MAP-REDUCE.
     if corpus and len(corpus) > FENETRE_CARACTERES:
-        resultat = carte_reduction(corpus, consigne, modele, cle, plafond)
+        resultat = carte_reduction(corpus, consigne, modele, cle, plafond, temperature)
         # on ajoute les champs communs attendus par le reste du code
         resultat.update({
             "nom": nom,
@@ -427,14 +447,19 @@ def executer(tache: dict, cle: str) -> dict:
 
     # Sinon appel direct (chemin existant)
     essais, echecs = [], []
-    for candidat in [modele] + REPLIS_GRATUITS:
+    # Déduplication des candidats tout en conservant l'ordre.
+    candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+    for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
         essais.append(candidat)
         try:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
         except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", "replace")[:300]
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:300]
+            except Exception:
+                detail = "<corps d'erreur illisible>"
             if temperature is not None and "temperature" in detail.lower():
                 try:
                     resultat = appeler(candidat, messages, plafond, cle, None)
@@ -593,6 +618,10 @@ def main() -> int:
         if not isinstance(taches, list):
             print("Le lot doit etre une liste d'objets.")
             return 1
+        # Si la température est fournie en ligne de commande, elle surcharge le JSON.
+        if args.temperature is not None:
+            for t in taches:
+                t["temperature"] = args.temperature
     elif args.tache:
         taches = [{"nom": args.modele, "modele": args.modele, "tache": args.tache,
                    "fichiers": args.fichiers, "systeme": args.systeme,

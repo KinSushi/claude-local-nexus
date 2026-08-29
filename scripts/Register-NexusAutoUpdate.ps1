@@ -53,8 +53,14 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Updater  = Join-Path $PSScriptRoot "Update-NexusModels.ps1"
 
+# Vérifier l'existence du script updater
 if (-not (Test-Path $Updater)) {
     Write-Error "Introuvable : $Updater"
+    exit 1
+}
+# Vérifier que le fichier a bien l'extension .ps1
+if ((Get-Item $Updater).Extension -ne '.ps1') {
+    Write-Error "Le fichier updater doit être un script PowerShell (.ps1) : $Updater"
     exit 1
 }
 
@@ -82,12 +88,16 @@ if (-not $shell) {
     exit 1
 }
 
-if ($Time -notmatch '^\d{2}:\d{2}$') {
+# Validation stricte de l'heure (format HH:mm et valeurs valides)
+[TimeSpan]$nullSpan = $null
+if (-not [TimeSpan]::TryParseExact($Time, 'hh\:mm', $null, [ref]$nullSpan)) {
     Write-Error "Heure invalide : '$Time' (format attendu HH:mm)."
     exit 1
 }
 
-$arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -SyncLocal -Validate -Restart' -f $Updater
+# Échapper correctement le chemin du script updater
+$escapedUpdater = [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedString($Updater)
+$arguments = "-NoProfile -ExecutionPolicy Bypass -File '$escapedUpdater' -SyncLocal -Validate -Restart"
 
 $action = New-ScheduledTaskAction -Execute $shell -Argument $arguments -WorkingDirectory $RepoRoot
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
@@ -98,6 +108,12 @@ $settings = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 3) `
     -MultipleInstances IgnoreNew
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+
+# Créer le répertoire de logs s'il n'existe pas
+$logDir = Join-Path $RepoRoot 'logs'
+if (-not (Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir | Out-Null
+}
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
@@ -113,7 +129,7 @@ Write-Host "Tache planifiee installee." -ForegroundColor Green
 Write-Host "  Nom       : $TaskName"
 Write-Host "  Frequence : tous les jours a $Time"
 Write-Host "  Commande  : $shell $arguments"
-Write-Host "  Journaux  : $(Join-Path $RepoRoot 'logs')"
+Write-Host "  Journaux  : $logDir"
 Write-Host ""
 Write-Host "Retrait : .\scripts\Register-NexusAutoUpdate.ps1 -Unregister"
 Write-Host ""
