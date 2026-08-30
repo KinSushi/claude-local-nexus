@@ -167,7 +167,7 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
     # Construction de la ligne de commande.
     # --------------------------------------------------------------
     # COMMENTAIRE : seules les options reconnues par nexus_essaim.py
-    # sont transmises.  L'option --essaims appartient à la ruche et
+    # sont transmises.  L'option --essaims appartient a la ruche et
     # provoquerait "unrecognized arguments" dans l'essaim, ce qui
     # ferait échouer tout le lot.  De même, l'option correcte pour le
     # plan est --plans (pluriel).  En filtrant ainsi, on évite que
@@ -180,6 +180,18 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
         "--plans", plan
     ]
 
+    # Delai maximal avant de considerer l'essaim comme expire. nexus_essaim.py
+    # borne deja chacune de ses etapes internes (audit, correction) a 900 s
+    # via NEXUS_AGENT_TIMEOUT / NEXUS_TIMEOUT, mais rien ici ne bornait le
+    # sous-processus dans son ensemble : sans ce delai, un lot dont une seule
+    # cible restait bloquee (reseau, modele qui ne repond plus) suspendait la
+    # ruche entiere indefiniment, sans jamais produire ni rapport ni code de
+    # sortie. Une variable d'environnement permet de l'elargir pour un gros
+    # lot (plusieurs vagues internes si taille-lot depasse le --parallele de
+    # l'essaim) sans toucher au code.
+    import subprocess
+    timeout_sec = int(os.getenv("NEXUS_RUCHE_TIMEOUT", "1800"))
+
     try:
         proc = run(
             cmd,
@@ -188,10 +200,23 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
             encoding="utf-8",
             errors="replace",
             check=False,
+            timeout=timeout_sec,
         )
         code = proc.returncode
         sortie_err = proc.stderr.strip()
         sortie_out = proc.stdout.strip()
+    except subprocess.TimeoutExpired:
+        # Le sous-processus est tue par subprocess.run : on ne peut plus
+        # affirmer quoi que ce soit sur l'etat individuel de chaque cible
+        # (nexus_essaim.py restaure lui-meme sa sauvegarde avant d'atteindre
+        # ses propres delais internes, mais un delai externe plus court peut
+        # interrompre avant cette restauration). On les marque donc toutes en
+        # echec plutot que de deviner un succes.
+        msg = f"Essaim expire apres {timeout_sec}s"
+        print(msg)
+        for p in lot:
+            resultats[str(p)] = {"verdict": "echec", "cause": msg}
+        return resultats
     except FileNotFoundError as e:
         code = 1
         sortie_err = str(e)
@@ -213,7 +238,7 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
                     resultats[cible_str] = {"verdict": verdict, "cause": cause}
                 return resultats
         except Exception:
-            # Le format n’est pas celui attendu ; on ignore et on utilise le fallback.
+            # Le format n’est pas celui attendu ; on ignore et on utilise le fallback.
             pass
 
     statut = "ok" if code == 0 else "echec"
