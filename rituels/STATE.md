@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 14:19 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 14:29 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,15 +9,15 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `5e9c099` |
-| Arbre de travail | propre |
+| Commit | `a3074cc` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
 litellm-db	db	Up 24 hours (healthy)
-litellm-proxy	litellm	Up 59 minutes
+litellm-proxy	litellm	Up About an hour
 litellm-redis	redis	Up 24 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 24 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 349.2 Go |
+| Disque libre | 349.0 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -72,8 +72,8 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-31 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       13
+33 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       14
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     3

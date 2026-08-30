@@ -1245,7 +1245,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1272,6 +1272,8 @@ def main() -> int:
         test_vitrine()
     if args.only in (None, "isolation"):
         test_isolation()
+    if args.only in (None, "lecture"):
+        test_garde_lecture()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1669,6 +1671,122 @@ def test_isolation() -> None:
     check("le controle voit une ecriture illegitime injectee",
           len(vues) == len(reelles) + 1,
           "%d -> %d apres injection" % (len(reelles), len(vues)))
+
+
+def test_garde_lecture() -> None:
+    """
+    Le garde « lire avant d'ecrire » refuse-t-il encore ?
+
+    Ecrit par le banc gratuit (gpt-oss-120b-cloud) apres un premier jet
+    REJETE : il avait invente le format d'entree -- « operation »/« target »
+    au lieu de tool_name/tool_input.file_path -- si bien que le script
+    n'aurait reconnu aucun outil, aurait tout autorise, et six cas sur sept
+    auraient passe PAR ACCIDENT. Son « finally » faisait en outre un
+    rmtree du repertoire de memoire, detruisant les sessions des autres.
+
+    Deux corrections arbitrees sur le second jet :
+
+    * le cas du session_id piege employait « Write », qui est REFUSE et
+      n'ecrit donc aucune memoire : il ne testait rien. C'est « Read » qui
+      declenche l'ecriture, donc c'est « Read » qu'il faut piquer ;
+    * le nettoyage visait le chemin non evade, laissant derriere lui le
+      fichier reellement cree.
+    """
+    import uuid
+
+    print("\n--- LECTURE AVANT ECRITURE : le garde refuse-t-il ? ---")
+
+    script = os.path.join(ROOT, "scripts", "nexus_garde_lecture.py")
+    if not os.path.isfile(script):
+        skip("garde de lecture", "nexus_garde_lecture.py introuvable")
+        return
+    readme = os.path.join(ROOT, "README.md")
+    if not os.path.isfile(readme):
+        skip("garde de lecture", "README.md absent")
+        return
+
+    memoires = os.path.join(ROOT, ".nexus", "lectures")
+    crees = []
+
+    def appeler(session, outil, chemin):
+        crees.append(os.path.join(memoires, "%s.json" % session))
+        charge = {"session_id": session, "tool_name": outil,
+                  "tool_input": {"file_path": chemin}}
+        return subprocess.run([sys.executable, script],
+                              input=json.dumps(charge), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace",
+                              timeout=60, cwd=ROOT)
+
+    def brut(entree):
+        return subprocess.run([sys.executable, script], input=entree,
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace",
+                              timeout=60, cwd=ROOT)
+
+    try:
+        # 1. Le cas qui justifie tout le garde : ecrire sur ce qu'on n'a pas vu.
+        s1 = "epreuve-%s" % uuid.uuid4().hex[:12]
+        r = appeler(s1, "Write", readme)
+        check("Write sur fichier existant jamais lu => refus",
+              '"permissionDecision": "deny"' in (r.stdout or ""),
+              (r.stdout or "").strip()[:70] or "aucune sortie")
+
+        # 2. Et le cas symetrique : avoir lu doit suffire a passer. Un garde
+        # qui refuse toujours serait desactive le jour meme.
+        s2 = "epreuve-%s" % uuid.uuid4().hex[:12]
+        appeler(s2, "Read", readme)
+        r = appeler(s2, "Write", readme)
+        check("Read puis Write sur le meme fichier => autorise",
+              r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
+
+        # 3. Sous Windows, deux casses designent UN fichier. Les traiter comme
+        # deux refuserait quelqu'un qui a pourtant lu.
+        s3 = "epreuve-%s" % uuid.uuid4().hex[:12]
+        appeler(s3, "Read", readme)
+        autre = os.path.join(os.path.dirname(readme),
+                             os.path.basename(readme).swapcase())
+        r = appeler(s3, "Write", autre)
+        check("casse differente du meme chemin => autorise",
+              r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
+
+        # 4. Creer un fichier neuf n'ecrase rien : il n'y a rien a avoir lu.
+        s4 = "epreuve-%s" % uuid.uuid4().hex[:12]
+        r = appeler(s4, "Write", os.path.join(ROOT, "fichier_inexistant.txt"))
+        check("Write sur fichier inexistant => autorise",
+              r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
+
+        # 5 et 6. Une anomalie AUTORISE en silence : un garde qui plante
+        # empeche de travailler, ce qui est pire que le defaut surveille.
+        r = brut("{ ceci n'est pas du json")
+        check("JSON invalide => silence et code 0",
+              r.stdout == "" and r.returncode == 0,
+              "rc=%s" % r.returncode)
+        r = brut("")
+        check("stdin vide => silence et code 0",
+              r.stdout == "" and r.returncode == 0,
+              "rc=%s" % r.returncode)
+
+        # 7. Un identifiant de session sert de NOM DE FICHIER. Non filtre, il
+        # ecrirait ou il veut. On emploie « Read » et non « Write » : seul
+        # Read ecrit la memoire, donc seul Read peut sortir du repertoire.
+        evade = os.path.normpath(os.path.join(memoires, "..", "..", "evade.json"))
+        avant = os.path.isfile(evade)
+        appeler("../../evade", "Read", readme)
+        crees.append(os.path.join(memoires, "evade.json"))
+        check("session_id piege => rien hors de .nexus/lectures",
+              os.path.isfile(evade) == avant,
+              "hors perimetre : %s" % evade)
+
+    finally:
+        # UNIQUEMENT ce que ce test a pu creer, fichier par fichier. Jamais un
+        # repertoire : le premier jet supprimait .nexus/lectures en entier,
+        # donc la memoire de toutes les autres sessions.
+        for fichier in crees:
+            try:
+                if os.path.isfile(fichier):
+                    os.remove(fichier)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":
