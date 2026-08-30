@@ -389,7 +389,7 @@ double ni ne concurrence ce qui existe ici (contrat §0).
 | Outil | Ce qu'il fait, d'après lui-même | Pourquoi il nous intéresse |
 |---|---|---|
 | `import_smoke.py` (114 l.) | importe chaque script de `scripts/` et échoue si l'un ne s'importe pas | **le plus rentable** : nous avons 43 scripts, et un import cassé ne se voit qu'à l'exécution. À rapprocher du `NameError` de `nexus_ruche.py`, resté invisible jusqu'à la suite complète |
-| `avec_verrou.py` (217 l.) | lance une commande **sous le verrou machine inter-projets** | trois dépôts tournent sur cette machine ; `NexusTraque` (PT10M) et `NexusVitrine` (PT6H) ignorent ce que font les voisins. La non-concurrence est déjà notre règle — ceci l'étendrait hors du dépôt |
+| `avec_verrou.py` / `verrou_machine.py` | verrou machine inter-projets | **repris** → `nexus_verrou_machine.py`, copie conforme octet pour octet, nom du mutex gardé par `controle_verrou_machine` (éprouvé 5/5), et **pris par le banc** (éprouvé 3/3) |
 | `garde_cardinal.py` (279 l.) | « un témoin ne doit pas sceller une croyance par un COMPTE » | nos épreuves affirment des comptes (`8/8`, `10/10`, `26 marqueurs`). Un compte survit à la réfutation de ce qu'il compte |
 | `compile_tout.py` (213 l.) | compile l'arbre en une commande, et **distingue COMPILER d'IMPORTER** | complète `nexus_garde_edition.py`, qui ne voit qu'un fichier à la fois |
 | `verdict_gate.py` (293 l.) | rend un verdict sur un journal, et **refuse de conclure quand il ne peut pas** | doctrine que nous appliquons déjà (`IGNORE` ≠ `OK`), mécanisée là-bas |
@@ -399,6 +399,13 @@ double ni ne concurrence ce qui existe ici (contrat §0).
 | `token_meter.py` (108 l.) | mesure la consommation de jetons par agent | recoupe `nexus_savings.py` : à comparer avant de reprendre |
 | `declarer_les_gardes.py` (300 l.) | déclare les gardes dans `.claude/settings.json` | nos hooks sont écrits à la main ; ceci les dériverait |
 | `garde_tracabilite.py`, `garde_reprise_coherente.py` | traçabilité, cohérence des points de reprise | à évaluer après les précédents |
+
+> **Une fausse accusation, écartée par la mesure.** Après avoir câblé le
+> verrou, le banc rendait des échecs en série et semblait ne plus filtrer :
+> j'ai cru à ma régression. La version restaurée depuis `HEAD`, **sans** mes
+> changements, se comportait à l'identique — ce n'était donc pas moi.
+> Restaurer avant d'accuser vaut mieux que corriger au juge, et coûte une
+> commande.
 
 > **Deux refusés, et c'est un résultat.** `garde_perimetre_agent.py`
 > empiéterait sur `nexus_garde_agent.py` — même hook `PreToolUse: Agent`,
@@ -423,6 +430,8 @@ enfreinte. Un paragraphe ne ferme rien.
 | `nexus_test_outillage.py` orphelin | seul script que personne n'appelle | le câbler ou le retirer |
 | 40 sauvegardes résiduelles dans `scripts/.nexus/` | ce sont des **données** | la suppression appartient à l'opérateur, pas à l'agent |
 | `import subprocess` en portée locale (`nexus_ruche.py:205`) | même famille qu'un défaut déjà payé | à corriger seul, sans le mêler à un autre sujet |
+| `--modele` ne filtre pas la liste du banc, alors que `--plan` le fait | constaté le 30/08 : `--modele llama3.2-3b-local` mesure malgré tout tous les modèles | corriger le filtre, seul, sans le mêler au verrou |
+| Les modèles **cloud** échouent en série (« Remote end closed connection », 2,0 s) | `--plan local` rend zéro échec : le défaut est côté cloud, pas côté banc | diagnostiquer quota ou réseau, machine au repos |
 | 9 appels Anthropic sur 9 échouent | **le repli masque la cause** : la lire exige de le désactiver temporairement | à faire hors de toute exécution de suite |
 | `Start-Claude.ps1` jamais joué de bout en bout | le lancer démarre une session Claude | ne se teste pas à la légère |
 | Débit mesuré sur 7 modèles sur 71 | le banc n'a jamais tourné en entier | `nexus_bench.py --debit`, machine au repos |

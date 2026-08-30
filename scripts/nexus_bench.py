@@ -452,11 +452,72 @@ def main():
     parser.add_argument("--debit", action="store_true",
                         help="Mesurer les jetons par seconde sur une tache "
                              "reelle, au lieu du delai de demarrage.")
+    parser.add_argument("--sans-verrou", action="store_true",
+                        help="mesurer sans prendre le verrou machine "
+                             "inter-projets (deliberement sous charge)")
+    parser.add_argument("--attente-verrou", type=float, default=0,
+                        help="secondes d'attente du verrou avant d'abandonner")
     args = parser.parse_args()
 
     # determiner la racine (parent du repertoire du script)
     script_path = Path(__file__).resolve()
     racine = script_path.parent.parent
+
+    # LE VERROU MACHINE, pris ICI et pas ailleurs.
+    #
+    # Trois depots travaillent sur cette machine et se partagent 66 Go de RAM,
+    # un moteur Ollama et un disque. Une latence mesuree pendant que le voisin
+    # lance pytest ne mesure pas la latence du modele : elle mesure la
+    # contention. Le defaut a deja ete paye ici, par une mesure prise pendant
+    # un telechargement de 28 Go, et il est pernicieux parce que le chiffre
+    # obtenu a l'air parfaitement normal.
+    #
+    # ON N'ATTEND PAS INDEFINIMENT. Attendre sans fin transformerait une
+    # contention en blocage muet ; passer outre annulerait le verrou tout en
+    # donnant l'impression qu'il protege. On echoue donc, en le disant, et
+    # l'appelant decide : reessayer plus tard, ou constater que l'autre projet
+    # travaille.
+    #
+    # --sans-verrou existe pour le cas ou l'on mesure DELIBEREMENT sous
+    # charge. Le contourner doit rester possible et explicite : un verrou
+    # qu'on ne peut pas lever a la main finit contourne autrement.
+    verrou_pris = None
+    if not getattr(args, "sans_verrou", False):
+        try:
+            sys.path.insert(0, str(script_path.parent))
+            import nexus_verrou_machine
+            verrou_pris = nexus_verrou_machine.verrou(
+                "bench", projet="claude-local-nexus",
+                attente_s=float(getattr(args, "attente_verrou", 0) or 0),
+                bavard=False)
+            tenu = verrou_pris.__enter__()
+            # LE REFUS NE LEVE PAS : il se lit sur « obtenu ». Ecrit d'abord
+            # avec un try/except attendant une exception, ce cablage laissait
+            # donc TOUJOURS passer -- le banc mesurait sous contention en
+            # croyant tenir le verrou. Trouve par l'epreuve, jamais par la
+            # relecture : depuis un processus separe, obtenu vaut False et
+            # rien n'est leve.
+            #
+            # A noter, et c'est ce qui rend le piege tenace : un mutex nomme
+            # est REENTRANT dans le meme processus. Un essai fait dans un
+            # seul interpreteur rend obtenu=True deux fois de suite et donne
+            # a croire que tout va bien.
+            if not getattr(tenu, "obtenu", False):
+                verrou_pris.__exit__(None, None, None)
+                print("[!] verrou machine refuse : un autre projet travaille.")
+                print("    Reessayer plus tard, ou --sans-verrou pour mesurer")
+                print("    deliberement sous charge.")
+                return 75  # EX_TEMPFAIL : contention, pas erreur
+        except ImportError:
+            # Copie absente : on mesure quand meme, mais on le DIT. « Pas de
+            # verrou » et « verrou refuse » sont deux etats distincts.
+            print("[i] verrou machine indisponible : mesure sans exclusion")
+            verrou_pris = None
+        except Exception as exc:
+            print("[!] verrou machine refuse : %s" % str(exc).splitlines()[0][:90])
+            print("    Un autre projet travaille. Reessayer, ou --sans-verrou")
+            print("    pour mesurer deliberement sous charge.")
+            return 75  # EX_TEMPFAIL : contention, pas erreur
 
     # charger .env
     env = charger_env(racine)
@@ -602,4 +663,8 @@ def main():
     sys.exit(0)
 
 if __name__ == "__main__":
-    main()
+    # sys.exit(main()) et non main() : le code rendu par main etait PERDU.
+    # Le refus de verrou affichait « un autre projet travaille » et rendait
+    # pourtant 0 -- le message disait refuse, le code disait succes, et un
+    # appelant automatise aurait cru la mesure faite. Trouve par l epreuve.
+    sys.exit(main() or 0)
