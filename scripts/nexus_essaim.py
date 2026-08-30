@@ -79,7 +79,8 @@ def _hash_path(cible: Path) -> str:
 # Interaction avec nexus_agent
 # --------------------------------------------------------------------------- #
 
-def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
+def executer_audit(cible: Path, consigne: str, modele: str,
+                   local_seul: bool = False) -> Dict:
     """
     Lance l'audit sur la cible en appelant ``nexus_agent.executer``.
     Retourne le dictionnaire brut renvoyé par l'agent.
@@ -97,6 +98,14 @@ def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
         payload = {
             "nom": f"audit-{cible.name}",
             "modele": modele,
+            # Sans cette clef, un modele local qui echoue fait basculer
+            # nexus_agent sur ses replis gratuits, dont le PREMIER est un
+            # modele cloud : une cible classee sensible partait alors hors
+            # de la machine. Mesure du 30 aout 2026 : nexus_preserve.py,
+            # classee locale, servie par gpt-oss-120b-cloud. Un repli qui
+            # traverse la frontiere de confidentialite est pire qu'un
+            # echec -- l'echec se voit, la fuite non.
+            "local_seul": local_seul,
             "tache": consigne,
             "fichiers": [str(cible)],
             "max_tokens": plafond,
@@ -246,7 +255,8 @@ def traiter_cible(
         else:
             consigne_audit = f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
 
-        audit_res = executer_audit(cible, consigne_audit, modele_audit)
+        audit_res = executer_audit(cible, consigne_audit, modele_audit,
+                                   local_seul=(plan == "local"))
 
         # Validation basique du résultat de l'agent
         if not isinstance(audit_res, dict):

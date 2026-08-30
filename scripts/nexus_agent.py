@@ -109,6 +109,16 @@ DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 # posee : trois echecs consecutifs du banc sur taches a sortie stricte
 # -- une reponse vide apres 19 000 jetons, une reponse tronquee dont le code
 # etait reecrit de memoire, et une boucle de repetition de 589 secondes.
+# Instruction systeme des appels MAP. Le modele doit savoir qu'il ne voit
+# qu'un fragment : autrement il conclut sur l'ensemble a partir d'un morceau.
+MAP_SYSTEME = (
+    "Tu analyses UN fragment parmi d'autres d'un ensemble plus vaste. "
+    "Extrais fidelement ce qui repond a la consigne, sans rien inventer. "
+    "Ne conclus pas sur l'ensemble : d'autres fragments sont traites "
+    "separement. Si le fragment ne contient rien d'utile, reponds "
+    "exactement : RIEN."
+)
+
 TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 
 # Ordre de repli entre plans GRATUITS uniquement. Aucun alias Claude n'y
@@ -361,7 +371,12 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     def _appel_map(i: int, fragment: str) -> Dict[str, Any]:
         contenu_user = f"{consigne}\n\n[Fragment {i}/{n}]\n\n{fragment}"
         messages = [
-            {"role": "system", "content": consigne},
+            # MAP_SYSTEME et non la consigne : celle-ci part deja dans le
+            # message user. Sans cette instruction, le modele ignore qu'il ne
+            # voit qu'un fragment, et rien ne l'empeche de conclure sur
+            # l'ensemble a partir d'un morceau -- ni d'inventer ce que les
+            # autres fragments contiennent.
+            {"role": "system", "content": MAP_SYSTEME},
             {"role": "user", "content": contenu_user}
         ]
         return appeler(modele, messages, plafond, cle, temperature)
@@ -422,7 +437,14 @@ import os
 
 def executer(tache: dict, cle: str) -> dict:
     # Le mode local_seul force l'utilisation exclusive de modèles dont le nom se termine par '-local'.
-    local_seul = os.environ.get("NEXUS_LOCAL_SEUL") == "1"
+    # Lu depuis la TACHE d'abord, l'environnement ensuite.
+    #
+    # os.environ est global au processus : depuis que les deux plans de
+    # l'essaim tournent en meme temps, un thread qui poserait
+    # NEXUS_LOCAL_SEUL=1 pour sa cible sensible contraindrait aussi le
+    # thread cloud, et sa restauration effacerait le reglage de l'autre.
+    # Une clef portee par la tache suit la tache, et rien d'autre.
+    local_seul = bool(tache.get("local_seul")) or         os.environ.get("NEXUS_LOCAL_SEUL") == "1"
 
     nom = tache.get("nom") or tache.get("modele") or "tache"
     # Defaut : le ROUTEUR, pas un modele nomme.

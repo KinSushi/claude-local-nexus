@@ -917,26 +917,55 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
     "fragment ne contient rien d'utile, reponds exactement : RIEN.";
 
   // --- MAP -----------------------------------------------------------
-  const mapped = [];
-  for (let i = 0; i < windows.length; i++) {
-    const result = await chat(
-      model,
-      [
-        { role: "system", content: MAP_SYSTEM },
-        {
-          role: "user",
-          content:
-            `Consigne : ${instruction}\n\n` +
-            `--- fragment ${i + 1}/${windows.length} ---\n${windows[i]}`,
-        },
-      ],
-      mapTokens
-    );
-    tokens += result.tokens;
-    const body = (result.text || "").trim();
-    if (body && body.toUpperCase() !== "RIEN") mapped.push(body);
-    if (onProgress) onProgress("map", i + 1, windows.length);
+  // Les fenetres sont independantes : les traiter une par une faisait payer
+  // la latence autant de fois qu'il y a de fragments. Concurrence bornee,
+  // et non Promise.all sur tout : cinquante appels d'un coup saturent la
+  // passerelle et le fournisseur.
+  const MAP_CONCURRENCE = 4;
+  const slots = new Array(windows.length);
+  let termines = 0;
+
+  async function mapOuvrier(depart, pas) {
+    for (let i = depart; i < windows.length; i += pas) {
+      const result = await chat(
+        model,
+        [
+          { role: "system", content: MAP_SYSTEM },
+          {
+            role: "user",
+            content:
+              `Consigne : ${instruction}
+
+` +
+              `--- fragment ${i + 1}/${windows.length} ---
+${windows[i]}`,
+          },
+        ],
+        mapTokens
+      );
+      // Entre l'await et la fin du tour, le code synchrone s'execute d'un
+      // bloc dans la boucle evenementielle : aucune course sur tokens ni
+      // sur termines, meme a quatre ouvriers.
+      tokens += result.tokens;
+      const body = (result.text || "").trim();
+      // Ecriture a indice fixe : l'ordre des fragments est preserve meme si
+      // les reponses reviennent dans le desordre. Un REDUCE qui recolle des
+      // fragments melanges produit un resume incoherent.
+      if (body && body.toUpperCase() !== "RIEN") slots[i] = body;
+      termines += 1;
+      // Avancement reel et non indice de fenetre, sinon la jauge reculerait
+      // des qu'une reponse rapide devance une lente.
+      if (onProgress) onProgress("map", termines, windows.length);
+    }
   }
+
+  await Promise.all(
+    Array.from({ length: MAP_CONCURRENCE }, (_, w) => mapOuvrier(w, MAP_CONCURRENCE))
+  );
+
+  // Les reponses RIEN laissent des trous : on retombe sur un tableau dense,
+  // dans le meme ordre que la version sequentielle.
+  const mapped = slots.filter((s) => s !== undefined);
 
   if (!mapped.length) {
     return { text: "Aucun fragment pertinent.", windows: windows.length,
