@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 12:29 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 12:39 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `e17d997` |
+| Commit | `bdcec50` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 22 hours (healthy)
-litellm-proxy	litellm	Up 5 minutes
+litellm-proxy	litellm	Up 2 minutes
 litellm-redis	redis	Up 22 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 22 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 350.5 Go |
+| Disque libre | 349.9 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -57,12 +57,12 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `9ed98a76dee54927d3d142dae9269ac7` |
+| `litellm_config.yaml` | `16a218b36e2213ceb70dde511925abfb` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
 | `cloud_models.txt` | `f33e74e16defb33966e90cb56522004c` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
-| `tools/nexus-mcp/server.js` | `55b8f7d8a168778df244780263fcc03c` |
+| `tools/nexus-mcp/server.js` | `25de6dc70c2413d321c2f93f7a238adb` |
 | `scripts/nexus_generate.py` | `61b116ed0ddee0ae004f39c8f3b80bb7` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f7` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |
@@ -74,7 +74,7 @@ Verdict : **valide**
 ```
 26 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       11
-  classe 2  decision prise sur un nom              21
+  classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     3
   classe 5  refus rendu en sortie 0                0

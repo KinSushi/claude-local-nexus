@@ -494,10 +494,40 @@ const TEMPERATURE_PROFIL = {
   multimodal: 0.2,
 };
 
+// Magasin d'observations : chaque appel devient une mesure.
+//
+// C'est la brique 8 de docs/architecture/Adaptive-Inference-Controller.md,
+// et la seule qui rende les suivantes possibles : sans traces accumulees,
+// aucun bandit n'a de quoi selectionner, et le controleur adaptatif reste
+// une intention.
+//
+// Elle est posee AVANT le controleur, a dessein. Un systeme qui apprend
+// commence par observer ; l'inverse -- decider puis chercher des donnees --
+// est la facon dont on justifie une decision au lieu de la fonder.
+//
+// Ecriture en append, une ligne JSON par appel, jamais bloquante : perdre
+// une observation ne doit pas faire echouer l'appel qu'elle observe.
+// Aucun contenu de requete ni de reponse n'y figure -- seulement des
+// grandeurs. Le magasin ne doit rien reveler qu'un journal de mesure n'ait
+// a connaitre.
+const OBSERVATIONS = path.join(INSTALL_ROOT, ".nexus", "temperature",
+                               "observations.jsonl");
+
+function observer(evenement) {
+  try {
+    fs.mkdirSync(path.dirname(OBSERVATIONS), { recursive: true });
+    fs.appendFileSync(OBSERVATIONS, JSON.stringify(evenement) + "\n", "utf8");
+  } catch {
+    // Silencieux a dessein, et c'est l'un des rares cas ou c'est justifie :
+    // l'observation est un effet de bord de l'appel, jamais sa raison.
+  }
+}
+
 async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
   const t = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
+  const depart = Date.now();
   const corps = { model, messages, max_tokens: maxTokens || 2048 };
   // Les modeles Anthropic recents rejettent certains parametres
   // d'echantillonnage (16, 85) : on ne leur en impose aucun.
@@ -522,6 +552,26 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     headers["x-litellm-model-group"] ||
     body.model ||
     model;
+  // L'observation, avant le retour. Les grandeurs seulement : ni prompt ni
+  // reponse, et le debit calcule plutot que suppose.
+  const dureeMs = Date.now() - depart;
+  const sortie = usage.completion_tokens || 0;
+  observer({
+    t: new Date().toISOString(),
+    model: resolved,
+    upstream: headers["x-litellm-model-name"] || "",
+    temperature: t,
+    duree_ms: dureeMs,
+    tokens_in: usage.prompt_tokens || 0,
+    tokens_out: sortie,
+    // Jetons par seconde, la grandeur qui decide pour une generation
+    // longue. Nul quand rien n'a ete produit -- une division par une
+    // duree ne dit rien s'il n'y a pas eu de sortie.
+    debit_jps: sortie && dureeMs ? Number((sortie / (dureeMs / 1000)).toFixed(2)) : null,
+    tronquee,
+    repli: headers["x-litellm-attempted-fallbacks"] || "0",
+  });
+
   return {
     text: sansRaisonnement((choice.message && choice.message.content) || ""),
     model: resolved,
@@ -1838,9 +1888,16 @@ async function callTool(name, args) {
     let model = args.model;
     let note = "";
     let delaiMs;
+    // La temperature suit le profil quand il y en a un, et reste au defaut
+    // sinon. Un appelant qui en fournit une explicitement l'emporte : le
+    // reglage s'adapte, il ne s'impose pas.
+    let temperature = args.temperature;
     if (!model && args.profile) {
       const resolved = await resolveProfile(args.profile);
       model = resolved.model;
+      if (temperature === undefined) {
+        temperature = TEMPERATURE_PROFIL[args.profile];
+      }
       // La limite dure du profil devient le delai de l'appel. Sans elle, une
       // tache « rapide » pouvait tenir la ligne dix minutes sur le delai
       // global -- et un appelant qui demande la rapidite doit obtenir un
