@@ -404,6 +404,32 @@ def main():
             print("Erreur de syntaxe detectee, restauration du fichier original")
             sys.exit(1)
 
+        # La cible a-t-elle bouge depuis qu'on l'a lue ?
+        #
+        # Entre la lecture et ici, il s'est ecoule un appel au modele --
+        # des minutes. Ecrire sans revenir voir ecrase en silence tout ce
+        # qui a ete fait entre-temps.
+        #
+        # Mesure du 2026-08-30 : un essaim lance avant un commit a rendu
+        # « Audit error » ET restaure une version anterieure de
+        # scripts/nexus_capability.py, effacant trente lignes ecrites et
+        # commitees pendant qu'il travaillait. Rien ne le signalait : le
+        # rapport annoncait un echec, et l'ecriture avait bien eu lieu.
+        #
+        # Ce script se protege deja d'un modele qui tronque (garde-fou des
+        # 60 %) et d'un modele qui casse la syntaxe. Il ne se protegeait pas
+        # du temps qui passe.
+        try:
+            actuel = charger_fichier(cible_path)
+        except Exception as exc:
+            print("Erreur: cible relue impossible avant ecriture : %s" % exc)
+            sys.exit(1)
+        if actuel != cible_original:
+            print("Erreur: %s a change pendant l'appel au modele." % cible_path)
+            print("        Rien n'a ete ecrit : la correction porterait sur")
+            print("        une version qui n'existe plus. Relancer.")
+            sys.exit(1)
+
         # Simulation ou ecriture atomique
         if args.simuler:
             print("Simulation: aucune modification ecrite")
