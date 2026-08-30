@@ -468,12 +468,13 @@ enfreinte. Un paragraphe ne ferme rien.
 > Le bon critère n'était pas la forme mais le sens : ni un numéro, ni un
 > intitulé de colonne.
 
-### Trouvé en se servant du pont, le 30/08 — deux défauts, deux contrôles
+### Trouvé en se servant du pont, le 30/08 — trois défauts, trois contrôles
 
 | Sujet | Statut | Ce qui le garde |
 |---|---|---|
 | `nexus-local` déclaré dans **deux portées** | `FAIT` | `controle_mcp_double_portee` dans `nexus_conformite.py` |
 | `nexus_agent.py` refusait un fichier sans nommer l'issue | `FAIT` | le refus cite désormais `--racine` ; prouvé en le rejouant |
+| `cockpit_frais` était insatisfiable dans le tour qu'il prescrit | `FAIT` | trois cas joués sur un dépôt jetable : ensemble, périmé, retouché |
 
 > **Ni l'un ni l'autre ne vient d'un audit.** Le premier est apparu dans la
 > sortie de `/mcp` au démarrage de la session : le serveur était déclaré en
@@ -503,6 +504,25 @@ enfreinte. Un paragraphe ne ferme rien.
 > touchée. Ce qui manquait était l'issue : `--racine` existait, le message ne
 > le disait pas. Une garde qui refuse sans dire par où passer se fait
 > contourner, ou renoncer.
+>
+> **Le troisième défaut est celui du rituel lui-même**, et il n'est apparu
+> qu'en le jouant après les deux premières corrections. `cockpit_frais`
+> comparait le **mtime du fichier** cockpit à la **date du commit** du dernier
+> changement de code : deux horloges différentes. Or le rituel prescrit
+> d'écrire le cockpit *puis* de commiter — donc, chaque fois que cockpit et
+> code partent dans le même commit, le fichier est nécessairement antérieur à
+> ce commit. Mesuré ce jour : commit du code 17:27:47, commit du cockpit
+> 17:27:47 — le même — et mtime 17:26:37, soit `MANQUE` sur un cockpit
+> parfaitement à jour. **Le contrôle rendait impossible le tour qu'il
+> exigeait**, et la seule façon de le contenter était de commiter deux fois.
+>
+> Corrigé par un second critère tiré de la seule horloge de git : le commit du
+> cockpit au moins aussi récent que celui du code. Le premier critère est
+> conservé pour l'édition pas encore commitée. Trois cas joués sur un dépôt
+> jetable — partis ensemble, code commité seul, cockpit retouché — et le cas
+> périmé rend toujours `MANQUE` : la correction n'a pas acheté le silence en
+> désarmant le contrôle.
+
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 

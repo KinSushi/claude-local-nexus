@@ -66,6 +66,19 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
     et une configuration INVALIDE là où il y en avait 67 et une saine. Un
     tableau de bord périmé décrit un état qui n'existe plus, avec l'autorité
     d'un fichier écrit.
+
+    Corrigé le même jour : comparer le *mtime du fichier* à la *date du
+    commit* mêle deux horloges, et rendait le contrôle insatisfiable dans le
+    tour qu'il prescrit lui-même. Le rituel demande d'écrire le cockpit puis
+    de commiter ; quand cockpit et code partent dans le même commit, le
+    fichier est forcément antérieur à ce commit. Mesuré : commit du code
+    17:27:47, commit du cockpit 17:27:47 — le même — et mtime 17:26:37, donc
+    MANQUE sur un cockpit parfaitement à jour.
+
+    D'où deux critères, dont un seul suffit : le fichier plus récent que le
+    dernier commit de code (édition pas encore commitée), ou le commit du
+    cockpit au moins aussi récent que celui du code (les deux partis
+    ensemble).
     """
     try:
         fichier = racine / "rituels" / "CHECKLIST_COCKPIT.MD"
@@ -77,8 +90,21 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
         if r.returncode != 0 or not r.stdout.strip():
             return OK, "aucun changement de code a suivre"
         dernier = int(r.stdout.strip())
+
+        # Critère 1 — le cockpit a été retouché depuis, sans être commité.
         if fichier.stat().st_mtime > dernier:
             return OK, "posterieur au dernier changement de code"
+
+        # Critère 2 — cockpit et code sont partis dans le même commit, ou le
+        # cockpit dans un commit plus récent. Ici les deux dates viennent de
+        # la MEME horloge, celle de git, et sont donc comparables.
+        rc = subprocess.run(["git", "log", "-1", "--format=%ct", "--",
+                             "rituels/CHECKLIST_COCKPIT.MD"], cwd=racine,
+                            capture_output=True, text=True, timeout=60)
+        if rc.returncode == 0 and rc.stdout.strip():
+            if int(rc.stdout.strip()) >= dernier:
+                return OK, "commite avec le code, ou apres lui"
+
         return MANQUE, "plus ancien que le dernier changement de code"
     except Exception as exc:
         return IGNORE, str(exc).splitlines()[0][:60]
