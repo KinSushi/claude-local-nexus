@@ -455,7 +455,7 @@ def juger(modele: str, cle: str) -> dict:
     else:
         print("  => La releve ne tient pas. Le travail s'arreterait avec l'abonnement.")
     print()
-    return {
+    rapport = {
         "modele": modele,
         "reussies": reussies,
         "plan": plan,
@@ -463,6 +463,63 @@ def juger(modele: str, cle: str) -> dict:
         "epreuves": resultats,
         "version": "1.0",
     }
+    consigner(rapport)
+    return rapport
+
+
+# La racine de la PLATEFORME, pas celle du projet appelant. `agent.ROOT` suit
+# le projet courant, ce qui est juste pour lire des fichiers a analyser et
+# faux pour ecrire un registre partage : depuis un projet tiers, l'epreuve
+# serait consignee chez lui et le generateur ne la verrait jamais.
+PLATEFORME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def consigner(rapport: dict) -> None:
+    """
+    Inscrire le verdict dans .nexus/epreuves.json.
+
+    Ce registre existe parce que le banc de latence (nexus_bench.py) et cette
+    releve ne mesurent pas la meme chose. Le banc demande seize jetons : il
+    chronometre le DEMARRAGE. La releve fait passer quatre epreuves reelles :
+    protocole, demande d'outil, exploitation du resultat, enchainement. Elle
+    prouve la CAPACITE.
+
+    Mesure : glm-4.7-flash-local demarre en 61,8 s, soit 1,8 s au-dessus du
+    seuil de pool, et reussit 4/4 aux epreuves. Le laisser tomber du pool sur
+    le seul delai de demarrage reviendrait a preferer la mesure faible a la
+    mesure forte. Relever le seuil a 65 s serait pire encore : cela ferait
+    entrer d'autres modeles qui, eux, n'ont rien prouve.
+
+    N'echoue jamais : un registre non ecrit ne doit pas faire echouer une
+    releve qui, elle, a abouti.
+    """
+    try:
+        dossier = os.path.join(PLATEFORME, ".nexus")
+        os.makedirs(dossier, exist_ok=True)
+        chemin = os.path.join(dossier, "epreuves.json")
+        try:
+            with open(chemin, encoding="utf-8") as f:
+                registre = json.load(f)
+            if not isinstance(registre, dict):
+                registre = {}
+        except Exception:
+            registre = {}
+        registre.setdefault("modeles", {})
+        # Le total est lu depuis EPREUVES et non fige a 4 : le jour ou une
+        # cinquieme epreuve est ajoutee, un « 4/5 » ne doit pas continuer de
+        # passer pour un sans-faute.
+        registre["modeles"][rapport["modele"]] = {
+            "reussies": rapport["reussies"],
+            "total": len(EPREUVES),
+            "complet": rapport["reussies"] >= len(EPREUVES),
+            "plan": rapport["plan"],
+            "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        registre["mesure_le"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        with open(chemin, "w", encoding="utf-8") as f:
+            json.dump(registre, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
 
 
 def candidats_locaux(cle: str) -> list[str]:

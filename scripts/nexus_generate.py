@@ -414,6 +414,26 @@ def latences_relevees() -> dict:
     return {}
 
 
+def epreuves_relevees() -> dict:
+    """
+    Registre des epreuves reelles, ecrit par scripts/nexus_releve.py.
+
+    Meme contrat que latences_relevees() : ne leve jamais. Un registre absent
+    rend simplement la derogation inoperante, donc le seuil de latence seul
+    decide -- le comportement d'avant.
+    """
+    chemin = os.path.join(ROOT, ".nexus", "epreuves.json")
+    try:
+        with open(chemin, encoding="utf-8") as f:
+            registre = json.load(f)
+        modeles = registre.get("modeles")
+        if isinstance(modeles, dict):
+            return modeles
+    except Exception:
+        pass
+    return {}
+
+
 def eligible_au_pool(alias, releve, seuil_ms=SEUIL_POOL_MS):
     """
     (eligible, motif) pour un alias, d'apres le releve de latence.
@@ -422,6 +442,22 @@ def eligible_au_pool(alias, releve, seuil_ms=SEUIL_POOL_MS):
     n'entre pas dans un pool. C'est le lien qui manquait entre BENCHMARK et
     PROMOTE dans le cycle de vie -- la decision se prenait a la main.
     """
+    # Une epreuve reelle reussie l'emporte sur le banc de demarrage.
+    #
+    # Les deux ne mesurent pas la meme chose : le banc chronometre le delai
+    # avant de commencer a repondre (seize jetons), la releve fait passer
+    # quatre epreuves de capacite -- protocole, demande d'outil, exploitation
+    # du resultat, enchainement. La seconde est la preuve forte.
+    #
+    # Sans cette derogation, glm-4.7-flash-local sortait du pool a 61,8 s,
+    # 1,8 s au-dessus du seuil, alors qu'il est le relais local declare et
+    # qu'il passe 4/4. Relever le seuil a 65 s aurait sauve celui-la en
+    # faisant entrer, du meme geste, des modeles n'ayant rien prouve.
+    epreuve = epreuves_relevees().get(alias)
+    if isinstance(epreuve, dict) and epreuve.get("complet"):
+        return True, "epreuve reelle %s/%s" % (epreuve.get("reussies"),
+                                               epreuve.get("total"))
+
     mesure = releve.get(alias)
     if not isinstance(mesure, dict):
         return False, "non mesure"
