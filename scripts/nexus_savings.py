@@ -359,10 +359,22 @@ def main() -> int:
         # soit un indicateur qui aurait fait chercher une panne inexistante
         # -- le defaut meme que cet indicateur est cense reveler ailleurs.
         modele = str(entry.get("model_group") or entry.get("model") or "")
-        est_embedding = ("embed" in modele.lower()
-                         or "minilm" in modele.lower()
-                         or "bge-" in modele.lower())
-        if not est_embedding and not _safe_int(entry.get("completion_tokens")):
+        bas = modele.lower()
+        est_embedding = ("embed" in bas or "minilm" in bas or "bge-" in bas)
+
+        # Un modele qui n'est pas declare n'est pas en panne : c'est une
+        # epreuve de refus. La suite REVERSE appelle exprès
+        # « modele-qui-nexiste-pas » et « phi3-mini-local-inexistant » pour
+        # verifier que la passerelle les rejette ; leur echec EST le
+        # resultat attendu.
+        #
+        # Deuxieme fois que ce meme piege se presente : apres les
+        # embeddings, dont l'absence de sortie est la nature. Un indicateur
+        # d'echec doit connaitre les echecs qui n'en sont pas, sans quoi il
+        # envoie chercher des pannes inexistantes.
+        est_declare = modele in domains
+        if est_declare and not est_embedding and not _safe_int(
+                entry.get("completion_tokens")):
             stats["sans_sortie"] += 1
         stats["entree"] += _safe_int(entry.get("prompt_tokens"))
         stats["sortie"] += _safe_int(entry.get("completion_tokens"))
