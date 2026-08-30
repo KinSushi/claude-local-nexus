@@ -244,9 +244,10 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
 
 
 def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
-    complet = os.path.join(ROOT, fichier)
     # Calcul de la racine de travail une seule fois.
     racine = agent.racine_travail()
+    # Construction du chemin complet en respectant les chemins déjà absolus.
+    complet = fichier if os.path.isabs(fichier) else os.path.join(racine, fichier)
     # Utilisation de la fonction moderne pour vérifier l'appartenance au dépôt.
     if not agent.sous_racine(complet, racine) or agent.est_secret(complet):
         print(
