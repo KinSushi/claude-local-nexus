@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 11:20 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 11:22 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `c4d6da5` |
-| Arbre de travail | propre |
+| Commit | `3c2ff26` |
+| Arbre de travail | modifie |
 | Version de routage | `rdb210b95d0` |
 
 ## Services
@@ -68,6 +68,22 @@ Verdict : **valide**
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |
 | `scripts/nexus_test.py` | `e9baaa6c9992692829397dc869facdd8` |
 | `scripts/Update-NexusModels.ps1` | `f1471ac00eeaa15c056ca4d66d3a9495` |
+
+## Traque mecanique
+
+```
+26 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       9
+  classe 2  decision prise sur un nom              21
+  classe 3  defaut de modele non mesure            5
+  classe 4  valeur neutre rendue par un except     3
+  classe 5  refus rendu en sortie 0                0
+  classe 6  refus rendu en retour 0                0
+```
+
+Heuristiques : chaque constat est une piste a verifier
+dans le code reel, jamais un verdict. Detail par
+`python scripts/nexus_traque.py`.
 
 ---
 

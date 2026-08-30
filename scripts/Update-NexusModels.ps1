@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Orchestrateur de mise à jour Claude-Local-Nexus.
 
@@ -245,6 +245,25 @@ if ($Restart) {
     } else {
         Write-Log "Releve operationnelle" "OK"
     }
+}
+
+# ----------------------------------------------------------------------
+# Le cockpit, regenere ici et non a la main
+# ----------------------------------------------------------------------
+# Un tableau de bord qu'il faut PENSER a mettre a jour ne sert qu'a
+# rassurer. Rouvert le 2026-08-30 apres vingt-et-une heures, celui-ci
+# annonçait 44 modeles et une configuration INVALIDE, la ou il y en avait
+# 67 et une configuration saine -- il decrivait un etat qui n'existait
+# plus, avec l'autorite d'un fichier genere.
+#
+# Il se regenere donc a chaque mise a jour, seul moment ou l'etat change
+# vraiment. Non bloquant : perdre une mise a jour reussie pour un rapport
+# serait un mauvais echange.
+Write-Log "Regeneration du cockpit"
+& $python (Join-Path $PSScriptRoot "nexus_state.py") 2>&1 |
+    ForEach-Object { Write-Log "  $_" }
+if ($LASTEXITCODE -ne 0) {
+    Write-Log "Cockpit non regenere : rituels/STATE.md reste date" "WARN"
 }
 
 Write-Log "Mise a jour terminee" "OK"

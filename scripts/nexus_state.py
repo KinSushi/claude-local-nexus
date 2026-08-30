@@ -406,6 +406,34 @@ def main() -> int:
         digest = sha256(path)
         lines.append(f"| `{relative}` | `{digest[:32] if digest else 'absent'}` |")
 
+    # La traque, mesuree a chaque regeneration.
+    #
+    # Le cockpit datait de vingt-et-une heures quand il a ete rouvert : il
+    # decrivait 44 modeles et une configuration INVALIDE, la ou il y en
+    # avait 67 et une configuration saine. Un tableau de bord qu'il faut
+    # penser a mettre a jour ne sert qu'a rassurer.
+    #
+    # Les chiffres de la traque y sont donc joints automatiquement. Ce sont
+    # des heuristiques, et le texte le dit : un constat est une piste a
+    # verifier dans le code reel, jamais un verdict.
+    lines += ["", "## Traque mecanique", ""]
+    try:
+        r = subprocess.run([sys.executable,
+                            os.path.join(ROOT, "scripts", "nexus_traque.py"),
+                            "--muet"], capture_output=True, text=True,
+                           timeout=180, encoding="utf-8", errors="replace")
+        if r.returncode == 0 and r.stdout.strip():
+            lines += ["```", r.stdout.strip(), "```", "",
+                      "Heuristiques : chaque constat est une piste a verifier",
+                      "dans le code reel, jamais un verdict. Detail par",
+                      "`python scripts/nexus_traque.py`."]
+        else:
+            lines.append("_traque indisponible_")
+    except Exception as exc:
+        # Le cockpit doit s'ecrire meme si la traque echoue : perdre l'etat
+        # mesure pour un rapport heuristique serait un mauvais echange.
+        lines.append("_traque indisponible : %s_" % str(exc)[:80])
+
     lines += [
         "",
         "---",
