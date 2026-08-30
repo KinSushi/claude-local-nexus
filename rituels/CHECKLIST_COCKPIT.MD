@@ -1,5 +1,29 @@
 # Cockpit — sujets ouverts
 
+> ## Une règle non mécanisée ne protège pas, même celui qui l'a écrite le matin.
+>
+> Ce n'est pas une maxime, c'est un constat daté du 30 août 2026, et la preuve
+> est la journée elle-même. Le matin, §112.3 était corrigée : une règle
+> généralisait **deux relevés à toute une classe**. L'après-midi, la même main
+> voyait un modèle résident dans `ollama ps` et écrivait que le moteur **en
+> garde un** — l'erreur identique, commise en documentant sa correction, puis
+> propagée dans quatre fichiers dont un contrôle qui la répétait à chaque
+> exécution.
+>
+> Trois autres fois le même jour : la confusion chargement/mesure corrigée sur
+> un banc puis reproduite sur le suivant ; l'angle mort `bge-m3` corrigé dans
+> deux fichiers avant de l'être à sa source ; l'avertissement « ne rien mesurer
+> sous charge » violé pendant un téléchargement de 28 Go.
+>
+> **Aucune n'était une faute de compréhension.** Les règles étaient écrites,
+> récentes, du même auteur.
+>
+> **Conséquence pour toute entrée de cette liste** : un sujet n'est clos que
+> lorsqu'un contrôle échoue si la règle est enfreinte. Tant qu'il n'existe
+> qu'un paragraphe, le sujet reste `OUVERT` — quelle que soit la qualité du
+> paragraphe.
+
+
 > Tenu à jour pendant la refonte du 29 août 2026. Sert de mémoire externe :
 > rien d'important ne doit dépendre du fil de conversation.
 >
