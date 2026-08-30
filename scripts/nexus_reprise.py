@@ -157,12 +157,21 @@ def bloc_taches() -> None:
     non. Confondre les deux, c'est croire armé ce qui ne l'est plus.
     """
     titre("CE QUI TOURNE SANS SESSION")
+    # Les noms sont ceux que Windows porte REELLEMENT, releves par
+    # Get-ScheduledTask. « NexusDemarrage » etait une supposition : la tache
+    # existante s'appelle « Claude-Local-Nexus - Demarrage », si bien que la
+    # reprise l'annoncait ABSENTE alors qu'elle etait armee -- et invitait a
+    # la reenregistrer pour rien. Un tableau de bord qui se trompe sur ce qui
+    # tourne est pire qu'un tableau de bord vide.
     taches = (
         ("NexusTraque", "traque des defauts + cockpit, PT10M",
          "Register-NexusTraque.ps1"),
         ("NexusVitrine", "publication si sain, PT6H",
          "Register-NexusVitrine.ps1"),
-        ("NexusDemarrage", "pile au logon", "Register-NexusDemarrage.ps1"),
+        ("Claude-Local-Nexus - Demarrage", "pile au logon",
+         "Register-NexusDemarrage.ps1"),
+        ("Claude-Local-Nexus - Mise a jour", "modeles, quotidien",
+         "Register-NexusAutoUpdate.ps1"),
     )
     for nom, role, script in taches:
         ok, sortie = executer(
