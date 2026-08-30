@@ -48,6 +48,37 @@
 | 38 constats | `OUVERT` | Classe 1 examinée : **1 vrai défaut sur 9**, corrigé. Restent 21 constats classe 2, 5 classe 3, 3 classe 4. |
 | Taux de faux positifs | `DÉCIDÉ` | Classe 1 : 5 faux positifs sur 6 examinés. Trop large, mais conservée — elle a trouvé le défaut réel. Le taux est écrit pour qui la lit. |
 
+### Pistes ouvertes par l'opérateur, jamais traitées
+
+| Sujet | État | Où en est-ce |
+|---|---|---|
+| Meta-learner | `OUVERT` | Demandé explicitement. Rien de fait. Le routeur choisit sur des poids figés (`quality 1.0, cost 0.0`) ; §75 décrit une boucle de rétroaction jamais construite. |
+| Harnais | `OUVERT` | Demandé explicitement. Rien de fait. |
+| AST | `PARTIEL` | `nexus_traque.py` emploie `ast`. Mais aucune analyse AST du code **produit par le banc** avant application — `nexus_patch.py` vérifie la syntaxe, pas la sémantique. |
+| Température des modèles locaux | `PARTIEL` | Corrigée côté MCP (0,2). **Aucun modèle du YAML ne fixe de température** — 0 occurrence. Un appel direct à la passerelle tourne toujours au défaut du modèle. |
+
+### Modèles téléchargés, non intégrés
+
+| Sujet | État |
+|---|---|
+| `command-r`, `sqlcoder`, `codegemma:7b` | `OUVERT` — installés, déclarés au YAML, **jamais mesurés** donc hors pool |
+| 9 modèles légers (0,4–1,8 Go) | `OUVERT` — `qwen2.5:0.5b`, `qwen3:0.6b`, `smollm2:360m`, `tinyllama`… installés, **jamais mesurés**. C'est le rôle « réponse binaire » qui reste à prouver. |
+| Capacités qu'ils apportent | `OUVERT` — `sqlcoder` (SQL) et `command-r` (outils) ne sont dans **aucun** profil MCP |
+
+### Défauts constatés, non corrigés
+
+| Sujet | État | Fait mesuré |
+|---|---|---|
+| `nexus_index_build` expire | `OUVERT` | 600 s sur `scripts/` seul. Défaut : `qwen3-embedding-8b-local`, 8 Go pour des vecteurs, alors qu'`all-minilm` fait 46 Mo. |
+| `nexus_search` expire | `OUVERT` | 600 s. Même cause probable. |
+| `releve-locale` expire dans le MCP | `OUVERT` | HTTP 408 après 180 s sur un `nexus_ask` profil coding. |
+| Tâches de fond tuées | `OUVERT` | Trois fois de suite. Cause non identifiée — limite système ou harnais. Contourné en mesurant au premier plan, jamais résolu. |
+| `nexus_essaim` : 3 échecs sur 6 | `OUVERT` | Palier porté à 16384 jetons, **jamais revérifié** depuis. |
+| Biais systématique du validateur | `OUVERT` | La double passe protège de la variance, **pas du biais de format** — les deux passes concordaient sur le faux positif. |
+| `qwen3-vl-32b` hors classement | `OUVERT` | Absent des entrées classées. Écarté par le verdict matériel ? Non vérifié. |
+| Sentinelles image et embedding | `OUVERT` | Posées, **jamais vues passer** dans une suite complète non interrompue. |
+| Asymétrie des pools | `DÉCIDÉ` | Cloud 19 candidats, local 4. Justifié — aucun poids chargé côté cloud — et documenté dans le code. |
+
 ### Vérifications jamais faites
 
 | Sujet | État |
