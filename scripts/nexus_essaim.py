@@ -93,6 +93,38 @@ def ecrire_fichier(path: Path, contenu: str) -> None:
     """Écrit le texte fourni dans le fichier indiqué, UTF‑8, remplace les erreurs."""
     path.write_text(contenu, encoding="utf-8", errors="replace")
 
+def dossier_isole() -> Path:
+    """
+    Repertoire de travail isole, hors de l'arbre principal.
+
+    Le contrat (0.4) veut qu'un worker recoive une COPIE, jamais la source :
+    il peut tronquer, reecrire ou inventer, et le depot ne doit pas pouvoir
+    en souffrir. On le place a cote de `.nexus-arbres`, ou vivent deja les
+    worktrees isoles, pour qu'un seul repertoire concentre tout ce qui est
+    jetable.
+
+    Volontairement hors du depot : ce qu'un modele ecrit ici ne peut etre
+    commite par megarde, ni ramasse par un outil qui parcourt l'arbre.
+    """
+    d = racine_depot().parent / ".nexus-arbres" / "essaim"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def preparer_copie(cible: Path, ident: str) -> Path:
+    """
+    Copie la cible dans l'espace isole et rend le chemin de la copie.
+
+    On copie l'etat REEL du fichier, pas sa version commitee : un worktree
+    git refleterait le dernier commit, et une cible modifiee et non commitee
+    aurait ete corrigee dans une version ancienne, puis promue par-dessus le
+    travail en cours.
+    """
+    copie = dossier_isole() / ("%s-%s%s" % (cible.stem, ident, cible.suffix))
+    shutil.copy2(cible, copie)
+    return copie
+
+
 def _hash_path(cible: Path) -> str:
     """Retourne un identifiant court basé sur le chemin complet de la cible."""
     h = hashlib.sha256(str(cible).encode("utf-8")).hexdigest()
@@ -285,6 +317,21 @@ def traiter_cible(
     # Flag indiquant si le backup a déjà été géré (restauré ou supprimé)
     backup_gere = False
 
+    # La copie de travail. Tout ce qui suit -- audit, correction,
+    # verification -- porte sur ELLE. L'original n'est touche qu'a l'etape 7,
+    # une fois la syntaxe verifiee.
+    try:
+        cible_travail = preparer_copie(cible, ident)
+    except Exception as e:
+        print(f"Copie isolee impossible pour {nom_cible}: {e}")
+        backup_path.unlink(missing_ok=True)
+        return f"{nom_cible},echec,0,0,none,{plan},copie isolee impossible", False, False
+
+    # Vrai seulement pendant la promotion : c'est la seule fenetre ou
+    # l'original peut etre a moitie ecrit, et donc la seule ou le backup
+    # sert encore a quelque chose.
+    promotion_en_cours = False
+
     try:
         # 2. audit
         if args.consigne_audit:
@@ -302,13 +349,14 @@ def traiter_cible(
         else:
             consigne_audit = f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
 
-        audit_res = executer_audit(cible, consigne_audit, modele_audit,
+        audit_res = executer_audit(cible_travail, consigne_audit, modele_audit,
                                    local_seul=(plan == "local"))
 
         # Validation basique du résultat de l'agent
         if not isinstance(audit_res, dict):
             print(f"Audit result malformed for {nom_cible}")
-            restaurer_backup(cible, backup_path)
+            # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
+            backup_path.unlink(missing_ok=True)
             backup_gere = True
             return (
                 f"{nom_cible},echec,0,0,none,{plan},reponse d'audit malformee",
@@ -319,7 +367,8 @@ def traiter_cible(
         # Gestion d'éventuelles erreurs d'audit
         if audit_res.get("erreur"):
             print(f"Audit error for {nom_cible}")
-            restaurer_backup(cible, backup_path)
+            # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
+            backup_path.unlink(missing_ok=True)
             backup_gere = True
             detail_audit = str(audit_res.get('erreur', '')).replace(',', ';').replace('\n', ' ')[:160]
             return (
@@ -343,14 +392,14 @@ def traiter_cible(
             )
 
         # 4. création du fichier de consigne pour la correction
-        consigne_path = creer_consigne_temp(cible, audit_texte)
+        consigne_path = creer_consigne_temp(cible_travail, audit_texte)
 
         # 5. correction via nexus_patch.py
         cmd = [
             sys.executable,
             str(dossier_scripts() / "nexus_patch.py"),
             "--cible",
-            str(cible),
+            str(cible_travail),
             "--consigne",
             str(consigne_path),
         ]
@@ -371,7 +420,7 @@ def traiter_cible(
         # une ancre peut encore echouer pour une autre raison.
         seuil_fonctions_lignes = 600
         try:
-            nb_lignes_cible = sum(1 for _ in cible.open(encoding="utf-8", errors="ignore"))
+            nb_lignes_cible = sum(1 for _ in cible_travail.open(encoding="utf-8", errors="ignore"))
         except OSError:
             nb_lignes_cible = 0
         if nb_lignes_cible > seuil_fonctions_lignes:
@@ -417,7 +466,7 @@ def traiter_cible(
                 # Le processus a été tué après le timeout.
                 # On vérifie si le fichier a été modifié.
                 try:
-                    current_hash = hashlib.sha256(cible.read_bytes()).hexdigest()
+                    current_hash = hashlib.sha256(cible_travail.read_bytes()).hexdigest()
                     backup_hash = hashlib.sha256(backup_path.read_bytes()).hexdigest()
                 except Exception as e:
                     print(f"Erreur lors du calcul des hash pour {nom_cible}: {e}")
@@ -447,7 +496,8 @@ def traiter_cible(
 
         if not correction_ok:
             print(f"Correction failed for {nom_cible}")
-            restaurer_backup(cible, backup_path)
+            # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
+            backup_path.unlink(missing_ok=True)
             backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_correction}",
@@ -456,9 +506,10 @@ def traiter_cible(
             )
 
         # 6. vérification syntaxe
-        if not verifier_syntaxe(cible):
+        if not verifier_syntaxe(cible_travail):
             print(f"Verification failed for {nom_cible}")
-            restaurer_backup(cible, backup_path)
+            # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
+            backup_path.unlink(missing_ok=True)
             backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},syntaxe invalide apres correction",
@@ -466,7 +517,25 @@ def traiter_cible(
                 False,
             )
 
-        # 7. succès : on supprime le backup
+        # 7. succes verifie : la copie remplace l'original.
+        #
+        # C'est le SEUL moment ou l'original est ouvert en ecriture, et il
+        # vient apres la verification de syntaxe -- non avant, comme c'etait
+        # le cas quand la correction s'appliquait a la source.
+        promotion_en_cours = True
+        try:
+            shutil.copy2(cible_travail, cible)
+        except Exception as e:
+            print(f"Promotion impossible pour {nom_cible}: {e}")
+            restaurer_backup(cible, backup_path)
+            backup_path.unlink(missing_ok=True)
+            backup_gere = True
+            return (
+                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},promotion impossible",
+                False,
+                False,
+            )
+        promotion_en_cours = False
         backup_path.unlink(missing_ok=True)
         backup_gere = True
 
@@ -483,8 +552,11 @@ def traiter_cible(
             fuite,
         )
     finally:
-        # Garantie de restauration du backup si celui‑ci n'a pas déjà été géré.
-        if not backup_gere and backup_path.exists():
+        # Le backup ne sert plus qu'a UNE chose : la fenetre de promotion,
+        # seul instant ou l'original peut etre a moitie ecrit. Partout
+        # ailleurs il n'a pas bouge, et le restaurer serait au mieux inutile,
+        # au pire une regression -- on reecrirait par-dessus un fichier sain.
+        if promotion_en_cours and backup_path.exists():
             try:
                 restaurer_backup(cible, backup_path)
             except Exception as e:

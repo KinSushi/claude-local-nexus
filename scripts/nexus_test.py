@@ -1245,7 +1245,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1270,6 +1270,8 @@ def main() -> int:
         test_ruche()
     if args.only in (None, "vitrine"):
         test_vitrine()
+    if args.only in (None, "isolation"):
+        test_isolation()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1540,6 +1542,103 @@ def test_vitrine() -> None:
     else:
         skip("recuperation de configuration",
              "configuration absente ou echange deja en cours")
+
+
+def test_isolation() -> None:
+    """
+    Le contrat 0.4 devient un controle : un worker corrige une COPIE.
+
+    L'essaim ecrivait sur la cible elle-meme et restaurait en cas d'echec.
+    L'ordre a ete renverse -- copier, corriger la copie, promouvoir apres
+    verification -- et sans ce test rien n'empecherait de le remettre a
+    l'endroit d'avant. Un correctif qui vit dans le code seul ne protege
+    personne : c'est la section 0.2.1 du contrat.
+
+    La difference porte sur ce qui arrive quand rien ne va : un processus
+    tue laissait l'original ECRASE, il le laisse desormais intact.
+    """
+    import inspect
+    import tempfile
+    from pathlib import Path
+
+    print("\n--- ISOLATION : le worker corrige une copie, jamais la source ---")
+
+    chemin = os.path.join(ROOT, "scripts")
+    if chemin not in sys.path:
+        sys.path.insert(0, chemin)
+    try:
+        import nexus_essaim
+    except Exception as exc:
+        check("nexus_essaim importable", False, str(exc).splitlines()[0][:60])
+        return
+
+    # -- 1. La copie est hors du depot, et elle est bien une copie.
+    #
+    # Hors du depot volontairement : ce qu'un modele ecrit la ne peut etre
+    # commite par megarde ni ramasse par un outil qui parcourt l'arbre.
+    with tempfile.TemporaryDirectory() as rep:
+        source = os.path.join(rep, "exemple.py")
+        with io.open(source, "w", encoding="utf-8") as fh:
+            fh.write("ORIGINAL\n")
+        try:
+            copie = nexus_essaim.preparer_copie(Path(source), "abcd1234")
+        except Exception as exc:
+            check("preparer_copie fabrique une copie", False,
+                  str(exc).splitlines()[0][:60])
+            return
+        dedans = os.path.abspath(str(copie)).startswith(
+            os.path.abspath(ROOT) + os.sep)
+        check("la copie de travail est HORS du depot", not dedans, str(copie))
+
+        # Ecrire dans la copie ne doit rien changer a la source : c'est
+        # toute la garantie, et elle se verifie plutot qu'elle ne se suppose.
+        with io.open(str(copie), "w", encoding="utf-8") as fh:
+            fh.write("REECRIT PAR UN MODELE\n")
+        with io.open(source, encoding="utf-8") as fh:
+            reste = fh.read()
+        check("reecrire la copie laisse l'original intact",
+              reste == "ORIGINAL\n", repr(reste[:40]))
+        try:
+            os.remove(str(copie))
+        except OSError:
+            pass
+
+    # -- 2. Le cycle passe bien la COPIE aux outils qui ecrivent.
+    #
+    # Verifie sur le source de la fonction : si quelqu'un remet « cible » a
+    # la place de « cible_travail », ce test tombe, et c'est precisement ce
+    # qu'on lui demande.
+    try:
+        code = inspect.getsource(nexus_essaim.traiter_cible)
+    except Exception as exc:
+        check("traiter_cible lisible", False, str(exc).splitlines()[0][:60])
+        return
+
+    check("la correction porte sur la copie",
+          "str(cible_travail)," in code and "str(cible)," not in code,
+          "nexus_patch recoit cible_travail")
+    check("la verification de syntaxe porte sur la copie",
+          "verifier_syntaxe(cible_travail)" in code
+          and "verifier_syntaxe(cible)" not in code,
+          "verifier_syntaxe(cible_travail)")
+    # Le court-circuit du « and » est ici une necessite, pas un style : sans
+    # la garde de presence, code.index() leverait ValueError au lieu de rendre
+    # un echec -- un test qui plante ne rapporte rien.
+    ordre_bon = ("promotion_en_cours = True" in code
+                 and "verifier_syntaxe(cible_travail)" in code
+                 and code.index("verifier_syntaxe(cible_travail)")
+                     < code.index("promotion_en_cours = True"))
+    check("l'original n'est ecrit qu'apres verification", ordre_bon,
+          "promotion posterieure a la verification")
+
+    # -- 3. Le filet ne se declenche plus a tort.
+    #
+    # Le backup ne sert QUE la fenetre de promotion, seul instant ou
+    # l'original peut etre a moitie ecrit. Restaurer ailleurs reecrirait
+    # par-dessus un fichier sain -- une regression, pas une protection.
+    check("le backup ne couvre plus que la promotion",
+          "if promotion_en_cours and backup_path.exists():" in code,
+          "finally borne a la fenetre de promotion")
 
 
 if __name__ == "__main__":
