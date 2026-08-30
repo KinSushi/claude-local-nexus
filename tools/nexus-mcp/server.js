@@ -775,26 +775,41 @@ async function searchIndex(query, k, embedModel) {
  * la machine sait faire : `coding` demandait 64K, seul `releve-locale` les
  * offre ici, il vient donc en tête.
  */
+// Budgets de latence, repris de Latency-budget.txt : une cible et une limite
+// dure par profil, pour que le delai d'un appel decoule du travail demande au
+// lieu d'un reglage unique.
+//
+// Ces nombres sont des DECISIONS de politique, pas des mesures -- et il faut
+// le dire, le depot distinguant les deux avec soin. Leur logique : « rapide »
+// sert la classification et l'extraction, un modele qui y met plus de deux
+// minutes n'est pas rapide, quoi qu'il reponde ; « coding » et « reasoning »
+// portent un travail long, ou couper tot gaspille ce qui est deja calcule.
+// La cible n'est pas encore exploitee : elle attend une mesure de latence par
+// modele, que la plateforme ne conserve pas.
 const PROFILES = {
   coding: {
+    latency: { target_ms: 30000, hard_limit_ms: 600000 },
     description: "implementation, debogage, refactorisation",
     contextMin: 32768,
     models: ["releve-locale", "glm-4.7-flash-local", "qwen3-coder-30b-local",
              "qwen2.5-coder-32b-local", "kimi-k2.7-code-cloud", "gpt-oss-120b-cloud"],
   },
   reasoning: {
+    latency: { target_ms: 60000, hard_limit_ms: 900000 },
     description: "architecture, raisonnement difficile, arbitrages",
     contextMin: 32768,
     models: ["glm-4.7-flash-local", "gemma4-31b-local", "nemotron-3-ultra-cloud",
              "gpt-oss-120b-cloud"],
   },
   rapide: {
+    latency: { target_ms: 5000, hard_limit_ms: 120000 },
     description: "classification, extraction, transformation courte",
     contextMin: 8192,
     models: ["llama3.2-3b-local", "phi3-mini-local", "gemma4-12b-local",
              "gpt-oss-20b-cloud"],
   },
   multimodal: {
+    latency: { target_ms: 60000, hard_limit_ms: 900000 },
     description: "image, capture d'ecran, OCR",
     contextMin: 8192,
     models: ["llava-7b-local", "llama3.2-vision-11b-local", "qwen3-vl-8b-local"],
@@ -1666,9 +1681,15 @@ async function callTool(name, args) {
     // precis est une decision, la laisser deduire n'en est pas une.
     let model = args.model;
     let note = "";
+    let delaiMs;
     if (!model && args.profile) {
       const resolved = await resolveProfile(args.profile);
       model = resolved.model;
+      // La limite dure du profil devient le delai de l'appel. Sans elle, une
+      // tache « rapide » pouvait tenir la ligne dix minutes sur le delai
+      // global -- et un appelant qui demande la rapidite doit obtenir un
+      // echec franc plutot qu'une attente qui n'en finit pas.
+      delaiMs = resolved.spec.latency && resolved.spec.latency.hard_limit_ms;
       note = ` · profil ${args.profile}`;
     }
     model = model || DEFAULT_CHAT_MODEL;
@@ -1676,7 +1697,7 @@ async function callTool(name, args) {
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
-    const result = await chat(model, messages, args.max_tokens || 2048);
+    const result = await chat(model, messages, args.max_tokens || 2048, delaiMs);
 
     // Le plan est annonce, pas sous-entendu : ce qui a ete facture et ce
     // qui est sorti de la machine doit se lire sans enquete.
