@@ -82,6 +82,9 @@
 | Magasin d'observations | chaque appel MCP devient une mesure |
 | `nexus_posterior.py` | les observations deviennent un posterior, qui mesure sans décider |
 | Objectif en §0 du contrat | lu avant tout, ne se redemande pas |
+| `nexus_garde_shell.py` + hook `PreToolUse` sur Bash | le shell ne peut plus manger un antislash de heredoc Python ni substituer un accent grave entre guillemets doubles |
+| `nexus_garde_lecture.py` + hook | on n'écrit plus dans un fichier existant qu'on n'a pas lu |
+| `nexus_cablage.py` lancé par le RITUEL | le sixième geste est exécuté, non rappelé : la liste des orphelins ne peut plus s'allonger |
 | `nexus_vitrine.py` + tâche `NexusVitrine`, PT6H | le dépôt public ne part que **sain** : sept contrôles bloquants avant tout push |
 | `nexus_vitrine.py --epreuve` | le détecteur de secrets est lui-même éprouvé — quatre faux secrets vus, un texte anodin ignoré |
 | `test_vitrine` dans `nexus_test.py` | trois régressions gardées : détection, verdict honnête, récupération de configuration |
@@ -240,7 +243,7 @@ inspire, on n'y touche pas.
 | hook `SessionStart` → reprise imprimée au démarrage | **repris** : `nexus_reprise.py`, tout dérivé, ne lance rien de long, n'échoue jamais |
 | ACL `deny` sur secrets et clés (101 règles là-bas) | **repris**, réduit à ce dépôt : 11 refus de lecture |
 | ACL `ask` sur les gestes irréversibles | **repris** : 15 gestes (push, reset --hard, clean, docker down -v, volume rm, prune, rm -rf, ollama rm) |
-| `garde_heredoc_echappements.py` | **à reprendre** — le défaut a été vécu ici quatre fois le 30/08, dont un message de commit amputé de ses noms techniques |
+| `garde_heredoc_echappements.py` | **repris** → `nexus_garde_shell.py`, 10/10 dans les deux sens |
 | `hook_lecture_avant_ecriture.py` | **repris** → `nexus_garde_lecture.py`, 7/7 |
 | `wiring_check.py` (cliquet de câblage) | **repris** → `nexus_cablage.py`, cliquet par nom, éprouvé |
 | `garde_perimetre_agent.py` | à reprendre — ACL de périmètre par agent |
@@ -272,6 +275,27 @@ inspire, on n'y touche pas.
 > sont appliqués par des scripts Python lancés depuis le shell : ils
 > **échappent** au garde. Ce n'est pas un défaut du mécanisme, c'est sa portée
 > — et s'en croire protégé serait la vraie faute.
+
+### Ce que l'usage a appris — et qu'aucune relecture n'aurait trouvé
+
+Inscrit au contrat §0 le 30/08 : se servir de la plateforme est en soi une
+source d'améliorations, et la plus riche. Un audit lit le code, l'usage
+l'exerce. Quatre défauts ce jour, tous venus de l'usage, **aucun** d'une
+relecture :
+
+| Défaut | Comment il s'est révélé |
+|---|---|
+| Le détecteur de secrets bloquait trois marque-places et zéro secret | en lançant la toute première publication réelle |
+| Le garde d'édition était **structurellement aveugle** sous Windows | en lui donnant délibérément un fichier cassé ; invisible autrement, car silencieux dans les deux cas |
+| Le contrôle de câblage prenait une mention en commentaire pour un appel — puis son remède produisait 18 faux négatifs | en le lançant sur ce dépôt plutôt qu'en raisonnant dessus |
+| Le shell mutilait quatre commandes, dont un message de commit | en relisant ce qui avait réellement été commité |
+
+> **Un jet du banc peut détruire ce qui marchait.** Le garde shell avait passé
+> huit cas sur huit. Un second appel, ne demandant que trois *ajouts* à logique
+> constante, a rendu un script qui ne lisait plus le JSON du hook, refusait
+> tout heredoc quoté portant un antislash, et sortait en code 1 sur stderr au
+> lieu d'imprimer un refus. Demander une retouche coûte parfois l'acquis :
+> l'épreuve précède l'intégration, et l'arbitrage garde le dernier mot.
 
 ### Vérifications jamais faites
 
