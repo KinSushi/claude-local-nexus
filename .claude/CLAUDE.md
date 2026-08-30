@@ -3677,6 +3677,38 @@ downloads. It is not advisory.
 
 ---
 
+# 107.3 Throughput does not follow size either — first readings
+
+`nexus_bench.py --debit` measures tokens per second on a real generation task.
+First three readings on this host, 2026-08-30:
+
+| Model | Size | Throughput |
+| --- | --- | --- |
+| `qwen3-coder-30b-local` | 30 B | **20.22 tok/s** |
+| `llama3.2-3b-local` | 3 B | 11.84 tok/s |
+| `qwen2.5-coder-14b-local` | 14 B | 7.05 tok/s |
+
+After the first two readings the obvious sentence was "throughput falls with
+size". The third refutes it: the largest model is the fastest, by a factor of
+three over the middle one. The likely reason is architecture — `qwen3-coder:30b`
+is a mixture-of-experts, few parameters active per token — but that is a
+hypothesis, not a measurement, and it is written here as such.
+
+So the same rule holds on both benches: **size predicts neither start-up delay
+nor throughput.** It was already true of time-to-first-token (§112.3); it is now
+measured true of generation speed.
+
+Two cautions on these figures:
+
+* Three readings are three readings. They refute "throughput falls with size" —
+  one counter-example suffices for that — but they establish no ordering of
+  their own.
+* A model whose weights are not resident pays the load. The bench wakes the
+  model first, on a separate and generous budget, precisely so that cost is not
+  charged to throughput. That separation had to be added after the fact:
+  `mistral-7b-local`, benched at 2.5 s to start, was failing its wake-up at 50 s
+  because it was paying the eviction of whatever held memory before it.
+
 # 107.2 The start-up bench cannot settle a default — a case in point
 
 The bench's own warning (§112.3) says its reading is necessary and not
