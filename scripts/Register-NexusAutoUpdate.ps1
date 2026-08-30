@@ -50,13 +50,16 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Verifier que le script est lance avec les droits administrateur
-$principalIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$principal = New-Object Security.Principal.WindowsPrincipal $principalIdentity
-if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Error "Ce script doit etre execute avec les droits administrateur."
-    exit 1
-}
+# Aucune elevation exigee, et ce n'est pas un relachement.
+#
+# La tache est enregistree POUR l'utilisateur courant (UserId = $env:USERNAME)
+# avec RunLevel Limited : Windows ne demande pas de droits administrateur pour
+# cela. La garde precedente refusait donc l'operation ordinaire, et il fallait
+# ouvrir un terminal eleve pour un geste qui n'en avait pas besoin -- une
+# friction suffisante pour que la tache reste des mois dans son etat initial.
+#
+# Si un droit venait reellement a manquer, Register-ScheduledTask echoue plus
+# bas avec son propre message, deja rattrape et affiche.
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Updater  = Join-Path $PSScriptRoot "Update-NexusModels.ps1"
@@ -106,11 +109,17 @@ if (-not $shell) {
 }
 
 # Validation de l'heure (format HH:mm ou H:mm)
-[TimeSpan]$nullSpan = $null
+#
+# [TimeSpan]::Zero et non $null : TimeSpan est un type VALEUR, et lui affecter
+# $null leve « Cannot convert null to type System.TimeSpan ». Le script
+# s'arretait donc ici -- mais nul ne le voyait, la verification des droits
+# administrateur sortant quelques lignes plus haut. Le premier defaut masquait
+# le second, et la tache planifiee restait celle d'une version anterieure.
+[TimeSpan]$heureAnalysee = [TimeSpan]::Zero
 $timeFormats = @('hh\:mm','h\:mm')
 $validTime = $false
 foreach ($fmt in $timeFormats) {
-    if ([TimeSpan]::TryParseExact($Time, $fmt, $null, [ref]$nullSpan)) {
+    if ([TimeSpan]::TryParseExact($Time, $fmt, $null, [ref]$heureAnalysee)) {
         $validTime = $true
         break
     }
@@ -126,8 +135,15 @@ if ($TaskName -match '[\\/:*?"<>|]') {
     exit 1
 }
 
-# Echappe correctement le chemin du script updater
-$escapedUpdater = [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedString($Updater)
+# Echappe le chemin pour une chaine PowerShell entre apostrophes.
+#
+# La methode appelee ici s'appelait EscapeSingleQuotedString, qui n'existe
+# pas : la classe expose EscapeSingleQuotedStringContent. L'appel levait donc
+# a chaque execution -- invisible, puisque la verification des droits
+# administrateur puis une conversion TimeSpan fautive sortaient avant de
+# l'atteindre. Trois defauts en file, chacun cachant le suivant, et une tache
+# planifiee restee celle d'une version anterieure.
+$escapedUpdater = $Updater -replace "'", "''"
 
 # Preparation du fichier de log unique
 $logDir = Join-Path $RepoRoot 'logs'
@@ -139,10 +155,20 @@ if (-not (Test-Path $logDir)) {
         exit 1
     }
 }
-$logFile = Join-Path $logDir ("update-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
+# Nom FIXE, et non horodate a l'enregistrement : l'horodatage etait celui du
+# jour ou la tache fut inscrite, pas de son execution, si bien que toutes les
+# executions ecrivaient dans un fichier portant une date trompeuse. On veut
+# savoir si LA derniere mise a jour a reussi.
+$logFile = Join-Path $logDir "update.log"
 
-# Arguments incluant la redirection des flux vers le log
-$arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$escapedUpdater`" -SyncLocal -Validate -Restart *> `"$logFile`""
+# -Command et non -File. Avec -File, tout ce qui suit le chemin du script lui
+# est passe EN ARGUMENTS : la redirection `*>` partait vers Update-NexusModels
+# comme parametre inconnu, et la tache echouait sans ecrire la moindre ligne.
+# Verifie sur la tache de demarrage, ou le meme montage donnait
+# LastTaskResult 1 et zero journal -- une panne muette, exactement ce que le
+# journal existait pour rendre visible.
+$escapedLog = $logFile -replace "'", "''"
+$arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""& '$escapedUpdater' -SyncLocal -Validate -Restart *> '$escapedLog'"""
 
 $action = New-ScheduledTaskAction -Execute $shell -Argument $arguments -WorkingDirectory $RepoRoot
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
@@ -153,8 +179,28 @@ $settings = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Hours 3) `
     -MultipleInstances IgnoreNew
 
-# Utiliser S4U (service for user) afin d'executer sans session interactive
-$taskPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
+# Interactive, et non S4U -- mais pas pour la raison qu'on croit.
+#
+# Rectification : l'espace de noms des tubes nommes est GLOBAL a la machine,
+# pas cloisonne par session. Une tache S4U atteindrait donc parfaitement
+# \\.\pipe\dockerDesktopLinuxEngine, la DACL admettant le meme SID. Le
+# commentaire precedent affirmait l'inverse ; il etait faux.
+#
+# La vraie raison tient a ce que S4U apporte : tourner sans session ouverte.
+# Or ici cet avantage ne vaut rien. Sans session, le tube n'est pas
+# inaccessible, il est INEXISTANT -- Docker Desktop ne demarre qu'a
+# l'ouverture de session. Une tache S4U se lancerait a 04:00, ne trouverait
+# aucun moteur, se terminerait proprement, et la journee serait perdue sur
+# une execution reussie qui n'a rien fait.
+#
+# Interactive ne se lance pas dans ce cas, et StartWhenAvailable la rattrape
+# a l'ouverture suivante -- precisement quand Docker Desktop revient. Le
+# rattrapage produit une execution UTILE la ou la tolerance S4U produit une
+# execution VIDE.
+#
+# Contrepartie assumee : aucune mise a jour tant qu'aucune session ne
+# s'ouvre. Rien n'etait possible de toute facon.
+$taskPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
 
 # Remplacer une tache existante le cas echeant
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {

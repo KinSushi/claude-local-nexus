@@ -15,11 +15,14 @@
 
     Deux choix expliques, parce qu'ils ne vont pas de soi :
 
-    * LogonType Interactive, et non S4U comme la tache de mise a jour. Le
-      client docker dialogue avec Docker Desktop par un tube nomme ouvert
-      dans la session interactive de l'utilisateur ; une tache S4U s'execute
-      hors de cette session et risque de ne pas l'atteindre. La fenetre est
-      masquee par -WindowStyle Hidden cote pwsh.
+    * LogonType Interactive, et non S4U. Attention au faux motif : les tubes
+      nommes sont GLOBAUX a la machine, pas cloisonnes par session, donc une
+      tache S4U atteindrait tres bien Docker Desktop. Le vrai motif est que
+      sans session le tube n'est pas inaccessible mais INEXISTANT -- Docker
+      Desktop ne demarre qu'a l'ouverture de session. Le seul avantage de
+      S4U, tourner sans session, ne vaut donc rien ici : la tache se
+      lancerait pour ne rien trouver. La fenetre est masquee par
+      -WindowStyle Hidden cote pwsh.
 
     * Un delai avant declenchement. A l'ouverture de session, Docker Desktop
       n'a pas fini de demarrer ; lancer la pile immediatement echouerait sur

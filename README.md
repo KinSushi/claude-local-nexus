@@ -222,6 +222,12 @@ Deux propriétés qui évitent la dérive :
   est exposé automatiquement, dans la limite de ce que la machine peut
   exécuter.
 
+Le compte rendu de chaque exécution est écrit dans `logs/update.log`, comme
+`logs/demarrage.log` pour le démarrage. Les deux tâches s'exécutent dans la
+session ouverte, parce que le client Docker dialogue avec Docker Desktop par
+un tube nommé propre à cette session ; si la machine dort à 04:00, la mise à
+jour est rattrapée à l'ouverture suivante.
+
 ---
 
 ## Sauvegarde : ce qui se retélécharge, et ce qui ne se retélécharge pas
