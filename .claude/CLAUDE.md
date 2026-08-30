@@ -103,8 +103,13 @@ D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system
 D:\EA MT5 PYTHON RENTABLE ROBUSTE
 ```
 
-**Read-only.** Draw on their tools, mechanisms, hooks and ACLs; never write
-into them. The second one carries a standing instruction of its own — fix the
+**Read-only, and by COPY.** Draw on their tools, mechanisms, hooks and ACLs;
+never write into them. Both carry substantial documentation and libraries —
+take a **copy** into this repository when something is needed, never read from
+or depend on the original in place. A dependency on a neighbour's path breaks
+the day that repository moves, and working in place risks writing where
+nothing may be written. The same rule as §0.4 for workers: a copy, never the
+source. The second one carries a standing instruction of its own — fix the
 script, not that project.
 
 The SAS repository declares four hook events and 101 `deny` rules. What has

@@ -379,8 +379,31 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
     choix = (corps.get("choices") or [{}])[0]
+    texte = _sans_raisonnement(choix.get("message", {}).get("content", ""))
+
+    # LA TRACE VERBATIM, deposee ici et nulle part ailleurs : c'est le seul
+    # point ou la reponse brute existe avant d'etre consommee, decoupee ou
+    # imprimee. Plus loin, elle est deja transformee.
+    #
+    # Un workflow massif isole ses agents -- worktrees, plans separes -- et
+    # l'isolation sans recuperation ne vaut rien : la sortie passait dans le
+    # terminal et disparaissait. Le magasin d'observations gardait le debit,
+    # la duree et les jetons, JAMAIS le texte.
+    #
+    # Le depot ne peut pas faire echouer l'appel : nexus_verbatim.deposer ne
+    # leve jamais et rend "" en cas d'echec. Perdre la trace est regrettable,
+    # perdre le travail serait inacceptable.
+    try:
+        import nexus_verbatim
+        nexus_verbatim.deposer(
+            texte, modele,
+            (messages[-1].get("content", "") if messages else "")[:120],
+            plan_de(entetes.get("x-litellm-model-api-base", "")))
+    except Exception:
+        pass
+
     return {
-        "texte": _sans_raisonnement(choix.get("message", {}).get("content", "")),
+        "texte": texte,
         "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
         "servi_par": entetes.get("x-litellm-model-name", "?"),
