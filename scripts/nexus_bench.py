@@ -234,12 +234,20 @@ def afficher_tableau(resultats: dict):
         # endpoint de conversation, ce n'est pas un echec de sa part. Le
         # confondre avec une panne le ferait ecarter des pools pour une
         # raison fausse.
-        if info.get("motif") == "non applicable":
+        # Une entree mesuree en DEBIT ne porte pas les clefs de la latence.
+        # Les lire sans precaution levait un KeyError et faisait echouer
+        # l'affichage apres des mesures pourtant reussies -- et deja ecrites
+        # sur disque, ce qui rendait la panne d'autant plus trompeuse.
+        if info.get("debit_jps") is not None or "debit_ok" in info:
+            jps = info.get("debit_jps")
+            sec = f"{jps:.2f} j/s" if jps else "N/A"
+            verdict = "OK" if info.get("debit_ok") else                       f"FAIL ({info.get('debit_motif') or 'inconnu'})"
+        elif info.get("motif") == "non applicable":
             verdict = "N/A (embedding)"
-        elif info["ok"]:
+        elif info.get("ok"):
             verdict = "OK"
         else:
-            verdict = f"FAIL ({info['motif']})"
+            verdict = f"FAIL ({info.get('motif') or 'inconnu'})"
         print(f"{alias:30} {sec:>10} {verdict:>20}")
 
 # ----- corps principal -------------------------------------------------------
