@@ -45,7 +45,19 @@ MOTIFS = (
     ("jeton-github", re.compile(r"ghp_[A-Za-z0-9]{20,}")),
     ("cle-aws", re.compile(r"AKIA[0-9A-Z]{16}")),
 )
-MOTIF_ENV = re.compile(r"^[A-Z_]{4,}=\S{20,}", re.MULTILINE)
+MOTIF_ENV = re.compile(r"^[A-Z_]{4,}=(\S{20,})", re.MULTILINE)
+
+# Un `.env.example` EST fait pour être suivi : ses valeurs sont des consignes,
+# pas des secrets. Le motif brut ci-dessus a bloqué la première publication sur
+# POSTGRES_PASSWORD, LITELLM_MASTER_KEY et LANGFUSE_HOST — deux marque-places
+# « REMPLACER… » et une URL publique. Trois blocages, zéro secret.
+#
+# Un garde-fou qui bloque toujours finit désactivé, et c'est alors le vrai
+# secret qui passe. On écarte donc ce qui ne peut pas être un secret, et rien
+# d'autre : une valeur qui n'est ni un marque-place ni une URL reste bloquante.
+INOFFENSIF = re.compile(
+    r"^(https?://|\$\{|<|REMPLACER|A_REMPLIR|CHANGE|CHANGEME|TODO|X{3,}|"
+    r"VOTRE|YOUR|EXEMPLE|EXAMPLE|PLACEHOLDER|DUMMY|FAKE)", re.IGNORECASE)
 
 PLAFOND_OCTETS = 2 * 1024 * 1024
 
@@ -111,8 +123,11 @@ def scruter(racine: Path, relatif: str) -> list:
     except OSError:
         return []
     touches = [nom for nom, rx in MOTIFS if rx.search(texte)]
-    if Path(relatif).name.startswith(".env") and MOTIF_ENV.search(texte):
-        touches.append("affectation-env")
+    if Path(relatif).name.startswith(".env"):
+        for valeur in MOTIF_ENV.findall(texte):
+            if not INOFFENSIF.match(valeur):
+                touches.append("affectation-env")
+                break
     return touches
 
 
@@ -192,14 +207,24 @@ def epreuve() -> int:
             print("  [%-6s] %-16s %s" % (OK if bon else BLOQUE, attendu,
                                          "detecte" if bon else "NON DETECTE"))
             echecs += 0 if bon else 1
-        # Et le contraire : un texte anodin ne doit rien declencher.
-        (racine / "lisez.md").write_text(
-            "Poser sa cle sk dans un fichier suivi est interdit.\n",
-            encoding="utf-8")
-        faux = scruter(racine, "lisez.md")
-        print("  [%-6s] %-16s %s" % (OK if not faux else BLOQUE, "texte-anodin",
-                                     "silencieux" if not faux else "FAUX POSITIF"))
-        echecs += 0 if not faux else 1
+        # Et le contraire, qui compte tout autant : ce qui NE doit PAS
+        # declencher. Les trois cas ci-dessous ne sont pas theoriques -- ils
+        # ont bloque la premiere publication reelle de ce depot.
+        muets = [
+            ("texte-anodin", "lisez.md",
+             "Poser sa cle sk dans un fichier suivi est interdit.\n"),
+            ("marque-place", ".env.example",
+             "POSTGRES_PASSWORD=REMPLACER_PAR_UN_MOT_DE_PASSE\n"),
+            ("url-publique", ".env.example",
+             "LANGFUSE_HOST=https://cloud.langfuse.com\n"),
+        ]
+        for nom, fichier, contenu in muets:
+            (racine / fichier).write_text(contenu, encoding="utf-8")
+            faux = scruter(racine, fichier)
+            print("  [%-6s] %-16s %s"
+                  % (OK if not faux else BLOQUE, nom,
+                     "silencieux" if not faux else "FAUX POSITIF : %s" % faux))
+            echecs += 0 if not faux else 1
     print("-" * 60)
     print("Epreuve du garde : %s" % ("tenue." if not echecs
                                      else "%d defaut(s)." % echecs))
