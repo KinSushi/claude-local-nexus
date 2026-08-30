@@ -238,6 +238,22 @@ def mesurer_embedding(gateway: str, alias: str, timeout: float) -> dict:
         return vec
 
     try:
+        # Reveil non chronometre, budget separe et genereux.
+        #
+        # TROISIEME fois que ce piege est pose dans ce depot, et deuxieme
+        # fois que je le repose apres l'avoir corrige : le banc de latence
+        # a du separer chargement et regime etabli, puis le banc de debit
+        # a du recevoir un budget de reveil distinct -- et cette fonction,
+        # ecrite entre les deux, ne l'avait pas.
+        #
+        # Mesure : all-minilm pese 46 Mo et expirait a 120 s. Ce n'etait
+        # pas lui, c'etait son chargement, impute a sa latence.
+        try:
+            _vecteur("reveil")
+        except Exception as exc:
+            return {"latence_ms": None, "marge": None, "ok": False,
+                    "motif": "chargement non tenu : %s" % str(exc)[:50]}
+
         durees = []
         for _ in range(3):
             depart = time.monotonic()

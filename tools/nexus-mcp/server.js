@@ -109,7 +109,26 @@ const DEFAULT_CHAT_MODEL = process.env.NEXUS_CHAT_MODEL || "glm-4.7-flash-local"
 // paraphrase (0.555 contre 0.520), ce qui rendrait la recherche trompeuse.
 // qwen3-embedding separe nettement (0.875 contre 0.417). Il est plus lourd :
 // l'indexation est plus lente, la pertinence bien meilleure.
-const DEFAULT_EMBED_MODEL = process.env.NEXUS_EMBED_MODEL || "qwen3-embedding-8b-local";
+// Modele d'embedding par defaut, choisi sur mesure et non sur la taille.
+//
+// C'etait qwen3-embedding-8b-local : HUIT gigaoctets de poids pour produire
+// des vecteurs. nexus_index_build expirait a 600 s sur le seul dossier
+// scripts/, et nexus_search aussi.
+//
+// Mesure du 2026-08-30, latence et MARGE DISCRIMINANTE -- cos(ancre,
+// proche) moins cos(ancre, eloigne), la capacite a separer le sens :
+//
+//   all-minilm-local          46 Mo    2341 ms   marge 0,289
+//   nomic-embed-text-local   274 Mo    2122 ms   marge 0,210
+//   bge-m3-local             1,2 Go    2187 ms   marge 0,204
+//
+// Le plus petit discrimine le MIEUX. La taille ne predisait ni le delai de
+// demarrage, ni le debit, ni -- on le voit ici -- la qualite des vecteurs.
+//
+// La marge prime sur la latence, a dessein : un embedding rapide qui ne
+// separe pas rend la recherche inutile. Ici les deux vont dans le meme
+// sens, ce qui rend le choix facile ; il ne le sera pas toujours.
+const DEFAULT_EMBED_MODEL = process.env.NEXUS_EMBED_MODEL || "all-minilm-local";
 // Le plus leger des modeles multimodaux installes : sur CPU, un llava:34b
 // mettrait des dizaines de minutes a decrire une capture d'ecran.
 const DEFAULT_VISION_MODEL = process.env.NEXUS_VISION_MODEL || "llava-7b-local";
