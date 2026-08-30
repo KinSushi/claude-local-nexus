@@ -1,0 +1,16 @@
+{
+  "mesure_le": "2026-08-30T19:26:10.660451+00:00",
+  "categories": {
+    "orphelin": [
+      "scripts/nexus_test_outillage.py"
+    ],
+    "preuve_seule": [
+      "scripts/Compact-NexusDisk.ps1",
+      "scripts/Initialize-Nexus.ps1",
+      "scripts/Install-NexusCommande.ps1",
+      "scripts/nexus_boussole.py",
+      "scripts/nexus_ruche.py",
+      "scripts/nexus_worktree.py"
+    ]
+  }
+}

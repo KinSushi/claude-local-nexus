@@ -328,6 +328,41 @@ def ecritures_hors_reserve(source: str) -> list:
     return trouves
 
 
+def controle_cablage() -> None:
+    """
+    Un script neuf a-t-il ete livre sans appelant ?
+
+    Le contrat (0.2.1) impose six maillons a tout mecanisme, et le plus
+    souvent oublie est l'APPELANT : un script existe, il est teste, et
+    personne ne l'invoque jamais. « Prouve » et « utilise » sont deux faits
+    distincts, et tout decompte de scripts livres les confond.
+
+    Mesure du 2026-08-30, avant tout correctif : 14 cables, 28 appeles,
+    5 prouves-seuls, 1 orphelin -- dont nexus_posterior.py, ecrit le matin
+    meme et appele par personne.
+
+    AVERTISSEMENT et non BLOQUANT : un script orphelin n'empeche pas la
+    plateforme de fonctionner, et refuser de demarrer pour cela punirait
+    l'operateur venu justement le cabler. Le cliquet, lui, est dans le
+    script : il echoue des que la liste s'allonge.
+    """
+    outil = os.path.join(ROOT, "scripts", "nexus_cablage.py")
+    if not os.path.isfile(outil):
+        return ignorer("cablage des scripts", "nexus_cablage.py introuvable")
+    try:
+        r = subprocess.run([sys.executable, outil], cwd=ROOT,
+                           capture_output=True, text=True, timeout=180,
+                           encoding="utf-8", errors="replace")
+    except Exception as exc:
+        return ignorer("cablage des scripts", str(exc)[:60])
+    lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    resume = lignes[0] if lignes else "aucune sortie"
+    if r.returncode == 0:
+        return noter("cablage des scripts", True, AVERTISSEMENT, resume) and None
+    noter("cablage des scripts", False, AVERTISSEMENT,
+          " | ".join(lignes[:3])[:200])
+
+
 def controle_pont_lecture_seule() -> None:
     """
     Le pont MCP peut-il abimer un fichier source ?
@@ -1007,6 +1042,7 @@ def main() -> int:
         controle_releves_lisibles,
         controle_travail_sur_original,
         controle_pont_lecture_seule,
+        controle_cablage,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
