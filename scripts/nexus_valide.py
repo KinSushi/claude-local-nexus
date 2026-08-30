@@ -303,15 +303,45 @@ def find_callers(func_names):
     Appelants de chaque fonction, sous la forme {nom: [(fichier, ligne, texte)]}.
 
     Une fonction sans appelant n'est PAS une erreur : elle peut etre neuve,
-    privee, ou appelee dynamiquement. La version precedente levait dans ce
+    privee, ou appelee dynamiquement. La version d'origine levait dans ce
     cas, main() rendait alors le code 2, et ce code pousse l'operateur vers
     un agent PAYANT -- une fonction nouvellement ecrite suffisait donc a
     declencher une depense. La liste reste simplement vide.
+
+    La recherche porte sur tout le depot, si bien que deux modules
+    definissant un nom homonyme voient leurs appelants confondus. Cas reel
+    du 30 aout 2026 : la signature de executer_audit change dans
+    nexus_essaim.py, et l'appel remonte venait de nexus_relais.py, qui
+    definit la sienne et n'importe pas l'autre -- le juge a conclu a une
+    regression inexistante. On ne filtre pas pour autant : ecarter
+    silencieusement des fichiers ecarterait aussi de vrais appelants. Le
+    nom ambigu est signale, et le juge decide en le sachant.
     """
     callers = {fn: [] for fn in func_names}
     for fn in func_names:
-        sortie = git_grep(r"%s\s*(" % re.escape(fn))
-        for line in sortie.splitlines():
+        # Fichiers qui DEFINISSENT le nom. Le depot melange Python et
+        # PowerShell, d'ou les deux mots-clefs.
+        # Motif litteral : `git grep` emploie des expressions regulieres
+        # BASIQUES, ou  ne vaut pas frontiere de mot. Le motif precedent
+        # ne trouvait jamais rien, et l'avertissement ne partait donc
+        # jamais -- une garde inerte, indiscernable d'un depot sain.
+        lignes_def = git_grep("def %s" % fn).splitlines()
+        lignes_def += git_grep("function %s" % fn).splitlines()
+        definisseurs = set()
+        for ligne in lignes_def:
+            if ligne.strip():
+                definisseurs.add(ligne.split(":", 1)[0])
+
+        if len(definisseurs) > 1:
+            # En TETE de liste : le juge doit lire l'avertissement avant les
+            # appelants, pas apres avoir forme son opinion.
+            callers[fn].append(
+                ("(ambiguite)", 0,
+                 "AVERTISSEMENT : le nom '%s' est defini dans %d fichiers (%s). "
+                 "Les appelants ci-dessous peuvent viser une autre fonction du "
+                 "meme nom." % (fn, len(definisseurs), ", ".join(sorted(definisseurs)))))
+
+        for line in git_grep(r"%s\s*(" % re.escape(fn)).splitlines():
             parts = line.split(":", 2)
             if len(parts) != 3:
                 continue
