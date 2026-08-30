@@ -526,6 +526,42 @@ function sansRaisonnement(texte) {
   return s.trim();
 }
 
+// Ce qu'il faut DIRE d'une reponse, en un seul endroit.
+//
+// `sansRaisonnement` rend la chaine vide quand un modele ouvre une balise de
+// pensee sans la refermer, et ce choix est juste : livrer le brouillon serait
+// pire. Mais le vide etait rendu SANS explication, alors que `chat()` detient
+// de quoi la donner. Mesure du 2026-08-30 : nexus_compare a affiche
+// « ### glm-5.3-cloud » suivi de rien, a cote de « 50.4s 8234 tokens ».
+// L'appelant en a conclu « reponse tronquee » -- la conclusion normale quand
+// l'outil sait et se tait. Meme famille que le refus qui ne nommait pas
+// --racine : le code detient la raison et ne la dit pas.
+//
+// La regle vit ici et nulle part ailleurs. Elle etait recopiee dans deux
+// appelants et absente des deux autres, ce qui est precisement la facon dont
+// deux copies finissent par diverger.
+function mentionsReponse(result) {
+  const mentions = [];
+  // Le libelle est repris MOT POUR MOT. « max_tokens » y est le nom du
+  // parametre, non une valeur a substituer : un premier jet l'avait pris pour
+  // un gabarit et aurait affiche « a undefined tokens », transformant une
+  // mention juste en mention cassee.
+  if (result.tronquee) mentions.push("REPONSE TRONQUEE a max_tokens");
+
+  const vide = !result.text || !String(result.text).trim();
+  const produits = Number(result.tokens_sortie) || 0;
+  if (vide && produits > 0) {
+    mentions.push("REPONSE VIDE apres retrait du raisonnement (" +
+                  produits + " jetons produits)");
+  } else if (vide) {
+    // Cas different, et il ne faut pas accuser le retrait du raisonnement
+    // d'un vide qu'il n'a pas cause : le modele n'a rien emis du tout.
+    mentions.push("REPONSE VIDE : le modele n'a produit aucun jeton");
+  }
+
+  return mentions.length ? " · " + mentions.join(" · ") : "";
+}
+
 // Temperature par defaut des outils du pont.
 //
 // Le serveur n'en envoyait AUCUNE, si bien que les douze outils tournaient
@@ -667,6 +703,10 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     model: resolved,
     upstream: headers["x-litellm-model-name"] || "",
     tokens: (usage.prompt_tokens || 0) + (usage.completion_tokens || 0),
+    // Les jetons de SORTIE a part. `tokens` melange entree et sortie, et
+    // d'autres appelants le lisent : annoncer « N jetons produits » avec ce
+    // total serait faux, et ce depot ne publie pas de chiffre faux.
+    tokens_sortie: sortie,
     tronquee,
     // Le cout reel, tel que la passerelle le calcule. Preferable a une
     // affirmation « cout 0 » deduite du nom du modele.
@@ -2005,7 +2045,7 @@ async function callTool(name, args) {
 
     // Le plan est annonce, pas sous-entendu : ce qui a ete facture et ce
     // qui est sorti de la machine doit se lire sans enquete.
-    const coupe = result.tronquee ? " · REPONSE TRONQUEE a max_tokens" : "";
+    const coupe = mentionsReponse(result);
     // La TEMPERATURE employee est journalisee : un reglage qui varie
     // sans etre dit rendrait un resultat inexplicable, ce qui est le
     // seul argument serieux contre l'adaptation automatique.
@@ -2031,7 +2071,7 @@ async function callTool(name, args) {
     // Deduite du plan, elle annoncait « cout 0 » pour plane:"all", dont le
     // pool contient pourtant des modeles Ollama Cloud.
     const billed = planOf(result.model);
-    return `[${router} -> ${result.model} · plan ${plane} · ${result.tokens} tokens · ${billed}]\n\n${result.text}`;
+    return `[${router} -> ${result.model} · plan ${plane} · ${result.tokens} tokens · ${billed}${mentionsReponse(result)}]\n\n${result.text}`;
   }
 
   if (name === "nexus_context") {
@@ -2122,7 +2162,7 @@ async function callTool(name, args) {
     }];
     const result = await chat(model, messages, 1024);
     const kb = Math.round(taille / 1024);
-    const coupe = result.tronquee ? " · REPONSE TRONQUEE a max_tokens" : "";
+    const coupe = mentionsReponse(result);
     return `[${result.model} · ${planOf(result.model)} · image ${kb} Ko${coupe}]\n\n${result.text}`;
   }
 
@@ -2319,8 +2359,8 @@ async function callTool(name, args) {
       try {
         const result = await chat(model, messages.slice(), args.max_tokens || 1024);
         const seconds = (Date.now() - started) / 1000;
-        lignes.push(`  ${model.padEnd(30)} ${seconds.toFixed(1).padStart(7)}s  ${String(result.tokens).padStart(7)} tokens`);
-        corps.push(`### ${model}\n${result.text.trim()}`);
+        lignes.push(`  ${model.padEnd(30)} ${seconds.toFixed(1).padStart(7)}s  ${String(result.tokens).padStart(7)} tokens${mentionsReponse(result)}`);
+        corps.push(`### ${model}${mentionsReponse(result)}\n${result.text.trim()}`);
       } catch (err) {
         lignes.push(`  ${model.padEnd(30)} ${"echec".padStart(8)}  ${err.message.slice(0, 60)}`);
         corps.push(`### ${model}\n(echec : ${err.message})`);

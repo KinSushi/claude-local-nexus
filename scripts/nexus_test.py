@@ -1246,7 +1246,7 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee", "semaphore"],
+                                 "shell", "portee", "semaphore", "mentions"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1281,6 +1281,8 @@ def main() -> int:
         test_portee_import()
     if args.only in (None, "semaphore"):
         test_semaphore_local()
+    if args.only in (None, "mentions"):
+        test_mentions_reponse()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1418,36 +1420,77 @@ def test_semaphore_local() -> None:
     pris apres l'attente -- doit etre VUE. Sans elle, six cas verts ne
     prouveraient que la bonne humeur du harnais.
     """
-    print("\n--- SEMAPHORE DU PLAN LOCAL : la borne tient-elle ? ---")
+    jouer_epreuve_node("epreuve_semaphore.js", "semaphore local",
+                       "SEMAPHORE DU PLAN LOCAL : la borne tient-elle ?")
 
-    epreuve = os.path.join(ROOT, "tools", "nexus-mcp", "epreuve_semaphore.js")
+
+def jouer_epreuve_node(fichier: str, etiquette: str, titre: str) -> None:
+    """
+    Joue une epreuve Node du pont et reverse ses cas dans la suite.
+
+    Ces epreuves lisent le CODE REEL de `server.js` et l'exercent : tester
+    une copie ne prouverait que la copie. Elles portent chacune une
+    CONTRE-EPREUVE, sans quoi une serie de cas verts ne prouverait que la
+    bonne humeur du harnais.
+
+    Un lanceur commun plutot qu'un par epreuve : la duplication est
+    precisement ce que le pont vient de se voir reprocher, ou une meme regle
+    vivait en deux copies et manquait aux deux autres appelants.
+    """
+    print("\n--- %s ---" % titre)
+
+    epreuve = os.path.join(ROOT, "tools", "nexus-mcp", fichier)
     if not os.path.isfile(epreuve):
-        skip("semaphore local", "epreuve_semaphore.js introuvable")
+        skip(etiquette, "%s introuvable" % fichier)
         return
     try:
         r = subprocess.run(["node", epreuve], cwd=ROOT, capture_output=True,
                            text=True, encoding="utf-8", errors="replace",
                            timeout=300)
     except FileNotFoundError:
-        skip("semaphore local", "node introuvable")
+        skip(etiquette, "node introuvable")
         return
     except subprocess.TimeoutExpired:
-        check("semaphore local", False, "pas de reponse en 300 s")
+        check(etiquette, False, "pas de reponse en 300 s")
         return
 
-    lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
-    for ligne in lignes:
-        if ligne.startswith("[OK  ]") or ligne.startswith("[RATE]"):
-            # rpartition, jamais split : deux cas s'appelaient tous deux
-            # « limite 1 » dans le rapport, le libelle etant coupe a son
-            # PREMIER deux-points au lieu du dernier.
-            corps = ligne[6:].strip()
-            nom, _, detail = corps.rpartition(" : ")
-            if not nom:
-                nom, detail = corps, ""
-            check(nom, ligne.startswith("[OK  ]"), detail[:70])
-    if not lignes:
-        check("semaphore local", False, "aucune sortie de l'epreuve")
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        # rpartition, jamais split : deux cas s'appelaient tous deux
+        # « limite 1 » dans le rapport, le libelle etant coupe a son PREMIER
+        # deux-points au lieu du dernier.
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    # Une epreuve muette n'est pas une epreuve reussie : si elle n'a rien
+    # imprime, c'est elle qui est cassee, et le silence se lirait comme un
+    # succes.
+    if not vus:
+        check(etiquette, False, "aucun cas rendu par l'epreuve (code %s)" % r.returncode)
+
+
+def test_mentions_reponse() -> None:
+    """
+    Un corps vide dit-il pourquoi il est vide ?
+
+    `sansRaisonnement` rend la chaine vide quand un modele ouvre une balise
+    de pensee sans la refermer -- choix juste, livrer le brouillon serait
+    pire. Mais le vide etait rendu SANS explication alors que `chat()`
+    detenait de quoi la donner. Mesure du 2026-08-30 : nexus_compare a
+    affiche « ### glm-5.3-cloud » suivi de rien, a cote de « 50.4s 8234
+    tokens », et l'appelant en a conclu « reponse tronquee ».
+
+    L'epreuve rejoue ce cas-la, avec ses vrais chiffres, plutot qu'un cas
+    invente pour la circonstance.
+    """
+    jouer_epreuve_node("epreuve_mentions.js", "mentions de reponse",
+                       "MENTIONS DE REPONSE : un corps vide dit-il pourquoi ?")
 
 
 def test_ruche() -> None:
