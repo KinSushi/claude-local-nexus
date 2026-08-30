@@ -353,6 +353,48 @@ function planOf(alias) {
   return "local, cout 0";
 }
 
+// Retire la chaine de pensee que certains modeles laissent dans `content`.
+//
+// Constate le 30 aout 2026 cote Python : une reponse rendue a l'utilisateur
+// contenait tout le raisonnement du modele, puis « </think>702 ». Le chemin
+// MCP recopiait content tel quel et avait le meme defaut -- or c'est lui que
+// Claude Code appelle. Le raisonnement n'est pas la reponse : le livrer donne
+// un brouillon a la place d'un resultat, et le MAP-REDUCE concatenerait ces
+// hesitations dans le texte soumis au REDUCE.
+const BALISES_PENSEE = ["think", "thinking", "reasoning"];
+
+function sansRaisonnement(texte) {
+  if (!texte) return "";
+  let s = String(texte);
+
+  // Blocs complets, une balise a la fois : une backreference  serait lue
+  // comme un echappement octal dans un template literal, ce que Node refuse.
+  for (const b of BALISES_PENSEE) {
+    s = s.replace(new RegExp("<\\s*" + b + "\\s*>[\\s\\S]*?<\\s*/\\s*" + b + "\\s*>", "gi"), "");
+  }
+
+  // Ouverture sans fermeture : la reponse n'est jamais venue. Rendre le
+  // raisonnement brut serait pire que ne rien rendre -- l'appelant croirait
+  // tenir un resultat.
+  for (const b of BALISES_PENSEE) {
+    if (new RegExp("<\\s*" + b + "\\s*>", "i").test(s)) return "";
+  }
+
+  // Fermeture sans ouverture : le raisonnement a ete tronque en amont, la
+  // reponse est ce qui suit la derniere fermeture.
+  let dernier = -1;
+  for (const b of BALISES_PENSEE) {
+    const re = new RegExp("<\\s*/\\s*" + b + "\\s*>", "gi");
+    let m;
+    while ((m = re.exec(s)) !== null) {
+      const bout = m.index + m[0].length;
+      if (bout > dernier) dernier = bout;
+    }
+  }
+  if (dernier >= 0) s = s.slice(dernier);
+  return s.trim();
+}
+
 async function chat(model, messages, maxTokens, timeoutMs) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
@@ -377,7 +419,7 @@ async function chat(model, messages, maxTokens, timeoutMs) {
     body.model ||
     model;
   return {
-    text: (choice.message && choice.message.content) || "",
+    text: sansRaisonnement((choice.message && choice.message.content) || ""),
     model: resolved,
     upstream: headers["x-litellm-model-name"] || "",
     tokens: (usage.prompt_tokens || 0) + (usage.completion_tokens || 0),
