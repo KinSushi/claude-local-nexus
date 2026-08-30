@@ -418,7 +418,12 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     return resultat
 
 
+import os
+
 def executer(tache: dict, cle: str) -> dict:
+    # Le mode local_seul force l'utilisation exclusive de modèles dont le nom se termine par '-local'.
+    local_seul = os.environ.get("NEXUS_LOCAL_SEUL") == "1"
+
     nom = tache.get("nom") or tache.get("modele") or "tache"
     # Le modèle par défaut a été changé de qwen3-coder-30b-local à codestral-22b-local.
     # Raison : les modèles >=30 B expirent après 900 s, rendant le défaut inutilisable.
@@ -453,12 +458,26 @@ def executer(tache: dict, cle: str) -> dict:
             "refus": refus,
             "plan": plan_de(resultat.get("adresse", "?")),
         })
+        if local_seul:
+            # Verifier que le plan utilise bien le mode local.
+            if resultat.get("plan") != "local":
+                return {"nom": nom, "modele": modele,
+                        "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
+            resultat["local_seul"] = True
         return resultat
 
     # Sinon appel direct (chemin existant)
     essais, echecs = [], []
     # Déduplication des candidats tout en conservant l'ordre.
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+
+    if local_seul:
+        # Restreindre aux alias terminant par '-local'.
+        candidats = [c for c in candidats if c.endswith("-local")]
+        if not candidats:
+            return {"nom": nom, "modele": modele,
+                    "erreur": "aucun modele local disponible pour NEXUS_LOCAL_SEUL=1"}
+
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
@@ -490,7 +509,7 @@ def executer(tache: dict, cle: str) -> dict:
                 # Le modele a atteint son plafond sans produire de texte.
                 # On signale le probleme sans basculer.
                 # Ajout de la cle `erreur` pour que les appelants qui ne
-                # testent que `erreur` détectent correctement le problème.
+                # testent que `erreur` detectent correctement le probleme.
                 resultat.update({
                     "nom": nom,
                     "modele": candidat,
@@ -508,6 +527,13 @@ def executer(tache: dict, cle: str) -> dict:
 
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "plan": plan_de(resultat["adresse"])})
+        if local_seul:
+            # Verifier que le plan utilise bien le mode local.
+            if resultat.get("plan") != "local":
+                return {"nom": nom, "modele": candidat,
+                        "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
+            resultat["local_seul"] = True
+
         if candidat != modele:
             resultat["bascule"] = "%s -> %s apres : %s" % (
                 modele, candidat, " | ".join(echecs))
