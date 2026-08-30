@@ -1117,7 +1117,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "code", "releve"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "code", "releve", "ruche"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1136,6 +1136,8 @@ def main() -> int:
         test_policy(models)
     if args.only in (None, "code"):
         test_code()
+    if args.only in (None, "ruche"):
+        test_ruche()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1150,5 +1152,178 @@ def main() -> int:
     return 1 if FAILED else 0
 
 
+
+
+def test_ruche() -> None:
+    """
+    Un essaim en panne peut-il faire croire a la ruche qu'il a reussi ?
+
+    Historique : la ruche a deja annonce 36 cibles "abouties", avec des
+    horodatages identiques a la microseconde, sans avoir lance un seul
+    essaim (corrige en 3abe81a). Ces epreuves simulent un essaim qui
+    echoue, qui expire ou qui est introuvable -- sans jamais appeler un
+    vrai modele -- afin qu'une regression future soit detectee ici, en
+    quelques secondes, plutot que sur un vrai budget de temps et de jetons.
+    """
+    print("\n--- RUCHE : un essaim en panne produit-il vraiment un echec ? ---")
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    try:
+        import nexus_ruche as ruche
+    except Exception as exc:
+        check("module ruche importable", False, str(exc))
+        return
+
+    import tempfile
+    import textwrap
+    from pathlib import Path
+
+    def ecrire_faux_script(dossier: Path, nom: str, code: str) -> Path:
+        chemin = dossier / nom
+        chemin.write_text(textwrap.dedent(code), encoding="utf-8")
+        return chemin
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        cible_a = tmp_path / "faux_a.py"
+        cible_b = tmp_path / "faux_b.py"
+        cible_a.write_text("# cible de test\n" * 31, encoding="utf-8")
+        cible_b.write_text("# cible de test\n" * 31, encoding="utf-8")
+        lot = [cible_a, cible_b]
+
+        script_original = ruche.ESSAIM_SCRIPT
+        etat_original = ruche.ETAT_FICHIER
+        decouvrir_original = ruche.decouvrir_cibles
+        argv_original = sys.argv
+        timeout_original = os.environ.get("NEXUS_RUCHE_TIMEOUT")
+
+        # Etat isole : sans ce remplacement, les cas qui appellent
+        # ruche.main() ecriraient de vraies cibles temporaires dans le
+        # journal reel du depot (.nexus/ruche-etat.json).
+        ruche.ETAT_FICHIER = tmp_path / "etat-test.json"
+
+        try:
+            # RETOUR -- ECHEC : l'essaim se termine en erreur sans rien
+            # ecrire. Aucune cible ne doit ressortir "ok".
+            script = ecrire_faux_script(tmp_path, "essaim_echec.py", """
+                import sys
+                print("erreur simulee", file=sys.stderr)
+                sys.exit(1)
+            """)
+            ruche.ESSAIM_SCRIPT = script
+            resultats = ruche.lancer_essaim(lot, False, "cloud", 1)
+            check("essaim en echec => echec pour toutes les cibles",
+                  all(r["verdict"] == "echec" for r in resultats.values()),
+                  str({Path(k).name: v["verdict"] for k, v in resultats.items()}))
+
+            # RETOUR -- EXPIRE : l'essaim ne repond plus. Avant le
+            # correctif, ce cas bloquait la ruche indefiniment (aucun
+            # timeout sur le sous-processus). Le delai est plafonne tres
+            # bas pour que le test reste rapide.
+            script = ecrire_faux_script(tmp_path, "essaim_expire.py", """
+                import time
+                time.sleep(30)
+            """)
+            ruche.ESSAIM_SCRIPT = script
+            os.environ["NEXUS_RUCHE_TIMEOUT"] = "2"
+            depart = time.time()
+            resultats = ruche.lancer_essaim(lot, False, "cloud", 1)
+            duree = time.time() - depart
+            check("essaim expire => echec sans blocage",
+                  all(r["verdict"] == "echec" for r in resultats.values()) and duree < 20,
+                  "%.1fs" % duree)
+            os.environ.pop("NEXUS_RUCHE_TIMEOUT", None)
+
+            # RETOUR -- NE LANCE RIEN : le script d'essaim est introuvable.
+            ruche.ESSAIM_SCRIPT = tmp_path / "absent.py"
+            resultats = ruche.lancer_essaim(lot, False, "cloud", 1)
+            check("essaim introuvable => echec",
+                  all(r["verdict"] == "echec" for r in resultats.values()),
+                  str({Path(k).name: v["verdict"] for k, v in resultats.items()}))
+
+            # ALLER -- un succes reel (code 0, CSV "ok") doit rester un succes.
+            script_ok = ecrire_faux_script(tmp_path, "essaim_ok.py", """
+                import argparse, sys, os
+                p = argparse.ArgumentParser()
+                p.add_argument("--cibles", nargs="+", required=True)
+                p.add_argument("--plans", default="cloud")
+                a = p.parse_args()
+                for c in a.cibles:
+                    print("%s,ok,0,5,modele-faux,%s" % (os.path.basename(c), a.plans))
+                sys.exit(0)
+            """)
+            ruche.ESSAIM_SCRIPT = script_ok
+            resultats = ruche.lancer_essaim(lot, False, "cloud", 1)
+            check("essaim reussi => ok pour toutes les cibles",
+                  all(r["verdict"] == "ok" for r in resultats.values()),
+                  str({Path(k).name: v["verdict"] for k, v in resultats.items()}))
+
+            # ALLER/RETOUR -- ECHEC PARTIEL : une cible en echec ne doit
+            # plus noyer les cibles reellement corrigees du meme lot. Avant
+            # le correctif, ce CSV etait relu comme du JSON (toujours en
+            # echec) et la ruche retombait sur le seul code de retour du
+            # sous-processus : un echec sur deux faisait echec du lot
+            # entier, et les cibles deja corrigees repassaient inutilement
+            # au banc gratuit a l'execution suivante.
+            script_mixte = ecrire_faux_script(tmp_path, "essaim_mixte.py", """
+                import argparse, sys, os
+                p = argparse.ArgumentParser()
+                p.add_argument("--cibles", nargs="+", required=True)
+                p.add_argument("--plans", default="cloud")
+                a = p.parse_args()
+                noms = [os.path.basename(c) for c in a.cibles]
+                for i, nom in enumerate(noms):
+                    print("%s,%s,1,10,modele-faux,%s" % (nom, "echec" if i == 0 else "ok", a.plans))
+                sys.exit(1)
+            """)
+            ruche.ESSAIM_SCRIPT = script_mixte
+            resultats = ruche.lancer_essaim(lot, False, "cloud", 1)
+            verdict_a = resultats.get(str(cible_a), {}).get("verdict")
+            verdict_b = resultats.get(str(cible_b), {}).get("verdict")
+            check("echec partiel : verdict distinct par cible",
+                  verdict_a == "echec" and verdict_b == "ok",
+                  "faux_a=%s, faux_b=%s" % (verdict_a, verdict_b))
+
+            # RETOUR, niveau ruche entiere -- aucune cible decouverte ne
+            # doit jamais rendre un succes. all() sur un dictionnaire vide
+            # vaut True en Python : c'etait le piege exact.
+            ruche.decouvrir_cibles = lambda: []
+            sys.argv = ["nexus_ruche.py"]
+            code = ruche.main()
+            check("aucune cible decouverte => code de sortie en echec",
+                  code == 1, "code %s" % code)
+
+            # ALLER, niveau ruche entiere -- le meme garde-fou ne doit pas
+            # se declencher a tort quand des cibles existent reellement.
+            ruche.decouvrir_cibles = lambda: [cible_a]
+            ruche.ESSAIM_SCRIPT = script_ok
+            sys.argv = ["nexus_ruche.py", "--essaims", "1", "--taille-lot", "1",
+                        "--tout-refaire"]
+            code = ruche.main()
+            check("cible reelle traitee avec succes => code de sortie ok",
+                  code == 0, "code %s" % code)
+
+            # ALLER, --max-cibles -- sans plafond, une execution couvre tout
+            # le depot decouvert quel que soit --essaims/--taille-lot ; avec
+            # lui, un essai reel a petit perimetre redevient possible.
+            # Verifie en sous-processus reel : --simuler garantit un cout et
+            # un trafic reseau nuls.
+            script_ruche = os.path.join(ROOT, "scripts", "nexus_ruche.py")
+            result = subprocess.run(
+                [sys.executable, script_ruche, "--max-cibles", "2",
+                 "--taille-lot", "2", "--essaims", "1", "--simuler",
+                 "--tout-refaire"],
+                capture_output=True, text=True, timeout=60)
+            check("--max-cibles borne le volume traite",
+                  "Cibles traitees cette execution : 2" in result.stdout,
+                  (result.stdout.strip().splitlines() or ["aucune sortie"])[-1])
+        finally:
+            ruche.ESSAIM_SCRIPT = script_original
+            ruche.ETAT_FICHIER = etat_original
+            ruche.decouvrir_cibles = decouvrir_original
+            sys.argv = argv_original
+            if timeout_original is None:
+                os.environ.pop("NEXUS_RUCHE_TIMEOUT", None)
+            else:
+                os.environ["NEXUS_RUCHE_TIMEOUT"] = timeout_original
 if __name__ == "__main__":
     sys.exit(main())

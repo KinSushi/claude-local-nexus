@@ -167,7 +167,7 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
     # Construction de la ligne de commande.
     # --------------------------------------------------------------
     # COMMENTAIRE : seules les options reconnues par nexus_essaim.py
-    # sont transmises.  L'option --essaims appartient à la ruche et
+    # sont transmises.  L'option --essaims appartient a la ruche et
     # provoquerait "unrecognized arguments" dans l'essaim, ce qui
     # ferait échouer tout le lot.  De même, l'option correcte pour le
     # plan est --plans (pluriel).  En filtrant ainsi, on évite que
@@ -180,6 +180,18 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
         "--plans", plan
     ]
 
+    # Delai maximal avant de considerer l'essaim comme expire. nexus_essaim.py
+    # borne deja chacune de ses etapes internes (audit, correction) a 900 s
+    # via NEXUS_AGENT_TIMEOUT / NEXUS_TIMEOUT, mais rien ici ne bornait le
+    # sous-processus dans son ensemble : sans ce delai, un lot dont une seule
+    # cible restait bloquee (reseau, modele qui ne repond plus) suspendait la
+    # ruche entiere indefiniment, sans jamais produire ni rapport ni code de
+    # sortie. Une variable d'environnement permet de l'elargir pour un gros
+    # lot (plusieurs vagues internes si taille-lot depasse le --parallele de
+    # l'essaim) sans toucher au code.
+    import subprocess
+    timeout_sec = int(os.getenv("NEXUS_RUCHE_TIMEOUT", "1800"))
+
     try:
         proc = run(
             cmd,
@@ -188,10 +200,23 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
             encoding="utf-8",
             errors="replace",
             check=False,
+            timeout=timeout_sec,
         )
         code = proc.returncode
         sortie_err = proc.stderr.strip()
         sortie_out = proc.stdout.strip()
+    except subprocess.TimeoutExpired:
+        # Le sous-processus est tue par subprocess.run : on ne peut plus
+        # affirmer quoi que ce soit sur l'etat individuel de chaque cible
+        # (nexus_essaim.py restaure lui-meme sa sauvegarde avant d'atteindre
+        # ses propres delais internes, mais un delai externe plus court peut
+        # interrompre avant cette restauration). On les marque donc toutes en
+        # echec plutot que de deviner un succes.
+        msg = f"Essaim expire apres {timeout_sec}s"
+        print(msg)
+        for p in lot:
+            resultats[str(p)] = {"verdict": "echec", "cause": msg}
+        return resultats
     except FileNotFoundError as e:
         code = 1
         sortie_err = str(e)
@@ -201,25 +226,24 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
         sortie_err = e.stderr.strip() if e.stderr else str(e)
         sortie_out = e.stdout.strip() if e.stdout else ""
 
-    # Tentative d’interpréter une sortie détaillée (JSON) fournie par l’essaim.
-    # Si le parsing échoue, on retombe sur le verdict global basé sur le code retour.
-    if sortie_out:
-        try:
-            details = json.loads(sortie_out)
-            if isinstance(details, dict):
-                for cible_str, info in details.items():
-                    verdict = info.get("verdict", "echec")
-                    cause = info.get("cause", "")
-                    resultats[cible_str] = {"verdict": verdict, "cause": cause}
-                return resultats
-        except Exception:
-            # Le format n’est pas celui attendu ; on ignore et on utilise le fallback.
-            pass
+    # Lecture du rapport reel de l'essaim : une ligne CSV par cible
+    # ("nom,verdict,nb_trouvailles,tokens,modele,plan"), jamais du JSON --
+    # nexus_essaim.py n'en a jamais produit. La tentative json.loads()
+    # precedente echouait donc a chaque appel et retombait systematiquement
+    # sur le seul code de retour du sous-processus pour TOUT le lot : un
+    # echec sur une cible parmi plusieurs faisait alors classer "echec" les
+    # cibles reellement corrigees du meme lot, qui repassaient inutilement
+    # au banc a l'execution suivante. Les cibles non reconnues (nom
+    # ambigu, ligne absente parce que l'essaim a ete interrompu en cours de
+    # lot) retombent sur ce meme verdict global, seul renseignement fiable
+    # qui reste alors disponible pour elles.
+    par_nom = parser_rapport_essaim(sortie_out, lot) if sortie_out else {}
 
-    statut = "ok" if code == 0 else "echec"
-    cause = "" if statut == "ok" else sortie_err or "code de retour non nul"
+    statut_defaut = "ok" if code == 0 else "echec"
+    cause_defaut = "" if statut_defaut == "ok" else (sortie_err or "code de retour non nul")
     for p in lot:
-        resultats[str(p)] = {"verdict": statut, "cause": cause}
+        cle = str(p)
+        resultats[cle] = par_nom.get(cle, {"verdict": statut_defaut, "cause": cause_defaut})
     return resultats
 
 
@@ -284,10 +308,17 @@ def rapport_final(etat: dict, total_cibles: int, traitees: int, start_time: floa
     echec = sum(1 for v in etat.values() if v["verdict"] == "echec")
     ignore = sum(1 for v in etat.values() if v["verdict"] == "ignore")
 
+    # "start_time" etait recu mais jamais lu : la ruche ne pouvait donc pas
+    # dire elle-meme combien de temps une execution avait pris, ce qui
+    # oblige quiconque veut mesurer l'effet de --essaims a chronometrer de
+    # l'exterieur a chaque fois.
+    duree = time.time() - start_time
+
     # Utiliser un bloc try/except pour garantir que le rapport s'affiche même si
     # un caractère non encodable apparaît dans les données.
     try:
         print("\n--- Rapport ---")
+        print(f"Duree de cette execution       : {duree:.1f}s")
         print(f"Cibles traitees cette execution : {traitees_durant}")
         print(f"Cibles sautees (deja abouties) : {sautees}")
         print(f"Total cibles connues           : {total_cibles}")
@@ -306,6 +337,7 @@ def rapport_final(etat: dict, total_cibles: int, traitees: int, start_time: floa
         # En cas d'erreur d'encodage, on réessaye avec remplacement des caractères.
         sys.stdout.buffer.write(
             ("\n--- Rapport (degrade) ---\n"
+             f"Duree de cette execution       : {duree:.1f}s\n"
              f"Cibles traitees cette execution : {traitees_durant}\n"
              f"Cibles sautees (deja abouties) : {sautees}\n"
              f"Total cibles connues           : {total_cibles}\n"
@@ -340,6 +372,13 @@ def main() -> int:
                         help="Ignorer le journal et tout retraiter.")
     parser.add_argument("--simuler", action="store_true",
                         help="Ne pas lancer de sousprocessus, simuler les resultats.")
+    parser.add_argument("--max-cibles", type=int, default=None,
+                        help="Plafonner le nombre de cibles traitees par cette "
+                             "execution, prises dans l'ordre de priorite. Sans "
+                             "ce plafond, --essaims et --taille-lot ne bornent "
+                             "que la concurrence : une seule invocation traite "
+                             "tout le depot decouvert, ce qui rend impossible "
+                             "un essai reel a perimetre reduit.")
     args = parser.parse_args()
 
     # Charger ou reinitialiser le journal d'etat
@@ -348,9 +387,22 @@ def main() -> int:
     else:
         etat = charger_etat()
 
-    # Decouverte et priorisation
+    # Decouverte, priorisation, puis plafond optionnel applique sur la liste
+    # deja triee (les cibles les plus prioritaires restent en tete).
     cibles = decouvrir_cibles()
     cibles = prioriser(cibles)
+    if args.max_cibles is not None:
+        cibles = cibles[: max(0, args.max_cibles)]
+
+    # Aucune cible a traiter : ni une decouverte vide (glob casse, mauvais
+    # repertoire courant) ni un plafond nul ne doivent produire un succes
+    # silencieux. Avant ce garde-fou, les deux cas laissaient "etat" vide et
+    # "return 0 if all(...) else 1" valait 0 : all() sur un dictionnaire
+    # vide est vrai en Python, donc "aucun travail" et "tout a reussi"
+    # rendaient exactement le meme code de sortie.
+    if not cibles:
+        print("Aucune cible a traiter : rien n'a ete couvert.")
+        return 1
 
     total_cibles = len(cibles)
 
@@ -374,5 +426,46 @@ def main() -> int:
     return 0 if all(v["verdict"] == "ok" for v in etat.values()) else 1
 
 
+
+
+def parser_rapport_essaim(sortie_out: str, lot: list[Path]) -> dict:
+    """
+    Interprete le rapport CSV d'un essaim (une ligne par cible : nom de
+    fichier, verdict, nb_trouvailles, tokens, modele, plan) et le rattache
+    aux chemins complets du lot par nom de fichier.
+
+    Retourne {chemin_complet: {"verdict": "ok"|"echec", "cause": str}} pour
+    les seules cibles reconnues sans ambiguite. Si deux cibles du meme lot
+    partagent le meme nom de fichier, aucune des deux n'est rattachee : la
+    correspondance redeviendrait un pari, pas une lecture, et l'appelant
+    retombe alors sur le verdict global du lot pour ces cibles-la.
+    """
+    correspondance = {
+        "ok": "ok",
+        "sans trouvaille": "ok",
+        "echec": "echec",
+        "inconnu": "echec",
+    }
+
+    par_nom_lot: dict = {}
+    for p in lot:
+        par_nom_lot.setdefault(p.name, []).append(p)
+    noms_uniques = {nom: chemins[0] for nom, chemins in par_nom_lot.items() if len(chemins) == 1}
+
+    resultats = {}
+    for ligne in sortie_out.splitlines():
+        champs = ligne.strip().split(",")
+        if len(champs) < 2:
+            continue
+        nom, verdict_brut = champs[0], champs[1]
+        chemin = noms_uniques.get(nom)
+        if chemin is None:
+            continue
+        verdict = correspondance.get(verdict_brut, "echec")
+        resultats[str(chemin)] = {
+            "verdict": verdict,
+            "cause": "" if verdict == "ok" else f"essaim: {verdict_brut}",
+        }
+    return resultats
 if __name__ == "__main__":
     sys.exit(main())
