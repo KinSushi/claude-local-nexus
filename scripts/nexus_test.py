@@ -1640,6 +1640,36 @@ def test_isolation() -> None:
           "if promotion_en_cours and backup_path.exists():" in code,
           "finally borne a la fenetre de promotion")
 
+    # -- 4. Le pont, lui, ne se protege pas par une copie mais par un
+    # invariant : il ne modifie AUCUN fichier source. Lui faire copier les
+    # fichiers avant lecture n'aurait protege de rien -- il ne les ouvre
+    # jamais en ecriture -- et une protection decorative se lit comme une
+    # garantie, ce qui est pire qu'aucune.
+    try:
+        import nexus_conformite
+    except Exception as exc:
+        skip("pont en lecture seule", str(exc).splitlines()[0][:60])
+        return
+
+    pont = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
+    if not os.path.isfile(pont):
+        skip("pont en lecture seule", "server.js introuvable")
+        return
+    with io.open(pont, encoding="utf-8", errors="replace") as fh:
+        source_pont = fh.read()
+    reelles = nexus_conformite.ecritures_hors_reserve(source_pont)
+    check("le pont n'ecrit rien hors de .nexus", not reelles,
+          "%d ecriture(s) : %s" % (len(reelles), reelles[:2]) if reelles
+          else "les cinq ecritures visent observations et index")
+
+    # Et l'epreuve du controle lui-meme : zero sur un pont sain ne prouve
+    # rien, un motif casse rendrait le meme silence.
+    injecte = source_pont + chr(10) +         'fs.writeFileSync(cheminSource, resultatDuModele, "utf8");' + chr(10)
+    vues = nexus_conformite.ecritures_hors_reserve(injecte)
+    check("le controle voit une ecriture illegitime injectee",
+          len(vues) == len(reelles) + 1,
+          "%d -> %d apres injection" % (len(reelles), len(vues)))
+
 
 if __name__ == "__main__":
     sys.exit(main())

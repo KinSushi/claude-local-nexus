@@ -286,6 +286,85 @@ def controle_mcp_a_jour() -> None:
           "code : la redemarrer" % disque)
 
 
+# Ce que le pont a le droit d'ecrire, et rien d'autre. Trois destinations,
+# toutes sous « .nexus » : le magasin d'observations et l'index (ecrit par
+# fichier provisoire puis renomme, pour qu'une interruption ne laisse pas un
+# JSON tronque).
+RESERVE_ECRITURE = ("OBSERVATIONS", "INDEX_DIR", "INDEX_PATH", "provisoire")
+
+ECRITURES_JS = ("writeFileSync", "appendFileSync", "createWriteStream",
+                "unlinkSync", "renameSync", "rmSync", "rmdirSync",
+                "copyFileSync", "truncateSync", "writeSync")
+
+
+def ecritures_hors_reserve(source: str) -> list:
+    """
+    Appels d'ecriture du pont dont la destination n'est pas dans la reserve.
+
+    Fonction pure, sans acces disque : elle est ainsi eprouvable sur un faux
+    source. Un controle qui ne peut etre mis en defaut sur commande ne prouve
+    rien -- son silence sur un fichier sain ressemble trait pour trait au
+    silence d'un motif casse.
+
+    `mkdirSync` est volontairement absent de la liste : creer un repertoire
+    n'abime aucune source, et l'inclure aurait ajoute du bruit sans ajouter
+    de garantie.
+    """
+    trouves = []
+    for numero, ligne in enumerate(source.splitlines(), 1):
+        nue = ligne.strip()
+        if nue.startswith("//") or nue.startswith("*"):
+            continue
+        for appel in ECRITURES_JS:
+            marque = appel + "("
+            if marque not in nue:
+                continue
+            argument = nue.split(marque, 1)[1]
+            # Premiere destination citee, jusqu'a la virgule ou la parenthese.
+            premier = argument.split(",")[0].split(")")[0].strip()
+            if any(mot in premier for mot in RESERVE_ECRITURE):
+                continue
+            trouves.append((numero, appel, premier[:40]))
+    return trouves
+
+
+def controle_pont_lecture_seule() -> None:
+    """
+    Le pont MCP peut-il abimer un fichier source ?
+
+    La regle 0.4 dit qu'un worker ne recoit jamais l'original. Pour l'essaim,
+    cela s'est traduit par une copie (voir test_isolation). Pour le pont, la
+    traduction honnete est DIFFERENTE : le pont ne modifie rien, il lit. Lui
+    faire copier les fichiers avant lecture n'aurait protege de rien, et une
+    protection decorative est pire qu'aucune -- elle se lit comme une garantie.
+
+    Ce qui compte donc est l'invariant lui-meme : mesure le 2026-08-30, les
+    cinq seules ecritures du serveur visent « .nexus » (observations et
+    index). Vrai ce jour-la, et rien ne le gardait. Le voici garde.
+
+    BLOQUANT : une ecriture neuve hors reserve donnerait au pont le pouvoir
+    de reecrire une source avec une sortie de modele, exactement ce que le
+    renversement de l'essaim vient de retirer.
+    """
+    chemin = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
+    if not os.path.isfile(chemin):
+        return ignorer("pont en lecture seule", "server.js introuvable")
+    try:
+        with io.open(chemin, encoding="utf-8", errors="replace") as f:
+            source = f.read()
+    except OSError as exc:
+        return ignorer("pont en lecture seule", str(exc)[:60])
+    hors = ecritures_hors_reserve(source)
+    if not hors:
+        return noter("pont en lecture seule", True, BLOQUANT,
+                     "aucune ecriture hors de .nexus") and None
+    detail = " ; ".join("ligne %d, %s vers %s" % h for h in hors[:3])
+    noter("pont en lecture seule", False, BLOQUANT,
+          detail + " -- le pont pourrait reecrire une source avec une sortie "
+          "de modele. Ajouter la destination a RESERVE_ECRITURE si elle est "
+          "legitime, plutot que de desactiver le controle.")
+
+
 def controle_travail_sur_original() -> None:
     """
     L'essaim a-t-il laisse des sauvegardes derriere lui ?
@@ -927,6 +1006,7 @@ def main() -> int:
         controle_residence_modeles,
         controle_releves_lisibles,
         controle_travail_sur_original,
+        controle_pont_lecture_seule,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
