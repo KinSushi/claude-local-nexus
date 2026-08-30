@@ -198,43 +198,60 @@ Les mesures montrent que le facteur limitant est **la machine locale** (CPU, mé
 
 ---
 
-## ⚡ Gros corpus : ce que coute chaque stratégie
+## ⚡ Gros corpus : comment le travail se repartit
 
 Au-delà de 96 000 caractères, le texte est découpé en fenêtres analysées
 séparément (MAP), puis fusionnées (REDUCE). Les fenêtres étant indépendantes,
-elles peuvent partir sur plusieurs plans à la fois.
+elles partent sur les deux plans à la fois.
 
-Mesures du 30 août 2026, même corpus de 221 334 caractères, même délai par
-fenêtre :
+**Une file commune, pas un partage décidé d'avance.** Chaque ouvrier prend la
+fenêtre suivante dès qu'il est libre : le plan rapide en traite naturellement
+davantage, sans qu'aucun ratio ne lui soit soufflé. Vérifié en laboratoire, à
+latences contrôlées : avec un plan trente fois plus rapide que l'autre, il
+prend **18 fenêtres sur 20**. Un ratio écrit dans le code vieillirait à chaque
+changement de machine, de modèle ou de charge ; une file s'ajuste seule.
 
-| Stratégie | Durée | Commentaire |
-|---|---|---|
-| Cloud seul | **191 s** | référence |
-| Plan local seul | **687 s** | 3,6× plus lent |
-| Part fixe 3:2 entre les plans | **268 s** | +40 % — le lot attend le plan lent |
-| **File commune** | **192 s** | cloud 3 fenêtres, local 1 |
+**Un plan qui tombe ne bloque rien.** L'autre vide la file sans qu'aucune
+règle ne l'ait prévu, et les fenêtres perdues sont relancées une fois sur les
+plans restants. Vérifié : plan local forcé en panne sur huit fenêtres, zéro
+perdue.
 
-C'est la file commune qui est employée. Chaque ouvrier prend la fenêtre
-suivante dès qu'il est libre : le plan rapide en traite naturellement
-davantage. Connaissant 191 et 687, le partage optimal tournait autour de
-78 % au cloud ; la file en a donné 75 %, **sans qu'aucun ratio ne lui soit
-soufflé**.
-
-Deux conséquences pratiques :
-
-- **Rien à régler.** Un ratio écrit dans le code vieillirait à chaque
-  changement de machine, de modèle ou de charge. Une file s'ajuste seule.
-- **Un plan qui tombe ne bloque rien.** L'autre vide la file sans qu'aucune
-  règle ne l'ait prévu, et les fenêtres perdues sont relancées une fois sur
-  les plans restants.
+**Le plan local s'écarte quand il ne peut pas lire.** Son plancher de contexte
+est **mesuré** sur la passerelle, jamais gravé dans le code : `nexus_capability`
+mesure la machine, `nexus_generate` en déduit les contextes, `/model/info` les
+expose. Aujourd'hui 8 192 jetons, soit des fenêtres de 24 371 caractères ; si
+vous migrez vers une machine plus capable et régénérez la configuration,
+32 768 jetons en donneraient 107 929, sans toucher à une ligne. Quand les
+fenêtres dépassent ce plancher, c'est le **plan** qui s'écarte, pas la fenêtre
+qui rétrécit — réduire les fenêtres triplerait le nombre d'appels.
 
 Le délai par fenêtre vaut **180 s**, contre 900 s pour un appel isolé
-(`NEXUS_MAP_TIMEOUT` pour le changer). La logique s'inverse entre les deux :
-seul, mieux vaut attendre qu'échouer ; dans un MAP, le résultat n'arrive
-qu'à la dernière fenêtre, donc une traînarde immobilise tout le lot.
+(`NEXUS_MAP_TIMEOUT`). La logique s'inverse entre les deux : seul, mieux vaut
+attendre qu'échouer ; dans un MAP, le résultat n'arrive qu'à la dernière
+fenêtre, donc une traînarde immobilise tout le lot.
 
 En mode `local_seul`, aucune fenêtre ne part en cloud : répartir un corpus
 sensible serait une fuite, pas une optimisation.
+
+### ⚠️ Mesurer une durée sur cette plateforme
+
+Deux pièges rendent toute comparaison fausse, et ils se cumulent.
+
+**Le cache.** LiteLLM garde un cache exact, TTL 3600 s. Relancer la même
+requête sur le même corpus sert la réponse au lieu de la recalculer — mesuré :
+50 s puis 13 s pour un travail identique. Il faut donc un corpus **différent à
+chaque exécution**.
+
+**La charge.** Le plan local est borné par la machine. Une mesure prise pendant
+qu'un essaim ou une suite de tests occupe le processeur ne dit rien de la
+stratégie mesurée. Machine au repos, sans exception.
+
+Cette section a d'abord porté un tableau de durées comparées — 191 s, 268 s,
+192 s. Elles étaient fausses : même corpus relancé six fois, et machine
+occupée. Reprise proprement, le même travail rend **11 s** en cloud seul et
+**14 s** par le routeur global. Les chiffres ont été retirés plutôt que
+corrigés : une seule série propre ne suffit pas à établir un écart, et il vaut
+mieux ne rien affirmer que répéter une comparaison qui ne tient pas.
 
 ---
 
