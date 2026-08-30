@@ -3753,6 +3753,39 @@ that wrote the warning.
 
 ---
 
+# 107.0 The engine's own settings come first — they change every reading below
+
+Established 2026-08-30 by a parallel session, and it reframes §107.1 to §107.3.
+
+`OLLAMA_KEEP_ALIVE` is unset on this host, so the engine's default applies:
+**five minutes**. `ollama ps` shows it live — one model "About a minute from
+now", another "Stopping…". Every call after a pause therefore repays the load
+of 20 GB from disk.
+
+**That is where the 61.8 s attributed to `glm-4.7-flash-local` comes from.** It
+was never a property of the model: it is disk, and it is avoidable. Every
+"start-up" figure in §107.3 and §112.3 measures a reload the engine could have
+been told not to perform.
+
+Second fact, equally consequential: the Radeon 890M is an **iGPU with no
+dedicated VRAM** — it shares the same 61.6 GB. Two 20 GB models resident at
+once do not merely fill memory, they contend for the same bandwidth. That is
+why `nexus_batch` runs sequentially, and the same reasoning applies to the pool.
+
+**The coupling that must be stated.** §107.1 bounds the local pool by cumulative
+weight against a 40 GB budget, which yields four models. That bound was derived
+while the engine kept three residents. If `OLLAMA_MAX_LOADED_MODELS` is set to
+**1**, a four-model pool becomes actively harmful: every router choice evicts
+the previous model and pays a full load. The bound and the engine setting are
+one decision, not two, and changing either without the other degrades the
+result.
+
+So the order of work is: settle the engine's settings first, then re-measure,
+then re-derive the pool. Doing it the other way — which is what happened —
+produces figures that describe a misconfiguration rather than a machine.
+
+---
+
 # 107.1 A pool is bounded by memory, not by taste
 
 Measured 2026-08-30, and each figure below corrected a decision that had
