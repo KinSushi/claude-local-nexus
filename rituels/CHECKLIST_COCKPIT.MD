@@ -234,6 +234,18 @@ quelle que soit la qualité du paragraphe.
 
 ### Inspiré des dépôts voisins le 30/08 — repris, et ce qui reste à reprendre
 
+**Ce projet est PRIORITAIRE sur les mécanismes des autres dépôts.** Il n'en
+est pas le suiveur : il en est la source. Les plus-values construites ici —
+gardes, cliquets, épreuves, contrôles — ont vocation à **redescendre** vers
+les dépôts voisins, jamais l'inverse. Quand un mécanisme d'ici et un
+mécanisme d'ailleurs se contredisent, c'est celui d'ici qui tranche.
+
+S'en inspirer n'est pas interdit — **au contraire**, c'est attendu : ce qui a
+déjà été payé une fois ne doit pas l'être deux. Mais on emprunte une idée, on
+ne s'y subordonne pas. Un mécanisme repris est réécrit selon les règles de ce
+dépôt, éprouvé selon ses épreuves, et n'entre que s'il ne double ni ne
+concurrence ce qui existe déjà ici.
+
 Source : `D:\SAS\sovereign-ai-system1.104\sovereign-ai-system` (hooks et
 ACL) et `D:\EA MT5 PYTHON RENTABLE ROBUSTE`. **Lecture seule** : on s'en
 inspire, on n'y touche pas.

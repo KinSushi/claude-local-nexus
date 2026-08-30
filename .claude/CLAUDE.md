@@ -81,6 +81,18 @@ reading:
 None of these came from an audit. All came from use, and each became a check
 that now fails when the defect returns.
 
+**THIS PROJECT TAKES PRIORITY over the neighbouring repositories'
+mechanisms.** It does not follow them: it is the source. What is built here —
+guards, ratchets, trials, checks — is meant to flow *down* to them, never the
+reverse. Where a mechanism here and a mechanism there disagree, the one here
+decides.
+
+Drawing on them is not forbidden — **on the contrary**, it is expected: what
+has already been paid for once must not be paid for twice. But an idea is
+borrowed, not submitted to. A mechanism taken from elsewhere is rewritten to
+this repository's rules, put through its trials, and enters only if it
+neither duplicates nor competes with what already exists here.
+
 **Borrowing from the neighbouring repositories is authorised — and expected.**
 Two repositories on this machine solved problems this one still has. Their
 mechanisms were already paid for once; reinventing them would pay the same

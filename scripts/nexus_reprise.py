@@ -97,6 +97,12 @@ def bloc_objectif() -> None:
     print("  Traquer toutes les ameliorations possibles. Ne rien produire,")
     print("  tout deleguer au banc gratuit. L'orchestrateur arbitre et verifie.")
     print("  Le contrat complet : .claude/CLAUDE.md, section 0.")
+    print("")
+    print("  CE PROJET EST PRIORITAIRE sur les mecanismes des autres depots :")
+    print("  il en est la source, non le suiveur, et les plus-values")
+    print("  construites ici redescendent vers eux. S'en inspirer n'est pas")
+    print("  interdit, au contraire -- mais on emprunte une idee, on ne s'y")
+    print("  subordonne pas.")
 
 
 def bloc_git() -> None:
