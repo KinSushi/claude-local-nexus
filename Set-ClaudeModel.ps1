@@ -11,8 +11,8 @@
     La documentation Anthropic est explicite : tant qu'un jeton de passerelle
     est actif, l'abonnement n'est pas utilise et le trafic est facture au
     token au proprietaire de la cle. L'ancienne version de ce script posait
-    les deux variables en mode « automatique » et annoncait « Anthropic
-    disponible » : elle consommait donc des credits API en croyant utiliser
+    les deux variables en mode "automatique" et annoncait "Anthropic
+    disponible" : elle consommait donc des credits API en croyant utiliser
     l'abonnement.
 
     Ce script ne bascule plus jamais tout seul. Chaque mode est demande
@@ -56,7 +56,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Utilisation du protocole HTTPS pour éviter la transmission en clair
+# Utilisation du protocole HTTPS pour eviter la transmission en clair
 $BaseUrl = "https://localhost:4000"
 
 function Write-Section { param($m) Write-Host "`n$m" -ForegroundColor Cyan }
@@ -68,14 +68,16 @@ function Get-MasterKey {
     if ($env:LITELLM_MASTER_KEY) { return $env:LITELLM_MASTER_KEY }
     $envFile = Join-Path $PSScriptRoot ".env"
     if (Test-Path $envFile) {
-        # Verifier les permissions du fichier .env (alerte si acces large)
+        # Verifier les permissions du fichier .env (erreur si acces large)
         try {
             $acl = Get-Acl $envFile
             if ($acl.Access.Count -gt 1) {
-                Write-Warn2 "Le fichier .env a des permissions larges ; verifier la securite."
+                Write-Warn2 "Le fichier .env a des permissions larges ; verification de la securite requise."
+                throw "Permissions du fichier .env trop larges."
             }
         } catch {
             Write-Warn2 "Impossible de verifier les permissions du .env : $($_.Exception.Message)"
+            throw "Verification des permissions du .env echouee."
         }
 
         try {
@@ -83,9 +85,9 @@ function Get-MasterKey {
                 if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') { return $matches[1].Trim() }
             }
         } catch {
-            # Erreur de lecture du fichier .env : on ne bloque pas le script, on retourne $null
+            # Erreur de lecture du fichier .env : on bloque le script
             Write-Warn2 "Impossible de lire le fichier .env : $($_.Exception.Message)"
-            return $null
+            throw "Lecture du .env echouee."
         }
     }
     return $null
@@ -173,18 +175,21 @@ switch ($Mode) {
     "Status" { Show-Status; break }
 
     "Subscription" {
-        # Suppression des variables de passerelle avec avertissement
+        # Suppression des variables de passerelle avec verification
         if ($env:ANTHROPIC_BASE_URL) {
             Write-Warn2 "Suppression de ANTHROPIC_BASE_URL"
             Remove-Item Env:ANTHROPIC_BASE_URL -ErrorAction SilentlyContinue
+            if ($env:ANTHROPIC_BASE_URL) { Write-Warn2 "Echec de la suppression de ANTHROPIC_BASE_URL" }
         }
         if ($env:ANTHROPIC_AUTH_TOKEN) {
             Write-Warn2 "Suppression de ANTHROPIC_AUTH_TOKEN"
             Remove-Item Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue
+            if ($env:ANTHROPIC_AUTH_TOKEN) { Write-Warn2 "Echec de la suppression de ANTHROPIC_AUTH_TOKEN" }
         }
         if ($env:ANTHROPIC_API_KEY) {
             Write-Warn2 "Suppression de ANTHROPIC_API_KEY"
             Remove-Item Env:ANTHROPIC_API_KEY -ErrorAction SilentlyContinue
+            if ($env:ANTHROPIC_API_KEY) { Write-Warn2 "Echec de la suppression de ANTHROPIC_API_KEY" }
         }
         Write-Section "Mode ABONNEMENT"
         Write-Ok "Variables de passerelle retirees de cette session."
@@ -243,6 +248,10 @@ switch ($Mode) {
 
         $env:ANTHROPIC_BASE_URL   = $BaseUrl
         $env:ANTHROPIC_AUTH_TOKEN = $key
+        # Masquer le token en memoire : on supprime la variable plain après usage
+        $secureKey = ConvertTo-SecureString $key -AsPlainText -Force
+        $key = $null
+
         # Appliquer le modele retenu explicitement
         $env:ANTHROPIC_MODEL = $selected
 

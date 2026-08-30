@@ -17,6 +17,11 @@ param(
 )
 
 # ------------------------------------------------------------
+# Variables globales
+# ------------------------------------------------------------
+$global:backupDir = $null   # initialise pour Cleanup-And-Exit
+
+# ------------------------------------------------------------
 # Fonctions utilitaires
 # ------------------------------------------------------------
 function Write-Info($msg) {
@@ -29,7 +34,7 @@ function Write-ErrorMsg($msg) {
     Write-Host $msg -ForegroundColor Red
 }
 function Cleanup-And-Exit([int]$code, [string]$msg) {
-    if (Test-Path $backupDir) {
+    if ($null -ne $backupDir -and (Test-Path $backupDir)) {
         try {
             Remove-Item -Recurse -Force $backupDir -ErrorAction Stop
         } catch {
@@ -47,14 +52,17 @@ function Cleanup-And-Exit([int]$code, [string]$msg) {
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Cleanup-And-Exit 1 "Docker n'est pas installe ou pas dans le PATH."
 }
-try {
-    docker info | Out-Null
-} catch {
+docker info > $null 2>&1
+if ($LASTEXITCODE -ne 0) {
     Cleanup-And-Exit 1 "Le daemon Docker ne semble pas etre disponible."
 }
 
 # Espace disque libre (exigence minimale 200 Go) -> abort si insuffisant
-$drive = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -eq 'C:\' }
+$drive = Get-PSDrive -PSProvider FileSystem |
+         Where-Object { $BackupRoot -like "$($_.Root)*" }
+if (-not $drive) {
+    Cleanup-And-Exit 1 "Impossible de determiner le lecteur du chemin de sauvegarde."
+}
 if ($drive.Free -lt 200GB) {
     Cleanup-And-Exit 1 "Espace disque libre insuffisant (moins de 200 Go). La sauvegarde ne peut pas continuer."
 }
@@ -62,7 +70,8 @@ if ($drive.Free -lt 200GB) {
 # ------------------------------------------------------------
 # Chemins de travail
 # ------------------------------------------------------------
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+# Le script se trouve dans le dossier scripts, on remonte d'un niveau pour atteindre la racine du projet
+$scriptRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition)
 
 # Vérifier que le répertoire racine de sauvegarde existe ou le créer
 if (-not (Test-Path $BackupRoot)) {
@@ -163,9 +172,8 @@ if ($IncludeVolumes) {
         }
     }
 
-    Write-Info ""
-    Write-Info "  Volume Ollama non archive : 541 Go retéléchargeables depuis model_list.txt." -ForegroundColor DarkGray
-    Write-Info "  Sauvegarde de l'irremplaçable : python scripts\nexus_preserve.py --backup" -ForegroundColor DarkGray
+    Write-Host "  Volume Ollama non archive : 541 Go retéléchargeables depuis model_list.txt." -ForegroundColor DarkGray
+    Write-Host "  Sauvegarde de l'irremplaçable : python scripts\nexus_preserve.py --backup" -ForegroundColor DarkGray
 }
 
 # ------------------------------------------------------------

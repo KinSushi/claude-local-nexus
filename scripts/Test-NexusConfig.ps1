@@ -61,25 +61,38 @@ if (-not (Test-Path $scriptPath)) {
 }
 
 # ----------------------------------------------------------------------
+# Forcer l'encodage UTF8 du processus Python (Python 3.7+)
+# ----------------------------------------------------------------------
+$env:PYTHONUTF8 = '1'
+
+# ----------------------------------------------------------------------
 # Exécution du script Python avec restauration du répertoire de travail
 # ----------------------------------------------------------------------
 Push-Location $PSScriptRoot
+$exitCode = 1   # valeur par défaut en cas d'échec
 try {
     # Construction des paramètres de Start-Process. -NoNewWindow n'est ajouté que sous Windows.
     $startParams = @{
-        FilePath    = $pythonCmd.Source
-        ArgumentList= "`"$scriptPath`""
-        PassThru    = $true
-        Wait        = $true
-        ErrorAction = 'Stop'
+        FilePath          = $pythonCmd.Source
+        ArgumentList      = @($scriptPath)          # tableau pour gérer correctement les espaces et caractères spéciaux
+        PassThru          = $true
+        Wait              = $true
+        ErrorAction       = 'Stop'
+        RedirectStandardOutput = $null            # éviter la perte de sortie dans certains environnements CI
+        RedirectStandardError  = $null
     }
-    if ($IsWindows) { $startParams.NoNewWindow = $true }
+    # Compatibilité PowerShell 5.1 et Core : utiliser $PSVersionTable.PSEdition si disponible
+    if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) {
+        $startParams.NoNewWindow = $true
+    }
 
     $proc = Start-Process @startParams
-
     $exitCode = $proc.ExitCode
-    # Si le processus n'a pas renvoyé de code (ex. processus tué), on considère une erreur.
     if ($null -eq $exitCode) { $exitCode = 1 }
+}
+catch {
+    # En cas d'exception (ex. lancement impossible), on conserve le code d'erreur 1
+    $exitCode = 1
 }
 finally {
     Pop-Location

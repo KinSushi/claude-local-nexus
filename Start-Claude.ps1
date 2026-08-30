@@ -52,6 +52,9 @@ $RepoRoot = $PSScriptRoot
 # URL configurable via variable d'environnement LITELLM_BASE_URL
 $BaseUrl = if ($env:LITELLM_BASE_URL) { $env:LITELLM_BASE_URL } else { "http://localhost:4000" }
 
+# Constante centralisée pour le nom du modèle de relève
+$ModelReleve = "releve-locale"
+
 function Write-Info { param($m) Write-Host "  $m" -ForegroundColor Gray }
 function Write-Ok   { param($m) Write-Host "  $m" -ForegroundColor Green }
 function Write-Warn2{ param($m) Write-Host "  $m" -ForegroundColor Yellow }
@@ -61,8 +64,8 @@ function Get-MasterKey {
     $envFile = Join-Path $RepoRoot ".env"
     if (Test-Path $envFile) {
         foreach ($line in Get-Content $envFile) {
-            if ($line -match '^\s*LITELLM_MASTER_KEY\s*=\s*(.+)$') {
-                # Trim whitespace then remove surrounding quotes if present
+            # Capture jusqu'au caractère # (commentaire) ou fin de ligne
+            if ($line -match '^\s*LITELLM_MASTER_KEY\s*=\s*([^#\r\n]+)') {
                 $key = $matches[1].Trim().Trim('"', "'")
                 if ($key) { return $key }
                 else { Write-Warn2 "Cle maitre trouvee mais vide dans .env." }
@@ -78,7 +81,7 @@ function Test-ReleveDisponible {
     try {
         $models = (Invoke-RestMethod -Uri "$BaseUrl/v1/models" `
             -Headers @{ Authorization = "Bearer $Key" } -TimeoutSec 20).data.id
-        return @($models) -contains "releve-locale"
+        return @($models) -contains $ModelReleve
     } catch {
         Write-Warn2 "Erreur lors du test de la releve locale: $_"
         return $false
@@ -101,7 +104,10 @@ $MotifsDeReleve = if ($env:LITELLM_MOTIFS) {
 }
 
 function Invoke-ClaudeCode {
-    param([string[]]$Arguments)
+    param(
+        [string[]]$Arguments,
+        [int]$TimeoutSec = 120
+    )
     # Verifier que l'executable 'claude' est disponible
     if (-not (Get-Command "claude" -ErrorAction SilentlyContinue)) {
         Write-Error "Executable 'claude' introuvable dans le PATH."
@@ -109,10 +115,25 @@ function Invoke-ClaudeCode {
     }
 
     $journal = Join-Path $env:TEMP ("claude-session-{0}.log" -f (Get-Date -Format "HHmmss"))
-    # La sortie est dupliquee : l'utilisateur la voit, le lanceur l'analyse.
-    & claude @Arguments 2>&1 | Tee-Object -FilePath $journal
-    $code = $LASTEXITCODE
+
+    # Lancement du processus avec timeout
+    $proc = Start-Process -FilePath "claude" -ArgumentList $Arguments `
+        -RedirectStandardOutput $journal -RedirectStandardError $journal `
+        -NoNewWindow -PassThru
+
+    $exited = $proc.WaitForExit($TimeoutSec * 1000)
+    if (-not $exited) {
+        Write-Warn2 "Execution de 'claude' depasse le timeout de $TimeoutSec secondes, arret du processus."
+        try { $proc.Kill() } catch {}
+        $code = 1
+    } else {
+        $code = $proc.ExitCode
+    }
+
     $trace = if (Test-Path $journal) { Get-Content $journal -Raw } else { "" }
+    # Affichage en temps réel (contenu du journal) pour conserver le comportement d'origine
+    if ($trace) { Write-Host $trace }
+
     Remove-Item $journal -ErrorAction SilentlyContinue
     return [pscustomobject]@{ Code = $code; Trace = $trace }
 }
@@ -149,7 +170,7 @@ if ($Mode -eq "Local") {
     $env:ANTHROPIC_BASE_URL   = $BaseUrl
     $env:ANTHROPIC_AUTH_TOKEN = $key
     Write-Host ""
-    $resultat = Invoke-ClaudeCode -Arguments @("--model", "releve-locale")
+    $resultat = Invoke-ClaudeCode -Arguments @("--model", $ModelReleve)
     exit $resultat.Code
 }
 
@@ -170,17 +191,29 @@ Write-Host "`n=== Bascule ===" -ForegroundColor Cyan
 Write-Warn2 "Session terminee sur un motif de quota ou d'abonnement : « $motif »."
 
 if (-not $releveDisponible -or $MaxRetries -lt 1) {
-    Write-Warn2 "Aucune releve disponible : arret."
+    Write-Warn2 "Aucune releve disponible ou nombre de retries atteint : arret."
     exit $resultat.Code
 }
 
-# Decrementer le compteur de retries avant la tentative de bascule
-$MaxRetries--
+# Boucle de bascule tant que des retries restent
+while ($MaxRetries -gt 0) {
+    $MaxRetries--
+    Write-Ok "Reprise sur '$ModelReleve' — 64K de contexte, aucune donnee ne sort."
+    Write-Info "Le pont MCP reste identique : les modeles restent accessibles comme outils."
+    $env:ANTHROPIC_BASE_URL   = $BaseUrl
+    $env:ANTHROPIC_AUTH_TOKEN = $key
+    Write-Host ""
+    $reprise = Invoke-ClaudeCode -Arguments @("--model", $ModelReleve)
+    if ($reprise.Code -eq 0) { exit $reprise.Code }
 
-Write-Ok "Reprise sur 'releve-locale' — 64K de contexte, aucune donnee ne sort."
-Write-Info "Le pont MCP reste identique : les modeles restent accessibles comme outils."
-$env:ANTHROPIC_BASE_URL   = $BaseUrl
-$env:ANTHROPIC_AUTH_TOKEN = $key
-Write-Host ""
-$reprise = Invoke-ClaudeCode -Arguments @("--model", "releve-locale")
-exit $reprise.Code
+    # Si la nouvelle tentative échoue sans motif de releve, on sort immédiatement
+    $nouveauMotif = Test-MotifDeReleve -Trace $reprise.Trace
+    if (-not $nouveauMotif) { exit $reprise.Code }
+
+    Write-Warn2 "Nouvelle tentative échouée sur le motif : « $nouveauMotif »."
+    if ($MaxRetries -eq 0) {
+        Write-Warn2 "Plus de retries disponibles, arrêt."
+        exit $reprise.Code
+    }
+    Write-Info "Nouvelle tentative de bascule (retries restants : $MaxRetries)."
+}

@@ -47,6 +47,9 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 try:
     import nexus_capability as capability  # noqa: E402
+except ImportError as exc:  # pragma: no cover
+    print(f"Erreur d'import du module nexus_capability : {exc}", file=sys.stderr)
+    sys.exit(1)
 finally:
     # Restaure sys.path pour éviter les effets de bord à l'import.
     if sys.path[0] == _SCRIPT_DIR:
@@ -82,6 +85,22 @@ TRACKED = [
 ]
 
 
+def _safe_float(value, default=0.0):
+    """Convertit en float en toute sécurité, retourne *default* en cas d'échec."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(value, default=0):
+    """Convertit en int en toute sécurité, retourne *default* en cas d'échec."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def run(args, timeout=TIMEOUT_RUN):
     """
     Exécute une commande externe et renvoie sa sortie standard.
@@ -102,7 +121,8 @@ def run(args, timeout=TIMEOUT_RUN):
         if result.stderr:
             print(result.stderr, file=sys.stderr)
         return result.stdout.strip()
-    except (subprocess.SubprocessError, OSError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+    except (subprocess.SubprocessError, OSError, subprocess.TimeoutExpired) as exc:
+        # FileNotFoundError est déjà une sous‑classe d'OSError.
         print(f"run error: {exc}", file=sys.stderr)
         return None
 
@@ -140,18 +160,17 @@ def master_key():
         return os.environ["LITELLM_MASTER_KEY"]
 
     env_file = os.path.join(ROOT, ".env")
+    pattern = re.compile(r"""^\s*(?:export\s+)?LITELLM_MASTER_KEY\s*=\s*(?P<val>.+?)\s*$""")
     try:
         with io.open(env_file, encoding="utf-8", errors="replace") as fh:
             for line in fh:
-                # Retirer les commentaires et les espaces superflus
-                line = line.split("#", 1)[0].strip()
-                if not line:
+                # Retirer les commentaires
+                line = line.split("#", 1)[0]
+                if not line.strip():
                     continue
-                # Gérer le préfixe « export »
-                if line.lower().startswith("export "):
-                    line = line[7:].strip()
-                if line.startswith("LITELLM_MASTER_KEY="):
-                    value = line.split("=", 1)[1].strip()
+                m = pattern.match(line)
+                if m:
+                    value = m.group("val").strip()
                     # Enlever les guillemets éventuels
                     if (value.startswith('"') and value.endswith('"')) or (
                         value.startswith("'") and value.endswith("'")
@@ -177,9 +196,16 @@ def exposed_models():
         request = urllib.request.Request(ROUTER_ENDPOINT)
         request.add_header("Authorization", "Bearer " + master_key())
         with urllib.request.urlopen(request, timeout=TIMEOUT_URL) as response:
-            data = json.loads(response.read().decode("utf-8"))
-        return sorted(d["id"] for d in data.get("data", []))
-    except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
+            raw = response.read().decode("utf-8")
+            data = json.loads(raw)
+        if not isinstance(data, dict):
+            raise ValueError("Réponse JSON inattendue")
+        models = []
+        for item in data.get("data", []):
+            if isinstance(item, dict) and "id" in item:
+                models.append(item["id"])
+        return sorted(models)
+    except (urllib.error.URLError, json.JSONDecodeError, OSError, ValueError) as exc:
         print(f"exposed_models error: {exc}", file=sys.stderr)
         return None
 
@@ -195,21 +221,21 @@ def main() -> int:
         "ollama": {
             "mode": raw_profile.get("ollama", {}).get("mode", "?")
         },
-        "inference_memory_gb": float(raw_profile.get("inference_memory_gb", 0)),
-        "host_ram_gb": float(raw_profile.get("host_ram_gb", 0)),
-        "pool_budget_gb": float(raw_profile.get("pool_budget_gb", 0)),
-        "runnable_budget_gb": float(raw_profile.get("runnable_budget_gb", 0)),
-        "cpu_cores": int(raw_profile.get("cpu_cores", 0)),
-        "cpu_threads": int(raw_profile.get("cpu_threads", 0)),
+        "inference_memory_gb": _safe_float(raw_profile.get("inference_memory_gb", 0)),
+        "host_ram_gb": _safe_float(raw_profile.get("host_ram_gb", 0)),
+        "pool_budget_gb": _safe_float(raw_profile.get("pool_budget_gb", 0)),
+        "runnable_budget_gb": _safe_float(raw_profile.get("runnable_budget_gb", 0)),
+        "cpu_cores": _safe_int(raw_profile.get("cpu_cores", 0)),
+        "cpu_threads": _safe_int(raw_profile.get("cpu_threads", 0)),
         "gpu": {
             "name": raw_profile.get("gpu", {}).get("name", "?"),
-            "vram_gb": float(raw_profile.get("gpu", {}).get("vram_gb", 0)),
+            "vram_gb": _safe_float(raw_profile.get("gpu", {}).get("vram_gb", 0)),
         },
         "gpu_usable_for_offload": bool(
             raw_profile.get("gpu_usable_for_offload", False)
         ),
         "model_store": raw_profile.get("model_store", "?"),
-        "free_disk_gb": float(raw_profile.get("free_disk_gb", 0)),
+        "free_disk_gb": _safe_float(raw_profile.get("free_disk_gb", 0)),
     }
 
     models = exposed_models()
@@ -246,6 +272,7 @@ def main() -> int:
             [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
             capture_output=True,
             text=True,
+            timeout=TIMEOUT_RUN,
             encoding="utf-8",
             errors="replace",
         )

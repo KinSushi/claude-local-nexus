@@ -19,14 +19,14 @@ Un diff unifié suppose que le modèle compte correctement ses lignes de
 contexte, ce qu'un modèle local rate régulièrement ; l'échec est alors
 soit silencieux, soit appliqué au mauvais endroit.
 
-Le JSON échoue autrement : un remplacement transporte du code multi-ligne,
+Le JSON échoue autrement : un remplacement transporte du code multi‑ligne,
 qu'il faut alors échapper caractère par caractère. Sur les deux premières
 tâches réelles, qwen3-coder:30b a produit une analyse pertinente dans un
 JSON invalide, faute d'avoir échappé les sauts de ligne — le travail était
 juste, la mise en forme le rendait inutilisable.
 
 Le modèle rend donc des blocs délimités par des marqueurs `@@` en début de
-ligne, où le code passe tel quel. Le script applique lui-même chaque
+ligne, où le code passe tel quel. Le script applique lui‑même chaque
 remplacement, après avoir vérifié que l'extrait cible apparaît exactement
 une fois. Une occurrence ambiguë est un refus, pas un pari.
 
@@ -55,6 +55,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import shlex
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_agent as agent  # noqa: E402
@@ -69,15 +70,6 @@ ROOT = agent.ROOT
 # exactement l'accident déjà survenu une fois sur ce dépôt.
 ARBRES = os.path.join(os.path.dirname(ROOT), ".nexus-arbres")
 
-# Le protocole n'est PAS du JSON, et ce choix vient d'une mesure. Un
-# remplacement transporte du code multi-ligne ; place dans une chaine JSON,
-# il exige d'echapper chaque saut de ligne, chaque guillemet et chaque
-# antislash. qwen3-coder:30b a rendu deux fois de suite une analyse
-# pertinente dans un JSON invalide, faute d'avoir echappe les sauts de
-# ligne — le travail etait bon, la mise en forme le rendait inutilisable.
-# Des delimiteurs en debut de ligne n'ont aucune de ces contraintes : le
-# code passe tel quel, et l'analyse du modele n'est plus perdue pour une
-# question de ponctuation.
 SYSTEME = (
     "Tu es un relecteur de code rigoureux. Tu reponds en francais et tu suis "
     "EXACTEMENT le format ci-dessous, sans rien ajouter avant ni apres, et "
@@ -95,7 +87,7 @@ SYSTEME = (
     "Repete le bloc @@CORRECTION ... @@FIN pour chaque correction.\n\n"
     "Regles imperatives :\n"
     "- l'extrait apres @@AVANT est COPIE CARACTERE POUR CARACTERE du fichier "
-    "fourni, indentation comprise. S'il ne correspond pas exactement, ta "
+    "fournis, indentation comprise. S'il ne correspond pas exactement, ta "
     "proposition est rejetee sans etre examinee ;\n"
     "- il doit etre assez long pour n'apparaitre QU'UNE SEULE FOIS dans le "
     "fichier ;\n"
@@ -109,8 +101,12 @@ SYSTEME = (
 
 def git(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["git"] + args, cwd=cwd or ROOT,
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        ["git"] + args,
+        cwd=cwd or ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -189,9 +185,7 @@ def analyser_reponse(texte: str) -> dict | None:
             if "avant" in courant and "apres" in courant:
                 remplacements.append(courant)
             courant = {}
-    # Un dernier bloc complet mais sans @@FIN reste exploitable : l'oubli
-    # du marqueur final est la faute de forme la plus fréquente, et elle
-    # n'enlève rien à la validité de ce qui précède.
+    # Un dernier bloc complet mais sans @@FIN reste exploitable.
     if "avant" in courant and "apres" in courant:
         remplacements.append(courant)
 
@@ -208,7 +202,9 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
     de le citer ; un `avant` présent plusieurs fois signifie qu'on ne sait
     pas laquelle il visait. Dans les deux cas, appliquer serait deviner.
     """
-    source = io.open(chemin, encoding="utf-8").read()
+    # Lecture en conservant le style de fin de ligne du fichier source.
+    with io.open(chemin, encoding="utf-8", newline="") as f:
+        source = f.read()
     poses, rejets = 0, []
     for i, r in enumerate(remplacements or [], 1):
         avant, apres = r.get("avant"), r.get("apres")
@@ -216,13 +212,6 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
             rejets.append("#%d : champs 'avant'/'apres' absents ou non textuels" % i)
             continue
         if apres == avant:
-            # Le modèle a rendu la cible inchangée. C'est sa façon de
-            # décliner — observé mot pour mot : « Ce n'est pas une erreur
-            # de correction car le code est correct. » Compté comme une
-            # pose, cela produisait « 3/3 remplacements appliques,
-            # verification OK », lu comme trois corrections réussies alors
-            # que rien n'avait bougé. Un rapport qui compte des non-actions
-            # comme des actions ne se relit pas : il se croit.
             rejets.append("#%d : remplacement identique a la cible (le modele decline)" % i)
             continue
         n = source.count(avant)
@@ -242,11 +231,13 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
         dir_name = os.path.dirname(chemin)
         fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
         try:
-            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as tmp_file:
+            # Conserver les permissions du fichier original.
+            mode_original = os.stat(chemin).st_mode
+            with os.fdopen(fd, "w", encoding="utf-8", newline="") as tmp_file:
                 tmp_file.write(source)
             os.replace(tmp_path, chemin)
+            os.chmod(chemin, mode_original)
         finally:
-            # Si os.replace a échoué, on s'assure de nettoyer le fichier temporaire.
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
     return poses, rejets
@@ -277,41 +268,49 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
     try:
         resultat = agent.appeler(
             modele,
-            [{"role": "system", "content": SYSTEME},
-             {"role": "user", "content":
-              "Consigne : %s\n\n--- %s ---\n%s" % (consigne, fichier, contenu)}],
-            max_tokens, cle,
+            [
+                {"role": "system", "content": SYSTEME},
+                {
+                    "role": "user",
+                    "content": "Consigne : %s\n\n--- %s ---\n%s"
+                    % (consigne, fichier, contenu),
+                },
+            ],
+            max_tokens,
+            cle,
         )
     except Exception as exc:
         print("  ECHEC de l'appel : %s" % exc)
-        # Le code Windows brut (10061) ne dit pas quoi faire. La passerelle
-        # eteinte est de loin la cause la plus frequente ici, et l'arbre
-        # est deja cree : sans cette ligne on relance la meme commande sans
-        # savoir qu'il fallait d'abord remonter la pile.
-        if "10061" in str(exc) or "refus" in str(exc).lower() \
-                or "refused" in str(exc).lower():
+        if "10061" in str(exc) or "refus" in str(exc).lower() or "refused" in str(exc).lower():
             print("  La passerelle ne repond pas sur %s." % agent.PASSERELLE)
             print("  Remonter la pile :  .\\scripts\\start.ps1")
         return 1
 
     plan = agent.plan_de(resultat["adresse"])
-    print("  servi    : %s [%s] en %.0f s, %d tokens, cout %s"
-          % (resultat["servi_par"], plan, resultat["duree"],
-             resultat["tokens"], resultat["cout"]))
+    print(
+        "  servi    : %s [%s] en %.0f s, %d tokens, cout %s"
+        % (
+            resultat["servi_par"],
+            plan,
+            resultat["duree"],
+            resultat["tokens"],
+            resultat["cout"],
+        )
+    )
     if plan == "anthropic":
         print("  [!] servi par Anthropic : cette tache a ete FACTUREE.")
 
     charge = analyser_reponse(resultat["texte"])
     if charge is None:
         if resultat.get("tronque"):
-            # La distinction n'est pas cosmétique : elle désigne qui doit
-            # être corrigé. Un JSON coupé net accuse le plafond de sortie,
-            # pas le modèle, et la réponse consiste à relancer plus haut —
-            # pas à changer de modèle ni à réécrire la consigne.
-            print("  Reponse COUPEE par le plafond de sortie (%d tokens demandes)."
-                  % max_tokens)
-            print("  Relancez avec --max-tokens %d, ou restreignez la consigne."
-                  % (max_tokens * 2))
+            print(
+                "  Reponse COUPEE par le plafond de sortie (%d tokens demandes)."
+                % max_tokens
+            )
+            print(
+                "  Relancez avec --max-tokens %d, ou restreignez la consigne."
+                % (max_tokens * 2)
+            )
         else:
             print("  Reponse inexploitable (aucun bloc @@ reconnu). Debut de la reponse :")
         print("  " + resultat["texte"].strip()[:400].replace("\n", "\n  "))
@@ -334,15 +333,23 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
         return 1
 
     if verifier:
+        # Substitution du placeholder puis découpage sécurisé des arguments.
         commande = verifier.replace("{fichier}", fichier.replace("\\", "/"))
         print("  verification : %s" % commande)
-        v = subprocess.run(commande, shell=True, cwd=chemin_arbre,
-                           capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
+        args = shlex.split(commande)
+        v = subprocess.run(
+            args,
+            cwd=chemin_arbre,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
         if v.returncode != 0:
-            # L'arbre est conservé tel quel : c'est la trace de l'échec, et
-            # la seule façon de comprendre ce que le modèle a cassé.
-            print("  VERIFICATION ECHOUEE (code %d) — arbre conserve pour inspection" % v.returncode)
+            print(
+                "  VERIFICATION ECHOUEE (code %d) — arbre conserve pour inspection"
+                % v.returncode
+            )
             print("  " + (v.stderr or v.stdout).strip()[:600].replace("\n", "\n  "))
             return 1
         print("  verification OK")
@@ -401,7 +408,10 @@ def fusionner(nom: str) -> int:
     if not git(["diff", "--quiet"], cwd=chemin).returncode:
         print("Aucune modification a fusionner dans %s" % nom)
         return 1
-    git(["add", "-A"], cwd=chemin)
+    add_res = git(["add", "-A"], cwd=chemin)
+    if add_res.returncode != 0:
+        print("Echec de l'ajout des modifications : " + (add_res.stderr or add_res.stdout).strip())
+        return 1
     c = git(["commit", "-m", "agent local : %s" % nom], cwd=chemin)
     if c.returncode != 0:
         print(c.stderr.strip() or c.stdout.strip())
@@ -416,10 +426,14 @@ def fusionner(nom: str) -> int:
 
 def jeter(nom: str) -> int:
     chemin = arbre_de(nom)
-    git(["worktree", "remove", "--force", chemin])
+    r = git(["worktree", "remove", "--force", chemin])
+    if r.returncode != 0:
+        print("Echec de la suppression du worktree : " + (r.stderr or r.stdout).strip())
     if os.path.isdir(chemin):
         shutil.rmtree(chemin, ignore_errors=True)
-    git(["branch", "-D", "agent/" + nom])
+    b = git(["branch", "-D", "agent/" + nom])
+    if b.returncode != 0:
+        print("Echec de la suppression de la branche : " + (b.stderr or b.stdout).strip())
     print("Arbre et branche retires : %s" % nom)
     return 0
 
@@ -428,17 +442,23 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--nom", help="Nom de la tache, donc de l'arbre et de la branche.")
     p.add_argument("--fichier", help="Fichier a relire, relatif a la racine.")
-    p.add_argument("--fichiers", nargs="+", metavar="CHEMIN",
-                   help="Plusieurs fichiers, traites en chaine. Le modele reste "
-                        "charge d'un fichier a l'autre : les appels suivants "
-                        "coutent quelques secondes au lieu d'une minute.")
+    p.add_argument(
+        "--fichiers",
+        nargs="+",
+        metavar="CHEMIN",
+        help="Plusieurs fichiers, traites en chaine. Le modele reste "
+        "charge d'un fichier a l'autre : les appels suivants "
+        "coutent quelques secondes au lieu d'une minute.",
+    )
     p.add_argument("--modele", default="qwen3-coder-30b-local")
     p.add_argument("--consigne", help="Ce que le modele doit corriger.")
     p.add_argument("--verifier", help="Commande de validation, '{fichier}' est substitue.")
-    # Une proposition de remplacement recopie des extraits entiers du
-    # fichier : elle est structurellement volumineuse. 3000 tokens ont
-    # suffi à couper la toute première tâche réelle en plein JSON.
-    p.add_argument("--max-tokens", type=int, default=8000)
+    p.add_argument(
+        "--max-tokens",
+        type=int,
+        default=8000,
+        help="Nombre maximal de tokens pour la réponse du modèle.",
+    )
     p.add_argument("--lister", action="store_true")
     p.add_argument("--fusionner", metavar="NOM")
     p.add_argument("--jeter", metavar="NOM")
@@ -457,18 +477,11 @@ def main() -> int:
 
     resultats: list[tuple[str, str, int]] = []
     for cible in cibles:
-        # Un nom d'arbre par fichier : deux relectures partageant le même
-        # arbre écriraient l'une par-dessus l'autre, et la fusion mêlerait
-        # deux propositions dont une seule a peut-être été validée.
-        nom = a.nom if (a.nom and len(cibles) == 1) else \
-            re.sub(r"[^a-zA-Z0-9_-]", "-",
-                   os.path.splitext(os.path.basename(cible))[0])
+        nom = a.nom if (a.nom and len(cibles) == 1) else re.sub(
+            r"[^a-zA-Z0-9_-]", "-", os.path.splitext(os.path.basename(cible))[0]
+        )
         if a.nom and len(cibles) > 1:
             nom = "%s-%s" % (a.nom, nom)
-        # Le vérificateur se déduit de l'extension quand il n'est pas donné.
-        # L'exiger à chaque appel revenait à le rendre facultatif en
-        # pratique, et la fois où on l'oublie est celle où le modèle casse
-        # le fichier.
         verif = a.verifier or verificateur_par_defaut(cible)
         if len(cibles) > 1:
             print("\n" + "#" * 72)
@@ -490,9 +503,6 @@ def main() -> int:
                 print("    git -C %s diff" % arbre_de(nom))
                 print("    python scripts/nexus_worktree.py --fusionner %s" % nom)
         print("=" * 72)
-    # Retourne 0 uniquement si toutes les cibles ont été traitées avec succès.
-    # Sinon, le code de sortie indique un échec global, évitant que l'opérateur
-    # ne fusionne des modifications partielles.
     return 0 if all(c == 0 for _, _, c in resultats) else 1
 
 

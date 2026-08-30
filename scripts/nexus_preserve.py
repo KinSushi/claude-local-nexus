@@ -20,7 +20,7 @@ sauvegardée. Le reste doit en sortir.
 
 Usage :
     python scripts/nexus_preserve.py              # audit
-    python scripts/nexus_preserve.py --backup     # sauvegarde l'irremplaçable
+    python scripts/nexus_preserve.py --backup   # sauvegarde l'irremplaçable
 """
 from __future__ import annotations
 
@@ -49,6 +49,14 @@ BACKUP_DIR = os.path.join(ROOT, "backups")
 
 RECONSTRUCTIBLE = "reconstructible"
 IRREMPLACABLE = "irremplacable"
+
+# ----------------------------------------------------------------------
+# Configuration externe (variables d'environnement) pour éviter le
+# couplage fort avec des valeurs codées en dur.
+# ----------------------------------------------------------------------
+DB_CONTAINER = os.getenv("LITELLM_DB_CONTAINER", "litellm-db")
+DB_USER = os.getenv("LITELLM_DB_USER", "litellm_user")
+DB_NAME = os.getenv("LITELLM_DB_NAME", "litellm")
 
 
 def run(args, timeout=120):
@@ -100,7 +108,7 @@ def _exec_subprocess(args, timeout):
     except subprocess.TimeoutExpired:
         print(f"  [!] timeout depasse : {' '.join(args)}")
     except subprocess.SubprocessError as exc:
-        print(f"  [!] erreur de sous‑processus : {exc}")
+        print(f"  [!] erreur de sous-processus : {exc}")
     except OSError as exc:
         print(f"  [!] erreur OS : {exc}")
     return None
@@ -180,21 +188,23 @@ def inventory() -> list[dict]:
             )
 
     # --- Images --------------------------------------------------------
-    for line in run(
+    img_output = run(
         ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}\t{{.Size}}"]
-    ).splitlines():
-        if "\t" not in line:
-            continue
-        name, size = line.split("\t", 1)
-        items.append(
-            {
-                "artefact": name,
-                "type": "image",
-                "taille": parse_size(size),
-                "verdict": RECONSTRUCTIBLE,
-                "source": "docker pull, declare dans docker-compose.yml",
-            }
-        )
+    )
+    if img_output:
+        for line in img_output.splitlines():
+            if "\t" not in line:
+                continue
+            name, size = line.split("\t", 1)
+            items.append(
+                {
+                    "artefact": name,
+                    "type": "image",
+                    "taille": parse_size(size),
+                    "verdict": RECONSTRUCTIBLE,
+                    "source": "docker pull, declare dans docker-compose.yml",
+                }
+            )
 
     # --- Fichiers du depot ---------------------------------------------
     tracked = run(["git", "-C", ROOT, "ls-files"])
@@ -347,13 +357,13 @@ def backup_irreplaceable() -> int:
         [
             "docker",
             "exec",
-            "litellm-db",
+            DB_CONTAINER,
             "pg_dump",
             "-U",
-            "litellm_user",
+            DB_USER,
             "--clean",
             "--if-exists",
-            "litellm",
+            DB_NAME,
         ],
         timeout=600,
     )
@@ -361,16 +371,19 @@ def backup_irreplaceable() -> int:
         print(f"  [!] pg_dump a echoue : {dump.stderr if dump else ''}")
         return 1
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", delete=False, dir=BACKUP_DIR, newline="\n"
-    ) as tmp:
-        tmp.write(dump.stdout)
-        temp_name = tmp.name
+    tmp_file = None
     try:
-        _atomic_write(temp_name, target)
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, dir=BACKUP_DIR, newline="\n"
+        ) as tmp:
+            tmp.write(dump.stdout)
+            tmp_file = tmp.name
+        _atomic_write(tmp_file, target)
         os.chmod(target, 0o600)  # permissions restrictives
     except OSError as exc:
         print(f"  [!] echec ecriture dump postgres : {exc}")
+        if tmp_file and os.path.exists(tmp_file):
+            os.unlink(tmp_file)
         return 1
 
     if not os.path.getsize(target):
@@ -388,10 +401,13 @@ def backup_irreplaceable() -> int:
     )
     if result is None or result.returncode != 0 or not os.path.exists(bundle_tmp):
         print(f"  [!] creation du bundle git a echoue : {result.stderr if result else ''}")
+        if os.path.exists(bundle_tmp):
+            os.unlink(bundle_tmp)
         return 1
 
     if os.path.getsize(bundle_tmp) == 0:
         print("  [!] bundle git vide, sauvegarde invalide")
+        os.unlink(bundle_tmp)
         return 1
 
     try:
@@ -399,6 +415,8 @@ def backup_irreplaceable() -> int:
         os.chmod(bundle_final, 0o600)
     except OSError as exc:
         print(f"  [!] echec ecriture bundle git : {exc}")
+        if os.path.exists(bundle_tmp):
+            os.unlink(bundle_tmp)
         return 1
 
     fait.append(
@@ -417,7 +435,7 @@ def backup_irreplaceable() -> int:
             if line.strip()
             and not line.startswith(" D")
             and not line.startswith("D ")
-            and line[3:].strip() != ".env"  # exclure le secret
+            and line[3:].strip() != ".env"
         ]
 
     if modifies:
@@ -439,16 +457,21 @@ def backup_irreplaceable() -> int:
                                 ajoutes += 1
         except Exception as exc:
             print(f"  [!] echec creation archive travail en cours : {exc}")
+            if os.path.exists(archive_tmp):
+                os.unlink(archive_tmp)
             return 1
 
         if not os.path.getsize(archive_tmp):
             print("  [!] archive travail en cours vide, sauvegarde invalide")
+            os.unlink(archive_tmp)
             return 1
 
         try:
             _atomic_write(archive_tmp, archive_final)
         except OSError as exc:
             print(f"  [!] echec ecriture archive travail en cours : {exc}")
+            if os.path.exists(archive_tmp):
+                os.unlink(archive_tmp)
             return 1
 
         fait.append(

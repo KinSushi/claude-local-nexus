@@ -1,29 +1,29 @@
 <#
 .SYNOPSIS
-    Amorce la plateforme sur une machine neuve, ou vérifie une installation.
+    Amorce la plateforme sur une machine neuve, ou verifie une installation.
 
 .DESCRIPTION
-    Conçu pour que ce dépôt serve de base opérationnelle réutilisable :
-    rien n'y est supposé de la machine, tout est vérifié puis mesuré.
+    Concu pour que ce depot serve de base operationnelle reutilisable :
+    rien n'y est suppose de la machine, tout est verifie puis mesure.
 
-    Déroulé, dans l'ordre :
+    Deroule, dans l'ordre :
 
-        1. prérequis          docker, node, python, PyYAML
-        2. secrets            .env créé depuis .env.example si absent
-        3. profil matériel    CPU, GPU, RAM, disque — et ce qu'ils autorisent
-        4. services           démarrage de la pile Docker
-        5. moteur             detection Docker / hôte, et son budget réel
-        6. configuration      génération puis validation bloquante
-        7. vérification       smoke test runtime
+        1. prerequis          docker, node, python, PyYAML
+        2. secrets            .env cree depuis .env.example si absent
+        3. profil materiel    CPU, GPU, RAM, disque — et ce qu'ils autorisent
+        4. services           demarrage de la pile Docker
+        5. moteur             detection Docker / hote, et son budget reel
+        6. configuration      generation puis validation bloquante
+        7. verification       smoke test runtime
         8. pont               rappel de l'approbation MCP
 
-    Le script s'arrête au premier prérequis manquant plutôt que de laisser
-    une installation à moitié faite : un échec franc coûte moins cher qu'un
-    état ambigu.
+    Le script s'arrete au premier prerequis manquant plutot que de laisser
+    une installation a moitie faite : un echec franc coute moins cher qu'un
+    etat ambigu.
 
 .PARAMETER SkipPull
-    N'installe aucun modèle. Utile pour vérifier une machine sans rien
-    télécharger.
+    N'installe aucun modele. Utile pour verifier une machine sans rien
+    telecharger.
 
 .PARAMETER CheckOnly
     Ne modifie rien : diagnostic seul.
@@ -35,7 +35,10 @@
 #>
 [CmdletBinding()]
 param(
+    [Parameter(Mandatory=$false, HelpMessage='N''installe aucun modele. Utile pour verifier une machine sans rien telecharger.')]
     [switch]$SkipPull,
+
+    [Parameter(Mandatory=$false, HelpMessage='Ne modifie rien : diagnostic seul.')]
     [switch]$CheckOnly
 )
 
@@ -44,10 +47,10 @@ $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ------------------------------------------------------------
-# Vérification des droits administrateur (défaut de robustesse)
+# Verification des droits administrateur (defaut de robustesse)
 # ------------------------------------------------------------
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "  [stop] Droits administrateur requis." -ForegroundColor Red
+    Write-Stop "Droits administrateur requis."
     exit 1
 }
 
@@ -61,6 +64,20 @@ function Write-Ok    { param($m) Write-Host "  [ok]   $m" -ForegroundColor Green
 function Write-Manque{ param($m) Write-Host "  [!]    $m" -ForegroundColor Yellow; $script:Problemes++ }
 function Write-Stop  { param($m) Write-Host "  [stop] $m" -ForegroundColor Red; $script:Problemes++ }
 
+# Helper to invoke docker compose with fallback to docker-compose
+function Invoke-DockerCompose {
+    param(
+        [Parameter(Mandatory=$true)][string[]]$Args
+    )
+    # Try 'docker compose' first
+    docker compose @Args 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        # Fallback to legacy 'docker-compose'
+        docker-compose @Args 2>&1
+    }
+    return $LASTEXITCODE
+}
+
 # ------------------------------------------------------------
 # 1. Prerequis
 # ------------------------------------------------------------
@@ -69,25 +86,30 @@ Write-Etape "Prerequis"
 $requis = @(
     @{ Nom = "docker"; Test = { docker --version };  Aide = "Installer Docker Desktop" },
     @{ Nom = "node";   Test = { node --version };    Aide = "Installer Node.js 18 ou plus" },
-    @{ Nom = "python"; Test = { python --version };  Aide = "Installer Python 3.10 ou plus" }
+    @{ Nom = "python"; Test = { python --version };  Aide = "Installer Python 3.10 ou plus" },
+    @{ Nom = "PyYAML"; Test = { python -c "import yaml; print(yaml.__version__)" }; Aide = "Installer pyyaml via pip" }
 )
 $bloquant = $false
 foreach ($outil in $requis) {
     $cmd = Get-Command $outil.Nom -ErrorAction SilentlyContinue
     if ($cmd) {
-        $version = (& $outil.Test 2>&1 | Select-Object -First 1)
-        Write-Ok "$($outil.Nom) — $version"
+        $output = & $outil.Test 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "$($outil.Nom) — $output"
+        } else {
+            Write-Stop "$($outil.Nom) introuvable ou en erreur. $($outil.Aide)"
+            $bloquant = $true
+        }
     } else {
         Write-Stop "$($outil.Nom) introuvable. $($outil.Aide)"
         $bloquant = $true
     }
 }
 
-$yaml = python -c "import yaml; print(yaml.__version__)" 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Ok "PyYAML — $yaml"
-} else {
-    Write-Stop "PyYAML absent. Installer : python -m pip install pyyaml"
+# Verification de l'espace disque (deplacee en debut)
+$drive = Get-PSDrive -Name ($RepoRoot.Substring(0,1))
+if ($drive.Free -lt 5GB) {
+    Write-Stop "Espace disque insuffisant (moins de 5 GB) pour telecharger les modeles."
     $bloquant = $true
 }
 
@@ -106,7 +128,6 @@ if (Test-Path $envFile) {
     $manquantes = @()
     $contenu = Get-Content $envFile -Raw
     foreach ($cle in @("LITELLM_MASTER_KEY", "POSTGRES_PASSWORD")) {
-        # La regex ignore les lignes commentées (commençant par #)
         if ($contenu -notmatch "(?m)^\s*$cle\s*=\s*\S") { $manquantes += $cle }
     }
     if ($manquantes) {
@@ -123,6 +144,12 @@ if (Test-Path $envFile) {
     Write-Manque ".env absent"
 } elseif (Test-Path $envModel) {
     Copy-Item $envModel $envFile
+    # Restreindre les permissions du fichier .env (lecture/ecriture uniquement pour l'utilisateur actuel)
+    try {
+        icacls $envFile /inheritance:r /grant:r "$($env:USERNAME):(R,W)" /c > $null
+    } catch {
+        # Si icacls n'est pas disponible, ignorer silencieusement
+    }
     Write-Manque ".env cree depuis .env.example — les valeurs sont a renseigner AVANT de demarrer"
     Write-Host "         Editer : $envFile" -ForegroundColor DarkGray
     exit 1
@@ -147,27 +174,27 @@ if (Test-Path $capabilityScript) {
 # ------------------------------------------------------------
 Write-Etape "Services"
 if ($CheckOnly) {
-    $composePs = docker compose ps 2>&1
+    $composePs = Invoke-DockerCompose -Args @("ps")
     if ($LASTEXITCODE -ne 0) {
-        Write-Stop "docker compose ps a échoué : $composePs"
+        Write-Stop "docker compose ps a echoue"
     } else {
-        Write-Ok "docker compose ps exécuté"
+        Write-Ok "docker compose ps execute"
         $composePs
     }
 } else {
     Push-Location $RepoRoot
     try {
-        $upResult = docker compose up -d 2>&1
+        $upResult = Invoke-DockerCompose -Args @("up","-d")
         if ($LASTEXITCODE -ne 0) {
-            Write-Stop "docker compose up a échoué : $upResult"
+            Write-Stop "docker compose up a echoue"
             exit 1
         }
         Start-Sleep -Seconds 10
-        $psResult = docker compose ps --format "{{.Name}}`t{{.Status}}" 2>&1
+        $psResult = Invoke-DockerCompose -Args @("ps","--format","{{.Name}}`t{{.Status}}")
         if ($LASTEXITCODE -ne 0) {
-            Write-Stop "docker compose ps a échoué : $psResult"
+            Write-Stop "docker compose ps a echoue"
         } else {
-            Write-Ok "docker compose up terminé"
+            Write-Ok "docker compose up termine"
             $psResult
         }
     } finally { Pop-Location }
@@ -188,13 +215,6 @@ if (Test-Path $switchEngineScript) {
 # 6. Modeles
 # ------------------------------------------------------------
 if (-not $SkipPull -and -not $CheckOnly) {
-    # Vérification de l'espace disque (défaut de robustesse)
-    $drive = Get-PSDrive -Name ($RepoRoot.Substring(0,1))
-    if ($drive.Free -lt 5GB) {
-        Write-Stop "Espace disque insuffisant (moins de 5 GB) pour télécharger les modèles."
-        exit 1
-    }
-
     Write-Etape "Inventaire local"
     Write-Host "  Le telechargement suit model_list.txt et respecte le verdict materiel :"
     Write-Host "  un modele que la machine ne peut pas executer n'est pas telecharge."

@@ -118,15 +118,16 @@ def main() -> int:
             "garantie fausse, plus nuisible qu'aucune garantie.")
 
     modele = entree.get("model")
-    # Le champ model doit être une chaîne pour pouvoir le valider.
-    if not isinstance(modele, str):
-        return 0
+    # Le champ model doit être présent ; son absence indique une dépense non décidée.
     if modele is None:
         return bloquer(
             "Sous-agent refuse : aucun modele choisi.",
             "Un model absent fait HERITER celui du parent, donc le plus cher,",
             "et rien ne le signale. C'est la depense non decidee, pas la",
             "depense elevee, que cette garde refuse.")
+    # Le champ model doit être une chaîne pour pouvoir le valider.
+    if not isinstance(modele, str):
+        return 0
     if modele not in MODELES_CONNUS:
         return bloquer(
             "Sous-agent refuse : model=%r inconnu." % modele,

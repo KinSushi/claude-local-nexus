@@ -11,6 +11,10 @@
 #     .\scripts\Update-NexusModels.ps1 -Validate -Restart
 # ============================================================
 
+param(
+    [switch]$WhatIf
+)
+
 # ------------------------------------------------------------
 # Configuration des chemins (utilisation de $PSScriptRoot)
 # ------------------------------------------------------------
@@ -32,10 +36,6 @@ if ((Test-Path $configPath) -and (Select-String -Path $configPath -Pattern "AUTO
     Write-Host ""
     exit 1
 }
-
-param(
-    [switch]$WhatIf
-)
 
 # ------------------------------------------------------------
 # Verification de la presence de la cle API
@@ -114,7 +114,7 @@ if ($WhatIf) {
     Write-Host ($cloudListContent -join "`n")
 } else {
     # sauvegarde avant ecriture
-    Copy-Item -Path $cloudModelsPath -Destination "$cloudModelsPath.bak" -Force -ErrorAction SilentlyContinue
+    Copy-Item -Path $cloudModelsPath -Destination "$cloudModelsPath.bak" -Force
     $cloudListContent | Set-Content -Path $cloudModelsPath -Encoding utf8NoBOM
     Write-Host "`ncloud_models.txt mis a jour." -ForegroundColor Cyan
 }
@@ -142,7 +142,7 @@ foreach ($baseModel in $validCloudModels) {
       num_predict: 4096
     model_info:
       max_input_tokens: 131072
-      description: "$baseModel (cloud)"
+      description: "`"$baseModel (cloud)`""
 "@
 }
 
@@ -161,7 +161,7 @@ if (-not (Test-Path $configPath)) {
 }
 
 # sauvegarde avant modification
-Copy-Item -Path $configPath -Destination "$configPath.bak" -Force -ErrorAction SilentlyContinue
+Copy-Item -Path $configPath -Destination "$configPath.bak" -Force
 
 $lines = Get-Content $configPath
 
@@ -192,7 +192,7 @@ $newLines += $yamlBlock -split "`n"
 if ($endIndex -lt $lines.Count - 1) {
     $newLines += $lines[($endIndex+1)..($lines.Count-1)]
 }
-$newContent = $newLines -join "`n"
+$newContent = $newLines -join [Environment]::NewLine
 $newContent | Set-Content -Path $configPath -Encoding utf8NoBOM
 
 Write-Host "`n✅ Mise a jour terminee." -ForegroundColor Green

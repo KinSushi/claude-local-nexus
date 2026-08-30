@@ -45,8 +45,15 @@ import sys
 import urllib.error
 import urllib.request
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import nexus_capability as capability  # noqa: E402
+# ----------------------------------------------------------------------
+# Import protégé du module externe `nexus_capability`
+# ----------------------------------------------------------------------
+try:
+    import nexus_capability as capability  # noqa: E402
+    _capability_import_error = None
+except Exception as exc:  # pragma: no cover
+    capability = None
+    _capability_import_error = exc
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -125,18 +132,9 @@ def controle_moteur_coherent() -> None:
         noter("moteur coherent", False, BLOQUANT, "configuration illisible : %s" % exc)
         return
     # Recensement de TOUTES les adresses déclarées, plutôt que le comptage
-    # de deux formes connues d'avance. L'ancienne version comparait
-    # `http://ollama:11434` à `host.docker.internal:11434` et ignorait
-    # tout le reste : une configuration mélangeant `http://127.0.0.1:11434`
-    # à l'une des deux passait pour cohérente, alors que c'est exactement
-    # la panne décrite ci-dessus. Un contrôle qui ne connaît que les
-    # formes déjà vues ne protège que du passé.
+    # de deux formes connues d'avance.
     adresses: dict[str, int] = {}
     for brut in re.findall(r"api_base:\s*(\S+)", texte):
-        # `,}]` retire en plus des guillemets : une déclaration écrite en
-        # flux YAML (`{... api_base: http://hote:11434}`) ferait sinon de
-        # l'accolade fermante un morceau de l'adresse, et deux écritures de
-        # la MÊME adresse compteraient pour deux moteurs distincts.
         adresse = brut.strip().strip("\"'").rstrip(",}]")
         if "ollama.com" in adresse or "anthropic" in adresse:
             continue  # plan distant : hors sujet ici
@@ -178,6 +176,14 @@ def controle_moteur_joignable() -> None:
     accepte les requêtes et les échoue toutes — le pire des deux états,
     puisqu'elle a l'air en marche.
     """
+    if capability is None:
+        noter(
+            "moteur joignable",
+            False,
+            BLOQUANT,
+            "module nexus_capability indisponible : %s" % _capability_import_error,
+        )
+        return
     lieu = capability.ollama_location()
     sonde = ("http://127.0.0.1:11434" if lieu.get("host_native") else "http://127.0.0.1:11435")
     try:
@@ -246,10 +252,21 @@ def controle_secrets() -> None:
     manquants = []
     for nom in SECRETS_REQUIS:
         m = re.search(r"^\s*%s\s*=\s*(.*)$" % re.escape(nom), contenu, re.M)
-        # Une variable déclarée vide ne vaut pas mieux qu'absente : elle
-        # part telle quelle dans l'en-tête et produit un 401 que rien
-        # n'explique.
-        if not m or not m.group(1).strip().strip("\"'"):
+        if not m:
+            manquants.append(nom)
+            continue
+        # Retirer les commentaires éventuels et les guillemets.
+        # Le caractère # peut faire partie du mot de passe. On ne le considère
+        # comme commentaire que lorsqu'il est précédé d'un espace (" #").
+        # Avant, un mot de passe contenant # était tronqué à vide, bloquant le
+        # démarrage de la passerelle.
+        raw_val = m.group(1)
+        if " #" in raw_val:
+            valeur = raw_val.split(" #", 1)[0].strip()
+        else:
+            valeur = raw_val.strip()
+        valeur = valeur.strip("\"'")
+        if not valeur:
             manquants.append(nom)
     noter(
         "secrets presents",
@@ -283,6 +300,14 @@ def controle_env_hors_git() -> None:
 
 
 def controle_disque() -> None:
+    if capability is None:
+        noter(
+            "espace disque",
+            False,
+            AVERTISSEMENT,
+            "module nexus_capability indisponible : %s" % _capability_import_error,
+        )
+        return
     profil = capability.build_profile()
     libre = profil.get("free_disk_gb", 0.0)
     noter(
@@ -380,14 +405,15 @@ def controle_pont_mcp() -> None:
                 arg.replace("${CLAUDE_PROJECT_DIR:-.}", ROOT)
                 .replace("${CLAUDE_PROJECT_DIR}", ROOT)
             )
-            # Une substitution non résolue ici n'est pas un défaut : elle
-            # peut être légitimement fournie par l'environnement. La
-            # première assertion a déjà écarté celles qui ne peuvent pas être
-            # l'être.
+            # Ignorer les substitutions non résolues restantes
             if "${" in cible:
                 continue
-            if not os.path.exists(cible):
-                defauts.append("%s : point d'entree absent (%s)" % (nom, cible))
+            # Résolution relative à ROOT si le chemin n'est pas absolu
+            if not os.path.isabs(cible):
+                cible = os.path.normpath(os.path.join(ROOT, cible))
+            # Vérifier que le point d'entrée est bien un fichier
+            if not os.path.isfile(cible):
+                defauts.append("%s : point d'entree absent ou non fichier (%s)" % (nom, cible))
 
     if not serveurs:
         noter("pont MCP", False, AVERTISSEMENT, ".mcp.json ne declare aucun serveur")
@@ -464,7 +490,7 @@ def controle_delegation(avant_demarrage: bool) -> None:
     if not passerelle_vivante():
         # Non mesurable n'est ni bon ni mauvais. Le journal de depense vit
         # dans la passerelle : eteinte, elle ne prouve rien dans un sens ni
-        # dans l'autre.
+        # l'autre.
         ignorer("part deleguee", "passerelle eteinte sur %s" % PASSERELLE)
         return
 

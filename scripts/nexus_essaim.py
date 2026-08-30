@@ -32,7 +32,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 # --------------------------------------------------------------------------- #
 # Pré‑chargement du module nexus_agent (une seule fois, avant le multithreading)
@@ -93,7 +93,7 @@ def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
         "max_tokens": 4096,
     }
     resultat = agent.executer(payload, cle)
-    return resultat
+    return resultat if isinstance(resultat, dict) else {}
 
 # --------------------------------------------------------------------------- #
 # Vérification syntaxique
@@ -104,7 +104,7 @@ def verifier_syntaxe(cible: Path) -> bool:
     Vérifie que le fichier corrigé possède une syntaxe valide.
     - .py : ast.parse
     - .js : ``node --check``
-    - .ps1 : ``pwsh -Command "Get-Content <file> | Out-Null"``
+    - .ps1 : ``pwsh -Command "[System.Management.Automation.Language.Parser]::ParseFile(...)"``
     Retourne True si la syntaxe est correcte, False sinon.
     """
     suffix = cible.suffix.lower()
@@ -119,28 +119,34 @@ def verifier_syntaxe(cible: Path) -> bool:
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
+                timeout=30,
             )
             return res.returncode == 0
         elif suffix == ".ps1":
-            # Escape les apostrophes dans le chemin pour éviter l'injection.
+            # Utilisation du parser PowerShell pour une vraie vérification.
             chemin = str(cible).replace("'", "''")
+            ps_cmd = (
+                "[System.Management.Automation.Language.Parser]::ParseFile("
+                f"'{chemin}', [ref]$null, [ref]$null) | Out-Null"
+            )
             cmd = [
                 "pwsh",
                 "-NoLogo",
                 "-NoProfile",
                 "-Command",
-                f"Get-Content -Raw -Path '{chemin}' | Out-Null",
+                ps_cmd,
             ]
             res = subprocess.run(
                 cmd,
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
+                timeout=30,
             )
             return res.returncode == 0
         else:
-            # Type inconnu : on considère que la vérification passe.
-            return True
+            # Type inconnu : on considère que la vérification échoue.
+            return False
     except Exception as e:
         print(f"Syntax check error for {cible.name}: {e}")
         return False
@@ -206,19 +212,44 @@ def traiter_cible(
         print(f"Erreur lors de la sauvegarde de {nom_cible}: {e}")
         return f"{nom_cible},echec,0,0,none,{plan}", False, False
 
+    # Flag indiquant si le backup a déjà été géré (restauré ou supprimé)
+    backup_gere = False
+
     try:
         # 2. audit
-        consigne_audit = (
-            charger_fichier(Path(args.consigne_audit))
-            if args.consigne_audit
-            else f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
-        )
+        if args.consigne_audit:
+            try:
+                consigne_audit = charger_fichier(Path(args.consigne_audit))
+            except FileNotFoundError as e:
+                print(f"Consigne audit introuvable: {e}")
+                restaurer_backup(cible, backup_path)
+                backup_gere = True
+                return (
+                    f"{nom_cible},echec,0,0,none,{plan}",
+                    False,
+                    False,
+                )
+        else:
+            consigne_audit = f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
+
         audit_res = executer_audit(cible, consigne_audit, modele_audit)
+
+        # Validation basique du résultat de l'agent
+        if not isinstance(audit_res, dict):
+            print(f"Audit result malformed for {nom_cible}")
+            restaurer_backup(cible, backup_path)
+            backup_gere = True
+            return (
+                f"{nom_cible},echec,0,0,none,{plan}",
+                False,
+                False,
+            )
 
         # Gestion d'éventuelles erreurs d'audit
         if audit_res.get("erreur"):
             print(f"Audit error for {nom_cible}")
             restaurer_backup(cible, backup_path)
+            backup_gere = True
             return (
                 f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
                 False,
@@ -232,6 +263,7 @@ def traiter_cible(
         if not audit_texte:
             print(f"{nom_cible} sans trouvaille")
             backup_path.unlink(missing_ok=True)
+            backup_gere = True
             return (
                 f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
                 True,
@@ -256,13 +288,47 @@ def traiter_cible(
             print(f"Simulation: {' '.join(cmd)}")
             correction_ok = True
         else:
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                encoding="utf-8",
-                errors="replace",
-            )
-            correction_ok = res.returncode == 0
+            # Le délai par défaut était de 60 s, ce qui était trop court.
+            # Mesures : 20‑60 s en cloud, jusqu’à 155 s à froid en local.
+            # On porte le délai à 900 s (valeur utilisée ailleurs dans le dépôt)
+            # et on le rend configurable via la variable d'environnement NEXUS_TIMEOUT.
+            timeout_sec = int(os.getenv("NEXUS_TIMEOUT", "900"))
+            try:
+                res = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=timeout_sec,
+                )
+                correction_ok = res.returncode == 0
+            except subprocess.TimeoutExpired:
+                # Le processus a été tué après le timeout.
+                # On vérifie si le fichier a été modifié.
+                try:
+                    current_hash = hashlib.sha256(cible.read_bytes()).hexdigest()
+                    backup_hash = hashlib.sha256(backup_path.read_bytes()).hexdigest()
+                except Exception as e:
+                    print(f"Erreur lors du calcul des hash pour {nom_cible}: {e}")
+                    # On ne peut pas déterminer l'état, on le signale comme inconnu.
+                    return (
+                        f"{nom_cible},inconnu,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                        False,
+                        False,
+                    )
+                if current_hash == backup_hash:
+                    # Aucun changement n'a eu lieu.
+                    print(f"Timeout expired for {nom_cible} but file unchanged")
+                    correction_ok = False
+                else:
+                    # Le fichier a été modifié mais on ne peut pas garantir la validité.
+                    print(f"Timeout expired for {nom_cible}; file may be in unknown state")
+                    # On ne restaure pas le backup, on signale l'état inconnu.
+                    return (
+                        f"{nom_cible},inconnu,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                        False,
+                        False,
+                    )
 
         # Nettoyage du fichier de consigne, même en cas d'échec
         consigne_path.unlink(missing_ok=True)
@@ -270,6 +336,7 @@ def traiter_cible(
         if not correction_ok:
             print(f"Correction failed for {nom_cible}")
             restaurer_backup(cible, backup_path)
+            backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
                 False,
@@ -280,6 +347,7 @@ def traiter_cible(
         if not verifier_syntaxe(cible):
             print(f"Verification failed for {nom_cible}")
             restaurer_backup(cible, backup_path)
+            backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
                 False,
@@ -288,6 +356,7 @@ def traiter_cible(
 
         # 7. succès : on supprime le backup
         backup_path.unlink(missing_ok=True)
+        backup_gere = True
 
         # Détection d'une fuite : cible prévue locale mais audit exécuté avec le modèle cloud
         fuite = False
@@ -302,8 +371,14 @@ def traiter_cible(
             fuite,
         )
     finally:
-        # Garantie de nettoyage du backup même en cas d'exception inattendue
-        backup_path.unlink(missing_ok=True)
+        # Garantie de restauration du backup si celui‑ci n'a pas déjà été géré.
+        if not backup_gere and backup_path.exists():
+            try:
+                restaurer_backup(cible, backup_path)
+            except Exception as e:
+                print(f"Restoration failed for {nom_cible}: {e}")
+            finally:
+                backup_path.unlink(missing_ok=True)
 
 # --------------------------------------------------------------------------- #
 # Fonction principale

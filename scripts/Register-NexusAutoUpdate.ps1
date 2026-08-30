@@ -89,8 +89,17 @@ if ($Unregister) {
 # ------------------------------------------------------------
 # Interpreteur : PowerShell 7 si disponible, sinon Windows PowerShell
 # ------------------------------------------------------------
-$shell = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
-if (-not $shell) { $shell = (Get-Command powershell -ErrorAction SilentlyContinue)?.Source }
+$pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+if ($pwshCmd) {
+    $shell = $pwshCmd.Source
+} else {
+    $psCmd = Get-Command powershell -ErrorAction SilentlyContinue
+    if ($psCmd) {
+        $shell = $psCmd.Source
+    } else {
+        $shell = $null
+    }
+}
 if (-not $shell) {
     Write-Error "Aucun interpreteur PowerShell trouve."
     exit 1
@@ -119,7 +128,21 @@ if ($TaskName -match '[\\/:*?"<>|]') {
 
 # Echappe correctement le chemin du script updater
 $escapedUpdater = [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedString($Updater)
-$arguments = "-NoProfile -ExecutionPolicy Bypass -File '$escapedUpdater' -SyncLocal -Validate -Restart"
+
+# Preparation du fichier de log unique
+$logDir = Join-Path $RepoRoot 'logs'
+if (-not (Test-Path $logDir)) {
+    try {
+        New-Item -ItemType Directory -Path $logDir -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Error "Impossible de creer le repertoire de logs : $logDir"
+        exit 1
+    }
+}
+$logFile = Join-Path $logDir ("update-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
+
+# Arguments incluant la redirection des flux vers le log
+$arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$escapedUpdater`" -SyncLocal -Validate -Restart *> `"$logFile`""
 
 $action = New-ScheduledTaskAction -Execute $shell -Argument $arguments -WorkingDirectory $RepoRoot
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
@@ -131,27 +154,24 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew
 
 # Utiliser S4U (service for user) afin d'executer sans session interactive
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
+$taskPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
 
-# Creer le repertoire de logs s'il n'existe pas
-$logDir = Join-Path $RepoRoot 'logs'
-if (-not (Test-Path $logDir)) {
-    try {
-        New-Item -ItemType Directory -Path $logDir -ErrorAction Stop | Out-Null
-    } catch {
-        Write-Error "Impossible de creer le repertoire de logs : $logDir"
-        exit 1
-    }
-}
-
+# Remplacer une tache existante le cas echeant
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     Write-Host "Ancienne tache remplacee." -ForegroundColor Yellow
 }
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
-    -Settings $settings -Principal $principal `
-    -Description "Synchronise l'inventaire local et Ollama Cloud, regenere les routeurs LiteLLM, valide puis redemarre la plateforme Claude-Local-Nexus." | Out-Null
+# Enregistrement de la tache avec gestion d'erreur explicite
+try {
+    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
+        -Settings $settings -Principal $taskPrincipal `
+        -Description "Synchronise l'inventaire local et Ollama Cloud, regenere les routeurs LiteLLM, valide puis redemarre la plateforme Claude-Local-Nexus." `
+        -ErrorAction Stop
+} catch {
+    Write-Error "Echec de l'enregistrement de la tache planifiee : $($_.Exception.Message)"
+    exit 1
+}
 
 Write-Host ""
 Write-Host "Tache planifiee installee." -ForegroundColor Green
@@ -165,8 +185,10 @@ Write-Host ""
 
 if ($RunNow) {
     Write-Host "Declenchement immediat..." -ForegroundColor Cyan
-    # Attendre que le planificateur prenne en compte la nouvelle tache
-    Start-Sleep -Seconds 2
-    Start-ScheduledTask -TaskName $TaskName
-    Write-Host "Lancee. Suivre : Get-Content (Get-ChildItem '$RepoRoot\logs' | Sort-Object LastWriteTime | Select-Object -Last 1).FullName -Wait"
+    try {
+        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        Write-Host "Lancee. Suivre : Get-Content (Get-ChildItem '$logDir' | Sort-Object LastWriteTime | Select-Object -Last 1).FullName -Wait"
+    } catch {
+        Write-Error "Impossible de demarrer la tache immédiatement : $($_.Exception.Message)"
+    }
 }

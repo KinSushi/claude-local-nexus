@@ -38,7 +38,9 @@ if (-not $env:LITELLM_MASTER_KEY) {
     $envFile = Join-Path $RepoRoot ".env"
     if (Test-Path $envFile) {
         foreach ($line in Get-Content $envFile) {
-            if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') {
+            # La regex s'arrête avant un éventuel commentaire (#) afin de ne pas
+            # inclure de caractères parasites dans la clé.
+            if ($line -match '^\s*LITELLM_MASTER_KEY=([^#\r\n]+)$') {
                 # Supprimer les espaces et les éventuels guillemets autour de la valeur
                 $env:LITELLM_MASTER_KEY = $matches[1].Trim().Trim('"').Trim("'")
             }
@@ -94,6 +96,11 @@ function Invoke-Chat {
         -Headers $headers -ContentType "application/json; charset=utf-8" `
         -Body $bytes -TimeoutSec $TimeoutSec
 
+    # Vérifier que la réponse contient au moins un choix avant d'accéder à l'index 0
+    if (-not ($response.PSObject.Properties.Name -contains 'choices') -or $null -eq $response.choices -or $response.choices.Count -eq 0) {
+        throw "reponse du endpoint /v1/chat/completions ne contient pas de choix"
+    }
+
     $msg = $response.choices[0].message
     $content = $msg.content
 
@@ -127,10 +134,11 @@ Invoke-Check "Sante du proxy" {
     return $null
 }
 
-$exposed = @()
+# La variable locale $exposed était redondante avec $script:exposed.
+# Elle a été supprimée pour éviter toute confusion.
 Invoke-Check "Inventaire expose" {
     # 90 s : juste apres un redemarrage, l'inventaire de plusieurs dizaines
-    # de modeles n'est pas servi instantanement.
+    # de modeles n'est pas servi instantanément.
     $r = Invoke-RestMethod -Uri "$BaseUrl/v1/models" -Headers $headers -TimeoutSec 90
 
     # 1️⃣ Vérifier que la réponse possède bien la propriété « data » et qu'elle n'est pas $null
@@ -173,6 +181,12 @@ Invoke-Check "Embeddings (nomic-embed-text-local)" {
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
     $r = Invoke-RestMethod -Uri "$BaseUrl/v1/embeddings" -Method Post -Headers $headers `
         -ContentType "application/json; charset=utf-8" -Body $bytes -TimeoutSec 120
+
+    # Vérifier que la réponse contient au moins un vecteur avant d'accéder à l'index 0
+    if (-not ($r.PSObject.Properties.Name -contains 'data') -or $null -eq $r.data -or $r.data.Count -eq 0) {
+        throw "reponse du endpoint /v1/embeddings ne contient pas de vecteur"
+    }
+
     $dim = $r.data[0].embedding.Count
     if ($dim -lt 1) { throw "vecteur vide" }
     return "$dim dimensions"

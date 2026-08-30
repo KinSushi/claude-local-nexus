@@ -6,7 +6,7 @@ Objet
 -----
 Localiser un fichier et vérifier son intégrité sans commande jetable. Chaque
 entrée porte son rôle en une ligne, sa taille, sa date et son empreinte
-SHA-256 tronquée — de quoi dire si le dépôt correspond encore à ce qu'on
+SHA‑256 tronquée — de quoi dire si le dépôt correspond encore à ce qu'on
 croit, et où regarder.
 
 Deux sorties, pour deux usages :
@@ -25,7 +25,6 @@ from __future__ import annotations
 import csv
 import datetime
 import hashlib
-import io
 import logging
 import os
 import sys
@@ -100,6 +99,13 @@ ORDER = ["Contrat", "Infrastructure", "Configuration", "Inventaire", "Pont",
          "Exploitation", "Rituel", "Documentation", "Architecture", "Obsolète"]
 
 
+def _escape_md(text: str) -> str:
+    """
+    Échappe les caractères spéciaux du Markdown dans les cellules de tableau.
+    """
+    return text.replace("|", r"\|").replace("`", r"\`")
+
+
 def sha256(path: str) -> str:
     """
     Calcule le hachage SHA‑256 complet d'un fichier.
@@ -112,17 +118,22 @@ def sha256(path: str) -> str:
     Retour
     ------
     str
-        Hexadécimal du hachage complet (64 caractères).
+        Hexadécimal du hachage complet (64 caractères) ou « N/A » si le
+        fichier n'est pas lisible.
     """
     digest = hashlib.sha256()
     # Vérification préalable des droits de lecture.
     if not os.access(path, os.R_OK):
-        logger.debug("Accès en lecture refusé pour %s", path)
-        return ""
-    with open(path, "rb") as fh:
-        for block in iter(lambda: fh.read(65536), b""):
-            digest.update(block)
-    return digest.hexdigest()
+        logger.warning("Accès en lecture refusé pour %s", path)
+        return "N/A"
+    try:
+        with open(path, "rb") as fh:
+            for block in iter(lambda: fh.read(65536), b""):
+                digest.update(block)
+        return digest.hexdigest()
+    except Exception as exc:
+        logger.warning("Impossible de lire %s : %s", path, exc)
+        return "N/A"
 
 
 def walk() -> list[tuple[str, str, str, int, str, str]]:
@@ -137,7 +148,11 @@ def walk() -> list[tuple[str, str, str, int, str, str]]:
          date de modification (YYYY‑MM‑DD), empreinte SHA‑256 tronquée à 16 caractères)
     """
     rows: list[tuple[str, str, str, int, str, str]] = []
-    for base, dirs, files in os.walk(ROOT):
+
+    def _onerror(err):
+        logger.warning("Erreur d'accès à %s : %s", err.filename, err.strerror)
+
+    for base, dirs, files in os.walk(ROOT, onerror=_onerror):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
             full = os.path.join(base, name)
@@ -163,9 +178,33 @@ def walk() -> list[tuple[str, str, str, int, str, str]]:
                     sha256(full)[:16],
                 ))
             except Exception as exc:
-                logger.debug("Erreur lors du traitement de %s : %s", full, exc)
+                logger.warning("Erreur lors du traitement de %s : %s", full, exc)
                 continue
     return rows
+
+
+def _atomic_write(path: str, write_func) -> None:
+    """
+    Écriture atomique d'un fichier. Le répertoire parent est créé si nécessaire.
+    En cas d'exception, le fichier temporaire est supprimé.
+    """
+    dir_name = os.path.dirname(path)
+    os.makedirs(dir_name, exist_ok=True)
+
+    tmp = tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", newline="\n", delete=False, dir=dir_name
+    )
+    try:
+        write_func(tmp)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+    finally:
+        tmp.close()
+    try:
+        os.replace(tmp.name, path)
+    except Exception:
+        os.remove(tmp.name)
+        raise
 
 
 def main() -> int:
@@ -177,7 +216,7 @@ def main() -> int:
     lines = [
         "# Boussole",
         "",
-        "> Index du dépôt, généré par `python scripts/nexus_boussole.py` le %s." % now,
+        f"> Index du dépôt, généré par `python scripts/nexus_boussole.py` le {now}.",
         "> Localiser sans chercher, verifier sans commande jetable.",
         "> `.env` en est volontairement absent : ni indexé, ni empreinté.",
         "",
@@ -186,8 +225,17 @@ def main() -> int:
     ]
     for category, relative, role, size, modified, digest in rows:
         readable = ("%.0f Ko" % (size / 1024)) if size >= 1024 else ("%d o" % size)
-        lines.append("| %s | `%s` | %s | %s | %s | `%s` |"
-                     % (category, relative, role or "—", readable, modified, digest))
+        lines.append(
+            "| %s | `%s` | %s | %s | %s | `%s` |"
+            % (
+                _escape_md(category),
+                _escape_md(relative),
+                _escape_md(role) or "—",
+                readable,
+                modified,
+                digest,
+            )
+        )
 
     counts: dict[str, int] = {}
     for category, *_ in rows:
@@ -212,42 +260,16 @@ def main() -> int:
     ]
 
     # Écriture atomique du fichier Markdown.
-    md_tmp = tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", newline="\n", delete=False,
-        dir=os.path.dirname(OUT_MD)
-    )
-    try:
-        md_tmp.write("\n".join(lines) + "\n")
-        md_tmp.flush()
-        os.fsync(md_tmp.fileno())
-    finally:
-        md_tmp.close()
-    try:
-        os.replace(md_tmp.name, OUT_MD)
-    except Exception:
-        os.remove(md_tmp.name)
-        raise
+    _atomic_write(OUT_MD, lambda fh: fh.write("\n".join(lines) + "\n"))
 
     # Écriture atomique du fichier CSV.
-    csv_tmp = tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8-sig", newline="", delete=False,
-        dir=os.path.dirname(OUT_CSV)
-    )
-    try:
-        writer = csv.writer(csv_tmp, delimiter=";")
-        writer.writerow(["Role", "Fichier", "Objet", "Taille (o)",
-                         "Modifie", "SHA-256 (16)"])
+    def _write_csv(fh):
+        writer = csv.writer(fh, delimiter=";")
+        writer.writerow(["Role", "Fichier", "Objet", "Taille (o)", "Modifie", "SHA-256 (16)"])
         for row in rows:
             writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5]])
-        csv_tmp.flush()
-        os.fsync(csv_tmp.fileno())
-    finally:
-        csv_tmp.close()
-    try:
-        os.replace(csv_tmp.name, OUT_CSV)
-    except Exception:
-        os.remove(csv_tmp.name)
-        raise
+
+    _atomic_write(OUT_CSV, _write_csv)
 
     print("Boussole regeneree : %d fichiers indexes" % len(rows))
     print("  %s" % os.path.relpath(OUT_MD, ROOT))

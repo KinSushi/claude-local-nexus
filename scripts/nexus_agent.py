@@ -58,6 +58,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import ssl
 from typing import List, Dict, Any
 
 # Configuration du logger minimal pour les diagnostics.
@@ -69,6 +70,10 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
+
+# Vérifier que la passerelle utilise HTTPS pour éviter les fuites en clair.
+if not PASSERELLE.lower().startswith("https://"):
+    logging.warning("La passerelle ne semble pas utiliser HTTPS : %s", PASSERELLE)
 
 # ----------------------------------------------------------------------
 # Taille maximale d'une fenetre (en caractères) pour un appel modele.
@@ -202,8 +207,11 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
             refus.append("%s (introuvable)" % brut)
             continue
         try:
-            contenu = io.open(complet, encoding="utf-8", errors="replace").read()
-        except Exception as exc:
+            # Normaliser le chemin pour les systèmes où le nom peut contenir
+            # des octets non UTF‑8.
+            chemin_norm = os.fsdecode(complet)
+            contenu = io.open(chemin_norm, encoding="utf-8", errors="replace").read()
+        except (OSError, UnicodeDecodeError) as exc:
             refus.append("%s (illisible : %s)" % (brut, exc))
             continue
         morceaux.append("--- %s ---\n%s" % (brut, contenu))
@@ -238,7 +246,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         method="POST",
     )
     depart = time.time()
-    with urllib.request.urlopen(requete, timeout=DELAI) as reponse:
+    ctx = ssl.create_default_context()
+    with urllib.request.urlopen(requete, timeout=DELAI, context=ctx) as reponse:
         corps = json.loads(reponse.read().decode("utf-8"))
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
@@ -261,7 +270,8 @@ def plans_par_alias(cle: str) -> Dict[str, str]:
     requete = urllib.request.Request(
         PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle})
     try:
-        with urllib.request.urlopen(requete, timeout=30) as reponse:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(requete, timeout=30, context=ctx) as reponse:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
     except Exception as exc:
         logging.error("Erreur lors de la récupération des plans d'alias : %s", exc)
@@ -555,7 +565,8 @@ def lister_modeles(cle: str) -> int:
         headers={"Authorization": "Bearer " + cle},
     )
     try:
-        with urllib.request.urlopen(requete, timeout=30) as reponse:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(requete, timeout=30, context=ctx) as reponse:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
     except Exception as exc:
         print("Passerelle injoignable sur %s (%s)" % (PASSERELLE, exc))
@@ -614,7 +625,11 @@ def main() -> int:
         return lister_modeles(cle)
 
     if args.lot:
-        taches = json.loads(io.open(args.lot, encoding="utf-8").read())
+        try:
+            taches = json.loads(io.open(args.lot, encoding="utf-8").read())
+        except json.JSONDecodeError as exc:
+            print("Le fichier de lot n'est pas un JSON valide : %s" % exc)
+            return 1
         if not isinstance(taches, list):
             print("Le lot doit etre une liste d'objets.")
             return 1
@@ -636,7 +651,8 @@ def main() -> int:
     # Le parallélisme est plafonné : au-delà, plusieurs gros modèles sont
     # chargés en même temps sur une machine qui n'a qu'une réserve de RAM,
     # et l'ensemble ralentit au lieu d'accélérer.
-    largeur = max(1, min(args.parallele, len(taches)))
+    # On limite le nombre de threads à 8 pour éviter une consommation excessive.
+    largeur = max(1, min(args.parallele, 8, len(taches)))
     depart = time.time()
     resultats: List[dict] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:

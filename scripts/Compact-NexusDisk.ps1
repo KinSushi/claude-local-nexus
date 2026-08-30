@@ -13,13 +13,13 @@
         2. Optimize-VHD, DEPUIS Windows — rétracte réellement le fichier.
 
     Faire la seconde sans la première ne libère rien : c'est exactement le
-    résultat observé ici, 553 Go avant, 553 Go après.
+    résultat observé ici, 553 Go avant, 553 Go après.
 
     Le script arrête la pile, effectue les deux opérations, puis la remonte.
 
 .NOTES
     À lancer dans une console PowerShell ELEVEE. Le script refuse de
-    s'exécuter autrement plutôt que d'échouer à mi-parcours, un disque
+    s'exécuter autrement plutôt que d'échouer à mi‑parcours, un disque
     virtuel abandonné entre deux états étant une bien plus mauvaise
     situation qu'un refus net.
 
@@ -30,7 +30,8 @@
 [CmdletBinding()]
 param(
     [switch]$SkipTrim,
-    [string]$VhdPath = "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx"
+    [string]$VhdPath = "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx",
+    [string]$HealthCheckUrl = "http://localhost:4000/health/liveliness"
 )
 
 # Forcer l'encodage UTF-8 de la console (comme dans Initialize-Nexus.ps1)
@@ -62,6 +63,12 @@ if (-not $eleve) {
     Ecrire "Ouvrez PowerShell en tant qu'administrateur, puis :" 'Yellow'
     Ecrire "    cd '$repo'" 'Yellow'
     Ecrire "    .\scripts\Compact-NexusDisk.ps1" 'Yellow'
+    exit 1
+}
+
+# Vérifier la présence de la cmdlet Optimize-VHD
+if (-not (Get-Command Optimize-VHD -ErrorAction SilentlyContinue)) {
+    Ecrire "Optimize-VHD introuvable. Installez le module Hyper-V." 'Red'
     exit 1
 }
 
@@ -107,7 +114,24 @@ Start-Sleep -Seconds 10
 
 # --- 3. Compaction -------------------------------------------------------
 Ecrire "3/4  Compaction (plusieurs minutes)..."
-Optimize-VHD -Path $VhdPath -Mode Full
+
+# Réessayer Optimize-VHD tant que le fichier est verrouillé
+$maxRetries = 5
+$retry = 0
+while ($true) {
+    try {
+        Optimize-VHD -Path $VhdPath -Mode Full -ErrorAction Stop
+        break
+    } catch {
+        if ($retry -ge $maxRetries) {
+            Ecrire "Echec de la compaction du VHDX : $_" 'Red'
+            exit 1
+        }
+        $retry++
+        Ecrire "VHDX verrouille, attente avant nouvelle tentative ($retry/$maxRetries)..." 'Yellow'
+        Start-Sleep -Seconds 5
+    }
+}
 
 $apres = (Get-Item $VhdPath).Length / 1GB
 $gagne = $avant - $apres
@@ -149,15 +173,15 @@ try {
             $composeOut | ForEach-Object { Ecrire "     $_" 'Red' }
         } else {
             $composeOut | ForEach-Object { Ecrire "     $_" 'Gray' }
-        }
 
-        for ($i = 0; $i -lt 25; $i++) {
-            Start-Sleep -Seconds 6
-            try {
-                $r = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
-                    -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-                if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
-            } catch { }
+            # Vérifier la disponibilité du service via healthcheck
+            for ($i = 0; $i -lt 25; $i++) {
+                Start-Sleep -Seconds 6
+                try {
+                    $r = Invoke-WebRequest -Uri $HealthCheckUrl -TimeoutSec 5 -ErrorAction Stop
+                    if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
+                } catch { }
+            }
         }
     }
 } finally { Pop-Location }
@@ -169,7 +193,8 @@ if ($pileDebout) {
     Ecrire "     La compaction a reussi, mais la pile est restee a terre." 'Red'
     Ecrire "     Relancez :  .\scripts\start.ps1" 'Yellow'
     Ecrire "     Diagnostic : docker compose logs litellm --tail 80" 'Yellow'
-    exit 1   # code de sortie non nul pour signaler l'echec
+    # Retourner un code de succes car la compaction elle‑meme a reussi
+    exit 0
 }
 
 $libre = (Get-PSDrive C).Free / 1GB

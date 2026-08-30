@@ -35,6 +35,7 @@ import re
 import sys
 import urllib.request
 import urllib.error
+import urllib.parse   # <-- import ajouté pour la validation d'URL
 import traceback
 import datetime
 import tempfile
@@ -324,8 +325,14 @@ def switch(target: str, dry_run: bool) -> int:
         fh.write(text)
 
     # Remplacement prudent : on ne touche pas les lignes commentées.
-    pattern = re.compile(r"(?m)^(?!\s*#.*)({})".format("|".join(map(re.escape, other_urls))))
-    new_text = pattern.sub(source["api_base"], text)
+    # Le groupe 1 capture l'éventuelle indentation afin de la conserver.
+    pattern = re.compile(
+        r"(?m)^(?!\s*#.*)(\s*)({})".format("|".join(map(re.escape, other_urls)))
+    )
+    def _repl(match: re.Match) -> str:
+        indentation = match.group(1)
+        return f"{indentation}{source['api_base']}"
+    new_text = pattern.sub(_repl, text)
 
     # Vérification que le remplacement a bien abouti au moteur attendu
     # et que le nombre d'occurrences attendues a été remplacé.

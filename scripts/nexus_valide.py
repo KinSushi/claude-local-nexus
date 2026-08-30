@@ -20,6 +20,7 @@ import ast
 import json
 import re
 import tokenize
+import shutil  # pour vérifier la présence de pwsh
 
 # ---------------------------------------------------------------------------
 
@@ -27,7 +28,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import nexus_agent as agent  # noqa: E402
 
+# Constantes configurables
+DEFAULT_MAX_TOKENS = 8000
+ALLOWED_EXTENSIONS = {".py", ".ps1"}
+
 # ---------------------------------------------------------------------------
+
+def _ensure_pwsh_available():
+    """Vérifie que l’exécutable PowerShell est présent dans le PATH."""
+    if shutil.which("pwsh") is None:
+        raise RuntimeError("L’exécutable 'pwsh' est introuvable dans le PATH.")
 
 def run_git(args):
     """Exécute une commande git et renvoie stdout décodé."""
@@ -60,8 +70,14 @@ def get_modified_files_uncommitted():
     out = run_git(["diff", "--name-only"])
     return [f for f in out.splitlines() if f]
 
+def _filter_allowed_files(file_list):
+    """Ne conserve que les fichiers dont l’extension est autorisée."""
+    return [f for f in file_list if os.path.splitext(f)[1] in ALLOWED_EXTENSIONS]
+
 def check_python_syntax(file_path):
     """Vérifie que le fichier Python se parse sans erreur."""
+    if not os.path.isfile(file_path):
+        raise RuntimeError(f"Fichier Python introuvable : {file_path}")
     # Détection de l’encodage déclaré dans le fichier pour éviter les
     # erreurs lorsqu’il n’est pas UTF‑8.
     with open(file_path, "rb") as f:
@@ -72,6 +88,9 @@ def check_python_syntax(file_path):
 
 def check_powershell_syntax(file_path):
     """Utilise le parseur PowerShell pour vérifier la syntaxe."""
+    _ensure_pwsh_available()
+    if not os.path.isfile(file_path):
+        raise RuntimeError(f"Fichier PowerShell introuvable : {file_path}")
     # Utilisation de l’option -File évite l’injection de commande.
     cmd = [
         "pwsh",
@@ -145,16 +164,19 @@ def find_callers(func_names):
     """
     Recherche les appelants de chaque fonction dans le dépôt.
     Retourne un dict {func: [(file, line_no, line_text), ...]}.
+    Lève une exception si aucun appelant n’est trouvé pour une fonction.
     """
     callers = {fn: [] for fn in func_names}
     for fn in func_names:
-        # git grep recherche les appels, exclut les définitions
+        # Échapper le nom de fonction pour éviter toute injection dans git grep
+        escaped_fn = re.escape(fn)
         try:
-            out = run_git(["grep", "-n", f"{fn}\\s*\\(", "--", "."])
+            out = run_git(["grep", "-n", f"{escaped_fn}\\s*\\(", "--", "."])
         except RuntimeError as e:
-            # Loguer l’erreur pour ne pas la masquer silencieusement.
+            # Loguer l’erreur mais ne pas masquer le problème
             print(f"Warning: git grep failed for {fn} : {e}", file=sys.stderr)
-            continue
+            raise RuntimeError(f"Impossible de rechercher les appelants de {fn}") from e
+
         for line in out.splitlines():
             # format: path:line:content
             parts = line.split(":", 2)
@@ -162,16 +184,19 @@ def find_callers(func_names):
                 continue
             path, lineno, content = parts
             # ignorer la ligne de définition déjà capturée
-            if re.search(rf"def\s+{fn}\s*\(", content):
+            if re.search(rf"\bdef\s+{re.escape(fn)}\s*\(", content):
                 continue
             callers[fn].append((path, int(lineno), content.strip()))
+
+        if not callers[fn]:
+            raise RuntimeError(f"Aucun appelant trouvé pour la fonction '{fn}'")
     return callers
 
-def build_task(diff_text, callers, max_tokens=8000):
+def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
     """
     Construit le dictionnaire de tâche attendu par l'agent gratuit.
     La clé `tache` contient le texte complet à analyser.
-    Le paramètre max_tokens est fixé à 8000 (minimum requis) mais peut être
+    Le paramètre max_tokens est fixé à DEFAULT_MAX_TOKENS (minimum requis) mais peut être
     augmenté en cas de troncature.
     """
     appelants_str = ""
@@ -214,7 +239,7 @@ def free_plan_judgment(diff_text, callers):
     un plafond de tokens doublé. Si la réponse est vide sans troncature,
     lève une erreur explicite.
     """
-    plafond = 8000  # plafond minimal requis
+    plafond = DEFAULT_MAX_TOKENS  # plafond minimal requis
     for attempt in range(2):  # première tentative + une relance éventuelle
         tache = build_task(diff_text, callers, max_tokens=plafond)
         cle = agent.cle_maitre()
@@ -289,13 +314,13 @@ def main():
         uncommitted = get_modified_files_uncommitted()
         if uncommitted:
             # On travaille sur le diff HEAD (travail non commit)
-            modified = uncommitted
+            modified = _filter_allowed_files(uncommitted)
             diff_text = get_diff_uncommitted()
             # Information explicite pour le journal
             print("Utilisation du diff du travail non commit (HEAD).")
         else:
             # Aucun changement non commit : on utilise le périmètre fourni
-            modified = get_modified_files_from_base(args.base)
+            modified = _filter_allowed_files(get_modified_files_from_base(args.base))
             diff_text = get_diff_from_base(args.base)
             print(
                 f"Aucun changement non commit detecte ; utilisation du perimetre {args.base}..HEAD."
@@ -315,7 +340,11 @@ def main():
             print("Aucune regression detectee.")
         return 0
 
-    callers = find_callers(changed_funcs)
+    try:
+        callers = find_callers(changed_funcs)
+    except Exception as e:
+        print("Erreur lors de la recherche des appelants :", e)
+        return 2
 
     try:
         regression, bascule, texte = free_plan_judgment(diff_text, callers)

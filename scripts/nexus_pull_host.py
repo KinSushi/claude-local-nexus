@@ -11,7 +11,7 @@ au départ :
     le disque a encore la place       un `ollama pull` qui sature le disque
                                       laisse un blob partiel et un système
                                       instable
-    le modèle est exécutable ici      inutile de tirer 42 Go que la machine
+    le modèle est exécutable ici      inutile de tirer 42 Go que la machine
                                       ne pourra pas charger
     l'échec d'un modèle n'arrête pas  le reste de la liste garde sa valeur
     la liste
@@ -35,19 +35,24 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.error
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexus_capability as capability  # noqa: E402
 
-# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
-# Sans cette ligne, Python ecrit dans la page de codes locale de Windows
-# et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
-# GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
+# La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
+# Sans cette ligne, Python écrit dans la page de code locale de Windows
+# et les accents se dégradent dès que la sortie est capturée -- le
+# résultat finissait commité dans rituels/STATE.md, donc visible sur
+# GitHub. PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+else:
+    # Fallback pour Python < 3.7
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -55,6 +60,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # coûte pas qu'un téléchargement : il laisse un blob incomplet et met le
 # système en difficulté.
 RESERVE_GB = float(os.getenv("NEXUS_RESERVE_GB", "20.0"))  # configurable via env
+
+# Timeout (secondes) pour le pull d'un modèle. Variable d'environnement pour
+# pouvoir l'ajuster sans toucher au code.
+PULL_TIMEOUT = int(os.getenv("NEXUS_PULL_TIMEOUT", "7200"))
 
 
 def host_models() -> set[str]:
@@ -105,16 +114,26 @@ def free_disk_gb() -> float | None:
         probe = parent
     try:
         return shutil.disk_usage(probe).free / (1024 ** 3)
-    except Exception:
+    except (OSError, PermissionError):
         return None
 
 
 def _valide_modele(modele: str) -> bool:
     """
     Valide le format du nom de modèle avant de l'utiliser dans une URL.
-    Seuls les caractères alphanumériques, ``-``, ``_``, ``.``, ``:``, ``/``
-    sont autorisés.
+
+    - Autorise uniquement les caractères alphanumériques, ``-``, ``_``, ``.``,
+      ``:``, ``/``.
+    - Refuse les séquences de chemin dangereuses (``..``).
+    - Limite la longueur totale à 255 caractères.
+    - N'accepte que les caractères ASCII (évite les problèmes d'encodage).
     """
+    if len(modele) > 255:
+        return False
+    if ".." in modele.split("/"):
+        return False
+    if not all(ord(c) < 128 for c in modele):
+        return False
     return re.fullmatch(r"[A-Za-z0-9_\-./:]+", modele) is not None
 
 
@@ -140,7 +159,7 @@ def taille_registre(modele: str) -> float | None:
             manifeste = json.loads(reponse.read().decode("utf-8"))
         octets = sum(couche.get("size", 0) for couche in manifeste.get("layers", []))
         return octets / 1e9
-    except Exception:
+    except (urllib.error.URLError, json.JSONDecodeError, OSError):
         return None
 
 
@@ -180,7 +199,7 @@ def declares_sans_poids() -> list[str] | None:
 
         with io.open(config, encoding="utf-8") as fh:
             cfg = yaml.safe_load(fh)
-    except Exception:
+    except (ImportError, OSError, yaml.YAMLError):
         return None
 
     manquants: list[str] = []
@@ -210,12 +229,12 @@ def _format_free(free: float | None) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    # Le comportement par defaut est de combler ce qui MANQUE reellement,
-    # deduit de la configuration. La liste figee est devenue l'option
-    # explicite, et l'inversion vient d'un incident : lancee sans option,
-    # la version precedente lisait `model_list.host.txt` -- produit quand
-    # le disque etait plein, donc reduit a quatre entrees toutes deja
-    # presentes -- et annoncait "0 a telecharger, 4 deja presents" pendant
+    # Le comportement par défaut est de combler ce qui MANQUE réellement,
+    # déduit de la configuration. La liste figée est devenue l'option
+    # explicite, et l'inversion vient d'un incident : lancée sans option,
+    # la version précédente lisait `model_list.host.txt` -- produit quand
+    # le disque était plein, donc réduit à quatre entrées toutes déjà
+    # présentes -- et annonçait "0 a telecharger, 4 deja presents" pendant
     # que le validateur listait six absents. Rien n'etait faux dans ce
     # message, et il induisait pourtant en erreur : le chemin le plus
     # court doit etre le chemin correct.
@@ -268,7 +287,7 @@ def main() -> int:
     faits, ignores, echecs = 0, 0, []
     # Un arret par manque de place ne remplit ni `ignores` ni
     # `echecs` : sans ce drapeau, l'epilogue concluait "tout est en
-    # place" apres s'etre arrete au premier modele.
+    # place" apres s'arreter au premier modele.
     interrompu = False
     libre_simule = free_disk_gb()
     for i, modele in enumerate(voulus, 1):
@@ -333,7 +352,7 @@ def main() -> int:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=7200,
+            timeout=PULL_TIMEOUT,
         )
         if result.returncode == 0:
             free_now = free_disk_gb()

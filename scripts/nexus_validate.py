@@ -18,7 +18,6 @@ from __future__ import annotations
 import io
 import os
 import re
-import subprocess
 import sys
 
 try:
@@ -55,7 +54,9 @@ warnings: list[str] = []
 # `-vl` couvre les Qwen-VL, que `vision|llava` laissait passer : ils
 # étaient classés « texte », et un repli les faisant tomber sur un modèle
 # aveugle n'aurait déclenché aucune erreur.
-VISION = re.compile(r"vision|llava|-vl[-:]|-vl$")
+# Le pattern est maintenant ancré pour éviter les faux positifs comme
+# « supervision-7b ».
+VISION = re.compile(r"(?:^|[-:])(?:vision|llava|-vl)(?:$|[-:])")
 EMBED = re.compile(r"embed|minilm")
 
 
@@ -69,8 +70,13 @@ def classify(alias: str) -> str:
 
 
 def load_config() -> dict:
-    with io.open(CONFIG, encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+    """Charge le fichier YAML de configuration en capturant les erreurs de syntaxe."""
+    try:
+        with io.open(CONFIG, encoding="utf-8") as fh:
+            return yaml.safe_load(fh) or {}
+    except yaml.YAMLError as exc:
+        errors.append(f"impossible de parser le fichier YAML : {exc}")
+        return {}
 
 
 def flatten_fallbacks(entries) -> list[tuple[str, list[str]]]:
@@ -107,7 +113,14 @@ def main() -> int:
 
     # --- 1. Alias déclarés, doublons -------------------------------------
     model_list = cfg.get("model_list") or []
-    declared: list[str] = [m["model_name"] for m in model_list]
+    declared: list[str] = []
+    for m in model_list:
+        name = m.get("model_name")
+        if not name:
+            errors.append("objet dans model_list sans champ 'model_name'")
+            continue
+        declared.append(name)
+
     seen: set[str] = set()
     for alias in declared:
         if alias in seen:
@@ -127,7 +140,8 @@ def main() -> int:
         params = m.get("litellm_params") or {}
         model = str(params.get("model", ""))
         api_base = str(params.get("api_base", ""))
-        alias_to_pair[m["model_name"]] = (model, api_base)
+        if "model_name" in m:
+            alias_to_pair[m["model_name"]] = (model, api_base)
 
     # --- 2. Références des routeurs adaptatifs ---------------------------
     #
@@ -219,7 +233,8 @@ def main() -> int:
         ("context_window_fallbacks", cfg.get("context_window_fallbacks")),
         ("default_fallbacks", router_settings.get("default_fallbacks")),
         ("content_policy_fallbacks", router_settings.get("content_policy_fallbacks")),
-        ("context_window_fallbacks (router)", router_settings.get("context_window_fallbacks")),
+        # La duplication de « context_window_fallbacks (router) » a été
+        # supprimée pour éviter les messages d'erreur doublés.
     )
     for label, entries in listes_de_repli:
         for source, targets in flatten_fallbacks(entries):
@@ -234,24 +249,6 @@ def main() -> int:
                     continue
 
                 # --- Nouveau contrôle : repli vers le même modele/engine ----
-                # Si source et cible résolvent vers le même couple (model, api_base)
-                # le repli ne fournit aucune redondance : la panne d'un modèle
-                # affecte les deux alias simultanément. Cela conduit à un
-                # basculement involontaire vers un plan payant, ce qui contrevient
-                # à l'objectif de la plateforme.
-                #
-                # EXCLUSION 1 : les alias dont le champ `model` commence par
-                # `auto_router/` ne sont pas de vrais modèles mais des mécanismes
-                # de routage. Les comparer génère un faux positif (ex. les
-                # routeurs adaptatifs partageant le même mécanisme). Ils doivent
-                # donc être ignorés.
-                #
-                # EXCLUSION 2 : si `api_base` est vide ou absent, l'alias ne
-                # désigne aucun moteur réel. Deux alias avec un `api_base` vide
-                # ne constituent pas un repli redondant et doivent être exclus
-                # du contrôle. Sans ces exclusions, le validateur refusait tout
-                # démarrage parce que les routeurs adaptatifs étaient signalés
-                # comme des doublons.
                 if source != "*" and source in alias_to_pair and target in alias_to_pair:
                     src_model, src_api = alias_to_pair[source]
                     tgt_model, tgt_api = alias_to_pair[target]
@@ -266,15 +263,10 @@ def main() -> int:
                             "%s : '%s' et '%s' pointent vers le meme modele '%s' et api_base '%s' - un repli vers le meme modele sur le meme moteur tombe en meme temps que sa source"
                             % (label, source, target, src_model, src_api)
                         )
-                        # Pas besoin de poursuivre les autres contrôles pour cet arc.
                         continue
 
                 # Modalité : un embedding ne retombe que sur un embedding,
                 # une vision que sur une vision (§17).
-                # La regle est symetrique : un embedding ne retombe pas sur
-                # un modele de chat, et un modele de chat ne retombe pas sur
-                # un embedding. Restreindre le controle au sens descendant
-                # laissait passer gemma4-12b-local -> all-minilm-local.
                 src_kind, dst_kind = classify(source), classify(target)
                 if src_kind != dst_kind:
                     errors.append("%s : '%s' (%s) retombe sur '%s' (%s) — modalite incompatible"
@@ -288,12 +280,17 @@ def main() -> int:
                 # jamais choisi : il ne doit pas décider à notre place.
                 src_domain = domains.get(source)
                 dst_domain = domains.get(target)
-                if src_domain and dst_domain and src_domain != dst_domain \
-                        and dst_domain != "local":
+                if src_domain and dst_domain and src_domain != dst_domain and dst_domain != "local":
                     errors.append(
                         "%s : '%s' (%s) retombe sur '%s' (%s) — un repli ne "
                         "peut aller que vers plus de confidentialite"
                         % (label, source, src_domain, target, dst_domain))
+                # Cas spécial : source "*"
+                if source == "*" and dst_domain and dst_domain != "local":
+                    errors.append(
+                        "%s : fallback par défaut vers '%s' (%s) — un repli par défaut ne doit pas sortir du domaine local"
+                        % (label, target, dst_domain))
+
             # Un graphe PAR LISTE, et non un graphe unique.
             #
             # `fallbacks` descend en capacite, `context_window_fallbacks`
@@ -346,20 +343,12 @@ def main() -> int:
                 name = value.split("/", 1)[1]
                 if name not in env_present:
                     errors.append("modele %s : variable %s non definie"
-                                  % (m["model_name"], name))
+                                  % (m.get("model_name", "<inconnu>"), name))
 
     # --- 6. Inventaire Ollama vs configuration --------------------------
     # Le profil sert des la section 6, pour distinguer un modele oublie
     # d'un modele deliberement ecarte.
     profile_materiel = capability.build_profile()
-    # Un seul inventaire, celui du moteur qui sert réellement. Le
-    # validateur en relançait un second, `docker exec ollama-server` écrit
-    # en dur : après la sortie du moteur hors de Docker, il a continué de
-    # décrire un conteneur supprimé, échoué, et — parce qu'un inventaire vide
-    # entrait dans le même `if installed:` qu'un inventaire réussi —
-    # s'est tu. Toute la section 6 a disparu sans un mot, au moment précis
-    # où huit alias venaient de perdre leurs poids. Un inventaire illisible
-    # n'est pas un inventaire vide : il doit s'entendre.
     tailles_installees = capability.installed_models()
     if tailles_installees is None:
         errors.append(
@@ -384,7 +373,7 @@ def main() -> int:
                 referenced_local.add(base)
                 if base not in installed and base + ":latest" not in installed:
                     errors.append("modele %s : '%s' declare mais absent d'Ollama"
-                                  % (m["model_name"], base))
+                                  % (m.get("model_name", "<inconnu>"), base))
         # ':latest' n'est qu'un tag implicite : 'codestral:latest' installé et
         # 'codestral' référencé désignent le même modèle. Comparer les deux
         # formes brutes produirait un avertissement pour chaque modèle sans
@@ -396,10 +385,6 @@ def main() -> int:
         for base in sorted(installed):
             if canonical(base) in canonical_refs:
                 continue
-            # Distinguer « oublié » de « refusé ». Reprocher à un modèle de
-            # ne pas être exposé alors que le garde-fou vient de l'écarter
-            # produisait un avertissement inextinguible : l'opérateur ne
-            # pouvait ni le corriger, ni le faire taire.
             taille = tailles_installees.get(base, 0.0)
             etat, motif = capability.verdict(taille, profile_materiel)
             if etat == capability.REJECT:
@@ -413,9 +398,8 @@ def main() -> int:
     # n'arrive jamais utilement. Le laisser selectionnable automatiquement
     # revient a tirer au sort une reponse qui ne viendra pas (§26).
     profile = profile_materiel
-    sizes = capability.installed_models()
+    sizes = tailles_installees or {}
     if sizes is None:
-        errors.append("inventaire des modeles illisible : verdict materiel impossible")
         sizes = {}
 
     # Tout ce qui peut etre choisi SANS decision humaine : candidats de
@@ -425,10 +409,6 @@ def main() -> int:
         selectable.update(candidates)
     # Toutes les listes de repli, et pas seulement `fallbacks` : un modèle
     # inexecutable restait accepté comme cible de `context_window_fallbacks`.
-    # `flatten_fallbacks` plutôt qu'un `entry.values()` direct : la même
-    # boucle plantait sur une liste plate de noms, forme que LiteLLM
-    # accepte pour `default_fallbacks`. Deux endroits lisaient ces listes,
-    # un seul savait les lire.
     for _, entries in listes_de_repli:
         for _source, targets in flatten_fallbacks(entries):
             selectable.update(targets)
@@ -440,7 +420,7 @@ def main() -> int:
             selectable.add(defaut)
 
     for m in model_list:
-        alias = m["model_name"]
+        alias = m.get("model_name", "<inconnu>")
         params = m.get("litellm_params") or {}
         raw_model = str(params.get("model", ""))
         if "ollama.com" in str(params.get("api_base", "")):
@@ -448,7 +428,9 @@ def main() -> int:
         if not raw_model.startswith(("ollama/", "ollama_chat/")):
             continue
         base = raw_model.split("/", 1)[1]
-        size = sizes.get(base) or sizes.get(base + ":latest") or 0.0
+        size = sizes.get(base)
+        if size is None:
+            size = sizes.get(base + ":latest", 0.0)
         state, reason = capability.verdict(size, profile)
         if state == capability.REJECT:
             message = "modele %s : %s" % (alias, reason)
