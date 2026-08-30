@@ -233,6 +233,51 @@ def controle_marqueurs_autogen() -> None:
     )
 
 
+def controle_residence_modeles() -> None:
+    """
+    Le moteur garde-t-il assez de modeles chauds pour le pool declare ?
+
+    AVERTISSEMENT, jamais bloquant : c'est un reglage de l'hote, pas du
+    depot, et il appartient a l'operateur. Le signaler suffit.
+
+    Mesure du 2026-08-30 : « ollama ps » ne montrait qu'un modele resident.
+    Tout pool plus large disperse alors les appels sur des modeles froids,
+    et chaque bascule paie le chargement des poids -- 41 a 69 s observees
+    sur des modeles bancs a 3 s. Le pool est desormais borne par le budget
+    memoire (107.1), ce qui limite les degats ; relever cette variable
+    s'attaque a la cause.
+    """
+    try:
+        import subprocess
+        sortie = subprocess.run(["ollama", "ps"], capture_output=True,
+                                text=True, timeout=20, encoding="utf-8",
+                                errors="replace")
+    except Exception as exc:
+        ignorer("residence des modeles", "moteur non interrogeable : %s" % exc)
+        return
+    if sortie.returncode != 0:
+        ignorer("residence des modeles", "ollama ps a rendu %s" % sortie.returncode)
+        return
+
+    # Une seule ligne d'en-tete signifie zero modele charge : ce n'est pas
+    # une anomalie, seulement un moteur au repos.
+    charges = [l for l in sortie.stdout.splitlines()[1:] if l.strip()]
+    plafond = os.environ.get("OLLAMA_MAX_LOADED_MODELS")
+
+    if plafond:
+        noter("residence des modeles", True, AVERTISSEMENT,
+              "OLLAMA_MAX_LOADED_MODELS=%s, %d modele(s) resident(s)"
+              % (plafond, len(charges)))
+        return
+
+    noter("residence des modeles", True, AVERTISSEMENT,
+          "OLLAMA_MAX_LOADED_MODELS non defini — le moteur garde un seul "
+          "modele chaud (%d resident(s) a l'instant). Chaque changement de "
+          "modele paie le chargement des poids. Le relever elargirait "
+          "d'autant le pool utile ; la memoire du moteur en dit la limite."
+          % len(charges))
+
+
 def controle_frontiere_alias() -> None:
     """
     Le suffixe d'un alias doit s'accorder avec l'adresse qu'il contacte.
@@ -698,6 +743,7 @@ def main() -> int:
         controle_moteur_joignable,
         controle_marqueurs_autogen,
         controle_frontiere_alias,
+        controle_residence_modeles,
         controle_secrets,
         controle_env_hors_git,
         controle_disque,
