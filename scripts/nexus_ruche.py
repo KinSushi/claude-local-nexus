@@ -59,11 +59,31 @@ ESSAIM_SCRIPT = Path(
 # --------------------------------------------------------------------------- #
 # Fonctions utilitaires
 # --------------------------------------------------------------------------- #
-def ecrire_etat_atomique(etat: dict) -> None:
-    """Écrire le journal d’état de façon atomique pour éviter les corruptions."""
+def ecrire_etat_atomique(delta: dict) -> None:
+    """
+    Fusionne "delta" dans le journal sur disque et l'ecrit atomiquement.
+
+    Relit l'etat courant sur disque avant d'ecrire, plutot que de faire
+    confiance a la copie en memoire de l'appelant : si deux invocations de
+    la ruche tournent en parallele (deux terminaux, une reprise apres
+    coupure), chacune ne connait que ses propres lots. Ecrire sa vue
+    entiere a chaque fois ecraserait la progression enregistree par
+    l'autre entre-temps -- une cible deja corrigee et verifiee par l'une
+    reapparaitrait "a refaire" pour la suivante. Ne fusionner que le delta
+    (les cibles que CET appel vient de traiter) reduit la fenetre de
+    course a la duree d'une lecture-ecriture au lieu de toute l'execution.
+
+    Limite assumee : un delta peut encore effacer des entrees legitimement
+    purgees par une autre invocation (cibles qui n'existent plus). Une
+    entree perimee qui reapparait ainsi n'est pas dangereuse : elle est
+    filtree du calcul de cette execution par main() avant tout traitement,
+    au pire retraitee inutilement une fois.
+    """
     ETAT_FICHIER.parent.mkdir(parents=True, exist_ok=True)
+    disque = charger_etat()
+    disque.update(delta)
     tmp = ETAT_FICHIER.with_suffix(".tmp")
-    tmp.write_text(json.dumps(etat, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(disque, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, ETAT_FICHIER)
 
 
@@ -277,6 +297,11 @@ def traiter_lots(
 
         for fut in concurrent.futures.as_completed(futures):
             res = fut.result()
+            # Delta de cet appel seulement : ecrire_etat_atomique() fusionne
+            # avec le disque plutot que d'ecraser avec toute la copie en
+            # memoire (voir sa docstring) -- lui passer "etat" en entier a
+            # chaque iteration aurait annule cette protection.
+            delta = {}
             for cible, info in res.items():
                 verdict = info["verdict"]
                 cause = info.get("cause", "")
@@ -288,12 +313,14 @@ def traiter_lots(
                         "processed": True,
                         "cause": cause,
                     }
-                    ecrire_etat_atomique(etat)  # écriture atomique après chaque mise à jour
+                    delta[cible] = etat[cible]
                 else:
                     # On compte les cibles simulées pour le rapport mais on ne les enregistre pas.
                     traitees += 1
                 if not simuler:
                     traitees += 1
+            if delta:
+                ecrire_etat_atomique(delta)  # écriture atomique après chaque lot
     return etat, traitees
 
 

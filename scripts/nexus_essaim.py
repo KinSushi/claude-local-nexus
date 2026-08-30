@@ -83,17 +83,31 @@ def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
     """
     Lance l'audit sur la cible en appelant ``nexus_agent.executer``.
     Retourne le dictionnaire brut renvoyé par l'agent.
+
+    Reessaie une fois avec un plafond double si la premiere reponse est
+    tronquee (finish_reason "length"), comme le fait deja nexus_patch.py
+    pour l'etape de correction. Sans ce reessai, un gros fichier (server.js,
+    2051 lignes) echouait des l'audit avec "plafond insuffisant", avant
+    meme d'atteindre la correction -- observe en conditions reelles sur ce
+    depot.
     """
     cle = agent.cle_maitre()
-    payload = {
-        "nom": f"audit-{cible.name}",
-        "modele": modele,
-        "tache": consigne,
-        "fichiers": [str(cible)],
-        "max_tokens": 4096,
-    }
-    resultat = agent.executer(payload, cle)
-    return resultat if isinstance(resultat, dict) else {}
+
+    def appeler(plafond: int) -> Dict:
+        payload = {
+            "nom": f"audit-{cible.name}",
+            "modele": modele,
+            "tache": consigne,
+            "fichiers": [str(cible)],
+            "max_tokens": plafond,
+        }
+        resultat = agent.executer(payload, cle)
+        return resultat if isinstance(resultat, dict) else {}
+
+    resultat = appeler(4096)
+    if resultat.get("tronque"):
+        resultat = appeler(8192)
+    return resultat
 
 # --------------------------------------------------------------------------- #
 # Vérification syntaxique
@@ -290,14 +304,24 @@ def traiter_cible(
         # chaque passage, jamais des plus petits. Reserve aux .py :
         # nexus_fonctions.py, qui applique ce mode, est un outil AST
         # Python et ne sait pas lire un .js ou un .ps1.
+        #
+        # Pour les autres extensions (.js, .ps1), --triplets : mesure sur
+        # ce depot, la cause precise de l'echec au-dela du seuil n'est pas
+        # une ancre introuvable mais "reponse tronquee meme apres double
+        # plafond" (server.js, 2051 lignes) -- le mode fichier entier
+        # demande de reproduire tout le fichier, --triplets seulement les
+        # extraits changes, ce qui evite cette troncature precise meme si
+        # une ancre peut encore echouer pour une autre raison.
         seuil_fonctions_lignes = 600
-        if cible.suffix.lower() == ".py":
-            try:
-                nb_lignes_cible = sum(1 for _ in cible.open(encoding="utf-8", errors="ignore"))
-            except OSError:
-                nb_lignes_cible = 0
-            if nb_lignes_cible > seuil_fonctions_lignes:
+        try:
+            nb_lignes_cible = sum(1 for _ in cible.open(encoding="utf-8", errors="ignore"))
+        except OSError:
+            nb_lignes_cible = 0
+        if nb_lignes_cible > seuil_fonctions_lignes:
+            if cible.suffix.lower() == ".py":
                 cmd.append("--fonctions")
+            else:
+                cmd.append("--triplets")
         if args.modele_correction:
             cmd.extend(["--modele", args.modele_correction])
 
@@ -410,6 +434,10 @@ def traiter_cible(
                 print(f"Restoration failed for {nom_cible}: {e}")
             finally:
                 backup_path.unlink(missing_ok=True)
+
+
+
+
 
 
 
