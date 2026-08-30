@@ -144,6 +144,70 @@ def releves_lisibles(racine: Path) -> tuple[str, str]:
         return MANQUE, "releve illisible : %s" % str(exc).splitlines()[0][:40]
 
 
+def arbres_en_attente(racine: Path) -> tuple[str, str]:
+    """
+    Des arbres de travail isolés ont-ils été laissés en plan ?
+
+    Un arbre oublié contient le travail d'un worker que personne n'a retenu
+    ni jeté : il vieillit, diverge, et finit fusionné ou détruit au hasard.
+    La récolte doit donc être réclamée à la fin du tour, pas espérée.
+
+    ELLE N'EST PAS RÉÉCRITE ICI. `nexus_worktree.py --lister` sait déjà
+    découvrir les arbres ; cette fonction l'APPELLE. Réimplémenter la
+    découverte aurait créé deux sources de vérité qui divergeraient au
+    premier changement — c'est la règle de non-concurrence du contrat, et
+    elle vaut autant entre nos propres outils qu'avec les automatismes.
+
+    Écrit par le banc (gpt-oss-120b-cloud, 1687 jetons, coût nul), intégré
+    sans correction.
+    """
+    cmd = [sys.executable, "scripts/nexus_worktree.py", "--lister"]
+    try:
+        result = subprocess.run(
+            cmd, cwd=str(racine), capture_output=True, text=True,
+            timeout=120, encoding="utf-8", errors="replace",
+        )
+        if result.returncode != 0:
+            sortie = result.stderr.splitlines() or result.stdout.splitlines()
+            return (IGNORE, (sortie[0] if sortie else "")[:60])
+
+        # Ne comptent QUE les arbres d'agent, reconnus a leur branche.
+        #
+        # Defaut trouve a l'usage, et non a la relecture : « git worktree
+        # list » commence par l'arbre PRINCIPAL, sur « [main] ». Compte
+        # naivement, le rituel annoncait deux arbres pour un seul, et
+        # reclamait de « fusionner ou jeter » le depot lui-meme -- une
+        # consigne fausse, et dangereuse si quelqu'un l'appliquait.
+        #
+        # Le critere vient de creer_arbre(), qui nomme toujours la branche
+        # « agent/<tache> ». On lit donc la convention plutot qu'une
+        # position dans la liste, qui changerait au premier tri.
+        compteur = 0
+        for ligne in result.stdout.splitlines():
+            texte = ligne.strip()
+            if not texte:
+                continue
+            if texte.startswith(("-", "=", "#")):
+                continue
+            if "aucun" in texte.lower():
+                continue
+            if "[agent/" not in texte:
+                continue
+            compteur += 1
+
+        if compteur == 0:
+            return (OK, "aucun arbre en attente")
+        return (MANQUE,
+                "%d arbre(s) en attente : fusionner ou jeter "
+                "(nexus_worktree.py --fusionner|--jeter)" % compteur)
+
+    except subprocess.TimeoutExpired:
+        return (IGNORE, "nexus_worktree n'a pas repondu en 120 s")
+    except Exception as exc:
+        msg = str(exc).encode("ascii", "ignore").decode()
+        return (IGNORE, msg[:60])
+
+
 def cablage_tenu(racine: Path) -> tuple[str, str]:
     """
     Ce qui a ete livre ce tour est-il CABLE, ou seulement ecrit ?
@@ -190,6 +254,7 @@ def main() -> int:
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
         ("cablage tenu", lambda: cablage_tenu(racine)),
+        ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 
     resultats = []

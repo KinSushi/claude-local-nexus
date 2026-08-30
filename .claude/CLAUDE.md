@@ -81,6 +81,34 @@ reading:
 None of these came from an audit. All came from use, and each became a check
 that now fails when the defect returns.
 
+**Borrowing from the neighbouring repositories is authorised — and expected.**
+Two repositories on this machine solved problems this one still has. Their
+mechanisms were already paid for once; reinventing them would pay the same
+price twice. The paths, written down so no session has to rediscover them:
+
+```text
+D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system
+D:\EA MT5 PYTHON RENTABLE ROBUSTE
+```
+
+**Read-only.** Draw on their tools, mechanisms, hooks and ACLs; never write
+into them. The second one carries a standing instruction of its own — fix the
+script, not that project.
+
+The SAS repository declares four hook events and 101 `deny` rules. What has
+been taken from it, and what is still open, is tracked in the cockpit rather
+than here, because that list changes and this contract should not. Taken so
+far: the `SessionStart` resume, the secret and irreversible-gesture ACLs, the
+read-before-write guard, the heredoc guard, and the wiring ratchet. Still
+open: agent-perimeter, anti-drift, and the automatic harvest of worker
+worktrees.
+
+Three of its principles are worth restating because they are general: derive
+everything and hard-code nothing, since a frozen measurement lies the next
+day; a start-up hook must never run anything long, only *say* what to run; and
+it must never fail, because a guard that crashes stops the work it was meant
+to protect.
+
 **Standing research leads**, to be pursued rather than waited for:
 
 * **metaheuristics** and **hybrid metaheuristics** — the routing, pool
