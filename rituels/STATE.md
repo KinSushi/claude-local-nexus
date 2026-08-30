@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 13:09 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 13:29 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,15 +9,15 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `bcb5d83` |
+| Commit | `f017aa5` |
 | Arbre de travail | modifie |
-| Version de routage | `?` |
+| Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
 litellm-db	db	Up 23 hours (healthy)
-litellm-proxy	litellm	Up 32 minutes
+litellm-proxy	litellm	Up 9 minutes
 litellm-redis	redis	Up 23 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 23 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 350.1 Go |
+| Disque libre | 349.3 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -50,34 +50,29 @@ litellm-redis	redis	Up 23 hours (healthy)
 
 ## Intégrité de la configuration
 
-Verdict : **INVALIDE**
-
-```
-- routeur adaptive-router-local : default_model 'modele-trop-lourd-local' hors du pool
-- modele modele-trop-lourd-local : 'llama4:scout' declare mais absent d'Ollama
-```
+Verdict : **valide**
 
 ## Empreintes SHA-256
 
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `b9f0c05f458e306899d299411a70cb7f` |
+| `litellm_config.yaml` | `92a860365e08bc93dcb833f81306cf64` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
-| `cloud_models.txt` | `f33e74e16defb33966e90cb56522004c` |
+| `cloud_models.txt` | `4dec2088c280f6603284fec19b745ea9` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
 | `tools/nexus-mcp/server.js` | `b8c406f5348915fd12f692e34e1076b3` |
 | `scripts/nexus_generate.py` | `bbb16e11531b9e90e2f3c8889950a9bc` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f7` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |
-| `scripts/nexus_test.py` | `b4aae857b4d4b4aca556f232e61a3e7a` |
+| `scripts/nexus_test.py` | `b2c1ba86060abeada7ed9db4e14b33da` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d0` |
 
 ## Traque mecanique
 
 ```
-28 fichier(s) analyse(s)
+29 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       12
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5

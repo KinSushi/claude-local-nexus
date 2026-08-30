@@ -121,6 +121,98 @@ not rituals.
 
 ---
 
+# 0.2.1 MECHANISE EVERYTHING, WIRE NOTHING BY HALVES
+
+A rule that is not mechanised protects no one — not even the person who wrote
+it that morning. This was proved here on 2026-08-30: a rule written before
+lunch was broken four times the same afternoon by its own author, once while
+documenting its correction.
+
+So the deliverable of any decision is **a check that fails when the rule is
+broken**, never a paragraph. If a change cannot be expressed as a check, it is
+not finished; say so rather than closing it.
+
+**And wire it to the end.** A mechanism half-wired is worse than none, because
+it reads as protection. Every wiring has a checklist of its own, and forgetting
+one link has cost real damage here:
+
+| Link | Question to answer before closing |
+| --- | --- |
+| the script | does it exist, and does it exit non-zero on the defect? |
+| its own proof | does a positive trial show it *detects*? Silence on a clean repository proves nothing — a broken pattern is just as silent |
+| the caller | is it invoked by a hook, a scheduled task, or another check — not only by hand? |
+| the gate | does something REFUSE to proceed when it fails? |
+| the documentation | contract, `MEMORY.md`, cockpit |
+| the regression | is there a test that fails if the wiring is removed? |
+
+Measured omissions: `nexus_bench.py` wrote its readings under a key its own
+readers did not look for — the next regeneration would have dropped 58 models
+from every pool, silently. `run_validator_on` restored the real configuration
+in a `finally`, and a `finally` does not run when the process is killed; the
+recovery that existed then deleted the real file because it read
+`CONFIG present` as `CONFIG sane`.
+
+---
+
+# 0.3 SHOWCASE BACKUP — STABLE AND SANE MEANS PUBLISH
+
+The repository is the professional showcase. When everything is stable and
+sane, the state goes to GitHub — and it must stay presentable at all times.
+
+Never by a bare `git push`. Publication goes through the one gesture that
+verifies first:
+
+```powershell
+python scripts/nexus_vitrine.py --simulation   # verify everything, publish nothing
+python scripts/nexus_vitrine.py                # publish if, and only if, sane
+python scripts/nexus_vitrine.py --epreuve      # does the secret detector detect?
+```
+
+Seven blocking controls before anything leaves: clean tree, `.env` untracked,
+no secret pattern among tracked files, `nexus_conformite.py` at 0,
+`nexus_rituel.py` at 0, an `origin` remote, a branch with an upstream.
+
+Pushing to a **public** repository is the only action here that is both
+outbound and irreversible: what leaves is indexable, and deleting it later does
+not remove it from caches. A `.env` committed once stays in history even when
+erased by the next commit — hence a control that blocks absolutely rather than
+warns.
+
+`--epreuve` exists because zero detections on this repository (121 tracked
+files) proves nothing on its own: a badly written pattern yields exactly the
+same silence. Four fabricated secrets must be seen, and one innocuous sentence
+must stay silent.
+
+The verdict reads the RESULT before the mode. The first draft read the mode
+first and announced « SIMULATION » over a block — a report that claims success
+on a failure is worse than no report.
+
+---
+
+# 0.4 THE LOCAL WORKERS ARE THE SUBCONTRACTORS
+
+The local bench models **are** what Haiku and Sonnet would be, at zero cost.
+They are not a fallback for when the budget is tight; they are where the volume
+goes. The orchestrator keeps arbitration and keeps nothing else.
+
+Three rules, and they are indivisible:
+
+1. **Never hand the original files to the MCP.** A worker gets a copy, never
+   the source. It may truncate, rewrite or invent — and the repository must not
+   be able to suffer for it.
+2. **Every worker in an isolated worktree** (`scripts/nexus_worktree.py`).
+   Isolated means its own working copy, its own commits, no collision with the
+   others or with the main tree.
+3. **Preserve the orchestrator's context.** Whatever can be read, summarised,
+   searched or compared by the MCP must not come back into the billed context.
+   `nexus_search`, `nexus_summarize`, `nexus_context` exist for exactly that.
+
+The metric is not "was the free plane used" but **how many billed tokens were
+spent driving free ones**. Measured on 2026-08-29: ~475 000 billed to drive
+~126 000 free. That is the inverse of the goal.
+
+---
+
 # 0.1 Mission
 
 You are an engineering assistant operating inside **Claude-Local-Nexus**, a Dockerized hybrid LLM orchestration platform.

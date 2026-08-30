@@ -1245,7 +1245,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1268,6 +1268,8 @@ def main() -> int:
         test_code()
     if args.only in (None, "ruche"):
         test_ruche()
+    if args.only in (None, "vitrine"):
+        test_vitrine()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1455,5 +1457,90 @@ def test_ruche() -> None:
                 os.environ.pop("NEXUS_RUCHE_TIMEOUT", None)
             else:
                 os.environ["NEXUS_RUCHE_TIMEOUT"] = timeout_original
+def test_vitrine() -> None:
+    """
+    Regression des deux defauts du 2026-08-30, garde par garde.
+
+    Ils ont ete corriges le meme jour, et rien n'empechait leur retour : le
+    correctif vivait dans le code, pas dans un controle. C'est precisement ce
+    que la section 0.2.1 du contrat interdit de laisser passer.
+    """
+    import tempfile
+
+    print("\n--- VITRINE : les garde-fous de publication ---")
+
+    racine_vitrine = os.path.join(ROOT, "scripts", "nexus_vitrine.py")
+    check("scripts/nexus_vitrine.py present", os.path.isfile(racine_vitrine),
+          racine_vitrine)
+    if not os.path.isfile(racine_vitrine):
+        return
+
+    # -- 1. Le detecteur de secrets detecte-t-il encore ?
+    #
+    # Zero declenchement sur le depot ne prouve rien : un motif casse rend le
+    # meme silence. L'epreuve injecte quatre faux secrets et exige de les voir.
+    r = subprocess.run([sys.executable, racine_vitrine, "--epreuve"],
+                       capture_output=True, text=True, timeout=120,
+                       encoding="utf-8", errors="replace")
+    check("le detecteur de secrets detecte (4 cas + 1 texte anodin)",
+          r.returncode == 0,
+          (r.stdout.strip().splitlines() or ["aucune sortie"])[-1])
+
+    # -- 2. Le verdict ment-il en simulation ?
+    #
+    # Le premier jet lisait le MODE avant le RESULTAT et annoncait
+    # « SIMULATION » sur un blocage. Un depot sale, en simulation, doit
+    # s'annoncer REFUSE.
+    with tempfile.TemporaryDirectory() as rep:
+        subprocess.run(["git", "init", "-q"], cwd=rep, timeout=60)
+        with io.open(os.path.join(rep, "sale.txt"), "w", encoding="utf-8") as fh:
+            fh.write("non commite\n")
+        r = subprocess.run([sys.executable, racine_vitrine, "--simulation",
+                            "--racine", rep, "--sauf-tests"],
+                           capture_output=True, text=True, timeout=180,
+                           encoding="utf-8", errors="replace")
+        sortie = r.stdout or ""
+        check("un blocage en simulation s'annonce REFUSEE, pas « passerait »",
+              r.returncode == 1 and "REFUSEE" in sortie
+              and "passerait" not in sortie,
+              (sortie.strip().splitlines() or ["aucune sortie"])[-1])
+
+    # -- 3. Une suite tuee peut-elle encore detruire la configuration ?
+    #
+    # run_validator_on echange la vraie configuration contre une cassee. Tue
+    # apres l'echange, il laissait CONFIG = configuration de TEST et
+    # .testswap = la vraie -- et la recuperation SUPPRIMAIT la vraie, lisant
+    # « CONFIG present » comme « CONFIG sain ». Commit 72b13df en porte la
+    # trace.
+    swapped = CONFIG + ".testswap"
+    if os.path.isfile(CONFIG) and not os.path.exists(swapped):
+        with io.open(CONFIG, encoding="utf-8", errors="replace") as fh:
+            vraie = fh.read()
+        try:
+            with io.open(swapped, "w", encoding="utf-8") as fh:
+                fh.write(vraie)
+            with io.open(CONFIG, "w", encoding="utf-8") as fh:
+                fh.write("model_list:\n- model_name: cible-de-test\n")
+            recover_swapped_config()
+            with io.open(CONFIG, encoding="utf-8", errors="replace") as fh:
+                revenue = fh.read()
+            check("une suite tuee apres l'echange rend la VRAIE configuration",
+                  "# >>> AUTOGEN:" in revenue and "cible-de-test" not in revenue,
+                  "%d marqueur(s) AUTOGEN, %d trace(s) de test"
+                  % (revenue.count("# >>> AUTOGEN:"),
+                     revenue.count("cible-de-test")))
+        finally:
+            # Quoi qu'il arrive, la vraie configuration revient. Ce finally-ci
+            # est en dernier ressort : le controle ci-dessus existe justement
+            # parce qu'un finally ne suffit pas.
+            with io.open(CONFIG, "w", encoding="utf-8") as fh:
+                fh.write(vraie)
+            if os.path.exists(swapped):
+                os.remove(swapped)
+    else:
+        skip("recuperation de configuration",
+             "configuration absente ou echange deja en cours")
+
+
 if __name__ == "__main__":
     sys.exit(main())

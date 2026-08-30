@@ -82,6 +82,11 @@
 | Magasin d'observations | chaque appel MCP devient une mesure |
 | `nexus_posterior.py` | les observations deviennent un posterior, qui mesure sans décider |
 | Objectif en §0 du contrat | lu avant tout, ne se redemande pas |
+| `nexus_vitrine.py` + tâche `NexusVitrine`, PT6H | le dépôt public ne part que **sain** : sept contrôles bloquants avant tout push |
+| `nexus_vitrine.py --epreuve` | le détecteur de secrets est lui-même éprouvé — quatre faux secrets vus, un texte anodin ignoré |
+| `test_vitrine` dans `nexus_test.py` | trois régressions gardées : détection, verdict honnête, récupération de configuration |
+| `recover_swapped_config` corrigée | une suite tuée ne peut plus laisser sa configuration de test à la place de la vraie |
+| `choisir_pool_exact` | le pool est optimal sous budget, non plus glouton |
 
 > Le rituel s'applique à lui-même : à sa première exécution il a refusé de
 > clore le tour — quatre fichiers non commités, dont lui-même — puis, une fois
@@ -99,6 +104,9 @@
 | Sentinelle image | **cycle bouclé** — HTTP 400, exigence rétablie |
 | Défaut d'embedding 8 Go | `all-minilm` (46 Mo), marge 0,289 contre 0,204 — index construit en 42 fichiers |
 | Température absente du YAML | 49 modèles en portent une ; par profil dans le MCP, journalisée `T=` |
+| Configuration écrasée par la suite de tests | cause trouvée : `run_validator_on` échange les fichiers, un `finally` ne survit pas à un `kill`, et la récupération lisait « CONFIG présent » comme « CONFIG sain ». Reproduit puis récupéré : 13 marqueurs, 0 trace de test |
+| Pool choisi par glouton | contre-exemple mesuré (budget 20 Go ; 19/10/10 Go pour 22/20/20) : glouton 22, exact 40. 110 033 combinaisons examinées en une fraction de seconde |
+| Pool exact appliqué au runtime | LiteLLM relancé ; `adaptive-router-local` répond, `x-litellm-adaptive-router-model: codestral-local`, `api_base` local — non-fuite prouvée par l'en-tête |
 
 > **Un serveur MCP démarré avant un correctif sert l'ancien code.** Node lit
 > `server.js` une seule fois. Empreinte du disque au 30/08 : `b8c406f53489`.
@@ -155,6 +163,19 @@
 | `qwen3-vl-32b` hors classement | `OUVERT` | Absent des entrées classées. Écarté par le verdict matériel ? Non vérifié. |
 | Sentinelles image et embedding | `OUVERT` | Posées, **jamais vues passer** dans une suite complète non interrompue. |
 | Asymétrie des pools | `DÉCIDÉ` | Cloud 19 candidats, local 4. Justifié — aucun poids chargé côté cloud — et documenté dans le code. |
+
+### Règles écrites le 30/08, pas encore mécanisées — donc OUVERTES
+
+Le critère en tête de ce document s'applique à elles comme aux autres : tant
+qu'aucun contrôle n'échoue quand la règle est enfreinte, le sujet reste ouvert,
+quelle que soit la qualité du paragraphe.
+
+| Règle | Où elle est écrite | Ce qui manque pour la fermer |
+|---|---|---|
+| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | un contrôle qui constate qu'un appel MCP a reçu un chemin de l'arbre principal ; rien ne l'empêche aujourd'hui |
+| Chaque worker dans un **worktree isolé** | contrat §0.4 | `nexus_worktree.py` existe mais rien n'oblige à passer par lui |
+| Préserver le contexte de l'orchestrateur | contrat §0.4 | mesurable (jetons facturés par jeton délégué) mais non mesuré par tour |
+| Tout mécaniser, ne rien oublier dans les câblages | contrat §0.2.1 | la checklist des six maillons est écrite ; aucun contrôle ne vérifie qu'un mécanisme neuf les a tous |
 
 ### Vérifications jamais faites
 
