@@ -276,10 +276,23 @@ mesures qui ne répondent pas à la même question :
 | `.nexus/latences.json` | combien de temps avant qu'il *commence* à répondre ? | `nexus_bench.py` |
 | `.nexus/epreuves.json` | sait-il réellement faire le travail ? | `nexus_releve.py` |
 
-Un modèle entre au pool s'il tient le budget matériel **et** le seuil de
+Un modèle est **éligible** s'il tient le budget matériel **et** le seuil de
 latence, **ou** s'il a passé les épreuves réelles en entier. Jamais mesuré
 vaut jamais promu : **être installé ne vaut pas être éligible au routage
 automatique**.
+
+Éligible ne veut pas dire retenu. Le pool du routeur est ensuite **borné par
+la mémoire** — les candidats sont classés par qualité puis par latence
+mesurée, et retenus tant que leur poids cumulé tient dans le budget du
+moteur. Cette seconde borne vient d'une mesure : ouvert aux vingt-neuf
+modèles éligibles, le pool était plus *lent*, pas plus rapide (78, 41 et
+60 s), parce que le moteur ne garde qu'un modèle chaud à la fois et que
+chaque changement paie le chargement des poids. Borné, le même banc rend
+4 s, 5 s et 1 s sur les requêtes courantes.
+
+Le pool suit donc la machine sans qu'une ligne change : modèles lourds, pool
+étroit ; modèles légers, pool large ; machine plus puissante, pool plus
+large.
 
 ---
 
