@@ -555,6 +555,52 @@ enfreinte. Un paragraphe ne ferme rien.
 
 
 
+### Charge massive sur le pont MCP, 30/08 — ce que l'usage a montré
+
+> Workflow `wf_b08fc212-efb` : 33 appels réels sur les douze outils de
+> `nexus-local`, chaque anomalie passée à un réfutateur. Arbitrage en cours ;
+> ce qui suit a été **vérifié dans le code réel**, jamais cru sur parole.
+
+| Sujet | Statut | Ce qu'il faudra pour le clore |
+|---|---|---|
+| Une réponse vidée par le retrait du raisonnement est rendue **sans le dire** | `OUVERT` | un signalement explicite dans les quatre appelants, et un test qui échoue s'il disparaît |
+| `nexus_compare` perd le drapeau `tronquee` que `chat()` calcule pour lui | `OUVERT` | même test |
+| Le profil `reasoning` a répondu entièrement hors sujet | `OUVERT` | une épreuve de compréhension par profil ; aucune n'existe |
+| `nexus_search` rend 8 extraits à score 0,205 sur une requête absurde | `OUVERT` | à vérifier : seuil ou mention explicite du score |
+
+> **Le premier défaut est confirmé ligne à ligne.** `chat()` rend
+> `text: sansRaisonnement(content)`, qui vaut `""` lorsqu'une balise de pensée
+> est ouverte et jamais refermée — et son commentaire justifie ce choix, à
+> raison : livrer le brouillon serait pire. Mais le même `chat()` rend aussi
+> `tokens` et `tronquee`. Mesuré par la charge : `glm-5.3-cloud`, 50,4 s,
+> **8234 jetons**, et un corps vide sous le titre `### glm-5.3-cloud`.
+> L'agent a conclu « réponse tronquée ». C'est la conclusion normale : l'outil
+> détient la raison et ne la dit pas.
+>
+> `nexus_ask`, `nexus_route` et `nexus_vision` annoncent bien
+> `· REPONSE TRONQUEE a max_tokens` ; **`nexus_compare` est le seul à perdre
+> ce drapeau**. Mais aucun des quatre ne dit qu'un corps vide vient du retrait
+> du raisonnement. C'est la même famille que le refus de `nexus_agent.py` qui
+> ne nommait pas `--racine` : le code sait, et se tait.
+>
+> **Le profil `reasoning` n'est PAS un défaut du pont.** Son ordre est
+> documenté dans `server.js` et fut corrigé par la mesure de débit — le
+> commentaire reconnaît lui-même que ses deux premiers candidats sont des
+> *spécialistes du code*. La charge y a mis un arbitrage d'infrastructure ;
+> `qwen3-coder-30b-local` l'a lu comme une question de **finance DeFi**
+> (« pools de liquidités », « taux de rendement »). Une observation ne fait pas
+> une propriété — §112.3 l'a assez coûté ici — mais elle désigne un vide réel :
+> l'ordre des profils est établi sur le démarrage et le débit, et **rien ne
+> mesure la compréhension du domaine**. Un banc de plus manque, pas un
+> réglage.
+>
+> **Trois remontées rejetées à l'arbitrage**, et le motif compte autant que le
+> rejet : le refus d'un modèle inexistant est clair et nomme l'issue (la garde
+> fonctionne) ; deux « anomalies » jugeaient la qualité d'un modèle local, pas
+> le pont ; une troisième, classée *bloquante*, disait « impossible d'invoquer
+> l'outil MCP sans outils shell » — c'est une limite du sous-agent, jamais du
+> serveur.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
