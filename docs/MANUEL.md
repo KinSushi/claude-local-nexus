@@ -76,14 +76,25 @@ python "C:/local-llm-docker/scripts/nexus_agent.py" `
 
 `--modele` est facultatif. Sans lui, la requête part sur `adaptive-router`,
 qui arbitre entre le local et le cloud Ollama — gratuits tous les deux, et
-sans jamais atteindre un alias facturé. Deux mesures pour choisir en
-connaissance de cause : son pool compte 42 candidats distincts dont **18
-locaux**, parmi lesquels deux qui peuvent tenir la ligne jusqu'au délai de
-900 s. Un repli observé sur `qwen3-coder:30b` a mis près de dix minutes là
-où le cloud répondait en quelques secondes — ordre de grandeur relevé en
-passant, pas mesure contrôlée (voir « Mesurer une durée » plus bas). Ce pool suit l'inventaire
-local, qui n'a **aucun plafond** — 39 modèles installés ce jour-là, 33
-exposés par la passerelle. Quand la latence prime sur la confidentialité, demander
+sans jamais atteindre un alias facturé. Son pool compte **4 candidats
+locaux et 19 cloud**, et son modèle par défaut est `qwen3-coder-30b-local`.
+
+Ce pool n'est plus tenu à la main : il est **calculé**, et **borné par la
+mémoire** plutôt que par un compte. La raison tient en une mesure. Ouvert à
+tous les modèles éligibles — vingt-neuf — il était plus *lent*, pas plus
+rapide : trois appels ont pris 78, 41 et 60 s, parce que `ollama ps` ne
+garde **qu'un seul modèle chaud à la fois** et que chaque changement paie
+le chargement des poids. Borné au budget mémoire du moteur, le même banc
+rend 4 s, 5 s et 1 s sur les requêtes courantes, les gros modèles n'étant
+convoqués que lorsqu'ils servent.
+
+Le pool s'adapte donc seul à la machine : modèles lourds, pool étroit ;
+modèles légers, pool large ; machine plus puissante, pool plus large sans
+qu'une ligne change. Le levier pour l'élargir davantage n'est pas dans la
+configuration mais dans le moteur — `OLLAMA_MAX_LOADED_MODELS`, que
+`nexus check` signale s'il n'est pas défini.
+
+Quand la latence prime sur la confidentialité, demander
 `--modele adaptive-router-cloud` : 19 candidats, aucun local.
 
 *Sortie attendue* : le rapport d’analyse s’affiche, indique le temps d’exécution et le modèle utilisé.  
