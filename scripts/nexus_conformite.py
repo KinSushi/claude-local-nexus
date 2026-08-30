@@ -233,6 +233,49 @@ def controle_marqueurs_autogen() -> None:
     )
 
 
+def controle_releves_lisibles() -> None:
+    """
+    Les fichiers de mesure ont-ils le format que leurs lecteurs exigent ?
+
+    Absent : ignore. Une machine neuve n'a rien mesure, et l'exiger
+    empecherait sa premiere mise en route.
+
+    Present mais mal forme : BLOQUANT. C'est le cas qui s'est produit le
+    2026-08-30, et il ne s'annoncait par rien. ecrire_json() posait les
+    mesures a la racine du document quand latences_relevees() les cherche
+    sous « modeles » : la lecture rendait un dictionnaire vide, les 58
+    modeles devenaient « non mesure », et la regeneration suivante les
+    aurait tous sortis des pools. Le banc n'affichait aucune anomalie, et
+    le defaut n'a ete trouve que par accident, dans un script ecrit pour
+    autre chose.
+
+    Un releve vide n'est pas non plus accepte en silence : « present mais
+    ne contenant rien » est le symptome exact de ce defaut.
+    """
+    for nom, role in ((("latences.json"), "banc de latence"),
+                      (("epreuves.json"), "releve des epreuves")):
+        chemin = os.path.join(ROOT, ".nexus", nom)
+        if not os.path.exists(chemin):
+            ignorer("releve %s" % nom, "jamais mesure sur cette machine")
+            continue
+        try:
+            with io.open(chemin, encoding="utf-8") as f:
+                donnees = json.load(f)
+        except Exception as exc:
+            noter("releve %s" % nom, False, BLOQUANT,
+                  "illisible : %s" % str(exc)[:80])
+            continue
+        modeles = donnees.get("modeles") if isinstance(donnees, dict) else None
+        if not isinstance(modeles, dict) or not modeles:
+            noter("releve %s" % nom, False, BLOQUANT,
+                  "%s : clef « modeles » absente ou vide. Les lecteurs "
+                  "rendront un releve vide et la regeneration videra les "
+                  "pools sans le dire." % role)
+            continue
+        noter("releve %s" % nom, True, BLOQUANT,
+              "%d modele(s), format attendu par ses lecteurs" % len(modeles))
+
+
 def controle_residence_modeles() -> None:
     """
     Le moteur garde-t-il assez de modeles chauds pour le pool declare ?
@@ -751,6 +794,7 @@ def main() -> int:
         controle_marqueurs_autogen,
         controle_frontiere_alias,
         controle_residence_modeles,
+        controle_releves_lisibles,
         controle_secrets,
         controle_env_hors_git,
         controle_disque,
