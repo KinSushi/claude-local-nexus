@@ -485,9 +485,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "codestral:22b (expose automatiquement)"
+      description: "codestral:22b (promu automatiquement — 2.8 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: deepseek-coder-6.7b-local
     litellm_params:
@@ -498,9 +498,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "deepseek-coder:6.7b (expose automatiquement)"
+      description: "deepseek-coder:6.7b (promu automatiquement — 2.5 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gemma4-26b-local
     litellm_params:
@@ -511,9 +511,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "gemma4:26b (expose automatiquement)"
+      description: "gemma4:26b (promu automatiquement — 10.4 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gemma4-local
     litellm_params:
@@ -524,9 +524,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "gemma4:latest (expose automatiquement)"
+      description: "gemma4:latest (promu automatiquement — 11.6 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gpt-oss-20b-local
     litellm_params:
@@ -537,9 +537,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "gpt-oss:20b (expose automatiquement)"
+      description: "gpt-oss:20b (promu automatiquement — 7.7 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: llama3.1-8b-local
     litellm_params:
@@ -550,9 +550,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "llama3.1:8b (expose automatiquement)"
+      description: "llama3.1:8b (promu automatiquement — 2.6 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: llama3.2-1b-local
     litellm_params:
@@ -563,9 +563,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "llama3.2:1b (expose automatiquement)"
+      description: "llama3.2:1b (promu automatiquement — 2.3 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: mistral-7b-local
     litellm_params:
@@ -576,9 +576,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "mistral:7b (expose automatiquement)"
+      description: "mistral:7b (promu automatiquement — 2.5 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: mixtral-8x7b-local
     litellm_params:
@@ -589,9 +589,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "mixtral:8x7b (expose automatiquement)"
+      description: "mixtral:8x7b (promu automatiquement — 56.0 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: phi3-medium-local
     litellm_params:
@@ -602,9 +602,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "phi3:medium (expose automatiquement)"
+      description: "phi3:medium (promu automatiquement — 20.2 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen2.5-coder-7b-local
     litellm_params:
@@ -615,9 +615,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "qwen2.5-coder:7b (expose automatiquement)"
+      description: "qwen2.5-coder:7b (promu automatiquement — 2.5 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3-vl-32b-local
     litellm_params:
@@ -628,7 +628,7 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "qwen3-vl:32b (expose automatiquement)"
+      description: "qwen3-vl:32b (expose automatiquement — hors pool : trop lent : 76.5 s)"
       nexus_generated: true
       nexus_pool: false
 
@@ -641,9 +641,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "qwen3-vl:8b (expose automatiquement)"
+      description: "qwen3-vl:8b (promu automatiquement — 38.2 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3.5-9b-local
     litellm_params:
@@ -654,7 +654,7 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "qwen3.5:9b (expose automatiquement)"
+      description: "qwen3.5:9b (expose automatiquement — hors pool : trop lent : 71.1 s)"
       nexus_generated: true
       nexus_pool: false
 
@@ -667,9 +667,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "qwen3.6:27b (expose automatiquement)"
+      description: "qwen3.6:27b (promu automatiquement — 45.8 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3-14b-local
     litellm_params:
@@ -680,9 +680,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "qwen3:14b (expose automatiquement)"
+      description: "qwen3:14b (promu automatiquement — 28.0 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3-32b-local
     litellm_params:
@@ -693,7 +693,7 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 8192
-      description: "qwen3:32b (expose automatiquement)"
+      description: "qwen3:32b (expose automatiquement — hors pool : trop lent : 102.9 s)"
       nexus_generated: true
       nexus_pool: false
 
@@ -706,9 +706,9 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "qwen3:8b (expose automatiquement)"
+      description: "qwen3:8b (promu automatiquement — 22.4 s)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
   # <<< AUTOGEN:LOCAL_MODELS_EXTRA
 
   # >>> AUTOGEN:CLOUD_MODELS  (genere par scripts/Update-NexusModels.ps1 - NE PAS EDITER)
@@ -1230,6 +1230,14 @@ router_settings:
 
     - phi3-mini-local:
         - ultime-recourse-local
+        - bge-m3-local
+
+    - ultime-recourse-local:
+        - bge-m3-local
+        - granite3.3-8b-local
+
+    - bge-m3-local:
+        - granite3.3-8b-local
 
     - llama3.2-vision-11b-local:
         - llava-34b-local
@@ -1363,36 +1371,51 @@ context_window_fallbacks:
   # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
   - gemma4-31b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - qwen3-coder-30b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - qwen2.5-coder-32b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - deepseek-coder-33b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - codestral-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - qwen2.5-32b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - qwen2.5-coder-14b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - gemma4-12b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - llama3.2-3b-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - phi3-mini-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   - ultime-recourse-local:
       - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - bge-m3-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
 
   # <<< AUTOGEN:LOCAL_CTX_FALLBACKS
 

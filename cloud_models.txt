@@ -1,4 +1,4 @@
-# Catalogue Ollama Cloud — généré le 2026-08-30 04:01 par scripts/nexus_generate.py
+# Catalogue Ollama Cloud — généré le 2026-08-30 06:41 par scripts/nexus_generate.py
 # Actifs : exécutables avec l'abonnement Ollama Cloud actuel.
 # Commentés : publiés mais non autorisés — ils redeviendront actifs
 # automatiquement dès qu'un palier supérieur sera souscrit.
