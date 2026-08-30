@@ -102,6 +102,19 @@ def racine_travail() -> str:
 # recharger. Mieux vaut attendre.
 DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 
+# Delai par FENETRE dans un MAP, distinct du delai d'un appel isole.
+#
+# 900 s conviennent a une tache unique : mieux vaut attendre qu'echouer.
+# Dans un MAP, la logique s'inverse. Les fenetres sont nombreuses et
+# independantes, et le resultat n'arrive qu'une fois la DERNIERE rendue :
+# une seule fenetre lente immobilise donc tout le lot. Mesure du 30 aout
+# 2026 : deux modeles locaux ont expire a 900 s sur la meme cible, bloquant
+# l'ensemble pendant une demi-heure pour un fragment sur trois.
+#
+# Court, la fenetre lente abandonne vite et laisse jouer le repli. C'est le
+# lot qui compte, pas l'obstination sur un fragment.
+DELAI_MAP = int(os.environ.get("NEXUS_MAP_TIMEOUT", "180"))
+
 # Temperature par defaut. 0.2 et non le defaut des modeles, souvent 0.7 a
 # 0.8 : le travail dominant ici est de la relecture de code, de l'extraction
 # et des sorties au format strict, ou une temperature haute produit la
@@ -229,7 +242,8 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
 
 
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
-            cle: str, temperature: float | None = None) -> Dict[str, Any]:
+            cle: str, temperature: float | None = None,
+            delai: int | None = None) -> Dict[str, Any]:
     """
     Un appel a la passerelle, avec la preuve du plan réellement servi.
 
@@ -257,7 +271,7 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     )
     depart = time.time()
     ctx = ssl.create_default_context()
-    with urllib.request.urlopen(requete, timeout=DELAI, context=ctx) as reponse:
+    with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
         corps = json.loads(reponse.read().decode("utf-8"))
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
@@ -341,8 +355,116 @@ def _decouper_en_fenetres(corpus: str) -> List[str]:
     return fenetres
 
 
+# Fils simultanes par plan. Ces deux nombres sont MESURES : au-dela de trois
+# appels concurrents le cloud n'accelere plus, et le plan local plafonne des
+# le deuxieme. Ce ne sont pas des reglages a gout.
+PLAFOND_FILS = {"cloud": 3, "local": 2}
+
+
+def _map_sur_plan(taches, alias, fils, plafond_jetons, cle, temperature):
+    """
+    Traite les fenetres d'UN plan, et rend des couples (indice, resultat).
+
+    `fils` borne la concurrence, `plafond_jetons` borne la taille de chaque
+    reponse. Les confondre est l'erreur qui guette ici : un plafond de
+    jetons passe a max_workers donnerait trois threads pour trois jetons.
+    """
+    if not taches:
+        return []
+    resultats = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=fils) as executeur:
+        futurs = {
+            executeur.submit(
+                appeler, alias,
+                [{"role": "system", "content": MAP_SYSTEME},
+                 {"role": "user", "content": contenu}],
+                plafond_jetons, cle, temperature, DELAI_MAP): indice
+            for indice, contenu in taches
+        }
+        for futur in concurrent.futures.as_completed(futurs):
+            indice = futurs[futur]
+            try:
+                resultats.append((indice, futur.result()))
+            except Exception as exc:
+                # None a sa place plutot qu'un trou : le fragment manquant
+                # se verra en aval, la ou un silence se confondrait avec un
+                # fragment vide.
+                resultats.append((indice, {"erreur": str(exc)}))
+    return resultats
+
+
+def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
+                  local_seul=False, journal=None):
+    """
+    Repartit les fenetres du MAP entre les plans, et rend les resultats
+    DANS L'ORDRE D'ENTREE quel que soit l'ordre d'arrivee.
+
+    Les deux plans ne se disputent aucune ressource : le local est borne par
+    la machine, le cloud par le reseau. Les faire travailler ensemble divise
+    le temps du MAP sans rien couter, tous deux etant gratuits.
+    """
+    sorties = [None] * len(contenus)
+    taches = list(enumerate(contenus))
+
+    # Un modele nomme explicitement par l'appelant n'est jamais substitue.
+    if not modele.startswith("adaptive-router"):
+        for indice, res in _map_sur_plan(taches, modele, min(4, len(contenus) or 1),
+                                         plafond_jetons, cle, temperature):
+            sorties[indice] = res
+        return sorties
+
+    # Corpus sensible : le repartir entre deux plans serait une fuite, pas
+    # une optimisation.
+    if local_seul:
+        for indice, res in _map_sur_plan(taches, "adaptive-router-local",
+                                         PLAFOND_FILS["local"], plafond_jetons,
+                                         cle, temperature):
+            sorties[indice] = res
+        return sorties
+
+    # Repartition AU PRORATA des plafonds mesures, et non a parts egales.
+    #
+    # Une alternance pair/impair donne autant de fenetres a chaque plan alors
+    # que leurs debits n'ont rien de comparable : le cloud rend en 7 a 30 s,
+    # le plan local vient d'expirer deux fois a 900 s sur la meme cible. A
+    # parts egales, le lot entier attend le plan le plus lent -- la
+    # repartition coute alors plus qu'elle ne rapporte.
+    #
+    # Le ratio employe est celui des fils simultanes, 3 contre 2, seuls
+    # chiffres MESURES dont on dispose. Le debit reel penche bien davantage
+    # vers le cloud, mais l'inventer serait pire que d'etre prudent : ce
+    # ratio-la, au moins, repose sur une mesure du depot.
+    cycle = PLAFOND_FILS["cloud"] + PLAFOND_FILS["local"]
+    pairs = [t for t in taches if t[0] % cycle < PLAFOND_FILS["cloud"]]
+    impairs = [t for t in taches if t[0] % cycle >= PLAFOND_FILS["cloud"]]
+
+    def _recolter(futur, nom_plan):
+        try:
+            for indice, res in futur.result():
+                sorties[indice] = res
+        except Exception as exc:
+            # Un plan effondre laisse ses emplacements a None, ce qui se voit
+            # en aval ; mais sans cette trace, nul ne saurait POURQUOI. Une
+            # panne muette se confond avec un plan sans travail.
+            if journal is not None:
+                journal.append("plan %s en echec : %s" % (nom_plan, exc))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executeur:
+        futur_cloud = executeur.submit(_map_sur_plan, pairs, "adaptive-router-cloud",
+                                       PLAFOND_FILS["cloud"], plafond_jetons,
+                                       cle, temperature)
+        futur_local = executeur.submit(_map_sur_plan, impairs, "adaptive-router-local",
+                                       PLAFOND_FILS["local"], plafond_jetons,
+                                       cle, temperature)
+        _recolter(futur_cloud, "cloud")
+        _recolter(futur_local, "local")
+
+    return sorties
+
+
 def carte_reduction(corpus: str, consigne: str, modele: str,
-                   cle: str, plafond: int, temperature: float | None = None) -> Dict[str, Any]:
+                   cle: str, plafond: int, temperature: float | None = None,
+                   local_seul: bool = False) -> Dict[str, Any]:
     """
     MAP-REDUCE du corpus trop volumineux.
 
@@ -368,46 +490,31 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     total_duree = 0.0
     last_map_result: Dict[str, Any] = {}
 
-    def _appel_map(i: int, fragment: str) -> Dict[str, Any]:
-        contenu_user = f"{consigne}\n\n[Fragment {i}/{n}]\n\n{fragment}"
-        messages = [
-            # MAP_SYSTEME et non la consigne : celle-ci part deja dans le
-            # message user. Sans cette instruction, le modele ignore qu'il ne
-            # voit qu'un fragment, et rien ne l'empeche de conclure sur
-            # l'ensemble a partir d'un morceau -- ni d'inventer ce que les
-            # autres fragments contiennent.
-            {"role": "system", "content": MAP_SYSTEME},
-            {"role": "user", "content": contenu_user}
-        ]
-        return appeler(modele, messages, plafond, cle, temperature)
+    # Les contenus sont prepares dans l'ordre du corpus, puis repartis entre
+    # les plans. Le numero de fragment reste celui du corpus : le modele doit
+    # savoir ou il se situe, meme si le plan qui le traite varie.
+    contenus = [
+        "%s\n\n[Fragment %d/%d]\n\n%s" % (consigne, i, n, fragment)
+        for i, fragment in enumerate(fenetres, start=1)
+    ]
+    incidents: List[str] = []
+    resultats_map = _repartir_map(contenus, modele, cle, plafond, temperature,
+                                  local_seul=local_seul, journal=incidents)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, n)) as executor:
-        futures = {
-            executor.submit(_appel_map, i, fragment): i
-            for i, fragment in enumerate(fenetres, start=1)
-        }
-        # Rangement a INDICE FIXE, et non append au fil des arrivees.
-        #
-        # as_completed rend les futurs dans l'ordre ou ils FINISSENT, jamais
-        # dans celui des fenetres : les fragments etaient concatenes melanges
-        # et le REDUCE resumait un texte dont les parties avaient change de
-        # place. Le serveur MCP corrigeait deja ce point ; celui-ci non.
-        emplacements = [None] * n
-        for fut in concurrent.futures.as_completed(futures):
-            res = fut.result()
-            emplacements[futures[fut] - 1] = res
-            total_tokens += res.get("tokens", 0)
-            total_duree += res.get("duree", 0.0)
-            last_map_result = res  # garde le dernier resultat pour les metadonnees
-
-    # Un fragment sans rien d'utile repond RIEN, comme MAP_SYSTEME l'exige :
-    # concatener ces reponses noierait le REDUCE sous des negations.
-    for res in emplacements:
+    for res in resultats_map:
         if not res:
             continue
+        total_tokens += res.get("tokens", 0)
+        total_duree += res.get("duree", 0.0)
+        last_map_result = res
+        # Un fragment sans rien d'utile repond RIEN, comme MAP_SYSTEME l'exige :
+        # concatener ces reponses noierait le REDUCE sous des negations.
         texte = (res.get("texte") or "").strip()
         if texte and texte.upper() != "RIEN":
             map_textes.append(texte)
+
+    for incident in incidents:
+        print("  %s" % incident, file=sys.stderr)
 
     texte_concat = "\n\n".join(map_textes)
 
@@ -503,7 +610,8 @@ def executer(tache: dict, cle: str) -> dict:
 
     # Si le corpus depasse la taille d'une fenetre, on utilise le MAP-REDUCE.
     if corpus and len(corpus) > FENETRE_CARACTERES:
-        resultat = carte_reduction(corpus, consigne, modele, cle, plafond, temperature)
+        resultat = carte_reduction(corpus, consigne, modele, cle, plafond,
+                                   temperature, local_seul=local_seul)
         # on ajoute les champs communs attendus par le reste du code
         resultat.update({
             "nom": nom,

@@ -235,6 +235,32 @@ Le critère principal est **l’exposition des données**, pas la puissance brut
 
 ---
 
+## 🔒 Quand une cible sensible echoue
+
+Une cible dont le nom porte un indice de secret — `preserve`, `secret`,
+`env`, `cle`, `key`, `auth` — est traitee sur le plan **local**, et
+desormais **verrouillee** sur ce plan : si le modèle local expire, le repli
+gratuit ne bascule plus vers le cloud. La tâche échoue.
+
+C'est voulu. Avant ce verrou, la même cible était servie par
+`gpt-oss-120b-cloud` : les données sortaient de la machine, et rien ne le
+signalait. Mesure comparative du 30 août 2026, sur `nexus_preserve.py` :
+
+| | Modèle servi | Résultat |
+|---|---|---|
+| Avant | `gpt-oss-120b-cloud` | `ok` — les données sont sorties |
+| Après | `codestral-22b-local` | `echec` — « tous les replis gratuits ont echoue » |
+
+La contrepartie est réelle : la cible n'est plus traitée du tout. Les deux
+replis locaux ont expiré en HTTP 408. Le plan local est fragile, et le
+verrou rend cette fragilité visible au lieu de la compenser par une sortie
+de données. Un échec se voit ; une fuite non.
+
+Si la cible n'est en réalité pas sensible, renommez-la ou passez
+`--plans cloud` explicitement.
+
+---
+
 ## ⚠️ Ce qui peut mal se passer  
 
 1. **Réponse vide** : le modèle a atteint son plafond de tokens. Augmentez `--max-tokens` plutôt que de conclure à une incapacité.  
