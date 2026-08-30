@@ -121,22 +121,15 @@ def fichier_valide(p: Path) -> bool:
     return True
 
 
-def decouvrir_cibles() -> list[Path]:
+def decouvrir_cibles(racine: Path) -> list[Path]:
     """Lister les cibles auditables du dépôt selon les règles de découverte."""
-    racine = BASE_DIR
+    # Convertir en Path si nécessaire.
+    racine_path = Path(racine) if not isinstance(racine, Path) else racine
     cibles = set()
-
-    # scripts/*.py et scripts/*.ps1
-    cibles.update(racine.glob("scripts/*.py"))
-    cibles.update(racine.glob("scripts/*.ps1"))
-
-    # *.ps1 à la racine
-    cibles.update(racine.glob("*.ps1"))
-
-    # tools/nexus-mcp/*.js
-    cibles.update(racine.glob("tools/nexus-mcp/*.js"))
-
-    # Filtrer
+    cibles.update(racine_path.glob("scripts/*.py"))
+    cibles.update(racine_path.glob("scripts/*.ps1"))
+    cibles.update(racine_path.glob("*.ps1"))
+    cibles.update(racine_path.glob("tools/nexus-mcp/*.js"))
     valides = [p for p in cibles if fichier_valide(p)]
     return valides
 
@@ -389,25 +382,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Coordinateur de lancement d'essaims pour le depot Nexus."
     )
+    parser.add_argument("--racine", help="Chemin racine du depot Nexus.")
     parser.add_argument("--essaims", type=int, default=ESSAIMS_DEFAUT,
                         help="Nombre d'essaims concurrents (max 4).")
     parser.add_argument("--taille-lot", type=int, default=TAILLE_LOT_DEFAUT,
                         help="Taille d'un lot de cibles.")
     parser.add_argument("--plans", choices=["cloud", "local", "deux"],
-                        default="local", help="Plan transmis a chaque essaim : cloud, local, ou deux "
-                             "(les deux plans travaillent alors en meme temps).")
+                        default="local", help="Plan transmis a chaque essaim.")
     parser.add_argument("--tout-refaire", action="store_true",
                         help="Ignorer le journal et tout retraiter.")
     parser.add_argument("--simuler", action="store_true",
                         help="Ne pas lancer de sousprocessus, simuler les resultats.")
     parser.add_argument("--max-cibles", type=int, default=None,
-                        help="Plafonner le nombre de cibles traitees par cette "
-                             "execution, prises dans l'ordre de priorite. Sans "
-                             "ce plafond, --essaims et --taille-lot ne bornent "
-                             "que la concurrence : une seule invocation traite "
-                             "tout le depot decouvert, ce qui rend impossible "
-                             "un essai reel a perimetre reduit.")
+                        help="Plafonner le nombre de cibles traitees par cette execution.")
     args = parser.parse_args()
+
+    # Determiner la racine du depot.
+    if args.racine:
+        racine = Path(args.racine)
+    else:
+        racine = Path(nexus_agent.racine_travail())
+    print(f"Racine utilisee : {racine}")
 
     # Charger ou reinitialiser le journal d'etat
     if args.tout_refaire:
@@ -415,9 +410,9 @@ def main() -> int:
     else:
         etat = charger_etat()
 
-    # Decouverte, priorisation, puis plafond optionnel applique sur la liste
-    # deja triee (les cibles les plus prioritaires restent en tete).
-    cibles = decouvrir_cibles()
+    # Decouverte, priorisation, puis plafond optionnel.
+    cibles = decouvrir_cibles(racine)
+    print(f"{len(cibles)} cibles decouvertes")
     cibles = prioriser(cibles)
     if args.max_cibles is not None:
         cibles = cibles[: max(0, args.max_cibles)]
@@ -434,23 +429,17 @@ def main() -> int:
 
     total_cibles = len(cibles)
 
-    # Nettoyer le journal des cibles qui n'existent plus.
     cibles_str = {str(p) for p in cibles}
     etat = {k: v for k, v in etat.items() if k in cibles_str}
 
-    # Decoupage en lots
     lots = decouper_lots(cibles, args.taille_lot)
 
-    # Marquer le temps de debut pour le rapport
     start_time = time.time()
 
-    # Traitement
     etat, traitees = traiter_lots(lots, args.essaims, args.simuler, etat, args.plans)
 
-    # Rapport
     rapport_final(etat, total_cibles, traitees, start_time)
 
-    # Code de sortie
     return 0 if all(v["verdict"] == "ok" for v in etat.values()) else 1
 
 

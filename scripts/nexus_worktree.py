@@ -245,8 +245,14 @@ def appliquer(chemin: str, remplacements: list[dict]) -> tuple[int, list[str]]:
 
 def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
     complet = os.path.join(ROOT, fichier)
-    if not agent.dans_depot(complet) or agent.est_secret(complet):
-        print("Fichier refuse : hors du depot ou susceptible de porter un secret.")
+    # Calcul de la racine de travail une seule fois.
+    racine = agent.racine_travail()
+    # Utilisation de la fonction moderne pour vérifier l'appartenance au dépôt.
+    if not agent.sous_racine(complet, racine) or agent.est_secret(complet):
+        print(
+            f"Fichier refuse : hors du dépôt (racine utilisée : {racine}) "
+            "ou susceptible de porter un secret."
+        )
         return 1
     if not os.path.exists(complet):
         print("Fichier introuvable : %s" % fichier)
