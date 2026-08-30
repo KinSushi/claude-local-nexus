@@ -72,6 +72,28 @@ python "C:/local-llm-docker/scripts/nexus_essaim.py" `
 
 ---
 
+## Combien d’essaims lancer ?  
+
+| Scénario | Essaims | Temps total | Gain |
+|----------|--------|------------|------|
+| 6 cibles, 2 lots | 1 | 293 s | – |
+| 6 cibles, 2 lots | 3 | 226 s | **1,30×** |
+| 9 cibles, 3 lots | 1 | 465 s | – |
+| 9 cibles, 3 lots | 3 | 398 s | **1,17×** |
+
+**Règle pratique**  
+- Démarrez avec **2 ou 3 essaims**.  
+- Ne dépassez **pas 4 essaims** ; au‑delà le gain diminue et la saturation apparaît.  
+- **Mesurez** sur votre propre matériel : les performances varient selon le compte Ollama Cloud ou la CPU locale.
+
+**Goulot d’étranglement**  
+Le facteur limitant (compte Ollama Cloud ou CPU local) n’est pas résolu ; il faut le surveiller mais ne pas l’affirmer comme résolu.
+
+**Limite de contexte**  
+En mode raisonnement, un contexte d’environ **20 000 caractères** expire après 600 s. Au‑delà, **découpez** le texte plutôt que d’attendre l’expiration.
+
+---
+
 ## 5️⃣ Couvrir tout un dépôt sans lister les fichiers à la main
 *Découverte automatique + plusieurs essaims concurrents.*
 
@@ -84,7 +106,7 @@ python "C:/local-llm-docker/scripts/nexus_ruche.py" `
 
 *Sortie attendue* : découvre les cibles éligibles du dépôt (`scripts/*.py`, `scripts/*.ps1`, `*.ps1` racine, `tools/nexus-mcp/*.js`), les traite par lots concurrents via `nexus_essaim.py`, et affiche un rapport avec la durée réelle, le nombre de cibles abouties/en échec, et la cause précise de chaque échec.
 
-**Options utiles** : `--max-cibles N` (plafonne le volume traité par cette exécution -- sans lui, une invocation couvre tout le dépôt découvert, quels que soient `--essaims`/`--taille-lot`, qui ne bornent que la concurrence) ; `--tout-refaire` (ignore le journal `.nexus/ruche-etat.json` et retraite tout) ; `--simuler` (aucun sous-processus, aucun coût). Une cible déjà « ok » dans le journal est sautée à l'exécution suivante : plusieurs invocations successives couvrent progressivement le dépôt.
+**Options utiles** : `--max-cibles N` (plafonne le volume traité par cette exécution -- sans lui, une invocation couvre tout le dépôt découvert, quels que soient `--essaims`/`--taille-lot`, qui ne bornent que la concurrence) ; `--tout-refaire` (ignore le journal `.nexus/ruche-etat.json` et retraite tout) ; `--simuler` (aucun sousprocessus, aucun coût). Une cible déjà « ok » dans le journal est sautée à l'exécution suivante : plusieurs invocations successives couvrent progressivement le dépôt.
 
 ---
 
@@ -116,4 +138,4 @@ Le critère principal est **l’exposition des données**, pas la puissance brut
 3. **Hallucinations plausibles** : les modèles peuvent produire du code qui semble correct mais est faux. **Vérifiez toujours** chaque modification dans le code réel avant de l’adopter.
 
 ---  
-Utilisez ces blocs tel quel, copiez‑collez dans votre terminal PowerShell et adaptez les chemins/arguments à votre projet. Aucun remplissage inutile : chaque commande est prête à l’emploi.  
+Utilisez ces blocs tel quel, copiez‑collez dans votre terminal PowerShell et adaptez les chemins/arguments à votre projet. Aucun remplissage inutile : chaque commande est prête à l’emploi.
