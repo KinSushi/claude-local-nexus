@@ -43,7 +43,7 @@ python "C:/local-llm-docker/scripts/nexus_patch.py" `
 
 *Sortie attendue* : le fichier original est sauvegardé, la version corrigée est écrite, la syntaxe est vérifiée et un message indique « Correction appliquée » ou « Restauré » en cas d’erreur.  
 
-Options : `--simuler` (affiche les changements sans écrire), `--triplets` (pour fichiers très gros), refus si plus de 40 % des lignes sont perdues.
+Options : `--simuler` (affiche les changements sans écrire), `--fonctions` (pour fichiers très gros en `.py` : ne demande que les fonctions changées, appliquées via `nexus_fonctions.py`), `--triplets` (mode historique à ancres exactes, fragile au-delà d'environ 600 lignes, même limite que le mode par défaut), refus si plus de 40 % des lignes sont perdues.
 
 ---
 
@@ -69,6 +69,22 @@ python "C:/local-llm-docker/scripts/nexus_essaim.py" `
 ```
 
 *Sortie attendue* : chaque cible est traitée, un résumé indique le nombre de fichiers corrigés et les éventuels échecs. `--plans deux` lance simultanément le cloud et le local ; les secrets restent toujours en **LOCAL**.
+
+---
+
+## 5️⃣ Couvrir tout un dépôt sans lister les fichiers à la main
+*Découverte automatique + plusieurs essaims concurrents.*
+
+```powershell
+python "C:/local-llm-docker/scripts/nexus_ruche.py" `
+    --essaims 2 `
+    --taille-lot 3 `
+    --plans cloud
+```
+
+*Sortie attendue* : découvre les cibles éligibles du dépôt (`scripts/*.py`, `scripts/*.ps1`, `*.ps1` racine, `tools/nexus-mcp/*.js`), les traite par lots concurrents via `nexus_essaim.py`, et affiche un rapport avec la durée réelle, le nombre de cibles abouties/en échec, et la cause précise de chaque échec.
+
+**Options utiles** : `--max-cibles N` (plafonne le volume traité par cette exécution -- sans lui, une invocation couvre tout le dépôt découvert, quels que soient `--essaims`/`--taille-lot`, qui ne bornent que la concurrence) ; `--tout-refaire` (ignore le journal `.nexus/ruche-etat.json` et retraite tout) ; `--simuler` (aucun sous-processus, aucun coût). Une cible déjà « ok » dans le journal est sautée à l'exécution suivante : plusieurs invocations successives couvrent progressivement le dépôt.
 
 ---
 
