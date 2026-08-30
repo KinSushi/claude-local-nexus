@@ -340,6 +340,13 @@ def main() -> int:
                         help="Ignorer le journal et tout retraiter.")
     parser.add_argument("--simuler", action="store_true",
                         help="Ne pas lancer de sousprocessus, simuler les resultats.")
+    parser.add_argument("--max-cibles", type=int, default=None,
+                        help="Plafonner le nombre de cibles traitees par cette "
+                             "execution, prises dans l'ordre de priorite. Sans "
+                             "ce plafond, --essaims et --taille-lot ne bornent "
+                             "que la concurrence : une seule invocation traite "
+                             "tout le depot decouvert, ce qui rend impossible "
+                             "un essai reel a perimetre reduit.")
     args = parser.parse_args()
 
     # Charger ou reinitialiser le journal d'etat
@@ -348,9 +355,22 @@ def main() -> int:
     else:
         etat = charger_etat()
 
-    # Decouverte et priorisation
+    # Decouverte, priorisation, puis plafond optionnel applique sur la liste
+    # deja triee (les cibles les plus prioritaires restent en tete).
     cibles = decouvrir_cibles()
     cibles = prioriser(cibles)
+    if args.max_cibles is not None:
+        cibles = cibles[: max(0, args.max_cibles)]
+
+    # Aucune cible a traiter : ni une decouverte vide (glob casse, mauvais
+    # repertoire courant) ni un plafond nul ne doivent produire un succes
+    # silencieux. Avant ce garde-fou, les deux cas laissaient "etat" vide et
+    # "return 0 if all(...) else 1" valait 0 : all() sur un dictionnaire
+    # vide est vrai en Python, donc "aucun travail" et "tout a reussi"
+    # rendaient exactement le meme code de sortie.
+    if not cibles:
+        print("Aucune cible a traiter : rien n'a ete couvert.")
+        return 1
 
     total_cibles = len(cibles)
 
