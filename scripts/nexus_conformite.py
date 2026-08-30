@@ -233,6 +233,58 @@ def controle_marqueurs_autogen() -> None:
     )
 
 
+def controle_frontiere_alias() -> None:
+    """
+    Le suffixe d'un alias doit s'accorder avec l'adresse qu'il contacte.
+
+    Sept endroits du code Python decident du plan -- donc de la
+    confidentialite -- en lisant la FIN DU NOM : `-local`, `-cloud`. Le nom
+    ne prouve pourtant rien. Un alias `-local` declare a la main avec un
+    api_base distant ferait mentir ces sept endroits d'un seul coup, et la
+    plateforme annoncerait « local » une requete sortie de la machine :
+    exactement ce que la section 34 interdit.
+
+    Constat du 2026-08-30 : les 67 alias sont coherents. Mais c'etait une
+    propriete CONSTATEE, que rien n'empechait de perdre. Ce controle la rend
+    garantie.
+
+    Bloquant, et non consultatif : une frontiere de confidentialite fausse
+    ne se signale pas, elle arrete.
+    """
+    if not os.path.exists(CONFIG):
+        return  # controle_config_valide dit deja l'absence
+    try:
+        with io.open(CONFIG, encoding="utf-8", errors="replace") as f:
+            texte = f.read()
+    except OSError as exc:
+        noter("frontiere des alias", False, BLOQUANT,
+              "configuration illisible : %s" % exc)
+        return
+
+    # Lecture par blocs plutot que par YAML : ce controle doit tenir meme
+    # quand la configuration est syntaxiquement douteuse -- c'est justement
+    # le moment ou une frontiere se perd.
+    fautifs = []
+    alias = None
+    for ligne in texte.splitlines():
+        d = ligne.strip()
+        if d.startswith("- model_name:"):
+            alias = d.split(":", 1)[1].strip()
+        elif d.startswith("api_base:") and alias:
+            base = d.split(":", 1)[1].strip()
+            # Distant = HTTPS vers un hote qui n'est pas la machine.
+            distant = base.startswith("https://") and "host.docker.internal" not in base
+            if alias.endswith("-local") and distant:
+                fautifs.append("%s dit local et contacte %s" % (alias, base))
+            elif alias.endswith("-cloud") and not distant:
+                fautifs.append("%s dit cloud et contacte %s" % (alias, base))
+            alias = None
+
+    noter("frontiere des alias", not fautifs, BLOQUANT,
+          " ; ".join(fautifs) if fautifs
+          else "suffixe et api_base concordent sur chaque alias")
+
+
 def controle_secrets() -> None:
     """Les variables sans lesquelles la pile démarre sans servir."""
     if not os.path.exists(ENV):
@@ -645,6 +697,7 @@ def main() -> int:
         controle_moteur_coherent,
         controle_moteur_joignable,
         controle_marqueurs_autogen,
+        controle_frontiere_alias,
         controle_secrets,
         controle_env_hors_git,
         controle_disque,
