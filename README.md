@@ -267,9 +267,19 @@ conteneurisé, Ollama en sort.
 ```
 
 Les zones délimitées par `# >>> AUTOGEN:<NOM>` sont réécrites à chaque mise
-à jour. Les profils de capacité, les fenêtres de contexte et l'appartenance
-aux pools restent curés à la main : **être installé ne vaut pas être éligible
-au routage automatique**.
+à jour. Les profils de capacité et les fenêtres de contexte restent curés à la
+main. L'appartenance aux pools, elle, est **calculée** — à partir de deux
+mesures qui ne répondent pas à la même question :
+
+| Relevé | Question | Produit par |
+|---|---|---|
+| `.nexus/latences.json` | combien de temps avant qu'il *commence* à répondre ? | `nexus_bench.py` |
+| `.nexus/epreuves.json` | sait-il réellement faire le travail ? | `nexus_releve.py` |
+
+Un modèle entre au pool s'il tient le budget matériel **et** le seuil de
+latence, **ou** s'il a passé les épreuves réelles en entier. Jamais mesuré
+vaut jamais promu : **être installé ne vaut pas être éligible au routage
+automatique**.
 
 ---
 
@@ -277,9 +287,16 @@ au routage automatique**.
 
 Elles sont documentées plutôt que tues.
 
-- **Hôte CPU.** Un modèle de 30 milliards de paramètres répond en dizaines de
-  secondes. Le choix par défaut est un MoE dont peu de paramètres sont
-  actifs ; la latence reste la contrainte dominante.
+- **Hôte CPU.** La latence reste la contrainte dominante. Elle ne se déduit
+  pas du nombre de paramètres : sur les 40 modèles locaux mesurés,
+  `qwen3-coder:30b` commence à répondre en **2,4 s** et `llava:34b` en
+  **3,1 s**, quand `qwen3.5:9b` demande **71 s** et `gemma4:12b` **51 s**.
+  Un seuil fondé sur la taille aurait gardé les lents et écarté les rapides ;
+  c'est pourquoi le seuil porte sur la mesure.
+- **Ce que cette mesure ne dit pas.** Le banc demande seize jetons : il
+  chronomètre le démarrage, pas le débit d'une tâche réelle. Le critère est
+  donc *nécessaire et non suffisant* — il écarte à coup sûr l'inutilisable,
+  il ne prouve pas utilisable ce qu'il laisse passer.
 - **Ollama dans Docker est plafonné** par la mémoire allouée à la VM WSL2 —
   sur la machine de référence, la moitié de la RAM lui est inaccessible. La
   sortie du moteur hors du conteneur est outillée et réversible.
