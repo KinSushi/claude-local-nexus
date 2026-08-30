@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import queue
 import io
 import json
 import logging
@@ -426,118 +427,142 @@ def _map_sur_plan(taches, alias, fils, plafond_jetons, cle, temperature):
 def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
                   local_seul=False, journal=None):
     """
-    Repartit les fenetres du MAP entre les plans, et rend les resultats
-    DANS L'ORDRE D'ENTREE quel que soit l'ordre d'arrivee.
+    Traite les fenetres du MAP en piochant dans une FILE COMMUNE.
 
-    Les deux plans ne se disputent aucune ressource : le local est borne par
-    la machine, le cloud par le reseau. Les faire travailler ensemble divise
-    le temps du MAP sans rien couter, tous deux etant gratuits.
+    Pourquoi une file et non une part assignee d'avance. Une repartition a
+    ratio fixe suppose connu le rapport de debit entre les plans. Mesure du
+    30 aout 2026, sur 221 334 caracteres : le cloud seul rend en 191 s, la
+    repartition 3:2 en 268 s -- soit 40 % de PLUS. Donner au plan lent une
+    part decidee a l'avance fait attendre tout le lot.
+
+    Avec une file commune, aucun ratio n'est suppose : chaque ouvrier prend
+    la fenetre suivante des qu'il est libre. Le plan rapide en traite
+    naturellement davantage, le lent moins, et l'equilibre se mesure a
+    l'execution au lieu de se deviner a l'ecriture. Si un plan s'effondre,
+    l'autre absorbe le reste sans qu'aucune regle ne le prevoie.
+
+    L'ordre d'entree est preserve : chaque resultat retourne a son indice.
     """
-    sorties = [None] * len(contenus)
-    taches = list(enumerate(contenus))
+    n = len(contenus)
+    sorties = [None] * n
+    if not n:
+        return sorties
 
     # Un modele nomme explicitement par l'appelant n'est jamais substitue.
     if not modele.startswith("adaptive-router"):
-        for indice, res in _map_sur_plan(taches, modele, min(4, len(contenus) or 1),
-                                         plafond_jetons, cle, temperature):
-            sorties[indice] = res
-        return sorties
+        plans = [(modele, min(4, n))]
+    elif local_seul:
+        # Corpus sensible : aucune fenetre ne part en cloud. Le repartir
+        # entre deux plans serait une fuite, pas une optimisation.
+        plans = [("adaptive-router-local", PLAFOND_FILS["local"])]
+    else:
+        plans = [("adaptive-router-cloud", PLAFOND_FILS["cloud"]),
+                 ("adaptive-router-local", PLAFOND_FILS["local"])]
 
-    # Corpus sensible : le repartir entre deux plans serait une fuite, pas
-    # une optimisation.
-    if local_seul:
-        for indice, res in _map_sur_plan(taches, "adaptive-router-local",
-                                         PLAFOND_FILS["local"], plafond_jetons,
-                                         cle, temperature):
-            sorties[indice] = res
-        return sorties
+    file = queue.Queue()
+    for couple in enumerate(contenus):
+        file.put(couple)
 
-    # Repartition AU PRORATA des plafonds mesures, et non a parts egales.
-    #
-    # Une alternance pair/impair donne autant de fenetres a chaque plan alors
-    # que leurs debits n'ont rien de comparable : le cloud rend en 7 a 30 s,
-    # le plan local vient d'expirer deux fois a 900 s sur la meme cible. A
-    # parts egales, le lot entier attend le plan le plus lent -- la
-    # repartition coute alors plus qu'elle ne rapporte.
-    #
-    # Le ratio employe est celui des fils simultanes, 3 contre 2, seuls
-    # chiffres MESURES dont on dispose. Le debit reel penche bien davantage
-    # vers le cloud, mais l'inventer serait pire que d'etre prudent : ce
-    # ratio-la, au moins, repose sur une mesure du depot.
-    cycle = PLAFOND_FILS["cloud"] + PLAFOND_FILS["local"]
-    pairs = [t for t in taches if t[0] % cycle < PLAFOND_FILS["cloud"]]
-    impairs = [t for t in taches if t[0] % cycle >= PLAFOND_FILS["cloud"]]
+    compte = {}
 
-    def _recolter(futur, nom_plan):
-        try:
-            for indice, res in futur.result():
-                sorties[indice] = res
-        except Exception as exc:
-            # Un plan effondre laisse ses emplacements a None, ce qui se voit
-            # en aval ; mais sans cette trace, nul ne saurait POURQUOI. Une
-            # panne muette se confond avec un plan sans travail.
-            if journal is not None:
-                journal.append("plan %s en echec : %s" % (nom_plan, exc))
+    def _ouvrier(alias):
+        pris = 0
+        while True:
+            try:
+                indice, contenu = file.get_nowait()
+            except queue.Empty:
+                return pris
+            try:
+                sorties[indice] = appeler(
+                    alias,
+                    [{"role": "system", "content": MAP_SYSTEME},
+                     {"role": "user", "content": contenu}],
+                    plafond_jetons, cle, temperature, DELAI_MAP)
+            except Exception as exc:
+                sorties[indice] = {"erreur": str(exc)}
+            pris += 1
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executeur:
-        futur_cloud = executeur.submit(_map_sur_plan, pairs, "adaptive-router-cloud",
-                                       PLAFOND_FILS["cloud"], plafond_jetons,
-                                       cle, temperature)
-        futur_local = executeur.submit(_map_sur_plan, impairs, "adaptive-router-local",
-                                       PLAFOND_FILS["local"], plafond_jetons,
-                                       cle, temperature)
-        _recolter(futur_cloud, "cloud")
-        _recolter(futur_local, "local")
+    fils_total = sum(fils for _, fils in plans)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=fils_total) as pool:
+        futurs = {}
+        for alias, fils in plans:
+            for _ in range(fils):
+                futurs[pool.submit(_ouvrier, alias)] = alias
+        for futur in concurrent.futures.as_completed(futurs):
+            alias = futurs[futur]
+            try:
+                compte[alias] = compte.get(alias, 0) + futur.result()
+            except Exception as exc:
+                if journal is not None:
+                    journal.append("ouvrier %s en echec : %s" % (alias, exc))
 
-    # --- Rattrapage : une fenetre perdue repart sur l'AUTRE plan ----------
-    #
-    # Sans lui, un plan en panne laisse ses fenetres a None et le REDUCE
-    # resume un corpus amoute de sa part. Le trou etait visible, mais le
-    # travail perdu : or l'autre plan, lui, tourne.
-    def _manquante(res):
-        if not res or not isinstance(res, dict):
-            return True
-        return bool(res.get("erreur")) or not (res.get("texte") or "").strip()
+    # La part reellement prise par chaque plan est une MESURE, pas un
+    # reglage : elle dit lequel a porte le lot, et le journal la conserve.
+    if journal is not None and len(plans) > 1:
+        journal.append("fenetres traitees par plan : " + ", ".join(
+            "%s %d" % (a.replace("adaptive-router-", ""), c)
+            for a, c in sorted(compte.items())))
 
-    perdus = [i for i, res in enumerate(sorties) if _manquante(res)]
-    if perdus:
-        origine_cloud = {i for i, _ in pairs}
-        # Chaque fenetre repart chez l'autre : celle qui a echoue en cloud
-        # tente le local, et reciproquement. Reessayer sur le meme plan
-        # reproduirait la panne qui vient de se produire.
-        vers_local = [(i, contenus[i]) for i in perdus if i in origine_cloud]
-        vers_cloud = [(i, contenus[i]) for i in perdus if i not in origine_cloud]
-
-        def _rattraper(taches_secours, plan):
-            if not taches_secours:
-                return []
-            return _map_sur_plan(taches_secours, "adaptive-router-" + plan,
-                                 PLAFOND_FILS[plan], plafond_jetons, cle,
-                                 temperature)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as secours:
-            f_local = secours.submit(_rattraper, vers_local, "local")
-            f_cloud = secours.submit(_rattraper, vers_cloud, "cloud")
-            for futur, plan in ((f_local, "local"), (f_cloud, "cloud")):
-                try:
-                    for indice, res in futur.result():
-                        if not _manquante(res):
-                            sorties[indice] = res
-                            if journal is not None:
-                                journal.append(
-                                    "fenetre %d rattrapee sur le plan %s"
-                                    % (indice + 1, plan))
-                except Exception as exc:
-                    if journal is not None:
-                        journal.append("rattrapage %s en echec : %s" % (plan, exc))
-
-        # UNE seule tentative. Si les deux plans echouent sur la meme fenetre,
-        # insister ne fait que retarder le lot entier.
-        for i in perdus:
-            if _manquante(sorties[i]) and journal is not None:
-                journal.append("fenetre %d perdue sur les deux plans" % (i + 1))
-
+    _rattraper_perdues(sorties, contenus, plans, cle, plafond_jetons,
+                       temperature, journal)
     return sorties
+
+
+def _manquante(res):
+    """Une fenetre sans resultat exploitable : vide, en erreur, ou sans texte."""
+    if not res or not isinstance(res, dict):
+        return True
+    return bool(res.get("erreur")) or not (res.get("texte") or "").strip()
+
+
+def _rattraper_perdues(sorties, contenus, plans, cle, plafond_jetons,
+                       temperature, journal):
+    """
+    Relance UNE fois les fenetres perdues, sur les plans encore disponibles.
+
+    Sans cela, un plan en panne laisse ses fenetres a None et le REDUCE
+    resume un corpus ampute de sa part. Une seule tentative : si tous les
+    plans echouent sur la meme fenetre, insister ne fait que retarder le lot.
+    """
+    perdues = [i for i, res in enumerate(sorties) if _manquante(res)]
+    if not perdues:
+        return
+
+    file = queue.Queue()
+    for i in perdues:
+        file.put((i, contenus[i]))
+
+    def _ouvrier(alias):
+        while True:
+            try:
+                indice, contenu = file.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                res = appeler(alias,
+                              [{"role": "system", "content": MAP_SYSTEME},
+                               {"role": "user", "content": contenu}],
+                              plafond_jetons, cle, temperature, DELAI_MAP)
+                if not _manquante(res):
+                    sorties[indice] = res
+                    if journal is not None:
+                        journal.append("fenetre %d rattrapee sur %s"
+                                       % (indice + 1, alias))
+            except Exception:
+                # La fenetre retourne dans la file : un autre ouvrier, sur un
+                # autre plan, peut encore la prendre.
+                file.put((indice, contenu))
+                return
+
+    fils = sum(f for _, f in plans)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, fils)) as pool:
+        for alias, nb in plans:
+            for _ in range(nb):
+                pool.submit(_ouvrier, alias)
+
+    for i in perdues:
+        if _manquante(sorties[i]) and journal is not None:
+            journal.append("fenetre %d perdue sur tous les plans" % (i + 1))
 
 
 def carte_reduction(corpus: str, consigne: str, modele: str,
