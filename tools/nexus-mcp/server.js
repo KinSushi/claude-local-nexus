@@ -408,12 +408,34 @@ function sansRaisonnement(texte) {
   return s.trim();
 }
 
-async function chat(model, messages, maxTokens, timeoutMs) {
+// Temperature par defaut des outils du pont.
+//
+// Le serveur n'en envoyait AUCUNE, si bien que les douze outils tournaient
+// au defaut des modeles, environ 0,7 a 0,8. C'est la leçon la plus chere du
+// depot, et le seul endroit ou elle n'etait pas appliquee : a 0,7, le banc
+// a rendu un document dont TOUTES les mesures etaient inventees, et une
+// boucle de repetition de 589 s ; a 0,2, la meme tache a reussi en 11 s.
+//
+// nexus_agent.py appliquait 0,2 depuis longtemps. Le serveur MCP, qui sert
+// bien plus de trafic, ne le faisait pas.
+//
+// Surchargeable par NEXUS_TEMPERATURE, et par appel pour les rares usages
+// ou l'on veut de la variete plutot que de l'exactitude.
+const TEMPERATURE_DEFAUT = process.env.NEXUS_TEMPERATURE !== undefined
+  ? Number(process.env.NEXUS_TEMPERATURE)
+  : 0.2;
+
+async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
+  const t = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
+  const corps = { model, messages, max_tokens: maxTokens || 2048 };
+  // Les modeles Anthropic recents rejettent certains parametres
+  // d'echantillonnage (16, 85) : on ne leur en impose aucun.
+  if (t !== null && !String(model).startsWith("claude-")) corps.temperature = t;
   const { body, headers } = await withRetry(() => requestJson(
     "/v1/chat/completions",
-    { model, messages, max_tokens: maxTokens || 2048 },
+    corps,
     timeoutMs
   ));
   const choice = body.choices && body.choices[0];
