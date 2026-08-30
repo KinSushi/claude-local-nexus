@@ -786,6 +786,22 @@ async function searchIndex(query, k, embedModel) {
 // portent un travail long, ou couper tot gaspille ce qui est deja calcule.
 // La cible n'est pas encore exploitee : elle attend une mesure de latence par
 // modele, que la plateforme ne conserve pas.
+//
+// CAPACITE « tools ». Le moteur declare, pour chaque modele, s'il sait
+// appeler un outil. Releve du 2026-08-30 : dix-neuf modeles installes sur
+// cinquante-quatre ne le savent pas, et six d'entre eux figurent dans ces
+// profils.
+//
+//   coding      codestral-22b, deepseek-coder-33b
+//   rapide      phi3-mini, qui est aussi ultime-recourse
+//   multimodal  llava-7b, llava-34b, llava-13b -- ses TROIS premiers
+//
+// Ce n'est un defaut que pour les usages qui appellent reellement un
+// outil : decrire une image n'en demande aucun, et nexus_vision fonctionne
+// donc tres bien avec llava. Les candidats sont annotes plutot que
+// reordonnes, pour que le choix soit informe sans etre force.
+//
+// Le repere se lit « outils=oui/non » a cote de chaque candidat concerne.
 const PROFILES = {
   coding: {
     latency: { target_ms: 30000, hard_limit_ms: 600000 },
@@ -802,9 +818,9 @@ const PROFILES = {
     // le second de l'hote, et son demarrage lent ne se paie qu'une fois.
     models: ["qwen3-coder-30b-local",      // 2,4 s, 20,22 j/s
              "glm-4.7-flash-local",        // 61,8 s, 19,85 j/s
-             "codestral-22b-local",        // 2,8 s, debit non mesure
+             "codestral-22b-local",        // 2,8 s, debit non mesure, outils=non
              "qwen2.5-coder-32b-local",    // 3,4 s, debit non mesure
-             "deepseek-coder-33b-local",   // 3,9 s, debit non mesure
+             "deepseek-coder-33b-local",   // 3,9 s, debit non mesure, outils=non
              "kimi-k2.7-code-cloud", "gpt-oss-120b-cloud"],
   },
   reasoning: {
@@ -845,7 +861,7 @@ const PROFILES = {
     // et c'est le plus lent du banc entier.
     models: ["llama3.2-3b-local",          // 2,3 s
              "llama3.2-1b-local",          // 2,3 s
-             "phi3-mini-local",            // 2,5 s
+             "phi3-mini-local",            // 2,5 s, outils=non
              "qwen2.5-coder-7b-local",     // 2,5 s
              "gpt-oss-20b-cloud"],
   },
@@ -857,9 +873,9 @@ const PROFILES = {
     // llava-13b 4,1 s, llama3.2-vision-11b 9,5 s, qwen3-vl-8b 38,2 s.
     // llava-34b (3,1 s) est intercale : plus gros et pourtant plus rapide
     // que les deux derniers.
-    models: ["llava-7b-local",             // 2,8 s
-             "llava-34b-local",            // 3,1 s
-             "llava-13b-local",            // 4,1 s
+    models: ["llava-7b-local",             // 2,8 s, outils=non
+             "llava-34b-local",            // 3,1 s, outils=non
+             "llava-13b-local",            // 4,1 s, outils=non
              "llama3.2-vision-11b-local",  // 9,5 s
              "qwen3-vl-8b-local"],         // 38,2 s
   },
