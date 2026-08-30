@@ -241,6 +241,36 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
     return "\n\n".join(morceaux), refus
 
 
+def _sans_raisonnement(texte):
+    """
+    Retire la chaine de pensee que certains modeles laissent dans `content`.
+
+    Constate le 30 aout 2026 : une reponse rendue a l'utilisateur contenait
+    tout le raisonnement du modele, puis « </think>702 ». Le raisonnement
+    n'est pas la reponse ; le livrer tel quel donne au lecteur un brouillon
+    a la place d'un resultat.
+    """
+    if not texte:
+        return ""
+    s = str(texte)
+    balises = r"think|thinking|reasoning"
+    # 1. Blocs complets, y compris repetes.
+    s = re.sub(r"<\s*(%s)\s*>.*?<\s*/\s*\1\s*>" % balises, "", s,
+               flags=re.DOTALL | re.IGNORECASE)
+    # 2. Ouverture sans fermeture : la reponse n'est jamais venue. Rendre du
+    #    raisonnement brut serait pire que ne rien rendre -- l'appelant croirait
+    #    tenir un resultat.
+    if re.search(r"<\s*(%s)\s*>" % balises, s, flags=re.IGNORECASE):
+        return ""
+    # 3. Fermeture sans ouverture : le raisonnement a ete tronque en amont, la
+    #    reponse est ce qui suit la derniere fermeture.
+    fermetures = list(re.finditer(r"<\s*/\s*(%s)\s*>" % balises, s,
+                                  flags=re.IGNORECASE))
+    if fermetures:
+        s = s[fermetures[-1].end():]
+    return s.strip()
+
+
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             cle: str, temperature: float | None = None,
             delai: int | None = None) -> Dict[str, Any]:
@@ -277,7 +307,7 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     duree = time.time() - depart
     choix = (corps.get("choices") or [{}])[0]
     return {
-        "texte": choix.get("message", {}).get("content", ""),
+        "texte": _sans_raisonnement(choix.get("message", {}).get("content", "")),
         "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
         "servi_par": entetes.get("x-litellm-model-name", "?"),
