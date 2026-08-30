@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # backup.ps1 - Sauvegarde de la configuration et des volumes
 # ============================================================
 # Crée une archive horodatée contenant :
@@ -15,6 +15,17 @@ param(
     [switch]$IncludeVolumes,
     [string]$BackupRoot = "C:\backups"   # chemin configurable, valeur par défaut
 )
+
+# L'encodage de sortie, fixe avant le premier caractere affiche.
+#
+# Sans cela la console rend « ? » a la place de chaque coche, croix ou
+# accent : une sauvegarde reussie s'affiche alors comme une suite de points
+# d'interrogation, que l'operateur lit comme des erreurs.
+#
+# Enveloppe dans un try : certains hotes refusent de changer l'encodage
+# d'un flux redirige. Un souci d'affichage ne doit jamais faire echouer une
+# sauvegarde -- ce serait echanger un defaut cosmetique contre un vrai.
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
 # ------------------------------------------------------------
 # Variables globales
@@ -124,6 +135,45 @@ foreach ($file in $configFiles) {
 }
 if ($missingFile) {
     Cleanup-And-Exit 1 "Sauvegarde incomplete : un ou plusieurs fichiers de configuration sont manquants ou non copies."
+}
+
+# ------------------------------------------------------------
+# Les releves de mesure (.nexus) -- facultatifs, jamais bloquants
+# ------------------------------------------------------------
+# Depuis que la promotion est mecanisee, ces fichiers ne sont plus des
+# traces : ce sont des ENTREES DE DECISION. Sans eux, regenerer la
+# configuration ne redonne pas la meme composition de pools. Les remesurer
+# coute des heures de machine -- une seule epreuve a demande 447 s.
+#
+# Ils sont volontairement hors du depot (.gitignore) parce qu'ils mesurent
+# CETTE machine ; une sauvegarde locale est donc le seul endroit ou ils ont
+# leur place.
+#
+# Leur absence n'est PAS une erreur, et c'est tout l'interet de les traiter
+# a part : une machine neuve n'a encore rien mesure. Les glisser dans
+# $configFiles aurait fait echouer sa toute premiere sauvegarde.
+$mesureFiles = @(
+    ".nexus/latences.json",
+    ".nexus/epreuves.json"
+)
+
+$mesureDir = Join-Path $backupDir ".nexus"
+foreach ($file in $mesureFiles) {
+    $fullPath = Join-Path $scriptRoot $file
+    if (Test-Path $fullPath) {
+        if (-not (Test-Path $mesureDir)) {
+            New-Item -ItemType Directory -Path $mesureDir -Force | Out-Null
+        }
+        try {
+            Copy-Item $fullPath -Destination $mesureDir -Force -ErrorAction Stop
+            Write-Info "  + $file"
+        } catch {
+            # Signale, ne bloque pas : la configuration, elle, est deja sauve.
+            Write-Warn "  ! releve non copie : $file"
+        }
+    } else {
+        Write-Info "  - $file (pas encore mesure)"
+    }
 }
 
 # ------------------------------------------------------------

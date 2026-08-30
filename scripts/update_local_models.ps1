@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # SCRIPT REMPLACE - NE PLUS UTILISER
 # ============================================================
 # litellm_config.yaml est desormais regenere par zones delimitees
@@ -36,6 +36,17 @@ if ((Test-Path $__config) -and (Select-String -Path $__config -Pattern "AUTOGEN:
 param(
     [switch]$Force
 )
+
+# L'encodage de sortie, fixe avant le premier caractere affiche.
+#
+# Sans cela la console rend « ? » a la place de chaque coche, croix ou
+# accent : une sauvegarde reussie s'affiche alors comme une suite de points
+# d'interrogation, que l'operateur lit comme des erreurs.
+#
+# Enveloppe dans un try : certains hotes refusent de changer l'encodage
+# d'un flux redirige. Un souci d'affichage ne doit jamais faire echouer une
+# sauvegarde -- ce serait echanger un defaut cosmetique contre un vrai.
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
 # --- Vérification de Docker ---
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
