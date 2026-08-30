@@ -420,7 +420,24 @@ def render_local_extra(installed: list[str], declared: set[str],
             "      litellm_health_check: true",
         ]
         if not is_embed:
-            out += ["      num_ctx: %d" % ctx, "      num_predict: 4096"]
+            # Temperature declaree, et non laissee au defaut du modele.
+            #
+            # Aucun modele du YAML n'en fixait : chaque appel qui n'en
+            # precisait pas une tournait donc a 0,7-0,8, le defaut des
+            # modeles. C'est la lecon la plus chere du depot -- a 0,7, un
+            # modele a rendu un document dont TOUTES les mesures etaient
+            # inventees, et une boucle de repetition de 589 s ; a 0,2, la
+            # meme tache a reussi en 11 s.
+            #
+            # Declaree et non imposee : un parametre envoye dans la requete
+            # l'emporte sur celui du litellm_params. C'est donc un filet de
+            # securite pour tout appelant distrait, et non une contrainte
+            # pour celui qui sait ce qu'il veut.
+            #
+            # Un embedding n'en recoit pas : la notion n'a pas de sens pour
+            # lui, et la lui envoyer serait au mieux ignore, au pire refuse.
+            out += ["      num_ctx: %d" % ctx, "      num_predict: 4096",
+                    "      temperature: %s" % TEMPERATURE_DEFAUT]
         out += [
             "    model_info:",
             "      max_input_tokens: %d" % ctx,
@@ -478,6 +495,13 @@ SEUIL_POOL_MS = int(os.environ.get("NEXUS_POOL_LATENCE_MAX", "60000"))
 # a 317 octets, le plus petit modele local reel 45,9 Mo. Le seuil est place
 # entre les deux, loin des deux.
 SEUIL_POIDS_REELS = 1024 * 1024
+
+# Temperature declaree pour tout modele de conversation genere.
+#
+# 0,2 : le defaut des modeles (~0,7-0,8) produit de la vraisemblance la ou
+# l'on veut de l'exactitude. Surchargeable par NEXUS_TEMPERATURE_DEFAUT, et
+# par tout appelant qui en envoie une dans sa requete.
+TEMPERATURE_DEFAUT = os.environ.get("NEXUS_TEMPERATURE_DEFAUT", "0.2")
 
 
 def latences_relevees() -> dict:
@@ -1412,6 +1436,15 @@ def main() -> int:
         for ligne in verdict.stdout.splitlines():
             if ligne.strip().startswith("- ") or "=>" in ligne:
                 print("  " + ligne.strip())
+        # stderr etait ignore : une EXCEPTION du validateur -- par
+        # opposition a un verdict d'invalidite -- ne laissait donc aucune
+        # trace, et le generateur refusait sans dire pourquoi. C'est le
+        # meme defaut que celui corrige le matin meme dans nexus_valide.py :
+        # un refus sans motif n'est pas actionnable.
+        if verdict.stderr.strip():
+            print("  [erreur du validateur]")
+            for ligne in verdict.stderr.strip().splitlines()[-6:]:
+                print("    " + ligne)
         return 1
 
     os.replace(candidat, CONFIG)

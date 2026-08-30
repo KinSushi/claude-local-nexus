@@ -16,6 +16,7 @@ Codes de sortie :
 from __future__ import annotations
 
 import io
+import subprocess
 import os
 import re
 import sys
@@ -56,12 +57,89 @@ warnings: list[str] = []
 # aveugle n'aurait déclenché aucune erreur.
 # Le pattern est maintenant ancré pour éviter les faux positifs comme
 # « supervision-7b ».
-VISION = re.compile(r"(?:^|[-:])(?:vision|llava|-vl)(?:$|[-:])")
+# Correction du 2026-08-30 : le motif RATAIT « qwen3-vl-8b-local ».
+#
+# Il exigeait « -vl » ENTOURE de separateurs, soit « [-:]-vl[-:] », donc un
+# double tiret qui n'existe dans aucun alias. Les deux Qwen-VL passaient
+# pour des modeles textuels, et le validateur approuvait des chaines ou une
+# vision retombe sur du texte -- ce que la 17 interdit et que ce meme
+# fichier commente trois lignes plus bas.
+#
+# Le generateur, lui, lit desormais les capacites declarees par le moteur
+# (« ollama show ») et savait que qwen3-vl est une vision. Les deux sources
+# ont diverge, et c'est le validateur qui avait tort.
+VISION = re.compile(r"(?:^|[-:])(?:vision|llava|vl)(?:$|[-:])")
 EMBED = re.compile(r"embed|minilm")
 
 
-def classify(alias: str) -> str:
-    """Modalité déduite de l'alias, pour vérifier la compatibilité des fallbacks."""
+_CAPACITES = {}
+
+
+def _capacites(base: str) -> set:
+    """Capacites declarees par le moteur, mises en cache. Set vide = inconnu."""
+    if base in _CAPACITES:
+        return _CAPACITES[base]
+    trouvees = set()
+    try:
+        r = subprocess.run(["ollama", "show", base], capture_output=True,
+                           text=True, timeout=20, encoding="utf-8",
+                           errors="replace")
+        if r.returncode == 0:
+            dedans = False
+            for ligne in r.stdout.splitlines():
+                if not dedans:
+                    if ligne.strip().lower() == "capabilities":
+                        dedans = True
+                    continue
+                if not ligne.strip() or not ligne[0].isspace():
+                    break
+                trouvees.add(ligne.strip().lower())
+    except Exception:
+        pass
+    _CAPACITES[base] = trouvees
+    return trouvees
+
+
+def _base_ollama(config: dict, alias: str) -> str | None:
+    """Nom Ollama d'un alias local, ou None s'il n'est pas servi localement."""
+    for m in config.get("model_list") or []:
+        if m.get("model_name") != alias:
+            continue
+        params = m.get("litellm_params") or {}
+        raw = str(params.get("model") or "")
+        if "ollama.com" in str(params.get("api_base") or ""):
+            return None
+        if raw.startswith(("ollama/", "ollama_chat/")):
+            return raw.split("/", 1)[1]
+        return None
+    return None
+
+
+def classify(alias: str, base: str | None = None) -> str:
+    """
+    Modalite du modele. La DECLARATION du moteur prime sur le nom.
+
+    Le motif sur le nom ne pouvait pas savoir, et c'est demontre : le
+    2026-08-30, « qwen3.6:27b » declare « vision » alors que rien dans son
+    nom ne l'indique. Le validateur le tenait pour un modele textuel et
+    aurait approuve une chaine ou une vision retombe sur du texte -- ce que
+    la 17 interdit.
+
+    Le generateur lisait deja « ollama show » ; les deux sources ont donc
+    diverge, et c'est celle qui devinait qui avait tort. Elles lisent
+    desormais la meme chose.
+
+    Le nom reste en REPLI : pour un modele distant, ou quand le moteur ne
+    repond pas. Un set vide signifie « inconnu », jamais « aucune capacite ».
+    """
+    if base:
+        capacites = _capacites(base)
+        if capacites:
+            if "embedding" in capacites:
+                return "embedding"
+            if "vision" in capacites:
+                return "vision"
+            return "text"
     if EMBED.search(alias):
         return "embedding"
     if VISION.search(alias):
@@ -267,7 +345,10 @@ def main() -> int:
 
                 # Modalité : un embedding ne retombe que sur un embedding,
                 # une vision que sur une vision (§17).
-                src_kind, dst_kind = classify(source), classify(target)
+                # La base Ollama, pour interroger le moteur plutot que
+                # deviner sur le nom.
+                src_kind = classify(source, _base_ollama(cfg, source))
+                dst_kind = classify(target, _base_ollama(cfg, target))
                 if src_kind != dst_kind:
                     errors.append("%s : '%s' (%s) retombe sur '%s' (%s) — modalite incompatible"
                                   % (label, source, src_kind, target, dst_kind))
