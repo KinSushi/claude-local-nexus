@@ -1085,6 +1085,29 @@ def main() -> int:
     # qwen3-coder-30b-local, tier 2 et 2,4 s -- capable et rapide.
     latences = latences_relevees()
 
+    def _debit(alias):
+        """
+        Jetons par seconde, ou None si jamais mesure.
+
+        Le debit prime sur le demarrage des qu'il est connu, parce qu'il se
+        paie a CHAQUE jeton quand le demarrage ne se paie qu'une fois --
+        et que les outils qui emploient ces pools produisent de longues
+        sorties.
+
+        Mesure du 2026-08-30, sur le pool alors en place :
+
+          qwen3-coder-30b-local    2,4 s   20,22 j/s
+          qwen2.5-coder-32b-local  3,4 s   moins de 2,1 j/s
+          llama3.2-3b-local        2,3 s   11,84 j/s
+          ultime-recourse-local    2,6 s   22,89 j/s
+
+        Trie par demarrage, ce pool placait le PIRE debit en deuxieme et le
+        MEILLEUR en dernier. Les quatre demarrages tiennent en 1,1 s
+        d'ecart ; les debits vont de 1 a 11.
+        """
+        mesure = latences.get(alias) or {}
+        return mesure.get("debit_jps")
+
     def _ms(alias):
         # Un modele sans releve part en fin de liste plutot que d'etre
         # exclu : il est deja passe par eligible_au_pool, donc soit il a
@@ -1157,7 +1180,18 @@ def main() -> int:
     pool_cloud = sorted((cloud_alias(b) for b in cloud
                          if modalite_cloud(b) == "text"), key=_ms)
 
-    classes = sorted(local_text, key=lambda e: (-e.tier, _ms(e.alias)))
+    # Tri a trois niveaux : qualite, puis debit mesure, puis demarrage.
+    #
+    # Un modele dont le debit est connu se classe par lui. Ceux qui ne le
+    # sont pas gardent leur classement par demarrage, ENTRE EUX, et
+    # passent apres les mesures : une mesure vaut mieux qu'une absence,
+    # mais l'absence ne vaut pas condamnation -- ils restent dans le pool.
+    def _rang(e):
+        d = _debit(e.alias)
+        return (-e.tier, 0 if d is not None else 1,
+                -(d or 0), _ms(e.alias))
+
+    classes = sorted(local_text, key=_rang)
     pool_local, cumul = [], 0.0
     for e in classes:
         poids = float(poids_par_alias.get(e.alias) or 0)

@@ -563,7 +563,7 @@ model_list:
       num_predict: 4096
     model_info:
       max_input_tokens: 16384
-      description: "llama3.2:1b (promu automatiquement — 2.3 s)"
+      description: "llama3.2:1b (promu automatiquement — 6.5 s)"
       nexus_generated: true
       nexus_pool: true
 
@@ -1052,7 +1052,7 @@ model_list:
       adaptive_router_config:
         available_models:
           - qwen3-coder-30b-local
-          - qwen2.5-coder-32b-local
+          - glm-4.7-flash-local
           - llama3.2-3b-local
           - ultime-recourse-local
       # <<< AUTOGEN:LOCAL_POOL
@@ -1119,7 +1119,7 @@ model_list:
       adaptive_router_config:
         available_models:
           - qwen3-coder-30b-local
-          - qwen2.5-coder-32b-local
+          - glm-4.7-flash-local
           - llama3.2-3b-local
           - ultime-recourse-local
       # <<< AUTOGEN:GLOBAL_POOL
