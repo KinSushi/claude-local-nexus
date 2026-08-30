@@ -238,12 +238,51 @@ def discover_local() -> list[str] | None:
     try:
         with urllib.request.urlopen(url, timeout=30) as reponse:
             charge = json.loads(reponse.read().decode("utf-8"))
-        noms = [m["name"] for m in charge.get("models", []) if m.get("name")]
-        if noms:
+        entrees = [(m["name"], m.get("size") or 0)
+                   for m in charge.get("models", []) if m.get("name")]
+        if entrees:
             # Les modeles cloud apparaissent dans le meme inventaire depuis
             # qu'Ollama les expose localement ; ils relevent du pool cloud,
             # pas du pool local, et ne doivent pas etre declares deux fois.
-            return sorted({n for n in noms if not n.endswith(":cloud")})
+            #
+            # DEUX criteres, et non un seul. Le suffixe ':cloud' est une
+            # CONVENTION DE NOM : si Ollama la change, un modele cloud
+            # passerait le filtre et serait declare sous un alias '-local'
+            # pointant vers le moteur local. Ce serait une fuite silencieuse,
+            # exactement ce que la section 34 interdit -- annoncer local ce
+            # qui sort de la machine.
+            #
+            # Le second critere est physique et ne depend d'aucune
+            # convention : un modele cloud n'a pas ses poids ici. Mesure du
+            # 2026-08-30 sur cet hote :
+            #
+            #     glm-5.2:cloud          290 octets   (756B annonces)
+            #     glm-5.3-flash:cloud    317 octets   (321B annonces)
+            #     all-minilm:latest       45,9 Mo     <- plus petit modele reel
+            #
+            # Sept cent cinquante milliards de parametres ne tiennent pas
+            # dans 290 octets : c'est un manifeste. Cinq ordres de grandeur
+            # separent les deux populations, d'ou le seuil ci-dessous, qui
+            # garde 3000x de marge d'un cote et 45x de l'autre.
+            locaux, ecartes = [], []
+            for nom, taille in entrees:
+                par_nom = nom.endswith(":cloud")
+                par_taille = taille < SEUIL_POIDS_REELS
+                if par_nom or par_taille:
+                    ecartes.append((nom, par_nom, par_taille, taille))
+                else:
+                    locaux.append(nom)
+            # Une DIVERGENCE entre les deux criteres n'est pas resolue en
+            # silence : elle signale que la convention a bouge, ou qu'un
+            # modele local est anormalement leger. Le resultat reste sur
+            # l'exclusion -- prudent par defaut -- mais il est dit.
+            for nom, par_nom, par_taille, taille in ecartes:
+                if par_nom != par_taille:
+                    print("  [!] %s ecarte du pool local sur un seul critere "
+                          "(nom cloud: %s, poids absents: %s, %s octets) — "
+                          "verifier si la convention Ollama a change"
+                          % (nom, par_nom, par_taille, format(taille, ",")))
+            return sorted(set(locaux))
         print("  [!] inventaire vide sur %s" % url)
         return None
     except Exception as exc:
@@ -392,6 +431,12 @@ def read_env(name: str) -> str | None:
 # gemma4-12b a 51 s. Un seuil sur le nombre de parametres aurait garde le
 # lent et jete le rapide.
 SEUIL_POOL_MS = int(os.environ.get("NEXUS_POOL_LATENCE_MAX", "60000"))
+
+# En deca de ce poids, un modele n'a pas ses poids sur la machine : c'est un
+# manifeste vers un modele distant. Mesure : les manifestes cloud pesent 290
+# a 317 octets, le plus petit modele local reel 45,9 Mo. Le seuil est place
+# entre les deux, loin des deux.
+SEUIL_POIDS_REELS = 1024 * 1024
 
 
 def latences_relevees() -> dict:
