@@ -83,17 +83,31 @@ def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
     """
     Lance l'audit sur la cible en appelant ``nexus_agent.executer``.
     Retourne le dictionnaire brut renvoyé par l'agent.
+
+    Reessaie une fois avec un plafond double si la premiere reponse est
+    tronquee (finish_reason "length"), comme le fait deja nexus_patch.py
+    pour l'etape de correction. Sans ce reessai, un gros fichier (server.js,
+    2051 lignes) echouait des l'audit avec "plafond insuffisant", avant
+    meme d'atteindre la correction -- observe en conditions reelles sur ce
+    depot.
     """
     cle = agent.cle_maitre()
-    payload = {
-        "nom": f"audit-{cible.name}",
-        "modele": modele,
-        "tache": consigne,
-        "fichiers": [str(cible)],
-        "max_tokens": 4096,
-    }
-    resultat = agent.executer(payload, cle)
-    return resultat if isinstance(resultat, dict) else {}
+
+    def appeler(plafond: int) -> Dict:
+        payload = {
+            "nom": f"audit-{cible.name}",
+            "modele": modele,
+            "tache": consigne,
+            "fichiers": [str(cible)],
+            "max_tokens": plafond,
+        }
+        resultat = agent.executer(payload, cle)
+        return resultat if isinstance(resultat, dict) else {}
+
+    resultat = appeler(4096)
+    if resultat.get("tronque"):
+        resultat = appeler(8192)
+    return resultat
 
 # --------------------------------------------------------------------------- #
 # Vérification syntaxique
