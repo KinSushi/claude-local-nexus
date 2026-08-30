@@ -335,6 +335,34 @@ matin. Jouée une fois, elle a **payé immédiatement**, et deux fois :
 > correction de `recover_swapped_config` tient en conditions réelles, et non
 > seulement sur l'accident reproduit à la main.
 
+### Outils voisins repérés, non encore évalués — par ordre de rendement
+
+Relevé le 30/08 dans `D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system`.
+Les intitulés viennent de leurs propres docstrings, **non d'une supposition**.
+Chacun doit d'abord passer le test de non-empiètement : il n'entre que s'il ne
+double ni ne concurrence ce qui existe ici (contrat §0).
+
+| Outil | Ce qu'il fait, d'après lui-même | Pourquoi il nous intéresse |
+|---|---|---|
+| `import_smoke.py` (114 l.) | importe chaque script de `scripts/` et échoue si l'un ne s'importe pas | **le plus rentable** : nous avons 43 scripts, et un import cassé ne se voit qu'à l'exécution. À rapprocher du `NameError` de `nexus_ruche.py`, resté invisible jusqu'à la suite complète |
+| `avec_verrou.py` (217 l.) | lance une commande **sous le verrou machine inter-projets** | trois dépôts tournent sur cette machine ; `NexusTraque` (PT10M) et `NexusVitrine` (PT6H) ignorent ce que font les voisins. La non-concurrence est déjà notre règle — ceci l'étendrait hors du dépôt |
+| `garde_cardinal.py` (279 l.) | « un témoin ne doit pas sceller une croyance par un COMPTE » | nos épreuves affirment des comptes (`8/8`, `10/10`, `26 marqueurs`). Un compte survit à la réfutation de ce qu'il compte |
+| `compile_tout.py` (213 l.) | compile l'arbre en une commande, et **distingue COMPILER d'IMPORTER** | complète `nexus_garde_edition.py`, qui ne voit qu'un fichier à la fois |
+| `verdict_gate.py` (293 l.) | rend un verdict sur un journal, et **refuse de conclure quand il ne peut pas** | doctrine que nous appliquons déjà (`IGNORE` ≠ `OK`), mécanisée là-bas |
+| `garde_append_only.py` (300 l.) | le contenu commité doit rester un **préfixe** du contenu courant | attraperait une réécriture destructrice d'un fichier de doctrine |
+| `garde_chemins_bruts.py` (298 l.) | une chaîne en rôle de CHEMIN doit être brute si elle porte un antislash | même famille que le garde des heredocs, déjà repris |
+| `mypy_ratchet.py` (190 l.) | cliquet de typage, « mécanique, parce qu'il ne l'était pas » | même forme que notre cliquet de câblage |
+| `token_meter.py` (108 l.) | mesure la consommation de jetons par agent | recoupe `nexus_savings.py` : à comparer avant de reprendre |
+| `declarer_les_gardes.py` (300 l.) | déclare les gardes dans `.claude/settings.json` | nos hooks sont écrits à la main ; ceci les dériverait |
+| `garde_tracabilite.py`, `garde_reprise_coherente.py` | traçabilité, cohérence des points de reprise | à évaluer après les précédents |
+
+> **Deux refusés, et c'est un résultat.** `garde_perimetre_agent.py`
+> empiéterait sur `nexus_garde_agent.py` — même hook `PreToolUse: Agent`,
+> deux gardes qui se marcheraient dessus. `hook_anti_derive_pollution.py`
+> recoupe `nexus_traque.py`, qui analyse déjà le dépôt toutes les dix
+> minutes. Le projet primant, c'est le nôtre qu'on étendrait le jour où le
+> besoin se confirme.
+
 ### Sujets neufs, ouverts le 30/08 au soir
 
 | Sujet | Pourquoi il reste ouvert |

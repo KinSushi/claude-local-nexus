@@ -328,6 +328,42 @@ def ecritures_hors_reserve(source: str) -> list:
     return trouves
 
 
+def controle_imports() -> None:
+    """
+    Chaque script s'importe-t-il, et son import fait-il quelque chose ?
+
+    Un module casse ne se voit qu'a l'execution du chemin qui l'emploie.
+    Mesure du 2026-08-30 : nexus_ruche.py employait nexus_agent sans jamais
+    l'importer, et personne ne l'avait vu jusqu'a ce que la suite complete
+    soit jouee pour la premiere fois de la journee.
+
+    Deux defauts, et le second est le pire. Un import qui ECHOUE est certain ;
+    un import qui AGIT transforme le fait de charger un module en action, si
+    bien qu'un outil qui inspecte le depot le modifie en l'inspectant. Le
+    premier jet de nexus_verbatim.py creait un repertoire a l'import.
+
+    BLOQUANT : un module qui ne s'importe pas est casse pour tous ses
+    appelants, et rien de ce qui suit ne peut etre tenu pour vrai.
+    """
+    outil = os.path.join(ROOT, "scripts", "nexus_import.py")
+    if not os.path.isfile(outil):
+        return ignorer("import des scripts", "nexus_import.py introuvable")
+    try:
+        r = subprocess.run([sys.executable, outil], cwd=ROOT,
+                           capture_output=True, text=True, timeout=900,
+                           encoding="utf-8", errors="replace")
+    except subprocess.TimeoutExpired:
+        return ignorer("import des scripts", "pas de reponse en 900 s")
+    except Exception as exc:
+        return ignorer("import des scripts", str(exc)[:60])
+    lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    if r.returncode == 0:
+        return noter("import des scripts", True, BLOQUANT,
+                     lignes[-1] if lignes else "aucun echec") and None
+    noter("import des scripts", False, BLOQUANT,
+          " | ".join(lignes[:3])[:200])
+
+
 def controle_cablage() -> None:
     """
     Un script neuf a-t-il ete livre sans appelant ?
@@ -1043,6 +1079,7 @@ def main() -> int:
         controle_travail_sur_original,
         controle_pont_lecture_seule,
         controle_cablage,
+        controle_imports,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
