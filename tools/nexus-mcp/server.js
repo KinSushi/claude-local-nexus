@@ -951,7 +951,59 @@ function mapReduceBudgets(contextTokens) {
   return { window, mapTokens };
 }
 
+// Plancher de contexte du plan local, MESURE et non grave dans le code.
+//
+// Il depend de la machine hote : nexus_capability.py la mesure,
+// nexus_generate en deduit le max_input_tokens de chaque modele, et la
+// passerelle l'expose. Une constante ecrite ici deviendrait fausse a la
+// premiere migration vers une machine plus capable, et il faudrait la
+// retrouver a la main dans deux fichiers.
+//
+// Le MINIMUM et non la moyenne : une fenetre doit tenir dans le plus etroit
+// des modeles qui peuvent la recevoir, faute de quoi celui-la rame jusqu'au
+// delai sans rendre ni erreur ni troncature.
+const CONTEXTE_LOCAL_REPLI = 8192;
+let contexteLocalCache = null;
+
+async function contexteLocalMinimal() {
+  const force = process.env.NEXUS_CONTEXTE_LOCAL;
+  if (force) return Number(force);
+  if (contexteLocalCache !== null) return contexteLocalCache;
+  let valeur = CONTEXTE_LOCAL_REPLI;
+  try {
+    const reponse = await fetch(`${LITELLM_URL}/model/info`, {
+      headers: { Authorization: `Bearer ${masterKey()}` },
+    });
+    const donnees = await reponse.json();
+    const contextes = (donnees.data || [])
+      .filter((m) => String(m.model_name || "").endsWith("-local"))
+      .map((m) => (m.model_info || {}).max_input_tokens)
+      .filter((c) => c);
+    if (contextes.length) valeur = Math.min(...contextes);
+  } catch {
+    // Passerelle muette : on garde le repli plutot que de lever. Le
+    // decoupage doit rester possible meme sans elle.
+  }
+  contexteLocalCache = valeur;
+  return valeur;
+}
+
 async function mapReduce(text, instruction, model, contextTokens, onProgress) {
+  // Le budget suit le plus PETIT contexte des plans qui peuvent recevoir une
+  // fenetre.
+  //
+  // Depuis que le MAP repartit entre plans, une fenetre taillee pour 32 768
+  // jetons -- le defaut ici -- peut atterrir sur un modele local, dont six
+  // sur sept plafonnent a 8 192. Mesure du 30 aout 2026 cote Python, sur le
+  // meme genre de depassement : aucune reponse au bout de 300 s, ni erreur
+  // ni troncature, le modele rame jusqu'au delai. Le rattrapage sauvait le
+  // resultat mais masquait le gaspillage.
+  //
+  // Mieux vaut plus de fenetres que des fenetres qu'un plan sur deux ne peut
+  // pas lire.
+  if (model.startsWith("adaptive-router") && !model.endsWith("-cloud")) {
+    contextTokens = Math.min(contextTokens, await contexteLocalMinimal());
+  }
   const { window: budget, mapTokens } = mapReduceBudgets(contextTokens);
   if (mapTokens < 256) {
     // En dessous, une analyse ne tient plus en quelques phrases utiles :

@@ -82,6 +82,78 @@ if not PASSERELLE.lower().startswith("https://"):
 # il y a la consigne, la consigne systeme et la reponse attendue.
 FENETRE_CARACTERES = int(os.getenv("NEXUS_FENETRE", "96000"))
 
+# Taille de fenetre quand le plan LOCAL participe au MAP.
+#
+# 96 000 caracteres valent environ 24 000 jetons. Six des sept modeles du
+# pool local plafonnent a 8 192 : une telle fenetre depasse leur contexte de
+# trois fois. Mesure du 30 aout 2026, 101 435 caracteres envoyes a
+# gemma4-12b-local : aucune reponse au bout de 300 s -- ni erreur franche ni
+# troncature visible, le modele rame. Chaque fenetre ainsi envoyee coutait
+# donc DELAI_MAP entier avant d'etre rattrapee par le cloud.
+#
+# Meme formule que le pont MCP : contexte utile moins la reserve de sortie,
+# quatre caracteres par jeton, puis 85 % pour la consigne, le message
+# systeme et les marqueurs. Mieux vaut sous-remplir une fenetre que la faire
+# deborder.
+# Le plancher de contexte du plan local est MESURE, pas grave dans le code.
+#
+# Il depend de la machine hote : nexus_capability.py la mesure, nexus_generate
+# en deduit le max_input_tokens de chaque modele, et la passerelle l'expose.
+# Une constante ecrite ici deviendrait fausse a la premiere migration vers
+# une machine plus capable, et il faudrait la retrouver a la main dans deux
+# fichiers. On interroge donc la passerelle, et le decoupage suit tout seul.
+#
+# NEXUS_CONTEXTE_LOCAL force la valeur ; le repli ne sert que si la passerelle
+# est injoignable, auquel cas mieux vaut sous-remplir que faire deborder.
+CONTEXTE_LOCAL_REPLI = 8192
+_contexte_local_cache = None
+
+
+def contexte_local_minimal(cle: str | None = None) -> int:
+    """
+    Plus petit contexte declare parmi les alias locaux exposes.
+
+    Le minimum et non la moyenne : une fenetre doit tenir dans le plus etroit
+    des modeles qui peuvent la recevoir, sans quoi celui-la rame jusqu'au
+    delai sans rendre ni erreur ni troncature.
+    """
+    global _contexte_local_cache
+    force = os.environ.get("NEXUS_CONTEXTE_LOCAL")
+    if force:
+        return int(force)
+    if _contexte_local_cache is not None:
+        return _contexte_local_cache
+    valeur = CONTEXTE_LOCAL_REPLI
+    try:
+        requete = urllib.request.Request(PASSERELLE + "/model/info")
+        requete.add_header("Authorization", "Bearer " + (cle or cle_maitre()))
+        with urllib.request.urlopen(requete, timeout=15) as reponse:
+            donnees = json.load(reponse)
+        contextes = [
+            (m.get("model_info") or {}).get("max_input_tokens")
+            for m in (donnees.get("data") or [])
+            if str(m.get("model_name", "")).endswith("-local")
+        ]
+        contextes = [c for c in contextes if c]
+        if contextes:
+            valeur = int(min(contextes))
+    except Exception:
+        # Passerelle muette : on garde le repli plutot que de lever. Le
+        # decoupage doit rester possible meme sans elle.
+        pass
+    _contexte_local_cache = valeur
+    return valeur
+
+
+def fenetre_locale_caracteres(cle: str | None = None) -> int:
+    """
+    Meme formule que le pont MCP : contexte utile moins la reserve de sortie,
+    quatre caracteres par jeton, puis 85 % pour la consigne, le message
+    systeme et les marqueurs.
+    """
+    utile = max(contexte_local_minimal(cle) - 1024, 1024)
+    return int(utile * 4 * 0.85)
+
 def racine_travail() -> str:
     """
     Retourne la racine de travail selon l'ordre de priorité suivant :
@@ -363,7 +435,7 @@ def plan_de(adresse: str) -> str:
     return "inconnu"
 
 
-def _decouper_en_fenetres(corpus: str) -> List[str]:
+def _decouper_en_fenetres(corpus: str, taille: int | None = None) -> List[str]:
     """
     Decoupe le corpus en fenetres de taille maximale FENETRE_CARACTERES.
     Preference est donne a la coupe sur une fin de ligne afin de ne pas
@@ -372,7 +444,7 @@ def _decouper_en_fenetres(corpus: str) -> List[str]:
     fenetres = []
     start = 0
     while start < len(corpus):
-        fin = min(start + FENETRE_CARACTERES, len(corpus))
+        fin = min(start + (taille or FENETRE_CARACTERES), len(corpus))
         # chercher le dernier \n avant fin
         coupe = corpus.rfind("\n", start, fin)
         if coupe == -1 or coupe <= start:
@@ -451,10 +523,16 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
     # Un modele nomme explicitement par l'appelant n'est jamais substitue.
     if not modele.startswith("adaptive-router"):
         plans = [(modele, min(4, n))]
-    elif local_seul:
+    elif local_seul or modele == "adaptive-router-local":
         # Corpus sensible : aucune fenetre ne part en cloud. Le repartir
         # entre deux plans serait une fuite, pas une optimisation.
         plans = [("adaptive-router-local", PLAFOND_FILS["local"])]
+    elif modele == "adaptive-router-cloud":
+        # Un routeur de plan NOMME designe ce plan, et lui seul. La condition
+        # ne testait que le prefixe « adaptive-router » : demander
+        # explicitement le cloud faisait donc quand meme travailler le local,
+        # et la bascule decidee plus haut pour l'ecarter restait sans effet.
+        plans = [("adaptive-router-cloud", PLAFOND_FILS["cloud"])]
     else:
         plans = [("adaptive-router-cloud", PLAFOND_FILS["cloud"]),
                  ("adaptive-router-local", PLAFOND_FILS["local"])]
@@ -584,7 +662,28 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     la duree totale, le nombre de fenetres (MAP), le nombre de paliers
     (REDUCE) et le flag converge.
     """
+    # La taille des fenetres suit le plus PETIT contexte des plans qui peuvent
+    # les recevoir. Depuis que le MAP repartit entre plans, une fenetre taillee
+    # pour le cloud peut atterrir sur un modele local a 8 192 jetons : elle y
+    # depasse le contexte, et le modele ne repond pas -- ni erreur ni
+    # troncature, il rame jusqu'au delai. Mieux vaut plus de fenetres que des
+    # fenetres qu'un plan sur deux ne peut pas lire.
+    # Les fenetres gardent leur taille pleine, et c'est une MESURE qui l'a
+    # impose. Un premier correctif les avait reduites au contexte du plan
+    # local, pour qu'aucune ne le deborde : le meme corpus est alors passe de
+    # 192 s a 286 s. Neuf fenetres au lieu de trois, et le surcout d'appels
+    # depasse de loin ce qu'on economise.
+    #
+    # C'est donc le PLAN qui s'ecarte, pas la fenetre qui retrecit : quand une
+    # fenetre depasse ce que le local peut lire, il ne participe pas au MAP.
+    # Sa contribution mesuree etait d'une fenetre sur quatre, pour un ecart de
+    # 192 s contre 191 s en cloud seul -- neutre. Le priver de fenetres qu'il
+    # ne peut pas traiter ne coute donc rien, et evite de gaspiller le delai.
     fenetres = _decouper_en_fenetres(corpus)
+    local_exclu = False
+    if fenetres and not local_seul:
+        if max(len(f) for f in fenetres) > fenetre_locale_caracteres(cle):
+            local_exclu = True
     n = len(fenetres)
 
     # Utilisation d'un ThreadPoolExecutor pour paralléliser les appels MAP.
@@ -601,7 +700,17 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
         for i, fragment in enumerate(fenetres, start=1)
     ]
     incidents: List[str] = []
-    resultats_map = _repartir_map(contenus, modele, cle, plafond, temperature,
+    # Un modele explicitement nomme reste respecte : seul le routeur global,
+    # qui melange les plans, bascule vers le cloud seul.
+    modele_map = modele
+    if local_exclu and modele == "adaptive-router":
+        modele_map = "adaptive-router-cloud"
+        incidents.append(
+            "plan local ecarte du MAP : fenetres de %d caracteres au-dela de "
+            "son contexte (%d)" % (max(len(f) for f in fenetres),
+                                   fenetre_locale_caracteres(cle)))
+
+    resultats_map = _repartir_map(contenus, modele_map, cle, plafond, temperature,
                                   local_seul=local_seul, journal=incidents)
 
     for res in resultats_map:
