@@ -116,7 +116,19 @@ def appliquer_remplacements(lignes_cible, fonctions, blocs):
     # ------------------------------------------------------------
     if ajouts:
         # 3.1 Localiser le bloc `if __name__ == "__main__"` via l'AST
-        source = "".join(lignes_cible)
+        #
+        # CORRECTIF : cette recherche se faisait sur `lignes_cible`, la
+        # version D'AVANT les remplacements de l'etape 2. Des qu'un
+        # remplacement change le nombre de lignes (quasi systematique) et
+        # se situe AVANT le bloc __main__, le numero de ligne trouve ne
+        # correspondait plus a sa position dans `nouvelles` : l'insertion
+        # atterrissait au milieu d'une instruction et cassait la syntaxe.
+        # Observe : ajouter parser_rapport_essaim() en meme temps qu'on
+        # remplacait lancer_essaim() (plus long que l'original) rendait
+        # "expected an indented block after 'if' statement" -- l'insertion
+        # avait coupe un bloc if en deux. On relit donc `nouvelles`, deja a
+        # jour des remplacements, et non plus l'entree d'origine.
+        source = "".join(nouvelles)
         try:
             tree = ast.parse(source)
         except SyntaxError:
