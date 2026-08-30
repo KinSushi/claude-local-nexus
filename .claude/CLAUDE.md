@@ -3677,6 +3677,43 @@ downloads. It is not advisory.
 
 ---
 
+# 107.1 A pool is bounded by memory, not by taste
+
+Measured 2026-08-30, and each figure below corrected a decision that had
+looked obviously right.
+
+**Opening the local pool to everything eligible made it slower.** Twenty-nine
+models, all measured fast, and three consecutive router calls took 78 s, 41 s
+and 60 s — for models benched at 22 s, 4 s and 12 s. The gap is weight
+loading, paid again on every call.
+
+**The cause is physical.** `ollama ps` shows **one model resident at a time**,
+expiring after four minutes. Any pool wider than one therefore disperses calls
+onto cold models, and the wider it is, the more certain the reload. Theoretical
+choice is paid in real seconds.
+
+**Bounding by a count was still wrong.** A count assumes the chosen ones can
+coexist; the first four weighed 19 + 18 + 19 + 18 = 74 GB against 66.2 GB of
+host memory. Measured with those four: 61, 39, 34, 69 s, the router alternating
+between two 20 GB models that evict each other.
+
+So the bound is on **cumulative weight**, against `pool_budget_gb` from the
+hardware profile (§107). It adapts on its own — heavy models, narrow pool;
+light models, wide pool; a bigger machine, a wider pool with no line changed.
+A minimum of two is kept: with one member there is no routing, only an alias
+in disguise.
+
+The resulting pool is better in kind, not merely smaller: two large coding
+specialists plus two small fast models that absorb trivial requests without
+evicting anything.
+
+**The complementary lever is outside the YAML.** `OLLAMA_MAX_LOADED_MODELS` is
+unset on this host, so the engine keeps one. Raising it would let the bound
+widen by as much, memory permitting. Until it is raised, widening the pool
+hurts — and that is a property of the engine, not of the models.
+
+---
+
 # 108. Fallback direction
 
 The earlier rule — "no fallback crosses a provider boundary" — was too
