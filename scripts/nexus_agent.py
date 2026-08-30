@@ -776,38 +776,8 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
 import os
 
 def executer(tache: dict, cle: str) -> dict:
-    # Le mode local_seul force l'utilisation exclusive de modèles dont le nom se termine par '-local'.
-    # Lu depuis la TACHE d'abord, l'environnement ensuite.
-    #
-    # os.environ est global au processus : depuis que les deux plans de
-    # l'essaim tournent en meme temps, un thread qui poserait
-    # NEXUS_LOCAL_SEUL=1 pour sa cible sensible contraindrait aussi le
-    # thread cloud, et sa restauration effacerait le reglage de l'autre.
-    # Une clef portee par la tache suit la tache, et rien d'autre.
-    local_seul = bool(tache.get("local_seul")) or         os.environ.get("NEXUS_LOCAL_SEUL") == "1"
-
+    local_seul = bool(tache.get("local_seul")) or os.environ.get("NEXUS_LOCAL_SEUL") == "1"
     nom = tache.get("nom") or tache.get("modele") or "tache"
-    # Defaut : le ROUTEUR, pas un modele nomme.
-    #
-    # Nommer un modele en dur revient a arbitrer une fois pour toutes, a la
-    # place de la piece qui existe pour cela. Le routeur choisit selon la
-    # tache, et son pool suit l'inventaire : un modele ajoute devient
-    # candidat sans qu'aucun script ne change. `adaptive-router` couvre le
-    # local ET le cloud Ollama, gratuits tous les deux ; il n'atteint jamais
-    # un alias facture, qui vit derriere adaptive-router-anthropic.
-    #
-    # Contrepartie mesuree, a connaitre : son pool compte 42 candidats
-    # DISTINCTS dont 18 locaux -- parmi lesquels qwen3-coder-30b-local et
-    # qwen2.5-coder-32b-local, qui peuvent tenir la ligne jusqu'au delai de
-    # 900 s. Mesure du 30 aout 2026 : un repli sur qwen3-coder:30b a rendu
-    # bien plus lentement qu'en cloud, jusqu'au delai. Borner par
-    # NEXUS_AGENT_TIMEOUT, ou demander adaptive-router-cloud (19 candidats,
-    # aucun local) quand la latence prime sur la confidentialite.
-    #
-    # Compter les occurrences et non les entrees distinctes donne 107 au
-    # lieu de 42 : un meme alias figure plusieurs fois dans le bloc, une
-    # fois par role. Le pool suit d'ailleurs l'inventaire, qui n'a aucun
-    # plafond -- 39 modeles installes le 30 aout 2026, 33 exposes.
     modele = tache.get("modele") or "adaptive-router"
     consigne = tache.get("tache") or ""
     if not consigne:
@@ -825,37 +795,32 @@ def executer(tache: dict, cle: str) -> dict:
     plafond = int(tache.get("max_tokens") or 1500)
     temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
 
-    # Si le corpus depasse la taille d'une fenetre, on utilise le MAP-REDUCE.
     if corpus and len(corpus) > FENETRE_CARACTERES:
         resultat = carte_reduction(corpus, consigne, modele, cle, plafond,
                                    temperature, local_seul=local_seul)
-        # on ajoute les champs communs attendus par le reste du code
         resultat.update({
             "nom": nom,
             "modele": modele,
             "refus": refus,
             "plan": plan_de(resultat.get("adresse", "?")),
         })
+        if local_seul and resultat.get("plan") != "local":
+            return {"nom": nom, "modele": modele,
+                    "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
         if local_seul:
-            # Verifier que le plan utilise bien le mode local.
-            if resultat.get("plan") != "local":
-                return {"nom": nom, "modele": modele,
-                        "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
             resultat["local_seul"] = True
         return resultat
 
-    # Sinon appel direct (chemin existant)
     essais, echecs = [], []
-    # Déduplication des candidats tout en conservant l'ordre.
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
 
     if local_seul:
-        # Restreindre aux alias terminant par '-local'.
         candidats = [c for c in candidats if c.endswith("-local")]
         if not candidats:
             return {"nom": nom, "modele": modele,
                     "erreur": "aucun modele local disponible pour NEXUS_LOCAL_SEUL=1"}
 
+    trunc_failure = None          # garde le premier échec par troncature
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
@@ -880,24 +845,15 @@ def executer(tache: dict, cle: str) -> dict:
             echecs.append("%s : %s" % (candidat, exc))
             continue
 
-        # Gestion du cas ou la reponse est vide
         texte_vide = not (resultat.get("texte") or "").strip()
         if texte_vide:
             if resultat.get("tronque"):
-                # Le modele a atteint son plafond sans produire de texte.
-                # On signale le probleme sans basculer.
-                # Ajout de la cle `erreur` pour que les appelants qui ne
-                # testent que `erreur` detectent correctement le probleme.
-                resultat.update({
-                    "nom": nom,
-                    "modele": candidat,
-                    "refus": refus,
-                    "plan": plan_de(resultat.get("adresse", "?")),
-                    "plafond_insuffisant": True,
-                    "detail": f"demande {plafond} jetons, augmenter le plafond",
-                    "erreur": f"plafond insuffisant : demande {plafond} jetons, augmenter le plafond"
-                })
-                return resultat
+                # Le modèle a consommé tout son budget sans produire de texte.
+                # On consigne l'échec et on continue avec le candidat suivant.
+                trunc_failure = resultat
+                echecs.append("%s : reponse vide tronquee (demande %d jetons)" %
+                              (candidat, plafond))
+                continue
             else:
                 echecs.append("%s : reponse vide (%d jetons consommes)"
                               % (candidat, resultat.get("tokens", 0)))
@@ -905,17 +861,29 @@ def executer(tache: dict, cle: str) -> dict:
 
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "plan": plan_de(resultat["adresse"])})
+        if local_seul and resultat.get("plan") != "local":
+            return {"nom": nom, "modele": candidat,
+                    "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
         if local_seul:
-            # Verifier que le plan utilise bien le mode local.
-            if resultat.get("plan") != "local":
-                return {"nom": nom, "modele": candidat,
-                        "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
             resultat["local_seul"] = True
-
         if candidat != modele:
             resultat["bascule"] = "%s -> %s apres : %s" % (
                 modele, candidat, " | ".join(echecs))
         return resultat
+
+    # Aucun candidat n'a produit de texte.
+    if trunc_failure:
+        # Retourner le premier échec par troncature comme refus de plafond.
+        trunc_failure.update({
+            "nom": nom,
+            "modele": candidat,
+            "refus": refus,
+            "plan": plan_de(trunc_failure.get("adresse", "?")),
+            "plafond_insuffisant": True,
+            "detail": f"demande {plafond} jetons, augmenter le plafond",
+            "erreur": f"plafond insuffisant : demande {plafond} jetons, augmenter le plafond"
+        })
+        return trunc_failure
 
     return {"nom": nom, "modele": modele,
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(echecs)}

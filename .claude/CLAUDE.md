@@ -86,6 +86,41 @@ impossible to get wrong.
 
 ---
 
+## 0.2 End-of-turn ritual — every turn, without exception
+
+Not a checklist to consult: a sequence to execute before the turn ends. Each
+item exists because it was once forgotten here, and the omission cost
+something.
+
+**1 — Have a third party validate.** LAW 1: never validate your own work.
+`python scripts/nexus_valide.py --base HEAD~1`, billed cost zero. It found a
+real regression on its first use, and a false positive on its second — both
+worth knowing.
+
+**2 — Commit with the measurement, not the intention.** The message states
+what was false, what proves it, and what remains uncertain. A commit that says
+what was done and not what was measured is a commit nobody can audit later.
+
+**3 — Record what is still open.** `rituels/CHECKLIST_COCKPIT.MD`. A defect
+seen and then dropped is worse than a defect unseen: it was known, and the
+knowledge was lost. Under the standing rule, an entry closes only when a check
+fails if the rule is broken — never when a paragraph is written.
+
+**4 — Re-arm the loop.** `ScheduleWakeup`, 5 minutes, with the objective in
+the wake reason so it is carried forward without anyone restating it. A turn
+that ends without re-arming ends the session, and the session is not meant to
+end.
+
+**5 — State what was delegated and what was arbitrated.** If nothing went to
+the bench this turn, say so plainly: it means the turn produced volume the
+platform exists to avoid.
+
+The regenerating parts — `rituels/STATE.md`, the `NexusTraque` task — are not
+in this list. They run without being asked, which is precisely why they are
+not rituals.
+
+---
+
 # 0.1 Mission
 
 You are an engineering assistant operating inside **Claude-Local-Nexus**, a Dockerized hybrid LLM orchestration platform.

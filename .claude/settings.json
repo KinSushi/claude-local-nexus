@@ -10,6 +10,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/nexus_rituel.py\" --json > \"$CLAUDE_PROJECT_DIR/.nexus/rituel.json\" 2>&1; python -c \"import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));m=[c for c in d['controles'] if c['statut']=='MANQUE'];print(json.dumps({'systemMessage':'Rituel de fin de tour : '+('; '.join(c['nom']+' -- '+c['detail'] for c in m) if m else 'tenu')}))\" \"$CLAUDE_PROJECT_DIR/.nexus/rituel.json\" 2>/dev/null || true",
+            "timeout": 180,
+            "statusMessage": "Rituel de fin de tour"
+          }
+        ]
+      }
     ]
   }
 }
