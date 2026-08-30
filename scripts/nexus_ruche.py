@@ -308,10 +308,17 @@ def rapport_final(etat: dict, total_cibles: int, traitees: int, start_time: floa
     echec = sum(1 for v in etat.values() if v["verdict"] == "echec")
     ignore = sum(1 for v in etat.values() if v["verdict"] == "ignore")
 
+    # "start_time" etait recu mais jamais lu : la ruche ne pouvait donc pas
+    # dire elle-meme combien de temps une execution avait pris, ce qui
+    # oblige quiconque veut mesurer l'effet de --essaims a chronometrer de
+    # l'exterieur a chaque fois.
+    duree = time.time() - start_time
+
     # Utiliser un bloc try/except pour garantir que le rapport s'affiche même si
     # un caractère non encodable apparaît dans les données.
     try:
         print("\n--- Rapport ---")
+        print(f"Duree de cette execution       : {duree:.1f}s")
         print(f"Cibles traitees cette execution : {traitees_durant}")
         print(f"Cibles sautees (deja abouties) : {sautees}")
         print(f"Total cibles connues           : {total_cibles}")
@@ -330,6 +337,7 @@ def rapport_final(etat: dict, total_cibles: int, traitees: int, start_time: floa
         # En cas d'erreur d'encodage, on réessaye avec remplacement des caractères.
         sys.stdout.buffer.write(
             ("\n--- Rapport (degrade) ---\n"
+             f"Duree de cette execution       : {duree:.1f}s\n"
              f"Cibles traitees cette execution : {traitees_durant}\n"
              f"Cibles sautees (deja abouties) : {sautees}\n"
              f"Total cibles connues           : {total_cibles}\n"
