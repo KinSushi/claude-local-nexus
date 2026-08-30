@@ -308,13 +308,30 @@ def render_local_extra(installed: list[str], declared: set[str],
             state, reason = capability.ACCEPT, ""
         rendered.append((base, state, reason))
 
+    releve = latences_relevees()
     for i, (base, state, reason) in enumerate(rendered):
         alias = local_alias(base)
         ctx = local_context(base, profile)
         is_embed = bool(EMBED_HINT.search(base))
+        # PROMOTION MECANISEE.
+        #
+        # Le verdict de capability juge la MEMOIRE ; il ne dit rien de la
+        # vitesse. Un modele qui tient dans la RAM peut mettre plusieurs
+        # minutes a rendre un mot, et n'a alors pas sa place dans un routage
+        # automatique. Le releve de nexus_bench.py fournit ce second critere.
+        #
+        # Les deux doivent etre satisfaits : DEGRADED reste hors pool quelle
+        # que soit sa latence, et un ACCEPT jamais mesure y reste aussi --
+        # l'absence de preuve n'est pas une preuve.
+        rapide, motif_latence = eligible_au_pool(alias, releve)
+        dans_pool = (state == capability.ACCEPT) and rapide
         note = "expose automatiquement"
         if state == capability.DEGRADED:
             note = "expose automatiquement — hors pool : " + reason
+        elif dans_pool:
+            note = "promu automatiquement — %s" % motif_latence
+        else:
+            note = "expose automatiquement — hors pool : " + motif_latence
         out += [
             "  - model_name: %s" % alias,
             "    litellm_params:",
@@ -334,7 +351,7 @@ def render_local_extra(installed: list[str], declared: set[str],
             # Les confondre ferait redeclarer tout modele ecarte des pools
             # a la main, donc un alias en double.
             "      nexus_generated: true",
-            "      nexus_pool: false",
+            "      nexus_pool: %s" % ("true" if dans_pool else "false"),
         ]
         if i < len(rendered) - 1:
             out.append("")
@@ -353,6 +370,64 @@ def read_env(name: str) -> str | None:
             if match and match.group(1).strip():
                 return match.group(1).strip()
     return None
+
+
+# Seuil d'admission au pool, en millisecondes.
+#
+# Mesure : une requete de seize jetons, sur une machine au repos, chargement
+# du modele compris. Le chargement est volontairement inclus -- c'est le pire
+# cas, et un pool automatique doit tenir le pire cas.
+#
+# Ce nombre est une DECISION, pas une mesure : au-dela d'une minute pour
+# rendre un mot, un modele n'a pas sa place dans un routage automatique, quoi
+# qu'il reponde ensuite. Surchargeable par NEXUS_POOL_LATENCE_MAX.
+SEUIL_POOL_MS = int(os.environ.get("NEXUS_POOL_LATENCE_MAX", "60000"))
+
+
+def latences_relevees() -> dict:
+    """
+    Releve de nexus_bench.py, ou un dictionnaire vide.
+
+    Ne leve jamais : un releve absent ne doit pas empecher de generer une
+    configuration. Il rend seulement tout modele « non mesure », donc hors
+    pool -- ce qui est le comportement d'avant cette mecanisation.
+    """
+    chemin = os.path.join(ROOT, ".nexus", "latences.json")
+    try:
+        with io.open(chemin, encoding="utf-8") as fh:
+            donnees = json.load(fh)
+        modeles = donnees.get("modeles")
+        if isinstance(modeles, dict):
+            return modeles
+    except Exception:
+        pass
+    return {}
+
+
+def eligible_au_pool(alias, releve, seuil_ms=SEUIL_POOL_MS):
+    """
+    (eligible, motif) pour un alias, d'apres le releve de latence.
+
+    L'absence de preuve n'est pas une preuve : un modele jamais mesure
+    n'entre pas dans un pool. C'est le lien qui manquait entre BENCHMARK et
+    PROMOTE dans le cycle de vie -- la decision se prenait a la main.
+    """
+    mesure = releve.get(alias)
+    if not isinstance(mesure, dict):
+        return False, "non mesure"
+    motif = mesure.get("motif") or ""
+    # Un embedding ne repond pas a un endpoint de conversation : ce n'est pas
+    # un echec de sa part, et il ne releve d'aucun pool de chat.
+    if motif == "non applicable":
+        return False, "non applicable"
+    if not mesure.get("ok"):
+        return False, "mesure en echec : %s" % (motif or "sans motif")
+    latence = mesure.get("latence_ms")
+    if not isinstance(latence, (int, float)):
+        return False, "mesure sans latence exploitable"
+    if latence > seuil_ms:
+        return False, "trop lent : %.1f s" % (latence / 1000.0)
+    return True, "%.1f s" % (latence / 1000.0)
 
 
 def pool_precedent() -> set[str]:
