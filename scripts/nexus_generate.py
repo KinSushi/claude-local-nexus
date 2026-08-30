@@ -1100,11 +1100,17 @@ def main() -> int:
     # modeles differents, chacun payant le chargement de ses poids :
     # 78 s, 41 s, 60 s -- pour des modeles mesures a 22, 4 et 12 s.
     #
-    # La cause est physique : « ollama ps » montre qu'UN SEUL modele reste
-    # chaud a la fois, avec expiration a quatre minutes. Tout pool plus
-    # large disperse donc les appels sur des modeles froids, et plus il est
-    # large, plus le chargement devient certain. Le choix theorique se paie
-    # en secondes reelles.
+    # La cause est physique : le moteur ne garde qu'une POIGNEE de modeles
+    # chauds -- trois mesures le meme jour, pour 36,7 Go, chacun expirant
+    # quatre minutes apres son dernier usage. Un pool bien plus large
+    # disperse donc les appels sur des modeles froids, et plus il est
+    # large, plus le chargement devient certain.
+    #
+    # Correction du meme jour : ce commentaire disait « UN SEUL modele ».
+    # C'etait une observation unique erigee en propriete -- l'erreur meme
+    # que la 112.3 corrige, recommise en documentant sa correction. Un
+    # modele etait resident parce qu'un seul servait, non parce que le
+    # moteur en garde un ; le defaut d'Ollama est de trois.
     #
     # La borne est donc petite a dessein. Le levier complementaire est
     # OLLAMA_MAX_LOADED_MODELS cote moteur : le relever permettrait

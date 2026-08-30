@@ -82,9 +82,9 @@ locaux et 19 cloud**, et son modèle par défaut est `qwen3-coder-30b-local`.
 Ce pool n'est plus tenu à la main : il est **calculé**, et **borné par la
 mémoire** plutôt que par un compte. La raison tient en une mesure. Ouvert à
 tous les modèles éligibles — vingt-neuf — il était plus *lent*, pas plus
-rapide : trois appels ont pris 78, 41 et 60 s, parce que `ollama ps` ne
-garde **qu'un seul modèle chaud à la fois** et que chaque changement paie
-le chargement des poids. Borné au budget mémoire du moteur, le même banc
+rapide : trois appels ont pris 78, 41 et 60 s, parce que le moteur ne garde
+**qu'une poignée de modèles chauds** — trois mesurés le même jour, pour
+36,7 Go — et que chaque changement au-delà paie le chargement des poids. Borné au budget mémoire du moteur, le même banc
 rend 4 s, 5 s et 1 s sur les requêtes courantes, les gros modèles n'étant
 convoqués que lorsqu'ils servent.
 

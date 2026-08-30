@@ -270,11 +270,18 @@ def controle_residence_modeles() -> None:
               % (plafond, len(charges)))
         return
 
+    # Le compte de residents est RAPPORTE, jamais interprete comme la
+    # limite du moteur. Le confondre a produit une affirmation fausse,
+    # propagee dans la doctrine et le code : « le moteur garde un seul
+    # modele chaud », alors qu'un seul etait resident parce qu'un seul
+    # servait. Trois ont ete mesures coexistant, et le defaut d'Ollama est
+    # de trois.
     noter("residence des modeles", True, AVERTISSEMENT,
-          "OLLAMA_MAX_LOADED_MODELS non defini — le moteur garde un seul "
-          "modele chaud (%d resident(s) a l'instant). Chaque changement de "
-          "modele paie le chargement des poids. Le relever elargirait "
-          "d'autant le pool utile ; la memoire du moteur en dit la limite."
+          "OLLAMA_MAX_LOADED_MODELS non defini — le moteur applique son "
+          "defaut (trois modeles) ; %d resident(s) a l'instant, ce qui "
+          "reflete l'usage et non la limite. Au-dela, chaque changement "
+          "paie le chargement des poids. Le relever elargirait d'autant le "
+          "pool utile ; la memoire du moteur en dit la borne."
           % len(charges))
 
 

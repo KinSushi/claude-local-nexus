@@ -3716,10 +3716,20 @@ models, all measured fast, and three consecutive router calls took 78 s, 41 s
 and 60 s — for models benched at 22 s, 4 s and 12 s. The gap is weight
 loading, paid again on every call.
 
-**The cause is physical.** `ollama ps` shows **one model resident at a time**,
-expiring after four minutes. Any pool wider than one therefore disperses calls
-onto cold models, and the wider it is, the more certain the reload. Theoretical
-choice is paid in real seconds.
+**The cause is physical.** The engine keeps only a handful of models resident
+— measured the same day, `ollama ps` showed **three** coexisting
+(qwen2.5-coder:14b 10 GB, mistral:7b 6.7 GB, glm-4.7-flash 20 GB = 36.7 GB),
+each expiring four minutes after its last use. A pool far wider than that
+therefore disperses calls onto cold models, and the wider it is, the more
+certain the reload. Theoretical choice is paid in real seconds.
+
+*Corrected the same day.* This paragraph first read "one model resident at a
+time". That was a single observation turned into a property — the exact error
+§112.3 corrects, committed again while documenting the fix for it. One model
+was resident because one was in use, not because the engine keeps one; Ollama's
+own default is three. The **decision** to bound by memory stands, since the
+78/41/60 s against 4/5/1 s readings are empirical. Only the explanation was
+wrong, and a wrong reason is worth correcting even when it led somewhere right.
 
 **Bounding by a count was still wrong.** A count assumes the chosen ones can
 coexist; the first four weighed 19 + 18 + 19 + 18 = 74 GB against 66.2 GB of
