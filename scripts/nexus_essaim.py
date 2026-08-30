@@ -52,9 +52,32 @@ except ImportError as e:
 # Helpers généraux
 # --------------------------------------------------------------------------- #
 
-def racine_depot() -> Path:
-    """Retourne le répertoire racine du dépôt (le répertoire contenant ce script)."""
+def dossier_scripts() -> Path:
+    """Répertoire contenant ce script — c'est là que vivent ses voisins."""
     return Path(__file__).resolve().parent
+
+def racine_depot() -> Path:
+    """
+    Racine du dépôt : le PARENT de ``scripts``.
+
+    L'ancienne version rendait ``scripts`` et le nommait « racine du dépôt » —
+    son propre docstring disait l'un et son code faisait l'autre. Elle servait
+    en outre à deux fins contradictoires : localiser ``.nexus`` (qui appartient
+    à la racine) et localiser ``nexus_patch.py`` (qui appartient à ``scripts``).
+    Aucun appel n'échouait, puisque chacun était juste pour son propre besoin
+    et faux pour l'autre.
+
+    Conséquence mesurée le 2026-08-30 : quarante sauvegardes ``backup-*.bak``
+    écrites dans ``scripts/.nexus/`` au lieu de ``.nexus/``. Elles y étaient
+    invisibles à qui cherchait à la racine — et elles n'auraient pas dû
+    subsister du tout : chacune est le reste d'une exécution qui n'a pas
+    nettoyé, donc d'une cible potentiellement laissée modifiée.
+
+    Rien n'a fuité : le motif ``.nexus/`` du .gitignore n'a pas de barre
+    oblique initiale, donc il s'applique à tous les niveaux. Vérifié par
+    ``git check-ignore``, pas supposé.
+    """
+    return dossier_scripts().parent
 
 def dossier_nexus() -> Path:
     """Assure l'existence du répertoire ``.nexus`` à la racine du dépôt."""
@@ -325,7 +348,7 @@ def traiter_cible(
         # 5. correction via nexus_patch.py
         cmd = [
             sys.executable,
-            str(racine_depot() / "nexus_patch.py"),
+            str(dossier_scripts() / "nexus_patch.py"),
             "--cible",
             str(cible),
             "--consigne",

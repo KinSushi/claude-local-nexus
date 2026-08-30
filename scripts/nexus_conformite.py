@@ -286,6 +286,58 @@ def controle_mcp_a_jour() -> None:
           "code : la redemarrer" % disque)
 
 
+def controle_travail_sur_original() -> None:
+    """
+    L'essaim a-t-il laisse des sauvegardes derriere lui ?
+
+    `nexus_essaim.py` travaille sur la CIBLE ELLE-MEME : il copie le fichier
+    en `.nexus/backup-<nom>-<hash>.bak`, laisse le banc le reecrire, puis
+    restaure ou supprime la sauvegarde selon le resultat. Le contrat (0.4)
+    demande l'inverse -- un worker recoit une copie, jamais la source -- et
+    cet ecart est inscrit OUVERT au cockpit.
+
+    En attendant, une sauvegarde qui SUBSISTE est un signal utilisable et
+    precis : le cycle ne s'est pas termine. Le processus a ete tue, ou la
+    restauration a echoue. Dans les deux cas la cible peut porter du texte
+    ecrit par un modele, jamais relu par personne.
+
+    Constate le 2026-08-30 : quarante fichiers dans `scripts/.nexus/`, la ou
+    une racine mal calculee les avait ecrits -- invisibles a qui cherchait
+    a la racine. On regarde donc les deux emplacements, l'actuel et l'ancien,
+    car les restes de l'ancien existent encore.
+
+    AVERTISSEMENT et non BLOQUANT : des restes n'empechent pas la plateforme
+    de fonctionner, et refuser de demarrer punirait l'operateur venu
+    justement les nettoyer.
+    """
+    emplacements = [
+        (os.path.join(ROOT, ".nexus"), "racine"),
+        # Ancien chemin : racine_depot() rendait « scripts ». Corrige, mais
+        # ce qui y a ete ecrit y reste, et compte tout autant.
+        (os.path.join(ROOT, "scripts", ".nexus"), "scripts (ancien chemin)"),
+    ]
+    restes = []
+    for dossier, ou in emplacements:
+        if not os.path.isdir(dossier):
+            continue
+        try:
+            noms = [n for n in os.listdir(dossier)
+                    if n.startswith("backup-") and n.endswith(".bak")]
+        except OSError:
+            continue
+        if noms:
+            restes.append((ou, len(noms), sorted(noms)[0]))
+    if not restes:
+        return noter("sauvegardes de l'essaim", True, AVERTISSEMENT,
+                     "aucun reste : chaque cycle s'est termine") and None
+    detail = " ; ".join("%d dans %s (ex. %s)" % (n, ou, ex)
+                        for ou, n, ex in restes)
+    noter("sauvegardes de l'essaim", False, AVERTISSEMENT,
+          detail + " -- chaque reste est un cycle interrompu : la cible peut "
+          "porter du texte ecrit par un modele et jamais relu. Verifier "
+          "« git status » avant de supprimer.")
+
+
 def controle_releves_lisibles() -> None:
     """
     Les fichiers de mesure ont-ils le format que leurs lecteurs exigent ?
@@ -874,6 +926,7 @@ def main() -> int:
         controle_frontiere_alias,
         controle_residence_modeles,
         controle_releves_lisibles,
+        controle_travail_sur_original,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
