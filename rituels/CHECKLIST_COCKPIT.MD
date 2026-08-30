@@ -565,6 +565,8 @@ enfreinte. Un paragraphe ne ferme rien.
 |---|---|---|
 | Le plan local n'avait **aucune borne de concurrence** | `FAIT` | sémaphore FIFO dans `server.js`, `--only semaphore`, 7 cas dont une contre-épreuve |
 | La synthèse a conclu « sain » sur 19 échecs | `OUVERT` | défaut de MON harnais, pas du dépôt : voir plus bas |
+| Un corps vidé par `sansRaisonnement()` était rendu **sans explication** | `FAIT` | `mentionsReponse()`, `--only mentions`, 7 cas dont une contre-épreuve |
+| 12 refus du pont ne nomment pas l'issue (vague 2) | `OUVERT` | à vérifier un par un dans `server.js` avant d'y croire |
 
 > **LE RÉSULTAT CENTRAL, et il était caché sous une synthèse rassurante.**
 > Le banc a rendu « RIEN n'a cassé », « 34/34, 100 % de complétude », « état
@@ -617,6 +619,26 @@ enfreinte. Un paragraphe ne ferme rien.
 > étant pris avant l'attente, `observer()` aurait compté le temps de file
 > dans `duree_ms` et `debit_jps`, faussant les relevés mêmes dont ce dépôt
 > tire sa doctrine ; l'attente est mesurée à part et rendue visible.
+>
+> **Le corps vide, corrigé.** `chat()` détenait déjà de quoi expliquer le vide
+> — `tokens` et `tronquee` — et aucun appelant ne s'en servait pour cela.
+> Vérifié ligne à ligne plutôt que sur parole : le banc annonçait *trois*
+> appelants portant la mention de troncature, il y en avait **deux**
+> (`nexus_ask`, `nexus_vision`) ; `nexus_route` et `nexus_compare`
+> n'annonçaient rien. La règle vit désormais dans `mentionsReponse()`, à un
+> seul endroit — elle était recopiée deux fois et absente deux fois, ce qui
+> est exactement ainsi que deux copies divergent.
+>
+> Un défaut du jet du banc aurait été une **régression** :
+> `REPONSE TRONQUEE a ${result.max_tokens} tokens`, sur un champ inexistant.
+> Le libellé actuel dit « a max_tokens » en nommant le *paramètre*, non une
+> valeur ; la suggestion aurait affiché « a undefined tokens ».
+>
+> **Vague 2 (`wf_b59cedb3-3ad`), signal brut, non encore arbitré :** 17 refus
+> propres, 10 entrées malformées *acceptées*, 3 erreurs brutes — et surtout
+> **12 refus qui ne nomment pas l'issue**, au regard du critère que ce dépôt
+> s'applique à lui-même. Rien de tout cela n'est cru avant lecture du code.
+
 
 
 
