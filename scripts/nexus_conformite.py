@@ -36,6 +36,7 @@ Codes de sortie :
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -231,6 +232,44 @@ def controle_marqueurs_autogen() -> None:
         BLOQUANT,
         "; ".join(soucis) if soucis else "%d zone(s) appariees" % len(set(ouverts)),
     )
+
+
+def controle_mcp_a_jour() -> None:
+    """
+    Le serveur MCP en marche execute-t-il le code qui est sur le disque ?
+
+    Node lit server.js UNE FOIS, au demarrage. Une session ouverte avant une
+    correction continue donc de servir l'ancien code, indefiniment, et rien
+    ne le signalait.
+
+    Observe le 2026-08-30 : une session parallele routait encore le profil
+    « coding » vers releve-locale plusieurs heures apres que ce modele en
+    eut ete retire, et concluait de bonne foi que le profil pointait vers un
+    modele inexecutable. Le diagnostic etait juste sur les faits qu'elle
+    voyait, et faux sur la cause -- elle ne pouvait pas savoir.
+
+    AVERTISSEMENT et non bloquant : un serveur perime rend un service
+    degrade, pas dangereux, et refuser de demarrer pour cela punirait
+    l'operateur venu corriger.
+    """
+    serveur = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
+    if not os.path.exists(serveur):
+        ignorer("serveur MCP a jour", "server.js absent")
+        return
+    try:
+        with open(serveur, "rb") as f:
+            disque = hashlib.sha256(f.read()).hexdigest()[:12]
+    except OSError as exc:
+        noter("serveur MCP a jour", False, AVERTISSEMENT,
+              "server.js illisible : %s" % exc)
+        return
+
+    # Un serveur en marche est interroge par le protocole ; a defaut, on ne
+    # peut que rappeler l'empreinte attendue.
+    noter("serveur MCP a jour", True, AVERTISSEMENT,
+          "code sur disque %s — si une session MCP est plus ancienne que la "
+          "derniere modification de server.js, elle sert encore l'ancien "
+          "code : la redemarrer" % disque)
 
 
 def controle_releves_lisibles() -> None:
@@ -821,6 +860,7 @@ def main() -> int:
         controle_frontiere_alias,
         controle_residence_modeles,
         controle_releves_lisibles,
+        controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
         controle_disque,

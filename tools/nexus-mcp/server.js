@@ -38,7 +38,33 @@ const readline = require("node:readline");
 const { AsyncLocalStorage } = require("node:async_hooks");
 
 const PROTOCOL_VERSION = "2025-06-18";
-const SERVER_INFO = { name: "nexus-local", version: "1.0.0" };
+// Empreinte du fichier CHARGE, et non un numero de version tenu a la main.
+//
+// Node lit ce fichier une fois, au demarrage. Une session ouverte avant une
+// correction continue donc de servir l'ancien code, indefiniment, et rien
+// ne le signale -- observe le 2026-08-30 : une session parallele routait
+// encore `coding` vers releve-locale plusieurs heures apres que ce modele
+// en eut ete retire, et concluait de bonne foi que le profil pointait vers
+// un modele inexecutable.
+//
+// Un numero fige a la main n'aurait rien change : il aurait ete correct et
+// perime en meme temps. L'empreinte, elle, ne peut pas mentir.
+const EMPREINTE = (() => {
+  try {
+    return require("crypto").createHash("sha256")
+      .update(require("fs").readFileSync(__filename))
+      .digest("hex").slice(0, 12);
+  } catch {
+    return "inconnue";
+  }
+})();
+
+const SERVER_INFO = {
+  name: "nexus-local",
+  version: "1.0.0",
+  // Lue par nexus_conformite.py, qui la compare au fichier sur disque.
+  empreinte: EMPREINTE,
+};
 
 // Racine du depot, par ordre de fiabilite decroissante : reglage explicite,
 // racine fournie par Claude Code, puis position du fichier. Aucune de ces
