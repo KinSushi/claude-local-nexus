@@ -226,25 +226,24 @@ def lancer_essaim(lot: list[Path], simuler: bool, plan: str, essaims: int) -> di
         sortie_err = e.stderr.strip() if e.stderr else str(e)
         sortie_out = e.stdout.strip() if e.stdout else ""
 
-    # Tentative d’interpréter une sortie détaillée (JSON) fournie par l’essaim.
-    # Si le parsing échoue, on retombe sur le verdict global basé sur le code retour.
-    if sortie_out:
-        try:
-            details = json.loads(sortie_out)
-            if isinstance(details, dict):
-                for cible_str, info in details.items():
-                    verdict = info.get("verdict", "echec")
-                    cause = info.get("cause", "")
-                    resultats[cible_str] = {"verdict": verdict, "cause": cause}
-                return resultats
-        except Exception:
-            # Le format n’est pas celui attendu ; on ignore et on utilise le fallback.
-            pass
+    # Lecture du rapport reel de l'essaim : une ligne CSV par cible
+    # ("nom,verdict,nb_trouvailles,tokens,modele,plan"), jamais du JSON --
+    # nexus_essaim.py n'en a jamais produit. La tentative json.loads()
+    # precedente echouait donc a chaque appel et retombait systematiquement
+    # sur le seul code de retour du sous-processus pour TOUT le lot : un
+    # echec sur une cible parmi plusieurs faisait alors classer "echec" les
+    # cibles reellement corrigees du meme lot, qui repassaient inutilement
+    # au banc a l'execution suivante. Les cibles non reconnues (nom
+    # ambigu, ligne absente parce que l'essaim a ete interrompu en cours de
+    # lot) retombent sur ce meme verdict global, seul renseignement fiable
+    # qui reste alors disponible pour elles.
+    par_nom = parser_rapport_essaim(sortie_out, lot) if sortie_out else {}
 
-    statut = "ok" if code == 0 else "echec"
-    cause = "" if statut == "ok" else sortie_err or "code de retour non nul"
+    statut_defaut = "ok" if code == 0 else "echec"
+    cause_defaut = "" if statut_defaut == "ok" else (sortie_err or "code de retour non nul")
     for p in lot:
-        resultats[str(p)] = {"verdict": statut, "cause": cause}
+        cle = str(p)
+        resultats[cle] = par_nom.get(cle, {"verdict": statut_defaut, "cause": cause_defaut})
     return resultats
 
 
@@ -419,5 +418,46 @@ def main() -> int:
     return 0 if all(v["verdict"] == "ok" for v in etat.values()) else 1
 
 
+
+
+def parser_rapport_essaim(sortie_out: str, lot: list[Path]) -> dict:
+    """
+    Interprete le rapport CSV d'un essaim (une ligne par cible : nom de
+    fichier, verdict, nb_trouvailles, tokens, modele, plan) et le rattache
+    aux chemins complets du lot par nom de fichier.
+
+    Retourne {chemin_complet: {"verdict": "ok"|"echec", "cause": str}} pour
+    les seules cibles reconnues sans ambiguite. Si deux cibles du meme lot
+    partagent le meme nom de fichier, aucune des deux n'est rattachee : la
+    correspondance redeviendrait un pari, pas une lecture, et l'appelant
+    retombe alors sur le verdict global du lot pour ces cibles-la.
+    """
+    correspondance = {
+        "ok": "ok",
+        "sans trouvaille": "ok",
+        "echec": "echec",
+        "inconnu": "echec",
+    }
+
+    par_nom_lot: dict = {}
+    for p in lot:
+        par_nom_lot.setdefault(p.name, []).append(p)
+    noms_uniques = {nom: chemins[0] for nom, chemins in par_nom_lot.items() if len(chemins) == 1}
+
+    resultats = {}
+    for ligne in sortie_out.splitlines():
+        champs = ligne.strip().split(",")
+        if len(champs) < 2:
+            continue
+        nom, verdict_brut = champs[0], champs[1]
+        chemin = noms_uniques.get(nom)
+        if chemin is None:
+            continue
+        verdict = correspondance.get(verdict_brut, "echec")
+        resultats[str(chemin)] = {
+            "verdict": verdict,
+            "cause": "" if verdict == "ok" else f"essaim: {verdict_brut}",
+        }
+    return resultats
 if __name__ == "__main__":
     sys.exit(main())
