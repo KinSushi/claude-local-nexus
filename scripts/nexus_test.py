@@ -550,12 +550,15 @@ def test_reverse(models: list[str]) -> None:
     status, body = call("/v1/embeddings",
                         {"model": "phi3-mini-local", "input": "test"}, timeout=120)
     served_ok = status == 200 and body.get("data") and "embedding" in body["data"][0]
+    # Le detail s'affiche AUSSI quand le test passe : un message redige pour
+    # le seul cas d'echec y ment. Il est donc construit selon l'etat.
+    detail = ("HTTP %s, vecteur servi — limite inchangee" % status if served_ok
+              else "BONNE NOUVELLE, pas une panne : le fournisseur REFUSE "
+                   "desormais (HTTP %s). Retablir l'exigence « embedding "
+                   "refuse sur un modele de chat » et supprimer cette "
+                   "sentinelle." % status)
     check("embedding sur un modele de chat : limite connue inchangee",
-          served_ok,
-          "BONNE NOUVELLE, pas une panne : le fournisseur REFUSE desormais "
-          "(HTTP %s). La limite documentee a disparu — retablir l'exigence "
-          "« embedding refuse sur un modele de chat » et supprimer cette "
-          "sentinelle." % status)
+          served_ok, detail)
 
     # FUITE TRANSITIVE : un fallback a deux sauts peut sortir du domaine
     # la ou un controle a un saut ne voit rien. On calcule donc la
@@ -672,12 +675,15 @@ def test_reverse(models: list[str]) -> None:
         # du texte. Le remede est d'employer nexus_vision, non d'elargir le
         # pool.
         garde = status != 200 or not texte.strip() or bool(avoue)
+        # Meme precaution : le detail est vrai dans les deux cas.
+        detail = ("HTTP %s, description assuree — limite inchangee : %r"
+                  % (status, texte.strip()[:50]) if not garde
+                  else "BONNE NOUVELLE, pas une panne : le modele ou la "
+                       "passerelle se garde desormais (HTTP %s). Retablir "
+                       "l'exigence « image refusee par un modele textuel » "
+                       "et supprimer cette sentinelle." % status)
         check("image sur un modele textuel : limite connue inchangee",
-              not garde,
-              "BONNE NOUVELLE, pas une panne : le modele ou la passerelle "
-              "se garde desormais (HTTP %s, %r). Retablir l'exigence "
-              "« image refusee par un modele textuel » et supprimer cette "
-              "sentinelle." % (status, texte.strip()[:60]))
+              not garde, detail)
 
     # Le serveur MCP doit signaler un outil inconnu sans se terminer.
     server = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
