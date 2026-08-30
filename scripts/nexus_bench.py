@@ -140,6 +140,60 @@ def mesurer_latence(gateway: str, alias: str, timeout: float) -> tuple:
         return (charge_ms, None, False, motif2)
     return (charge_ms, etabli_ms, True, "")
 
+def mesurer_debit(gateway: str, alias: str, timeout: float) -> tuple:
+    """
+    Jetons produits par seconde sur une tache reelle. Rend (jps, jetons, ok, motif).
+
+    C'est le second banc que la 112.3 reclamait, et dont la 107.2 a montre
+    qu'il manquait pour de bon : qwen2.5-32b-local demarre en 3,8 s et n'a
+    pas fini une synthese de 3000 caracteres en 110 s. Le delai avant le
+    premier jeton ne dit rien du debit ; les deux se mesurent separement ou
+    pas du tout.
+
+    La tache demande une sortie LONGUE a partir d'une entree courte : c'est
+    le debit de generation que l'on veut, pas la vitesse de lecture. Un
+    corpus volumineux melangerait les deux.
+
+    Le modele est d'abord reveille par un appel court, dont la duree est
+    ecartee. Sans cela le chargement des poids serait impute au debit --
+    l'erreur exacte que le banc de latence a du corriger.
+    """
+    if est_embedding(alias):
+        return (None, None, False, "non applicable")
+    url = f"{gateway.rstrip('/')}/v1/chat/completions"
+    commun = {"model": alias, "cache": {"no-cache": True, "no-store": True}}
+
+    # Reveil, non chronometre.
+    try:
+        appel_post(url, dict(commun, max_tokens=8,
+                             messages=[{"role": "user", "content": "Dis PRET"}]),
+                   timeout)
+    except Exception as exc:
+        return (None, None, False, "reveil impossible : %s" % str(exc)[:60])
+
+    payload = dict(commun, max_tokens=256, messages=[{"role": "user", "content":
+        "Explique en detail, en francais et en au moins deux cents mots, "
+        "ce qu'est une passerelle de modeles de langage et a quoi elle sert."}])
+    depart = time.monotonic()
+    try:
+        reponse = appel_post(url, payload, timeout)
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+            return (None, None, False, "timeout a %.0f s" % timeout)
+        return (None, None, False, str(exc.reason)[:60])
+    except Exception as exc:
+        return (None, None, False, str(exc)[:60])
+    secondes = time.monotonic() - depart
+
+    usage = (reponse or {}).get("usage") or {}
+    jetons = usage.get("completion_tokens") or 0
+    if not jetons:
+        # Sans compte de jetons rendu par la passerelle, on ne devine pas :
+        # estimer d'apres la longueur du texte melangerait tokenisations.
+        return (None, None, False, "aucun compte de jetons rendu")
+    return (round(jetons / secondes, 2), jetons, True, "")
+
+
 def latences_existantes(racine) -> dict:
     """
     Releve deja sur disque, ou dictionnaire vide.
@@ -198,6 +252,9 @@ def main():
                         default="local",
                         help="Plan a mesurer. Le plan anthropic est exclu : "
                              "il est le seul facture au jeton.")
+    parser.add_argument("--debit", action="store_true",
+                        help="Mesurer les jetons par seconde sur une tache "
+                             "reelle, au lieu du delai de demarrage.")
     args = parser.parse_args()
 
     # determiner la racine (parent du repertoire du script)
@@ -256,6 +313,20 @@ def main():
     # modele. Une mesure faite est une mesure gardee.
     resultats = dict(latences_existantes(racine))
     for alias in modeles:
+        if args.debit:
+            # Le debit s'ecrit A COTE de la latence, jamais a sa place : ce
+            # sont deux grandeurs distinctes, et ecraser l'une par l'autre
+            # ferait juger l'admission au pool sur un chiffre qui n'est pas
+            # celui que nexus_generate y attend.
+            jps, jetons, ok, motif = mesurer_debit(gateway, alias, timeout)
+            ancien = resultats.get(alias) or {}
+            resultats[alias] = dict(ancien, debit_jps=jps, debit_jetons=jetons,
+                                    debit_ok=ok, debit_motif=motif)
+            print("  %-34s %8s j/s  %s" % (alias,
+                  ("%.2f" % jps) if jps else "-", motif or "OK"))
+            ecrire_json(racine, resultats)
+            continue
+
         charge_ms, etabli_ms, ok, motif = mesurer_latence(gateway, alias, timeout)
         resultats[alias] = {
             # latence_ms reste la clef lue par nexus_generate : c'est le
