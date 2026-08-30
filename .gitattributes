@@ -29,3 +29,10 @@ docs/architecture/** linguist-documentation
 rituels/BOUSSOLE.csv linguist-generated
 rituels/STATE.md     linguist-generated
 cloud_models.txt     linguist-generated
+
+# Copie CONFORME du verrou machine du depot voisin. « -text » interdit a git
+# toute normalisation de fins de ligne : le contrat entre les trois projets
+# exige que ce fichier reste identique OCTET POUR OCTET a sa source, et une
+# conversion CRLF/LF suffirait a faire diverger l'empreinte sans changer une
+# seule instruction.
+scripts/nexus_verrou_machine.py -text

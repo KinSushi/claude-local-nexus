@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 15:39 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 15:49 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,16 +9,16 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `c2f9e91` |
-| Arbre de travail | propre |
+| Commit | `270ea08` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
-litellm-db	db	Up 25 hours (healthy)
+litellm-db	db	Up 26 hours (healthy)
 litellm-proxy	litellm	Up 2 hours
-litellm-redis	redis	Up 25 hours (healthy)
+litellm-redis	redis	Up 26 hours (healthy)
 ```
 
 ## Moteur d'inférence
@@ -72,8 +72,8 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-36 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       24
+37 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       25
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     4

@@ -328,6 +328,91 @@ def ecritures_hors_reserve(source: str) -> list:
     return trouves
 
 
+# Les deux depots voisins, en LECTURE SEULE. Absents sur une autre machine :
+# le controle IGNORE alors, il n'echoue pas -- ce depot doit rester
+# utilisable seul.
+VERROUS_VOISINS = (
+    ("SAS", r"D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system"
+            r"\workspace\tools\verrou_machine.py"),
+    ("EA MT5", r"D:\EA MT5 PYTHON RENTABLE ROBUSTE"
+               r"\workspace\tools\verrou_machine.py"),
+)
+
+PREFIXE_ATTENDU = "AURUM_MACHINE_"
+
+
+def prefixe_de(chemin: str):
+    """Prefixe de mutex declare par un fichier, ou None s'il est illisible."""
+    try:
+        with io.open(chemin, encoding="utf-8", errors="replace") as f:
+            trouve = re.search(r"PREFIXE\s*=\s*[\"']([^\"']+)", f.read())
+        return trouve.group(1) if trouve else None
+    except OSError:
+        return None
+
+
+def controle_verrou_machine() -> None:
+    """
+    Le verrou d'exclusion inter-projets porte-t-il encore le meme nom ?
+
+    Trois depots travaillent sur cette machine et se partagent 66 Go de RAM,
+    un moteur Ollama et un disque. Le verrou machine les empeche de se
+    marcher dessus -- une mesure prise pendant que le voisin lance pytest ne
+    mesure pas ce qu'elle croit, defaut deja paye ici par une mesure prise
+    pendant un telechargement de 28 Go.
+
+    LE CONTRAT ENTRE PROJETS EST LE NOM DU MUTEX, rien d'autre : pas de
+    fichier partage, pas de repertoire commun. Un mutex nomme est un objet du
+    noyau, libere par Windows quand le processus meurt -- il n'existe pas de
+    verrou orphelin.
+
+    D'ou le point de rupture, et la raison de ce controle : si un projet
+    change son prefixe, l'exclusion casse EN SILENCE. Les trois continueraient
+    de prendre un verrou, chacun le sien, en croyant se proteger, et
+    travailleraient en meme temps sans qu'aucun message ne l'annonce.
+
+    Mesure du 2026-08-30 : les trois declarent AURUM_MACHINE_ et la meme
+    signature, alors que le CODE diverge -- notre copie fait 13 842 octets
+    comme celle de SAS, celle d'EA MT5 en fait 16 478. La divergence de code
+    est sans effet ; seule celle du nom compte, et c'est donc elle, et elle
+    seule, qui est gardee.
+
+    BLOQUANT sur notre propre copie -- un verrou mal nomme chez nous ne
+    protege plus rien. AVERTISSEMENT sur les voisins : leur depot ne nous
+    appartient pas, et bloquer notre demarrage pour un fichier qu'on ne peut
+    pas corriger punirait l'operateur.
+    """
+    notre = os.path.join(ROOT, "scripts", "nexus_verrou_machine.py")
+    if not os.path.isfile(notre):
+        return ignorer("verrou machine", "copie locale absente")
+    prefixe = prefixe_de(notre)
+    if prefixe != PREFIXE_ATTENDU:
+        return noter("verrou machine", False, BLOQUANT,
+                     "notre prefixe vaut %r, attendu %r : l'exclusion "
+                     "inter-projets est rompue" % (prefixe, PREFIXE_ATTENDU)) and None
+
+    divergents, vus = [], 0
+    for nom, chemin in VERROUS_VOISINS:
+        if not os.path.isfile(chemin):
+            continue
+        vus += 1
+        autre = prefixe_de(chemin)
+        if autre != PREFIXE_ATTENDU:
+            divergents.append("%s declare %r" % (nom, autre))
+
+    if divergents:
+        return noter("verrou machine", False, AVERTISSEMENT,
+                     "; ".join(divergents) + " -- l'exclusion casserait en "
+                     "silence, chacun prenant son propre verrou") and None
+    if not vus:
+        return noter("verrou machine", True, AVERTISSEMENT,
+                     "prefixe %s ; aucun depot voisin sur cette machine"
+                     % PREFIXE_ATTENDU) and None
+    noter("verrou machine", True, AVERTISSEMENT,
+          "prefixe %s partage avec %d depot(s) voisin(s)"
+          % (PREFIXE_ATTENDU, vus))
+
+
 def controle_hooks_cables() -> None:
     """
     Chaque hook declare pointe-t-il sur un script qui existe ?
@@ -1134,6 +1219,7 @@ def main() -> int:
         controle_cablage,
         controle_imports,
         controle_hooks_cables,
+        controle_verrou_machine,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
