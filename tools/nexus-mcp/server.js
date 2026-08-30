@@ -960,17 +960,38 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
 
   // --- MAP -----------------------------------------------------------
   // Les fenetres sont independantes : les traiter une par une faisait payer
-  // la latence autant de fois qu'il y a de fragments. Concurrence bornee,
-  // et non Promise.all sur tout : cinquante appels d'un coup saturent la
-  // passerelle et le fournisseur.
-  const MAP_CONCURRENCE = 4;
+  // la latence autant de fois qu'il y a de fragments.
+  //
+  // Elles se repartissent entre les DEUX plans, qui travaillent ensemble :
+  // ils ne se disputent rien, le local etant borne par la machine et le
+  // cloud par le reseau.
+  const PLAFOND_FILS = { cloud: 3, local: 2 };
   const slots = new Array(windows.length);
   let termines = 0;
 
-  async function mapOuvrier(depart, pas) {
-    for (let i = depart; i < windows.length; i += pas) {
+  // Les ouvriers piochent dans une FILE COMMUNE plutot que de recevoir une
+  // part decidee d'avance.
+  //
+  // Mesure du 30 aout 2026, sur 221 334 caracteres : cloud seul 191 s, plan
+  // local seul 687 s -- 3,6 fois plus lent. Une repartition a ratio fixe 3:2
+  // rendait en 268 s, soit 40 % de PLUS que le cloud seul : la part donnee au
+  // plan lent faisait attendre tout le lot. La file commune a rendu en 192 s,
+  // le local ayant tout de meme porte une fenetre sur quatre -- soit 75 % au
+  // cloud, tres pres du partage optimal, sans qu'aucun ratio ne lui soit
+  // souffle.
+  //
+  // L'equilibre se mesure donc a l'execution au lieu de se deviner. Et si un
+  // plan s'effondre, l'autre vide la file sans qu'aucune regle ne l'ait prevu.
+  let prochaine = 0;
+  const parPlan = {};
+
+  async function mapOuvrier(modele) {
+    // Increment puis lecture en un seul tour synchrone : la boucle
+    // evenementielle est monothreadee, deux ouvriers ne peuvent pas obtenir
+    // le meme indice.
+    for (let i = prochaine++; i < windows.length; i = prochaine++) {
       const result = await chat(
-        model,
+        modele,
         [
           { role: "system", content: MAP_SYSTEM },
           {
@@ -985,15 +1006,13 @@ ${windows[i]}`,
         ],
         mapTokens
       );
-      // Entre l'await et la fin du tour, le code synchrone s'execute d'un
-      // bloc dans la boucle evenementielle : aucune course sur tokens ni
-      // sur termines, meme a quatre ouvriers.
       tokens += result.tokens;
       const body = (result.text || "").trim();
       // Ecriture a indice fixe : l'ordre des fragments est preserve meme si
       // les reponses reviennent dans le desordre. Un REDUCE qui recolle des
       // fragments melanges produit un resume incoherent.
       if (body && body.toUpperCase() !== "RIEN") slots[i] = body;
+      parPlan[modele] = (parPlan[modele] || 0) + 1;
       termines += 1;
       // Avancement reel et non indice de fenetre, sinon la jauge reculerait
       // des qu'une reponse rapide devance une lente.
@@ -1001,9 +1020,15 @@ ${windows[i]}`,
     }
   }
 
-  await Promise.all(
-    Array.from({ length: MAP_CONCURRENCE }, (_, w) => mapOuvrier(w, MAP_CONCURRENCE))
-  );
+  const ouvriers = [];
+  if (model.startsWith("adaptive-router")) {
+    for (let w = 0; w < PLAFOND_FILS.cloud; w++) ouvriers.push(mapOuvrier("adaptive-router-cloud"));
+    for (let w = 0; w < PLAFOND_FILS.local; w++) ouvriers.push(mapOuvrier("adaptive-router-local"));
+  } else {
+    // Un modele nomme explicitement par l'appelant n'est jamais substitue.
+    for (let w = 0; w < 4; w++) ouvriers.push(mapOuvrier(model));
+  }
+  await Promise.all(ouvriers);
 
   // Les reponses RIEN laissent des trous : on retombe sur un tableau dense,
   // dans le meme ordre que la version sequentielle.
