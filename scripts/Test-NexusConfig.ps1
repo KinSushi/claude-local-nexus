@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Validation d'intégrité de litellm_config.yaml (détection de dérive).
 
@@ -83,29 +83,31 @@ $env:PYTHONUTF8 = '1'
 # Exécution du script Python avec restauration du répertoire de travail
 # ----------------------------------------------------------------------
 Push-Location $PSScriptRoot
-$exitCode = 1   # valeur par défaut en cas d'échec
 try {
-    # Construction des paramètres de Start-Process. -NoNewWindow n'est ajouté que sous Windows.
-    $startParams = @{
-        FilePath          = $pythonCmd.Source
-        ArgumentList      = @($scriptPath)          # tableau pour gérer correctement les espaces et caractères spéciaux
-        PassThru          = $true
-        Wait              = $true
-        ErrorAction       = 'Stop'
-        RedirectStandardOutput = $null            # éviter la perte de sortie dans certains environnements CI
-        RedirectStandardError  = $null
-    }
-    # Compatibilité PowerShell 5.1 et Core : utiliser $PSVersionTable.PSEdition si disponible
-    if ($PSVersionTable.PSEdition -eq 'Desktop' -or $IsWindows) {
-        $startParams.NoNewWindow = $true
-    }
-
-    $proc = Start-Process @startParams
-    $exitCode = $proc.ExitCode
+    # Appel DIRECT, et non Start-Process.
+    #
+    # L'ancienne version passait RedirectStandardOutput = $null et
+    # RedirectStandardError = $null a Start-Process, en commentant que
+    # c'etait pour « eviter la perte de sortie ». Ces parametres refusent
+    # $null : PowerShell levait « Cannot validate argument on parameter
+    # RedirectStandardOutput ». Avec ErrorAction = Stop, l'exception filait
+    # dans le catch, qui rendait 1 sans rien afficher.
+    #
+    # Resultat mesure le 2026-08-30 : cette porte d'integrite rendait 1 et
+    # ZERO octet de sortie, alors que le validateur Python qu'elle enveloppe
+    # rendait 0. Elle criait au loup, en silence, sur une configuration
+    # saine -- et c'est elle qui bloque le redemarrage de la passerelle.
+    #
+    # L'operateur d'appel n'a aucun de ces travers : la sortie du validateur
+    # arrive telle quelle sur les flux du script, et $LASTEXITCODE porte le
+    # code du processus. Start-Process n'apportait rien ici : il sert a
+    # lancer un processus detache, ce que precisement on ne veut pas.
+    & $pythonCmd.Source $scriptPath
+    $exitCode = $LASTEXITCODE
     if ($null -eq $exitCode) { $exitCode = 1 }
 }
 catch {
-    # En cas d'exception (ex. lancement impossible), on conserve le code d'erreur 1
+    [Console]::Error.WriteLine("La validation n'a pas pu s'executer : $($_.Exception.Message)")
     $exitCode = 1
 }
 finally {
