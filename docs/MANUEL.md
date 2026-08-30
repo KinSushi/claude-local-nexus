@@ -13,6 +13,18 @@
 
 Les outils fonctionnent depuis **n’importe quel projet** ; les chemins relatifs sont résolus depuis le répertoire courant.
 
+Deux niveaux de réemploi. **Scripts** (sections ci-dessous) : chemin absolu + pile Docker de cette installation démarrée (`docker compose up -d` depuis `C:/local-llm-docker`), rien d’autre. **Outils MCP** (`nexus_ask` et les autres, côté Claude Code) : exigent un `.mcp.json` propre au projet appelant -- celui de cette installation référence le serveur via `${CLAUDE_PROJECT_DIR}`, relatif au projet courant, donc le copier tel quel ailleurs pointerait vers le mauvais serveur :
+
+```json
+{ "mcpServers": { "nexus-local": {
+  "command": "node",
+  "args": ["C:/local-llm-docker/tools/nexus-mcp/server.js"],
+  "env": { "NEXUS_LITELLM_URL": "http://127.0.0.1:4000" }
+} } }
+```
+
+à placer à la racine du projet appelant. La passerelle est un service partagé : plusieurs projets peuvent l’utiliser en même temps.
+
 ---
 
 ## 1️⃣ Interroger le banc  
