@@ -1,5 +1,49 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.production)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/.ssh/**)",
+      "Read(**/.aws/credentials)",
+      "Read(**/nexus_cle.txt)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "PowerShell(git push *)",
+      "Bash(git reset --hard *)",
+      "PowerShell(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git tag *)",
+      "Bash(docker compose down -v*)",
+      "PowerShell(docker compose down -v*)",
+      "Bash(docker volume rm *)",
+      "Bash(docker system prune *)",
+      "Bash(rm -rf *)",
+      "PowerShell(Remove-Item -Recurse -Force *)",
+      "Bash(ollama rm *)",
+      "PowerShell(ollama rm *)",
+      "Bash(gh api *)"
+    ]
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/nexus_reprise.py\"",
+            "timeout": 90,
+            "statusMessage": "Reprise de session"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Agent",
