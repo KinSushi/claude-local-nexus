@@ -72,6 +72,22 @@
 | 38 constats | `OUVERT` | Classe 1 examinée : **1 vrai défaut sur 9**, corrigé. Restent 21 constats classe 2, 5 classe 3, 3 classe 4. |
 | Taux de faux positifs | `DÉCIDÉ` | Classe 1 : 5 faux positifs sur 6 examinés. Trop large, mais conservée — elle a trouvé le défaut réel. Le taux est écrit pour qui la lit. |
 
+### Mécanisé le 30/08 — ce qui ne dépend plus de personne
+
+| Mécanisme | Ce qu'il garantit |
+|---|---|
+| `nexus_rituel.py` + hook `Stop` | les cinq gestes de fin de tour sont **exécutés**, plus lus |
+| Tâche `NexusTraque`, PT10M | traque + cockpit régénérés sans session |
+| `nexus_state.py` dans `Update-NexusModels` | le cockpit ne peut plus dater |
+| Magasin d'observations | chaque appel MCP devient une mesure |
+| `nexus_posterior.py` | les observations deviennent un posterior, qui mesure sans décider |
+| Objectif en §0 du contrat | lu avant tout, ne se redemande pas |
+
+> Le rituel s'applique à lui-même : à sa première exécution il a refusé de
+> clore le tour — quatre fichiers non commités, dont lui-même — puis, une fois
+> commité, il a refusé à nouveau parce que le commit rendait ce cockpit
+> périmé. C'est exactement ce qu'on attend de lui.
+
 ### Fermé depuis — vérifié, plus supposé
 
 | Sujet | Preuve |
