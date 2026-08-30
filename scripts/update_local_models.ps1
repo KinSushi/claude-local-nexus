@@ -10,6 +10,7 @@
 # Utiliser a la place :
 #     .\scripts\Update-NexusModels.ps1 -Validate -Restart
 # ============================================================
+exit 1
 
 $__config = Join-Path (Split-Path -Parent $PSScriptRoot) "litellm_config.yaml"
 if ((Test-Path $__config) -and (Select-String -Path $__config -Pattern "AUTOGEN:" -Quiet)) {
@@ -50,13 +51,14 @@ if ($ollamaStatus -ne "healthy") {
 }
 
 # --- Vérification du fichier model_list.txt ---
-if (-not (Test-Path model_list.txt)) {
+$__modelList = Join-Path $PSScriptRoot "model_list.txt"
+if (-not (Test-Path $__modelList)) {
     Write-Error "Fichier model_list.txt introuvable."
     exit 1
 }
 
 # --- Lecture et filtrage ---
-$models = Get-Content model_list.txt |
+$models = Get-Content $__modelList |
     Where-Object {
         $_ -notmatch '^\s*#' -and      # ignorer les commentaires
         $_ -notmatch '^\s*$' -and      # ignorer les lignes vides

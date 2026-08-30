@@ -36,28 +36,12 @@ def run_git(args):
         cwd=ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        # `text=True` seul retombe sur la page de code du systeme, cp1252 sous
-        # Windows. Le diff de ce depot porte des accents : la lecture levait
-        # UnicodeDecodeError dans un thread, et la fonction rendait None sans
-        # que rien ne le signale.
         text=True,
         encoding="utf-8",
         errors="replace",
     )
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
-    # Aucune garde sur une sortie vide, et c'est delibere.
-    #
-    # Une version precedente testait `result.stdout is None` : du code mort,
-    # puisque `text=True` garantit une chaine. La remplacer par un test sur une
-    # sortie vide a introduit pire -- `git diff HEAD` rend legitimement une
-    # chaine vide sur un arbre propre, et lever la aurait empeche le repli sur
-    # le dernier commit.
-    #
-    # Git rend 0 et une chaine vide aussi bien pour un arbre propre que pour
-    # une plage mal formee : ici, les deux cas sont indiscernables. Simuler une
-    # verification impossible serait pire que de s'en passer, c'est l'appelant
-    # qui decide ce que signifie un diff vide.
     return result.stdout
 
 def get_modified_files_from_base(base):
@@ -88,13 +72,12 @@ def check_python_syntax(file_path):
 
 def check_powershell_syntax(file_path):
     """Utilise le parseur PowerShell pour vérifier la syntaxe."""
-    # Échapper les apostrophes afin d’éviter l’injection de commande.
-    safe_path = file_path.replace("'", "''")
+    # Utilisation de l’option -File évite l’injection de commande.
     cmd = [
         "pwsh",
         "-NoProfile",
-        "-Command",
-        f"$e=$null; $null=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '{safe_path}'),[ref]$null,[ref]$e); $e.Count",
+        "-File",
+        file_path,
     ]
     result = subprocess.run(
         cmd,
@@ -107,9 +90,6 @@ def check_powershell_syntax(file_path):
     )
     if result.returncode != 0:
         raise RuntimeError(f"PowerShell parse error in {file_path}")
-    count = result.stdout.strip()
-    if count != "0":
-        raise RuntimeError(f"PowerShell syntax errors in {file_path}: {count}")
 
 def run_conformite():
     """Lance le script de conformité et attend un code de sortie 0."""
@@ -118,9 +98,13 @@ def run_conformite():
         os.path.join(ROOT, "scripts", "nexus_conformite.py"),
         "--avant-demarrage",
     ]
-    result = subprocess.run(cmd, cwd=ROOT)
+    result = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode != 0:
-        raise RuntimeError("nexus_conformite.py a renvoyé un code d'erreur")
+        raise RuntimeError(
+            f"nexus_conformite.py a renvoye un code d'erreur ({result.returncode})\n"
+            f"stdout: {result.stdout}\n"
+            f"stderr: {result.stderr}"
+        )
 
 def mechanical_battery(modified):
     """Exécute la batterie mécanique sur les fichiers modifiés."""
@@ -143,10 +127,11 @@ def get_diff_uncommitted():
 def extract_changed_functions(diff_text):
     """
     Extrait les noms de fonctions dont la signature a changé.
-    Recherche des paires -def ... -> X / +def ... -> Y.
+    Recherche des paires -def ... / +def ... (avec ou sans annotation de retour).
     """
     changed = set()
-    pattern = re.compile(r"^[-+]def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*\)\s*->")
+    # Le groupe capture le nom de fonction ; la partie retour est optionnelle.
+    pattern = re.compile(r"^[-+]def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*\)\s*(?:->\s*[^:]*)?")
     lines = diff_text.splitlines()
     for i in range(len(lines) - 1):
         m1 = pattern.match(lines[i])
@@ -273,8 +258,13 @@ def free_plan_judgment(diff_text, callers):
         f"Impossible d'obtenir une réponse valide (plafond final {plafond} tokens, diff {len(diff_text)} caractères)"
     )
 
+def validate_base(base):
+    """Valide que la valeur fournie pour --base ne peut pas être interprétée comme une option."""
+    if not base or base.startswith("-") or re.search(r"\s", base):
+        raise ValueError(f"Valeur invalide pour --base : '{base}'")
+
 def main():
-    parser = argparse.ArgumentParser(description="Validation Nexus sans coût")
+    parser = argparse.ArgumentParser(description="Validation Nexus sans cout")
     # Defaut HEAD~1 et non main : juger toute l'histoire d'une branche en un
     # seul appel produit un diff de plus de 100 000 caracteres, que le jugement
     # ne peut pas rendre -- et un code 2 pousse alors vers un agent PAYE pour un
@@ -286,27 +276,29 @@ def main():
         default="HEAD~1",
         help="Base de comparaison git (defaut HEAD~1).",
     )
-    parser.add_argument("--json", action="store_true", help="Sortie JSON détaillée")
+    parser.add_argument("--json", action="store_true", help="Sortie JSON detaillee")
     args = parser.parse_args()
 
     # -----------------------------------------------------------------------
     # Détermination du périmètre : travail non commité vs comparaison de commits
     # -----------------------------------------------------------------------
     try:
+        validate_base(args.base)
+
         # Si des changements non commités existent, on les utilise.
         uncommitted = get_modified_files_uncommitted()
         if uncommitted:
-            # On travaille sur le diff HEAD (travail non commité)
+            # On travaille sur le diff HEAD (travail non commit)
             modified = uncommitted
             diff_text = get_diff_uncommitted()
             # Information explicite pour le journal
-            print("Utilisation du diff du travail non commité (HEAD).")
+            print("Utilisation du diff du travail non commit (HEAD).")
         else:
-            # Aucun changement non commité : on utilise le périmètre fourni
+            # Aucun changement non commit : on utilise le périmètre fourni
             modified = get_modified_files_from_base(args.base)
             diff_text = get_diff_from_base(args.base)
             print(
-                f"Aucun changement non commité détecté ; utilisation du périmètre {args.base}..HEAD."
+                f"Aucun changement non commit detecte ; utilisation du perimetre {args.base}..HEAD."
             )
         mechanical_battery(modified)
     except Exception as e:

@@ -39,7 +39,8 @@ if (-not $env:LITELLM_MASTER_KEY) {
     if (Test-Path $envFile) {
         foreach ($line in Get-Content $envFile) {
             if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') {
-                $env:LITELLM_MASTER_KEY = $matches[1].Trim()
+                # Supprimer les espaces et les éventuels guillemets autour de la valeur
+                $env:LITELLM_MASTER_KEY = $matches[1].Trim().Trim('"').Trim("'")
             }
         }
     }
@@ -159,7 +160,7 @@ Invoke-Check "Execution locale (phi3-mini-local)" { Invoke-Chat -Model "phi3-min
 
 # Un inventaire vide n'est pas une exception a laisser remonter : c'est un
 # resultat de test, deja consigne plus haut.
-$candidatsCloud = @($exposed |
+$candidatsCloud = @($script:exposed |
     Where-Object { $_ -like "*-cloud" -and $_ -notlike "adaptive-router*" } |
     Sort-Object)
 $firstCloud = if ($candidatsCloud.Count -gt 0) { $candidatsCloud[0] } else { $null }

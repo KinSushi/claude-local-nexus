@@ -1,35 +1,35 @@
 <#
 .SYNOPSIS
-    Installe (ou retire) la mise à jour automatique de Claude-Local-Nexus.
+    Installe (ou retire) la mise a jour automatique de Claude-Local-Nexus.
 
 .DESCRIPTION
-    Enregistre une tâche planifiée Windows qui exécute chaque jour :
+    Enregistre une tache planifiee Windows qui execute chaque jour :
 
         Update-NexusModels.ps1 -SyncLocal -Validate -Restart
 
-    Concrètement, chaque nuit la plateforme :
-      - retélécharge les modèles locaux manquants ;
+    Concretement, chaque nuit la plateforme :
+      - retélécharge les modeles locaux manquants ;
       - redécouvre le catalogue Ollama Cloud ;
-      - re-teste les droits réels du compte Ollama Cloud ;
-      - régénère routeurs et graphes de fallback ;
+      - re-teste les droits reels du compte Ollama Cloud ;
+      - regenere routeurs et graphes de fallback ;
       - refuse d'appliquer une configuration invalide ;
-      - redémarre LiteLLM et vérifie le résultat en runtime.
+      - redemarre LiteLLM et verifie le resultat en runtime.
 
-    C'est ce qui rend l'abonnement Ollama Cloud auto-suivi : le jour où un
-    palier supérieur est souscrit, les modèles débloqués entrent d'eux-mêmes
-    dans le routeur à l'exécution suivante. Aucune édition de configuration.
+    C'est ce qui rend l'abonnement Ollama Cloud auto-suivi : le jour ou un
+    palier superieur est souscrit, les modeles debloques entrent d'eux-memes
+    dans le routeur a l'execution suivante. Aucune edition de configuration.
 
-    La tâche s'exécute sous le compte courant, sans élévation, et ne
-    démarre que si Docker Desktop tourne (sinon elle se termine proprement).
+    La tache s'execute sous le compte courant, sans elevation, et ne
+    demarre que si Docker Desktop tourne (sinon elle se termine proprement).
 
 .PARAMETER Time
-    Heure d'exécution quotidienne (format HH:mm). Défaut 04:00.
+    Heure d'execution quotidienne (format HH:mm ou H:mm). Defaut 04:00.
 .PARAMETER TaskName
-    Nom de la tâche planifiée. Défaut "Claude-Local-Nexus - Mise a jour".
+    Nom de la tache planifiee. Defaut "Claude-Local-Nexus - Mise a jour".
 .PARAMETER RunNow
-    Déclenche immédiatement une exécution après l'enregistrement.
+    Declenche immediatement une execution apres l'enregistrement.
 .PARAMETER Unregister
-    Supprime la tâche planifiée au lieu de l'installer.
+    Supprime la tache planifiee au lieu de l'installer.
 
 .EXAMPLE
     .\scripts\Register-NexusAutoUpdate.ps1
@@ -50,22 +50,30 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Verifier que le script est lance avec les droits administrateur
+$principalIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal $principalIdentity
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Error "Ce script doit etre execute avec les droits administrateur."
+    exit 1
+}
+
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Updater  = Join-Path $PSScriptRoot "Update-NexusModels.ps1"
 
-# Vérifier l'existence du script updater
+# Verifier l'existence du script updater
 if (-not (Test-Path $Updater)) {
     Write-Error "Introuvable : $Updater"
     exit 1
 }
-# Vérifier que le fichier a bien l'extension .ps1
+# Verifier que le fichier a bien l'extension .ps1
 if ((Get-Item $Updater).Extension -ne '.ps1') {
-    Write-Error "Le fichier updater doit être un script PowerShell (.ps1) : $Updater"
+    Write-Error "Le fichier updater doit etre un script PowerShell (.ps1) : $Updater"
     exit 1
 }
 
 # ------------------------------------------------------------
-# Désinstallation
+# Desinstallation
 # ------------------------------------------------------------
 if ($Unregister) {
     $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -79,7 +87,7 @@ if ($Unregister) {
 }
 
 # ------------------------------------------------------------
-# Interpréteur : PowerShell 7 si disponible, sinon Windows PowerShell
+# Interpreteur : PowerShell 7 si disponible, sinon Windows PowerShell
 # ------------------------------------------------------------
 $shell = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
 if (-not $shell) { $shell = (Get-Command powershell -ErrorAction SilentlyContinue)?.Source }
@@ -88,14 +96,28 @@ if (-not $shell) {
     exit 1
 }
 
-# Validation stricte de l'heure (format HH:mm et valeurs valides)
+# Validation de l'heure (format HH:mm ou H:mm)
 [TimeSpan]$nullSpan = $null
-if (-not [TimeSpan]::TryParseExact($Time, 'hh\:mm', $null, [ref]$nullSpan)) {
+$timeFormats = @('hh\:mm','h\:mm')
+$validTime = $false
+foreach ($fmt in $timeFormats) {
+    if ([TimeSpan]::TryParseExact($Time, $fmt, $null, [ref]$nullSpan)) {
+        $validTime = $true
+        break
+    }
+}
+if (-not $validTime) {
     Write-Error "Heure invalide : '$Time' (format attendu HH:mm)."
     exit 1
 }
 
-# Échapper correctement le chemin du script updater
+# Validation du nom de tache (pas de caracteres interdits)
+if ($TaskName -match '[\\/:*?"<>|]') {
+    Write-Error "Nom de tache invalide : il ne doit pas contenir \ / : * ? "" < > |"
+    exit 1
+}
+
+# Echappe correctement le chemin du script updater
 $escapedUpdater = [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedString($Updater)
 $arguments = "-NoProfile -ExecutionPolicy Bypass -File '$escapedUpdater' -SyncLocal -Validate -Restart"
 
@@ -107,12 +129,19 @@ $settings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -ExecutionTimeLimit (New-TimeSpan -Hours 3) `
     -MultipleInstances IgnoreNew
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
 
-# Créer le répertoire de logs s'il n'existe pas
+# Utiliser S4U (service for user) afin d'executer sans session interactive
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Limited
+
+# Creer le repertoire de logs s'il n'existe pas
 $logDir = Join-Path $RepoRoot 'logs'
 if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir | Out-Null
+    try {
+        New-Item -ItemType Directory -Path $logDir -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Error "Impossible de creer le repertoire de logs : $logDir"
+        exit 1
+    }
 }
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
@@ -136,6 +165,8 @@ Write-Host ""
 
 if ($RunNow) {
     Write-Host "Declenchement immediat..." -ForegroundColor Cyan
+    # Attendre que le planificateur prenne en compte la nouvelle tache
+    Start-Sleep -Seconds 2
     Start-ScheduledTask -TaskName $TaskName
     Write-Host "Lancee. Suivre : Get-Content (Get-ChildItem '$RepoRoot\logs' | Sort-Object LastWriteTime | Select-Object -Last 1).FullName -Wait"
 }

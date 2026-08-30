@@ -101,7 +101,7 @@ if (-not $SkipTrim) {
 # --- 2. Arret de la pile -------------------------------------------------
 Ecrire "2/4  Arret de la pile et de WSL..."
 Push-Location $repo
-try { docker compose down 2>&1 | Out-Null } finally { Pop-Location }
+try { docker compose down } finally { Pop-Location }
 wsl --shutdown
 Start-Sleep -Seconds 10
 

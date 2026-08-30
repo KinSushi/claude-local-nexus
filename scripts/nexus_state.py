@@ -20,8 +20,10 @@ import hashlib
 import io
 import json
 import os
+import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
 # --------------------------------------------------------------------------- #
@@ -29,13 +31,26 @@ import urllib.request
 # --------------------------------------------------------------------------- #
 TIMEOUT_RUN = 60          # Timeout pour les appels subprocess
 TIMEOUT_URL = 20          # Timeout pour la requête HTTP vers la passerelle
+ROUTER_HOST = "127.0.0.1"
+ROUTER_PORT = 4000
+ROUTER_ENDPOINT = f"http://{ROUTER_HOST}:{ROUTER_PORT}/v1/models"
 ROUTER_CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "litellm_config.yaml",
 )
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import nexus_capability as capability  # noqa: E402
+# --------------------------------------------------------------------------- #
+# Import du module de capacité sans polluer sys.path
+# --------------------------------------------------------------------------- #
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+try:
+    import nexus_capability as capability  # noqa: E402
+finally:
+    # Restaure sys.path pour éviter les effets de bord à l'import.
+    if sys.path[0] == _SCRIPT_DIR:
+        sys.path.pop(0)
 
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
@@ -72,10 +87,8 @@ def run(args, timeout=TIMEOUT_RUN):
     Exécute une commande externe et renvoie sa sortie standard.
 
     Retourne ``None`` si l'exécution échoue (ex. commande introuvable,
-    timeout, permission). Cela évite d'interpréter une erreur comme une
-    sortie vide, ce qui aurait pu masquer un problème d'infrastructure et
-    conduire à un rapport indiquant à tort que l'arbre de travail était
-    propre.
+    timeout, permission). Le flux d'erreur standard est consigné sur
+    ``stderr`` afin de ne pas perdre d'information de diagnostic.
     """
     try:
         result = subprocess.run(
@@ -86,40 +99,67 @@ def run(args, timeout=TIMEOUT_RUN):
             encoding="utf-8",
             errors="replace",
         )
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
         return result.stdout.strip()
-    except Exception:
+    except (subprocess.SubprocessError, OSError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        print(f"run error: {exc}", file=sys.stderr)
         return None
 
 
 def sha256(path):
+    """
+    Retourne le hachage SHA‑256 du fichier indiqué ou ``None`` en cas
+    d'erreur d'accès.
+    """
     try:
         digest = hashlib.sha256()
         with open(path, "rb") as fh:
             for block in iter(lambda: fh.read(65536), b""):
                 digest.update(block)
         return digest.hexdigest()
-    except Exception:
+    except OSError as exc:
+        print(f"sha256 error on {path}: {exc}", file=sys.stderr)
         return None
 
 
 def master_key():
+    """
+    Retourne la clé maître LITELLM. Elle peut être fournie via la variable
+    d'environnement ``LITELLM_MASTER_KEY`` ou, à défaut, dans le fichier
+    ``.env`` à la racine du dépôt.
+
+    Le parsing accepte les formes suivantes :
+        LITELLM_MASTER_KEY=abc
+        export LITELLM_MASTER_KEY="abc"
+        # commentaire
+    Les guillemets éventuels sont retirés et les commentaires en ligne sont
+    ignorés.
+    """
     if os.environ.get("LITELLM_MASTER_KEY"):
         return os.environ["LITELLM_MASTER_KEY"]
+
     env_file = os.path.join(ROOT, ".env")
-    if not os.path.exists(env_file):
-        return ""
-    # `os.path.exists` puis `open` laisse un intervalle : le fichier peut
-    # disparaître entre les deux, et un .env illisible par permission
-    # passe le premier test pour échouer au second. Ce script produit un
-    # état ; il ne doit pas mourir parce qu'un secret est inaccessible —
-    # tout le reste de l'état, lui, reste parfaitement calculable.
     try:
         with io.open(env_file, encoding="utf-8", errors="replace") as fh:
             for line in fh:
+                # Retirer les commentaires et les espaces superflus
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                # Gérer le préfixe « export »
+                if line.lower().startswith("export "):
+                    line = line[7:].strip()
                 if line.startswith("LITELLM_MASTER_KEY="):
-                    return line.split("=", 1)[1].strip()
-    except OSError:
-        return ""
+                    value = line.split("=", 1)[1].strip()
+                    # Enlever les guillemets éventuels
+                    if (value.startswith('"') and value.endswith('"')) or (
+                        value.startswith("'") and value.endswith("'")
+                    ):
+                        value = value[1:-1]
+                    return value
+    except OSError as exc:
+        print(f"master_key error: {exc}", file=sys.stderr)
     return ""
 
 
@@ -131,16 +171,16 @@ def exposed_models():
     exposés » dans STATE.md alors que la passerelle était simplement
     éteinte. L'état commis affirmait donc une panne catastrophique — plus
     aucun modèle — là où rien n'était cassé. Un état qui ment est pire
-    qu'un état absent, parce qu'il fait chercher une cause qui n'existe
-    pas.
+    qu'un état absent, parce qu'il fait chercher une cause qui n'existe pas.
     """
     try:
-        request = urllib.request.Request("http://127.0.0.1:4000/v1/models")
+        request = urllib.request.Request(ROUTER_ENDPOINT)
         request.add_header("Authorization", "Bearer " + master_key())
         with urllib.request.urlopen(request, timeout=TIMEOUT_URL) as response:
             data = json.loads(response.read().decode("utf-8"))
         return sorted(d["id"] for d in data.get("data", []))
-    except Exception:
+    except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
+        print(f"exposed_models error: {exc}", file=sys.stderr)
         return None
 
 
@@ -149,11 +189,39 @@ def main() -> int:
     now = datetime.datetime.now(datetime.timezone.utc).astimezone().strftime(
         "%Y-%m-%d %H:%M %Z"
     )
-    profile = capability.build_profile()
+    # Construction du profil avec validation de présence de clés.
+    raw_profile = capability.build_profile()
+    profile = {
+        "ollama": {
+            "mode": raw_profile.get("ollama", {}).get("mode", "?")
+        },
+        "inference_memory_gb": float(raw_profile.get("inference_memory_gb", 0)),
+        "host_ram_gb": float(raw_profile.get("host_ram_gb", 0)),
+        "pool_budget_gb": float(raw_profile.get("pool_budget_gb", 0)),
+        "runnable_budget_gb": float(raw_profile.get("runnable_budget_gb", 0)),
+        "cpu_cores": int(raw_profile.get("cpu_cores", 0)),
+        "cpu_threads": int(raw_profile.get("cpu_threads", 0)),
+        "gpu": {
+            "name": raw_profile.get("gpu", {}).get("name", "?"),
+            "vram_gb": float(raw_profile.get("gpu", {}).get("vram_gb", 0)),
+        },
+        "gpu_usable_for_offload": bool(
+            raw_profile.get("gpu_usable_for_offload", False)
+        ),
+        "model_store": raw_profile.get("model_store", "?"),
+        "free_disk_gb": float(raw_profile.get("free_disk_gb", 0)),
+    }
+
     models = exposed_models()
     passerelle_muette = models is None
 
-    groups = {"local": [], "cloud": [], "anthropic": [], "routeurs": []}
+    groups = {
+        "local": [],
+        "cloud": [],
+        "anthropic": [],
+        "routeurs": [],
+        "autres": [],  # pour les alias non reconnus
+    }
     for alias in (models or []):
         if alias.startswith("adaptive-router"):
             groups["routeurs"].append(alias)
@@ -161,8 +229,10 @@ def main() -> int:
             groups["local"].append(alias)
         elif alias.endswith("-cloud"):
             groups["cloud"].append(alias)
-        else:
+        elif alias.startswith("anthropic-"):
             groups["anthropic"].append(alias)
+        else:
+            groups["autres"].append(alias)
 
     services = run(
         ["docker", "compose", "ps", "--format", "{{.Name}}\t{{.Service}}\t{{.Status}}"]
@@ -179,12 +249,11 @@ def main() -> int:
             encoding="utf-8",
             errors="replace",
         )
-    except Exception as exc:  # pragma: no cover
+    except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover
         print(
             f"Erreur lors de l'execution de nexus_validate.py : {exc}",
             file=sys.stderr,
         )
-        # Simuler un échec de validation
         class DummyResult:
             returncode = 1
             stdout = ""
@@ -208,8 +277,7 @@ def main() -> int:
                 if line.startswith("# NEXUS-ROUTER-VERSION:"):
                     router_version = line.split(":", 1)[1].strip()
                     break
-    except Exception:
-        # Absence ou lecture impossible du fichier de configuration.
+    except OSError:
         router_version = "?"
 
     commit = run(["git", "rev-parse", "--short", "HEAD"])
@@ -227,7 +295,7 @@ def main() -> int:
     lines = [
         "# État de la plateforme",
         "",
-        "> Généré par `python scripts/nexus_state.py` le %s." % now,
+        f"> Généré par `python scripts/nexus_state.py` le {now}.",
         "> **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,",
         "> pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.",
         "",
@@ -235,10 +303,10 @@ def main() -> int:
         "",
         "| | |",
         "|---|---|",
-        "| Branche | `%s` |" % (branch or "?"),
-        "| Commit | `%s` |" % (commit or "?"),
-        "| Arbre de travail | %s |" % worktree_status,
-        "| Version de routage | `%s` |" % router_version,
+        f"| Branche | `{branch or '?'}` |",
+        f"| Commit | `{commit or '?'}` |",
+        f"| Arbre de travail | {worktree_status} |",
+        f"| Version de routage | `{router_version}` |",
         "",
         "## Services",
         "",
@@ -250,25 +318,24 @@ def main() -> int:
         "",
         "| | |",
         "|---|---|",
-        "| Implantation | `%s` |" % profile["ollama"]["mode"],
-        "| Mémoire d'inférence | %.1f Go |" % profile["inference_memory_gb"],
-        "| RAM machine | %.1f Go |" % profile["host_ram_gb"],
-        "| Budget pool | %.1f Go |" % profile["pool_budget_gb"],
-        "| Budget maximal | %.1f Go |" % profile["runnable_budget_gb"],
-        "| CPU | %d cœurs / %d threads |" % (profile["cpu_cores"], profile["cpu_threads"]),
-        "| GPU | %s (%.1f Go) |" % (profile["gpu"]["name"] or "?", profile["gpu"]["vram_gb"]),
-        "| Offload GPU | %s |" % ("oui" if profile["gpu_usable_for_offload"] else "non"),
-        "| Stockage modèles | `%s` |" % profile["model_store"],
-        "| Disque libre | %.1f Go |" % profile["free_disk_gb"],
+        f"| Implantation | `{profile['ollama']['mode']}` |",
+        f"| Mémoire d'inférence | {profile['inference_memory_gb']:.1f} Go |",
+        f"| RAM machine | {profile['host_ram_gb']:.1f} Go |",
+        f"| Budget pool | {profile['pool_budget_gb']:.1f} Go |",
+        f"| Budget maximal | {profile['runnable_budget_gb']:.1f} Go |",
+        f"| CPU | {profile['cpu_cores']} cœurs / {profile['cpu_threads']} threads |",
+        f"| GPU | {profile['gpu']['name'] or '?'} ({profile['gpu']['vram_gb']:.1f} Go) |",
+        f"| Offload GPU | {'oui' if profile['gpu_usable_for_offload'] else 'non'} |",
+        f"| Stockage modèles | `{profile['model_store']}` |",
+        f"| Disque libre | {profile['free_disk_gb']:.1f} Go |",
         "",
     ]
 
-    if profile["ollama"]["mode"].startswith("docker"):
-        perdu = profile["host_ram_gb"] - profile["inference_memory_gb"]
+    if isinstance(profile['ollama']['mode'], str) and profile['ollama']['mode'].startswith("docker"):
+        perdu = profile['host_ram_gb'] - profile['inference_memory_gb']
         if perdu > 4:
             lines += [
-                "> %.0f Go des %.0f Go de la machine restent hors d'atteinte de"
-                % (perdu, profile["host_ram_gb"]),
+                f"> {perdu:.0f} Go des {profile['host_ram_gb']:.0f} Go de la machine restent hors d'atteinte de",
                 "> l'inférence tant que le moteur tourne dans Docker.",
                 "",
             ]
@@ -276,11 +343,8 @@ def main() -> int:
     lines += [
         ("## Inventaire exposé — PASSERELLE INJOIGNABLE"
          if passerelle_muette else
-         "## Inventaire exposé — %d modèles" % len(models)),
+         f"## Inventaire exposé — {len(models)} modèles"),
         "",
-        # Un zéro et une absence de mesure se ressemblent dans un tableau,
-        # et ne veulent pas du tout dire la même chose : le premier annonce
-        # une panne totale, le second qu'on n'a rien demandé à personne.
         ("> La passerelle n'a pas répondu sur `127.0.0.1:4000`. Ce qui suit "
          "n'est donc **pas** un inventaire vide : c'est une absence de "
          "mesure. Relancer `.\\scripts\\start.ps1` avant d'en conclure quoi "
@@ -289,17 +353,18 @@ def main() -> int:
         "",
         "| Plan | Nombre | Facturation |",
         "|---|---|---|",
-        "| Local | %d | aucune, rien ne quitte la machine |" % len(groups["local"]),
-        "| Ollama Cloud | %d | abonnement Ollama |" % len(groups["cloud"]),
-        "| Anthropic | %d | crédits API, distincts de l'abonnement claude.ai |"
-        % len(groups["anthropic"]),
-        "| Routeurs | %d | selon le plan retenu |" % len(groups["routeurs"]),
+        f"| Local | {len(groups['local'])} | aucune, rien ne quitte la machine |",
+        f"| Ollama Cloud | {len(groups['cloud'])} | abonnement Ollama |",
+        f"| Anthropic | {len(groups['anthropic'])} | crédits API, distincts de l'abonnement claude.ai |",
+        f"| Routeurs | {len(groups['routeurs'])} | selon le plan retenu |",
+        f"| Autres | {len(groups['autres'])} | non classés |",
         "",
         "## Intégrité de la configuration",
         "",
-        "Verdict : **%s**" % verdict,
+        f"Verdict : **{verdict}**",
         "",
     ]
+
     if issues:
         lines += ["```"] + issues + ["```", ""]
 
@@ -312,7 +377,7 @@ def main() -> int:
     for relative in TRACKED:
         path = os.path.join(ROOT, relative)
         digest = sha256(path)
-        lines.append("| `%s` | `%s` |" % (relative, digest[:32] if digest else "absent"))
+        lines.append(f"| `{relative}` | `{digest[:32] if digest else 'absent'}` |")
 
     lines += [
         "",
@@ -325,23 +390,27 @@ def main() -> int:
     # S'assurer que le répertoire cible existe avant d'écrire le fichier temporaire.
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
 
-    # Écriture atomique : on écrit d'abord dans un fichier temporaire puis on
-    # le replace atomiquement. Ainsi, une interruption ne laisse pas un
-    # STATE.md partiellement écrit qui pourrait être lu comme valide.
     temp_path = STATE + ".tmp"
-    with io.open(temp_path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(lines) + "\n")
-    os.replace(temp_path, STATE)
+    try:
+        with io.open(temp_path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(lines) + "\n")
+        os.replace(temp_path, STATE)
+    finally:
+        # Nettoyage du fichier temporaire en cas d'échec.
+        if os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
 
     if passerelle_muette:
         print(
             "STATE.md regenere : PASSERELLE INJOIGNABLE (127.0.0.1:4000), "
-            "configuration %s" % verdict
+            f"configuration {verdict}"
         )
     else:
         print(
-            "STATE.md regenere : %d modeles exposes, configuration %s"
-            % (len(models), verdict)
+            f"STATE.md regenere : {len(models)} modeles exposes, configuration {verdict}"
         )
     # Propagation du code de retour de la validation : si la validation a
     # échoué, on renvoie un code d'erreur afin que l'orchestrateur puisse

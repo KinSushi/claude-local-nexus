@@ -24,6 +24,7 @@
 .PARAMETER SkipPull
     N'installe aucun modèle. Utile pour vérifier une machine sans rien
     télécharger.
+
 .PARAMETER CheckOnly
     Ne modifie rien : diagnostic seul.
 
@@ -41,6 +42,14 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# ------------------------------------------------------------
+# Vérification des droits administrateur (défaut de robustesse)
+# ------------------------------------------------------------
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "  [stop] Droits administrateur requis." -ForegroundColor Red
+    exit 1
+}
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Scripts  = $PSScriptRoot
@@ -97,6 +106,7 @@ if (Test-Path $envFile) {
     $manquantes = @()
     $contenu = Get-Content $envFile -Raw
     foreach ($cle in @("LITELLM_MASTER_KEY", "POSTGRES_PASSWORD")) {
+        # La regex ignore les lignes commentées (commençant par #)
         if ($contenu -notmatch "(?m)^\s*$cle\s*=\s*\S") { $manquantes += $cle }
     }
     if ($manquantes) {
@@ -125,20 +135,41 @@ if (Test-Path $envFile) {
 # 3. Profil materiel
 # ------------------------------------------------------------
 Write-Etape "Profil materiel"
-python (Join-Path $Scripts "nexus_capability.py") | Select-Object -First 16
+$capabilityScript = Join-Path $Scripts "nexus_capability.py"
+if (Test-Path $capabilityScript) {
+    python "`"$capabilityScript`"" | Select-Object -First 16
+} else {
+    Write-Stop "Script nexus_capability.py introuvable."
+}
 
 # ------------------------------------------------------------
 # 4. Services
 # ------------------------------------------------------------
 Write-Etape "Services"
 if ($CheckOnly) {
-    docker compose ps
+    $composePs = docker compose ps 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Stop "docker compose ps a échoué : $composePs"
+    } else {
+        Write-Ok "docker compose ps exécuté"
+        $composePs
+    }
 } else {
     Push-Location $RepoRoot
     try {
-        docker compose up -d | Out-Null
+        $upResult = docker compose up -d 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Stop "docker compose up a échoué : $upResult"
+            exit 1
+        }
         Start-Sleep -Seconds 10
-        docker compose ps --format "{{.Name}}`t{{.Status}}"
+        $psResult = docker compose ps --format "{{.Name}}`t{{.Status}}" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Stop "docker compose ps a échoué : $psResult"
+        } else {
+            Write-Ok "docker compose up terminé"
+            $psResult
+        }
     } finally { Pop-Location }
 }
 
@@ -146,21 +177,35 @@ if ($CheckOnly) {
 # 5. Moteur d'inference
 # ------------------------------------------------------------
 Write-Etape "Moteur d'inference"
-python (Join-Path $Scripts "nexus_switch_engine.py") --status | Select-Object -First 6
+$switchEngineScript = Join-Path $Scripts "nexus_switch_engine.py"
+if (Test-Path $switchEngineScript) {
+    python "`"$switchEngineScript`"" --status | Select-Object -First 6
+} else {
+    Write-Stop "Script nexus_switch_engine.py introuvable."
+}
 
 # ------------------------------------------------------------
 # 6. Modeles
 # ------------------------------------------------------------
 if (-not $SkipPull -and -not $CheckOnly) {
+    # Vérification de l'espace disque (défaut de robustesse)
+    $drive = Get-PSDrive -Name ($RepoRoot.Substring(0,1))
+    if ($drive.Free -lt 5GB) {
+        Write-Stop "Espace disque insuffisant (moins de 5 GB) pour télécharger les modèles."
+        exit 1
+    }
+
     Write-Etape "Inventaire local"
     Write-Host "  Le telechargement suit model_list.txt et respecte le verdict materiel :"
     Write-Host "  un modele que la machine ne peut pas executer n'est pas telecharge."
-    & (Join-Path $Scripts "Update-NexusModels.ps1") -SyncLocal
-    # Verifier le code de retour du script de synchronisation locale.
-    # Si le script echoue, le modele local peut etre incomplet ou corrompu,
-    # ce qui evite des erreurs lateres lors du demarrage.
-    if ($LASTEXITCODE -ne 0) {
-        Write-Manque "Update-NexusModels -SyncLocal a echoue (code $LASTEXITCODE)"
+    $updateScript = Join-Path $Scripts "Update-NexusModels.ps1"
+    if (Test-Path $updateScript) {
+        & "`"$updateScript`"" -SyncLocal
+        if ($LASTEXITCODE -ne 0) {
+            Write-Manque "Update-NexusModels -SyncLocal a echoue (code $LASTEXITCODE)"
+        }
+    } else {
+        Write-Stop "Script Update-NexusModels.ps1 introuvable."
     }
 } else {
     Write-Etape "Inventaire local"
@@ -172,19 +217,24 @@ if (-not $SkipPull -and -not $CheckOnly) {
 # ------------------------------------------------------------
 Write-Etape "Configuration"
 if ($CheckOnly) {
-    & (Join-Path $Scripts "Test-NexusConfig.ps1")
-    # Verifier le code de retour du test de configuration.
-    # Un echec indique que la configuration est invalide et que le service
-    # pourrait ne pas demarrer correctement.
-    if ($LASTEXITCODE -ne 0) {
-        Write-Manque "Test-NexusConfig a echoue (code $LASTEXITCODE)"
+    $testConfig = Join-Path $Scripts "Test-NexusConfig.ps1"
+    if (Test-Path $testConfig) {
+        & "`"$testConfig`""
+        if ($LASTEXITCODE -ne 0) {
+            Write-Manque "Test-NexusConfig a echoue (code $LASTEXITCODE)"
+        }
+    } else {
+        Write-Stop "Script Test-NexusConfig.ps1 introuvable."
     }
 } else {
-    & (Join-Path $Scripts "Update-NexusModels.ps1") -Restart
-    # Verifier le code de retour du redemarrage du service.
-    # Un echec du redemarrage laisse le service indisponible.
-    if ($LASTEXITCODE -ne 0) {
-        Write-Manque "Update-NexusModels -Restart a echoue (code $LASTEXITCODE)"
+    $updateScript = Join-Path $Scripts "Update-NexusModels.ps1"
+    if (Test-Path $updateScript) {
+        & "`"$updateScript`"" -Restart
+        if ($LASTEXITCODE -ne 0) {
+            Write-Manque "Update-NexusModels -Restart a echoue (code $LASTEXITCODE)"
+        }
+    } else {
+        Write-Stop "Script Update-NexusModels.ps1 introuvable."
     }
 }
 
@@ -214,3 +264,4 @@ Write-Host "  Sujets ouverts  : rituels\CHECKLIST_COCKPIT.MD"
 Write-Host "  Suite de tests  : python scripts\nexus_test.py"
 Write-Host ""
 exit ([int]($script:Problemes -gt 0))
+</#>

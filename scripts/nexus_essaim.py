@@ -24,6 +24,7 @@ Les messages affichés sur la console sont sans accents (compatibilité Windows)
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import shutil
@@ -32,6 +33,20 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+# --------------------------------------------------------------------------- #
+# Pré‑chargement du module nexus_agent (une seule fois, avant le multithreading)
+# --------------------------------------------------------------------------- #
+
+# Ajout du répertoire du dépôt au PYTHONPATH avant l'import du module.
+# Cette opération est effectuée au moment du chargement du script,
+# donc elle n'est plus exécutée simultanément par plusieurs threads.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    import nexus_agent as agent  # type: ignore
+except ImportError as e:
+    print(f"Import error: {e}")
+    sys.exit(1)
 
 # --------------------------------------------------------------------------- #
 # Helpers généraux
@@ -55,6 +70,11 @@ def ecrire_fichier(path: Path, contenu: str) -> None:
     """Écrit le texte fourni dans le fichier indiqué, UTF‑8, remplace les erreurs."""
     path.write_text(contenu, encoding="utf-8", errors="replace")
 
+def _hash_path(cible: Path) -> str:
+    """Retourne un identifiant court basé sur le chemin complet de la cible."""
+    h = hashlib.sha256(str(cible).encode("utf-8")).hexdigest()
+    return h[:8]
+
 # --------------------------------------------------------------------------- #
 # Interaction avec nexus_agent
 # --------------------------------------------------------------------------- #
@@ -64,10 +84,6 @@ def executer_audit(cible: Path, consigne: str, modele: str) -> Dict:
     Lance l'audit sur la cible en appelant ``nexus_agent.executer``.
     Retourne le dictionnaire brut renvoyé par l'agent.
     """
-    # insertion du répertoire du dépôt dans le path
-    sys.path.insert(0, str(racine_depot()))
-    import nexus_agent as agent
-
     cle = agent.cle_maitre()
     payload = {
         "nom": f"audit-{cible.name}",
@@ -106,8 +122,15 @@ def verifier_syntaxe(cible: Path) -> bool:
             )
             return res.returncode == 0
         elif suffix == ".ps1":
-            # PowerShell 7+ (pwsh) : on charge le fichier, aucune sortie attendue.
-            cmd = ["pwsh", "-NoLogo", "-NoProfile", "-Command", f"Get-Content -Raw -Path '{cible}' | Out-Null"]
+            # Escape les apostrophes dans le chemin pour éviter l'injection.
+            chemin = str(cible).replace("'", "''")
+            cmd = [
+                "pwsh",
+                "-NoLogo",
+                "-NoProfile",
+                "-Command",
+                f"Get-Content -Raw -Path '{chemin}' | Out-Null",
+            ]
             res = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -118,7 +141,8 @@ def verifier_syntaxe(cible: Path) -> bool:
         else:
             # Type inconnu : on considère que la vérification passe.
             return True
-    except Exception:
+    except Exception as e:
+        print(f"Syntax check error for {cible.name}: {e}")
         return False
 
 # --------------------------------------------------------------------------- #
@@ -135,7 +159,8 @@ def creer_consigne_temp(cible: Path, audit_texte: str) -> Path:
     Retourne le chemin du fichier créé.
     """
     dossier = dossier_nexus()
-    temp_path = dossier / f"essaim-{cible.name}.md"
+    ident = _hash_path(cible)
+    temp_path = dossier / f"essaim-{cible.name}-{ident}.md"
 
     intro = f"Ces trouvailles servent à corriger la cible {cible.name}.\n\n"
     contraintes = (
@@ -169,93 +194,116 @@ def traiter_cible(
     """
     cible = Path(cible_str).resolve()
     nom_cible = cible.name
+    ident = _hash_path(cible)
+
+    backup_dir = dossier_nexus()
+    backup_path = backup_dir / f"backup-{nom_cible}-{ident}.bak"
 
     # 1. sauvegarde
-    backup_dir = dossier_nexus()
-    backup_path = backup_dir / f"backup-{nom_cible}.bak"
     try:
         shutil.copy2(cible, backup_path)
     except Exception as e:
         print(f"Erreur lors de la sauvegarde de {nom_cible}: {e}")
         return f"{nom_cible},echec,0,0,none,{plan}", False, False
 
-    # 2. audit
-    consigne_audit = (
-        charger_fichier(Path(args.consigne_audit))
-        if args.consigne_audit
-        else f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
-    )
-    audit_res = executer_audit(cible, consigne_audit, modele_audit)
-
-    # Gestion d'éventuelles erreurs d'audit
-    if audit_res.get("erreur"):
-        print(f"Audit error for {nom_cible}")
-        restaurer_backup(cible, backup_path)
-        return f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
-
-    audit_texte = audit_res.get("texte", "").strip()
-    nb_trouvailles = len(audit_texte.splitlines()) if audit_texte else 0
-
-    # 3. aucune trouvaille
-    if not audit_texte:
-        print(f"{nom_cible} sans trouvaille")
-        backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", True, False
-
-    # 4. création du fichier de consigne pour la correction
-    consigne_path = creer_consigne_temp(cible, audit_texte)
-
-    # 5. correction via nexus_patch.py
-    cmd = [
-        sys.executable,
-        str(racine_depot() / "nexus_patch.py"),
-        "--cible",
-        str(cible),
-        "--consigne",
-        str(consigne_path),
-    ]
-    if args.modele_correction:
-        cmd.extend(["--modele", args.modele_correction])
-    if args.simuler:
-        print(f"Simulation: {' '.join(cmd)}")
-        correction_ok = True
-    else:
-        res = subprocess.run(
-            cmd,
-            capture_output=True,
-            encoding="utf-8",
-            errors="replace",
+    try:
+        # 2. audit
+        consigne_audit = (
+            charger_fichier(Path(args.consigne_audit))
+            if args.consigne_audit
+            else f"Audit du fichier {nom_cible} pour identifier les classes de défaut."
         )
-        correction_ok = res.returncode == 0
+        audit_res = executer_audit(cible, consigne_audit, modele_audit)
 
-    # Nettoyage du fichier de consigne, même en cas d'échec
-    consigne_path.unlink(missing_ok=True)
+        # Gestion d'éventuelles erreurs d'audit
+        if audit_res.get("erreur"):
+            print(f"Audit error for {nom_cible}")
+            restaurer_backup(cible, backup_path)
+            return (
+                f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                False,
+                False,
+            )
 
-    if not correction_ok:
-        print(f"Correction failed for {nom_cible}")
-        restaurer_backup(cible, backup_path)
+        audit_texte = audit_res.get("texte", "").strip()
+        nb_trouvailles = len(audit_texte.splitlines()) if audit_texte else 0
+
+        # 3. aucune trouvaille
+        if not audit_texte:
+            print(f"{nom_cible} sans trouvaille")
+            backup_path.unlink(missing_ok=True)
+            return (
+                f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                True,
+                False,
+            )
+
+        # 4. création du fichier de consigne pour la correction
+        consigne_path = creer_consigne_temp(cible, audit_texte)
+
+        # 5. correction via nexus_patch.py
+        cmd = [
+            sys.executable,
+            str(racine_depot() / "nexus_patch.py"),
+            "--cible",
+            str(cible),
+            "--consigne",
+            str(consigne_path),
+        ]
+        if args.modele_correction:
+            cmd.extend(["--modele", args.modele_correction])
+        if args.simuler:
+            print(f"Simulation: {' '.join(cmd)}")
+            correction_ok = True
+        else:
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            correction_ok = res.returncode == 0
+
+        # Nettoyage du fichier de consigne, même en cas d'échec
+        consigne_path.unlink(missing_ok=True)
+
+        if not correction_ok:
+            print(f"Correction failed for {nom_cible}")
+            restaurer_backup(cible, backup_path)
+            return (
+                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                False,
+                False,
+            )
+
+        # 6. vérification syntaxe
+        if not verifier_syntaxe(cible):
+            print(f"Verification failed for {nom_cible}")
+            restaurer_backup(cible, backup_path)
+            return (
+                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                False,
+                False,
+            )
+
+        # 7. succès : on supprime le backup
         backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
 
-    # 6. vérification syntaxe
-    if not verifier_syntaxe(cible):
-        print(f"Verification failed for {nom_cible}")
-        restaurer_backup(cible, backup_path)
+        # Détection d'une fuite : cible prévue locale mais audit exécuté avec le modèle cloud
+        fuite = False
+        modele_observe = audit_res.get("modele", "")
+        if plan == "local" and modele_observe == args.modele_audit:
+            fuite = True
+            print(f"Fuite detectee: {nom_cible} devait etre traite en local mais a utilise le modele cloud")
+
+        return (
+            f"{nom_cible},ok,{nb_trouvailles},{audit_res.get('tokens',0)},{modele_observe},{plan}",
+            True,
+            fuite,
+        )
+    finally:
+        # Garantie de nettoyage du backup même en cas d'exception inattendue
         backup_path.unlink(missing_ok=True)
-        return f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}", False, False
-
-    # 7. succès : on supprime le backup
-    backup_path.unlink(missing_ok=True)
-
-    # Détection d'une fuite : cible prévue locale mais audit exécuté avec le modèle cloud
-    fuite = False
-    modele_observe = audit_res.get("modele", "")
-    if plan == "local" and modele_observe == args.modele_audit:
-        # le modèle cloud a été utilisé alors que le plan local était requis
-        fuite = True
-        print(f"Fuite detectee: {nom_cible} devait etre traite en local mais a utilise le modele cloud")
-
-    return f"{nom_cible},ok,{nb_trouvailles},{audit_res.get('tokens',0)},{modele_observe},{plan}", True, fuite
 
 # --------------------------------------------------------------------------- #
 # Fonction principale
@@ -362,7 +410,8 @@ def main() -> int:
                     args,
                     "cloud",
                     args.modele_audit,
-                ): cible for cible in cloud_cibles
+                ): cible
+                for cible in cloud_cibles
             }
             for future in as_completed(futures):
                 rapport, ok, fuite = future.result()
@@ -382,7 +431,8 @@ def main() -> int:
                     args,
                     "local",
                     args.modele_audit_local,
-                ): cible for cible in local_cibles
+                ): cible
+                for cible in local_cibles
             }
             for future in as_completed(futures):
                 rapport, ok, fuite = future.result()

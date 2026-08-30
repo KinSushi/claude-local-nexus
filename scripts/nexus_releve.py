@@ -1,30 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Le local prend-il réellement le relais ?
+Le local prend‑il réellement le relais ?
 
 Pourquoi ce script existe
 -------------------------
-La promesse de la plateforme n'est pas « des modèles locaux existent ».
-Elle est : *le jour où l'abonnement expire ou son quota est épuisé, le
+La promesse de la plateforme n’est pas « des modèles locaux existent ».
+Elle est : *le jour où l’abonnement expire ou son quota est épuisé, le
 travail continue*. Ces deux affirmations sont très différentes, et seule
 la seconde a de la valeur.
 
-Un modèle qui répond à une question n'orchestre rien. Orchestrer suppose
-quatre choses, et l'échec d'une seule suffit à ruiner la relève :
+Un modèle qui répond à une question n’orchestre rien. Orchestrer suppose
+quatre choses, et l’échec d’une seule suffit à ruiner la relève :
 
-    1. parler le protocole      /v1/messages, l'API que Claude Code emploie
+    1. parler le protocole      /v1/messages, l’API que Claude Code emploie
     2. demander un outil        stop_reason = tool_use, nom et arguments justes
     3. exploiter le retour      lire un tool_result et en tirer une conclusion
-    4. enchaîner                plusieurs outils d'affilée sans perdre le fil
+    4. enchaîner                plusieurs outils d’affilée sans perdre le fil
 
 Chacune est vérifiée séparément, sur le modèle réellement déclaré comme
-relève, en conditions réelles. Aucune n'est déduite d'une autre : un
+relève, en conditions réelles. Aucune n’est déduite d’une autre : un
 modèle peut parfaitement émettre un `tool_use` bien formé puis ignorer le
-résultat qu'on lui renvoie.
+résultat qu’on lui renvoie.
 
-Le test échoue bruyamment plutôt que d'accorder le bénéfice du doute. Une
-relève dont on croit à tort qu'elle fonctionne est pire qu'une relève
-absente : on ne s'aperçoit de rien jusqu'au jour où l'on en a besoin.
+Le test échoue bruyamment plutôt que d’accorder le bénéfice du doute. Une
+relève dont on croit à tort qu’elle fonctionne est pire qu’une relève
+absente : on ne s’aperçoit de rien jusqu’au jour où l’on en a besoin.
 
 Usage :
     python scripts/nexus_releve.py                     # modèle de relève déclaré
@@ -54,12 +54,12 @@ ROOT = agent.ROOT
 PASSERELLE = agent.PASSERELLE
 
 # L'alias que la configuration désigne comme relève. Il est interrogé par
-# son nom logique, jamais par le modèle sous-jacent : c'est ce nom que
-# Claude Code recevra, et donc ce nom qu'il faut éprouver.
+# son nom logique, jamais par le modèle sous‑jacent : c’est ce nom que
+# Claude Code recevra, et donc ce nom qu’il faut éprouver.
 RELEVE = "releve-locale"
 
 # Un modèle non chargé met une à deux minutes à répondre au premier appel,
-# et la relève est justement le modèle qui ne tourne pas d'habitude.
+# et la relève est justement le modèle qui ne tourne pas d’habitude.
 DELAI = int(os.environ.get("NEXUS_RELEVE_TIMEOUT", "900"))
 
 OUTIL_LIRE = {
@@ -83,13 +83,18 @@ OUTIL_COMPTER = {
 }
 
 
+def _now() -> float:
+    """Retourne le temps monotone, utilisable pour mesurer des durées."""
+    return time.monotonic()
+
+
 def messages(charge: dict, cle: str) -> dict:
     """
     Un appel à /v1/messages, l'API Anthropic servie par LiteLLM.
 
-    C'est volontairement le même chemin que celui qu'emprunterait Claude
+    C’est volontairement le même chemin que celui qu’emprunterait Claude
     Code configuré sur la passerelle. Tester /v1/chat/completions à la
-    place mesurerait un protocole que la relève n'utilisera jamais.
+    place mesurerait un protocole que la relève n’utilisera jamais.
     """
     requete = urllib.request.Request(
         PASSERELLE + "/v1/messages",
@@ -101,25 +106,21 @@ def messages(charge: dict, cle: str) -> dict:
         },
         method="POST",
     )
-    debut = time.time()
+    debut = _now()
     try:
         with urllib.request.urlopen(requete, timeout=DELAI) as reponse:
             corps = json.loads(reponse.read().decode("utf-8"))
             entetes = {k.lower(): v for k, v in reponse.getheaders()}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:400]
-        # Le code est conservé séparément parce qu'il désigne le
-        # responsable, ce que le texte du message ne fait pas toujours :
-        # 401 met en cause la clé, 402 le palier souscrit, 404 l'alias
-        # demandé, 5xx le moteur. Sans lui, « la relève ne répond pas »
-        # envoie chercher au mauvais endroit — et une relève qu'on croit
-        # cassée alors qu'une clé a expiré ne se répare jamais.
-        return {"echec": "HTTP %s : %s" % (exc.code, detail),
-                "code_http": exc.code,
-                "duree": time.time() - debut}
+        return {
+            "echec": "HTTP %s : %s" % (exc.code, detail),
+            "code_http": exc.code,
+            "duree": _now() - debut,
+        }
     except Exception as exc:
-        return {"echec": str(exc), "duree": time.time() - debut}
-    corps["_duree"] = time.time() - debut
+        return {"echec": str(exc), "duree": _now() - debut}
+    corps["_duree"] = _now() - debut
     corps["_adresse"] = entetes.get("x-litellm-model-api-base", "?")
     corps["_servi"] = entetes.get("x-litellm-model-name", "?")
     return corps
@@ -137,17 +138,28 @@ def texte_de(reponse: dict) -> str:
 # Les quatre épreuves
 # ----------------------------------------------------------------------
 def epreuve_protocole(modele: str, cle: str) -> dict:
-    """Le modèle répond-il par l'API que Claude Code emploie ?"""
+    """Le modèle répond‑il par l'API que Claude Code emploie ?"""
     jeton = "RLV%d" % (int(time.time()) % 10000)
-    r = messages({
-        "model": modele,
-        "max_tokens": 32,
-        "messages": [{"role": "user",
-                      "content": "Repete ce mot et rien d'autre : %s" % jeton}],
-    }, cle)
+    r = messages(
+        {
+            "model": modele,
+            "max_tokens": 32,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Repete ce mot et rien d'autre : %s" % jeton,
+                }
+            ],
+        },
+        cle,
+    )
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
-                "code_http": r.get("code_http")}
+        return {
+            "ok": False,
+            "detail": r["echec"],
+            "duree": r.get("duree", 0),
+            "code_http": r.get("code_http"),
+        }
     corps = texte_de(r)
     return {
         "ok": jeton in corps,
@@ -159,23 +171,37 @@ def epreuve_protocole(modele: str, cle: str) -> dict:
 
 
 def epreuve_demande_outil(modele: str, cle: str) -> dict:
-    """Le modèle demande-t-il l'outil, avec le bon nom et le bon argument ?"""
-    r = messages({
-        "model": modele,
-        "max_tokens": 400,
-        "tools": [OUTIL_LIRE],
-        "messages": [{"role": "user",
-                      "content": "Quelle est la premiere ligne de README.md ? "
-                                 "Utilise l'outil pour le lire."}],
-    }, cle)
+    """Le modèle demande‑t‑il l'outil, avec le bon nom et le bon argument ?"""
+    r = messages(
+        {
+            "model": modele,
+            "max_tokens": 400,
+            "tools": [OUTIL_LIRE],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Quelle est la premiere ligne de README.md ? "
+                    "Utilise l'outil pour le lire.",
+                }
+            ],
+        },
+        cle,
+    )
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
-                "code_http": r.get("code_http")}
+        return {
+            "ok": False,
+            "detail": r["echec"],
+            "duree": r.get("duree", 0),
+            "code_http": r.get("code_http"),
+        }
     appels = blocs(r, "tool_use")
     if not appels:
-        return {"ok": False, "duree": r.get("_duree", 0),
-                "detail": "aucun tool_use (stop_reason=%s) : %r"
-                          % (r.get("stop_reason"), texte_de(r)[:120])}
+        return {
+            "ok": False,
+            "duree": r.get("_duree", 0),
+            "detail": "aucun tool_use (stop_reason=%s) : %r"
+            % (r.get("stop_reason"), texte_de(r)[:120]),
+        }
     appel = appels[0]
     chemin = str((appel.get("input") or {}).get("chemin", ""))
     juste = appel.get("name") == "lire_fichier" and "README" in chemin.upper()
@@ -189,52 +215,68 @@ def epreuve_demande_outil(modele: str, cle: str) -> dict:
 
 def epreuve_exploite_retour(modele: str, cle: str, appel: dict | None) -> dict:
     """
-    Le modèle sait-il tirer une conclusion du résultat qu'on lui renvoie ?
+    Le modèle sait‑il tirer une conclusion du résultat qu’on lui renvoie ?
 
-    L'épreuve est distincte de la précédente à dessein : émettre un
+    L’épreuve est distincte de la précédente à dessein : émettre un
     `tool_use` bien formé et exploiter un `tool_result` sont deux
     aptitudes séparées, et un modèle peut posséder la première sans la
     seconde. Les confondre ferait conclure à une relève opérationnelle sur
-    la foi d'une demande d'outil restée sans suite.
+    la foi d’une demande d’outil restée sans suite.
     """
     if appel is None:
-        # Non mesurable, et non « raté » : faute d'une demande d'outil à
-        # renvoyer, l'aptitude à exploiter un résultat n'a pas été mise à
-        # l'épreuve. La compter en échec imputerait au modèle un défaut
-        # que rien n'établit, et afficherait 1/4 là où la mesure ne porte
-        # que sur deux épreuves.
-        return {"ok": None, "detail": "epreuve precedente echouee, rien a enchainer",
-                "duree": 0}
+        return {
+            "ok": None,
+            "detail": "epreuve precedente echouee, rien a enchainer",
+            "duree": 0,
+        }
+
+    chemin_readme = os.path.join(ROOT, "README.md")
+    if not os.path.exists(chemin_readme):
+        return {
+            "ok": None,
+            "detail": f"Fichier {chemin_readme} introuvable",
+            "duree": 0,
+        }
+
     try:
-        premiere = io.open(os.path.join(ROOT, "README.md"),
-                           encoding="utf-8").readline().strip()
+        premiere = io.open(chemin_readme, encoding="utf-8").readline().strip()
     except Exception as exc:
-        # Le banc de test est en cause, pas le modèle : c'est non mesurable.
         return {"ok": None, "detail": "README.md illisible : %s" % exc, "duree": 0}
 
-    r = messages({
-        "model": modele,
-        "max_tokens": 300,
-        "tools": [OUTIL_LIRE],
-        "messages": [
-            {"role": "user",
-             "content": "Quelle est la premiere ligne de README.md ? "
-                        "Utilise l'outil pour le lire."},
-            {"role": "assistant", "content": [appel]},
-            {"role": "user", "content": [{
-                "type": "tool_result",
-                "tool_use_id": appel.get("id", "toolu_01"),
-                "content": premiere + "\n\n(suite du fichier omise)",
-            }]},
-        ],
-    }, cle)
+    r = messages(
+        {
+            "model": modele,
+            "max_tokens": 300,
+            "tools": [OUTIL_LIRE],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Quelle est la premiere ligne de README.md ? "
+                    "Utilise l'outil pour le lire.",
+                },
+                {"role": "assistant", "content": [appel]},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": appel.get("id", "toolu_01"),
+                            "content": premiere + "\n\n(suite du fichier omise)",
+                        }
+                    ],
+                },
+            ],
+        },
+        cle,
+    )
     if r.get("echec"):
-        return {"ok": False, "detail": r["echec"], "duree": r.get("duree", 0),
-                "code_http": r.get("code_http")}
+        return {
+            "ok": False,
+            "detail": r["echec"],
+            "duree": r.get("duree", 0),
+            "code_http": r.get("code_http"),
+        }
     corps = texte_de(r)
-    # La comparaison porte sur le contenu de la ligne, pas sur une reprise
-    # mot pour mot : un modèle qui répond « le titre est Claude-Local-Nexus »
-    # a parfaitement exploité le résultat.
     noyau = premiere.lstrip("# ").strip()
     return {
         "ok": bool(noyau) and noyau.lower() in corps.lower(),
@@ -246,64 +288,95 @@ def epreuve_exploite_retour(modele: str, cle: str, appel: dict | None) -> dict:
 
 def epreuve_enchainement(modele: str, cle: str) -> dict:
     """
-    Deux outils d'affilée : le modèle choisit-il le bon à chaque étape ?
+    Deux outils d’affilée : le modèle choisit‑il le bon à chaque étape ?
 
-    Un orchestrateur ne fait presque jamais un seul appel. S'il choisit
-    toujours le premier outil de la liste, ou s'il perd le fil après un
-    résultat, il enchaînera des actions qui n'ont plus de rapport avec la
-    tâche — panne bien plus coûteuse qu'un refus franc.
+    Un orchestrateur ne fait presque jamais un seul appel. S’il choisit
+    toujours le premier outil de la liste, ou s’il perd le fil après un
+    résultat, il enchaînera des actions qui n’ont plus de rapport avec la
+    tâche — panne bien plus coûteuse qu’un refus franc.
     """
-    depart = time.time()
-    r1 = messages({
-        "model": modele,
-        "max_tokens": 400,
-        "tools": [OUTIL_LIRE, OUTIL_COMPTER],
-        "messages": [{"role": "user",
-                      "content": "Combien de lignes contient README.md ? "
-                                 "Choisis l'outil approprie."}],
-    }, cle)
+    depart = _now()
+    r1 = messages(
+        {
+            "model": modele,
+            "max_tokens": 400,
+            "tools": [OUTIL_LIRE, OUTIL_COMPTER],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Combien de lignes contient README.md ? "
+                    "Choisis l'outil approprie.",
+                }
+            ],
+        },
+        cle,
+    )
     if r1.get("echec"):
-        return {"ok": False, "detail": r1["echec"], "duree": time.time() - depart,
-                "code_http": r1.get("code_http")}
+        return {
+            "ok": False,
+            "detail": r1["echec"],
+            "duree": _now() - depart,
+            "code_http": r1.get("code_http"),
+        }
     appels = blocs(r1, "tool_use")
     if not appels:
-        return {"ok": False, "duree": time.time() - depart,
-                "detail": "aucun tool_use au premier tour"}
+        return {"ok": False, "duree": _now() - depart, "detail": "aucun tool_use au premier tour"}
     if appels[0].get("name") != "compter_lignes":
-        return {"ok": False, "duree": time.time() - depart,
-                "detail": "mauvais outil choisi : %s au lieu de compter_lignes"
-                          % appels[0].get("name")}
+        return {
+            "ok": False,
+            "duree": _now() - depart,
+            "detail": "mauvais outil choisi : %s au lieu de compter_lignes" % appels[0].get("name"),
+        }
 
-    # Gardé comme la lecture jumelle d'`epreuve_exploite_retour` : sans
-    # cela, un README absent faisait remonter une trace nue au milieu
-    # d'un script dont tout le reste diagnostique soigneusement.
+    chemin_readme = os.path.join(ROOT, "README.md")
+    if not os.path.exists(chemin_readme):
+        return {
+            "ok": None,
+            "detail": f"Fichier {chemin_readme} introuvable",
+            "duree": _now() - depart,
+        }
+
     try:
-        nb = sum(1 for _ in io.open(os.path.join(ROOT, "README.md"), encoding="utf-8"))
+        nb = sum(1 for _ in io.open(chemin_readme, encoding="utf-8"))
     except Exception as exc:
-        return {"ok": None, "detail": "README.md illisible : %s" % exc,
-                "duree": time.time() - depart}
-    r2 = messages({
-        "model": modele,
-        "max_tokens": 200,
-        "tools": [OUTIL_LIRE, OUTIL_COMPTER],
-        "messages": [
-            {"role": "user", "content": "Combien de lignes contient README.md ? "
-                                        "Choisis l'outil approprie."},
-            {"role": "assistant", "content": [appels[0]]},
-            {"role": "user", "content": [{
-                "type": "tool_result",
-                "tool_use_id": appels[0].get("id", "toolu_01"),
-                "content": str(nb),
-            }]},
-        ],
-    }, cle)
+        return {"ok": None, "detail": "README.md illisible : %s" % exc, "duree": _now() - depart}
+    r2 = messages(
+        {
+            "model": modele,
+            "max_tokens": 200,
+            "tools": [OUTIL_LIRE, OUTIL_COMPTER],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Combien de lignes contient README.md ? "
+                    "Choisis l'outil approprie.",
+                },
+                {"role": "assistant", "content": [appels[0]]},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": appels[0].get("id", "toolu_01"),
+                            "content": str(nb),
+                        }
+                    ],
+                },
+            ],
+        },
+        cle,
+    )
     if r2.get("echec"):
-        return {"ok": False, "detail": r2["echec"], "duree": time.time() - depart,
-                "code_http": r2.get("code_http")}
+        return {
+            "ok": False,
+            "detail": r2["echec"],
+            "duree": _now() - depart,
+            "code_http": r2.get("code_http"),
+        }
     corps = texte_de(r2)
     return {
         "ok": str(nb) in corps,
-        "duree": time.time() - depart,
+        "duree": _now() - depart,
         "detail": corps[:160] if corps else "reponse vide",
         "attendu": str(nb),
     }
@@ -311,9 +384,9 @@ def epreuve_enchainement(modele: str, cle: str) -> dict:
 
 EPREUVES = [
     ("parle le protocole /v1/messages", epreuve_protocole),
-    ("demande un outil",                epreuve_demande_outil),
-    ("exploite le resultat d'outil",    epreuve_exploite_retour),
-    ("enchaine deux outils",            epreuve_enchainement),
+    ("demande un outil", epreuve_demande_outil),
+    ("exploite le resultat d'outil", epreuve_exploite_retour),
+    ("enchaine deux outils", epreuve_enchainement),
 ]
 
 
@@ -337,52 +410,44 @@ def juger(modele: str, cle: str) -> dict:
             print("         %s" % str(r.get("detail", ""))[:200])
         resultats.append({"epreuve": titre, **{k: v for k, v in r.items() if k != "appel"}})
 
-    # Un code HTTP recurrent dit ou chercher, la ou "la releve ne repond
-    # pas" envoie au mauvais endroit.
     codes = {r.get("code_http") for r in resultats if r.get("code_http")}
     reussies = sum(1 for r in resultats if r["ok"])
     ignorees = sum(1 for r in resultats if r["ok"] is None)
     echouees = sum(1 for r in resultats if r["ok"] is False)
-    # Le plan vient du catalogue, pas de l'en-tete : /v1/messages ne pose
-    # pas x-litellm-model-api-base, et en deduire "inconnu" ferait conclure
-    # que la releve n'est pas locale alors qu'elle l'est. Le catalogue,
-    # lui, decrit ou l'alias enverra ses requetes, quel que soit le
-    # protocole employe pour l'appeler.
+
     plan = agent.plans_par_alias(cle).get(modele) or agent.plan_de(adresse)
     print()
     print("  servi par : %s [%s]%s" % (servi, plan, "" if adresse == "?" else " " + adresse))
     if plan != "local":
-        # Une relève servie par le cloud ou par Anthropic ne relève de
-        # rien : elle dépend précisément de ce dont on cherche à se rendre
-        # indépendant.
         print("  [!] La releve n'a PAS ete servie en local : le test ne prouve rien")
         print("      sur l'autonomie de la machine.")
     if codes:
-        # 400 et non 404 pour un alias inconnu : mesure sur LiteLLM, qui
-        # traite un nom de modele absent du catalogue comme une requete
-        # malformee. Chercher un 404 aurait laisse le cas le plus frequent
-        # sans explication.
-        motifs = {400: "alias absent du catalogue de la passerelle",
-                  401: "cle refusee", 402: "palier non souscrit",
-                  404: "route inconnue", 429: "quota epuise",
-                  500: "moteur en erreur", 502: "moteur injoignable",
-                  504: "moteur trop lent"}
-        print("  codes HTTP rencontres : %s"
-              % ", ".join("%s (%s)" % (c, motifs.get(c, "voir le detail"))
-                          for c in sorted(codes)))
-    # La sous-chaine « epreuves reussies » est lue par nexus_conformite.py :
-    # le complement s'ajoute apres, il ne la coupe pas.
-    print("  %d/4 epreuves reussies%s"
-          % (reussies, "" if not ignorees
-             else " (%d echec(s), %d non mesurable(s))" % (echouees, ignorees)))
+        motifs = {
+            400: "alias absent du catalogue de la passerelle",
+            401: "cle refusee",
+            402: "palier non souscrit",
+            404: "route inconnue",
+            429: "quota epuise",
+            500: "moteur en erreur",
+            502: "moteur injoignable",
+            504: "moteur trop lent",
+        }
+        print(
+            "  codes HTTP rencontres : %s"
+            % ", ".join("%s (%s)" % (c, motifs.get(c, "voir le detail")) for c in sorted(codes))
+        )
+    print(
+        "  %d/4 epreuves reussies%s"
+        % (
+            reussies,
+            "" if not ignorees else " (%d echec(s), %d non mesurable(s))" % (echouees, ignorees),
+        )
+    )
     if reussies == 4:
         print("  => La releve peut orchestrer : outils demandes, resultats exploites,")
         print("     enchainement tenu.")
     elif ignorees and not echouees:
-        # Aucune epreuve n'a echoue, mais toutes n'ont pas ete tentees.
-        # Conclure « ne tient pas » serait aussi faux que conclure l'inverse.
-        print("  => Mesure incomplete : aucune epreuve n'a echoue, mais %d n'a pas"
-              % ignorees)
+        print("  => Mesure incomplete : aucune epreuve n'a echoue, mais %d n'a pas" % ignorees)
         print("     pu etre tentee. Rien n'est prouve, rien n'est infirme.")
     elif reussies >= 2:
         print("  => La releve repond mais n'orchestre pas de bout en bout.")
@@ -390,23 +455,33 @@ def juger(modele: str, cle: str) -> dict:
     else:
         print("  => La releve ne tient pas. Le travail s'arreterait avec l'abonnement.")
     print()
-    return {"modele": modele, "reussies": reussies, "plan": plan,
-            "adresse": adresse, "epreuves": resultats}
+    return {
+        "modele": modele,
+        "reussies": reussies,
+        "plan": plan,
+        "adresse": adresse,
+        "epreuves": resultats,
+        "version": "1.0",
+    }
 
 
 def candidats_locaux(cle: str) -> list[str]:
     """Alias locaux exposés, hors embeddings et hors modèles de vision."""
     requete = urllib.request.Request(
-        PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle})
-    # `agent.plans_par_alias` interroge le MÊME endpoint et se garde ; ici
-    # la garde manquait. Passerelle éteinte, `--tous` rendait une trace nue
-    # au lieu du diagnostic que tout le reste du fichier construit.
+        PASSERELLE + "/v1/model/info", headers={"Authorization": "Bearer " + cle}
+    )
     try:
         with urllib.request.urlopen(requete, timeout=30) as reponse:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
-    except Exception as exc:
+    except urllib.error.URLError as exc:
         print("  Catalogue injoignable sur %s : %s" % (PASSERELLE, exc))
         print("  Verifier la passerelle : python scripts/nexus_conformite.py")
+        return []
+    except json.JSONDecodeError as exc:
+        print("  Reponse JSON invalide du catalogue : %s" % exc)
+        return []
+    except Exception as exc:
+        print("  Erreur inattendue lors du catalogue : %s" % exc)
         return []
     noms = []
     for entree in donnees:
@@ -426,8 +501,9 @@ def candidats_locaux(cle: str) -> list[str]:
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--modele", help="Alias a eprouver. Defaut : " + RELEVE)
-    p.add_argument("--tous", action="store_true",
-                   help="Eprouver tous les candidats locaux (long).")
+    p.add_argument(
+        "--tous", action="store_true", help="Eprouver tous les candidats locaux (long)."
+    )
     p.add_argument("--json", action="store_true")
     a = p.parse_args()
 
@@ -435,8 +511,6 @@ def main() -> int:
     if a.tous:
         cibles = candidats_locaux(cle)
         if not cibles:
-            # Zero candidat n'est pas « zero apte » : c'est une absence de
-            # mesure. Le code 1 dit que rien n'a pu etre etabli.
             print("Aucun candidat local a eprouver.")
             return 1
     else:
@@ -454,8 +528,6 @@ def main() -> int:
         for r in sorted(rapports, key=lambda r: -r["reussies"]):
             print("    %-32s %d/4" % (r["modele"], r["reussies"]))
         print("=" * 72)
-    # Code 1 dès qu'aucune cible n'est apte : ce test sert de garde-fou,
-    # pas d'information.
     return 0 if aptes else 1
 
 

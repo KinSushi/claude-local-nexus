@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Plan de sortie des modèles hors de Docker.
+Plan de sortie des modeles hors de Docker.
 
-Le problème posé
+Le probleme pose
 ----------------
 Le volume Docker contient plus de poids que le disque n'a de place libre :
-on ne peut donc pas tout recopier d'un côté à l'autre, et une migration
-« tout ou rien » échouerait à mi-parcours.
+on ne peut donc pas tout recopier d'un cote a l'autre, et une migration
+"tout ou rien" echouerait a mi-parcours.
 
-Ce script établit un plan qui tient réellement. Il ne se contente pas de
-trier par taille : il couvre d'abord les rôles indispensables (relève,
-codage, généraliste, vision, embeddings), écarte ce que la machine ne peut
-de toute façon pas exécuter, dédoublonne les alias qui partagent le même
-blob, et s'arrête quand le disque est atteint.
+Ce script etablit un plan qui tient réellement. Il ne se contente pas de
+trier par taille : il couvre d'abord les roles indispensables (relève,
+codage, generaliste, vision, embeddings), ecarte ce que la machine ne peut
+de toute facon pas executer, dedoublonne les alias qui partagent le meme
+blob, et s'arrete quand le disque est atteint.
 
-Il n'efface rien et ne télécharge rien. Il produit une liste et un
-raisonnement, à exécuter ensuite en connaissance de cause.
+Il n'efface rien et ne telecharge rien. Il produit une liste et un
+raisonnement, a executer ensuite en connaissance de cause.
 
 Usage :
     python scripts/nexus_migration_plan.py
@@ -31,22 +31,30 @@ import subprocess
 import sys
 
 # ---------------------------------------------------------------------------
-# Gestion de la dépendance externe ``nexus_capability``.
-# Si le module est absent, on indique clairement le problème et on quitte
-# avec un code d'erreur explicite.  Cela évite une trace de type
+# Verification de la version Python minimale (3.7) requise pour
+# sys.stdout.reconfigure et la syntaxe de type liste[...].
+# ---------------------------------------------------------------------------
+if sys.version_info < (3, 7):
+    print("Erreur : Python 3.7 ou superieur est requis.", file=sys.stderr)
+    sys.exit(2)
+
+# ---------------------------------------------------------------------------
+# Gestion de la dependance externe ``nexus_capability``.
+# Si le module est absent, on indique clairement le probleme et on quitte
+# avec un code d'erreur explicite.  Cela evite une trace de type
 # ``ModuleNotFoundError`` qui ne serait pas compréhensible pour l'utilisateur.
 # ---------------------------------------------------------------------------
 try:
     import nexus_capability as capability  # noqa: E402
 except ImportError as exc:  # pragma: no cover
-    print("Erreur : le module requis 'nexus_capability' est introuvable.")
+    print("Erreur : le module requis 'nexus_capability' est introuvable.", file=sys.stderr)
     sys.exit(2)
 
 # ---------------------------------------------------------------------------
 # Configuration flexible du nom du conteneur Docker contenant Ollama.
-# Le nom était codé en dur (« ollama-server »).  En le rendant paramétrable
-# via une variable d'environnement, on évite l'échec du script lorsqu'un
-# utilisateur a choisi un autre nom dans son ``docker‑compose.yml``.
+# Le nom etait code en dur ("ollama-server").  En le rendant paramettrable
+# via une variable d'environnement, on evite l'echec du script lorsqu'un
+# utilisateur a choisi un autre nom dans son ``docker-compose.yml``.
 # ---------------------------------------------------------------------------
 OLLAMA_CONTAINER = os.getenv("OLLAMA_CONTAINER", "ollama-server")
 
@@ -62,30 +70,30 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Marge laissée au disque : un système qui frôle la saturation devient
-# instable bien avant d'être plein.
+# Marge laissee au disque : un systeme qui frôle la saturation devient
+# instable bien avant d'etre plein.
 DISK_RESERVE_GB = 25.0
 
-# Rôles à couvrir, dans l'ordre où ils comptent. Le premier modèle
-# disponible de chaque rôle est retenu avant tout élargissement : une
+# Roles a couvrir, dans l'ordre où ils comptent. Le premier modele
+# disponible de chaque role est retenu avant tout elargissement : une
 # plateforme qui sait tout coder mais ne sait pas lire une image n'est
-# pas multimodale, quel que soit le nombre de modèles installés.
+# pas multimodale, quel que soit le nombre de modeles installes.
 ROLES = [
-    ("releve",     r"^glm-4\.7-flash|^qwen3-coder:30b",              "relève 64K / orchestrateur"),
-    ("embedding",  r"^qwen3-embedding|^nomic-embed-text",            "embeddings / recherche"),
-    ("code",       r"^qwen3-coder|^qwen2\.5-coder:(32|14)b|^codestral", "codage"),
-    ("general",    r"^gemma4:(31|26|12)b|^qwen2\.5:32b|^qwen3\.6",   "généraliste / raisonnement"),
-    ("vision",     r"^qwen3-vl:8b|^llava:(7|13)b|^llama3\.2-vision:11b", "multimodal"),
-    ("rapide",     r"^llama3\.2:(1|3)b|^phi3:mini",                  "réponses courtes / latence"),
+    ("releve",     r"^(glm-4\.7-flash|qwen3-coder:30b)$",              "relève 64K / orchestrateur"),
+    ("embedding",  r"^(qwen3-embedding|nomic-embed-text)$",            "embeddings / recherche"),
+    ("code",       r"^(qwen3-coder|qwen2\.5-coder:(32|14)b|codestral)$", "codage"),
+    ("general",    r"^(gemma4:(31|26|12)b|qwen2\.5:32b|qwen3\.6)$",   "generaliste / raisonnement"),
+    ("vision",     r"^(qwen3-vl:8b|llava:(7|13)b|llama3\.2-vision:11b)$", "multimodal"),
+    ("rapide",     r"^(llama3\.2:(1|3)b|phi3:mini)$",                  "reponses courtes / latence"),
 ]
 
 
 def _extract_size(text: str) -> str | None:
     """
-    Extrait la chaîne représentant la taille d'un modèle dans la sortie
-    de ``ollama list``.  Le format peut être « 4.7 GB », « 4.7GB » ou
-    toute variante contenant un suffixe d'unité (K, M, G, T) suivi de
-    ``B``.  Retourne ``None`` si aucune correspondance n'est trouvée.
+    Extrait la chaine representant la taille d'un modele dans la sortie
+    de ``ollama list``.  Le format peut etre "4.7 GB", "4.7GB" ou
+    toute variante contenant un suffixe d'unite (K, M, G, T) suivi de
+    "B".  Retourne None si aucune correspondance n'est trouvee.
     """
     match = re.search(r"(\d+(?:[.,]\d+)?\s*[KMGT]?B)", text, re.IGNORECASE)
     return match.group(1).replace(" ", "") if match else None
@@ -111,17 +119,16 @@ def docker_models() -> list[tuple[str, str, float]]:
             capture_output=True, text=True, timeout=60,
             encoding="utf-8", errors="replace",
         )
-    except (subprocess.SubprocessError, OSError):
-        # `OSError` couvre l'absence de l'executable du PATH, qui n'est pas
-        # un `SubprocessError` : sans lui le script mourrait la ou il doit
-        # simplement rendre une liste vide.
+    except (subprocess.SubprocessError, OSError) as exc:
+        # Conserver le diagnostic pour le debogage.
+        print(f"Erreur lors de l'execution de {' '.join(commande)} : {exc}", file=sys.stderr)
         return []
     rows = []
     for line in result.stdout.splitlines()[1:]:
         parts = line.split()
         if len(parts) < 2:
             continue
-        # Ignorer les modèles cloud qui n'ont pas de poids local.
+        # Ignorer les modeles cloud qui n'ont pas de poids local.
         if parts[0].endswith(":cloud"):
             continue
         size_str = _extract_size(line)
@@ -130,7 +137,7 @@ def docker_models() -> list[tuple[str, str, float]]:
         try:
             taille = capability.parse_size(size_str)
         except Exception:  # pragma: no cover
-            # Si le parsing échoue, on ignore simplement ce modèle.
+            # Si le parsing echoue, on ignore simplement ce modele.
             continue
         if taille <= 0:
             continue
@@ -145,32 +152,37 @@ def main() -> int:
     args = parser.parse_args()
 
     # -----------------------------------------------------------------------
-    # Construction du profil matériel avec gestion d'erreur.
-    # En cas d'échec (ex. permissions, disque inaccessible), on informe
-    # l'utilisateur plutôt que de laisser une traceback s'afficher.
+    # Construction du profil materiel avec gestion d'erreur et validation
+    # des cles attendues.
     # -----------------------------------------------------------------------
     try:
         profile = capability.build_profile()
     except Exception as exc:  # pragma: no cover
-        print("Erreur lors de la construction du profil : %s" % exc)
+        print(f"Erreur lors de la construction du profil : {exc}", file=sys.stderr)
+        return 1
+
+    # Validation explicite des champs du profil.
+    required_keys = ["free_disk_gb", "model_store", "inference_memory_gb", "ollama"]
+    for key in required_keys:
+        if key not in profile:
+            print(f"Erreur : le profil ne contient pas la cle '{key}'.", file=sys.stderr)
+            return 1
+    if "mode" not in profile["ollama"]:
+        print("Erreur : le sous-dictionnaire 'ollama' ne contient pas la cle 'mode'.", file=sys.stderr)
         return 1
 
     rows = docker_models()
     if not rows:
-        print("Aucun modele lisible sur le moteur Ollama servant.")
+        print("Aucun modele lisible sur le moteur Ollama servant.", file=sys.stderr)
         return 1
 
-    # Un même blob peut porter deux noms (codestral:latest et codestral:22b
+    # Un meme blob peut porter deux noms (codestral:latest et codestral:22b
     # partagent le meme identifiant). Le compter deux fois surestimerait
     # gravement le volume a migrer.
     by_blob: dict[str, list[tuple[str, float]]] = {}
     for name, blob, size in rows:
         by_blob.setdefault(blob, []).append((name, size))
-    # Une première version de ce calcul subsistait juste au-dessus, écrasée
-    # à la ligne suivante sans jamais servi. Elle produisait en outre
-    # des paires là où la suite attend des triplets : quiconque aurait
-    # supprimé la seconde affectation en croyant dédoublonner aurait cassé
-    # `total_unique` d'une manière difficile à rattacher à sa cause.
+
     unique = []
     for blob, names in by_blob.items():
         canonical = sorted(names, key=lambda n: (len(n[0]), n[0]))[0]
@@ -179,7 +191,7 @@ def main() -> int:
     total_raw = sum(size for _, _, size in rows)
     total_unique = sum(size for _, size, _ in unique)
 
-    # Verdict matériel : inutile de migrer ce qui ne s'exécutera jamais.
+    # Verdict materiel : inutile de migrer ce qui ne s'executera jamais.
     runnable, rejected = [], []
     for name, size, aliases in unique:
         state, reason = capability.verdict(size, profile)
@@ -188,7 +200,7 @@ def main() -> int:
 
     budget = max(profile["free_disk_gb"] - DISK_RESERVE_GB, 0.0)
 
-    # Couverture des rôles d'abord, élargissement ensuite.
+    # Couverture des roles d'abord, elargissement ensuite.
     chosen: list[tuple[str, float, str]] = []
     used = 0.0
     taken: set[str] = set()
@@ -196,8 +208,8 @@ def main() -> int:
     for key, pattern, label in ROLES:
         candidates = [r for r in runnable
                       if re.match(pattern, r[0]) and r[0] not in taken]
-        # À rôle couvert, le plus léger suffit : la place économisée
-        # profite aux rôles suivants.
+        # A role couvre, le plus leger suffit : la place economisee
+        # profite aux roles suivants.
         candidates.sort(key=lambda r: r[1])
         for name, size, aliases, state, reason in candidates:
             if used + size > budget:
@@ -210,14 +222,14 @@ def main() -> int:
     for name, size, aliases, state, reason in sorted(runnable, key=lambda r: r[1]):
         if name in taken or used + size > budget:
             continue
-        chosen.append((name, size, "élargissement"))
+        chosen.append((name, size, "elargissement"))
         taken.add(name)
         used += size
 
     left = [(n, s) for n, s, a, st, r in runnable if n not in taken]
 
     print("=" * 72)
-    print(" Plan de sortie des modèles hors de Docker")
+    print(" Plan de sortie des modeles hors de Docker")
     print("=" * 72)
     print("  Poids listes         : %.0f Go" % total_raw)
     print("  Poids reels (dedoublonnes) : %.0f Go" % total_unique)
@@ -235,7 +247,7 @@ def main() -> int:
 
     if rejected:
         total_rejected = sum(size for _, size, _, _, _ in rejected)
-        print("\n  A NE PAS MIGRER — inexécutables ici, %.0f Go recuperables"
+        print("\n  A NE PAS MIGRER — inexecutable ici, %.0f Go recuperables"
               % total_rejected)
         for name, size, aliases, state, reason in sorted(rejected, key=lambda r: -r[1]):
             print("    %-28s %6.1f Go   %s" % (name, size, reason))
@@ -268,23 +280,23 @@ def main() -> int:
         target = args.write if os.path.isabs(args.write) else os.path.join(ROOT, args.write)
         # `--write ../../ailleurs.txt` ecrivait hors du depot sans un mot.
         # La comparaison se fait par `commonpath` et non par `startswith` :
-        # un répertoire voisin nommé `local-llm-docker-prive` commence par
-        # la racine sans être dedans, et un contrôle par préfixe l'aurait
-        # accepté — c'est-à-dire précisément le cas qu'il prétend couvrir.
+        # un repertoire voisin nommé `local-llm-docker-prive` commence par
+        # la racine sans etre dedans, et un controle par prefixe l'aurait
+        # accepte -- c'est-a-dire precisely le cas qu'il pretend couvrir.
         try:
             dedans = os.path.commonpath(
                 [os.path.realpath(target), os.path.realpath(ROOT)]
             ) == os.path.realpath(ROOT)
         except ValueError:
-            # Lecteurs différents sous Windows : `commonpath` lève plutôt que
-            # de rendre un résultat trompeur. C'est donc un refus.
+            # Lecteurs differents sous Windows : `commonpath` lève plutôt que
+            # de rendre un resultat trompeur. C'est donc un refus.
             dedans = False
         if not dedans:
             print("Refus : %s est hors du depot." % target)
             return 1
         lines = [
             "# Inventaire local a telecharger sur l'hote.",
-            "# Genere par scripts/nexus_migration_plan.py — %d modeles, %.0f Go."
+            "# Genere par scripts/nexus_migration_plan.py - %d modeles, %.0f Go."
             % (len(chosen), used),
             "# Les modeles inexecutables sur cette machine en sont absents.",
             "",

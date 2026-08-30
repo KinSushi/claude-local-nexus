@@ -52,11 +52,33 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
+# ------------------------------------------------------------
+# Vérification de la disponibilité de Docker Compose (V2 ou V1)
+# ------------------------------------------------------------
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Error "Docker n'est pas installe ou pas dans le PATH."
     exit 1
 }
 
+# Déterminer la commande Docker Compose à utiliser
+$dockerComposeCmd = $null
+try {
+    docker compose version > $null 2>&1
+    if ($LASTEXITCODE -eq 0) { $dockerComposeCmd = 'docker compose' }
+} catch { }
+
+if (-not $dockerComposeCmd) {
+    if (Get-Command 'docker-compose' -ErrorAction SilentlyContinue) {
+        $dockerComposeCmd = 'docker-compose'
+    } else {
+        Write-Error "Docker Compose (v2) ou docker-compose (v1) introuvable."
+        exit 1
+    }
+}
+
+# ------------------------------------------------------------
+# Vérification de Python
+# ------------------------------------------------------------
 $python = (Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python = (Get-Command py -ErrorAction SilentlyContinue).Source }
 if (-not $python) {
@@ -71,7 +93,12 @@ Write-Host ""
 Write-Host "Controle de conformite avant demarrage..." -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    & $python (Join-Path $PSScriptRoot "nexus_conformite.py") --avant-demarrage
+    $conformiteScript = Join-Path $PSScriptRoot "nexus_conformite.py"
+    if (-not (Test-Path $conformiteScript)) {
+        Write-Error "Fichier manquant : $conformiteScript"
+        exit 1
+    }
+    & $python $conformiteScript --avant-demarrage
     $conforme = ($LASTEXITCODE -eq 0)
 } finally { Pop-Location }
 
@@ -84,9 +111,6 @@ if (-not $conforme) {
         Write-Host ""
         exit 1
     }
-    # `-Force` ne rend pas la configuration conforme : il rend la decision
-    # explicite. Le rappel reste affiche pour que personne ne decouvre
-    # l'etat degrade trois heures plus tard dans un journal.
     Write-Host ""
     Write-Host "  -Force : demarrage malgre la non-conformite." -ForegroundColor Yellow
     Write-Host ""
@@ -98,23 +122,19 @@ if (-not $conforme) {
 Push-Location $RepoRoot
 try {
     if ($Restart) {
-        # On ne supprime plus la sortie de docker compose et on vérifie le code retour.
-        # Si la commande échoue, on lève une erreur explicite afin d'éviter que le script
-        # continue comme si le service était opérationnel.
         Write-Host "Redemarrage de LiteLLM..." -ForegroundColor Cyan
-        docker compose restart litellm
+        & $dockerComposeCmd restart litellm
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
-            Write-Host "Erreur: docker compose restart litellm a renvoye un code $exitCode" -ForegroundColor Red
+            Write-Host "Erreur: $dockerComposeCmd restart litellm a renvoye un code $exitCode" -ForegroundColor Red
             exit $exitCode
         }
     } else {
-        # Même logique pour le démarrage complet : on conserve la sortie et on teste le code.
         Write-Host "Demarrage des conteneurs..." -ForegroundColor Cyan
-        docker compose up -d
+        & $dockerComposeCmd up -d
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
-            Write-Host "Erreur: docker compose up -d a renvoye un code $exitCode" -ForegroundColor Red
+            Write-Host "Erreur: $dockerComposeCmd up -d a renvoye un code $exitCode" -ForegroundColor Red
             exit $exitCode
         }
     }
@@ -123,36 +143,43 @@ try {
 # ------------------------------------------------------------
 # 3. Attente de la passerelle
 # ------------------------------------------------------------
+$HealthUrl = "http://localhost:4000/health/liveliness"
 Write-Host "Attente de la passerelle..." -NoNewline
 $pret = $false
-for ($i = 0; $i -lt 30; $i++) {
+# Timeout configurable : 40 itérations de 4s = 160s
+for ($i = 0; $i -lt 40; $i++) {
     Start-Sleep -Seconds 4
     try {
-        $r = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
-            -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
+        $r = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop
         if ($r.StatusCode -eq 200) { $pret = $true; break }
     } catch { Write-Host "." -NoNewline }
 }
 Write-Host ""
 
 if (-not $pret) {
-    Write-Host "  LiteLLM ne repond pas apres 120 s." -ForegroundColor Red
-    Write-Host "  Diagnostic : docker compose logs litellm --tail 80" -ForegroundColor Yellow
+    Write-Host "  LiteLLM ne repond pas apres 160 s." -ForegroundColor Red
+    Write-Host "  Diagnostic : $dockerComposeCmd logs litellm --tail 80" -ForegroundColor Yellow
     exit 1
 }
-Write-Host "  Passerelle prete sur http://localhost:4000" -ForegroundColor Green
+Write-Host "  Passerelle prete sur $HealthUrl" -ForegroundColor Green
 
 # ------------------------------------------------------------
 # 4. Conformité runtime — la relève, qu'aucun contrôle statique ne couvre
 # ------------------------------------------------------------
 Push-Location $RepoRoot
 try {
-    & $python (Join-Path $PSScriptRoot "nexus_releve.py") | Out-Null
+    $releveScript = Join-Path $PSScriptRoot "nexus_releve.py"
+    if (-not (Test-Path $releveScript)) {
+        Write-Error "Fichier manquant : $releveScript"
+        exit 1
+    }
+    & $python $releveScript | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  Releve locale operationnelle." -ForegroundColor Green
     } else {
         Write-Host "  RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement." -ForegroundColor Red
         Write-Host "  Diagnostic : python scripts/nexus_releve.py --tous" -ForegroundColor Yellow
+        exit $LASTEXITCODE
     }
 } finally { Pop-Location }
 

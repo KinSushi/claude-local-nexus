@@ -13,7 +13,8 @@ distinguuer :
   (exécutable absent, délai expiré, autre exception).
 
 Le code minimise les changements : il ne touche que la fonction
-`call_tool` et la logique de retour de `main`.
+`call_tool`, la logique de détection d'erreur et la validation des
+arguments de `main()`.
 """
 from __future__ import annotations
 
@@ -33,9 +34,12 @@ SERVER = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception as e:
+except Exception as e:  # pragma: no cover
     # avertir si la reconfiguration échoue
-    print(f"ERROR: failed to reconfigure stdout/stderr ({type(e).__name__}: {e})", file=sys.stderr)
+    print(
+        f"ERROR: failed to reconfigure stdout/stderr ({type(e).__name__}: {e})",
+        file=sys.stderr,
+    )
 
 
 def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
@@ -58,24 +62,30 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
     if not name or not isinstance(arguments, dict):
         return f"ERROR: invalid arguments (SERVER={SERVER})"
 
-    messages = "\n".join([
-        json.dumps({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-06-18",
-                "capabilities": {},
-                "clientInfo": {"name": "probe", "version": "1"},
-            },
-        }),
-        json.dumps({
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/call",
-            "params": {"name": name, "arguments": arguments},
-        }),
-    ]) + "\n"
+    messages = "\n".join(
+        [
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2025-06-18",
+                        "capabilities": {},
+                        "clientInfo": {"name": "probe", "version": "1"},
+                    },
+                }
+            ),
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {"name": name, "arguments": arguments},
+                }
+            ),
+        ]
+    ) + "\n"
 
     try:
         result = subprocess.run(
@@ -97,6 +107,10 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
         # toute autre erreur inattendue
         return f"ERROR: unexpected error {type(e).__name__}: {e} (SERVER={SERVER})"
 
+    # si le processus s'est terminé avec un code d'erreur et aucune sortie JSON
+    if result.returncode != 0 and not result.stdout.strip():
+        return f"ERROR: server exited with code {result.returncode} (SERVER={SERVER})"
+
     # Analyse de la sortie du serveur
     for line in result.stdout.splitlines():
         if not line.strip().startswith("{"):
@@ -105,7 +119,14 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
             message = json.loads(line)
         except JSONDecodeError as e:
             return f"ERROR: malformed json from server ({type(e).__name__}: {e}) (SERVER={SERVER})"
-        # vérifier que le message possède les clés attendues
+
+        # Gestion d'une réponse d'erreur JSON‑RPC
+        if isinstance(message, dict) and "error" in message:
+            err = message["error"]
+            code = err.get("code", "?")
+            msg = err.get("message", "")
+            return f"ERROR: server json-rpc error {code}: {msg} (SERVER={SERVER})"
+
         if not isinstance(message, dict) or "id" not in message:
             continue
         if message.get("id") == 2:
@@ -113,7 +134,15 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
             if not isinstance(payload, dict):
                 return f"ERROR: unexpected payload format (SERVER={SERVER})"
             flag = " [ERREUR]" if payload.get("isError") else ""
-            content = payload.get("content", [{}])[0].get("text", "")
+            content_list = payload.get("content", [])
+            # si la liste est vide ou mal formée, on considère qu'il n'y a rien
+            if not isinstance(content_list, list) or not content_list:
+                content = ""
+            else:
+                first = content_list[0]
+                content = ""
+                if isinstance(first, dict):
+                    content = first.get("text", "")
             if not flag and not content.strip():
                 return "NO CONTENT: nothing could be measured"
             return flag + "\n" + content
@@ -143,7 +172,7 @@ def _probe_success(output: str) -> bool:
         return False
     if output.startswith("ERROR:"):
         return False
-    if " [ERREUR]" in output:
+    if output.startswith(" [ERREUR]"):
         return False
     return True
 
@@ -161,7 +190,11 @@ def main() -> int:
         out = call_tool("nexus_index_build", {"root": root})
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "search":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing query argument (SERVER={SERVER})", file=sys.stderr)
+            return 1
         try:
             k_val = int(sys.argv[3]) if len(sys.argv) > 3 else 5
         except ValueError:
@@ -176,12 +209,20 @@ def main() -> int:
         )
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "summarize":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing path arguments (SERVER={SERVER})", file=sys.stderr)
+            return 1
         out = call_tool("nexus_summarize", {"paths": sys.argv[2:]})
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "context":
         # context <instruction> <modele> <fenetre> <fichier...>
+        if len(sys.argv) < 5:
+            print(f"ERROR: insufficient arguments for context (SERVER={SERVER})", file=sys.stderr)
+            return 1
         try:
             context_tokens = int(sys.argv[4])
         except ValueError:
@@ -196,7 +237,11 @@ def main() -> int:
         out = call_tool("nexus_context", args)
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "vision":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing path argument for vision (SERVER={SERVER})", file=sys.stderr)
+            return 1
         args = {"path": sys.argv[2]}
         if len(sys.argv) > 3:
             args["prompt"] = sys.argv[3]
@@ -205,24 +250,34 @@ def main() -> int:
         out = call_tool("nexus_vision", args)
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "models":
         out = call_tool("nexus_models", {})
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "ask":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing prompt argument for ask (SERVER={SERVER})", file=sys.stderr)
+            return 1
         args = {"prompt": sys.argv[2]}
         if len(sys.argv) > 3:
             args["model"] = sys.argv[3]
         out = call_tool("nexus_ask", args)
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     elif action == "route":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing prompt argument for route (SERVER={SERVER})", file=sys.stderr)
+            return 1
         args = {"prompt": sys.argv[2]}
         if len(sys.argv) > 3:
             args["plane"] = sys.argv[3]
         out = call_tool("nexus_route", args)
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+
     else:
         print(__doc__)
         return 1

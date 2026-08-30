@@ -62,9 +62,10 @@ function Get-MasterKey {
     if (Test-Path $envFile) {
         foreach ($line in Get-Content $envFile) {
             if ($line -match '^\s*LITELLM_MASTER_KEY\s*=\s*(.+)$') {
-                $key = $matches[1].Trim()
+                # Trim whitespace then remove surrounding quotes if present
+                $key = $matches[1].Trim().Trim('"', "'")
                 if ($key) { return $key }
-                else { Write-Warn2 "Clé maître trouvee mais vide dans .env." }
+                else { Write-Warn2 "Cle maitre trouvee mais vide dans .env." }
             }
         }
         Write-Warn2 "Fichier .env present mais aucune ligne LITELLM_MASTER_KEY valide."
@@ -127,7 +128,7 @@ function Test-MotifDeReleve {
 # ------------------------------------------------------------
 $key = Get-MasterKey
 if (-not $key) {
-    Write-Warn2 "Clé maître introuvable ; certaines operations peuvent echouer."
+    Write-Warn2 "Cle maitre introuvable ; certaines operations peuvent echouer."
 }
 $releveDisponible = if ($key) { Test-ReleveDisponible -Key $key } else { $false }
 

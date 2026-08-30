@@ -10,7 +10,7 @@
 # Configuration
 # ------------------------------------------------------------
 # Chemins absolus basés sur le répertoire du script
-$scriptDir      = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$scriptDir      = $PSScriptRoot
 $envFile        = Join-Path $scriptDir '.env'
 $envExampleFile = Join-Path $scriptDir '.env.example'
 $modelListFile  = Join-Path $scriptDir 'model_list.txt'
@@ -18,7 +18,19 @@ $modelListFile  = Join-Path $scriptDir 'model_list.txt'
 # Nom du conteneur Ollama (modifiable dans docker-compose.yml)
 $ollamaContainer = 'ollama-server'
 
+# ------------------------------------------------------------
+# Paramètres de robustesse
+# ------------------------------------------------------------
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# Démarrage du transcript (log)
+$logFile = Join-Path $scriptDir ("restore_{0:yyyyMMdd_HHmmss}.log" -f (Get-Date))
+Start-Transcript -Path $logFile -Append
+
+# ------------------------------------------------------------
 # Détermination de la commande docker compose (v2 ou v1)
+# ------------------------------------------------------------
 $dockerComposeCmd = 'docker compose'
 try {
     & docker compose version *>$null
@@ -31,6 +43,7 @@ try {
 # ------------------------------------------------------------
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Error "Docker n'est pas installé ou pas dans le PATH."
+    Stop-Transcript
     exit 1
 }
 
@@ -44,11 +57,13 @@ if (-not (Test-Path $envFile)) {
     } else {
         Write-Error "Ni .env ni .env.example ne sont presentes. Rien n'a ete detruit."
     }
+    Stop-Transcript
     exit 1
 }
 
 if (-not (Test-Path $modelListFile)) {
     Write-Error "Fichier model_list.txt introuvable. Abort."
+    Stop-Transcript
     exit 1
 }
 
@@ -58,26 +73,33 @@ if (-not (Test-Path $modelListFile)) {
 Write-Host "⚠️  Attention : cette operation va supprimer les volumes Docker (donnees PostgreSQL, modeles Ollama, cache Redis)."
 Write-Host "Tapez 'OUI' pour confirmer, ou toute autre chose pour annuler."
 $confirmation = Read-Host
-if ($confirmation -ne 'OUI') {
+if ($confirmation.Trim().ToUpper() -ne 'OUI') {
     Write-Host "Operation annulee par l'utilisateur."
+    Stop-Transcript
     exit 0
 }
 
 # ------------------------------------------------------------
 # Arrêter et supprimer les conteneurs et volumes
 # ------------------------------------------------------------
-& $dockerComposeCmd down -v
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Echec lors du docker compose down."
+try {
+    & $dockerComposeCmd down -v
+    if ($LASTEXITCODE -ne 0) { throw "docker compose down returned non-zero exit code." }
+} catch {
+    Write-Error "Echec lors du docker compose down. $_"
+    Stop-Transcript
     exit 1
 }
 
 # ------------------------------------------------------------
 # Démarrer la stack
 # ------------------------------------------------------------
-& $dockerComposeCmd up -d
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Echec lors du docker compose up. La pile n'est pas demarree."
+try {
+    & $dockerComposeCmd up -d
+    if ($LASTEXITCODE -ne 0) { throw "docker compose up returned non-zero exit code." }
+} catch {
+    Write-Error "Echec lors du docker compose up. La pile n'est pas demarree. $_"
+    Stop-Transcript
     exit 1
 }
 
@@ -87,14 +109,20 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Attente du demarrage d'Ollama..."
 $maxAttempts = 30
 $attempt = 0
+$ollamaStatus = $null
+
 do {
     $attempt++
     Start-Sleep -Seconds 2
-    $ollamaStatus = docker inspect --format='{{.State.Health.Status}}' $ollamaContainer 2>$null
-} while ($ollamaStatus -ne 'healthy' -and $attempt -lt $maxAttempts)
 
-if ($ollamaStatus -ne 'healthy') {
-    Write-Error "Ollama n'est pas en etat 'healthy' après $($maxAttempts * 2) secondes. Verifiez les logs avec 'docker logs $ollamaContainer'."
+    # Récupérer le statut health si défini, sinon le statut général
+    $inspectResult = docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' $ollamaContainer 2>$null
+    $ollamaStatus = $inspectResult.Trim()
+} while ($ollamaStatus -ne 'healthy' -and $ollamaStatus -ne 'running' -and $attempt -lt $maxAttempts)
+
+if ($ollamaStatus -ne 'healthy' -and $ollamaStatus -ne 'running') {
+    Write-Error "Ollama n'est pas en etat 'healthy' ou 'running' après $($maxAttempts * 2) secondes. Verifiez les logs avec 'docker logs $ollamaContainer'."
+    Stop-Transcript
     exit 1
 }
 
@@ -112,8 +140,7 @@ foreach ($model in $models) {
     if ($model -eq '') { continue }
 
     Write-Host "Telechargement de $model..."
-    docker exec $ollamaContainer ollama pull "$model"
-
+    & docker exec $ollamaContainer ollama pull "$model"
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✔ Telechargement reussi."
         $successCount++
@@ -134,6 +161,7 @@ Write-Host "   Echecs  : $failCount"
 Write-Host "============================================================"
 
 if ($failCount -gt 0) {
+    Stop-Transcript
     exit 1
 }
 
@@ -144,3 +172,8 @@ Write-Host "Etat final de la stack :"
 & $dockerComposeCmd ps
 
 Write-Host "✅ Restauration terminee."
+
+# ------------------------------------------------------------
+# Nettoyage
+# ------------------------------------------------------------
+Stop-Transcript

@@ -1,14 +1,23 @@
 # ============================================================
 # stop.ps1 - Arret de la stack sans suppression des volumes
 # ============================================================
-# Arrete et supprime les conteneurs, mais conserve les volumes
-# (donnees PostgreSQL, modeles Ollama, cache Redis).
+# Arrête et supprime les conteneurs, mais conserve les volumes
+# (données PostgreSQL, modèles Ollama, cache Redis).
 # Utilisation : executer depuis le dossier contenant docker-compose.yml
 # ============================================================
 
-# Verifier que Docker est disponible
+# URL de healthcheck configurable (modifier ici si besoin)
+$HealthCheckUrl = "http://localhost:4000/health/liveliness"
+
+# Vérifier que Docker est disponible
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Error "Docker n'est pas installe ou pas dans le PATH."
+    exit 1
+}
+
+# Vérifier la présence du fichier docker-compose.yml
+if (-not (Test-Path -Path "./docker-compose.yml")) {
+    Write-Error "Fichier docker-compose.yml introuvable dans le repertoire courant."
     exit 1
 }
 
@@ -26,7 +35,7 @@ $serviceStillUp = $false
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Seconds 1
     try {
-        $null = Invoke-WebRequest -Uri "http://localhost:4000/health/liveliness" `
+        $null = Invoke-WebRequest -Uri $HealthCheckUrl `
                                     -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         # Si la requete reussit, le service répond encore
         $serviceStillUp = $true

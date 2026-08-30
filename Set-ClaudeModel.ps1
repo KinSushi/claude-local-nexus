@@ -56,7 +56,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$BaseUrl = "http://localhost:4000"
+# Utilisation du protocole HTTPS pour éviter la transmission en clair
+$BaseUrl = "https://localhost:4000"
 
 function Write-Section { param($m) Write-Host "`n$m" -ForegroundColor Cyan }
 function Write-Ok      { param($m) Write-Host "  $m" -ForegroundColor Green }
@@ -67,6 +68,16 @@ function Get-MasterKey {
     if ($env:LITELLM_MASTER_KEY) { return $env:LITELLM_MASTER_KEY }
     $envFile = Join-Path $PSScriptRoot ".env"
     if (Test-Path $envFile) {
+        # Verifier les permissions du fichier .env (alerte si acces large)
+        try {
+            $acl = Get-Acl $envFile
+            if ($acl.Access.Count -gt 1) {
+                Write-Warn2 "Le fichier .env a des permissions larges ; verifier la securite."
+            }
+        } catch {
+            Write-Warn2 "Impossible de verifier les permissions du .env : $($_.Exception.Message)"
+        }
+
         try {
             foreach ($line in Get-Content $envFile -ErrorAction Stop) {
                 if ($line -match '^\s*LITELLM_MASTER_KEY=(.*)$') { return $matches[1].Trim() }
@@ -90,8 +101,14 @@ function Get-ExposedModels {
         }
         return @($response.data.id)
     } catch {
-        # On conserve l'information de l'erreur sans masquer le type (auth, timeout, etc.)
-        Write-Warn2 "Erreur lors de la recuperation des modeles : $($_.Exception.Message)"
+        # Log plus detaille de l'erreur HTTP si disponible
+        if ($_.Exception.Response) {
+            $status = $_.Exception.Response.StatusCode.Value__
+            $msg = $_.Exception.Response.StatusDescription
+            Write-Warn2 "Erreur HTTP $status ($msg) lors de la recuperation des modeles : $($_.Exception.Message)"
+        } else {
+            Write-Warn2 "Erreur lors de la recuperation des modeles : $($_.Exception.Message)"
+        }
         return @()
     }
 }
@@ -235,9 +252,9 @@ switch ($Mode) {
             Write-Ok "Modele retenu : $selected (local, cout 0, aucune donnee ne sort)."
             Write-Info "Contexte local limite : Claude Code est gourmand, les"
             Write-Info "fenetres locales sont a 8K/32K. Les sessions longues"
-            Write-Info "risquent de saturer — c'est un mode de secours."
+            Write-Info "risquent de saturer - c'est un mode de secours."
         } else {
-            Write-Warn2 "Modele retenu : $selected — FACTURE AU TOKEN sur les credits API."
+            Write-Warn2 "Modele retenu : $selected - FACTURE AU TOKEN sur les credits API."
         }
         Write-Info "ANTHROPIC_BASE_URL   = $env:ANTHROPIC_BASE_URL"
         Write-Info "ANTHROPIC_AUTH_TOKEN = defini (masque)"

@@ -11,8 +11,19 @@
 #     .\scripts\Update-NexusModels.ps1 -Validate -Restart
 # ============================================================
 
-$__config = Join-Path (Split-Path -Parent $PSScriptRoot) "litellm_config.yaml"
-if ((Test-Path $__config) -and (Select-String -Path $__config -Pattern "AUTOGEN:" -Quiet)) {
+# ------------------------------------------------------------
+# Configuration des chemins (utilisation de $PSScriptRoot)
+# ------------------------------------------------------------
+$scriptDir = $PSScriptRoot
+$configPath = Join-Path $scriptDir "..\litellm_config.yaml"
+$cloudModelsPath = Join-Path $scriptDir "cloud_models.txt"
+
+# ------------------------------------------------------------
+# Verifications preliminaires
+# ------------------------------------------------------------
+Set-StrictMode -Version Latest
+
+if ((Test-Path $configPath) -and (Select-String -Path $configPath -Pattern "AUTOGEN:" -Quiet -CaseSensitive:$false)) {
     Write-Host ""
     Write-Host "  Script remplace et desactive." -ForegroundColor Yellow
     Write-Host "  litellm_config.yaml utilise des zones AUTOGEN que ce script detruirait." -ForegroundColor Yellow
@@ -22,36 +33,29 @@ if ((Test-Path $__config) -and (Select-String -Path $__config -Pattern "AUTOGEN:
     exit 1
 }
 
-# ============================================================
-# update_cloud_models.ps1
-# Met à jour les modèles cloud listés dans cloud_models.txt
-# en vérifiant leur existence sur l'API officielle d'Ollama.
-# Régénère la section OLLAMA CLOUD de litellm_config.yaml
-#
-# Utilisation :
-#   .\update_cloud_models.ps1                # Mise à jour réelle
-#   .\update_cloud_models.ps1 -WhatIf        # Simulation sans écrire
-# ============================================================
-
 param(
     [switch]$WhatIf
 )
 
-# --- Vérification de curl.exe ---
-if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
-    Write-Error "curl.exe n'est pas trouvé. Installez curl ou utilisez Invoke-RestMethod."
-    exit 1
+# ------------------------------------------------------------
+# Verification de la presence de la cle API
+# ------------------------------------------------------------
+if (-not $env:OLLAMA_CLOUD_API_KEY) {
+    Write-Warning "Variable d'environnement OLLAMA_CLOUD_API_KEY non definie."
 }
 
-# --- Vérification du fichier cloud_models.txt ---
-if (-not (Test-Path cloud_models.txt)) {
+# ------------------------------------------------------------
+# Verification du fichier cloud_models.txt
+# ------------------------------------------------------------
+if (-not (Test-Path $cloudModelsPath)) {
     Write-Error "Fichier cloud_models.txt introuvable."
     exit 1
 }
 
-# --- Lecture des modèles cloud souhaités ---
-# On ignore les commentaires (#) et les lignes vides, on accepte tout le reste.
-$desiredCloudModels = Get-Content cloud_models.txt |
+# ------------------------------------------------------------
+# Lecture des modeles cloud souhaites
+# ------------------------------------------------------------
+$desiredCloudModels = Get-Content $cloudModelsPath |
     Where-Object {
         $_ -notmatch '^\s*#' -and      # ligne ne commençant pas par # (commentaire)
         $_ -notmatch '^\s*$'           # ligne non vide
@@ -60,68 +64,72 @@ $desiredCloudModels = Get-Content cloud_models.txt |
     Where-Object { $_ -ne "" }
 
 if (-not $desiredCloudModels) {
-    Write-Warning "Aucun modèle cloud défini dans cloud_models.txt."
+    Write-Warning "Aucun modele cloud defini dans cloud_models.txt."
     exit 0
 }
 
-# --- Récupération de la liste officielle des modèles via API ---
-Write-Host "Récupération de la liste officielle des modèles..." -ForegroundColor Cyan
+# ------------------------------------------------------------
+# Recuperation de la liste officielle des modeles via API
+# ------------------------------------------------------------
+Write-Host "Recuperation de la liste officielle des modeles..." -ForegroundColor Cyan
 $apiUrl = "https://ollama.com/api/tags"
-$response = & curl.exe -s $apiUrl
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Échec de la récupération des modèles depuis $apiUrl"
-    exit 1
-}
 
 try {
-    $data = $response | ConvertFrom-Json
+    $data = Invoke-RestMethod -Uri $apiUrl -Method Get -MaximumRetryCount 2 -TimeoutSec 10 -ErrorAction Stop
 } catch {
-    Write-Error "Impossible de parser la réponse JSON."
+    Write-Error "Echec de la recuperation des modeles depuis $apiUrl"
     exit 1
 }
 
-# --- Vérification de l'existence de chaque modèle (sans suffixe cloud) ---
+# ------------------------------------------------------------
+# Verification de l'existence de chaque modele (sans suffixe cloud)
+# ------------------------------------------------------------
 $availableModelNames = $data.models | Select-Object -ExpandProperty name
 $validCloudModels = @()
 
 foreach ($model in $desiredCloudModels) {
-    # Retirer le suffixe :cloud si présent
     $baseModel = $model -replace ':cloud$', ''
     if ($availableModelNames -contains $baseModel) {
         Write-Host "  ✔ $baseModel existe" -ForegroundColor Green
         $validCloudModels += $baseModel
     } else {
-        Write-Warning "  ❌ $baseModel n'existe pas dans l'API, ignoré."
+        Write-Warning "  ❌ $baseModel n'existe pas dans l'API, ignore."
     }
 }
 
 if (-not $validCloudModels) {
-    Write-Warning "Aucun modèle cloud valide trouvé."
+    Write-Warning "Aucun modele cloud valide trouve."
     exit 0
 }
 
-Write-Host "`nModèles cloud valides : $($validCloudModels.Count)"
+Write-Host "`nModeles cloud valides : $($validCloudModels.Count)"
 
-# --- Mise à jour de cloud_models.txt (avec suffixe :cloud pour clarté) ---
+# ------------------------------------------------------------
+# Mise a jour de cloud_models.txt (avec suffixe :cloud)
+# ------------------------------------------------------------
 $cloudListContent = $validCloudModels | ForEach-Object { "$_:cloud" }
+
 if ($WhatIf) {
-    Write-Host "`n[Simulation] cloud_models.txt serait mis à jour avec :" -ForegroundColor Yellow
+    Write-Host "`n[Simulation] cloud_models.txt serait mis a jour avec :" -ForegroundColor Yellow
     Write-Host ($cloudListContent -join "`n")
 } else {
-    $cloudListContent | Set-Content -Path cloud_models.txt -Encoding UTF8
-    Write-Host "`ncloud_models.txt mis à jour." -ForegroundColor Cyan
+    # sauvegarde avant ecriture
+    Copy-Item -Path $cloudModelsPath -Destination "$cloudModelsPath.bak" -Force -ErrorAction SilentlyContinue
+    $cloudListContent | Set-Content -Path $cloudModelsPath -Encoding utf8NoBOM
+    Write-Host "`ncloud_models.txt mis a jour." -ForegroundColor Cyan
 }
 
-# --- Génération de la section YAML ---
+# ------------------------------------------------------------
+# Generation du bloc YAML
+# ------------------------------------------------------------
 $yamlBlock = @"
   # ==========================================================
-  # OLLAMA CLOUD (auto-généré par update_cloud_models.ps1)
+  # OLLAMA CLOUD (auto-genere par update_cloud_models.ps1)
   # ==========================================================
 "@
 
 foreach ($baseModel in $validCloudModels) {
     $cloudName = "$baseModel`:cloud"
-    # Nom LiteLLM interne : on remplace les caractères problématiques par des tirets
     $modelName = ($baseModel -replace '[:.]', '-') + "-cloud"
     $yamlBlock += @"
 
@@ -138,10 +146,11 @@ foreach ($baseModel in $validCloudModels) {
 "@
 }
 
-# --- Mise à jour de litellm_config.yaml ---
-$configPath = "litellm_config.yaml"
+# ------------------------------------------------------------
+# Mise a jour de litellm_config.yaml
+# ------------------------------------------------------------
 if ($WhatIf) {
-    Write-Host "`n[Simulation] litellm_config.yaml (section OLLAMA CLOUD) serait remplacée par :" -ForegroundColor Yellow
+    Write-Host "`n[Simulation] litellm_config.yaml (section OLLAMA CLOUD) serait remplace par :" -ForegroundColor Yellow
     Write-Host $yamlBlock
     exit 0
 }
@@ -151,21 +160,39 @@ if (-not (Test-Path $configPath)) {
     exit 1
 }
 
+# sauvegarde avant modification
+Copy-Item -Path $configPath -Destination "$configPath.bak" -Force -ErrorAction SilentlyContinue
+
 $lines = Get-Content $configPath
-$startIndex = ($lines | Select-String -Pattern "OLLAMA CLOUD" | Select-Object -First 1).LineNumber
-if (-not $startIndex) {
-    Write-Error "Section OLLAMA CLOUD non trouvée dans $configPath. Ajoutez un commentaire '# OLLAMA CLOUD' avant la liste des modèles cloud."
+
+$startMatch = $lines | Select-String -Pattern "OLLAMA CLOUD" -SimpleMatch -CaseSensitive:$false | Select-Object -First 1
+$endMatch   = $lines | Select-String -Pattern "ROUTEURS ADAPTATIFS" -SimpleMatch -CaseSensitive:$false | Select-Object -First 1
+
+if ($null -eq $startMatch) {
+    Write-Error "Section OLLAMA CLOUD non trouvee dans $configPath. Ajoutez un commentaire '# OLLAMA CLOUD' avant la liste des modeles cloud."
     exit 1
 }
-$startIndex--
+$startIndex = $startMatch.LineNumber - 1   # convertir en indice zero-base
 
-$endIndex = ($lines | Select-String -Pattern "ROUTEURS ADAPTATIFS" | Select-Object -First 1).LineNumber - 2
-if (-not $endIndex) {
-    $endIndex = $lines.Count
+if ($null -eq $endMatch) {
+    $endIndex = $lines.Count - 1
+} else {
+    $endIndex = $endMatch.LineNumber - 3   # on veut la ligne avant le commentaire suivant
+    if ($endIndex -lt $startIndex) {
+        $endIndex = $startIndex
+    }
 }
 
-$newLines = $lines[0..($startIndex-1)] + $yamlBlock + $lines[$endIndex..($lines.Count-1)]
+# reconstruction du fichier
+$newLines = @()
+if ($startIndex -gt 0) {
+    $newLines += $lines[0..($startIndex-1)]
+}
+$newLines += $yamlBlock -split "`n"
+if ($endIndex -lt $lines.Count - 1) {
+    $newLines += $lines[($endIndex+1)..($lines.Count-1)]
+}
 $newContent = $newLines -join "`n"
-$newContent | Set-Content -Path $configPath -Encoding UTF8
+$newContent | Set-Content -Path $configPath -Encoding utf8NoBOM
 
-Write-Host "`n✅ Mise à jour terminée." -ForegroundColor Green
+Write-Host "`n✅ Mise a jour terminee." -ForegroundColor Green

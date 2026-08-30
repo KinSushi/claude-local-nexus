@@ -12,7 +12,8 @@
 # ============================================================
 
 param(
-    [switch]$IncludeVolumes
+    [switch]$IncludeVolumes,
+    [string]$BackupRoot = "C:\backups"   # chemin configurable, valeur par défaut
 )
 
 # ------------------------------------------------------------
@@ -27,40 +28,59 @@ function Write-Warn($msg) {
 function Write-ErrorMsg($msg) {
     Write-Host $msg -ForegroundColor Red
 }
+function Cleanup-And-Exit([int]$code, [string]$msg) {
+    if (Test-Path $backupDir) {
+        try {
+            Remove-Item -Recurse -Force $backupDir -ErrorAction Stop
+        } catch {
+            # Si le nettoyage échoue, on ne bloque pas l'arrêt du script
+        }
+    }
+    Write-ErrorMsg $msg
+    exit $code
+}
 
 # ------------------------------------------------------------
 # Vérifications préliminaires
 # ------------------------------------------------------------
 # Docker doit être installé ET le daemon doit être actif
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-ErrorMsg "Docker n'est pas installé ou pas dans le PATH."
-    exit 1
+    Cleanup-And-Exit 1 "Docker n'est pas installe ou pas dans le PATH."
 }
-if (-not (docker info -ErrorAction SilentlyContinue)) {
-    Write-ErrorMsg "Le daemon Docker ne semble pas être disponible."
-    exit 1
+try {
+    docker info | Out-Null
+} catch {
+    Cleanup-And-Exit 1 "Le daemon Docker ne semble pas etre disponible."
 }
 
-# Espace disque libre (exigence minimale 200 Go)
+# Espace disque libre (exigence minimale 200 Go) -> abort si insuffisant
 $drive = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -eq 'C:\' }
 if ($drive.Free -lt 200GB) {
-    Write-Warn "Espace disque libre insuffisant (moins de 200 Go). La sauvegarde peut echouer."
+    Cleanup-And-Exit 1 "Espace disque libre insuffisant (moins de 200 Go). La sauvegarde ne peut pas continuer."
 }
 
 # ------------------------------------------------------------
 # Chemins de travail
 # ------------------------------------------------------------
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$backupRoot = "C:\backups"
+
+# Vérifier que le répertoire racine de sauvegarde existe ou le créer
+if (-not (Test-Path $BackupRoot)) {
+    try {
+        New-Item -ItemType Directory -Path $BackupRoot -Force -ErrorAction Stop | Out-Null
+    } catch {
+        Cleanup-And-Exit 1 "Impossible de creer le repertoire racine de sauvegarde $BackupRoot."
+    }
+}
+
 $timestamp   = Get-Date -Format "yyyyMMdd-HHmmss"
-$backupDir   = Join-Path $backupRoot "litellm-backup-$timestamp"
+$backupDir   = Join-Path $BackupRoot "litellm-backup-$timestamp"
 
 # Création du répertoire de sauvegarde (arrêt en cas d'échec)
 try {
     New-Item -ItemType Directory -Path $backupDir -Force -ErrorAction Stop | Out-Null
 } catch {
-    Write-ErrorMsg "Impossible de creer le repertoire de sauvegarde $backupDir."
-    exit 1
+    Cleanup-And-Exit 1 "Impossible de creer le repertoire de sauvegarde $backupDir."
 }
 
 Write-Info "Creation de la sauvegarde dans $backupDir..."
@@ -94,8 +114,7 @@ foreach ($file in $configFiles) {
     }
 }
 if ($missingFile) {
-    Write-ErrorMsg "Sauvegarde incomplete : un ou plusieurs fichiers de configuration sont manquants ou non copies."
-    exit 1
+    Cleanup-And-Exit 1 "Sauvegarde incomplete : un ou plusieurs fichiers de configuration sont manquants ou non copies."
 }
 
 # ------------------------------------------------------------
@@ -109,8 +128,7 @@ if ($IncludeVolumes) {
     try {
         New-Item -ItemType Directory -Path $volumeDir -Force -ErrorAction Stop | Out-Null
     } catch {
-        Write-ErrorMsg "Impossible de creer le repertoire $volumeDir."
-        exit 1
+        Cleanup-And-Exit 1 "Impossible de creer le repertoire $volumeDir."
     }
 
     $volumes = @(
@@ -119,28 +137,28 @@ if ($IncludeVolumes) {
     )
 
     foreach ($vol in $volumes) {
-        # Vérifier que le volume existe
-        if (-not (docker volume inspect $vol.Name -ErrorAction SilentlyContinue)) {
-            Write-Warn "  ⚠ Volume $($vol.Name) introuvable."
-            $volumeEchoue = $true
-            continue
-        }
-
+        # Tenter l'archivage directement ; docker renverra une erreur si le volume n'existe pas
         Write-Info "  Archivage du volume $($vol.Name)..."
         docker run --rm -v "$($vol.Name):/volume" -v "${volumeDir}:/backup" alpine `
             tar czf "/backup/$($vol.File)" -C /volume . 2>$null
+        $exitCode = $LASTEXITCODE
 
-        if ($LASTEXITCODE -eq 0) {
+        if ($exitCode -eq 0) {
             $archivePath = Join-Path $volumeDir $vol.File
-            # Vérifier que l'archive n'est pas vide
-            if ((Get-Item $archivePath).Length -gt 0) {
-                Write-Info "    ✔ $($vol.File)"
-            } else {
-                Write-Warn "    ⚠ Archive vide pour $($vol.Name)"
+            try {
+                $size = (Get-Item $archivePath -ErrorAction Stop).Length
+                if ($size -gt 0) {
+                    Write-Info "    ✔ $($vol.File)"
+                } else {
+                    Write-Warn "    ⚠ Archive vide pour $($vol.Name)"
+                    $volumeEchoue = $true
+                }
+            } catch {
+                Write-Warn "    ⚠ Impossible de verifier l'archive $($vol.File)"
                 $volumeEchoue = $true
             }
         } else {
-            Write-Warn "    ❌ Echec de sauvegarde du volume $($vol.Name)"
+            Write-Warn "    ❌ Echec de sauvegarde du volume $($vol.Name) (code sortie $exitCode)"
             $volumeEchoue = $true
         }
     }
@@ -154,8 +172,7 @@ if ($IncludeVolumes) {
 # Rapport final
 # ------------------------------------------------------------
 if ($IncludeVolumes -and $volumeEchoue) {
-    Write-ErrorMsg "`n❌ Sauvegarde INCOMPLETE dans $backupDir : au moins un volume n'a pas ete archive."
-    exit 1
+    Cleanup-And-Exit 1 "`n❌ Sauvegarde INCOMPLETE dans $backupDir : au moins un volume n'a pas ete archive."
 }
 
 Write-Info "`n✅ Sauvegarde terminee dans $backupDir"

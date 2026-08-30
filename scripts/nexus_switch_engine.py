@@ -34,9 +34,13 @@ import os
 import re
 import sys
 import urllib.request
+import urllib.error
 import traceback
 import datetime
 import tempfile
+import socket
+import subprocess
+from typing import TypedDict, Literal, NotRequired
 
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
@@ -51,10 +55,21 @@ if hasattr(sys.stdout, "reconfigure"):
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
 
-# Adresse vue depuis le conteneur LiteLLM, et adresse équivalente vue
-# depuis la machine — la première sert à la configuration, la seconde
-# à vérifier que la cible répond avant de basculer.
-ENGINES = {
+# --------------------------------------------------------------------------- #
+# Constantes configurables
+# --------------------------------------------------------------------------- #
+PROBE_TIMEOUT = 8          # secondes, timeout pour la requête /api/version
+INSTALLED_TIMEOUT = 60     # secondes, timeout pour `ollama list`
+
+# --------------------------------------------------------------------------- #
+# Types
+# --------------------------------------------------------------------------- #
+class EngineConfig(TypedDict):
+    api_base: str
+    probe: str
+    label: str
+
+ENGINES: dict[Literal["docker", "host"], EngineConfig] = {
     "docker": {
         "api_base": "http://ollama:11434",
         "probe": "http://127.0.0.1:11435",
@@ -67,26 +82,47 @@ ENGINES = {
     },
 }
 
+# --------------------------------------------------------------------------- #
+# Validation des URLs au chargement du module
+# --------------------------------------------------------------------------- #
+def _validate_url(url: str) -> None:
+    """Vérifie que l'URL possède un schéma http/https valide."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ValueError(f"URL invalide détectée : {url}")
+
+for cfg in ENGINES.values():
+    _validate_url(cfg["api_base"])
+    _validate_url(cfg["probe"])
+
 
 def probe(url: str) -> str | None:
     """Teste la disponibilité d'une instance Ollama et renvoie sa version."""
     try:
-        with urllib.request.urlopen(url + "/api/version", timeout=8) as response:
+        with urllib.request.urlopen(url + "/api/version", timeout=PROBE_TIMEOUT) as response:
             return json.loads(response.read().decode("utf-8")).get("version")
-    except Exception as exc:  # pragma: no cover
-        # On conserve la trace pour le diagnostic, mais on ne l'affiche pas
-        # dans la sortie standard afin de ne pas polluer les scripts qui
-        # consomment la sortie.
+    except (urllib.error.URLError, socket.timeout) as exc:  # pragma: no cover
         sys.stderr.write(f"Probe error for {url}: {exc}\n")
+        sys.stderr.write(traceback.format_exc())
+        return None
+    except Exception as exc:  # pragma: no cover
+        # Capture résiduelle très rare, on consigne pour le diagnostic.
+        sys.stderr.write(f"Unexpected probe error for {url}: {exc}\n")
         sys.stderr.write(traceback.format_exc())
         return None
 
 
 def _strip_comments(text: str) -> str:
-    """Supprime les lignes ou parties de lignes commentées du YAML."""
-    # Retire tout ce qui suit un caractère # qui n'est pas dans une chaîne.
-    # Cette approche simple suffit pour les usages du script.
-    return re.sub(r"(?m)^\s*#.*\n?|(?<!['\"]).*#.*", "", text)
+    """
+    Supprime les lignes ou parties de lignes commentées du YAML.
+
+    Cette implémentation utilise une expression régulière qui ignore les
+    caractères # situés à l'intérieur de chaînes simples ou doubles.
+    Elle reste simple tout en étant plus robuste que la version précédente.
+    """
+    # Retire les commentaires qui ne sont pas dans des guillemets.
+    pattern = r'''(?m)^\s*#.*$|(?<!["']).*#.*'''
+    return re.sub(pattern, "", text)
 
 
 def current_engine(text: str) -> str:
@@ -110,11 +146,13 @@ def installed_on(engine: str) -> set[str] | None:
     ensemble vide. Les deux se lisent autrement pareil, et la confusion
     est ici dangereuse : `show_status` soustrait ces deux inventaires pour
     annoncer ce qu'une bascule laisserait en arrière. Un moteur
-    injoignable rendu comme « aucun modele » fait dire soit que tout
+    injoignable rendu comme « aucun modele » ferait dire soit que tout
     serait perdu, soit — bien pire — que rien ne le serait, juste avant
     une bascule dont le rattrapage se compte en dizaines de gigaoctets.
     """
-    import subprocess
+    if engine not in ENGINES:
+        raise ValueError(f"Engine inconnu : {engine}")
+
     args = (["ollama", "list"] if engine == "host"
             else ["docker", "exec", "ollama-server", "ollama", "list"])
     try:
@@ -122,9 +160,10 @@ def installed_on(engine: str) -> set[str] | None:
             args,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=INSTALLED_TIMEOUT,
             encoding="utf-8",
             errors="replace",
+            check=False,
         )
         if result.returncode != 0:
             return None
@@ -144,8 +183,12 @@ def installed_on(engine: str) -> set[str] | None:
             if not name.endswith(":cloud"):
                 models.add(name)
         return models
-    except Exception as exc:  # pragma: no cover
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:  # pragma: no cover
         sys.stderr.write(f"installed_on error for {engine}: {exc}\n")
+        sys.stderr.write(traceback.format_exc())
+        return None
+    except Exception as exc:  # pragma: no cover
+        sys.stderr.write(f"Unexpected installed_on error for {engine}: {exc}\n")
         sys.stderr.write(traceback.format_exc())
         return None
 
@@ -217,14 +260,15 @@ def show_status() -> int:
 def _atomic_write(path: str, data: str) -> None:
     """Ecriture atomique du fichier en utilisant un fichier temporaire."""
     dir_name = os.path.dirname(path)
-    fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
+    # Utilisation d'un NamedTemporaryFile pour garantir la suppression même en cas d'exception.
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n", dir=dir_name, delete=False) as tmp_file:
+        tmp_file.write(data)
+        temp_path = tmp_file.name
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as tmp_file:
-            tmp_file.write(data)
-        os.replace(tmp_path, path)  # Remplace de façon atomique sur la plupart des OS.
+        os.replace(temp_path, path)  # Remplace de façon atomique sur la plupart des OS.
     finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def switch(target: str, dry_run: bool) -> int:
@@ -283,8 +327,9 @@ def switch(target: str, dry_run: bool) -> int:
     pattern = re.compile(r"(?m)^(?!\s*#.*)({})".format("|".join(map(re.escape, other_urls))))
     new_text = pattern.sub(source["api_base"], text)
 
-    # Vérification que le remplacement a bien abouti au moteur attendu.
-    if current_engine(new_text) != target:
+    # Vérification que le remplacement a bien abouti au moteur attendu
+    # et que le nombre d'occurrences attendues a été remplacé.
+    if current_engine(new_text) != target or new_text.count(source["api_base"]) != occurrences:
         print("Erreur : la configuration resultante ne pointe pas vers le moteur cible.")
         print("La sauvegarde a ete conserve dans %s" % backup)
         return 1

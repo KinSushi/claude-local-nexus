@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Mesure ce que la délégation fait réellement économiser.
+Mesure ce que la delegation fait réellement economiser.
 
 Ce que ce rapport mesure, et ce qu'il ne mesure pas
 ---------------------------------------------------
 Il compte le travail qui a transité par la passerelle : chaque requête, son
-plan d'exécution, ses tokens, son coût réel. Il en déduit ce que le même
-volume aurait coûté sur Claude, et donc l'économie obtenue.
+plan d'exécution, ses tokens, son coût réel. Il en deduit ce que le même
+volume aurait coute sur Claude, et donc l'économie obtenue.
 
 Il ne voit **pas** le trafic de l'abonnement claude.ai : celui-ci ne passe
 pas par la passerelle, par construction. Le chiffre produit est donc
-« volume détourné de l'abonnement », et non « pourcentage de l'abonnement
-restant ». Prétendre le contraire serait mesurer ce qu'on ne voit pas.
+« volume détourne de l'abonnement », pas « pourcentage d'abonnement
+restant ». Pretendre le contraire serait mesurer ce qu'on ne voit pas.
 
-Le coût contrefactuel s'appuie sur les tarifs déclarés dans
+Le cout contrefactuel s'appuie sur les tarifs declares dans
 litellm_config.yaml pour les modèles Anthropic — la même source que celle
 qu'utilise le routeur, pour que les deux chiffres restent comparables.
 
@@ -33,7 +33,7 @@ import sys
 import urllib.error
 import urllib.request
 
-# La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
+# La sortie est souvent redirigee : journaux, STATE.md, sousprocessus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
 # et les accents se degradent des que la sortie est capturee -- le
 # resultat finissait commite dans rituels/STATE.md, donc visible sur
@@ -54,8 +54,22 @@ CONFIG = os.path.join(ROOT, "litellm_config.yaml")
 BASE_URL = os.environ.get("NEXUS_LITELLM_URL", "http://127.0.0.1:4000")
 
 # Modèle de référence du contrefactuel : celui qu'on aurait
-# vraisemblablement employé sans délégation.
+# vraisemblablement employé sans delegation.
 REFERENCE = "claude-sonnet-5"
+
+
+def _clean_env_value(value: str) -> str:
+    """Supprime les guillemets, les commentaires et le prefixe export."""
+    # Retire le prefixe export si present
+    value = re.sub(r"^\s*export\s+", "", value)
+    # Supprime tout ce qui suit un # (commentaire)
+    value = value.split("#", 1)[0].strip()
+    # Enleve les guillemets simples ou doubles autour de la valeur
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
+        value = value[1:-1]
+    return value.strip()
 
 
 def master_key() -> str:
@@ -67,12 +81,16 @@ def master_key() -> str:
     """
     if os.environ.get("LITELLM_MASTER_KEY"):
         return os.environ["LITELLM_MASTER_KEY"]
-    with io.open(os.path.join(ROOT, ".env"), encoding="utf-8",
-                 errors="replace") as fh:
+    env_path = os.path.join(ROOT, ".env")
+    if not os.path.isfile(env_path):
+        raise RuntimeError("LITELLM_MASTER_KEY introuvable")
+    with io.open(env_path, encoding="utf-8", errors="replace") as fh:
         for line in fh:
             match = re.match(r"^\s*LITELLM_MASTER_KEY\s*=\s*(.*)$", line)
-            if match and match.group(1).strip():
-                return match.group(1).strip()
+            if match:
+                raw = match.group(1).strip()
+                if raw:
+                    return _clean_env_value(raw)
     raise RuntimeError("LITELLM_MASTER_KEY introuvable")
 
 
@@ -97,8 +115,8 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
     Domaine et tarif de chaque alias, lus dans la configuration.
 
     Retourne ``None`` lorsqu'une erreur de lecture ou de format empêche
-    l'extraction fiable des données. Les erreurs de schéma sont signalées
-    de façon précise afin d'éviter de masquer un bug réel.
+    l'extraction fiable des données. Les erreurs de schema sont signalees
+    de façon precise afin d'éviter de masquer un bug réel.
     """
     try:
         with io.open(CONFIG, encoding="utf-8") as fh:
@@ -120,7 +138,7 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
     prices: dict[str, tuple[float, float]] = {}
 
     for model in config.get("model_list") or []:
-        # Protection contre les entrées malformées
+        # Protection contre les entrees malformées
         alias = model.get("model_name")
         if not isinstance(alias, str):
             continue
@@ -134,6 +152,9 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
         elif "ollama.com" in str(params.get("api_base", "")):
             domains[alias] = "cloud"
         else:
+            # Classification par defaut : on signale le fallback pour eviter
+            # les faux positifs d'economie.
+            print("AVERTISSEMENT: le modele %s n'est pas reconnu, classifie comme local" % alias)
             domains[alias] = "local"
 
         # Extraction des tarifs ; on ignore les modèles dont le tarif est
@@ -145,39 +166,51 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
                 prices[alias] = price
                 prices[raw] = price
             except Exception:
-                # Tarif invalide : on le consigne mais on poursuit.
+                # Tarif invalide : on le consigne mais on poursuit.
                 print("Tarif invalide pour le modele %s, ignore." % alias)
 
     return domains, prices
 
 
+def _validate_base_url(url: str) -> str:
+    """Valide que l'URL possède un scheme http ou https."""
+    if not url.startswith(("http://", "https://")):
+        raise RuntimeError("BASE_URL invalide : doit commencer par http:// ou https://")
+    return url.rstrip("/")
+
+
 def fetch_logs(days: int) -> list[dict]:
     """
-    Journal des requêtes, filtré côté client.
+    Journal des requêtes, filtre côté client.
 
-    Le filtre par dates de l'API s'est révélé peu fiable ; on récupère donc
-    une fenêtre large et on tranche sur ``startTime``, qui est présent dans
+    Le filtre par dates de l'API s'est revele peu fiable ; on récupère donc
+    une fenêtre large et on tranche sur ``startTime``, qui est present dans
     chaque enregistrement.
     """
     key = master_key()
-    request = urllib.request.Request("%s/spend/logs?limit=5000" % BASE_URL)
+    base = _validate_base_url(BASE_URL)
+    request = urllib.request.Request(f"{base}/spend/logs?limit=5000")
     request.add_header("Authorization", "Bearer " + key)
 
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        raise RuntimeError("Erreur HTTP %s lors de la récupération des logs"
+        raise RuntimeError("Erreur HTTP %s lors de la recuperation des logs"
                            % exc.code) from exc
     except urllib.error.URLError as exc:
-        raise RuntimeError("Erreur réseau lors de la récupération des logs: %s"
+        raise RuntimeError("Erreur reseau lors de la recuperation des logs: %s"
                            % exc.reason) from exc
     except json.JSONDecodeError as exc:
-        raise RuntimeError("Réponse JSON invalide : %s" % exc) from exc
+        raise RuntimeError("Reponse JSON invalide : %s" % exc) from exc
 
     entries = payload if isinstance(payload, list) else payload.get("data", [])
 
-    limite = datetime.datetime.now() - datetime.timedelta(days=days)
+    # Avertir si le nombre d'entrees atteint la limite connue.
+    if len(entries) >= 5000:
+        print("AVERTISSEMENT: le serveur a pu tronquer les logs a 5000 entrees")
+
+    limite = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
     retenus = []
     for entry in entries:
         tags = [str(t) for t in (entry.get("request_tags") or [])]
@@ -185,11 +218,17 @@ def fetch_logs(days: int) -> list[dict]:
             continue
         stamp = str(entry.get("startTime") or entry.get("created_at") or "")
         try:
-            moment = datetime.datetime.fromisoformat(
-                stamp.replace("Z", "").split(".")[0])
+            # Convertit en datetime UTC, en ignorant le suffixe Z et les fractions.
+            iso = stamp.replace("Z", "")
+            if "." in iso:
+                iso = iso.split(".", 1)[0]
+            moment = datetime.datetime.fromisoformat(iso)
+            if moment.tzinfo is None:
+                moment = moment.replace(tzinfo=datetime.timezone.utc)
+            else:
+                moment = moment.astimezone(datetime.timezone.utc)
         except Exception:
-            # Horodatage illisible : on ignore l'entrée plutôt que de la
-            # conserver et fausser les statistiques.
+            # Horodatage illisible : on ignore l'entree.
             continue
         if moment >= limite:
             retenus.append(entry)
@@ -198,9 +237,9 @@ def fetch_logs(days: int) -> list[dict]:
 
 def domain_of(entry: dict, domains: dict[str, str]) -> str:
     """
-    Détermine le plan d'exécution d'une requête.
+    Determine le plan d'execution d'une requete.
 
-    ``api_base`` prime sur le nom : il indique où la requête est réellement
+    ``api_base`` prime sur le nom : il indique ou la requete est réellement
     partie, ce qu'aucun alias ne garantit.
     """
     api_base = str(entry.get("api_base") or "")
@@ -224,9 +263,18 @@ def domain_of(entry: dict, domains: dict[str, str]) -> str:
     return "inconnu"
 
 
+def _positive_int(value: str) -> int:
+    """Convertit en int et verifie qu'il est >= 1."""
+    ivalue = int(value)
+    if ivalue < 1:
+        raise argparse.ArgumentTypeError("Le nombre de jours doit etre >= 1")
+    return ivalue
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--jours", type=int, default=7)
+    parser.add_argument("--jours", type=_positive_int, default=7,
+                        help="Nombre de jours a analyser (minimum 1)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
@@ -295,7 +343,7 @@ def main() -> int:
         return 0
 
     print("=" * 70)
-    print(" Delegation et economie — %d dernier(s) jour(s)" % args.jours)
+    print(" Delegation et economie - %d dernier(s) jour(s)" % args.jours)
     print("=" * 70)
     print("  %d requetes passees par la passerelle" % len(logs))
 
@@ -313,7 +361,7 @@ def main() -> int:
           % (part_deleguee, tokens_delegues, total_tokens))
 
     if chiffrable:
-        print("\n  Contrefactuel — ce que le volume delegue aurait coute sur %s :" % REFERENCE)
+        print("\n  Contrefactuel - ce que le volume delegue aurait coute sur %s :" % REFERENCE)
         print("    cout evite    : %.4f $" % cout_contrefactuel)
         print("    cout reel     : %.4f $" % cout_delegue_reel)
         print("    economie      : %.4f $" % (cout_contrefactuel - cout_delegue_reel))
@@ -324,6 +372,9 @@ def main() -> int:
     if cout_anthropic:
         print("    depense API   : %.4f $ (Anthropic, hors abonnement)" % cout_anthropic)
 
+    # Note : le cout reel des delegations locales ne prend pas en compte le
+    # cout d'infrastructure (GPU, electricite, maintenance). Le chiffre
+    # indique uniquement le montant facture par le fournisseur.
     print("\n  Modeles les plus sollicites :")
     for alias, count in par_modele.most_common(6):
         print("    %-32s %d" % (alias, count))
@@ -332,7 +383,7 @@ def main() -> int:
     print("""
   Ce que ce chiffre dit, et ce qu'il ne dit pas.
 
-  Il mesure le volume detourne de l'abonnement, pas le pourcentage
+  Il mesure le volume détourne de l'abonnement, pas le pourcentage
   d'abonnement restant : le trafic de claude.ai ne passe pas par la
   passerelle et reste donc invisible ici. Il n'y a pas de seuil a
   atteindre — la part deleguee est une grandeur a maximiser, et elle ne
