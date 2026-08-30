@@ -552,8 +552,10 @@ def test_reverse(models: list[str]) -> None:
     served_ok = status == 200 and body.get("data") and "embedding" in body["data"][0]
     check("embedding sur un modele de chat : limite connue inchangee",
           served_ok,
-          "le fournisseur REFUSE desormais (HTTP %s) — la limite a change, "
-          "la regle peut etre durcie" % status)
+          "BONNE NOUVELLE, pas une panne : le fournisseur REFUSE desormais "
+          "(HTTP %s). La limite documentee a disparu — retablir l'exigence "
+          "« embedding refuse sur un modele de chat » et supprimer cette "
+          "sentinelle." % status)
 
     # FUITE TRANSITIVE : un fallback a deux sauts peut sortir du domaine
     # la ou un controle a un saut ne voit rien. On calcule donc la

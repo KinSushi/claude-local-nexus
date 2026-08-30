@@ -194,6 +194,10 @@ def main():
     parser.add_argument("--timeout", type=float, help="Timeout en secondes (defaut 90)")
     parser.add_argument("--json", action="store_true", help="Afficher le JSON de sortie")
     parser.add_argument("--modele", action="append", help="Alias du modele a tester (repetable)")
+    parser.add_argument("--plan", choices=("local", "cloud", "tous"),
+                        default="local",
+                        help="Plan a mesurer. Le plan anthropic est exclu : "
+                             "il est le seul facture au jeton.")
     args = parser.parse_args()
 
     # determiner la racine (parent du repertoire du script)
@@ -221,9 +225,20 @@ def main():
         sys.stderr.write("Passerelle injoignable sur %s : %s\n" % (gateway, exc))
         sys.exit(1)
 
-    modeles = [m["model_name"] for m in info.get("data", []) if m.get("model_name", "").endswith("-local")]
+    # Le plan mesure. Le banc ne couvrait que le local, si bien que le pool
+    # cloud restait ordonne sans mesure -- le defaut meme corrige cote local.
+    #
+    # Le plan anthropic est exclu SANS OPTION pour l'activer : il est le seul
+    # facture au jeton, et mesurer coute des appels. Un banc qui peut
+    # depenser n'a pas sa place dans un depot dont le produit est de ne pas
+    # depenser.
+    suffixes = {"local": ("-local",), "cloud": ("-cloud",),
+                "tous": ("-local", "-cloud")}[args.plan]
+    modeles = [m["model_name"] for m in info.get("data", [])
+               if m.get("model_name", "").endswith(suffixes)
+               and not m.get("model_name", "").startswith("adaptive-router")]
     if not modeles:
-        sys.stderr.write("Aucun modele local trouve.\n")
+        sys.stderr.write("Aucun modele %s trouve." % args.plan + chr(10))
         sys.exit(1)
 
     # filtrer selon --modele si fourni
