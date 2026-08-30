@@ -380,6 +380,10 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
             "Commence chaque constat par un mot parmi TRAITE, REGRESSION,\n"
             "INDETERMINE, suivi d'une phrase courte.\n"
             "N'invente aucun defaut pour remplir la liste.\n\n"
+            "Termine OBLIGATOIREMENT par une derniere ligne valant conclusion,\n"
+            "et n\'emploie ce mot-cle nulle part ailleurs :\n"
+            "  VERDICT_FINAL: REGRESSION   s\'il existe au moins une regression\n"
+            "  VERDICT_FINAL: RAS          s\'il n\'y en a aucune\n"
             "DIFF:\n"
             f"{diff_text}\n"
         )
@@ -396,6 +400,10 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
         "Pour chaque appelant, réponds d'un seul mot parmi : TRAITE, REGRESSION, INDETERMINE, "
         "suivi d'une courte phrase explicative.\n"
         "Ne fabrique aucune réponse si le contexte est insuffisant.\n\n"
+        "Termine OBLIGATOIREMENT par une derniere ligne valant conclusion,\n"
+        "et n\'emploie ce mot-cle nulle part ailleurs :\n"
+        "  VERDICT_FINAL: REGRESSION   s\'il existe au moins une regression\n"
+        "  VERDICT_FINAL: RAS          s\'il n\'y en a aucune\n"
         "DIFF:\n"
         f"{diff_text}\n"
         "APPELANTS:\n"
@@ -415,6 +423,10 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
 # lire « INDETERMINE - aucune REGRESSION visible » comme une regression.
 VERDICT = re.compile(r"\b(REGRESSION|TRAITE|INDETERMINE)\b")
 
+# La conclusion, distincte du verdict par ligne. Un deux-points colle au
+# mot-cle en fait une etiquette qu'une rubrique de prose ne produit pas.
+CONCLUSION = re.compile(r"VERDICT_FINAL\s*:\s*(REGRESSION|RAS)\b")
+
 
 def analyse_result(text):
     """
@@ -430,11 +442,36 @@ def analyse_result(text):
     Le mot est cherche en MAJUSCULES sans accent : « regression » ou
     « régression » en prose ne declenche rien, seul le verdict compte.
     """
+    # La ligne de conclusion d'abord, et elle seule si elle existe.
+    #
+    # Faux positif mesure le 2026-08-30. Le modele avait ecrit :
+    #
+    #   REGRESSION : aucune variable renommee n'est referencee ; aucune
+    #   condition n'est inversee ; aucun flux ou code de sortie n'est perdu
+    #
+    # C'est une RUBRIQUE -- « au titre des regressions : aucune » -- et le
+    # parseur y lisait un verdict. La consigne le permettait : « commence
+    # chaque constat par un mot parmi TRAITE, REGRESSION, INDETERMINE »
+    # rend un titre et un verdict indiscernables.
+    #
+    # La double passe n'a rien vu, et ne pouvait rien voir : les deux passes
+    # ont concorde. Elle protege de la VARIANCE du modele, pas d'un biais
+    # systematique de format. C'est une limite reelle de cette protection,
+    # et le remede n'est pas de rejuger mais de demander une conclusion
+    # qu'une rubrique ne puisse pas imiter.
+    for line in text.splitlines():
+        m = CONCLUSION.search(line)
+        if m:
+            return m.group(1) == "REGRESSION", True
+
+    # Pas de conclusion : repli sur l'heuristique par mot-cle, en signalant
+    # que le verdict n'est PAS explicite. L'appelant en tire l'incertitude
+    # plutot que de trancher sur une lecture faible.
     for line in text.splitlines():
         m = VERDICT.search(line)
         if m and m.group(1) == "REGRESSION":
-            return True
-    return False
+            return True, False
+    return False, False
 
 def free_plan_judgment(diff_text, callers):
     """
@@ -485,7 +522,11 @@ def free_plan_judgment(diff_text, callers):
             )
 
         # Réponse valide
-        regression = analyse_result(reponse["texte"])
+        regression, explicite = analyse_result(reponse["texte"])
+        if not explicite:
+            # Le modele n a pas rendu sa conclusion : ne pas faire comme si.
+            reponse["texte"] += (chr(10) + "[!] aucune ligne VERDICT_FINAL : "
+                                 "verdict lu par heuristique, a confirmer")
         bascule = reponse.get("bascule")
         return regression, bascule, reponse["texte"]
 

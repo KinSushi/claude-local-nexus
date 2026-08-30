@@ -95,18 +95,20 @@ def master_key() -> str:
 
 
 def _safe_int(value) -> int:
-    """Convertit en int, renvoie 0 si la conversion échoue."""
+    """Convertit en int, renvoie 0 si la conversion échoue, en loggant le problème."""
     try:
         return int(value)
-    except Exception:
+    except Exception as exc:  # pragma: no cover
+        print(f"AVERTISSEMENT: conversion int impossible ({exc})", file=sys.stderr)
         return 0
 
 
 def _safe_float(value) -> float:
-    """Convertit en float, renvoie 0.0 si la conversion échoue."""
+    """Convertit en float, renvoie 0.0 si la conversion échoue, en loggant le problème."""
     try:
         return float(value)
-    except Exception:
+    except Exception as exc:  # pragma: no cover
+        print(f"AVERTISSEMENT: conversion float impossible ({exc})", file=sys.stderr)
         return 0.0
 
 
@@ -147,11 +149,37 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
 
         if raw.startswith("auto_router/"):
             continue
-        if raw.startswith("anthropic/"):
+
+        # Determination du domaine en se basant sur l'URL d'API, pas sur le nom du modèle.
+        api_base = str(params.get("api_base") or "")
+        if "anthropic.com" in api_base:
             domains[alias] = "anthropic"
-        elif "ollama.com" in str(params.get("api_base", "")):
+        elif "ollama.com" in api_base:
             domains[alias] = "cloud"
+        elif raw.startswith("anthropic/"):
+            # Repli de nom, et seulement pour Anthropic : un modele Anthropic
+            # n'a souvent aucun api_base, LiteLLM employant le sien par defaut.
+            # L'absence d'adresse n'y est donc pas un silence suspect.
+            domains[alias] = "anthropic"
         else:
+            # Un api_base pointant vers cette machine EST la preuve du local :
+            # ce n'est pas un repli, et il n'y a rien a signaler.
+            #
+            # Mesure du 2026-08-30 : l'avertissement se declenchait 40 fois
+            # par execution, une par modele local, c'est-a-dire sur le cas
+            # parfaitement normal. Un avertissement qui crie sur la normale
+            # n'avertit plus -- il noie le seul cas qui meritait d'etre vu,
+            # celui d'un modele dont on ne sait pas ou il s'execute.
+            #
+            # Le classement, lui, ne change pas : ces modeles etaient deja
+            # comptes locaux, et le sont toujours. Seul le bruit disparait.
+            local_prouve = any(marque in str(params.get("api_base") or "")
+                               for marque in ("host.docker.internal",
+                                              "localhost", "127.0.0.1"))
+            if local_prouve:
+                domains[alias] = "local"
+                continue
+
             # Classification par defaut : on signale le fallback pour eviter
             # les faux positifs d'economie.
             # stderr, et non stdout : --json ecrit sa mesure sur stdout, et un
@@ -171,9 +199,9 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
                          float(params.get("output_cost_per_token") or 0.0))
                 prices[alias] = price
                 prices[raw] = price
-            except Exception:
+            except Exception as exc:  # pragma: no cover
                 # Tarif invalide : on le consigne mais on poursuit.
-                print("Tarif invalide pour le modele %s, ignore." % alias,
+                print("Tarif invalide pour le modele %s, ignore. (%s)" % (alias, exc),
                       file=sys.stderr)
 
     return domains, prices
@@ -235,8 +263,9 @@ def fetch_logs(days: int) -> list[dict]:
                 moment = moment.replace(tzinfo=datetime.timezone.utc)
             else:
                 moment = moment.astimezone(datetime.timezone.utc)
-        except Exception:
-            # Horodatage illisible : on ignore l'entree.
+        except Exception as exc:  # pragma: no cover
+            # Horodatage illisible : on loggue le problème avant d'ignorer l'entree.
+            print(f"AVERTISSEMENT: horodatage invalide ({exc})", file=sys.stderr)
             continue
         if moment >= limite:
             retenus.append(entry)
@@ -266,8 +295,7 @@ def domain_of(entry: dict, domains: dict[str, str]) -> str:
     alias = str(entry.get("model", ""))
     if alias.startswith("ollama"):
         return "cloud" if ":cloud" in alias else "local"
-    if "claude" in alias:
-        return "anthropic"
+    # Le test sur le nom du modele (ex: "claude") est supprime, on se fie a api_base.
     return "inconnu"
 
 
