@@ -3677,6 +3677,35 @@ downloads. It is not advisory.
 
 ---
 
+# 107.2 The start-up bench cannot settle a default — a case in point
+
+The bench's own warning (§112.3) says its reading is necessary and not
+sufficient: sixteen tokens measure the delay before a model *starts*, never
+its throughput on real work. On 2026-08-30 that warning stopped a change that
+looked obviously right.
+
+The MCP server's `DEFAULT_CHAT_MODEL` is `glm-4.7-flash-local`, benched at
+**61.8 s** to start — by far the slowest default in the repository, every other
+one sitting between 2.4 and 2.9 s. The obvious replacement was
+`qwen2.5-32b-local`: same declared quality tier, benched at **3.8 s**, sixteen
+times faster.
+
+Put to a real task — summarise 3000 characters in three sentences — it did not
+finish in **110 s**. The model that starts in 3.8 s does not deliver.
+
+So the default was **left unchanged**. Not because the current one is good — it
+is measurably the slowest — but because the evidence available cannot choose
+its replacement, and swapping a measured-bad default for an unmeasured one is
+not an improvement, only a different bet.
+
+What this settles: the second bench §112.3 asks for — tokens per second on a
+real task, not time-to-first-token — is no longer a theoretical nicety. It is
+the missing instrument, and its absence has now blocked a concrete decision.
+Until it exists, `DEFAULT_CHAT_MODEL` cannot be chosen on evidence, and the
+honest move is to say so rather than to pick.
+
+---
+
 # 107.1 A pool is bounded by memory, not by taste
 
 Measured 2026-08-30, and each figure below corrected a decision that had
