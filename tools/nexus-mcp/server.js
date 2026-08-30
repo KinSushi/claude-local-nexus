@@ -44,9 +44,22 @@ const SERVER_INFO = { name: "nexus-local", version: "1.0.0" };
 // racine fournie par Claude Code, puis position du fichier. Aucune de ces
 // sources n'est un chemin en dur : le pont doit pouvoir etre repris tel
 // quel dans un autre projet.
+// CLAUDE_PROJECT_DIR a ete RETIRE de cette chaine, a dessein.
+//
+// INSTALL_ROOT sert a trouver le .env de la passerelle et les scripts de la
+// plateforme (nexus_capability.py, nexus_savings.py). Or CLAUDE_PROJECT_DIR
+// designe le projet APPELANT : depuis un depot tiers, INSTALL_ROOT pointait
+// donc vers un repertoire ou ne se trouve ni .env ni scripts/, et la lecture
+// de la clef comme nexus_models et nexus_savings echouaient -- precisement
+// dans le cas que le pont existe pour servir.
+//
+// __dirname, lui, designe toujours l'installation reelle : un serveur sait
+// ou il vit. NEXUS_ROOT reste disponible pour un reglage explicite.
+//
+// Ne pas confondre avec WORK_ROOT ci-dessous, qui doit suivre le projet
+// appelant. Les deux racines sont distinctes et le rester est tout l'enjeu.
 const INSTALL_ROOT =
   process.env.NEXUS_ROOT ||
-  process.env.CLAUDE_PROJECT_DIR ||
   path.resolve(__dirname, "..", "..");
 
 // Racine du projet dont on lit les fichiers (WORK_ROOT). Priorité :
