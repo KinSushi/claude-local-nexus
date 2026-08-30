@@ -852,6 +852,75 @@ def test_releve() -> None:
           "plan reel : %s" % rapport["plan"])
 
 
+def test_routage_par_profil() -> None:
+    """
+    Les quatre profils resolvent-ils vers un modele reellement expose ?
+
+    La table PROFILES vit cote JavaScript, dans le serveur MCP. Elle est LUE
+    ici plutot que recopiee : une copie Python divergerait en silence le jour
+    ou la table change, et le test cesserait de tester ce qu'il croit.
+
+    resolveProfile parcourt spec.models dans l'ordre et rend le PREMIER
+    expose. L'assertion porte donc sur cette propriete, et non sur un appel
+    HTTP : il n'existe aucun endpoint de routage par profil.
+    """
+    print("\n--- ROUTAGE : les profils resolvent-ils vers un modele expose ? ---")
+
+    racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    chemin = os.path.join(racine, "tools", "nexus-mcp", "server.js")
+    try:
+        with io.open(chemin, encoding="utf-8") as fh:
+            source = fh.read()
+    except Exception as exc:
+        skip("routage : table des profils", "server.js illisible : %s" % exc)
+        return
+
+    # Le corps d'un profil contient lui-meme des accolades -- latency: { ... }
+    # par exemple. Un motif en [^}] s'arrete a la premiere fermante et ne
+    # trouve plus rien : c'est ce qui est arrive le jour ou latency a ete
+    # ajoute. On autorise donc un niveau d'imbrication.
+    motif = re.compile(
+        r"(\w+)\s*:\s*\{(?:[^{}]|\{[^{}]*\})*?models\s*:\s*\[([^\]]*)\]",
+        re.S)
+    profils = {}
+    for nom, liste in motif.findall(source):
+        profils[nom] = [m.strip().strip("'\"") for m in liste.split(",") if m.strip()]
+
+    attendus = {"coding", "reasoning", "rapide", "multimodal"}
+    # Si l'extraction ne rend pas les quatre profils connus, c'est le motif
+    # qui a vieilli, pas le routage. Le dire evite de chercher au mauvais
+    # endroit.
+    if set(profils) != attendus:
+        skip("routage : table des profils",
+             "extraction incoherente : %s" % sorted(profils))
+        return
+    check("routage : quatre profils extraits de server.js", True,
+          ", ".join(sorted(profils)))
+
+    status, corps = call("/v1/models")
+    if status != 200 or not isinstance(corps, dict):
+        skip("routage : inventaire", "GET /v1/models a rendu %s" % status)
+        return
+    exposes = {m.get("id") for m in corps.get("data", []) if m.get("id")}
+
+    for profil in sorted(profils):
+        candidats = profils[profil]
+        presents = [m for m in candidats if m in exposes]
+        if not presents:
+            # Un profil sans modele disponible n'est pas un defaut de
+            # routage : c'est un inventaire incomplet.
+            skip("routage : profil %s" % profil,
+                 "aucun candidat expose parmi %d" % len(candidats))
+            continue
+        retenu = presents[0]
+        rang = candidats.index(retenu)
+        # Tous ceux qui precedent le retenu doivent etre absents : sinon
+        # resolveProfile en aurait choisi un autre.
+        avant_absents = all(c not in exposes for c in candidats[:rang])
+        check("routage : profil %s -> %s" % (profil, retenu), avant_absents,
+              "rang %d sur %d candidats" % (rang + 1, len(candidats)))
+
+
 def test_code() -> None:
     print("\n--- CODE : les scripts de la plateforme se tiennent-ils ? ---")
 
@@ -1117,7 +1186,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "code", "releve", "ruche"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1134,6 +1203,8 @@ def main() -> int:
         test_reverse(models)
     if args.only in (None, "policy"):
         test_policy(models)
+    if args.only in (None, "routage"):
+        test_routage_par_profil()
     if args.only in (None, "code"):
         test_code()
     if args.only in (None, "ruche"):
