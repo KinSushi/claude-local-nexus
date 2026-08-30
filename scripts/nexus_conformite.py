@@ -103,14 +103,28 @@ def controle_config_valide() -> None:
         errors="replace",
     )
     erreurs = [l.strip() for l in r.stdout.splitlines() if l.strip().startswith("- ")]
+    # Cas où le processus échoue sans produire d'erreurs « - » : on indique le code
+    # de retour et la dernière ligne non vide de stderr (ou stdout à défaut).
+    if r.returncode != 0 and not erreurs:
+        source = r.stderr if r.stderr.strip() else r.stdout
+        lignes = [l.strip() for l in source.splitlines() if l.strip()]
+        derniere = lignes[-1] if lignes else ""
+        # Troncature raisonnable (200 caractères max) pour éviter les débordements.
+        if len(derniere) > 200:
+            derniere = derniere[:197] + "..."
+        detail = f"code {r.returncode} : {derniere}"
+    else:
+        detail = (
+            "%d erreur(s) : %s"
+            % (len(erreurs), "; ".join(e[2:] for e in erreurs[:3]))
+            if r.returncode != 0
+            else ""
+        )
     noter(
         "configuration valide",
         r.returncode == 0,
         BLOQUANT,
-        "%d erreur(s) : %s"
-        % (len(erreurs), "; ".join(e[2:] for e in erreurs[:3]))
-        if r.returncode != 0
-        else "",
+        detail,
     )
 
 

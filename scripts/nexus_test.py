@@ -530,35 +530,27 @@ def test_reverse(models: list[str]) -> None:
     check("chemin interdit non rattrape par un fallback", served is None,
           "servi par %s" % served if served else "aucune reponse servie")
 
-    # Une requête d'embedding servie par un modèle de chat : LIMITE CONNUE.
+    # Une requête d'embedding ne doit jamais être servie par un modèle de
+    # chat : la réponse aurait la mauvaise forme sans erreur explicite (§17).
     #
-    # Ce test attendait un refus. Mesure du 2026-08-30 : phi3-mini-local,
-    # modèle de chat, rend un vecteur de 1024 dimensions avec HTTP 200.
-    # L'appelant croit donc tenir un embedding valide, alors que ce modèle
-    # n'est pas entraîné pour cela — la §17 est franchie en silence.
+    # Cette exigence avait été rétrogradée en sentinelle le 2026-08-30 :
+    # phi3-mini-local rendait alors un vecteur de 1024 dimensions avec
+    # HTTP 200, et la protection n'existait ni dans Ollama ni dans LiteLLM.
+    # Déclarer `mode: chat` avait été essayé, puis retiré — sans effet.
     #
-    # La protection a été cherchée et n'existe pas à ce niveau. LiteLLM
-    # expose un champ `mode` par modèle ; déclarer `mode: chat` sur
-    # phi3-mini-local a été essayé, puis retiré : la requête passe
-    # toujours, HTTP 200. Le champ est informatif, pas contraignant.
+    # La sentinelle s'est déclenchée le jour même : la passerelle refuse
+    # désormais, HTTP 400, « Unmapped LLM provider for this endpoint —
+    # custom_llm_provider=ollama_chat ». Le refus est propre et pour la
+    # bonne raison, et les replis déclarés sont tentés puis refusés de même.
     #
-    # Le test devient donc une SENTINELLE plutôt qu'une exigence. Il
-    # constate le comportement réel du fournisseur et alerte s'il change —
-    # le jour où la passerelle refusera, on pourra durcir la règle. Le
-    # remède, en attendant, est chez l'appelant : demander un embedding à
-    # un alias d'embedding.
+    # L'exigence est donc rétablie, comme la sentinelle le prescrivait
+    # elle-même. C'est le cycle complet d'une sentinelle : elle constate une
+    # limite, elle alerte quand la limite tombe, elle disparaît.
     status, body = call("/v1/embeddings",
                         {"model": "phi3-mini-local", "input": "test"}, timeout=120)
     served_ok = status == 200 and body.get("data") and "embedding" in body["data"][0]
-    # Le detail s'affiche AUSSI quand le test passe : un message redige pour
-    # le seul cas d'echec y ment. Il est donc construit selon l'etat.
-    detail = ("HTTP %s, vecteur servi — limite inchangee" % status if served_ok
-              else "BONNE NOUVELLE, pas une panne : le fournisseur REFUSE "
-                   "desormais (HTTP %s). Retablir l'exigence « embedding "
-                   "refuse sur un modele de chat » et supprimer cette "
-                   "sentinelle." % status)
-    check("embedding sur un modele de chat : limite connue inchangee",
-          served_ok, detail)
+    check("embedding refuse sur un modele de chat", not served_ok,
+          "HTTP %s" % status)
 
     # FUITE TRANSITIVE : un fallback a deux sauts peut sortir du domaine
     # la ou un controle a un saut ne voit rien. On calcule donc la
@@ -656,34 +648,25 @@ def test_reverse(models: list[str]) -> None:
         # voir l'image. Inacceptable : une description assuree.
         avoue = re.search(r"ne (peux|puis)|pas d'image|aucune image|incapab|"
                           r"cannot|unable|no image|as an ai", texte, re.I)
-        # SENTINELLE, comme pour l'embedding, et pour la meme raison.
+        # Une image envoyée à un modèle TEXTUEL ne doit pas produire une
+        # réponse d'apparence plausible : c'est le pire des échecs, puisqu'il
+        # ne se voit pas (§92).
         #
-        # Mesure du 2026-08-30 : phi3-mini-local recoit l'image et repond
-        # « Cette image est un visuel de presentation (probablement une... »
-        # -- une description assuree de ce qu'il ne voit pas. C'est le pire
-        # des echecs, puisqu'il ne se voit pas.
+        # Cette exigence avait été rétrogradée en sentinelle le 2026-08-30 :
+        # phi3-mini-local recevait l'image et répondait « Cette image est un
+        # visuel de présentation (probablement une… » — une description
+        # assurée de ce qu'il ne voit pas.
         #
-        # Ni le modele ni la passerelle ne s'en gardent. La protection
-        # existe en revanche dans l'outil prevu : nexus_vision choisit
-        # DEFAULT_VISION_MODEL (llava-7b-local, 2,8 s mesurees) et ne laisse
-        # pas l'appelant designer un modele textuel.
+        # La sentinelle s'est déclenchée le jour même, en même temps que
+        # celle des embeddings : la passerelle refuse désormais, HTTP 400.
+        # L'exigence est rétablie, comme la sentinelle le prescrivait.
         #
-        # Le routeur local, lui, ne protege pas davantage : son pool est
-        # textuel par construction et ne contient aucun modele de vision.
-        # Une image adressee a adaptive-router-local sera donc mal traitee.
-        # Y ajouter un modele de vision serait pire -- il serait choisi pour
-        # du texte. Le remede est d'employer nexus_vision, non d'elargir le
-        # pool.
-        garde = status != 200 or not texte.strip() or bool(avoue)
-        # Meme precaution : le detail est vrai dans les deux cas.
-        detail = ("HTTP %s, description assuree — limite inchangee : %r"
-                  % (status, texte.strip()[:50]) if not garde
-                  else "BONNE NOUVELLE, pas une panne : le modele ou la "
-                       "passerelle se garde desormais (HTTP %s). Retablir "
-                       "l'exigence « image refusee par un modele textuel » "
-                       "et supprimer cette sentinelle." % status)
-        check("image sur un modele textuel : limite connue inchangee",
-              not garde, detail)
+        # Reste acceptable, et le test le prévoit : un refus franc, ou une
+        # réponse qui reconnaît ne pas voir l'image. Inacceptable : une
+        # description assurée.
+        check("image refusee par un modele textuel",
+              status != 200 or not texte.strip() or bool(avoue),
+              "HTTP %s — %r" % (status, texte.strip()[:60]))
 
     # Le serveur MCP doit signaler un outil inconnu sans se terminer.
     server = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
