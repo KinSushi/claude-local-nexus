@@ -1110,11 +1110,46 @@ def main() -> int:
     # OLLAMA_MAX_LOADED_MODELS cote moteur : le relever permettrait
     # d'elargir cette borne d'autant, la memoire du moteur le permettant
     # (66 Go). Tant qu'il vaut 1, elargir le pool nuit.
-    PLAFOND_POOL_LOCAL = int(os.environ.get("NEXUS_POOL_LOCAL_MAX", "4"))
+    # La borne porte sur le POIDS CUMULE, non sur un compte.
+    #
+    # Une borne en nombre supposait implicitement que les elus pouvaient
+    # coexister en memoire. Verification faite : les quatre premiers pesent
+    # 19 + 18 + 19 + 18 = 74 Go pour 66,2 Go de memoire hote. Ils ne
+    # tiennent pas ensemble, et un compte ne pouvait pas le savoir.
+    #
+    # Le budget vient du profil materiel (107), deja calcule et deja
+    # affiche. Il s'adapte donc seul : gros modeles, pool etroit ; petits
+    # modeles, pool large ; machine plus puissante, pool plus large sans
+    # qu'une ligne change.
+    #
+    # Le minimum de deux est delibere : a un seul membre il n'y a plus de
+    # routage, seulement un alias deguise.
+    budget_go = float((profile or {}).get("pool_budget_gb") or 0) or 40.0
+    if os.environ.get("NEXUS_POOL_LOCAL_MAX"):
+        budget_go = float(os.environ["NEXUS_POOL_LOCAL_MAX"])
 
-    pool_local = [e.alias for e in
-                  sorted(local_text, key=lambda e: (-e.tier, _ms(e.alias)))
-                  ][:PLAFOND_POOL_LOCAL]
+    # sizes est indexe par NOM OLLAMA (« qwen3-coder:30b »), le pool par
+    # ALIAS LiteLLM (« qwen3-coder-30b-local »). Interroger l'un avec
+    # l'autre rend 0 pour chacun : le budget ne serait jamais atteint et la
+    # borne ne bornerait rien, sans que rien ne le signale. D'ou l'index
+    # inverse, construit avec la meme fonction que la declaration.
+    poids_par_alias = {local_alias(nom): go for nom, go in (sizes or {}).items()}
+
+    classes = sorted(local_text, key=lambda e: (-e.tier, _ms(e.alias)))
+    pool_local, cumul = [], 0.0
+    for e in classes:
+        poids = float(poids_par_alias.get(e.alias) or 0)
+        if pool_local and cumul + poids > budget_go:
+            continue
+        pool_local.append(e.alias)
+        cumul += poids
+    # Deux au minimum, meme si les deux premiers depassent le budget : un
+    # pool a un seul membre ne route rien.
+    for e in classes:
+        if len(pool_local) >= 2:
+            break
+        if e.alias not in pool_local:
+            pool_local.append(e.alias)
 
     blocks = {
         # Le bloc couvre le modele par defaut ET la liste : les deux sont
