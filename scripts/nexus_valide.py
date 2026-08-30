@@ -567,17 +567,71 @@ def main():
         print("Plan gratuit indisponible :", e)
         return 2
 
+    # Une regression annoncee se confirme avant d'etre rendue.
+    #
+    # Mesure du 2026-08-30 : deux passes sur le MEME commit ont rendu
+    # « Regression detectee. » puis « regression: false ». Le jugement du banc
+    # varie d'une passe a l'autre -- il est probabiliste, pas deterministe --
+    # et LOI 1 repose entierement sur lui. Un verdict non reproductible n'est
+    # pas un verdict.
+    #
+    # Seule la REGRESSION est re-jugee, et l'asymetrie est voulue : un faux
+    # positif coute du temps, un faux negatif laisse passer le defaut. On ne
+    # depense donc la seconde passe que du cote ou elle protege.
+    #
+    # Et un desaccord ne se resout PAS en faveur du silence : concluer « rien
+    # a signaler » parce que la seconde passe s'est ravisee effacerait un
+    # signal qu'on a bel et bien recu. Le desaccord est rendu comme tel, avec
+    # les deux jugements, et l'arbitrage revient a l'orchestrateur.
+    desaccord = None
+    if regression:
+        try:
+            regression2, _, texte2 = free_plan_judgment(diff_text, callers)
+        except Exception as e:
+            # La seconde passe indisponible ne doit pas effacer la premiere.
+            regression2, texte2 = True, "seconde passe indisponible : %s" % e
+        if not regression2:
+            desaccord = texte2
+            saut = chr(10)
+            entete = saut + saut + '--- seconde passe, en desaccord ---' + saut
+            texte = (texte or '') + entete + (texte2 or '')
+
     if args.json:
         payload = {
             "regression": regression,
             "bascule": bascule,
             "texte": texte,
+            "desaccord": desaccord is not None,
             "code": 1 if regression else 0,
         }
         print(json.dumps(payload, ensure_ascii=False))
     else:
         if regression:
-            print("Regression detectee.")
+            # Le motif, pas seulement le verdict.
+            #
+            # Cette branche detenait `texte` -- le jugement du banc, ligne par
+            # ligne -- et ne l'imprimait qu'en mode --json. Le cas ou le motif
+            # est le plus necessaire etait donc precisement celui ou il etait
+            # tu. Un « Regression detectee. » seul n'est pas actionnable :
+            # il oblige a relancer la validation autrement pour apprendre ce
+            # qu'elle savait deja.
+            portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
+                      if changed_funcs else "diff entier, aucune fonction isolee")
+            if desaccord is not None:
+                print("Verdict INCERTAIN — les deux passes du banc gratuit se "
+                      "contredisent (%s)." % portee)
+                print("  Le desaccord porte sur un jugement, pas sur le code. "
+                      "Verifier la trouvaille dans le code reel avant d'agir.")
+            else:
+                print("Regression detectee — juge par le banc gratuit (%s)."
+                      % portee)
+            for ligne in (texte or "").splitlines():
+                if ligne.strip():
+                    print("  %s" % ligne.rstrip())
+            if bascule:
+                # Le plan ayant reellement juge. Un verdict rendu par un plan
+                # de repli ne se lit pas comme un verdict du plan demande.
+                print("  (bascule de plan : %s)" % bascule)
             return 1
         else:
             portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
