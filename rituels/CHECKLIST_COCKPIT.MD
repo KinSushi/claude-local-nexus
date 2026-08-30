@@ -88,6 +88,20 @@
 | `recover_swapped_config` corrigée | une suite tuée ne peut plus laisser sa configuration de test à la place de la vraie |
 | `choisir_pool_exact` | le pool est optimal sous budget, non plus glouton |
 
+> **La mesure était vraie et partielle.** Avant de câbler la détection de
+> secrets, j'ai mesuré les faux positifs sur les 121 fichiers suivis : zéro
+> déclenchement. Le chiffre était exact — et ne couvrait que **trois des quatre
+> motifs**. L'affectation `.env`, le seul non testé, a bloqué la première
+> publication réelle sur `POSTGRES_PASSWORD`, `LITELLM_MASTER_KEY` et
+> `LANGFUSE_HOST` : deux marque-places « REMPLACER… » et une URL publique.
+> Trois blocages, zéro secret.
+>
+> Ce n'est pas bénin : un garde-fou qui bloque toujours finit désactivé, et
+> c'est alors le vrai secret qui passe. L'épreuve compte désormais sept cas, et
+> les deux nouveaux sont les cas réels — **ce qui ne doit pas déclencher compte
+> autant que ce qui doit déclencher**. Un détecteur n'est pas éprouvé par ses
+> seules détections.
+
 > Le rituel s'applique à lui-même : à sa première exécution il a refusé de
 > clore le tour — quatre fichiers non commités, dont lui-même — puis, une fois
 > commité, il a refusé à nouveau parce que le commit rendait ce cockpit
