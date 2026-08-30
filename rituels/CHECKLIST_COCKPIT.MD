@@ -335,6 +335,47 @@ matin. Jouée une fois, elle a **payé immédiatement**, et deux fois :
 > correction de `recover_swapped_config` tient en conditions réelles, et non
 > seulement sur l'accident reproduit à la main.
 
+### CE DONT JE DISPOSE — inventaire mesuré le 30/08, jamais supposé
+
+Comptés par `find`, dans
+`D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system`. **Plus de 33 000
+fichiers** de documentation et de bibliothèques sont là, à disposition, et
+n'ont jamais servi une seule fois à ce projet.
+
+| Corpus | Volume | Nature dominante |
+|---|---|---|
+| `_REFERENCE_LIVRES` | **12 793** fichiers | 12 749 `.txt` — les livres |
+| `_REFERENCE_PYTHON_LIBS` | **11 034** fichiers | 10 161 `.md` sous `python_libs_docs` — documentation de bibliothèques Python |
+| `_REFERENCE_CODE_LIVRES` | **5 381** fichiers | le code source accompagnant les livres |
+| `_REFERENCE_NOYAU_EXTERNE` | 1 538 fichiers | noyau externe |
+| `_REFERENCE_MQL5_KB` | 680 fichiers | base MQL5 — la piste métaheuristiques du contrat §0 |
+| `_REFERENCE_SHELL_DOCS` | **624** fichiers | 318 `.md` + 302 `.txt` — bash et shell |
+| `_REFERENCE_JEDHA` | 612 fichiers | cours |
+| `_REFERENCE_DOCS_PROJET` | 490 fichiers | documentation de projet |
+| `_REFERENCE_LECONS` | 109 fichiers | leçons tirées, déjà payées là-bas |
+
+**COPIES UNIQUEMENT.** On prend une copie de ce dont on a besoin ; jamais une
+lecture en place, jamais une dépendance à leur chemin. Une dépendance au
+chemin d'un voisin casse le jour où ce dépôt bouge, et travailler en place
+risque d'écrire là où rien ne doit l'être. Même règle que §0.4 pour les
+workers : une copie, jamais la source.
+
+**Ce que cela change concrètement.** Les documentations shell et Python
+répondent directement à des défauts déjà payés ici — quatre commandes
+mutilées par le shell en une journée, une racine relative prise pour absolue
+trois fois, `py_compile` structurellement aveugle sous Windows. Ces réponses
+existent, écrites, à quelques répertoires d'ici. Les ignorer revient à
+repayer ce qui est déjà acquis.
+
+**Et le reste de l'environnement, également disponible et sous-employé** :
+
+| Ressource | État |
+|---|---|
+| Banc local — 71 modèles mesurés | employé, mais le débit n'est mesuré que sur 7 d'entre eux |
+| Banc cloud Ollama — abonnement payé | employé ; parallélise sans contention, 2–3 s de réponse |
+| Douze outils voisins repérés (ci-dessous) | aucun évalué au-delà des cinq repris |
+| Internet, autorisé par le contrat §0 | jamais employé cette session |
+
 ### Outils voisins repérés, non encore évalués — par ordre de rendement
 
 Relevé le 30/08 dans `D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system`.
@@ -362,6 +403,30 @@ double ni ne concurrence ce qui existe ici (contrat §0).
 > recoupe `nexus_traque.py`, qui analyse déjà le dépôt toutes les dix
 > minutes. Le projet primant, c'est le nôtre qu'on étendrait le jour où le
 > besoin se confirme.
+
+### Sujets ouverts consolidés — l'état au 30/08 au soir
+
+Tout ce qui reste, en un seul endroit. Rappel du critère en tête de document :
+un sujet ne se clôt que lorsqu'un **contrôle échoue** si la règle est
+enfreinte. Un paragraphe ne ferme rien.
+
+| Sujet | Pourquoi il reste ouvert | Prochain geste |
+|---|---|---|
+| **33 000 fichiers de documentation et bibliothèques** jamais exploités | repérés et mesurés ce soir, aucune copie encore prise | copier le corpus shell (624 fichiers) et Python (11 034) qui répondent aux défauts déjà payés |
+| Les livres — 12 793 fichiers, plus 5 381 de code associé | jamais lus par ce projet | indexer une copie via `nexus_index_build`, puis interroger par `nexus_search` |
+| Douze outils voisins repérés | aucun évalué au-delà des cinq repris | `import_smoke` fait ; `avec_verrou` ensuite — trois dépôts tournent sur cette machine sans se connaître |
+| Chaque worker dans un **worktree isolé** | la copie est hors du dépôt, mais c'est un répertoire, pas un worktree git | dire ou faire, pas cocher |
+| Préserver le contexte de l'orchestrateur | mesurable par `nexus_savings`, non mesuré par tour | un contrôle de rituel comparant jetons facturés et délégués |
+| `nexus_test_outillage.py` orphelin | seul script que personne n'appelle | le câbler ou le retirer |
+| 40 sauvegardes résiduelles dans `scripts/.nexus/` | ce sont des **données** | la suppression appartient à l'opérateur, pas à l'agent |
+| `import subprocess` en portée locale (`nexus_ruche.py:205`) | même famille qu'un défaut déjà payé | à corriger seul, sans le mêler à un autre sujet |
+| 9 appels Anthropic sur 9 échouent | **le repli masque la cause** : la lire exige de le désactiver temporairement | à faire hors de toute exécution de suite |
+| `Start-Claude.ps1` jamais joué de bout en bout | le lancer démarre une session Claude | ne se teste pas à la légère |
+| Débit mesuré sur 7 modèles sur 71 | le banc n'a jamais tourné en entier | `nexus_bench.py --debit`, machine au repos |
+| Coût binaire mesuré sur aucun modèle | jamais lancé | idem |
+| Briques AIC restantes — classifieur, estimateur, critique, bandit | architecture reçue, non construite | le posterior existe et attend des observations |
+| Métaheuristiques, bandits, MQL5 | pistes permanentes du contrat §0 | `_REFERENCE_MQL5_KB`, 680 fichiers, à portée |
+| Internet, autorisé | jamais employé | vérifier une doctrine contre la documentation d'éditeur |
 
 ### Sujets neufs, ouverts le 30/08 au soir
 

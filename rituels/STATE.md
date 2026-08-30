@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 15:09 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 15:19 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `0a046ea` |
-| Arbre de travail | propre |
+| Commit | `1cdee3c` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
@@ -57,9 +57,9 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `7794b25ff965892c61aee34e3c0862ae` |
+| `litellm_config.yaml` | `92a860365e08bc93dcb833f81306cf64` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
-| `cloud_models.txt` | `7b5f9004d45d4b7818a4a8788227f75d` |
+| `cloud_models.txt` | `c3dd69a2673b53559124fd20e9e93c84` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
 | `tools/nexus-mcp/server.js` | `b8c406f5348915fd12f692e34e1076b3` |
@@ -72,8 +72,8 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-35 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       23
+36 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       24
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     4

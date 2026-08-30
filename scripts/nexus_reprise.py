@@ -115,6 +115,14 @@ def bloc_objectif() -> None:
     print("  construites ici redescendent vers eux. S'en inspirer n'est pas")
     print("  interdit, au contraire -- mais on emprunte une idee, on ne s'y")
     print("  subordonne pas.")
+    print("")
+    print("  MISSION PERMANENTE, jamais achevee : traquer la MOINDRE")
+    print("  amelioration possible. Repondre a la demande n'est pas une fin,")
+    print("  c'est un element d'une file qui n'est jamais vide.")
+    print("  L'environnement est vaste et sous-employe : 71 modeles mesures,")
+    print("  deux bancs, douze outils voisins reperes, plus de 33 000")
+    print("  fichiers de documentation et de bibliotheques a portee de copie.")
+    print("  Voir « CE DONT JE DISPOSE » dans rituels/CHECKLIST_COCKPIT.MD.")
 
 
 def bloc_git() -> None:
@@ -188,7 +196,14 @@ def bloc_sujets() -> None:
     dedans, montres, corps = False, 0, False
     for ligne in lignes:
         if ligne.startswith("### "):
-            dedans = ("ouvert" in ligne.lower() or "jamais" in ligne.lower())
+            # « jamais » seul captait « CE DONT JE DISPOSE — inventaire mesure le
+            # 30/08, jamais suppose », qui n'est pas une liste de sujets
+            # ouverts mais un inventaire de ressources. Le critere doit viser
+            # ce qui reste A FAIRE, pas tout titre contenant le mot.
+            dedans = ("ouvert" in ligne.lower()
+                      or "jamais faites" in ligne.lower()
+                      or "jamais traitees" in ligne.lower()
+                      or "jamais traitées" in ligne.lower())
             corps = False
             if dedans:
                 print("  %s" % ligne[4:])
@@ -217,7 +232,11 @@ def bloc_sujets() -> None:
                 if c and not NUMERO.match(c) and c.lower() not in INTITULES:
                     cellule = c
                     break
-            if cellule and not cellule.startswith("**") and montres < 12:
+            # Le gras est RETIRE, non exclu : le filtre precedent sautait
+            # les cellules commencant par « ** », c'est-a-dire justement les
+            # sujets qu'on avait pris la peine de mettre en avant.
+            cellule = cellule.replace("**", "")
+            if cellule and montres < 18:
                 print("     - %s" % cellule[:96])
                 montres += 1
     if not montres:
