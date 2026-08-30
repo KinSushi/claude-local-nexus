@@ -46,7 +46,7 @@ if hasattr(sys.stdout, "reconfigure"):
 try:
     import yaml
 except ImportError:
-    print("ERREUR: PyYAML requis")
+    print("ERREUR: PyYAML requis", file=sys.stderr)
     sys.exit(1)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,16 +122,16 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
         with io.open(CONFIG, encoding="utf-8") as fh:
             config = yaml.safe_load(fh)
     except yaml.YAMLError as exc:
-        print("Configuration illisible (%s) : %s" % (CONFIG, exc))
+        print("Configuration illisible (%s) : %s" % (CONFIG, exc), file=sys.stderr)
         return None
     except Exception as exc:
         print("Erreur lors de la lecture de la configuration (%s) : %s"
-              % (CONFIG, exc))
+              % (CONFIG, exc), file=sys.stderr)
         return None
 
     if not isinstance(config, dict):
         print("Configuration illisible (%s) : document vide ou non conforme"
-              % CONFIG)
+              % CONFIG, file=sys.stderr)
         return None
 
     domains: dict[str, str] = {}
@@ -154,7 +154,13 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
         else:
             # Classification par defaut : on signale le fallback pour eviter
             # les faux positifs d'economie.
-            print("AVERTISSEMENT: le modele %s n'est pas reconnu, classifie comme local" % alias)
+            # stderr, et non stdout : --json ecrit sa mesure sur stdout, et un
+            # avertissement place devant la rendait illisible au parseur. Le
+            # controle « part deleguee » de nexus_conformite.py tombait ainsi
+            # en IGNORE a chaque passage -- la mesure du produit central etait
+            # aveugle, alors que la valeur, elle, etait calculee correctement.
+            print("AVERTISSEMENT: le modele %s n'est pas reconnu, classifie comme local" % alias,
+                  file=sys.stderr)
             domains[alias] = "local"
 
         # Extraction des tarifs ; on ignore les modèles dont le tarif est
@@ -167,7 +173,8 @@ def load_domains() -> tuple[dict[str, str], dict[str, tuple[float, float]]] | No
                 prices[raw] = price
             except Exception:
                 # Tarif invalide : on le consigne mais on poursuit.
-                print("Tarif invalide pour le modele %s, ignore." % alias)
+                print("Tarif invalide pour le modele %s, ignore." % alias,
+                      file=sys.stderr)
 
     return domains, prices
 
@@ -208,7 +215,8 @@ def fetch_logs(days: int) -> list[dict]:
 
     # Avertir si le nombre d'entrees atteint la limite connue.
     if len(entries) >= 5000:
-        print("AVERTISSEMENT: le serveur a pu tronquer les logs a 5000 entrees")
+        print("AVERTISSEMENT: le serveur a pu tronquer les logs a 5000 entrees",
+              file=sys.stderr)
 
     limite = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
     retenus = []

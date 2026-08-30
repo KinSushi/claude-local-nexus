@@ -44,11 +44,20 @@ try {
     # ------------------------------------------------------------
     # Determination de la commande docker compose (v2 ou v1)
     # ------------------------------------------------------------
-    $dockerComposeCmd = 'docker compose'
-    try {
-        & docker compose version 2>$null
-    } catch {
-        $dockerComposeCmd = 'docker-compose'
+    # Executable et arguments separes : `& 'docker compose' down -v` cherchait
+    # une commande NOMMEE « docker compose », donc la restauration ne
+    # supprimait ni ne remontait rien. Et `& docker compose version` ne peut
+    # pas lever, docker existant : seul $LASTEXITCODE dit la verite.
+    $composeExe  = 'docker'
+    $composeArgs = @('compose')
+    docker compose version > $null 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        if (Get-Command 'docker-compose' -ErrorAction SilentlyContinue) {
+            $composeExe = 'docker-compose'; $composeArgs = @()
+        } else {
+            Write-Error "Docker Compose (v2) ou docker-compose (v1) introuvable. Rien n'a ete detruit."
+            exit 1
+        }
     }
 
     # ------------------------------------------------------------
@@ -86,13 +95,13 @@ try {
     # ------------------------------------------------------------
     # Arreter et supprimer les conteneurs et volumes
     # ------------------------------------------------------------
-    & $dockerComposeCmd down -v
+    & $composeExe @composeArgs down -v
     if ($LASTEXITCODE -ne 0) { throw "docker compose down returned non-zero exit code." }
 
     # ------------------------------------------------------------
     # Demarrer la stack
     # ------------------------------------------------------------
-    & $dockerComposeCmd up -d
+    & $composeExe @composeArgs up -d
     if ($LASTEXITCODE -ne 0) { throw "docker compose up returned non-zero exit code." }
 
     # ------------------------------------------------------------
@@ -162,7 +171,7 @@ try {
     # Etat final de la stack (observabilite)
     # ------------------------------------------------------------
     Write-Host "Etat final de la stack :"
-    & $dockerComposeCmd ps
+    & $composeExe @composeArgs ps
 
     Write-Host "✅ Restauration terminee."
 }
