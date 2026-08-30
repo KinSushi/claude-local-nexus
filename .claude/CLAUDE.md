@@ -3844,6 +3844,33 @@ python scripts/nexus_agent.py --tache "..." --fichiers f1 f2 `
     --modele gpt-oss-120b-cloud --max-tokens 2000
 ```
 
+### The 20–35 s figure is the CLOUD plane's, and the MCP default is not cloud
+
+`gpt-oss-120b-cloud` answers 10–30k tokens in 20–35 s. That number is quoted
+often enough to read as the bench's speed. It is not: the MCP server's default
+chat model is `glm-4.7-flash-local` (`tools/nexus-mcp/server.js`), and that
+model was measured today at **61.8 s just to start answering**.
+
+MAP-REDUCE pays that start-up once per window. So on a large corpus the
+default plane does not merely run slower — it runs slower by a factor that
+grows with the document. Measured from a neighbouring project: `nexus_context`
+timed out at 600 s on four files, and `nexus_summarize` on this very file
+(84 KB) exceeded 120 s.
+
+The ceiling for a large document is therefore **time, not context** (§110
+already says the window is not the limit; this names what is).
+
+What follows is NOT "so allow the cloud". Whether data may leave for
+ollama.com is a sovereignty decision (§35, §64), and it is the operator's,
+never the agent's — this repository being public is what makes the cloud
+acceptable *here*, and that reasoning does not travel to another repository.
+
+What does follow: **a silent timeout is not an arbitration.** Falling back to
+cloud on its own would cross a provider boundary unasked, which §108 forbids.
+Expiring without explanation hides the choice instead. The correct behaviour
+is to fail loudly and name the option, so the operator arbitrates at the
+moment it matters.
+
 ## 112.4 What the free plane cannot replace
 
 A model is often wrong, and wrong in ways that read as right. Rejected in one
