@@ -207,6 +207,63 @@ def mesurer_debit(gateway: str, alias: str, timeout: float) -> tuple:
     return (round(jetons / secondes, 2), jetons, True, "")
 
 
+def mesurer_embedding(gateway: str, alias: str, timeout: float) -> dict:
+    """
+    Latence et pouvoir discriminant d'un modele d'embedding.
+
+    Ecrite par le banc gratuit (gpt-oss-120b-cloud), integrée et verifiee
+    ici. Les identificateurs accentues qu'il avait employes ont ete ramenes
+    a l'ASCII, par coherence avec le reste du depot.
+
+    Elle comble un angle mort : le banc classait les embeddings « non
+    applicable » et ne les mesurait jamais, faute de repondre a un endpoint
+    de conversation. Leur choix par defaut n'etait donc fonde sur rien --
+    et nexus_index_build, qui emploie qwen3-embedding-8b-local par defaut,
+    a expire apres 600 s sur le seul dossier scripts/.
+
+    LA MARGE PRIME SUR LA LATENCE. Un embedding rapide qui ne separe pas le
+    sens proche du sens eloigne rend la recherche inutile : il repond vite
+    n'importe quoi. La marge est la difference de cosinus entre une paire
+    proche et une paire eloignee ; c'est la mesure que la suite de tests
+    emploie deja, plutot qu'un proxy d'isotropie moins interpretable.
+    """
+    url = "%s/v1/embeddings" % gateway.rstrip("/")
+
+    def _vecteur(texte):
+        reponse = appel_post(url, {"model": alias, "input": texte}, timeout)
+        vec = (reponse.get("data") or [{}])[0].get("embedding")
+        if not vec:
+            raise ValueError("pas d'embedding rendu")
+        return vec
+
+    try:
+        durees = []
+        for _ in range(3):
+            depart = time.monotonic()
+            _vecteur("temps")
+            durees.append(time.monotonic() - depart)
+        latence_ms = int(round(sum(durees) / len(durees) * 1000))
+
+        ancre = _vecteur("La passerelle route les requetes vers le modele adapte.")
+        proche = _vecteur("Le routeur choisit le modele qui convient a la demande.")
+        loin = _vecteur("La confiture de mures se prepare en fin d'ete.")
+        if not (len(ancre) == len(proche) == len(loin)):
+            raise ValueError("dimensions incoherentes")
+
+        def _cos(a, b):
+            na = sum(x * x for x in a) ** 0.5
+            nb = sum(y * y for y in b) ** 0.5
+            if not na or not nb:
+                return 0.0
+            return sum(x * y for x, y in zip(a, b)) / (na * nb)
+
+        marge = round(_cos(ancre, proche) - _cos(ancre, loin), 3)
+        return {"latence_ms": latence_ms, "marge": marge, "ok": True, "motif": ""}
+    except Exception as exc:
+        motif = (str(exc).splitlines() or ["erreur inattendue"])[0][:60]
+        return {"latence_ms": None, "marge": None, "ok": False, "motif": motif}
+
+
 def latences_existantes(racine) -> dict:
     """
     Releve deja sur disque, ou dictionnaire vide.
