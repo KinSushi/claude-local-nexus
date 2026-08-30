@@ -27,6 +27,43 @@ Deux niveaux de réemploi. **Scripts** (sections ci-dessous) : chemin absolu + p
 
 ---
 
+## 0️⃣ La commande `nexus`
+*Si vous ne devez retenir qu'une chose, retenez celle-ci.*
+
+Une commande unique, disponible depuis **n'importe quel répertoire**, qui
+évite d'avoir à retenir les chemins absolus :
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `nexus` | Monte la pile : moteur Ollama, conformité, conteneurs, passerelle. **~46 s** |
+| `nexus check` | Vérifie le runtime : local, cloud et les trois routeurs |
+| `nexus status` | Contrôle de conformité, sans rien démarrer |
+| `nexus stop` | Arrête la pile |
+| `nexus mcp` | Écrit `.mcp.json` dans le projet courant, pour y avoir `nexus_ask` & co. |
+| `nexus ask "consigne" f1 f2` | Interroge le banc gratuit |
+| `nexus valide --base main` | Valide **le projet courant**, sans agent ni coût |
+| `nexus help` | Rappelle tout ceci |
+
+**Vous n'avez normalement rien à lancer.** Une tâche planifiée monte la pile
+à l'ouverture de votre session Windows, 120 s après — le délai laisse à
+Docker Desktop le temps de démarrer. Le compte rendu est écrit dans
+`logs/demarrage.log` : c'est là qu'on regarde si un démarrage a échoué.
+
+`nexus` reste utile après un `nexus stop`, après une modification de
+configuration, ou quand le démarrage automatique n'a pas fait son office.
+
+### Installation de ces deux commodités
+
+```powershell
+.\scripts\Install-NexusCommande.ps1     # la commande `nexus` (profil PowerShell)
+.\scripts\Register-NexusDemarrage.ps1   # le démarrage à l'ouverture de session
+```
+
+Chacune se retire avec `-Remove`. Les sections suivantes donnent la forme
+longue, à chemin absolu, qui fonctionne sans rien installer.
+
+---
+
 ## 1️⃣ Interroger le banc  
 *Déleguer une lecture ou une analyse.*
 
@@ -63,10 +100,21 @@ Options : `--simuler` (affiche les changements sans écrire), `--fonctions` (p
 *Détection de régressions.*
 
 ```powershell
+nexus valide
+# ou, sans la commande courte :
 python "C:/local-llm-docker/scripts/nexus_valide.py"
 ```
 
 *Sortie attendue* : code de retour 0 → rien à signaler, 1 → défaut trouvé, 2 → le banc n’a pu répondre (cas où un modèle PAYE pourrait être envisagé). Le script analyse le travail **non commité** par défaut.
+
+La validation porte sur le **projet courant**, pas sur la plateforme : la
+racine est prise dans `NEXUS_WORK_ROOT`, sinon `CLAUDE_PROJECT_DIR`, sinon le
+dépôt git contenant le répertoire d'où vous appelez.
+
+Le verdict vient du banc gratuit, et **il n'est pas déterministe** : sur
+quatre passages d'un même diff, trois ont conclu à l'absence de régression et
+un à l'inverse. Un passage est un signal, pas une preuve — sur un point qui
+compte, relancez.
 
 ---
 

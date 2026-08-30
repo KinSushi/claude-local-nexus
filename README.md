@@ -121,25 +121,42 @@ Puis lancer `claude` et approuver le serveur MCP `nexus-local`.
 
 ### Reprise
 
-L'installation ci-dessus ne se refait pas. Au quotidien, et après un
-redémarrage de la machine :
+En temps normal, **rien à taper** : une tâche planifiée monte la pile à
+l'ouverture de la session Windows, 120 s après — le délai laisse à Docker
+Desktop le temps de démarrer. Le compte rendu est écrit dans
+`logs/demarrage.log`.
+
+Pour le reste, une commande unique, disponible depuis n'importe quel
+répertoire :
 
 ```powershell
-.\scripts\start.ps1              # moteur, conformité, pile, passerelle — 46 s mesurées
-.\scripts\start.ps1 -Verifier    # + local, cloud et les trois routeurs
-.\scripts\start.ps1 -Restart     # LiteLLM seul, après modification de la configuration
+nexus                       # monte la pile — 46 s mesurées
+nexus check                 # local, cloud et les trois routeurs
+nexus status                # conformité, sans rien démarrer
+nexus mcp                   # branche le projet courant sur le banc
+nexus ask "consigne" f1 f2  # interroge le banc gratuit
+nexus valide --base main    # valide le projet courant, sans agent ni coût
+nexus help                  # rappelle tout ceci
 ```
+
+Les deux commodités s'installent une fois, et se retirent avec `-Remove` :
+
+```powershell
+.\scripts\Install-NexusCommande.ps1     # la commande `nexus`
+.\scripts\Register-NexusDemarrage.ps1   # le démarrage automatique
+```
+
+Sans rien installer, la forme longue reste valable :
+`C:\local-llm-docker\scripts\start.ps1`, appelable de n'importe où, avec
+`-Verifier` pour enchaîner la vérification complète et `-Restart` pour
+relancer LiteLLM seul.
 
 Le contrôle de conformité passe **avant** le démarrage, et il est bloquant :
 une passerelle qui monte devant une configuration fausse accepte toutes les
-requêtes et les fait toutes échouer.
-
-`start.ps1` rallume aussi le moteur Ollama au besoin. Celui-ci vit sur
-l'hôte, hors Docker, et n'a **aucun** démarrage automatique là où Docker
-Desktop en a un : après un redémarrage, la pile remontait seule et le moteur
-restait éteint. `-Verifier` reste hors du chemin par défaut parce que charger
-un modèle local prend des minutes — redémarrer vite et vérifier à fond sont
-deux besoins distincts.
+requêtes et les fait toutes échouer. `start.ps1` rallume aussi le moteur
+Ollama, qui vit sur l'hôte et n'a **aucun** démarrage automatique là où
+Docker Desktop en a un — sans quoi la pile remonte seule et le moteur reste
+éteint.
 
 ---
 

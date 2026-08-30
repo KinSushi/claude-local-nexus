@@ -447,9 +447,34 @@ def test_valide() -> None:
         changees = nexus_valide.extract_changed_functions(diff_change)
         check("aller: changement de signature detecte", changees == ["calculer"], str(changees))
 
-        diff_inchange = "-def calculer(a, b):\n+def autre(a, b):\n"
-        changees2 = nexus_valide.extract_changed_functions(diff_inchange)
-        check("aller: noms differents -> pas signale comme change", changees2 == [], str(changees2))
+        # Un renommage n'est PAS un non-evenement : `calculer` disparait et
+        # tous ses appelants cassent. L'attente precedente etait [] , ce qui
+        # verrouillait l'angle mort au lieu de le signaler.
+        diff_renomme = "-def calculer(a, b):\n+def autre(a, b):\n"
+        changees2 = nexus_valide.extract_changed_functions(diff_renomme)
+        check("aller: renommage -> les deux noms signales",
+              changees2 == ["autre", "calculer"], str(changees2))
+
+        # Corps modifie sans toucher a la signature : le cas le plus courant,
+        # et celui qui echappait entierement a la detection. Le nom vient du
+        # contexte que git place apres le second @@.
+        diff_corps = "@@ -10,7 +10,7 @@ def calculer(a, b):\n-    return a + b\n+    return a - b\n"
+        changees3 = nexus_valide.extract_changed_functions(diff_corps)
+        check("aller: corps modifie detecte par le contexte de hunk",
+              changees3 == ["calculer"], str(changees3))
+
+        # Une fonction sans aucun appelant ne doit plus lever : la levee
+        # faisait rendre le code 2, qui pousse vers un agent PAYANT.
+        sans_appelant = nexus_valide.find_callers(["ZZZ_fonction_inexistante_ZZZ"])
+        check("retour: fonction sans appelant -> liste vide, pas d'exception",
+              sans_appelant == {"ZZZ_fonction_inexistante_ZZZ": []}, str(sans_appelant))
+
+        # Le verdict n'est jamais en tete de ligne : build_task impose le
+        # format « <nom> : VERDICT - phrase ».
+        check("aller: REGRESSION lue au milieu de la ligne",
+              nexus_valide.analyse_result("_safe_int : REGRESSION - signature cassee"))
+        check("retour: INDETERMINE citant REGRESSION ne compte pas",
+              not nexus_valide.analyse_result("x : INDETERMINE - aucune REGRESSION visible"))
 
         # ---- ALLER / RETOUR : validate_base --------------------------------
         leve = False

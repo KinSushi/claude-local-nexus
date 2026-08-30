@@ -102,13 +102,36 @@ def get_modified_files_from_base(base):
     out = run_git(["diff", "--name-only", f"{base}..HEAD"])
     return [f for f in out.splitlines() if f]
 
+def _tete_existe():
+    """Vrai si le depot a au moins un commit."""
+    try:
+        run_git(["rev-parse", "--verify", "HEAD"])
+        return True
+    except RuntimeError:
+        return False
+
+
 def get_modified_files_uncommitted():
     """
-    Retourne la liste des fichiers modifiés dans l’arbre de travail
-    (diff non commité). Aucun commit n’est impliqué.
+    Fichiers modifies depuis HEAD : index ET arbre de travail.
+
+    `git diff` seul compare l'arbre a l'INDEX, pas a HEAD. Consequence
+    mesuree : apres un `git add` -- le geste naturel avant de valider --
+    le diff devenait vide, le script basculait sur un perimetre de commits
+    lui aussi vide, et concluait qu'il n'y avait rien a juger. Indexer son
+    travail desarmait donc le validateur.
+
+    Les fichiers neufs jamais indexes sont ajoutes a part : aucun diff ne
+    les contient, mais la batterie mecanique peut au moins verifier qu'ils
+    tiennent debout.
     """
-    out = run_git(["diff", "--name-only"])
-    return [f for f in out.splitlines() if f]
+    portee = ["diff", "--name-only", "HEAD"] if _tete_existe() else ["diff", "--name-only"]
+    fichiers = [f for f in run_git(portee).splitlines() if f]
+    neufs = run_git(["ls-files", "--others", "--exclude-standard"]).splitlines()
+    for f in neufs:
+        if f and f not in fichiers:
+            fichiers.append(f)
+    return fichiers
 
 def _filter_allowed_files(file_list):
     """Ne conserve que les fichiers dont l’extension est autorisée."""
@@ -193,8 +216,14 @@ def get_diff_from_base(base):
     return run_git(["diff", f"{base}..HEAD"])
 
 def get_diff_uncommitted():
-    """Retourne le diff complet du travail non commité (HEAD vs arbre)."""
-    return run_git(["diff"])
+    """
+    Diff complet depuis HEAD, index compris.
+
+    La docstring precedente annoncait deja « HEAD vs arbre » alors que le
+    code faisait `git diff`, soit index vs arbre. L'ecart entre les deux
+    est exactement ce qui rendait le trou invisible.
+    """
+    return run_git(["diff", "HEAD"] if _tete_existe() else ["diff"])
 
 def extract_changed_functions(diff_text):
     """

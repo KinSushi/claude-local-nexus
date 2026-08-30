@@ -3555,7 +3555,25 @@ the pool by itself at the next update.
 python scripts/nexus_valide.py --base main            # validation, cout zero
 .\scripts\Register-NexusAutoUpdate.ps1                # daily task, 04:00
 python scripts/nexus_test.py                          # full test suite
+
+.\scripts\start.ps1 [-Verifier]                       # bring the stack up
+.\scripts\Install-NexusCommande.ps1                   # `nexus` in the profile
+.\scripts\Register-NexusDemarrage.ps1                 # start at logon
 ```
+
+`scripts/nexus.ps1` is the single entry point: `start` (default), `check`,
+`status`, `stop`, `mcp`, `ask`, `valide`, `help`. It derives the platform
+root from `$PSScriptRoot`, so file paths handed to it stay relative to the
+CALLING project. `nexus mcp` writes the `.mcp.json` a foreign project needs,
+with an absolute server path -- copying the platform's own file would not
+work, it refers to the server through `${CLAUDE_PROJECT_DIR}`.
+
+A scheduled task brings the stack up at logon, 120 s in, and writes
+`logs/demarrage.log`. Note for whoever registers such a task: `pwsh -File`
+passes everything after the script path AS ARGUMENTS, so a `*>` redirection
+never reaches PowerShell. Use `-Command "& 'script' *> 'log'"` instead.
+Measured with `-File`: LastTaskResult 1, and no log at all -- a silent
+failure, precisely what the log existed to prevent.
 
 ## 105.5 Observability of routing decisions
 
