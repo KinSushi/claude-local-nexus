@@ -190,7 +190,33 @@ if ($Restart) {
         }
     } finally { Pop-Location }
 
-    Start-Sleep -Seconds 25
+    # Attente SONDEE, et non fixe.
+    #
+    # 25 secondes suffisaient d'ordinaire, mais pas toujours : le 30 aout
+    # 2026 a 04:00, le premier controle du smoke -- « Sante du proxy » -- a
+    # echoue 31 secondes apres le redemarrage, tous les autres passant. La
+    # tache planifiee a donc rendu 1 sur un faux echec, et un delai fixe
+    # reproduit ce cas des que la machine est un peu chargee.
+    #
+    # Plafond de 60 essais espaces de 4 s, soit 240 s, comme dans start.ps1.
+    # L'attente vient APRES le premier essai : quand la passerelle repond
+    # deja, ce chemin ne coute rien.
+    $HealthUrl = if ($env:HEALTH_URL) { $env:HEALTH_URL }
+                 else { 'http://localhost:4000/health/liveliness' }
+    $pret = $false
+    for ($essai = 1; $essai -le 60; $essai++) {
+        try {
+            $reponse = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop
+            if ($reponse.StatusCode -eq 200) { $pret = $true; break }
+        } catch {
+            # Port ferme, delai depasse ou reponse non 200 : on retente.
+        }
+        if ($essai -lt 60) { Start-Sleep -Seconds 4 }
+    }
+    if (-not $pret) {
+        Write-Log "Passerelle muette apres 240 s sur $HealthUrl" "ERROR"
+        exit 1
+    }
 
     Write-Log "Smoke test"
     & (Join-Path $PSScriptRoot "Test-NexusSmoke.ps1") -IncludeRouters 2>&1 |
