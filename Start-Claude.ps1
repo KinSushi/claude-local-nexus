@@ -105,36 +105,29 @@ $MotifsDeReleve = if ($env:LITELLM_MOTIFS) {
 
 function Invoke-ClaudeCode {
     param(
-        [string[]]$Arguments,
-        [int]$TimeoutSec = 120
+        [string[]]$Arguments
     )
     # Verifier que l'executable 'claude' est disponible
     if (-not (Get-Command "claude" -ErrorAction SilentlyContinue)) {
         Write-Error "Executable 'claude' introuvable dans le PATH."
         return [pscustomobject]@{ Code = 1; Trace = "" }
     }
+    if (-not $Arguments) { $Arguments = @() }
 
-    $journal = Join-Path $env:TEMP ("claude-session-{0}.log" -f (Get-Date -Format "HHmmss"))
+    # 'claude' est une interface interactive : elle doit garder la console.
+    # Detourner sa sortie vers un fichier la rendait invisible, et le timeout
+    # de 120 s tuait la session en pleine conversation. Seul stderr est
+    # capture, pour que Test-MotifDeReleve dispose du motif d'arret.
+    $journalErr = Join-Path $env:TEMP ("claude-session-{0}.erreur.log" -f (Get-Date -Format "HHmmssfff"))
 
-    # Lancement du processus avec timeout
-    $proc = Start-Process -FilePath "claude" -ArgumentList $Arguments `
-        -RedirectStandardOutput $journal -RedirectStandardError $journal `
-        -NoNewWindow -PassThru
+    & claude @Arguments 2> $journalErr
+    $code = $LASTEXITCODE
+    if ($null -eq $code) { $code = 0 }
 
-    $exited = $proc.WaitForExit($TimeoutSec * 1000)
-    if (-not $exited) {
-        Write-Warn2 "Execution de 'claude' depasse le timeout de $TimeoutSec secondes, arret du processus."
-        try { $proc.Kill() } catch {}
-        $code = 1
-    } else {
-        $code = $proc.ExitCode
-    }
-
-    $trace = if (Test-Path $journal) { Get-Content $journal -Raw } else { "" }
-    # Affichage en temps réel (contenu du journal) pour conserver le comportement d'origine
+    $trace = if (Test-Path $journalErr) { Get-Content $journalErr -Raw } else { "" }
     if ($trace) { Write-Host $trace }
 
-    Remove-Item $journal -ErrorAction SilentlyContinue
+    Remove-Item $journalErr -ErrorAction SilentlyContinue
     return [pscustomobject]@{ Code = $code; Trace = $trace }
 }
 

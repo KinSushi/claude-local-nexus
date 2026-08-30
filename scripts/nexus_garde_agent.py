@@ -36,9 +36,13 @@ Contrat du hook
 Entree : un objet JSON sur stdin.
 Sortie : code 2 et un message sur stderr pour bloquer, code 0 sinon.
 
-Toute anomalie -- JSON illisible, champ absent, autre outil -- rend 0. Une
-garde qui plante ne doit jamais empecher de travailler : elle cesse alors de
-garantir quoi que ce soit, ce qui est moins grave que de bloquer le depot.
+Toute anomalie de forme -- JSON illisible, charge qui n'est pas un objet,
+autre outil que Agent -- rend 0. Une garde qui plante ne doit jamais empecher
+de travailler : elle cesse alors de garantir quoi que ce soit, ce qui est
+moins grave que de bloquer le depot.
+
+L'absence de `model`, elle, n'est pas une anomalie de forme : c'est
+exactement la depense non decidee. Elle bloque.
 """
 from __future__ import annotations
 
@@ -107,11 +111,12 @@ def main() -> int:
     if not isinstance(entree, dict):
         return 0
 
+    # subagent_type est FACULTATIF : l'omettre lance un agent generaliste, et
+    # c'est le cas le plus courant. Sortir ici quand il manquait annulait le
+    # controle du modele juste en dessous -- la garde laissait donc passer
+    # precisement la depense non decidee qu'elle existe pour refuser.
     genre = entree.get("subagent_type")
-    # Si le type n'est pas une chaîne, on ne peut pas le comparer correctement → aucune décision.
-    if not isinstance(genre, str):
-        return 0
-    if genre in TYPES_INTERDITS:
+    if isinstance(genre, str) and genre in TYPES_INTERDITS:
         return bloquer(
             "Sous-agent refuse : subagent_type='%s' herite du modele du parent," % genre,
             "et l'argument model y est ignore. L'annoncer bride serait une",
@@ -125,10 +130,9 @@ def main() -> int:
             "Un model absent fait HERITER celui du parent, donc le plus cher,",
             "et rien ne le signale. C'est la depense non decidee, pas la",
             "depense elevee, que cette garde refuse.")
-    # Le champ model doit être une chaîne pour pouvoir le valider.
-    if not isinstance(modele, str):
-        return 0
-    if modele not in MODELES_CONNUS:
+    # Un model non textuel n'est pas davantage un choix qu'une faute de
+    # frappe : il est traite comme un nom inconnu, pas comme une anomalie.
+    if not isinstance(modele, str) or modele not in MODELES_CONNUS:
         return bloquer(
             "Sous-agent refuse : model=%r inconnu." % modele,
             "Valeurs connues : %s." % ", ".join(sorted(MODELES_CONNUS)),

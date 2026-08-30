@@ -539,6 +539,97 @@ def controle_delegation(avant_demarrage: bool) -> None:
     )
 
 
+def controle_garde_agent() -> None:
+    """
+    Verifie que la garde contre les sous-agents non decides est operative.
+
+    Trois conditions, dans cet ordre : le script existe et s'analyse ; il est
+    reellement cable en hook PreToolUse ; et il refuse effectivement un
+    sous-agent sans modele. Les deux premieres ne prouvent rien sans la
+    troisieme -- une garde presente et cablee peut avoir cesse de refuser.
+    C'est arrive : une sortie prematuree sur `subagent_type` absent annulait
+    le controle du modele, et la garde laissait passer le cas le plus courant.
+    """
+    import ast
+
+    # ------------------------------------------------------------------
+    # 1. Presence et parsabilite du script
+    # ------------------------------------------------------------------
+    script_path = os.path.join(ROOT, "scripts", "nexus_garde_agent.py")
+    if not os.path.isfile(script_path):
+        noter("garde agent", False, BLOQUANT,
+              "fichier scripts/nexus_garde_agent.py absent")
+        return
+    try:
+        with io.open(script_path, "r", encoding="utf-8") as f:
+            ast.parse(f.read(), filename=script_path)
+    except Exception as exc:
+        noter("garde agent", False, BLOQUANT,
+              "scripts/nexus_garde_agent.py invalide : %s" % exc)
+        return
+
+    # ------------------------------------------------------------------
+    # 2. Cablage dans .claude/settings.json
+    #
+    # Le format reel est une LISTE d'entrees, chacune portant un matcher et sa
+    # PROPRE liste de hooks. Une version anterieure de ce controle attendait un
+    # objet plat expose matcher/command : elle aurait declare absent un hook
+    # correctement cable, et bloque le demarrage sur un defaut imaginaire.
+    # ------------------------------------------------------------------
+    settings_path = os.path.join(ROOT, ".claude", "settings.json")
+    if not os.path.isfile(settings_path):
+        noter("garde agent", False, BLOQUANT, ".claude/settings.json absent")
+        return
+    try:
+        with io.open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception as exc:
+        noter("garde agent", False, BLOQUANT,
+              ".claude/settings.json illisible : %s" % exc)
+        return
+
+    entrees = (settings.get("hooks") or {}).get("PreToolUse")
+    cable = False
+    if isinstance(entrees, list):
+        for entree in entrees:
+            if not isinstance(entree, dict) or entree.get("matcher") != "Agent":
+                continue
+            for h in entree.get("hooks") or []:
+                if isinstance(h, dict) and "nexus_garde_agent" in (h.get("command") or ""):
+                    cable = True
+    if not cable:
+        noter("garde agent", False, BLOQUANT,
+              "aucun hook PreToolUse matcher=Agent n'invoque nexus_garde_agent")
+        return
+
+    # ------------------------------------------------------------------
+    # 3. Comportement effectif : refuser un sous-agent sans modele.
+    #
+    # NEXUS_AGENT_LIBRE est neutralise : la derogation est legitime a l'usage,
+    # mais elle ne doit pas faire conclure que la garde est morte.
+    # ------------------------------------------------------------------
+    env = dict(os.environ)
+    env.pop("NEXUS_AGENT_LIBRE", None)
+    try:
+        proc = subprocess.run(
+            [sys.executable, script_path],
+            input='{"tool_name":"Agent","tool_input":{}}',
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=30, env=env,
+        )
+    except Exception as exc:
+        noter("garde agent", False, BLOQUANT,
+              "execution du script impossible : %s" % exc)
+        return
+
+    if proc.returncode != 2:
+        noter("garde agent", False, BLOQUANT,
+              "sous-agent sans modele accepte (code %s au lieu de 2)" % proc.returncode)
+        return
+
+    noter("garde agent", True, BLOQUANT, "")
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
@@ -558,6 +649,7 @@ def main() -> int:
         controle_env_hors_git,
         controle_disque,
         controle_pont_mcp,
+        controle_garde_agent,
     ):
         try:
             controle()
