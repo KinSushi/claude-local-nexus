@@ -519,6 +519,33 @@ def repartir_cibles(cibles: List[str]) -> Tuple[List[str], List[str]]:
             cloud.append(c)
     return cloud, locales
 
+def traiter_plan(cibles, args, plan, modele, parallele):
+    """
+    Traite les cibles d'UN plan dans son propre executeur.
+
+    Extraire ce traitement permet de lancer les deux plans en meme temps :
+    tant que chacun vivait dans un bloc `with` de main(), le second ne
+    pouvait pas demarrer avant que le premier ait vide sa file, et les
+    durees s'additionnaient. Or les deux ne se disputent rien -- le plan
+    local est borne par la machine, le plan cloud par le reseau.
+
+    Chaque plan garde son propre plafond, qui est mesure : le cloud
+    n'accelere plus au-dela de trois appels simultanes, le local plafonne
+    des le deuxieme. Les fusionner effacerait ces deux mesures.
+    """
+    if not cibles:
+        return []
+    resultats = []
+    with ThreadPoolExecutor(max_workers=parallele) as executor:
+        futures = {
+            executor.submit(traiter_cible, cible, args, plan, modele): cible
+            for cible in cibles
+        }
+        for future in as_completed(futures):
+            resultats.append(future.result())
+    return resultats
+
+
 def main() -> int:
     args = analyser_arguments()
 
@@ -536,47 +563,37 @@ def main() -> int:
     else:  # deux
         cloud_cibles, local_cibles = repartir_cibles(args.cibles)
 
-    # Traitement du plan cloud
-    if cloud_cibles:
-        with ThreadPoolExecutor(max_workers=args.parallele) as executor:
-            futures = {
-                executor.submit(
-                    traiter_cible,
-                    cible,
-                    args,
-                    "cloud",
-                    args.modele_audit,
-                ): cible
-                for cible in cloud_cibles
-            }
-            for future in as_completed(futures):
-                rapport, ok, fuite = future.result()
-                rapports.append(rapport)
-                if not ok:
-                    echec = True
-                if fuite:
-                    fuite_detectee = True
+    def resultats_ou_echec(future, nom_plan):
+        # Un plan qui echoue ne doit pas faire perdre l'autre, mais il ne
+        # doit pas non plus passer pour un plan sans travail : on rend un
+        # triplet d'echec, que la boucle d'agregation traduira en ligne de
+        # rapport et en echec = True. Une panne muette se confond avec un
+        # succes, et c'est le pire des deux.
+        try:
+            return future.result()
+        except Exception as exc:
+            return [("plan %s en echec : %s" % (nom_plan, exc), False, False)]
 
-    # Traitement du plan local
-    if local_cibles:
-        with ThreadPoolExecutor(max_workers=args.parallele_local) as executor:
-            futures = {
-                executor.submit(
-                    traiter_cible,
-                    cible,
-                    args,
-                    "local",
-                    args.modele_audit_local,
-                ): cible
-                for cible in local_cibles
-            }
-            for future in as_completed(futures):
-                rapport, ok, fuite = future.result()
-                rapports.append(rapport)
-                if not ok:
-                    echec = True
-                if fuite:
-                    fuite_detectee = True
+    # Les deux plans partent ENSEMBLE. Leurs durees se superposent au lieu
+    # de s'additionner : le gain est celui du plan le plus court.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_cloud = executor.submit(
+            traiter_plan, cloud_cibles, args, "cloud",
+            args.modele_audit, args.parallele,
+        )
+        future_local = executor.submit(
+            traiter_plan, local_cibles, args, "local",
+            args.modele_audit_local, args.parallele_local,
+        )
+        resultats_cloud = resultats_ou_echec(future_cloud, "cloud")
+        resultats_local = resultats_ou_echec(future_local, "local")
+
+    for rapport, ok, fuite in resultats_cloud + resultats_local:
+        rapports.append(rapport)
+        if not ok:
+            echec = True
+        if fuite:
+            fuite_detectee = True
 
     # Affichage du rapport
     for ligne in rapports:

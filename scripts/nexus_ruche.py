@@ -394,7 +394,8 @@ def main() -> int:
     parser.add_argument("--taille-lot", type=int, default=TAILLE_LOT_DEFAUT,
                         help="Taille d'un lot de cibles.")
     parser.add_argument("--plans", choices=["cloud", "local", "deux"],
-                        default="local", help="Plan d'execution (non utilise).")
+                        default="local", help="Plan transmis a chaque essaim : cloud, local, ou deux "
+                             "(les deux plans travaillent alors en meme temps).")
     parser.add_argument("--tout-refaire", action="store_true",
                         help="Ignorer le journal et tout retraiter.")
     parser.add_argument("--simuler", action="store_true",
