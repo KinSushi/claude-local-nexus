@@ -411,6 +411,79 @@ function planOf(alias) {
   return "local, cout 0";
 }
 
+// Concurrence du plan local, bornee au niveau du SERVEUR.
+//
+// `nexus_batch` est sequentiel a dessein, et sa description dit pourquoi :
+// deux inferences simultanees se disputent la meme bande passante memoire et
+// finissent plus tard que si elles s'etaient suivies. Mais cette discipline
+// ne valait qu'A L'INTERIEUR d'un appel : rien n'empechait dix appelants d'en
+// lancer dix en parallele, c'est-a-dire exactement ce que `nexus_batch`
+// refuse de faire. La regle existait en paragraphe, pas en mecanisme.
+//
+// Mesure du 2026-08-30, 34 appels MCP dont une dizaine simultanes :
+//
+//     plan local   8 reussites, 14 ECHECS -- toutes des expirations a 600 s
+//     plan cloud   7 reussites,  0 echec
+//
+// Ont expire : un resume de README.md (15 Ko), une extraction dite triviale
+// via nexus_route, et deux nexus_context. Ce n'est pas la taille des taches
+// qui a decide, c'est le nombre d'inferences concurrentes sur un hote a
+// memoire partagee dont le moteur ne garde que trois modeles residents.
+//
+// Le cloud n'est PAS borne : il a rendu 7 sur 7 en parallele, et le brider
+// gacherait l'abonnement qui a ete paye pour cela.
+const CONCURRENCE_LOCALE = Number(process.env.NEXUS_LOCAL_CONCURRENCE || 1);
+
+const attenteLocale = [];
+let jetonsLocauxPris = 0;
+
+/**
+ * Execute `fn` en tenant un jeton du plan local, et le rend toujours.
+ *
+ * Le jeton est PRIS dans le meme tick que le test d'admission, jamais apres
+ * un `await`. Le premier jet faisait l'inverse -- il incrementait le compteur
+ * apres l'attente -- si bien que deux appels partis dans le meme tick voyaient
+ * tous deux zero jeton pris et passaient ensemble. Le semaphore aurait ete
+ * inoperant precisement sous la charge qui le motive.
+ *
+ * A la liberation, le jeton est TRANSMIS au suivant plutot que rendu puis
+ * repris : entre les deux gestes, un appel arrive entre-temps se glisserait
+ * devant toute la file.
+ */
+async function avecJetonLocal(fn) {
+  // Sortie de secours. Sans elle, une anomalie de comptage bloquerait le pont
+  // entier, ce qui serait un defaut bien pire que la contention corrigee.
+  if (!(CONCURRENCE_LOCALE > 0)) return fn();
+
+  if (jetonsLocauxPris < CONCURRENCE_LOCALE) {
+    jetonsLocauxPris++;
+  } else {
+    await new Promise((resoudre) => attenteLocale.push(resoudre));
+    // Le jeton nous a ete transmis : le compteur reste inchange.
+  }
+  try {
+    return await fn();
+  } finally {
+    const suivant = attenteLocale.shift();
+    if (suivant) suivant();
+    else jetonsLocauxPris = Math.max(0, jetonsLocauxPris - 1);
+  }
+}
+
+/**
+ * Le plan local, et lui seul.
+ *
+ * `planOf` est la seule source : declarer une seconde table serait s'exposer
+ * a ce qu'elles divergent. Un plan INCONNU rend false -- serialiser par
+ * defaut ce que l'on ne connait pas ralentirait le cloud sur une simple
+ * lacune de table, et le cout d'un faux negatif est une contention, jamais
+ * une panne.
+ */
+function estPlanLocal(alias) {
+  const libelle = planOf(alias);
+  return typeof libelle === "string" && /^local\b/i.test(libelle.trim());
+}
+
 // Retire la chaine de pensee que certains modeles laissent dans `content`.
 //
 // Constate le 30 aout 2026 cote Python : une reponse rendue a l'utilisateur
@@ -532,11 +605,23 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // Les modeles Anthropic recents rejettent certains parametres
   // d'echantillonnage (16, 85) : on ne leur en impose aucun.
   if (t !== null && !String(model).startsWith("claude-")) corps.temperature = t;
-  const { body, headers } = await withRetry(() => requestJson(
+  // L'attente du jeton est mesuree A PART, et retranchee de la duree.
+  // `observer()` alimente les relevés dont ce depot tire sa doctrine :
+  // compter le temps de file dans `duree_ms` gonflerait la latence et
+  // ecraserait le debit, c'est-a-dire fausserait les mesures memes qui ont
+  // servi a choisir les modeles.
+  let attenteMs = 0;
+  const appelReseau = () => withRetry(() => requestJson(
     "/v1/chat/completions",
     corps,
     timeoutMs
   ));
+  const { body, headers } = estPlanLocal(model)
+    ? await avecJetonLocal(() => {
+        attenteMs = Date.now() - depart;
+        return appelReseau();
+      })
+    : await appelReseau();
   const choice = body.choices && body.choices[0];
   if (!choice) throw new Error("aucune reponse du modele " + model);
   const usage = body.usage || {};
@@ -554,7 +639,8 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     model;
   // L'observation, avant le retour. Les grandeurs seulement : ni prompt ni
   // reponse, et le debit calcule plutot que suppose.
-  const dureeMs = Date.now() - depart;
+  // La duree du TRAVAIL, l'attente en file retranchee.
+  const dureeMs = Date.now() - depart - attenteMs;
   const sortie = usage.completion_tokens || 0;
   observer({
     t: new Date().toISOString(),
@@ -562,6 +648,10 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     upstream: headers["x-litellm-model-name"] || "",
     temperature: t,
     duree_ms: dureeMs,
+    // L'attente est rendue VISIBLE plutot que cachee : c'est elle qui prouve
+    // que le semaphore travaille, et elle seule permet de juger si la borne
+    // est trop basse.
+    attente_ms: attenteMs,
     tokens_in: usage.prompt_tokens || 0,
     tokens_out: sortie,
     // Jetons par seconde, la grandeur qui decide pour une generation

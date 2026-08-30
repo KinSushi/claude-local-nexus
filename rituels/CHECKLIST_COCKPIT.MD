@@ -557,9 +557,68 @@ enfreinte. Un paragraphe ne ferme rien.
 
 ### Charge massive sur le pont MCP, 30/08 — ce que l'usage a montré
 
-> Workflow `wf_b08fc212-efb` : 33 appels réels sur les douze outils de
-> `nexus-local`, chaque anomalie passée à un réfutateur. Arbitrage en cours ;
-> ce qui suit a été **vérifié dans le code réel**, jamais cru sur parole.
+> Workflow `wf_b08fc212-efb`, **terminé** : 60 agents, 34 appels réels, 22
+> minutes. Ce qui suit a été **vérifié dans le code réel**, jamais cru sur
+> parole — et il a fallu le faire, car la synthèse du banc était fausse.
+
+| Trouvaille | Statut | Ce qui la garde |
+|---|---|---|
+| Le plan local n'avait **aucune borne de concurrence** | `FAIT` | sémaphore FIFO dans `server.js`, `--only semaphore`, 7 cas dont une contre-épreuve |
+| La synthèse a conclu « sain » sur 19 échecs | `OUVERT` | défaut de MON harnais, pas du dépôt : voir plus bas |
+
+> **LE RÉSULTAT CENTRAL, et il était caché sous une synthèse rassurante.**
+> Le banc a rendu « RIEN n'a cassé », « 34/34, 100 % de complétude », « état
+> opérationnel : sain ». Les compteurs calculés sur les mêmes données disent
+> **19 échecs sur 34**. La synthèse donnait en outre trois nombres différents
+> pour une même quantité — 20 dans son texte, 30 dans son propre tableau, 25
+> dans les compteurs.
+>
+> Ses *faits* étaient pourtant exacts : `DEFAULT_TIMEOUT_MS` est bien à
+> `server.js:135`, et `litellm_config.yaml:1847` porte bien
+> `request_timeout: 180`. Vérifiés tous les deux. **C'est son verdict qui
+> était faux**, par un sophisme : un délai configuré à 600 s ne rend pas sain
+> le fait de l'atteindre. §112.4 disait « l'analyse est un signal, jamais une
+> preuve » ; ici l'analyse était juste et la *conclusion* inventée, ce qui est
+> une variante plus dangereuse, parce qu'elle résiste à la vérification des
+> citations.
+>
+> **La répartition des échecs, elle, ne laisse aucun doute :**
+>
+> | plan | réussites | échecs |
+> |---|---|---|
+> | local | 8 | **14** — toutes des expirations à 600 s |
+> | cloud | 7 | **0** |
+>
+> Ont expiré : un résumé de `README.md` (15 Ko), une extraction dite
+> *triviale* via `nexus_route`, deux `nexus_context`. Ce n'est donc pas la
+> taille des tâches qui a décidé, c'est le **nombre d'inférences
+> concurrentes** sur un hôte à mémoire partagée dont le moteur ne garde que
+> trois modèles résidents.
+>
+> **La règle existait déjà — en paragraphe.** `nexus_batch` est séquentiel à
+> dessein, et sa description dit exactement pourquoi : « deux inférences
+> simultanées se disputent la même bande passante mémoire et finissent plus
+> tard que si elles s'étaient suivies ». Mais cette discipline ne valait qu'à
+> l'INTÉRIEUR d'un appel. Rien n'empêchait dix appelants de faire précisément
+> ce que `nexus_batch` refuse. C'est §0.2.1 dans sa forme la plus pure : une
+> règle écrite, juste, et qui ne protégeait rien.
+>
+> Le sémaphore ne borne **que** le plan local : le cloud a rendu 7 sur 7 en
+> parallèle, et le brider gâcherait l'abonnement payé pour cela. Le plan
+> inconnu n'est pas sérialisé non plus — le coût d'un faux négatif est une
+> contention, celui d'un faux positif une lenteur imposée au cloud sur une
+> simple lacune de table.
+>
+> **Deux défauts arbitrés dans le jet du banc.** Le sémaphore prenait son
+> jeton APRÈS l'`await` : deux appels partis dans le même tick voyaient tous
+> deux zéro jeton pris et passaient ensemble — inopérant précisément sous la
+> charge qui le motive. La contre-épreuve le chiffre : la variante fautive
+> atteint **20 appels simultanés** là où la corrigée reste à 1. Et `depart`
+> étant pris avant l'attente, `observer()` aurait compté le temps de file
+> dans `duree_ms` et `debit_jps`, faussant les relevés mêmes dont ce dépôt
+> tire sa doctrine ; l'attente est mesurée à part et rendue visible.
+
+
 
 | Sujet | Statut | Ce qu'il faudra pour le clore |
 |---|---|---|

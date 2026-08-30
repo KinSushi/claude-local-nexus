@@ -1246,7 +1246,7 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee"],
+                                 "shell", "portee", "semaphore"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1279,6 +1279,8 @@ def main() -> int:
         test_garde_shell()
     if args.only in (None, "portee"):
         test_portee_import()
+    if args.only in (None, "semaphore"):
+        test_semaphore_local()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1395,6 +1397,57 @@ def test_portee_import() -> None:
         check("silence sur cas legitime : %s" % nom,
               code == 0 and lignes == ["OK"],
               "silence" if lignes == ["OK"] else "; ".join(lignes)[:70])
+
+
+def test_semaphore_local() -> None:
+    """
+    Le plan local est-il encore borne, et le harnais le verrait-il sinon ?
+
+    Mesure du 2026-08-30, 34 appels MCP dont une dizaine simultanes :
+    plan local 8 reussites et 14 ECHECS, toutes des expirations a 600 s ;
+    plan cloud 7 reussites et 0 echec. Ont expire un resume de README.md
+    (15 Ko) et une extraction dite triviale : ce n'est pas la taille des
+    taches qui a decide, c'est le nombre d'inferences concurrentes.
+
+    `nexus_batch` etait deja sequentiel a dessein, mais seulement A
+    L'INTERIEUR d'un appel. La regle existait en paragraphe, pas en
+    mecanisme.
+
+    L'epreuve joue sur le CODE REEL de server.js, extrait a la volee, et
+    porte une CONTRE-EPREUVE : la variante fautive du premier jet -- jeton
+    pris apres l'attente -- doit etre VUE. Sans elle, six cas verts ne
+    prouveraient que la bonne humeur du harnais.
+    """
+    print("\n--- SEMAPHORE DU PLAN LOCAL : la borne tient-elle ? ---")
+
+    epreuve = os.path.join(ROOT, "tools", "nexus-mcp", "epreuve_semaphore.js")
+    if not os.path.isfile(epreuve):
+        skip("semaphore local", "epreuve_semaphore.js introuvable")
+        return
+    try:
+        r = subprocess.run(["node", epreuve], cwd=ROOT, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           timeout=300)
+    except FileNotFoundError:
+        skip("semaphore local", "node introuvable")
+        return
+    except subprocess.TimeoutExpired:
+        check("semaphore local", False, "pas de reponse en 300 s")
+        return
+
+    lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
+    for ligne in lignes:
+        if ligne.startswith("[OK  ]") or ligne.startswith("[RATE]"):
+            # rpartition, jamais split : deux cas s'appelaient tous deux
+            # « limite 1 » dans le rapport, le libelle etant coupe a son
+            # PREMIER deux-points au lieu du dernier.
+            corps = ligne[6:].strip()
+            nom, _, detail = corps.rpartition(" : ")
+            if not nom:
+                nom, detail = corps, ""
+            check(nom, ligne.startswith("[OK  ]"), detail[:70])
+    if not lignes:
+        check("semaphore local", False, "aucune sortie de l'epreuve")
 
 
 def test_ruche() -> None:
