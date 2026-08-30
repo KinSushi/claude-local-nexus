@@ -65,6 +65,18 @@ import sys
 # pour un outil dont le role est justement de dire ce qui reste ouvert.
 SEPARATEUR = re.compile(r"^\s*\|[\s|:-]+\|\s*$")
 
+# Intitules de colonne du cockpit. Un en-tete qui echappe au separateur --
+# second en-tete dans un meme tableau, mise en forme irreguliere -- serait
+# sinon annonce comme un sujet ouvert, du bruit qui ressemble a une
+# information.
+# Un numero de ligne ou de section : « 3 », « 1.1 », « 2.3.4 ». isdigit()
+# seul laissait passer les decimaux, et « 1.1 » etait annonce comme sujet.
+NUMERO = re.compile(r"^[0-9]+([.][0-9]+)*[.]?$")
+
+INTITULES = {"#", "sujet", "statut", "detail", "détail", "preuve", "regle",
+             "règle", "mecanisme", "mécanisme", "etat", "état", "lien",
+             "ou elle est ecrite", "où elle est écrite"}
+
 # Le PARENT de « scripts », et non « scripts ». Voir le docstring : c'est la
 # faute la plus reproduite de ce dépôt, et elle ne fait jamais echouer un
 # appel — elle le fait viser à côté, en silence.
@@ -189,7 +201,22 @@ def bloc_sujets() -> None:
             corps = True
             continue
         if dedans and corps and ligne.startswith("|"):
-            cellule = ligne.split("|")[1].strip()
+            # Certains tableaux du cockpit ont une premiere colonne « # »
+            # qui ne porte qu'un NUMERO de ligne. La prendre pour le sujet
+            # affichait « 1 », « 2 », « # » -- du bruit qui ressemblait a de
+            # l'information, ce qui est pire que pas d'information du tout.
+            # On retient donc la premiere cellule qui dit vraiment quelque
+            # chose, au lieu de compter sur une position.
+            cellules = [c.strip() for c in ligne.split("|")[1:-1]]
+            cellule = ""
+            for c in cellules:
+                # Ni un numero de ligne, ni un intitule de colonne. Le
+                # premier essai filtrait sur la LONGUEUR (>= 4), ce qui
+                # sautait « AST » et retenait le statut a sa place : un
+                # critere de forme la ou il fallait un critere de sens.
+                if c and not NUMERO.match(c) and c.lower() not in INTITULES:
+                    cellule = c
+                    break
             if cellule and not cellule.startswith("**") and montres < 12:
                 print("     - %s" % cellule[:96])
                 montres += 1

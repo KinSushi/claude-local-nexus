@@ -1425,7 +1425,7 @@ def test_ruche() -> None:
             # RETOUR, niveau ruche entiere -- aucune cible decouverte ne
             # doit jamais rendre un succes. all() sur un dictionnaire vide
             # vaut True en Python : c'etait le piege exact.
-            ruche.decouvrir_cibles = lambda: []
+            ruche.decouvrir_cibles = lambda _racine: []
             sys.argv = ["nexus_ruche.py"]
             code = ruche.main()
             check("aucune cible decouverte => code de sortie en echec",
@@ -1433,7 +1433,7 @@ def test_ruche() -> None:
 
             # ALLER, niveau ruche entiere -- le meme garde-fou ne doit pas
             # se declencher a tort quand des cibles existent reellement.
-            ruche.decouvrir_cibles = lambda: [cible_a]
+            ruche.decouvrir_cibles = lambda _racine: [cible_a]
             ruche.ESSAIM_SCRIPT = script_ok
             sys.argv = ["nexus_ruche.py", "--essaims", "1", "--taille-lot", "1",
                         "--tout-refaire"]

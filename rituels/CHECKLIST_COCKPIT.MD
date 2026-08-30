@@ -181,7 +181,13 @@
 | Sentinelles image et embedding | `OUVERT` | Posées, **jamais vues passer** dans une suite complète non interrompue. |
 | Asymétrie des pools | `DÉCIDÉ` | Cloud 19 candidats, local 4. Justifié — aucun poids chargé côté cloud — et documenté dans le code. |
 
-### Règles écrites le 30/08, pas encore mécanisées — donc OUVERTES
+### Règles du 30/08 encore OUVERTES — celles qu'aucun contrôle ne garde
+
+Deux des quatre règles inscrites ici le matin ont été fermées depuis et ont
+donc quitté ce tableau : elles figurent au point d'étape, avec leur preuve.
+Les y laisser faisait annoncer par la reprise de session, à chaque
+démarrage, des sujets clos comme ouverts — un tableau de bord qui ment sur
+son propre état est pire qu'un tableau de bord absent.
 
 Le critère en tête de ce document s'applique à elles comme aux autres : tant
 qu'aucun contrôle n'échoue quand la règle est enfreinte, le sujet reste ouvert,
@@ -189,7 +195,6 @@ quelle que soit la qualité du paragraphe.
 
 | Règle | Où elle est écrite | Ce qui manque pour la fermer |
 |---|---|---|
-| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **fermé pour l'essaim** (`test_isolation`, 6/6, éprouvé contre la version d'avant : 4 échecs sur 4). **fermé pour le pont**, mais autrement qu'attendu : le pont ne modifie rien, il lit — lui faire copier les fichiers avant lecture n'aurait protégé de rien, et une protection décorative se lit comme une garantie. Ce qui est gardé est l'invariant réel : `controle_pont_lecture_seule`, BLOQUANT, éprouvé par injection (0 → 1) |
 | Chaque worker dans un **worktree isolé** | contrat §0.4 | l'essaim écrit désormais hors du dépôt, à côté de `.nexus-arbres` — mais c'est un répertoire, **pas un worktree git**. Le dire plutôt que de laisser croire la case cochée |
 
 > **Où la règle est enfreinte, mesuré le 30/08.** En cherchant à mécaniser
@@ -230,7 +235,6 @@ quelle que soit la qualité du paragraphe.
 > cas non gérés — ce qui, après renversement, réécrirait par-dessus un fichier
 > sain. Une protection au mauvais endroit devient une régression.
 | Préserver le contexte de l'orchestrateur | contrat §0.4 | mesurable (jetons facturés par jeton délégué) mais non mesuré par tour |
-| Tout mécaniser, ne rien oublier dans les câblages | contrat §0.2.1 | la checklist des six maillons est écrite ; aucun contrôle ne vérifie qu'un mécanisme neuf les a tous |
 
 ### Inspiré des dépôts voisins le 30/08 — repris, et ce qui reste à reprendre
 
@@ -308,6 +312,45 @@ relecture :
 > tout heredoc quoté portant un antislash, et sortait en code 1 sur stderr au
 > lieu d'imprimer un refus. Demander une retouche coûte parfois l'acquis :
 > l'épreuve précède l'intégration, et l'arbitrage garde le dernier mot.
+
+### Ce que la suite complète a trouvé — un défaut en masquait un autre
+
+Le sujet « suite complète après tous les changements » était ouvert depuis le
+matin. Jouée une fois, elle a **payé immédiatement**, et deux fois :
+
+| Défaut | Portée réelle |
+|---|---|
+| `nexus_ruche.py` employait `nexus_agent.racine_travail()` **sans jamais importer le module** | toute exécution sans `--racine` levait `NameError`. Ni `sys.path` posé, ni import : le chemin par défaut était mort |
+| Le test substituait `decouvrir_cibles` par une `lambda:` sans argument, alors que la vraie signature prend la racine | défaut du TEST, invisible tant que le premier plantait avant lui |
+
+> **Le premier masquait le second.** C'est l'argument le plus solide pour
+> jouer la suite ENTIÈRE plutôt que la famille qu'on vient de toucher : un
+> plantage précoce protège les défauts situés derrière lui, et les rend
+> indiscernables du code sain.
+
+> **Vérification gratuite obtenue au passage.** La première exécution s'est
+> terminée par une exception non rattrapée — exactement le cas qui, ce matin,
+> laissait `litellm_config.yaml` remplacé par la configuration de test.
+> Constaté après : 26 marqueurs AUTOGEN, aucun `.testswap` résiduel. La
+> correction de `recover_swapped_config` tient en conditions réelles, et non
+> seulement sur l'accident reproduit à la main.
+
+### Sujets neufs, ouverts le 30/08 au soir
+
+| Sujet | Pourquoi il reste ouvert |
+|---|---|
+| Documentation et bibliothèques des dépôts voisins | ressource massive, jamais exploitée. Règle posée : **copies uniquement**, jamais de lecture en place ni de dépendance à leur chemin |
+| `nexus_test_outillage.py` orphelin | seul script que personne n'appelle. Le cliquet l'a figé dans la référence : il ne peut plus être rejoint, mais il n'est pas résolu |
+| 40 sauvegardes résiduelles dans `scripts/.nexus/` | signalées par `controle_travail_sur_original`. Ce sont des **données** : leur suppression appartient à l'opérateur, pas à l'agent |
+| `import subprocess` en portée locale (`nexus_ruche.py:205`) | même famille que le défaut déjà payé ce jour ; non corrigé pour ne pas mêler deux sujets dans un correctif |
+
+> **Trois défauts de l'extracteur de sujets, corrigés en série** — et chacun
+> trouvé en *lisant sa sortie*, jamais en relisant son code. Il prenait le
+> séparateur `| --- |` pour un préfixe (zéro sujet extrait, en silence) ; puis
+> le numéro de la première colonne pour le sujet (« # », « 1.1 ») ; puis, sous
+> un critère de LONGUEUR, il sautait « AST » et retenait le statut à sa place.
+> Le bon critère n'était pas la forme mais le sens : ni un numéro, ni un
+> intitulé de colonne.
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 

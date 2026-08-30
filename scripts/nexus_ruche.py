@@ -32,6 +32,24 @@ import time
 from pathlib import Path
 from subprocess import run, CalledProcessError
 
+# nexus_agent etait EMPLOYE (racine_travail) sans etre importe : toute
+# execution sans --racine levait NameError. Trouve par la suite complete du
+# 2026-08-30, jamais jouee depuis les changements du jour -- le sujet
+# « suite complete apres tous les changements » etait ouvert au cockpit, et
+# il a paye des sa premiere execution.
+#
+# On suit la convention des autres scripts du depot (nexus_essaim,
+# nexus_patch, nexus_relais) : le repertoire de ce fichier est ajoute au
+# chemin, puis l'import est tente.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import nexus_agent  # noqa: E402
+except Exception:  # pragma: no cover
+    # Repli : sans le module, la racine reste derivable de la position de ce
+    # fichier. Mieux vaut une racine deduite qu'un plantage -- et le repli
+    # donne le meme resultat dans le cas normal.
+    nexus_agent = None
+
 # --------------------------------------------------------------------------- #
 # Constantes
 # --------------------------------------------------------------------------- #
@@ -401,7 +419,8 @@ def main() -> int:
     if args.racine:
         racine = Path(args.racine)
     else:
-        racine = Path(nexus_agent.racine_travail())
+        racine = (Path(nexus_agent.racine_travail()) if nexus_agent
+                  else Path(__file__).resolve().parent.parent)
     print(f"Racine utilisee : {racine}")
 
     # Charger ou reinitialiser le journal d'etat
