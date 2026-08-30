@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 14:49 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 14:59 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `406b215` |
+| Commit | `29428cf` |
 | Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 25 hours (healthy)
-litellm-proxy	litellm	Up About an hour
+litellm-proxy	litellm	Up 2 hours
 litellm-redis	redis	Up 25 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 25 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 348.8 Go |
+| Disque libre | 342.9 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -72,11 +72,11 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-34 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       18
+35 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       23
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
-  classe 4  valeur neutre rendue par un except     3
+  classe 4  valeur neutre rendue par un except     4
   classe 5  refus rendu en sortie 0                0
   classe 6  refus rendu en retour 0                0
 ```

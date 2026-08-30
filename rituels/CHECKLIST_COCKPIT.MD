@@ -309,6 +309,35 @@ relecture :
 > lieu d'imprimer un refus. Demander une retouche coûte parfois l'acquis :
 > l'épreuve précède l'intégration, et l'arbitrage garde le dernier mot.
 
+### Point d'étape du 30/08 au soir — ce qui a été tranché
+
+| Sujet ouvert | État |
+|---|---|
+| Ne jamais fournir les fichiers originaux au MCP | **FERMÉ des deux côtés** : `test_isolation` 8/8 pour l'essaim, `controle_pont_lecture_seule` pour le pont |
+| Tout mécaniser, ne rien oublier dans les câblages | **FERMÉ** : `nexus_cablage.py` (cliquet par nom) lancé par le rituel, geste 6 |
+| Récolte des worktrees | **FERMÉ** : le rituel appelle `nexus_worktree.py --lister`, et a trouvé un arbre oublié le jour de sa pose |
+| Récupérer verbatim ce que les agents laissent | **FERMÉ** : `nexus_verbatim.py`, câblé dans `appeler()`, 7/7, vérifié par un appel réel |
+| Le repli `anthropic → local` fonctionne-t-il ? | **VÉRIFIÉ pour la première fois** : `attempted-fallbacks: 1`, `api_base` local, réponse servie. §108 tient en conditions réelles |
+| Chaque worker dans un worktree isolé | **partiel** : la copie est hors du dépôt, mais c'est un répertoire, pas un worktree git. Dit plutôt que coché |
+| Préserver le contexte de l'orchestrateur | ouvert : mesurable par `nexus_savings`, mais aucun contrôle par tour |
+| 9 appels Anthropic sur 9 échouent | **mieux caractérisé, non résolu** — voir ci-dessous |
+| `Start-Claude.ps1` jamais exécuté de bout en bout | ouvert : le lancer démarre une session Claude, ce qui ne se teste pas à la légère |
+| Meta-learner, harnais, AST, températures | chantiers de recherche, non défauts. Ouverts délibérément |
+
+> **Le repli masque la cause, et c'est le vrai constat sur Anthropic.** Un
+> appel à `adaptive-router-anthropic` rend **200** — servi par
+> `glm-4.7-flash`, en local. Le routeur avait choisi `claude-sonnet-5`,
+> `attempted-fallbacks: 1` : l'appel Anthropic a échoué et le repli l'a
+> rattrapé. Même en appelant l'alias `claude-sonnet-5` directement, le repli
+> intercepte. La clé est posée (108 caractères), donc la cause est ailleurs —
+> et pour la lire il faut désactiver temporairement le repli.
+>
+> Deux choses en découlent. La bonne : §108 est vérifié en conditions
+> réelles, ce qui n'avait jamais été fait — pas de fuite, pas d'échec visible.
+> La gênante : un appelant qui demande Claude reçoit du local **sans le
+> savoir**, et seul l'en-tête le dit. C'est conforme au contrat (« un repli
+> est subi, jamais choisi ») mais mérite d'être su.
+
 ### Vérifications jamais faites
 
 | Sujet | État |
