@@ -25,7 +25,12 @@ import tempfile
 # ------------------------------------------------------------
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 BASE_DIR = pathlib.Path(__file__).resolve().parent
-NEXUS_DIR = BASE_DIR / ".nexus"
+# Le répertoire .nexus doit être à la racine du dépôt, c’est‑à‑dire le
+# répertoire parent de celui contenant les scripts.  Sinon le journal
+# était créé dans scripts/.nexus/, hors de portée du .gitignore et
+# différent du chemin attendu par les autres outils du dépôt.
+REPO_ROOT = BASE_DIR.parent
+NEXUS_DIR = REPO_ROOT / ".nexus"
 JOURNAL_PATH = NEXUS_DIR / "relais-journal.json"
 RELAIS_FILE = NEXUS_DIR / "relais-file.txt"
 BRIEF_DIR = NEXUS_DIR / "briefs"
@@ -214,13 +219,13 @@ def main():
         "--plans",
         choices=["cloud", "local", "auto"],
         default="auto",
-        help="Plan de modèle à employer.",
+        help="Plan de modele a employer.",
     )
     parser.add_argument("--simuler", action="store_true")
     parser.add_argument("--file", type=pathlib.Path, help="Fichier listant les cibles.")
     args = parser.parse_args()
 
-    # Détermination du plan de base
+    # Determination du plan de base
     plan_courant = "cloud" if args.plans in ("cloud", "auto") else "local"
     cloud_echoue = False
     echec_cloud_consecutif = 0
@@ -234,45 +239,57 @@ def main():
     reussites = 0
     echecs = 0
     traitees = 0
+    total_jetons = 0
+    cibles_echouees = []
 
-    for cible in cibles:
+    total_cibles = len(cibles)
+
+    for idx, cible in enumerate(cibles, start=1):
         if traitees >= args.max_cibles:
             break
         if str(cible) in journal:
-            continue  # déjà traité
+            # cible deja traitee, on la saute
+            continue
 
-        # 1. AUDIT
+        # ------------------------------------------------------------
+        # 1. Affichage avant le traitement de la cible
+        # ------------------------------------------------------------
+        print(f"[{idx}/{total_cibles}] Debut traitement de {cible}")
+
+        # 2. AUDIT
         resultat = executer_audit(cible, plan_courant)
         if resultat.get("erreur"):
-            # Détection d’épuisement du cloud
+            # Detection d'epuisement du cloud
             err = resultat["erreur"]
             if any(code in err for code in ("402", "429")) or not resultat.get("texte"):
                 echec_cloud_consecutif += 1
                 if echec_cloud_consecutif >= 3:
                     cloud_echoue = True
+                    # Basculement imminent du cloud vers le local
+                    print("Basculement du plan: cloud -> local (3 echecs consecutifs ou code 402/429)")
                     plan_courant = "local"
             else:
                 echec_cloud_consecutif = 0
         else:
             echec_cloud_consecutif = 0
 
-        # 2. BRIEF
+        # 3. BRIEF
         brief_path = ecrire_brief(cible, resultat.get("texte", ""))
 
-        # 3. CORRECTION
+        # 4. CORRECTION
         if not args.simuler:
             ok_corr = corriger_cible(cible, brief_path)
         else:
             ok_corr = True
         supprimer_brief(brief_path)
 
-        # 4. VALIDATION
+        # 5. VALIDATION
         if ok_corr and not args.simuler:
             ok_val = valider_cible()
         else:
             ok_val = ok_corr
 
-        # 5. GESTION DES RESULTATS
+        # 6. GESTION DES RESULTATS
         if ok_val:
             verdict = "reussi"
             reussites += 1
@@ -281,13 +298,42 @@ def main():
             echec_cloud_consecutif = 0  # reset pour le local
             restaurer_cible(cible)
             echecs += 1
+            cibles_echouees.append(str(cible))
 
+        # 7. Mise a jour du journal et sauvegarde immediate
         mettre_a_jour_journal(journal, cible, verdict, resultat, plan_courant)
+        sauver_journal(journal)   # ecriture atomique apres chaque mise a jour
         traitees += 1
 
-        # 6. Basculement éventuel
+        # 8. Accumulation des jetons (si disponible)
+        total_jetons += resultat.get("jetons", 0)
+
+        # 9. Affichage apres le traitement de la cible
+        duree = resultat.get("duree", "N/A")
+        jetons = resultat.get("jetons", "N/A")
+        print(
+            f"Fin traitement de {cible}: verdict={verdict}, plan={plan_courant}, "
+            f"jetons={jetons}, duree={duree}"
+        )
+
+        # 10. Basculement eventuel (deja realise ci-dessus)
         if plan_courant == "cloud" and cloud_echoue:
             plan_courant = "local"
+            print("Basculement du plan: cloud -> local (condition detectee)")
+
+    # ------------------------------------------------------------
+    # Bilan final
+    # ------------------------------------------------------------
+    print("=== BILAN FINAL ===")
+    print(f"Cibles traitees      : {traitees}")
+    print(f"  - reussies        : {reussites}")
+    print(f"  - echecs          : {echecs}")
+    print(f"Cibles sautees (deja dans le journal) : {len(cibles) - traitees - (len(cibles) - len([c for c in cibles if str(c) in journal]))}")
+    print(f"Jetons gratuits consommes : {total_jetons}")
+    if cibles_echouees:
+        print("Cibles en echec :")
+        for ce in cibles_echouees:
+            print(f"  - {ce}")
 
     # Codes de sortie
     if reussites > 0 and echecs == 0:
