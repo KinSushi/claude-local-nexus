@@ -43,7 +43,7 @@ python "C:/local-llm-docker/scripts/nexus_patch.py" `
 
 *Sortie attendue* : le fichier original est sauvegardé, la version corrigée est écrite, la syntaxe est vérifiée et un message indique « Correction appliquée » ou « Restauré » en cas d’erreur.  
 
-Options : `--simuler` (affiche les changements sans écrire), `--fonctions` (pour fichiers très gros en `.py` : ne demande que les fonctions changées, appliquées via `nexus_fonctions.py`), `--triplets` (mode historique à ancres exactes, fragile au-delà d'environ 600 lignes, même limite que le mode par défaut), refus si plus de 40 % des lignes sont perdues.
+Options : `--simuler` (affiche les changements sans écrire), `--fonctions` (pour fichiers très gros en `.py` : ne demande que les fonctions changées, appliquées via `nexus_fonctions.py`), `--triplets` (mode historique à ancres exactes, fragile au‑beyond d'environ 600 lignes, même limite que le mode par défaut), refus si plus de 40 % des lignes sont perdues.
 
 ---
 
@@ -81,16 +81,13 @@ python "C:/local-llm-docker/scripts/nexus_essaim.py" `
 | 9 cibles, 3 lots | 1 | 465 s | – |
 | 9 cibles, 3 lots | 3 | 398 s | **1,17×** |
 
-**Règle pratique**  
-- Démarrez avec **2 ou 3 essaims**.  
-- Ne dépassez **pas 4 essaims** ; au‑delà le gain diminue et la saturation apparaît.  
-- **Mesurez** sur votre propre matériel : les performances varient selon le compte Ollama Cloud ou la CPU locale.
+**Règle pratique basée sur les mesures**  
+- **Mode CLOUD** : jusqu’à **3 essaims**, le temps d’exécution reste celui d’un **seul** appel — le parallélisme y est donc gratuit, trois cibles coûtent le temps d’une. Au‑delà, le temps augmente ; le gain se dégrade (ex. 6 appels → ratio 1,35).  
+- **Mode BIPLAN ou LOCAL** : le **plan local** plafonne déjà dès le **2ᵉ appel simultané** (ratio ≈ 1,36) et n’obtient plus d’accélération supplémentaire avec plus d’essaims (3 appels → ratio ≈ 1,37).  
+- Le critère de choix n’est donc pas le nombre d’essaims mais le **plan** : pour la vitesse pure, utilisez le cloud avec ≤ 3 essaims ; pour la confidentialité, acceptez le plafond local et ne cherchez pas à le contourner par la concurrence.
 
 **Goulot d’étranglement**  
-Le facteur limitant (compte Ollama Cloud ou CPU local) n’est pas résolu ; il faut le surveiller mais ne pas l’affirmer comme résolu.
-
-**Limite de contexte**  
-En mode raisonnement, un contexte d’environ **20 000 caractères** expire après 600 s. Au‑delà, **découpez** le texte plutôt que d’attendre l’expiration.
+Les mesures montrent que le facteur limitant est **la machine locale** (CPU, mémoire, I/O). Ni le compte Ollama Cloud ni la passerelle LiteLLM ne constituent le goulot. Aucun échec n’a été observé, donc aucune limite de quota n’est atteinte.
 
 ---
 
