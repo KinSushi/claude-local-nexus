@@ -1156,6 +1156,21 @@ def main() -> int:
         # dictes par la meme mesure, et les separer laisserait le defaut
         # derriver a la main -- ce qui est precisement ce qui s'etait
         # produit, gemma4-12b restant defaut a 51,5 s.
+        # Le routeur GLOBAL partage la meme partie locale et le meme
+        # defaut. Il portait le meme travers, en pire : son defaut etait
+        # aussi gemma4-12b-local a 51,5 s, et c'est lui que nexus_agent.py
+        # emploie par defaut -- donc toute delegation partait de la.
+        #
+        # Son defaut reste LOCAL a dessein, bien que son pool contienne du
+        # cloud : la 29 prefere le local a capacite suffisante, et un defaut
+        # cloud engagerait une sortie de donnees sans que rien ne l'ait
+        # demande.
+        "GLOBAL_POOL": ([
+            "      adaptive_router_default_model: %s" % (pool_local[0]
+                                                         if pool_local else "phi3-mini-local"),
+            "      adaptive_router_config:",
+            "        available_models:",
+        ] + ["          - %s" % a for a in pool_local]),
         "LOCAL_POOL": ([
             "      adaptive_router_default_model: %s" % (pool_local[0]
                                                          if pool_local else "phi3-mini-local"),
