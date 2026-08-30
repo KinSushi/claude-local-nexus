@@ -457,6 +457,7 @@ def juger(modele: str, cle: str) -> dict:
     print()
     rapport = {
         "modele": modele,
+        "servi": servi,
         "reussies": reussies,
         "plan": plan,
         "adresse": adresse,
@@ -472,6 +473,46 @@ def juger(modele: str, cle: str) -> dict:
 # faux pour ecrire un registre partage : depuis un projet tiers, l'epreuve
 # serait consignee chez lui et le generateur ne la verrait jamais.
 PLATEFORME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+# Les deux sortes de guillemets, nommees plutot qu'echappees : un
+# echappement traverse mal les couches d'outillage qui ecrivent ce
+# fichier, et a deja produit ici des caracteres de controle.
+GUILLEMETS = chr(34) + chr(39)
+
+
+def alias_expose(servi: str | None) -> str | None:
+    """
+    Remonter du modele amont (`ollama_chat/glm-4.7-flash`) a l'alias que la
+    passerelle expose (`glm-4.7-flash-local`).
+
+    L'en-tete x-litellm-model-name donne l'amont, pas l'alias. Le generateur,
+    lui, ne connait que l'alias : sans cette traduction les deux ne se
+    rencontrent jamais.
+
+    Rend None plutot que de deviner. Un alias invente serait pire qu'absent :
+    il accorderait une derogation a un modele qui n'a rien passe.
+    """
+    if not servi or servi == "?":
+        return None
+    chemin = os.path.join(PLATEFORME, "litellm_config.yaml")
+    try:
+        with open(chemin, encoding="utf-8") as f:
+            texte = f.read()
+    except Exception:
+        return None
+    # Lecture textuelle volontaire : PyYAML n'est pas une dependance de ce
+    # script, et l'exiger ferait echouer une consignation pour une commodite.
+    nom = None
+    for ligne in texte.splitlines():
+        depouille = ligne.strip()
+        if depouille.startswith("- model_name:"):
+            nom = depouille.split(":", 1)[1].strip()
+        elif depouille.startswith("model:") and nom:
+            valeur = depouille.split(chr(58), 1)[1].strip()
+            if valeur.strip(GUILLEMETS) == servi:
+                return nom
+    return None
 
 
 def consigner(rapport: dict) -> None:
@@ -508,13 +549,23 @@ def consigner(rapport: dict) -> None:
         # Le total est lu depuis EPREUVES et non fige a 4 : le jour ou une
         # cinquieme epreuve est ajoutee, un « 4/5 » ne doit pas continuer de
         # passer pour un sans-faute.
-        registre["modeles"][rapport["modele"]] = {
+        entree = {
             "reussies": rapport["reussies"],
             "total": len(EPREUVES),
             "complet": rapport["reussies"] >= len(EPREUVES),
             "plan": rapport["plan"],
+            "servi": rapport.get("servi"),
             "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
+        # Sous les DEUX noms : celui demande et celui reellement servi.
+        #
+        # L'epreuve porte sur l'alias `releve-locale`, tandis que le pool
+        # raisonne sur l'alias expose -- `glm-4.7-flash-local`. Ne consigner
+        # que le premier laissait la derogation chercher un nom jamais ecrit :
+        # elle n'aurait servi a rien, sans que rien ne le signale.
+        for nom in {rapport["modele"], alias_expose(rapport.get("servi"))}:
+            if nom:
+                registre["modeles"][nom] = dict(entree, demande=rapport["modele"])
         registre["mesure_le"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         with open(chemin, "w", encoding="utf-8") as f:
             json.dump(registre, f, indent=2, ensure_ascii=False)
