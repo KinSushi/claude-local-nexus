@@ -429,6 +429,10 @@ def main():
                         default="local",
                         help="Plan a mesurer. Le plan anthropic est exclu : "
                              "il est le seul facture au jeton.")
+    parser.add_argument("--manquants", action="store_true",
+                        help="Ne mesurer que les modeles exposes qui n'ont "
+                             "aucun releve. Rend 0 meme s'il n'y a rien a "
+                             "faire : c'est un rattrapage, pas une porte.")
     parser.add_argument("--debit", action="store_true",
                         help="Mesurer les jetons par seconde sur une tache "
                              "reelle, au lieu du delai de demarrage.")
@@ -474,6 +478,29 @@ def main():
     if not modeles:
         sys.stderr.write("Aucun modele %s trouve." % args.plan + chr(10))
         sys.exit(1)
+
+    # --manquants : ne mesurer que ce qui ne l'est pas.
+    #
+    # Sans cela, un modele telecharge reste « jamais mesure » donc hors
+    # pool, indefiniment, et rien ne le signale. Douze modeles etaient dans
+    # ce cas le 2026-08-30 : installes, declares au YAML, invisibles au
+    # routage -- l'absence de preuve est bien la regle, mais encore
+    # faut-il que la preuve finisse par etre produite.
+    if args.manquants:
+        deja = latences_existantes(racine)
+        clef = "debit_jps" if args.debit else "latence_ms"
+        modeles = [m for m in modeles
+                   if not isinstance(deja.get(m), dict)
+                   or deja[m].get(clef) is None]
+        if not modeles:
+            print("Aucun modele a rattraper : tout est mesure.")
+            return 0
+        # En rattrapage, le tableau final ne montre QUE les modeles traites.
+        # Afficher tout le releve donnerait a croire qu'on vient de tout
+        # remesurer -- un compte rendu qui exagere ce qu'il a fait est une
+        # forme de mensonge, meme involontaire.
+        a_rattraper = set(modeles)
+        print("A rattraper : %d modele(s) sans releve." % len(modeles))
 
     # filtrer selon --modele si fourni
     if args.modele:
@@ -530,7 +557,11 @@ def main():
     ecrire_json(racine, mesures)
 
     # affichage
-    afficher_tableau(resultats)
+    if args.manquants:
+        afficher_tableau({k: v for k, v in resultats.items()
+                          if k in a_rattraper})
+    else:
+        afficher_tableau(resultats)
     if args.json:
         print(json.dumps(mesures, ensure_ascii=False, indent=2))
 

@@ -3753,6 +3753,45 @@ that wrote the warning.
 
 ---
 
+# 106.1 A rule that is not mechanised protects no one — not even its author
+
+Stated by the operator on 2026-08-30, after watching it happen all day. It is
+the session's central finding, and the evidence is this session itself.
+
+That morning, §112.3 was corrected: a rule had generalised **two readings into
+a whole class** of models. The correction was written, committed, and
+explained at length.
+
+That afternoon, the same hand looked at `ollama ps`, saw one resident model,
+and wrote into the doctrine that the engine **keeps one model resident**. One
+observation raised to a property — the identical error, committed while
+documenting its correction, then propagated into four files including a
+conformity check that repeated it on every run.
+
+It happened three more times the same day:
+
+* the load-vs-measurement confusion, corrected on the latency bench, was
+  **reproduced on the throughput bench** built afterwards;
+* the `bge-m3` blind spot was fixed in two files before being fixed at its
+  source, so the same wrong regex kept shipping;
+* the "measure nothing under load" warning in the manual was violated by
+  measuring during a 28 GB download.
+
+None of these were failures of understanding. The rules were written, recent,
+and by the same author. **Discipline did not survive contact with a long
+session** — and there is no reason to expect it to survive contact with a
+different author, or with the same one a month later.
+
+Hence the standing rule: when a lesson matters, the deliverable is not a
+paragraph, it is a check that fails. `nexus_traque.py`, the blocking
+conformity controls, the guard in the generator, the pool bound derived from a
+measured budget — each exists because the corresponding written rule had
+already been broken by the person who wrote it.
+
+A paragraph documents. Only a check protects.
+
+---
+
 # 107.0 The engine's own settings come first — they change every reading below
 
 Established 2026-08-30 by a parallel session, and it reframes §107.1 to §107.3.
