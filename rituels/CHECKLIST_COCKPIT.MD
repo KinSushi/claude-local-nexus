@@ -12,6 +12,52 @@
 
 ---
 
+## Session du 30 août 2026 — sujets ouverts
+
+> Trente-cinq commits. Ce qui suit est ce qui **reste**, pas ce qui a été fait :
+> l'historique est dans git, le cockpit ne sert qu'à ne rien perdre.
+
+### Bloqué sur une décision qui ne m'appartient pas
+
+| Sujet | État | Ce qui manque |
+|---|---|---|
+| Réglages du moteur Ollama | `OUVERT` | `OLLAMA_KEEP_ALIVE` non défini → défaut 5 min. Une session parallèle a montré que **les 61,8 s attribuées à `glm-4.7-flash` sont du rechargement disque**, pas de l'inférence. Décision d'environnement hôte. |
+| Taille du pool local | `OUVERT` | **Couplé au point ci-dessus.** Borné à 4 modèles alors que le moteur en gardait 3 résidents. Si `OLLAMA_MAX_LOADED_MODELS=1`, il faut 1–2, sinon chaque choix évince. Les deux réglages sont **une** décision. |
+
+### Mesures incomplètes
+
+| Sujet | État | Reste |
+|---|---|---|
+| Débit (jetons/s) | `OUVERT` | 7 modèles mesurés sur 58. Le tri des pools en dépend. |
+| Fidélité des embeddings | `PRÊT` | `mesurer_embedding()` écrite et intégrée, **jamais exécutée** — toutes les tentatives ont expiré sous charge. |
+| Coût fixe binaire | `PRÊT` | `mesurer_binaire()` écrite, **jamais exécutée**. C'est elle qui prouvera qu'un modèle local minuscule bat le cloud, sans aller-retour réseau. |
+| Qualité de résumé | `OUVERT` | Grandeur manquante pour trancher `DEFAULT_CHAT_MODEL`. Piste retenue : similarité sémantique résumé↔source par embedding local, sans référence humaine. |
+
+### Capacités déclarées, non exploitées
+
+| Sujet | État | Reste |
+|---|---|---|
+| `tools` | `PRÊT` | 19 modèles sur 54 ne l'ont pas ; 6 sont dans les profils MCP, **annotés mais pas triés dessus**. |
+| `thinking` | `OUVERT` | Déclarée par le moteur, lue nulle part. |
+| Niveau de qualité | `OUVERT` | 21 modèles sur 36 restent à `tier 0` — jamais déclaré, jamais déduit. |
+
+### Traque mécanique
+
+| Sujet | État | Reste |
+|---|---|---|
+| 38 constats | `OUVERT` | Classe 1 examinée : **1 vrai défaut sur 9**, corrigé. Restent 21 constats classe 2, 5 classe 3, 3 classe 4. |
+| Taux de faux positifs | `DÉCIDÉ` | Classe 1 : 5 faux positifs sur 6 examinés. Trop large, mais conservée — elle a trouvé le défaut réel. Le taux est écrit pour qui la lit. |
+
+### Vérifications jamais faites
+
+| Sujet | État |
+|---|---|
+| `Start-Claude.ps1` | `OUVERT` — corrigé, **jamais exécuté de bout en bout** |
+| Suite complète après tous les changements | `OUVERT` — trois lancements interrompus ; dernier état connu 24 PASS, 0 FAIL |
+| 9 appels Anthropic sur 9 échouent | `OUVERT` — le plan de dernier ressort ne répond pas. Non testé par appel réel : ce serait facturé. |
+
+---
+
 ## Reprise immédiate — à lire en premier dans une nouvelle session
 
 Trois commandes suffisent à savoir où l'on en est. Aucune ne suppose quoi
