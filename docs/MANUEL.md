@@ -254,6 +254,28 @@ occupée. Reprise proprement, le même travail rend **11 s** en cloud seul et
 corrigés : une seule série propre ne suffit pas à établir un écart, et il vaut
 mieux ne rien affirmer que répéter une comparaison qui ne tient pas.
 
+**Le tuyau.** Un troisième piège, celui-ci sur la *lecture* de la mesure :
+
+```bash
+timeout 600 python scripts/nexus_releve.py 2>&1 | tail -8   # NON
+```
+
+Deux défauts en une ligne. Le code de sortie observé est celui de `tail`, pas
+celui de Python — une commande tuée par `timeout` rend un franc succès. Et
+Python bufferise par blocs vers un tuyau : quand le processus est tué, le
+buffer non vidé est **perdu**, si bien que la sortie paraît vide alors que le
+travail avait bien avancé.
+
+Observé ici : une relève expirée a rendu « code 0 » et zéro ligne. Rien ne
+distinguait ce cas d'une relève qui n'aurait eu rien à dire.
+
+```bash
+timeout 1500 python -u scripts/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
+```
+
+`-u` désactive le buffer, la redirection remplace le tuyau, et le `$?` lu
+juste après porte enfin sur Python.
+
 ---
 
 ## 5️⃣ Couvrir tout un dépôt sans lister les fichiers à la main
