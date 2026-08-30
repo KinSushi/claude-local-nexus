@@ -11,11 +11,23 @@ respectant les limites de ressources de l’hôte.
 Le script ne dépend que de la bibliothèque standard.
 """
 
+# --------------------------------------------------------------------------- #
+# Protection de l'encodage de la sortie
+# --------------------------------------------------------------------------- #
+# La console Windows utilise souvent cp1252 qui ne sait pas encoder certains
+# caractères (ex. espace fine insécable) provenant de réponses de modèles.
+# On reconfigure stdout et stderr en UTF‑8 avec errors="replace" afin que
+# tout caractère non supporté soit remplacé plutôt que de provoquer une
+# UnicodeEncodeError qui interromprait l'exécution.
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 import argparse
 import concurrent.futures
 import json
 import os
-import sys
 import time
 from pathlib import Path
 from subprocess import run, CalledProcessError
@@ -272,21 +284,43 @@ def rapport_final(etat: dict, total_cibles: int, traitees: int, start_time: floa
     echec = sum(1 for v in etat.values() if v["verdict"] == "echec")
     ignore = sum(1 for v in etat.values() if v["verdict"] == "ignore")
 
-    print("\n--- Rapport ---")
-    print(f"Cibles traitees cette execution : {traitees_durant}")
-    print(f"Cibles sautees (deja abouties) : {sautees}")
-    print(f"Total cibles connues           : {total_cibles}")
-    print(f"Abouties                       : {ok}")
-    print(f"Echecs                         : {echec}")
-    print(f"Ignorees                       : {ignore}")
-    # Le compteur de jetons gratuits n'est pas mesure ici.
-    print("Jetons gratuits consommes : non mesure")
-    if echec:
-        print("\nCibles en echec (a corriger) :")
-        for cible, info in etat.items():
-            if info["verdict"] == "echec":
-                cause = info.get("cause", "")
-                print(f"- {cible} : {cause}")
+    # Utiliser un bloc try/except pour garantir que le rapport s'affiche même si
+    # un caractère non encodable apparaît dans les données.
+    try:
+        print("\n--- Rapport ---")
+        print(f"Cibles traitees cette execution : {traitees_durant}")
+        print(f"Cibles sautees (deja abouties) : {sautees}")
+        print(f"Total cibles connues           : {total_cibles}")
+        print(f"Abouties                       : {ok}")
+        print(f"Echecs                         : {echec}")
+        print(f"Ignorees                       : {ignore}")
+        # Le compteur de jetons gratuits n'est pas mesure ici.
+        print("Jetons gratuits consommes : non mesure")
+        if echec:
+            print("\nCibles en echec (a corriger) :")
+            for cible, info in etat.items():
+                if info["verdict"] == "echec":
+                    cause = info.get("cause", "")
+                    print(f"- {cible} : {cause}")
+    except Exception:
+        # En cas d'erreur d'encodage, on réessaye avec remplacement des caractères.
+        sys.stdout.buffer.write(
+            ("\n--- Rapport (degrade) ---\n"
+             f"Cibles traitees cette execution : {traitees_durant}\n"
+             f"Cibles sautees (deja abouties) : {sautees}\n"
+             f"Total cibles connues           : {total_cibles}\n"
+             f"Abouties                       : {ok}\n"
+             f"Echecs                         : {echec}\n"
+             f"Ignorees                       : {ignore}\n"
+             "Jetons gratuits consommes : non mesure\n"
+            ).encode("utf-8", errors="replace")
+        )
+        if echec:
+            for cible, info in etat.items():
+                if info["verdict"] == "echec":
+                    cause = info.get("cause", "")
+                    line = f"- {cible} : {cause}\n"
+                    sys.stdout.buffer.write(line.encode("utf-8", errors="replace"))
 
 
 # --------------------------------------------------------------------------- #
