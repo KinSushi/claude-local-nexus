@@ -55,6 +55,32 @@ plutôt qu'en lisant les fichiers directement."*
 — vendor docs, papers, published measurements. What comes back is a signal to
 verify in the real code, never a proof (§112.4).
 
+**Using the platform is itself a source of improvement — and the richest
+one.** Every session drives these tools for real work, and that use surfaces
+defects no audit finds, because an audit reads the code while use exercises
+it. When a tool refuses what it should allow, allows what it should refuse,
+says something false, or is awkward at the moment it matters, that is a
+finding: record it and fix it, in the same turn, rather than working around
+it. Working around a defect is how it survives.
+
+Measured on 2026-08-30, in one session, entirely from use rather than from
+reading:
+
+* the secret detector blocked three placeholders and zero secrets — found by
+  running the very first publication, not by reviewing the pattern;
+* the edit guard was structurally blind on Windows (`py_compile` with
+  `cfile=os.devnull` raises `FileExistsError`, never `PyCompileError`) —
+  found by deliberately feeding it a broken file, and invisible otherwise;
+* the wiring check counted a mention in a comment as a call, then its first
+  remedy produced eighteen false negatives — both found by running it on
+  this repository rather than by reasoning about it;
+* the shell mutilated four commands, one of them a commit message that went
+  out stripped of its technical names — found by reading back what had
+  actually been committed.
+
+None of these came from an audit. All came from use, and each became a check
+that now fails when the defect returns.
+
 **Standing research leads**, to be pursued rather than waited for:
 
 * **metaheuristics** and **hybrid metaheuristics** — the routing, pool
@@ -114,6 +140,14 @@ end.
 **5 — State what was delegated and what was arbitrated.** If nothing went to
 the bench this turn, say so plainly: it means the turn produced volume the
 platform exists to avoid.
+
+**6 — Never leave a mechanism unwired.** Mechanise what must be mechanised,
+and wire what must be wired — in the same turn. A script nobody calls is not
+a mechanism, it is a file; a rule with no check behind it is a paragraph. The
+six links of §0.2.1 are the list, and the *caller* is the one most often
+missing, because nothing asks for it at the moment you believe you have
+finished. `nexus_rituel.py` now runs `nexus_cablage.py` rather than reminding
+you to: the ratchet refuses to let the orphan list grow.
 
 The regenerating parts — `rituels/STATE.md`, the `NexusTraque` task — are not
 in this list. They run without being asked, which is precisely why they are

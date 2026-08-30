@@ -1245,7 +1245,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture"],
+    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
+                                 "shell"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1274,6 +1275,8 @@ def main() -> int:
         test_isolation()
     if args.only in (None, "lecture"):
         test_garde_lecture()
+    if args.only in (None, "shell"):
+        test_garde_shell()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1787,6 +1790,74 @@ def test_garde_lecture() -> None:
                     os.remove(fichier)
             except OSError:
                 pass
+
+
+def test_garde_shell() -> None:
+    """
+    Le garde des heredocs refuse-t-il encore les deux pieges vecus ?
+
+    Le 2026-08-30, dans une seule session, le shell a mutile QUATRE
+    commandes -- dont un message de commit parti ampute de ses noms
+    techniques. La regle etait ecrite et recente ; seul un controle protege.
+
+    Les huit premiers cas comptent autant dans un sens que dans l'autre : un
+    garde qui refuserait tous les heredocs serait desarme le jour de sa pose,
+    et six des huit verifient donc qu'il AUTORISE.
+    """
+    print("\n--- GARDE SHELL : heredocs et accents graves ---")
+
+    garde = os.path.join(ROOT, "scripts", "nexus_garde_shell.py")
+    if not os.path.isfile(garde):
+        skip("garde shell", "nexus_garde_shell.py introuvable")
+        return
+
+    barre = chr(92)
+    grave = chr(96)
+
+    def juger(commande, outil="Bash"):
+        charge = json.dumps({"tool_name": outil,
+                             "tool_input": {"command": commande}})
+        r = subprocess.run([sys.executable, garde], input=charge,
+                           capture_output=True, text=True, timeout=60,
+                           encoding="utf-8", errors="replace")
+        return ("deny" in (r.stdout or "")), r.returncode
+
+    cas = [
+        ("heredoc python avec antislash => REFUS",
+         "python - <<'PYEOF'" + chr(10) + "rx = r'[^" + barre + "s]+'"
+         + chr(10) + "PYEOF", True, "Bash"),
+        ("accent grave entre guillemets doubles => REFUS",
+         'git commit -m "voir ' + grave + 'py_compile' + grave + '"',
+         True, "Bash"),
+        ("heredoc python sans antislash => autorise",
+         "python - <<'PYEOF'" + chr(10) + "print('ok')" + chr(10) + "PYEOF",
+         False, "Bash"),
+        ("accent grave entre guillemets simples => autorise",
+         "echo 'ni " + grave + "ceci" + grave + " ni cela'", False, "Bash"),
+        ("accent grave echappe => autorise",
+         'echo "protege ' + barre + grave + 'ainsi' + barre + grave + '"',
+         False, "Bash"),
+        ("commande ordinaire => autorise", "git status", False, "Bash"),
+        ("heredoc bash sans python => autorise",
+         "cat <<EOF" + chr(10) + "avec " + barre + " antislash" + chr(10)
+         + "EOF", False, "Bash"),
+        ("outil autre que Bash => autorise",
+         "peu importe " + grave + "ceci" + grave, False, "Read"),
+    ]
+    for nom, commande, attendu, outil in cas:
+        refuse, code = juger(commande, outil)
+        check(nom, refuse == attendu and code == 0,
+              "%s, rc=%s" % ("refuse" if refuse else "autorise", code))
+
+    # Une anomalie AUTORISE en silence : un garde qui plante empeche de
+    # travailler, ce qui est pire que le defaut qu'il surveille.
+    for nom, entree in (("JSON invalide => silence", "{pas du json"),
+                        ("stdin vide => silence", "")):
+        r = subprocess.run([sys.executable, garde], input=entree,
+                           capture_output=True, text=True, timeout=60,
+                           encoding="utf-8", errors="replace")
+        check(nom, r.stdout == "" and r.returncode == 0,
+              "rc=%s" % r.returncode)
 
 
 if __name__ == "__main__":

@@ -144,6 +144,33 @@ def releves_lisibles(racine: Path) -> tuple[str, str]:
         return MANQUE, "releve illisible : %s" % str(exc).splitlines()[0][:40]
 
 
+def cablage_tenu(racine: Path) -> tuple[str, str]:
+    """
+    Ce qui a ete livre ce tour est-il CABLE, ou seulement ecrit ?
+
+    Sixieme geste, et le plus oublie : un mecanisme sans appelant n'est pas
+    un mecanisme, c'est un fichier. Le contrat (0.2.1) enumere six maillons
+    -- script, preuve, appelant, barriere, documentation, regression -- et
+    l'appelant est celui qui manque le plus souvent, parce que rien ne le
+    reclame au moment ou l'on croit avoir fini.
+
+    Le cliquet de nexus_cablage.py refuse que la liste des orphelins et des
+    prouves-seuls s'allonge. Le rituel ne le RAPPELLE pas : il le LANCE.
+    """
+    try:
+        r = subprocess.run([sys.executable, "scripts/nexus_cablage.py"],
+                           cwd=racine, capture_output=True, text=True,
+                           timeout=180, encoding="utf-8", errors="replace")
+        lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+        if r.returncode == 0:
+            return OK, (lignes[0] if lignes else "aucune regression")
+        return MANQUE, " | ".join(lignes[:2])[:90]
+    except subprocess.TimeoutExpired:
+        return IGNORE, "nexus_cablage n'a pas repondu en 180 s"
+    except Exception as exc:
+        return IGNORE, str(exc).splitlines()[0][:60]
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -162,6 +189,7 @@ def main() -> int:
         ("boucle armee", boucle_armee),
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
+        ("cablage tenu", lambda: cablage_tenu(racine)),
     ]
 
     resultats = []
