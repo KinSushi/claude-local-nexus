@@ -229,6 +229,31 @@ quelle que soit la qualité du paragraphe.
 | Préserver le contexte de l'orchestrateur | contrat §0.4 | mesurable (jetons facturés par jeton délégué) mais non mesuré par tour |
 | Tout mécaniser, ne rien oublier dans les câblages | contrat §0.2.1 | la checklist des six maillons est écrite ; aucun contrôle ne vérifie qu'un mécanisme neuf les a tous |
 
+### Inspiré des dépôts voisins le 30/08 — repris, et ce qui reste à reprendre
+
+Source : `D:\SAS\sovereign-ai-system1.104\sovereign-ai-system` (hooks et
+ACL) et `D:\EA MT5 PYTHON RENTABLE ROBUSTE`. **Lecture seule** : on s'en
+inspire, on n'y touche pas.
+
+| Mécanisme SAS | État ici |
+|---|---|
+| hook `SessionStart` → reprise imprimée au démarrage | **repris** : `nexus_reprise.py`, tout dérivé, ne lance rien de long, n'échoue jamais |
+| ACL `deny` sur secrets et clés (101 règles là-bas) | **repris**, réduit à ce dépôt : 11 refus de lecture |
+| ACL `ask` sur les gestes irréversibles | **repris** : 15 gestes (push, reset --hard, clean, docker down -v, volume rm, prune, rm -rf, ollama rm) |
+| `garde_heredoc_echappements.py` | **à reprendre** — le défaut a été vécu ici trois fois le 30/08, les heredocs mangeant `
+` et `'` |
+| `hook_lecture_avant_ecriture.py` | à reprendre — impose de lire avant d'écrire |
+| `garde_perimetre_agent.py` | à reprendre — ACL de périmètre par agent |
+| `hook_anti_derive_pollution.py` | à reprendre — refuse les fichiers hors périmètre |
+| `recolter_rapports_agents.py --hook` | **à reprendre** — récolte automatique des worktrees des workers en fin de tour |
+
+> **Non-concurrence, règle posée le 30/08.** Un mécanisme neuf ne doit ni
+> doubler ni concurrencer les automatismes déjà en place. `NexusTraque`
+> (PT10M) régénère le cockpit, `NexusVitrine` (PT6H) commite et pousse : un
+> hook qui écrirait ces mêmes cibles se marcherait dessus avec eux.
+> `nexus_garde_edition.py` est écrit sous cette contrainte — il **n'écrit
+> aucun fichier**, il lit et compile en mémoire.
+
 ### Vérifications jamais faites
 
 | Sujet | État |

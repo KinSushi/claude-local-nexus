@@ -66,6 +66,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/nexus_garde_edition.py\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }
