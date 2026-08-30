@@ -186,7 +186,7 @@ quelle que soit la qualité du paragraphe.
 
 | Règle | Où elle est écrite | Ce qui manque pour la fermer |
 |---|---|---|
-| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **fermé pour l'essaim** (`test_isolation`, 6/6, éprouvé contre la version d'avant : 4 échecs sur 4). **Reste ouvert pour les appels MCP directs** : `nexus_summarize`/`nexus_context` lancés à la main lisent toujours l'arbre principal, et rien ne l'empêche |
+| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **fermé pour l'essaim** (`test_isolation`, 6/6, éprouvé contre la version d'avant : 4 échecs sur 4). **fermé pour le pont**, mais autrement qu'attendu : le pont ne modifie rien, il lit — lui faire copier les fichiers avant lecture n'aurait protégé de rien, et une protection décorative se lit comme une garantie. Ce qui est gardé est l'invariant réel : `controle_pont_lecture_seule`, BLOQUANT, éprouvé par injection (0 → 1) |
 | Chaque worker dans un **worktree isolé** | contrat §0.4 | l'essaim écrit désormais hors du dépôt, à côté de `.nexus-arbres` — mais c'est un répertoire, **pas un worktree git**. Le dire plutôt que de laisser croire la case cochée |
 
 > **Où la règle est enfreinte, mesuré le 30/08.** En cherchant à mécaniser
