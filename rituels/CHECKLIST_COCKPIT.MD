@@ -72,6 +72,43 @@
 | 38 constats | `OUVERT` | Classe 1 examinée : **1 vrai défaut sur 9**, corrigé. Restent 21 constats classe 2, 5 classe 3, 3 classe 4. |
 | Taux de faux positifs | `DÉCIDÉ` | Classe 1 : 5 faux positifs sur 6 examinés. Trop large, mais conservée — elle a trouvé le défaut réel. Le taux est écrit pour qui la lit. |
 
+### Fermé depuis — vérifié, plus supposé
+
+| Sujet | Preuve |
+|---|---|
+| `coding → releve-locale` | 0 occurrence ; le profil commence par `qwen3-coder-30b-local` |
+| `releve-locale` sans repli | `{'releve-locale': ['qwen3-coder-30b-local', 'qwen2.5-coder-32b-local']}` |
+| `nexus_worktree.py` racine figée | `--racine` existe, défaut = projet courant, vérifié depuis deux répertoires |
+| Sentinelle embedding | **cycle bouclé** — la passerelle refuse (HTTP 400), exigence rétablie |
+| Sentinelle image | **cycle bouclé** — HTTP 400, exigence rétablie |
+| Défaut d'embedding 8 Go | `all-minilm` (46 Mo), marge 0,289 contre 0,204 — index construit en 42 fichiers |
+| Température absente du YAML | 49 modèles en portent une ; par profil dans le MCP, journalisée `T=` |
+
+> **Un serveur MCP démarré avant un correctif sert l'ancien code.** Node lit
+> `server.js` une seule fois. Empreinte du disque au 30/08 : `b8c406f53489`.
+> `controle_mcp_a_jour` la rappelle à chaque conformité — une session dont le
+> serveur est plus ancien que le dernier commit doit redémarrer, sinon elle
+> diagnostique un état qui n'existe plus.
+
+### Briques de l'AIC — architecture reçue le 30/08
+
+| Brique | État |
+|---|---|
+| Magasin d'observations | **fait** — chaque appel MCP écrit une ligne mesurée |
+| Posterior | **fait** — `nexus_posterior.py`, médianes, confiance sous 5 obs. |
+| Task Classifier | absent |
+| Complexity Estimator | absent |
+| Validator / Critic | absent |
+| Bandit | absent — attend que le magasin se remplisse |
+
+### Pistes de recherche permanentes — inscrites au contrat le 30/08
+
+| Piste | État |
+|---|---|
+| Métaheuristiques et hybrides | `OUVERT` — routage, pool et température sont des problèmes de recherche sous contrainte, résolus à la main |
+| Inférence adaptative (bandits, bayésien) | `OUVERT` — le magasin est prêt, la politique non |
+| Travaux MQL5 sur les métaheuristiques | `OUVERT` — corpus publié et mesuré, méthode à reprendre |
+
 ### Pistes ouvertes par l'opérateur, jamais traitées
 
 | Sujet | État | Où en est-ce |
