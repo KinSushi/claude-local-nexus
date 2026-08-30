@@ -536,7 +536,16 @@ def consigner(rapport: dict) -> None:
     modeles n'ayant rien prouve. Aucun cas de ce type n'existe a ce jour.
 
     N'echoue jamais : un registre non ecrit ne doit pas faire echouer une
-    releve qui, elle, a abouti.
+    releve qui, elle, a abouti. Mais il le DIT, sur stderr.
+
+    Mesure du 2026-08-30 : une releve de 1004 s a rendu 4/4 et n'a ecrit
+    aucun registre. Le filet etait un `except: pass` muet, si bien que la
+    cause a ete perdue avec l'erreur -- il a fallu rejouer la consignation a
+    la main pour constater qu'elle marchait, sans jamais apprendre pourquoi
+    elle avait echoue.
+
+    Ne pas faire echouer et ne rien dire sont deux choses differentes. La
+    premiere est voulue, la seconde etait un defaut.
     """
     try:
         dossier = os.path.join(PLATEFORME, ".nexus")
@@ -573,8 +582,10 @@ def consigner(rapport: dict) -> None:
         registre["mesure_le"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         with open(chemin, "w", encoding="utf-8") as f:
             json.dump(registre, f, indent=2, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as exc:
+        # stderr, jamais stdout : --json doit rester analysable.
+        print("  [!] registre d'epreuves non ecrit : %s: %s"
+              % (type(exc).__name__, exc), file=sys.stderr)
 
 
 def candidats_locaux(cle: str) -> list[str]:
