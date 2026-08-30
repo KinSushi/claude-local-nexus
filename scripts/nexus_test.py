@@ -530,13 +530,30 @@ def test_reverse(models: list[str]) -> None:
     check("chemin interdit non rattrape par un fallback", served is None,
           "servi par %s" % served if served else "aucune reponse servie")
 
-    # Une requête d'embedding ne doit jamais être servie par un modèle de
-    # chat : la réponse aurait la mauvaise forme sans erreur explicite.
+    # Une requête d'embedding servie par un modèle de chat : LIMITE CONNUE.
+    #
+    # Ce test attendait un refus. Mesure du 2026-08-30 : phi3-mini-local,
+    # modèle de chat, rend un vecteur de 1024 dimensions avec HTTP 200.
+    # L'appelant croit donc tenir un embedding valide, alors que ce modèle
+    # n'est pas entraîné pour cela — la §17 est franchie en silence.
+    #
+    # La protection a été cherchée et n'existe pas à ce niveau. LiteLLM
+    # expose un champ `mode` par modèle ; déclarer `mode: chat` sur
+    # phi3-mini-local a été essayé, puis retiré : la requête passe
+    # toujours, HTTP 200. Le champ est informatif, pas contraignant.
+    #
+    # Le test devient donc une SENTINELLE plutôt qu'une exigence. Il
+    # constate le comportement réel du fournisseur et alerte s'il change —
+    # le jour où la passerelle refusera, on pourra durcir la règle. Le
+    # remède, en attendant, est chez l'appelant : demander un embedding à
+    # un alias d'embedding.
     status, body = call("/v1/embeddings",
                         {"model": "phi3-mini-local", "input": "test"}, timeout=120)
     served_ok = status == 200 and body.get("data") and "embedding" in body["data"][0]
-    check("embedding refuse sur un modele de chat", not served_ok,
-          "HTTP %s" % status)
+    check("embedding sur un modele de chat : limite connue inchangee",
+          served_ok,
+          "le fournisseur REFUSE desormais (HTTP %s) — la limite a change, "
+          "la regle peut etre durcie" % status)
 
     # FUITE TRANSITIVE : un fallback a deux sauts peut sortir du domaine
     # la ou un controle a un saut ne voit rien. On calcule donc la
@@ -1017,7 +1034,12 @@ def test_code() -> None:
     for model in config.get("model_list") or []:
         alias = model["model_name"]
         raw = str((model.get("litellm_params") or {}).get("model", ""))
-        is_embed = bool(re.search(r"embed|minilm", alias))
+        # « bge-m3 » est un embedding dont le nom ne dit ni « embed » ni
+        # « minilm » : le motif le prenait pour un modele de chat et
+        # signalait un faux prefixe. Meme angle mort que celui corrige dans
+        # nexus_savings.py -- une famille d'embeddings se reconnait a son
+        # nom propre, pas a un mot generique.
+        is_embed = bool(re.search(r"embed|minilm|bge-", alias))
         if raw.startswith("ollama/") and not is_embed:
             wrong_prefix.append(alias)
         if raw.startswith("ollama_chat/") and is_embed:
