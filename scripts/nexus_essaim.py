@@ -511,22 +511,32 @@ def analyser_arguments() -> argparse.Namespace:
 
 def repartir_cibles(cibles: List[str]) -> Tuple[List[str], List[str]]:
     """
-    Sépare les cibles en deux listes :
+    Separe les cibles : ce qui est sensible reste local, le reste peut sortir.
 
-    - locales : le nom contient un indice de secret ou de configuration sensible,
-    - cloud   : le reste.
+    La decision revient a nexus_agent.est_secret, definition UNIQUE de la
+    sensibilite dans ce depot. Auparavant cette fonction avait la sienne --
+    six mots-clefs cherches en sous-chaine : preserve, secret, env, cle, key,
+    auth -- et les deux divergeaient.
 
-    Les mots-clés sensibles sont : preserve, secret, env, cle, key, auth.
+    Mesure du 30 aout 2026, trois divergences dangereuses dans le meme sens :
+
+        credentials.json   essaim CLOUD   agent secret
+        id_rsa             essaim CLOUD   agent secret
+        serveur.pem        essaim CLOUD   agent secret
+
+    Des identifiants et des cles privees seraient donc partis vers
+    ollama.com, alors que l'agent refuse deja de les lire. Deux definitions
+    concurrentes de « sensible » valent moins qu'une seule : la plus laxiste
+    l'emporte toujours, puisqu'il suffit d'emprunter le chemin qu'elle garde.
+
+    Les divergences inverses -- nexus_preserve.py classe local par la
+    sous-chaine « preserve » alors que ce script n'a rien de secret -- se
+    corrigent du meme coup. Chercher « key » en sous-chaine attrapait aussi
+    « monkey ».
     """
-    mots_cles = ["preserve", "secret", "env", "cle", "key", "auth"]
-    locales = []
-    cloud = []
+    locales, cloud = [], []
     for c in cibles:
-        nom = Path(c).name.lower()
-        if any(mot in nom for mot in mots_cles):
-            locales.append(c)
-        else:
-            cloud.append(c)
+        (locales if agent.est_secret(c) else cloud).append(c)
     return cloud, locales
 
 def traiter_plan(cibles, args, plan, modele, parallele):
