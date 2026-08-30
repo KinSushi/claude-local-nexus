@@ -431,8 +431,9 @@ def main() -> int:
 def parser_rapport_essaim(sortie_out: str, lot: list[Path]) -> dict:
     """
     Interprete le rapport CSV d'un essaim (une ligne par cible : nom de
-    fichier, verdict, nb_trouvailles, tokens, modele, plan) et le rattache
-    aux chemins complets du lot par nom de fichier.
+    fichier, verdict, nb_trouvailles, tokens, modele, plan, et depuis peu
+    un 7e champ optionnel portant le detail de l'echec) et le rattache aux
+    chemins complets du lot par nom de fichier.
 
     Retourne {chemin_complet: {"verdict": "ok"|"echec", "cause": str}} pour
     les seules cibles reconnues sans ambiguite. Si deux cibles du meme lot
@@ -462,10 +463,19 @@ def parser_rapport_essaim(sortie_out: str, lot: list[Path]) -> dict:
         if chemin is None:
             continue
         verdict = correspondance.get(verdict_brut, "echec")
-        resultats[str(chemin)] = {
-            "verdict": verdict,
-            "cause": "" if verdict == "ok" else f"essaim: {verdict_brut}",
-        }
+        # Le 7e champ, quand il existe, porte un diagnostic precis (dernier
+        # message de nexus_patch.py, ou "timeout apres Ns"). Sans lui, la
+        # cause se limitait a repeter le verdict brut, ce qui n'apprend
+        # rien de plus qu'on ne savait deja -- c'est ce qui a oblige a
+        # rejouer la meme consigne a la main pour comprendre un echec reel.
+        detail = champs[6].strip() if len(champs) > 6 and champs[6].strip() else ""
+        if verdict == "ok":
+            cause = ""
+        elif detail:
+            cause = detail
+        else:
+            cause = f"essaim: {verdict_brut}"
+        resultats[str(chemin)] = {"verdict": verdict, "cause": cause}
     return resultats
 if __name__ == "__main__":
     sys.exit(main())

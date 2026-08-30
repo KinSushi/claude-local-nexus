@@ -293,10 +293,17 @@ def main():
         action="store_true",
         help="Afficher ce qui serait applique sans ecrire",
     )
-    parser.add_argument(
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
         "--triplets",
         action="store_true",
-        help="Utiliser le mode triplets (pour fichiers trop gros)",
+        help="Utiliser le mode triplets (ancres exactes, fragile sur les gros fichiers)",
+    )
+    mode_group.add_argument(
+        "--fonctions",
+        action="store_true",
+        help="Utiliser le mode fonctions (seules les fonctions changees, "
+             "robuste sur les gros fichiers .py ; voir nexus_fonctions.py)",
     )
     args = parser.parse_args()
 
@@ -306,7 +313,9 @@ def main():
         consigne = lire_consigne(args)
 
         # Choix du format selon le mode
-        if args.triplets:
+        if args.fonctions:
+            consigne_avec_format = ajouter_exigence_fonctions(consigne)
+        elif args.triplets:
             consigne_avec_format = ajouter_exigence_triplet(consigne)
         else:
             consigne_avec_format = ajouter_exigence_fichier(consigne)
@@ -339,7 +348,14 @@ def main():
 
         texte = reponse.get("texte", "")
 
-        if args.triplets:
+        if args.fonctions:
+            # Mode fonctions : seules les fonctions changees sont demandees
+            # et appliquees via nexus_fonctions.py (voir plus haut).
+            nouveau_contenu, appliquees = appliquer_mode_fonctions(cible_original, texte)
+            if nouveau_contenu is None:
+                sys.exit(1)  # message d'erreur deja imprime
+
+        elif args.triplets:
             # Mode legacy : traitement des triplets
             triplets = extraire_triplets(texte)
             if not triplets:
@@ -393,5 +409,83 @@ def main():
         sys.exit(1)
 
 
+
+
+def ajouter_exigence_fonctions(consigne):
+    """
+    Ajoute l'exigence de format « fonctions » (mode --fonctions) : le modele
+    ne renvoie que les fonctions changees ou ajoutees, jamais le fichier
+    complet, au format attendu par nexus_fonctions.py.
+
+    Pourquoi : sur un gros fichier, le mode fichier entier (par defaut) et
+    le mode triplets echouent tous deux au-dela d'environ 600 lignes -- le
+    premier parce que le modele tronque ou omet une ligne loin du
+    changement (le garde-fou de taille en dessous de 60% le detecte, mais
+    ne le corrige pas), le second parce qu'une ancre exacte au caractere
+    pres devient introuvable des que le fichier est volumineux. Demander
+    uniquement les fonctions modifiees supprime la cause commune : il n'y a
+    plus de texte inchange a reproduire fidelement.
+    """
+    exigence = (
+        "\n\nRepondez UNIQUEMENT avec les fonctions modifiees ou ajoutees, "
+        "jamais le fichier complet ni les fonctions inchangees. Format "
+        "exact, un bloc par fonction :\n"
+        "@@FONCTION nom_de_la_fonction@@\n"
+        "<le corps complet de la fonction corrigee ou nouvelle, avec sa "
+        "signature>\n"
+        "@@FIN@@\n"
+        "Pour une methode de classe, utilisez Classe.methode comme nom.\n"
+    )
+    return consigne.rstrip() + exigence
+def appliquer_mode_fonctions(cible_original, texte):
+    """
+    Applique la reponse du modele au format --fonctions.
+
+    Reutilise nexus_fonctions.py (deja present dans ce depot) pour le
+    remplacement au niveau de l'AST plutot que de dupliquer cette logique :
+    c'est l'unite de remplacement la plus robuste sur les gros fichiers
+    disponible ici, et la dupliquer aurait cree deux implementations a
+    maintenir en parallele.
+
+    Retourne (nouveau_contenu, nb_operations) si l'application reussit,
+    (None, 0) sinon (message d'erreur deja imprime, aucune exception levee
+    vers l'appelant : main() attend un couple, pas une levee).
+    """
+    import tempfile as _tempfile
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import nexus_fonctions as fonctions_outil
+
+    # parser_blocs() lit un fichier ; on ecrit donc la reponse du modele
+    # dans un fichier temporaire plutot que de dupliquer son analyseur.
+    fd, tmp_path = _tempfile.mkstemp(suffix=".blocs.txt", text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(texte)
+        try:
+            blocs = fonctions_outil.parser_blocs(tmp_path)
+        except ValueError as e:
+            print(f"Erreur: reponse --fonctions mal formee: {e}")
+            return None, 0
+    finally:
+        os.unlink(tmp_path)
+
+    if not blocs:
+        print("Erreur: aucun bloc @@FONCTION@@ trouve dans la reponse")
+        return None, 0
+
+    lignes_cible = cible_original.splitlines(keepends=True)
+    try:
+        fonctions_existantes = fonctions_outil.analyser_ast(lignes_cible)
+    except SyntaxError as e:
+        print(f"Erreur: le fichier original ne se parse pas: {e}")
+        return None, 0
+
+    nouvelles, remplacees, ajoutees = fonctions_outil.appliquer_remplacements(
+        lignes_cible, fonctions_existantes, blocs
+    )
+    if not remplacees and not ajoutees:
+        print("Erreur: aucune fonction demandee n'a pu etre appliquee")
+        return None, 0
+    return "".join(nouvelles), len(remplacees) + len(ajoutees)
 if __name__ == "__main__":
     sys.exit(main())

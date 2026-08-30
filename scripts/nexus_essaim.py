@@ -225,7 +225,7 @@ def traiter_cible(
                 restaurer_backup(cible, backup_path)
                 backup_gere = True
                 return (
-                    f"{nom_cible},echec,0,0,none,{plan}",
+                    f"{nom_cible},echec,0,0,none,{plan},consigne audit introuvable",
                     False,
                     False,
                 )
@@ -240,7 +240,7 @@ def traiter_cible(
             restaurer_backup(cible, backup_path)
             backup_gere = True
             return (
-                f"{nom_cible},echec,0,0,none,{plan}",
+                f"{nom_cible},echec,0,0,none,{plan},reponse d'audit malformee",
                 False,
                 False,
             )
@@ -250,8 +250,9 @@ def traiter_cible(
             print(f"Audit error for {nom_cible}")
             restaurer_backup(cible, backup_path)
             backup_gere = True
+            detail_audit = str(audit_res.get('erreur', '')).replace(',', ';').replace('\n', ' ')[:160]
             return (
-                f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_audit}",
                 False,
                 False,
             )
@@ -282,15 +283,37 @@ def traiter_cible(
             "--consigne",
             str(consigne_path),
         ]
+        # Mode --fonctions au-dela d'un certain volume : mesure sur ce
+        # depot (deux runs reels), le mode fichier entier (par defaut)
+        # echoue systematiquement la verification au-dela d'environ 600
+        # lignes -- c'etait le cas des 3 plus gros fichiers du depot a
+        # chaque passage, jamais des plus petits. Reserve aux .py :
+        # nexus_fonctions.py, qui applique ce mode, est un outil AST
+        # Python et ne sait pas lire un .js ou un .ps1.
+        seuil_fonctions_lignes = 600
+        if cible.suffix.lower() == ".py":
+            try:
+                nb_lignes_cible = sum(1 for _ in cible.open(encoding="utf-8", errors="ignore"))
+            except OSError:
+                nb_lignes_cible = 0
+            if nb_lignes_cible > seuil_fonctions_lignes:
+                cmd.append("--fonctions")
         if args.modele_correction:
             cmd.extend(["--modele", args.modele_correction])
+
+        # Detail de l'echec de correction, pour le rapport (7e champ CSV).
+        # Sans lui, "echec" ne distingue pas un blocage reseau d'une reponse
+        # mal formee ou d'une syntaxe invalide -- il fallait rejouer la
+        # meme consigne a la main pour le savoir, ce qui est arrive.
+        detail_correction = ""
+
         if args.simuler:
             print(f"Simulation: {' '.join(cmd)}")
             correction_ok = True
         else:
-            # Le délai par défaut était de 60 s, ce qui était trop court.
-            # Mesures : 20‑60 s en cloud, jusqu’à 155 s à froid en local.
-            # On porte le délai à 900 s (valeur utilisée ailleurs dans le dépôt)
+            # Le délai par défaut était de 60 s, ce qui était trop court.
+            # Mesures : 20‑60 s en cloud, jusqu’à 155 s à froid en local.
+            # On porte le délai à 900 s (valeur utilisée ailleurs dans le dépôt)
             # et on le rend configurable via la variable d'environnement NEXUS_TIMEOUT.
             timeout_sec = int(os.getenv("NEXUS_TIMEOUT", "900"))
             try:
@@ -302,6 +325,13 @@ def traiter_cible(
                     timeout=timeout_sec,
                 )
                 correction_ok = res.returncode == 0
+                if not correction_ok:
+                    # Dernier message imprime par nexus_patch.py : c'est le
+                    # seul indice sur la cause reelle (bloc mal forme,
+                    # aucune fonction appliquee, syntaxe invalide...).
+                    sortie_brute = (res.stdout or res.stderr or "").strip()
+                    derniere_ligne = sortie_brute.splitlines()[-1] if sortie_brute else ""
+                    detail_correction = derniere_ligne.replace(",", ";").replace("\n", " ")[:160]
             except subprocess.TimeoutExpired:
                 # Le processus a été tué après le timeout.
                 # On vérifie si le fichier a été modifié.
@@ -320,6 +350,7 @@ def traiter_cible(
                     # Aucun changement n'a eu lieu.
                     print(f"Timeout expired for {nom_cible} but file unchanged")
                     correction_ok = False
+                    detail_correction = f"timeout apres {timeout_sec}s"
                 else:
                     # Le fichier a été modifié mais on ne peut pas garantir la validité.
                     print(f"Timeout expired for {nom_cible}; file may be in unknown state")
@@ -338,7 +369,7 @@ def traiter_cible(
             restaurer_backup(cible, backup_path)
             backup_gere = True
             return (
-                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_correction}",
                 False,
                 False,
             )
@@ -349,7 +380,7 @@ def traiter_cible(
             restaurer_backup(cible, backup_path)
             backup_gere = True
             return (
-                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},syntaxe invalide apres correction",
                 False,
                 False,
             )
@@ -379,6 +410,8 @@ def traiter_cible(
                 print(f"Restoration failed for {nom_cible}: {e}")
             finally:
                 backup_path.unlink(missing_ok=True)
+
+
 
 # --------------------------------------------------------------------------- #
 # Fonction principale
