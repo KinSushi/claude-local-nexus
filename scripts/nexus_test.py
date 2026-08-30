@@ -1246,7 +1246,7 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell"],
+                                 "shell", "portee"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1277,6 +1277,8 @@ def main() -> int:
         test_garde_lecture()
     if args.only in (None, "shell"):
         test_garde_shell()
+    if args.only in (None, "portee"):
+        test_portee_import()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1291,6 +1293,108 @@ def main() -> int:
     return 1 if FAILED else 0
 
 
+
+
+def test_portee_import() -> None:
+    """
+    Le detecteur de portee voit-il, et se tait-il quand il le doit ?
+
+    Un depot sain rend « OK ». Un motif casse rend « OK » aussi : le silence
+    ne prouve donc rien, et il faut un cas positif FABRIQUE pour savoir que
+    le detecteur detecte encore.
+
+    Les cinq cas legitimes comptent autant que le cas dangereux. Le depot
+    porte une trentaine d'imports locaux, tous justifies ; un detecteur qui
+    les signalerait serait desactive le jour meme, et ne protegerait plus de
+    rien.
+    """
+    import shutil
+    import tempfile
+
+    print("\n--- PORTEE DES IMPORTS : le detecteur detecte-t-il encore ? ---")
+
+    outil = os.path.join(ROOT, "scripts", "nexus_portee_import.py")
+    if not os.path.isfile(outil):
+        skip("portee des imports", "nexus_portee_import.py introuvable")
+        return
+
+    dangereux = (
+        "def prepare():\n"
+        "    import subprocess\n"
+        "    return subprocess.run(['true'])\n"
+        "\n"
+        "def autre_chemin():\n"
+        "    return subprocess.TimeoutExpired\n"
+    )
+
+    legitimes = {
+        "lie au niveau module": (
+            "import json\n"
+            "\n"
+            "def charge():\n"
+            "    import json\n"
+            "    return json.loads('{}')\n"
+            "\n"
+            "def sauve():\n"
+            "    return json.dumps({})\n"
+        ),
+        "builtin": (
+            "def f():\n"
+            "    import os\n"
+            "    return os.getcwd()\n"
+            "\n"
+            "def g():\n"
+            "    return len([1, 2])\n"
+        ),
+        "fonction imbriquee": (
+            "def dehors():\n"
+            "    import textwrap\n"
+            "    def dedans():\n"
+            "        return textwrap.dedent('  x')\n"
+            "    return dedans()\n"
+        ),
+        "deux fonctions importent le meme nom": (
+            "def une():\n"
+            "    import yaml\n"
+            "    return yaml.safe_load('a: 1')\n"
+            "\n"
+            "def deux():\n"
+            "    import yaml\n"
+            "    return yaml.safe_dump({})\n"
+        ),
+        "nom reaffecte chez l'employeur": (
+            "def importe():\n"
+            "    import shutil\n"
+            "    return shutil.which('git')\n"
+            "\n"
+            "def emploie(shutil):\n"
+            "    return shutil\n"
+        ),
+    }
+
+    def jouer(source):
+        dossier = tempfile.mkdtemp(prefix="epreuve_portee_")
+        try:
+            cible = os.path.join(dossier, "cas.py")
+            with io.open(cible, "w", encoding="utf-8") as fh:
+                fh.write(source)
+            r = subprocess.run([sys.executable, outil, cible],
+                               capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=120)
+            return r.returncode, [l for l in r.stdout.splitlines() if l.strip()]
+        finally:
+            shutil.rmtree(dossier, ignore_errors=True)
+
+    code, lignes = jouer(dangereux)
+    check("cas dangereux signale",
+          code == 1 and any("subprocess" in l for l in lignes),
+          lignes[0] if lignes else "aucune sortie")
+
+    for nom, source in legitimes.items():
+        code, lignes = jouer(source)
+        check("silence sur cas legitime : %s" % nom,
+              code == 0 and lignes == ["OK"],
+              "silence" if lignes == ["OK"] else "; ".join(lignes)[:70])
 
 
 def test_ruche() -> None:
@@ -1757,6 +1861,38 @@ def test_garde_lecture() -> None:
         r = appeler(s4, "Write", os.path.join(ROOT, "fichier_inexistant.txt"))
         check("Write sur fichier inexistant => autorise",
               r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
+
+        # 4 bis. Et il faut S'EN SOUVENIR. Mesure du 2026-08-30 : un script
+        # d'extraction ecrit par la session, puis corrige dans le meme tour,
+        # etait REFUSE au second passage -- au motif que la session en
+        # ignorerait le contenu, alors qu'elle en etait l'auteur. Le garde
+        # n'alimentait sa memoire que sur « Read ».
+        #
+        # L'enregistrement n'a lieu que sur un fichier INEXISTANT, et c'est
+        # ce qui le rend sur : si l'ecriture echoue, le fichier reste absent,
+        # donc la suivante est une creation, autorisee de toute facon.
+        s4b = "epreuve-%s" % uuid.uuid4().hex[:12]
+        neuf = os.path.join(ROOT, "epreuve_garde_%s.txt" % uuid.uuid4().hex[:8])
+        appeler(s4b, "Write", neuf)          # creation : autorisee, et retenue
+        with io.open(neuf, "w", encoding="utf-8") as fh:
+            fh.write("ecrit par la session")
+        try:
+            r = appeler(s4b, "Write", neuf)  # le fichier existe maintenant
+            check("Write sur un fichier que la session vient de creer => autorise",
+                  r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
+        finally:
+            try:
+                os.remove(neuf)
+            except OSError:
+                pass
+
+        # 4 ter. Le symetrique, qui prouve que la memoire n'est pas devenue
+        # une passoire : une AUTRE session n'a rien ecrit, donc rien vu.
+        s4c = "epreuve-%s" % uuid.uuid4().hex[:12]
+        r = appeler(s4c, "Write", readme)
+        check("autre session sur le meme fichier => refus maintenu",
+              '"permissionDecision": "deny"' in (r.stdout or ""),
+              (r.stdout or "").strip()[:70] or "aucune sortie")
 
         # 5 et 6. Une anomalie AUTORISE en silence : un garde qui plante
         # empeche de travailler, ce qui est pire que le defaut surveille.

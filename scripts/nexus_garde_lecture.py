@@ -160,6 +160,20 @@ def main() -> None:
         return
     if not existe:
         # Creer un fichier neuf n'ecrase rien : il n'y a rien a avoir lu.
+        #
+        # Mais il faut S'EN SOUVENIR. Sans cela, la session qui vient
+        # d'ecrire un fichier se voit refuser la deuxieme ecriture dessus,
+        # au motif qu'elle n'en connaitrait pas le contenu -- alors qu'elle
+        # en est l'auteur. Mesure du 2026-08-30 : un script d'extraction
+        # ecrit puis corrige dans le meme tour, refuse au second passage.
+        #
+        # L'enregistrement n'a lieu QUE sur un fichier inexistant, et c'est
+        # ce qui le rend sur : si l'ecriture echoue, le fichier reste
+        # absent, donc la prochaine sera une creation, autorisee de toute
+        # facon. Aucun contenu non vu ne peut ainsi devenir ecrasable.
+        connus = lus(fichier_memoire)
+        connus.add(cible)
+        retenir(fichier_memoire, connus)
         return
     if cible in lus(fichier_memoire):
         return

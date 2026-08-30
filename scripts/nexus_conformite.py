@@ -1086,6 +1086,41 @@ def controle_mcp_double_portee() -> None:
     )
     noter("pont MCP double portee", not divergents, AVERTISSEMENT, detail)
 
+def controle_portee_import() -> None:
+    """
+    Un nom importe dans une fonction, employe dans une autre.
+
+    Ce controle ne double PAS « import des scripts ». Celui-la CHARGE chaque
+    module et ne peut rien voir ici : le module s'importe proprement, puisque
+    l'import existe — il est simplement au mauvais endroit. Le NameError
+    tombe plus tard, a l'execution du seul chemin qui emploie le nom, c'est-a-
+    dire souvent en production et jamais pendant le controle.
+
+    BLOQUANT, comme son voisin : un chemin qui leve NameError est casse pour
+    tous ses appelants, et rien de ce qui suit ne peut etre tenu pour vrai.
+    """
+    outil = os.path.join(ROOT, "scripts", "nexus_portee_import.py")
+    if not os.path.isfile(outil):
+        return ignorer("portee des imports", "nexus_portee_import.py introuvable")
+    try:
+        r = subprocess.run([sys.executable, outil], cwd=ROOT,
+                           capture_output=True, text=True, timeout=300,
+                           encoding="utf-8", errors="replace")
+    except subprocess.TimeoutExpired:
+        return ignorer("portee des imports", "pas de reponse en 300 s")
+    except Exception as exc:
+        return ignorer("portee des imports", str(exc)[:60])
+
+    lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    if r.returncode == 0:
+        return noter("portee des imports", True, BLOQUANT,
+                     "aucun nom employe hors de la fonction qui l'importe")
+    compte = next((l.split(":", 1)[1].strip()
+                   for l in lignes if l.startswith("DEFAUTS:")), "?")
+    autres = [l for l in lignes if not l.startswith("DEFAUTS:")]
+    noter("portee des imports", False, BLOQUANT,
+          "%s defaut(s) : %s" % (compte, " | ".join(autres[:2])))
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -1310,6 +1345,7 @@ def main() -> int:
         controle_pont_lecture_seule,
         controle_cablage,
         controle_imports,
+        controle_portee_import,
         controle_hooks_cables,
         controle_verrou_machine,
         controle_mcp_a_jour,

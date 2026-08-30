@@ -468,13 +468,15 @@ enfreinte. Un paragraphe ne ferme rien.
 > Le bon critère n'était pas la forme mais le sens : ni un numéro, ni un
 > intitulé de colonne.
 
-### Trouvé en se servant du pont, le 30/08 — trois défauts, trois contrôles
+### Trouvé en se servant du pont, le 30/08 — cinq défauts, cinq contrôles
 
 | Sujet | Statut | Ce qui le garde |
 |---|---|---|
 | `nexus-local` déclaré dans **deux portées** | `FAIT` | `controle_mcp_double_portee` dans `nexus_conformite.py` |
 | `nexus_agent.py` refusait un fichier sans nommer l'issue | `FAIT` | le refus cite désormais `--racine` ; prouvé en le rejouant |
 | `cockpit_frais` était insatisfiable dans le tour qu'il prescrit | `FAIT` | trois cas joués sur un dépôt jetable : ensemble, périmé, retouché |
+| Le garde de lecture refusait un fichier **créé par la session** | `FAIT` | deux cas dans `test_garde_lecture` : création retenue, autre session refusée |
+| Aucun garde sur l'import en portée dangereuse | `FAIT` | `nexus_portee_import.py`, `controle_portee_import`, six cas dans `--only portee` |
 
 > **Ni l'un ni l'autre ne vient d'un audit.** Le premier est apparu dans la
 > sortie de `/mcp` au démarrage de la session : le serveur était déclaré en
@@ -522,6 +524,35 @@ enfreinte. Un paragraphe ne ferme rien.
 > jetable — partis ensemble, code commité seul, cockpit retouché — et le cas
 > périmé rend toujours `MANQUE` : la correction n'a pas acheté le silence en
 > désarmant le contrôle.
+>
+> **Le quatrième défaut a mordu l'orchestrateur lui-même**, à l'instant où il
+> corrigeait un script d'extraction : le garde « lire avant d'écrire » a refusé
+> un fichier que la session venait pourtant d'**écrire**, au motif qu'elle en
+> ignorerait le contenu. Il n'alimentait sa mémoire que sur `Read`, jamais sur
+> une création. Le correctif n'enregistre que l'écriture sur un fichier
+> **inexistant**, et c'est ce qui le rend sûr : si l'écriture échoue, le
+> fichier reste absent, donc la suivante est une création, autorisée de toute
+> façon — aucun contenu non vu ne peut devenir écrasable. Un second cas de test
+> vérifie qu'une *autre* session reste refusée : sans lui, le correctif aurait
+> pu transformer la mémoire en passoire sans que rien ne le dise.
+>
+> **Le cinquième n'était pas un défaut, et c'est le résultat.** Le cockpit
+> portait depuis la veille « `import subprocess` en portée locale
+> (`nexus_ruche.py:205`) ». Vérifié dans le code réel : l'import est local,
+> mais l'usage l'est aussi — cela fonctionne. Le corriger n'aurait protégé de
+> rien. Une règle « pas d'import local » aurait été pire : le dépôt en compte
+> une trentaine, tous légitimes (import paresseux, dépendance optionnelle,
+> fixture de test), et un contrôle qui les signalerait serait désarmé le jour
+> même.
+>
+> Ce qui mérite un garde est la forme **dangereuse**, voisine et invisible : un
+> nom importé dans une fonction et employé dans une **autre**. Le module
+> s'importe alors proprement — `controle_imports`, qui charge les modules, ne
+> peut rien voir — et le `NameError` tombe plus tard, sur le seul chemin qui
+> emploie le nom. `nexus_portee_import.py` rend `OK` sur le dépôt : le silence
+> ne prouvant rien, six cas fabriqués le complètent, un dangereux et cinq
+> légitimes, un par règle de non-signalement.
+
 
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
