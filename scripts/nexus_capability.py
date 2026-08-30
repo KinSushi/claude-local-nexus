@@ -78,12 +78,40 @@ ACCEPT, DEGRADED, REJECT = "ACCEPT", "DEGRADED", "REJECT"
 
 
 def _run(args: list[str], timeout: int = 60) -> str:
+    """
+    Sortie de la commande, ou chaine vide.
+
+    Le vide couvre trois cas que les appelants traitent identiquement --
+    commande absente, commande en echec, sortie reellement vide -- et c'est
+    voulu : pour eux, « pas de reponse » est l'information utile. La sonde
+    du conteneur ollama-server, par exemple, echoue normalement depuis que
+    le moteur tourne sur l'hote.
+
+    La raison du vide est donc TUE par defaut, a dessein : la dire ferait
+    crier deux fois par execution sur une machine parfaitement saine, et un
+    avertissement qui se declenche sur la normale n'avertit plus.
+
+    Elle reste disponible sous NEXUS_VERBEUX, parce que ces mesures
+    alimentent le verdict materiel -- lequel decide de la declaration, de
+    l'appartenance aux pools et des telechargements. Le jour ou ce verdict
+    sera faux, il faudra pouvoir demander pourquoi sans modifier le code.
+    """
+    def _dire(motif: str) -> None:
+        if os.environ.get("NEXUS_VERBEUX"):
+            print("  [verbeux] %s : %s" % (" ".join(args[:2]), motif),
+                  file=sys.stderr)
+
     try:
         result = subprocess.run(args, capture_output=True, text=True,
                                 timeout=timeout, encoding="utf-8",
                                 errors="replace")
-        return result.stdout if result.returncode == 0 else ""
-    except Exception:
+        if result.returncode != 0:
+            _dire("code %s : %s" % (result.returncode,
+                                    (result.stderr or "").strip()[:120]))
+            return ""
+        return result.stdout
+    except Exception as exc:
+        _dire("%s: %s" % (type(exc).__name__, exc))
         return ""
 
 
