@@ -29,6 +29,7 @@ import datetime
 import io
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -422,6 +423,40 @@ def backup_irreplaceable() -> int:
     fait.append(
         f"historique git : {os.path.basename(bundle_final)} ({os.path.getsize(bundle_final)/(1024**2):.1f} Mo, restaurable par git clone <bundle>)"
     )
+
+    # ---------- Relevés de mesure (.nexus) ----------
+    #
+    # Ils echappent aux trois mecanismes ci-dessus : ils ne sont ni dans la
+    # base, ni dans le bundle git, ni listes par `git status --porcelain`
+    # puisqu'ils sont gitignores. Le script dedie a l'irremplacable les
+    # perdait donc, alors qu'ils en relevent pleinement.
+    #
+    # Le critere de ce fichier est « existe-t-il une source pour
+    # reconstruire ». Pour les poids de modeles la reponse est oui, publique
+    # et rapide : 541 Go ecartes sans regret. Pour ces relevés, la source est
+    # la machine elle-meme, au prix d'heures de mesure -- une seule epreuve
+    # de la releve a demande 1004 s. Et ils pesent quelques kilo-octets : le
+    # gaspillage est nul, la perte serait reelle.
+    #
+    # Ils sont gitignores a raison, parce qu'ils mesurent CETTE machine. Une
+    # sauvegarde locale est le seul endroit ou ils ont leur place.
+    releves = []
+    dossier_nexus = os.path.join(ROOT, ".nexus")
+    for nom in ("latences.json", "epreuves.json"):
+        source = os.path.join(dossier_nexus, nom)
+        if not os.path.isfile(source):
+            continue
+        cible = os.path.join(BACKUP_DIR, f"{os.path.splitext(nom)[0]}-{stamp}.json")
+        try:
+            shutil.copy2(source, cible)
+            releves.append(os.path.basename(cible))
+        except OSError as exc:
+            # Signale sans interrompre : la base et le bundle, eux, sont deja
+            # sauves, et les perdre pour un releve serait un mauvais echange.
+            print(f"  [!] releve non copie : {nom} : {exc}")
+    if releves:
+        fait.append("relevés de mesure : " + ", ".join(releves)
+                    + " (des heures de mesure, quelques kilo-octets)")
 
     # ---------- Travail en cours (fichiers non commités) ----------
     status = _exec_subprocess(
