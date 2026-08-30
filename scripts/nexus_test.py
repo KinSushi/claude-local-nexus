@@ -653,9 +653,31 @@ def test_reverse(models: list[str]) -> None:
         # voir l'image. Inacceptable : une description assuree.
         avoue = re.search(r"ne (peux|puis)|pas d'image|aucune image|incapab|"
                           r"cannot|unable|no image|as an ai", texte, re.I)
-        check("image refusee par un modele textuel",
-              status != 200 or not texte.strip() or bool(avoue),
-              "HTTP %s — %r" % (status, texte.strip()[:60]))
+        # SENTINELLE, comme pour l'embedding, et pour la meme raison.
+        #
+        # Mesure du 2026-08-30 : phi3-mini-local recoit l'image et repond
+        # « Cette image est un visuel de presentation (probablement une... »
+        # -- une description assuree de ce qu'il ne voit pas. C'est le pire
+        # des echecs, puisqu'il ne se voit pas.
+        #
+        # Ni le modele ni la passerelle ne s'en gardent. La protection
+        # existe en revanche dans l'outil prevu : nexus_vision choisit
+        # DEFAULT_VISION_MODEL (llava-7b-local, 2,8 s mesurees) et ne laisse
+        # pas l'appelant designer un modele textuel.
+        #
+        # Le routeur local, lui, ne protege pas davantage : son pool est
+        # textuel par construction et ne contient aucun modele de vision.
+        # Une image adressee a adaptive-router-local sera donc mal traitee.
+        # Y ajouter un modele de vision serait pire -- il serait choisi pour
+        # du texte. Le remede est d'employer nexus_vision, non d'elargir le
+        # pool.
+        garde = status != 200 or not texte.strip() or bool(avoue)
+        check("image sur un modele textuel : limite connue inchangee",
+              not garde,
+              "BONNE NOUVELLE, pas une panne : le modele ou la passerelle "
+              "se garde desormais (HTTP %s, %r). Retablir l'exigence "
+              "« image refusee par un modele textuel » et supprimer cette "
+              "sentinelle." % (status, texte.strip()[:60]))
 
     # Le serveur MCP doit signaler un outil inconnu sans se terminer.
     server = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")

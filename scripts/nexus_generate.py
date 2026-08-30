@@ -1135,6 +1135,9 @@ def main() -> int:
     # inverse, construit avec la meme fonction que la declaration.
     poids_par_alias = {local_alias(nom): go for nom, go in (sizes or {}).items()}
 
+    pool_cloud = sorted((cloud_alias(b) for b in cloud
+                         if modalite_cloud(b) == "text"), key=_ms)
+
     classes = sorted(local_text, key=lambda e: (-e.tier, _ms(e.alias)))
     pool_local, cumul = [], 0.0
     for e in classes:
@@ -1182,10 +1185,17 @@ def main() -> int:
         # Seuls les modeles textuels entrent dans un pool de routage : un
         # embedding ou une vision n'y a pas sa place, et rien d'autre ne
         # verifie la modalite d'un pool.
-        "CLOUD_POOL_CLOUD": ["          - %s" % cloud_alias(b) for b in cloud
-                             if modalite_cloud(b) == "text"],
-        "CLOUD_POOL_GLOBAL": ["          - %s" % cloud_alias(b) for b in cloud
-                              if modalite_cloud(b) == "text"],
+        # Les pools cloud sont tries par la mesure eux aussi, depuis que le
+        # banc couvre ce plan.
+        #
+        # Le gain y est modeste et il faut le dire : les dix-neuf modeles
+        # cloud tiennent entre 2,5 et 11,2 s, un ecart de 4,5x contre 45x
+        # cote local. N'ayant aucun poids a charger ici, ils n'ont pas le
+        # probleme que ce tri corrige en local. Le seul defaut reel etait
+        # que le premier candidat, qwen3.5-397b-cloud a 5,6 s, etait plus
+        # lent que la moitie du pool -- gemma4-31b-cloud rend en 2,5 s.
+        "CLOUD_POOL_CLOUD": ["          - %s" % a for a in pool_cloud],
+        "CLOUD_POOL_GLOBAL": ["          - %s" % a for a in pool_cloud],
         # Les chaines externes s'achevent en local ; la chaine locale,
         # elle, ne sort jamais.
         "ANTHROPIC_FALLBACKS": render_chain(anthropic_groups, 4,
