@@ -228,12 +228,35 @@ def latences_existantes(racine) -> dict:
 
 
 def ecrire_json(racine: Path, mesures: dict):
-    """Ecrire le fichier latences.json avec encodage UTF-8 explicite."""
+    """
+    Ecrire latences.json SOUS SON ENVELOPPE, celle que la lecture attend.
+
+    Defaut critique corrige le 2026-08-30. Cette fonction ecrivait les
+    mesures a la racine du document, alors que latences_existantes() et
+    nexus_generate.latences_relevees() lisent toutes deux
+    donnees.get("modeles"). Chaque ecriture detruisait donc le format que
+    la lecture exige.
+
+    La consequence n'etait pas une erreur mais un SILENCE : la lecture
+    rendait un dictionnaire vide, tous les modeles devenaient « non
+    mesure », et la regeneration suivante les aurait tous sortis des pools
+    -- effacant sans un mot des heures de mesure et le travail de routage
+    qui en depend.
+
+    Decouvert en lisant le fichier a la main apres une mesure de debit ;
+    rien dans les sorties du banc ne le signalait.
+    """
     sortie_dir = racine / ".nexus"
     sortie_dir.mkdir(parents=True, exist_ok=True)
     sortie_path = sortie_dir / "latences.json"
+    # Une enveloppe deja presente n'est pas redoublee : mesures peut
+    # arriver sous les deux formes selon l'appelant.
+    document = mesures if "modeles" in mesures else {
+        "mesure_le": datetime.now(timezone.utc).isoformat(),
+        "modeles": mesures,
+    }
     with sortie_path.open("w", encoding="utf-8") as f:
-        json.dump(mesures, f, ensure_ascii=False, indent=2)
+        json.dump(document, f, ensure_ascii=False, indent=2)
 
 def afficher_tableau(resultats: dict):
     """Afficher un tableau simple alias, secondes, verdict."""
