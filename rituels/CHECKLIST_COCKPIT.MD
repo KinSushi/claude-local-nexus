@@ -240,9 +240,9 @@ inspire, on n'y touche pas.
 | hook `SessionStart` → reprise imprimée au démarrage | **repris** : `nexus_reprise.py`, tout dérivé, ne lance rien de long, n'échoue jamais |
 | ACL `deny` sur secrets et clés (101 règles là-bas) | **repris**, réduit à ce dépôt : 11 refus de lecture |
 | ACL `ask` sur les gestes irréversibles | **repris** : 15 gestes (push, reset --hard, clean, docker down -v, volume rm, prune, rm -rf, ollama rm) |
-| `garde_heredoc_echappements.py` | **à reprendre** — le défaut a été vécu ici trois fois le 30/08, les heredocs mangeant `
-` et `'` |
-| `hook_lecture_avant_ecriture.py` | à reprendre — impose de lire avant d'écrire |
+| `garde_heredoc_echappements.py` | **à reprendre** — le défaut a été vécu ici quatre fois le 30/08, dont un message de commit amputé de ses noms techniques |
+| `hook_lecture_avant_ecriture.py` | **repris** → `nexus_garde_lecture.py`, 7/7 |
+| `wiring_check.py` (cliquet de câblage) | **repris** → `nexus_cablage.py`, cliquet par nom, éprouvé |
 | `garde_perimetre_agent.py` | à reprendre — ACL de périmètre par agent |
 | `hook_anti_derive_pollution.py` | à reprendre — refuse les fichiers hors périmètre |
 | `recolter_rapports_agents.py --hook` | **à reprendre** — récolte automatique des worktrees des workers en fin de tour |
@@ -260,6 +260,18 @@ inspire, on n'y touche pas.
 > hook qui écrirait ces mêmes cibles se marcherait dessus avec eux.
 > `nexus_garde_edition.py` est écrit sous cette contrainte — il **n'écrit
 > aucun fichier**, il lit et compile en mémoire.
+>
+> **Une porte ne mute pas l'arbre qu'elle juge.** Principe rapporté par
+> l'instance voisine, qui a mesuré 88 répertoires `__pycache__` créés par sa
+> propre porte. Vérifié ici : `py_compile` n'est employé nulle part, les
+> `__pycache__` sont gitignorés, et `nexus_cablage.py` ne modifie aucun
+> fichier suivi pendant son exécution (mesuré avant/après).
+
+> **Limite du garde de lecture, écrite plutôt que tue.** `nexus_garde_lecture.py`
+> ne voit que les outils passant par le hook. Les correctifs de cette session
+> sont appliqués par des scripts Python lancés depuis le shell : ils
+> **échappent** au garde. Ce n'est pas un défaut du mécanisme, c'est sa portée
+> — et s'en croire protégé serait la vraie faute.
 
 ### Vérifications jamais faites
 
