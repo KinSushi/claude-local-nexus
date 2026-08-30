@@ -437,6 +437,25 @@ model_list:
       max_input_tokens: 8192
       description: "nomic-embed-text — embedding léger"
 
+  - model_name: bge-m3-local
+    litellm_params:
+      model: ollama/bge-m3
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+    model_info:
+      max_input_tokens: 8192
+      description: "bge-m3 — embedding multilingue, 1024 dimensions (nomic en rend 768, all-minilm 384, tous deux anglocentres)"
+
+  - model_name: granite3.3-8b-local
+    litellm_params:
+      model: ollama_chat/granite3.3:8b
+      api_base: http://host.docker.internal:11434
+      num_ctx: 32768
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 32768
+      description: "Granite 3.3 8B — generaliste local a large contexte ; hors lui et glm-4.7-flash, le pool local plafonne a 8192"
+
   - model_name: all-minilm-local
     litellm_params:
       model: ollama/all-minilm

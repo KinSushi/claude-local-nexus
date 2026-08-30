@@ -37,3 +37,5 @@ qwen3.6:27b
 codestral:22b
 deepseek-coder:6.7b
 qwen2.5-coder:7b
+bge-m3:latest
+granite3.3:8b
