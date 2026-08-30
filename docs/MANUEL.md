@@ -198,6 +198,46 @@ Les mesures montrent que le facteur limitant est **la machine locale** (CPU, mé
 
 ---
 
+## ⚡ Gros corpus : ce que coute chaque stratégie
+
+Au-delà de 96 000 caractères, le texte est découpé en fenêtres analysées
+séparément (MAP), puis fusionnées (REDUCE). Les fenêtres étant indépendantes,
+elles peuvent partir sur plusieurs plans à la fois.
+
+Mesures du 30 août 2026, même corpus de 221 334 caractères, même délai par
+fenêtre :
+
+| Stratégie | Durée | Commentaire |
+|---|---|---|
+| Cloud seul | **191 s** | référence |
+| Plan local seul | **687 s** | 3,6× plus lent |
+| Part fixe 3:2 entre les plans | **268 s** | +40 % — le lot attend le plan lent |
+| **File commune** | **192 s** | cloud 3 fenêtres, local 1 |
+
+C'est la file commune qui est employée. Chaque ouvrier prend la fenêtre
+suivante dès qu'il est libre : le plan rapide en traite naturellement
+davantage. Connaissant 191 et 687, le partage optimal tournait autour de
+78 % au cloud ; la file en a donné 75 %, **sans qu'aucun ratio ne lui soit
+soufflé**.
+
+Deux conséquences pratiques :
+
+- **Rien à régler.** Un ratio écrit dans le code vieillirait à chaque
+  changement de machine, de modèle ou de charge. Une file s'ajuste seule.
+- **Un plan qui tombe ne bloque rien.** L'autre vide la file sans qu'aucune
+  règle ne l'ait prévu, et les fenêtres perdues sont relancées une fois sur
+  les plans restants.
+
+Le délai par fenêtre vaut **180 s**, contre 900 s pour un appel isolé
+(`NEXUS_MAP_TIMEOUT` pour le changer). La logique s'inverse entre les deux :
+seul, mieux vaut attendre qu'échouer ; dans un MAP, le résultat n'arrive
+qu'à la dernière fenêtre, donc une traînarde immobilise tout le lot.
+
+En mode `local_seul`, aucune fenêtre ne part en cloud : répartir un corpus
+sensible serait une fuite, pas une optimisation.
+
+---
+
 ## 5️⃣ Couvrir tout un dépôt sans lister les fichiers à la main
 *Découverte automatique + plusieurs essaims concurrents.*
 

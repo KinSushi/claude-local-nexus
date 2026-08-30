@@ -47,7 +47,16 @@ def ecrire_fichier_atomique(chemin, contenu):
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as tmp:
             tmp.write(contenu)
-        sauvegarde = chemin + ".candidat"
+        # ".avant-patch" et non ".candidat".
+        #
+        # Le suffixe .candidat designe ailleurs dans ce depot une version
+        # PROPOSEE, pas encore appliquee -- c'est le sens qu'il a dans
+        # nexus_generate.py. Ici il nommait l'inverse : la copie de
+        # l'original AVANT ecrasement. Le meme suffixe disait donc l'avant a
+        # un endroit et l'apres a un autre, et rien sur le fichier ne
+        # permettait de trancher. Constate a l'usage : ces sauvegardes ont
+        # ete prises pour des rendus de modele en attente d'integration.
+        sauvegarde = chemin + ".avant-patch"
         shutil.copy2(chemin, sauvegarde)
         os.replace(tmp_path, chemin)
     finally:
