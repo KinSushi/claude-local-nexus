@@ -163,13 +163,26 @@ def mesurer_debit(gateway: str, alias: str, timeout: float) -> tuple:
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
     commun = {"model": alias, "cache": {"no-cache": True, "no-store": True}}
 
-    # Reveil, non chronometre.
+    # Reveil, non chronometre, et avec SON PROPRE budget.
+    #
+    # Lui donner le meme timeout que la mesure reproduisait exactement le
+    # piege corrige cote latence. Le reveil ne paie pas seulement le
+    # chargement du modele : le moteur ne gardant qu'un modele chaud
+    # (107.1), il paie aussi l'eviction du precedent. Mesure du
+    # 2026-08-30 : mistral-7b-local, pourtant banc a 2,5 s de demarrage,
+    # echouait au reveil en 50 s -- un echec impute au modele alors qu'il
+    # revenait a la bascule.
+    #
+    # Le budget de reveil est donc genereux et distinct. S'il expire, le
+    # motif le dit : c'est le chargement qui n'a pas tenu, pas le debit.
+    reveil = max(timeout * 3, 180)
     try:
         appel_post(url, dict(commun, max_tokens=8,
                              messages=[{"role": "user", "content": "Dis PRET"}]),
-                   timeout)
+                   reveil)
     except Exception as exc:
-        return (None, None, False, "reveil impossible : %s" % str(exc)[:60])
+        return (None, None, False,
+                "chargement non tenu en %.0f s : %s" % (reveil, str(exc)[:40]))
 
     payload = dict(commun, max_tokens=256, messages=[{"role": "user", "content":
         "Explique en detail, en francais et en au moins deux cents mots, "
