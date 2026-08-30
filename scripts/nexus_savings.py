@@ -334,13 +334,36 @@ def main() -> int:
         return 0
 
     par_plan = collections.defaultdict(
-        lambda: {"requetes": 0, "entree": 0, "sortie": 0, "cout": 0.0})
+        lambda: {"requetes": 0, "entree": 0, "sortie": 0, "cout": 0.0,
+                 "sans_sortie": 0})
     par_modele = collections.Counter()
 
     for entry in logs:
         plan = domain_of(entry, domains)
         stats = par_plan[plan]
         stats["requetes"] += 1
+        # Un appel qui n'a rien produit n'a pas traite de volume.
+        #
+        # Mesure du 2026-08-30 : neuf appels a claude-fable-5, 65 403 jetons
+        # d'entree, ZERO de sortie, cout nul. Ils ont echoue avant de
+        # generer. Leur entree pese pourtant au denominateur de la part
+        # deleguee, et representait exactement les 0,6 % manquants.
+        #
+        # Le chiffre n'est PAS corrige pour autant, et c'est delibere : les
+        # retrancher flatterait la mesure, exactement comme le faisait jadis
+        # l'inclusion du trafic de sante (111). Ils sont comptes comme avant,
+        # et signales a cote -- au lecteur de savoir ce que le chiffre
+        # recouvre, plutot qu'a l'outil de choisir pour lui.
+        # Un embedding n'a PAS de completion_tokens : c'est sa nature, pas
+        # un echec. Les compter ici donnait 213 « echecs » locaux sur 1034,
+        # soit un indicateur qui aurait fait chercher une panne inexistante
+        # -- le defaut meme que cet indicateur est cense reveler ailleurs.
+        modele = str(entry.get("model_group") or entry.get("model") or "")
+        est_embedding = ("embed" in modele.lower()
+                         or "minilm" in modele.lower()
+                         or "bge-" in modele.lower())
+        if not est_embedding and not _safe_int(entry.get("completion_tokens")):
+            stats["sans_sortie"] += 1
         stats["entree"] += _safe_int(entry.get("prompt_tokens"))
         stats["sortie"] += _safe_int(entry.get("completion_tokens"))
         stats["cout"] += _safe_float(entry.get("spend"))
@@ -395,6 +418,28 @@ def main() -> int:
 
     print("\n  Part deleguee : %.1f %% des tokens (%d sur %d)"
           % (part_deleguee, tokens_delegues, total_tokens))
+
+    # Les appels qui n'ont rien produit, dits a cote du chiffre et non
+    # retranches.
+    #
+    # Mesure du 2026-08-30 : neuf appels a claude-fable-5, 65 403 jetons
+    # d'entree, ZERO de sortie, cout nul -- des echecs avant generation.
+    # Leur entree pese pourtant au denominateur, et representait exactement
+    # les 0,6 % manquants.
+    #
+    # Le chiffre n'est PAS corrige, et c'est delibere : les retrancher
+    # flatterait la mesure, exactement comme le faisait jadis l'inclusion
+    # du trafic de sante (111). Au lecteur de savoir ce que le chiffre
+    # recouvre, plutot qu'a l'outil de choisir pour lui.
+    muets = [(plan, v) for plan, v in sorted(par_plan.items())
+             if v.get("sans_sortie")]
+    if muets:
+        print(chr(10) + "  Dont appels sans aucune sortie (echecs avant generation) :")
+        for plan, v in muets:
+            print("    %-10s %d requete(s) sur %d" % (plan, v["sans_sortie"],
+                                                      v["requetes"]))
+        print("    Leur entree reste au denominateur : la retrancher")
+        print("    flatterait la mesure au lieu de la corriger.")
 
     if chiffrable:
         print("\n  Contrefactuel - ce que le volume delegue aurait coute sur %s :" % REFERENCE)
