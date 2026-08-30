@@ -582,6 +582,23 @@ def main():
     # filtrer selon --modele si fourni
     if args.modele:
         modeles = [m for m in modeles if m in args.modele]
+        # ET restreindre le TABLEAU FINAL aux modeles demandes.
+        #
+        # Le filtre marchait deja ; c'est l'affichage qui trompait. Lance
+        # avec « --modele llama3.2-3b-local », le banc mesurait bien ce seul
+        # modele mais imprimait ensuite les 71 lignes du releve stocke --
+        # verifie en comparant : « phi3-mini-local 2.518 » etait exactement
+        # le latence_ms=2518 deja enregistre, pas une mesure du jour.
+        #
+        # Le code disait deja pourquoi c'est grave, pour le mode rattrapage :
+        # « un compte rendu qui exagere ce qu'il a fait est une forme de
+        # mensonge, meme involontaire ». La meme raison vaut ici, et le meme
+        # mecanisme y repond.
+        #
+        # J'ai moi-meme conclu de cet affichage que « --modele ne filtre
+        # pas », et je l'ai inscrit au cockpit. C'etait faux : un compte
+        # rendu trompeur ne trompe pas que les lecteurs pressés.
+        a_rattraper = set(modeles)
         if not modeles:
             sys.stderr.write("Aucun des modeles demandes n'est disponible.\n")
             sys.exit(1)
@@ -652,7 +669,17 @@ def main():
     ecrire_json(racine, mesures)
 
     # affichage
-    if args.manquants:
+    #
+    # La condition portait sur --manquants SEUL, alors que la vraie question
+    # est : « un sous-ensemble a-t-il ete demande ? ». Avec --modele, le banc
+    # mesurait bien le seul modele voulu puis imprimait les 71 lignes du
+    # releve stocke -- verifie en comparant les valeurs affichees aux
+    # latence_ms deja enregistres, identiques au millieme.
+    #
+    # Le code disait deja pourquoi c'est grave : « un compte rendu qui
+    # exagere ce qu'il a fait est une forme de mensonge, meme involontaire ».
+    # La raison ne dependait pas de l'option qui restreint.
+    if args.manquants or args.modele:
         afficher_tableau({k: v for k, v in resultats.items()
                           if k in a_rattraper})
     else:

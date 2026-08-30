@@ -400,6 +400,17 @@ double ni ne concurrence ce qui existe ici (contrat §0).
 | `declarer_les_gardes.py` (300 l.) | déclare les gardes dans `.claude/settings.json` | nos hooks sont écrits à la main ; ceci les dériverait |
 | `garde_tracabilite.py`, `garde_reprise_coherente.py` | traçabilité, cohérence des points de reprise | à évaluer après les précédents |
 
+> **Un compte rendu trompeur trompe aussi celui qui l'écrit.** De cet
+> affichage j'ai conclu « `--modele` ne filtre pas », et je l'ai inscrit ici
+> comme un fait. C'était faux, et il a fallu comparer les valeurs affichées
+> au fichier de relevé pour le voir. Le code portait pourtant déjà la règle,
+> écrite pour un autre mode : *« un compte rendu qui exagère ce qu'il a fait
+> est une forme de mensonge, même involontaire »*. Elle valait ici aussi.
+>
+> Une entrée de checklist se vérifie comme un correctif. Celle-ci est barrée
+> plutôt que supprimée : effacer une erreur d'analyse fait perdre ce qu'elle
+> enseigne.
+
 > **Une fausse accusation, écartée par la mesure.** Après avoir câblé le
 > verrou, le banc rendait des échecs en série et semblait ne plus filtrer :
 > j'ai cru à ma régression. La version restaurée depuis `HEAD`, **sans** mes
@@ -430,7 +441,7 @@ enfreinte. Un paragraphe ne ferme rien.
 | `nexus_test_outillage.py` orphelin | seul script que personne n'appelle | le câbler ou le retirer |
 | 40 sauvegardes résiduelles dans `scripts/.nexus/` | ce sont des **données** | la suppression appartient à l'opérateur, pas à l'agent |
 | `import subprocess` en portée locale (`nexus_ruche.py:205`) | même famille qu'un défaut déjà payé | à corriger seul, sans le mêler à un autre sujet |
-| `--modele` ne filtre pas la liste du banc, alors que `--plan` le fait | constaté le 30/08 : `--modele llama3.2-3b-local` mesure malgré tout tous les modèles | corriger le filtre, seul, sans le mêler au verrou |
+| ~~`--modele` ne filtre pas~~ — **inscription FAUSSE, corrigée** | le filtre marchait ; c'est l'AFFICHAGE qui trompait. Le banc mesurait bien le seul modèle demandé puis imprimait les 71 lignes du relevé stocké. Prouvé en comparant : « phi3-mini-local 2.518 » était exactement le `latence_ms=2518` déjà enregistré, pas une mesure du jour | **corrigé** : la restriction d'affichage portait sur `--manquants` seul, elle porte désormais sur tout sous-ensemble demandé |
 | Les modèles **cloud** échouent en série (« Remote end closed connection », 2,0 s) | `--plan local` rend zéro échec : le défaut est côté cloud, pas côté banc | diagnostiquer quota ou réseau, machine au repos |
 | 9 appels Anthropic sur 9 échouent | **le repli masque la cause** : la lire exige de le désactiver temporairement | à faire hors de toute exécution de suite |
 | `Start-Claude.ps1` jamais joué de bout en bout | le lancer démarre une session Claude | ne se teste pas à la légère |
