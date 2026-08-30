@@ -88,16 +88,25 @@ def check_python_syntax(file_path):
 
 def check_powershell_syntax(file_path):
     """Utilise le parseur PowerShell pour vérifier la syntaxe."""
+    # Vérifie que l'exécutable pwsh est disponible.
     _ensure_pwsh_available()
+    # Vérifie que le fichier existe.
     if not os.path.isfile(file_path):
         raise RuntimeError(f"Fichier PowerShell introuvable : {file_path}")
-    # Utilisation de l’option -File évite l’injection de commande.
-    cmd = [
-        "pwsh",
-        "-NoProfile",
-        "-File",
-        file_path,
-    ]
+    # Convertit le chemin en absolu et double les apostrophes pour éviter les erreurs de parsing.
+    abs_path = os.path.abspath(file_path)
+    escaped_path = abs_path.replace("'", "''")
+    # Utilisation de ParseFile au lieu de -File : -File exécute le script,
+    # ce qui peut déclencher des actions dangereuses (ex. restore.ps1 qui supprime
+    # des volumes Docker). ParseFile ne fait qu'analyser la syntaxe, évitant ainsi
+    # toute exécution non désirée.
+    ps_cmd = (
+        f"$e=$null; "
+        f"$null=[System.Management.Automation.Language.Parser]::ParseFile('{escaped_path}',[ref]$null,[ref]$e); "
+        f"if ($e.Count -gt 0) {{ "
+        f"Write-Output '{{0}} errors: {{1}}' -f $e.Count, $e[0].Message; exit 1 }} else {{ exit 0 }}"
+    )
+    cmd = ["pwsh", "-NoProfile", "-Command", ps_cmd]
     result = subprocess.run(
         cmd,
         cwd=ROOT,
@@ -108,7 +117,9 @@ def check_powershell_syntax(file_path):
         errors="replace",
     )
     if result.returncode != 0:
-        raise RuntimeError(f"PowerShell parse error in {file_path}")
+        # Le message d'erreur ne doit pas contenir d'accents.
+        error_msg = result.stdout.strip().splitlines()[0] if result.stdout else "parse error"
+        raise RuntimeError(error_msg)
 
 def run_conformite():
     """Lance le script de conformité et attend un code de sortie 0."""
