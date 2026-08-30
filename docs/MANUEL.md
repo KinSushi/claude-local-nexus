@@ -71,13 +71,60 @@ longue, à chemin absolu, qui fonctionne sans rien installer.
 python "C:/local-llm-docker/scripts/nexus_agent.py" `
     --tache "Analyser la complexité du fichier src/module.py" `
     --fichiers src/module.py `
-    --modele gpt-oss-120b-cloud `
     --max-tokens 2000
 ```
+
+`--modele` est facultatif. Sans lui, la requête part sur `adaptive-router`,
+qui arbitre entre le local et le cloud Ollama — gratuits tous les deux, et
+sans jamais atteindre un alias facturé. Deux mesures pour choisir en
+connaissance de cause : son pool compte 42 candidats distincts dont **18
+locaux**, parmi lesquels deux qui peuvent tenir la ligne jusqu'au délai de
+900 s ; le 30 août 2026, un repli sur `qwen3-coder:30b` a rendu en **597 s**
+là où la même tâche prenait **13 s** en cloud. Ce pool suit l'inventaire
+local, qui n'a **aucun plafond** — 39 modèles installés ce jour-là, 33
+exposés par la passerelle. Quand la latence prime sur la confidentialité, demander
+`--modele adaptive-router-cloud` : 19 candidats, aucun local.
 
 *Sortie attendue* : le rapport d’analyse s’affiche, indique le temps d’exécution et le modèle utilisé.  
 
 **Options utiles** : `--lot lot.json --parallele 3` (tâches simultanées), `--racine <chemin>` (autre répertoire), `--temperature <valeur>` (défaut 0.2). Au‑delà de 96 000 caractères, le texte est découpé et les réponses sont fusionnées automatiquement. En cas d’échec, bascule vers un modèle **GRATUIT** (jamais PAYE).
+
+---
+
+## 1️⃣bis Les compétences
+*Une consigne système réutilisable, désignée par son nom.*
+
+Les fichiers vivent dans `competences/` à la racine de la plateforme : un
+fichier `.txt` par compétence, une règle par ligne.
+
+| Nom | Ce qu'elle impose |
+|---|---|
+| `relire-code` | ne pas affirmer l'existence d'une API sans l'avoir vue ; éprouver les cas limites ; dire « je n'ai pas pu vérifier » plutôt que combler |
+| `arbitrer` | vérifier chaque prémisse ; ne jamais produire un chiffre non fourni ; rendre INDETERMINE plutôt que deviner ; énoncer la contrepartie |
+| `repondre-court` | le résultat d'abord, pas de préambule ni de résumé final, sans sacrifier une nuance nécessaire |
+
+```powershell
+python "C:/local-llm-docker/scripts/nexus_agent.py" `
+    --tache "Y a-t-il un défaut dans ce code ?" --fichiers src/module.ps1 `
+    --competence relire-code
+```
+
+`--systeme` l'emporte si tu fournis les deux : il est plus spécifique. En
+mode `--lot`, la compétence s'applique aux tâches qui ne portent pas déjà
+leur propre clef `systeme` ; celles qui en ont une ne sont jamais écrasées.
+Un nom inconnu affiche la liste des noms disponibles et rend le code 1.
+
+Les compétences appartiennent à la **plateforme** : un projet tiers qui
+appelle le script en hérite sans rien installer. Pour en ajouter une, dépose
+un fichier `.txt` dans `competences/` — aucun code à modifier.
+
+Ce que cela vaut, mesuré. Sur un piège réel — un découpage PowerShell
+`$Reste[1..($Reste.Count-1)]` qui, sur un tableau d'un seul élément, renvoie
+les indices 1 puis 0 — le modèle **sans** compétence affirme « erreur index
+out of range », ce qui est faux ; **avec** `relire-code`, il écrit « je n'ai
+pas pu vérifier le comportement exact sans exécution ». L'aveu remplace
+l'invention. Aucun des deux ne trouve le vrai comportement : une consigne
+système réduit un type d'erreur, elle ne rend pas le modèle plus capable.
 
 ---
 

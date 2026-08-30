@@ -425,13 +425,28 @@ def executer(tache: dict, cle: str) -> dict:
     local_seul = os.environ.get("NEXUS_LOCAL_SEUL") == "1"
 
     nom = tache.get("nom") or tache.get("modele") or "tache"
-    # Le modèle par défaut a été changé de qwen3-coder-30b-local à codestral-22b-local.
-    # Raison : les modèles >=30 B expirent après 900 s, rendant le défaut inutilisable.
-    # codestral-22b-local est un modèle local gratuit (respecte la doctrine « local d'abord »),
-    # il répond en ~38 s à chaud (bien plus rapide que glm-4.7-flash-local) et ne fait
-    # pas sortir les données du dépôt. Le cloud gratuit gpt-oss-120b-cloud est plus rapide
-    # (7‑8 s) mais viole la priorité locale, donc il reste en repli gratuit.
-    modele = tache.get("modele") or "codestral-22b-local"
+    # Defaut : le ROUTEUR, pas un modele nomme.
+    #
+    # Nommer un modele en dur revient a arbitrer une fois pour toutes, a la
+    # place de la piece qui existe pour cela. Le routeur choisit selon la
+    # tache, et son pool suit l'inventaire : un modele ajoute devient
+    # candidat sans qu'aucun script ne change. `adaptive-router` couvre le
+    # local ET le cloud Ollama, gratuits tous les deux ; il n'atteint jamais
+    # un alias facture, qui vit derriere adaptive-router-anthropic.
+    #
+    # Contrepartie mesuree, a connaitre : son pool compte 42 candidats
+    # DISTINCTS dont 18 locaux -- parmi lesquels qwen3-coder-30b-local et
+    # qwen2.5-coder-32b-local, qui peuvent tenir la ligne jusqu'au delai de
+    # 900 s. Mesure du 30 aout 2026 : un repli sur qwen3-coder:30b a rendu
+    # en 597 s la ou la meme tache prenait 13 s en cloud. Borner par
+    # NEXUS_AGENT_TIMEOUT, ou demander adaptive-router-cloud (19 candidats,
+    # aucun local) quand la latence prime sur la confidentialite.
+    #
+    # Compter les occurrences et non les entrees distinctes donne 107 au
+    # lieu de 42 : un meme alias figure plusieurs fois dans le bloc, une
+    # fois par role. Le pool suit d'ailleurs l'inventaire, qui n'a aucun
+    # plafond -- 39 modeles installes le 30 aout 2026, 33 exposes.
+    modele = tache.get("modele") or "adaptive-router"
     consigne = tache.get("tache") or ""
     if not consigne:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
@@ -623,14 +638,56 @@ def lister_modeles(cle: str) -> int:
     return 0
 
 
+def lister_competences() -> list:
+    """
+    Noms des consignes systeme disponibles, sans extension.
+
+    Les competences appartiennent a la PLATEFORME et non au projet appelant :
+    elles sont donc cherchees sous ROOT, jamais sous --racine ni sous le
+    repertoire courant. Un depot tiers qui delegue au banc herite ainsi des
+    memes garde-fous sans rien installer.
+
+    Un repertoire absent rend une liste vide plutot que de lever : l'absence
+    de competences n'est pas une panne, seulement une fonction inemployee.
+    """
+    chemin = os.path.join(ROOT, "competences")
+    if not os.path.isdir(chemin):
+        return []
+    return sorted(os.path.splitext(f)[0]
+                  for f in os.listdir(chemin) if f.endswith(".txt"))
+
+
+def charger_competence(nom: str) -> str:
+    """
+    Contenu d'une competence, ou une erreur qui dit ce qui existe.
+
+    Le message enumere les noms disponibles : une erreur qui se contente de
+    « inconnu » oblige a fouiller le depot pour retrouver l'orthographe.
+    """
+    disponibles = lister_competences()
+    if nom not in disponibles:
+        raise RuntimeError(
+            "Competence '%s' inconnue. Disponibles : %s"
+            % (nom, ", ".join(disponibles) or "aucune"))
+    chemin = os.path.join(ROOT, "competences", nom + ".txt")
+    with io.open(chemin, encoding="utf-8") as fh:
+        return fh.read()
+
+
 def main() -> int:
     parseur = argparse.ArgumentParser(description=__doc__)
     parseur.add_argument("--tache", help="Consigne adressee au modele.")
     parseur.add_argument("--fichiers", nargs="*", default=[],
                          help="Fichiers du depot a joindre.")
     # Le défaut a été mis à jour : voir commentaire dans `executer`.
-    parseur.add_argument("--modele", default="codestral-22b-local")
+    parseur.add_argument("--modele", default="adaptive-router",
+                         help="Alias ou routeur. Defaut adaptive-router : la "
+                              "plateforme arbitre. adaptive-router-cloud evite "
+                              "les modeles locaux lents.")
     parseur.add_argument("--systeme", help="Consigne systeme optionnelle.")
+    parseur.add_argument("--competence",
+                         help="Consigne systeme prise dans competences/. "
+                              "Disponibles : %s" % (", ".join(lister_competences()) or "aucune"))
     parseur.add_argument("--max-tokens", type=int, default=1500)
     parseur.add_argument("--temperature", type=float, default=None,
                          help="Defaut %.1f. Ne monter au-dessus de 0.5 que "
@@ -673,6 +730,25 @@ def main() -> int:
     else:
         parseur.print_help()
         return 1
+
+    # La competence s'applique ici, et non plus haut : `taches` n'existe pas
+    # avant ce point, quelle que soit la branche empruntee.
+    if args.competence:
+        try:
+            texte = charger_competence(args.competence)
+        except RuntimeError as exc:
+            print(exc)
+            return 1
+        # --systeme l'emporte : il est plus specifique qu'un nom de competence.
+        if not args.systeme:
+            args.systeme = texte
+
+    # Rien si aucune consigne n'a ete resolue, sinon la boucle ecraserait par
+    # None la valeur qu'une tache du lot porte deja.
+    if args.systeme is not None:
+        for t in taches:
+            if not t.get("systeme"):
+                t["systeme"] = args.systeme
 
     # Le parallélisme est plafonné : au-delà, plusieurs gros modèles sont
     # chargés en même temps sur une machine qui n'a qu'une réserve de RAM,
