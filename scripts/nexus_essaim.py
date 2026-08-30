@@ -282,15 +282,30 @@ def traiter_cible(
             "--consigne",
             str(consigne_path),
         ]
+        # Mode --fonctions au-dela d'un certain volume : mesure sur ce
+        # depot (deux runs reels), le mode fichier entier (par defaut)
+        # echoue systematiquement la verification au-dela d'environ 600
+        # lignes -- c'etait le cas des 3 plus gros fichiers du depot a
+        # chaque passage, jamais des plus petits. Reserve aux .py :
+        # nexus_fonctions.py, qui applique ce mode, est un outil AST
+        # Python et ne sait pas lire un .js ou un .ps1.
+        seuil_fonctions_lignes = 600
+        if cible.suffix.lower() == ".py":
+            try:
+                nb_lignes_cible = sum(1 for _ in cible.open(encoding="utf-8", errors="ignore"))
+            except OSError:
+                nb_lignes_cible = 0
+            if nb_lignes_cible > seuil_fonctions_lignes:
+                cmd.append("--fonctions")
         if args.modele_correction:
             cmd.extend(["--modele", args.modele_correction])
         if args.simuler:
             print(f"Simulation: {' '.join(cmd)}")
             correction_ok = True
         else:
-            # Le délai par défaut était de 60 s, ce qui était trop court.
-            # Mesures : 20‑60 s en cloud, jusqu’à 155 s à froid en local.
-            # On porte le délai à 900 s (valeur utilisée ailleurs dans le dépôt)
+            # Le délai par défaut était de 60 s, ce qui était trop court.
+            # Mesures : 20‑60 s en cloud, jusqu’à 155 s à froid en local.
+            # On porte le délai à 900 s (valeur utilisée ailleurs dans le dépôt)
             # et on le rend configurable via la variable d'environnement NEXUS_TIMEOUT.
             timeout_sec = int(os.getenv("NEXUS_TIMEOUT", "900"))
             try:
