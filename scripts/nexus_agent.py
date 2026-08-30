@@ -386,12 +386,28 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
             executor.submit(_appel_map, i, fragment): i
             for i, fragment in enumerate(fenetres, start=1)
         }
+        # Rangement a INDICE FIXE, et non append au fil des arrivees.
+        #
+        # as_completed rend les futurs dans l'ordre ou ils FINISSENT, jamais
+        # dans celui des fenetres : les fragments etaient concatenes melanges
+        # et le REDUCE resumait un texte dont les parties avaient change de
+        # place. Le serveur MCP corrigeait deja ce point ; celui-ci non.
+        emplacements = [None] * n
         for fut in concurrent.futures.as_completed(futures):
             res = fut.result()
-            map_textes.append(res.get("texte", ""))
+            emplacements[futures[fut] - 1] = res
             total_tokens += res.get("tokens", 0)
             total_duree += res.get("duree", 0.0)
-            last_map_result = res  # garde le dernier résultat pour les métadonnées
+            last_map_result = res  # garde le dernier resultat pour les metadonnees
+
+    # Un fragment sans rien d'utile repond RIEN, comme MAP_SYSTEME l'exige :
+    # concatener ces reponses noierait le REDUCE sous des negations.
+    for res in emplacements:
+        if not res:
+            continue
+        texte = (res.get("texte") or "").strip()
+        if texte and texte.upper() != "RIEN":
+            map_textes.append(texte)
 
     texte_concat = "\n\n".join(map_textes)
 
