@@ -1002,6 +1002,36 @@ def main() -> int:
           % (profile["ollama"]["mode"], profile["inference_memory_gb"],
              profile["pool_budget_gb"]))
 
+    # Le relevé a-t-il disparu depuis la derniere generation ?
+    #
+    # Le meme garde-fou que pour l'inventaire, et pour la meme raison :
+    # generer sans mesure ne rend pas une configuration neutre, elle rend
+    # une configuration VIDE -- tous les modeles « non mesure », donc hors
+    # de tout pool.
+    #
+    # Il doit vivre ici et non dans la conformite, car celle-ci s'execute
+    # APRES la generation dans Update-NexusModels : elle constaterait le
+    # degat au lieu de l'empecher. Pire, le vidage efface la marque
+    # nexus_pool: true qui permet de le detecter, si bien que le controle
+    # suivant ne verrait plus rien d'anormal.
+    #
+    # Trou identifie par le banc gratuit en audit delegue, puis precise en
+    # lisant l'ordre reel des etapes : trois modeles sur trois ont pointe
+    # « effacer la marque contourne le controle », ce qui etait faux sous
+    # cette forme -- effacer la marque EST le degat -- mais juste sous
+    # celle-ci.
+    if not latences_relevees():
+        promus = "nexus_pool: true" in open(CONFIG, encoding="utf-8",
+                                            errors="replace").read()
+        if promus:
+            print(chr(10) + "Le relevé de mesures est absent alors que la configuration")
+            print("porte des modeles promus. Generer maintenant les sortirait")
+            print("TOUS des pools, et effacerait du meme coup la trace qui")
+            print("permet de s'en apercevoir. La generation s'arrete.")
+            print(chr(10) + "Remedes : restaurer .nexus/latences.json depuis une")
+            print("sauvegarde, ou remesurer avec scripts/nexus_bench.py.")
+            return 1
+
     entries = classify(config, profile, sizes)
 
     # Les entrées cloud déjà déclarées sont remplacées par la découverte :

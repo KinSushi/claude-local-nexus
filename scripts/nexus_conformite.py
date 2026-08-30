@@ -256,7 +256,33 @@ def controle_releves_lisibles() -> None:
                       (("epreuves.json"), "releve des epreuves")):
         chemin = os.path.join(ROOT, ".nexus", nom)
         if not os.path.exists(chemin):
-            ignorer("releve %s" % nom, "jamais mesure sur cette machine")
+            # « Jamais mesure » et « mesure puis disparu » ne sont pas la
+            # meme chose, et les confondre ouvrait un trou : supprimer le
+            # fichier produit EXACTEMENT le meme dommage qu'un format
+            # casse -- verifie, le relevé relu tombe a zero modele et trois
+            # des quatre membres du pool cessent d'etre eligibles -- mais
+            # passait en IGNORE.
+            #
+            # Trouve par le banc gratuit, en audit delegue : « en
+            # supprimant le fichier, on contourne le controle bloquant ».
+            # Verifie ensuite dans le code reel, ou il s'est confirme.
+            #
+            # Le temoin d'un relevé passe est dans la configuration
+            # elle-meme : nexus_pool: true n'a pu y etre ecrit que par une
+            # generation disposant de mesures.
+            temoin = False
+            try:
+                with io.open(CONFIG, encoding="utf-8", errors="replace") as f:
+                    temoin = "nexus_pool: true" in f.read()
+            except OSError:
+                pass
+            if temoin:
+                noter("releve %s" % nom, False, BLOQUANT,
+                      "absent alors que la configuration porte des modeles "
+                      "promus : le relevé a existe puis disparu. Regenerer "
+                      "maintenant viderait les pools.")
+            else:
+                ignorer("releve %s" % nom, "jamais mesure sur cette machine")
             continue
         try:
             with io.open(chemin, encoding="utf-8") as f:
