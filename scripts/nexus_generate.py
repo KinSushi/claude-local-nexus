@@ -185,6 +185,47 @@ def discover_cloud() -> list[str]:
     return sorted(names, key=lambda n: (cloud_rank(n), n))
 
 
+def capacites_ollama(nom_base: str, timeout: int = 20) -> set:
+    """
+    Capacites que le MOTEUR declare pour un modele. Set vide = inconnu.
+
+    Le nom d'un modele est une convention ; la declaration du moteur est un
+    fait. Les motifs qui devinaient la capacite d'apres le nom se sont tous
+    reveles faux, mesure le 2026-08-30 sur 36 modeles locaux :
+
+      VISION_HINT « vision|llava » ne voyait pas qwen3-vl : DEUX modeles de
+      vision etaient classes texte, ce que les 17 et 92 interdisent.
+      CODE_HINT contenait « qwen » : six generalistes passaient pour des
+      specialistes du code, dont qwen3:0.6b, destine a repondre par oui ou
+      par non.
+      EMBED_HINT « embed|minilm » ne voyait pas bge-m3 -- angle mort corrige
+      deux fois ailleurs sans jamais l'etre a sa source.
+
+    Un set VIDE signifie « inconnu », jamais « aucune capacite ». L'appelant
+    doit alors se rabattre sur autre chose plutot que de conclure.
+
+    Ecrite par le banc gratuit sur consigne, integrée apres verification.
+    """
+    try:
+        r = subprocess.run(["ollama", "show", nom_base], capture_output=True,
+                           text=True, timeout=timeout, encoding="utf-8",
+                           errors="replace")
+        if r.returncode != 0:
+            return set()
+        dedans, trouvees = False, set()
+        for ligne in r.stdout.splitlines():
+            if not dedans:
+                if ligne.strip().lower() == "capabilities":
+                    dedans = True
+                continue
+            if not ligne.strip() or not ligne[0].isspace():
+                break
+            trouvees.add(ligne.strip().lower())
+        return trouvees
+    except Exception:
+        return set()
+
+
 def local_alias(base: str) -> str:
     """
     Alias d'un modèle Ollama installé.
@@ -706,6 +747,28 @@ def classify(config: dict, profile: dict | None = None,
             modality = "vision"
         else:
             modality = "text"
+
+        # La declaration du moteur l'emporte sur le nom.
+        #
+        # Les motifs ci-dessus restent, mais en REPLI : ils servent quand le
+        # moteur ne repond pas, ou pour un modele qui n'est pas chez lui
+        # (cloud, Anthropic). Quand il repond, c'est lui qui tranche -- un
+        # nom est une convention, une declaration est un fait.
+        #
+        # Mesure : VISION_HINT ne voyait pas qwen3-vl, EMBED_HINT ne voyait
+        # pas bge-m3, et CODE_HINT prenait tout Qwen pour un modele de code.
+        if domain == "local" and raw.startswith(("ollama/", "ollama_chat/")):
+            # `base` n'est definie plus haut que dans une branche
+            # conditionnelle ; la rederiver ici evite un NameError selon le
+            # chemin pris.
+            capacites = capacites_ollama(raw.split("/", 1)[1])
+            if capacites:
+                if "embedding" in capacites:
+                    modality = "embedding"
+                elif "vision" in capacites:
+                    modality = "vision"
+                else:
+                    modality = "text"
 
         # La spécialisation coding/general ne discrimine que le pool local :
         # les modèles Anthropic et cloud sont généralistes, les séparer

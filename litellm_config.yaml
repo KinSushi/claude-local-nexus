@@ -476,6 +476,19 @@ model_list:
   # automatique (§76). Pour en promouvoir un, le declarer a la
   # main plus haut avec son profil de capacite.
   # >>> AUTOGEN:LOCAL_MODELS_EXTRA
+  - model_name: codegemma-7b-local
+    litellm_params:
+      model: ollama_chat/codegemma:7b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "codegemma:7b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: codestral-22b-local
     litellm_params:
       model: ollama_chat/codestral:22b
@@ -489,6 +502,19 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
+  - model_name: command-r-local
+    litellm_params:
+      model: ollama_chat/command-r:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "command-r:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: deepseek-coder-6.7b-local
     litellm_params:
       model: ollama_chat/deepseek-coder:6.7b
@@ -501,6 +527,19 @@ model_list:
       description: "deepseek-coder:6.7b (promu automatiquement — 2.5 s)"
       nexus_generated: true
       nexus_pool: true
+
+  - model_name: gemma3-1b-local
+    litellm_params:
+      model: ollama_chat/gemma3:1b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "gemma3:1b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: gemma4-26b-local
     litellm_params:
@@ -540,6 +579,19 @@ model_list:
       description: "gpt-oss:20b (promu automatiquement — 7.7 s)"
       nexus_generated: true
       nexus_pool: true
+
+  - model_name: granite3.1-moe-1b-local
+    litellm_params:
+      model: ollama_chat/granite3.1-moe:1b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "granite3.1-moe:1b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: llama3.1-8b-local
     litellm_params:
@@ -593,6 +645,19 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
+  - model_name: phi3.5-local
+    litellm_params:
+      model: ollama_chat/phi3.5:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "phi3.5:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: phi3-medium-local
     litellm_params:
       model: ollama_chat/phi3:medium
@@ -618,6 +683,32 @@ model_list:
       description: "qwen2.5-coder:7b (promu automatiquement — 2.5 s)"
       nexus_generated: true
       nexus_pool: true
+
+  - model_name: qwen2.5-0.5b-local
+    litellm_params:
+      model: ollama_chat/qwen2.5:0.5b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen2.5:0.5b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen2.5-1.5b-local
+    litellm_params:
+      model: ollama_chat/qwen2.5:1.5b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen2.5:1.5b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: qwen3-vl-32b-local
     litellm_params:
@@ -671,6 +762,32 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
+  - model_name: qwen3-0.6b-local
+    litellm_params:
+      model: ollama_chat/qwen3:0.6b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3:0.6b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3-1.7b-local
+    litellm_params:
+      model: ollama_chat/qwen3:1.7b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3:1.7b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: qwen3-14b-local
     litellm_params:
       model: ollama_chat/qwen3:14b
@@ -709,6 +826,58 @@ model_list:
       description: "qwen3:8b (promu automatiquement — 22.4 s)"
       nexus_generated: true
       nexus_pool: true
+
+  - model_name: smollm2-1.7b-local
+    litellm_params:
+      model: ollama_chat/smollm2:1.7b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 16384
+      description: "smollm2:1.7b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: smollm2-360m-local
+    litellm_params:
+      model: ollama_chat/smollm2:360m
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "smollm2:360m (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: sqlcoder-local
+    litellm_params:
+      model: ollama_chat/sqlcoder:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "sqlcoder:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: tinyllama-local
+    litellm_params:
+      model: ollama_chat/tinyllama:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 8192
+      num_predict: 4096
+    model_info:
+      max_input_tokens: 8192
+      description: "tinyllama:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
   # <<< AUTOGEN:LOCAL_MODELS_EXTRA
 
   # >>> AUTOGEN:CLOUD_MODELS  (genere par scripts/Update-NexusModels.ps1 - NE PAS EDITER)
