@@ -468,6 +468,42 @@ enfreinte. Un paragraphe ne ferme rien.
 > Le bon critère n'était pas la forme mais le sens : ni un numéro, ni un
 > intitulé de colonne.
 
+### Trouvé en se servant du pont, le 30/08 — deux défauts, deux contrôles
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `nexus-local` déclaré dans **deux portées** | `FAIT` | `controle_mcp_double_portee` dans `nexus_conformite.py` |
+| `nexus_agent.py` refusait un fichier sans nommer l'issue | `FAIT` | le refus cite désormais `--racine` ; prouvé en le rejouant |
+
+> **Ni l'un ni l'autre ne vient d'un audit.** Le premier est apparu dans la
+> sortie de `/mcp` au démarrage de la session : le serveur était déclaré en
+> portée *utilisateur* (chemin absolu, posé à la main) **et** en portée projet
+> (`${CLAUDE_PROJECT_DIR:-.}`, écrit par `nexus mcp`). Claude Code range ses
+> jetons par point d'entrée : deux écritures du même chemin sont pour lui deux
+> serveurs, et l'opérateur ignore laquelle le sert.
+>
+> **Le premier jet du contrôle ne détectait pas le défaut qui l'avait fait
+> naître.** Il résolvait `${CLAUDE_PROJECT_DIR}` *avant* de comparer, concluait
+> « même fichier, doublon inoffensif », et se taisait. Comparer les chemins
+> résolus répond à une question que personne ne pose ; c'est le texte déclaré
+> qu'il fallait comparer, puisque c'est lui que Claude Code indexe. L'épreuve
+> positive a été faite **avant** la correction de la cause, précisément pour
+> que le silence d'après prouve quelque chose.
+>
+> L'entrée en portée utilisateur a été retirée, non par préférence mais sur
+> constat : les deux dépôts voisins possèdent déjà leur propre `.mcp.json`
+> valide, vérifié point d'entrée par point d'entrée. Elle ne couvrait donc
+> rien qui ne le fût déjà, et `nexus mcp` mécanise ce qu'elle faisait à la
+> main.
+>
+> Le second est né du même tour : le banc a refusé le fichier de contexte que
+> l'orchestrateur lui tendait, parce que le répertoire de brouillon documenté
+> est hors de la racine de travail. **La garde a raison** — elle empêche qu'un
+> fichier quelconque de la machine parte vers ollama.com — et elle n'a pas été
+> touchée. Ce qui manquait était l'issue : `--racine` existait, le message ne
+> le disait pas. Une garde qui refuse sans dire par où passer se fait
+> contourner, ou renoncer.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |

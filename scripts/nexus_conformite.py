@@ -994,6 +994,98 @@ def controle_pont_mcp() -> None:
     )
 
 
+def _point_entree_mcp(corps):
+    """
+    Le point d'entree TEL QUE DECLARE, et non tel qu'il se resoudra.
+
+    C'est la distinction qui fait tout le controle. Claude Code range ses
+    jetons par point d'entree litteral : deux ecritures differentes du
+    meme chemin sont pour lui deux serveurs, meme lorsqu'elles designent
+    le meme fichier une fois `${CLAUDE_PROJECT_DIR}` substitue. Comparer
+    les chemins resolus rendrait donc le controle muet precisement sur le
+    cas qui l'a fait ecrire.
+    """
+    if not isinstance(corps, dict):
+        return str(corps).strip().lower()
+    morceaux = [str(corps.get("command") or "")]
+    args = corps.get("args")
+    if isinstance(args, (list, tuple)):
+        morceaux.extend(str(a) for a in args)
+    elif args:
+        morceaux.append(str(args))
+    return " ".join(m.strip() for m in morceaux).lower()
+
+
+def _resolu_mcp(signature):
+    """La meme signature, substitutions faites : sert a expliquer, pas a juger."""
+    resolu = signature.replace("${claude_project_dir:-.}", ROOT.lower())
+    resolu = resolu.replace("${claude_project_dir}", ROOT.lower())
+    return resolu.replace(chr(92), "/")
+
+
+def controle_mcp_double_portee() -> None:
+    """
+    Un meme serveur declare deux fois ne se voit pas : il se subit.
+
+    Claude Code range les jetons PAR POINT D'ENTREE. Deux declarations du
+    meme nom qui pointent ailleurs l'une que l'autre font donc qu'une
+    authentification faite dans un contexte ne vaut rien dans l'autre, et
+    surtout que l'operateur ignore laquelle des deux le sert. Le doublon
+    exact, lui, ne coute rien : il est signale, jamais reproche.
+
+    AVERTISSEMENT et jamais BLOQUANT : une collision de portee n'empeche
+    pas de demarrer, et refuser le demarrage punirait l'operateur venu la
+    corriger. Une machine sans ~/.claude.json ne dit rien du tout —
+    l'absence de portee utilisateur n'est pas un defaut.
+    """
+    utilisateur = os.path.expanduser("~/.claude.json")
+    projet = os.path.join(ROOT, ".mcp.json")
+    try:
+        with io.open(utilisateur, encoding="utf-8") as f:
+            declare_utilisateur = json.loads(f.read()).get("mcpServers") or {}
+        with io.open(projet, encoding="utf-8") as f:
+            declare_projet = json.loads(f.read()).get("mcpServers") or {}
+    except Exception:
+        # Ni fichier absent ni fichier illisible ne sont l'affaire de ce
+        # controle : controle_pont_mcp juge deja le fichier du projet.
+        return
+
+    communs = sorted(set(declare_utilisateur) & set(declare_projet))
+    if not communs:
+        noter(
+            "pont MCP double portee",
+            True,
+            AVERTISSEMENT,
+            "aucun serveur declare dans les deux portees",
+        )
+        return
+
+    divergents, identiques = [], []
+    for nom in communs:
+        cote_u = _point_entree_mcp(declare_utilisateur[nom])
+        cote_p = _point_entree_mcp(declare_projet[nom])
+        if cote_u == cote_p:
+            identiques.append(nom)
+        else:
+            meme_cible = _resolu_mcp(cote_u) == _resolu_mcp(cote_p)
+            divergents.append(
+                "%s : utilisateur=%s vs projet=%s%s"
+                % (
+                    nom,
+                    cote_u,
+                    cote_p,
+                    " (meme fichier une fois resolu, mais deux points d'entree"
+                    " pour Claude Code)" if meme_cible else "",
+                )
+            )
+
+    detail = (
+        "; ".join(divergents)
+        if divergents
+        else "doublon exact, sans divergence : %s" % ", ".join(identiques)
+    )
+    noter("pont MCP double portee", not divergents, AVERTISSEMENT, detail)
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -1225,6 +1317,7 @@ def main() -> int:
         controle_env_hors_git,
         controle_disque,
         controle_pont_mcp,
+        controle_mcp_double_portee,
         controle_garde_agent,
     ):
         try:

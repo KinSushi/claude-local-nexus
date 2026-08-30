@@ -294,7 +294,13 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
     for brut in chemins:
         complet = brut if os.path.isabs(brut) else os.path.join(racine, brut)
         if not sous_racine(complet, racine):
-            refus.append("%s (hors de la racine de travail %s)" % (brut, racine))
+            # Nommer l'issue, et non seulement la fermeture : une garde qui
+            # refuse sans dire par ou passer se fait contourner, ou renoncer.
+            refus.append(
+                "%s (hors de la racine de travail %s ; --racine pour en"
+                " designer une autre, ou copier le fichier sous la racine)"
+                % (brut, racine)
+            )
             continue
         if est_secret(complet):
             refus.append("%s (susceptible de contenir un secret)" % brut)
