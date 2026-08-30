@@ -3725,16 +3725,31 @@ times faster.
 Put to a real task — summarise 3000 characters in three sentences — it did not
 finish in **110 s**. The model that starts in 3.8 s does not deliver.
 
-So the default was **left unchanged**. Not because the current one is good — it
-is measurably the slowest — but because the evidence available cannot choose
-its replacement, and swapping a measured-bad default for an unmeasured one is
-not an improvement, only a different bet.
+So the default was **left unchanged**, for want of evidence to choose a
+replacement.
 
-What this settles: the second bench §112.3 asks for — tokens per second on a
-real task, not time-to-first-token — is no longer a theoretical nicety. It is
-the missing instrument, and its absence has now blocked a concrete decision.
-Until it exists, `DEFAULT_CHAT_MODEL` cannot be chosen on evidence, and the
-honest move is to say so rather than to pick.
+**Then the evidence arrived, and it reversed the verdict.** Measured on the new
+throughput bench, `glm-4.7-flash-local` returns **19.85 tok/s** — the best on
+this host, tied with `qwen3-coder-30b-local`. The default that looked like the
+worst in the repository is one of the two best at what it actually does.
+
+The arithmetic that settles it, on a 500-token summary:
+
+| Model | Start-up | Throughput | First call | Once resident |
+| --- | --- | --- | --- | --- |
+| `glm-4.7-flash-local` | 61.8 s | 19.85 tok/s | ~87 s | **25 s** |
+| `llama3.2-3b-local` | 2.3 s | 11.84 tok/s | ~44 s | 42 s |
+
+Start-up is paid once, when the weights are not resident. Throughput is paid on
+every token. For a tool that generates long output — which is exactly what
+`nexus_summarize` and `nexus_context` do — the second dominates, and the
+"slowest default in the repository" is the fastest choice available.
+
+Two things follow. The default stands, now on evidence rather than for want of
+it. And the criticism levelled at it repeatedly through 2026-08-30 — including
+in commit messages — was **wrong**: it judged a generation tool by a start-up
+reading, the very confusion §112.3 warns against, committed by the same hand
+that wrote the warning.
 
 ---
 
