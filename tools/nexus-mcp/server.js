@@ -796,25 +796,43 @@ const PROFILES = {
     // coutait cher : les deux premiers etaient releve-locale et
     // glm-4.7-flash-local, soit le MEME modele mesure a 61,8 s -- le plus
     // lent du banc en tete d'un profil que le premier expose emporte (109).
-    models: ["qwen3-coder-30b-local",      // 2,4 s
-             "codestral-22b-local",        // 2,8 s
-             "qwen2.5-coder-32b-local",    // 3,4 s
-             "deepseek-coder-33b-local",   // 3,9 s
-             "glm-4.7-flash-local",        // 61,8 s, garde en dernier local :
-                                           // lent a demarrer mais 4/4 aux epreuves
+    // qwen3-coder-30b reste en tete : il est le meilleur sur les DEUX
+    // mesures, 2,4 s au demarrage et 20,22 j/s en generation.
+    // glm-4.7-flash remonte en deuxieme : son debit mesure (19,85 j/s) est
+    // le second de l'hote, et son demarrage lent ne se paie qu'une fois.
+    models: ["qwen3-coder-30b-local",      // 2,4 s, 20,22 j/s
+             "glm-4.7-flash-local",        // 61,8 s, 19,85 j/s
+             "codestral-22b-local",        // 2,8 s, debit non mesure
+             "qwen2.5-coder-32b-local",    // 3,4 s, debit non mesure
+             "deepseek-coder-33b-local",   // 3,9 s, debit non mesure
              "kimi-k2.7-code-cloud", "gpt-oss-120b-cloud"],
   },
   reasoning: {
     latency: { target_ms: 60000, hard_limit_ms: 900000 },
     description: "architecture, raisonnement difficile, arbitrages",
     contextMin: 32768,
-    // Meme correction. qwen2.5-32b est de meme rang de qualite que
-    // gemma4-31b et repond en 3,8 s contre 41,6 : rien ne justifiait de le
-    // laisser derriere.
-    models: ["qwen2.5-32b-local",          // 3,8 s
-             "qwen3-coder-30b-local",      // 2,4 s
-             "gemma4-31b-local",           // 41,6 s
-             "glm-4.7-flash-local",        // 61,8 s
+    // Ordre corrige une seconde fois, et par la mesure qui manquait.
+    //
+    // Il avait d'abord ete etabli sur le DEMARRAGE, ce qui mettait
+    // qwen2.5-32b-local en tete (3,8 s) et reléguait glm-4.7-flash-local
+    // en dernier local (61,8 s). Le banc de debit renverse ce classement :
+    //
+    //   glm-4.7-flash-local     19,85 j/s
+    //   qwen2.5-32b-local       moins de 1,7 j/s (256 jetons non rendus
+    //                           en 150 s)
+    //
+    // Douze fois plus lent en generation. Or le raisonnement produit de
+    // longues sorties : c'est le debit qui domine, le demarrage n'etant
+    // paye qu'une fois. Le classement par demarrage etait donc une
+    // regression, introduite le matin meme en croyant corriger.
+    //
+    // qwen2.5-32b n'est pas ecarte pour autant -- c'est un generaliste, la
+    // ou les deux premiers sont des specialistes du code -- mais il passe
+    // en dernier candidat local, ou son debit pese moins.
+    models: ["qwen3-coder-30b-local",      // 2,4 s au demarrage, 20,22 j/s
+             "glm-4.7-flash-local",        // 61,8 s, mais 19,85 j/s
+             "gemma4-31b-local",           // 41,6 s, debit non mesure
+             "qwen2.5-32b-local",          // 3,8 s, moins de 1,7 j/s
              "nemotron-3-ultra-cloud", "gpt-oss-120b-cloud"],
   },
   rapide: {
