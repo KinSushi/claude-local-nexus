@@ -489,6 +489,54 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
         _recolter(futur_cloud, "cloud")
         _recolter(futur_local, "local")
 
+    # --- Rattrapage : une fenetre perdue repart sur l'AUTRE plan ----------
+    #
+    # Sans lui, un plan en panne laisse ses fenetres a None et le REDUCE
+    # resume un corpus amoute de sa part. Le trou etait visible, mais le
+    # travail perdu : or l'autre plan, lui, tourne.
+    def _manquante(res):
+        if not res or not isinstance(res, dict):
+            return True
+        return bool(res.get("erreur")) or not (res.get("texte") or "").strip()
+
+    perdus = [i for i, res in enumerate(sorties) if _manquante(res)]
+    if perdus:
+        origine_cloud = {i for i, _ in pairs}
+        # Chaque fenetre repart chez l'autre : celle qui a echoue en cloud
+        # tente le local, et reciproquement. Reessayer sur le meme plan
+        # reproduirait la panne qui vient de se produire.
+        vers_local = [(i, contenus[i]) for i in perdus if i in origine_cloud]
+        vers_cloud = [(i, contenus[i]) for i in perdus if i not in origine_cloud]
+
+        def _rattraper(taches_secours, plan):
+            if not taches_secours:
+                return []
+            return _map_sur_plan(taches_secours, "adaptive-router-" + plan,
+                                 PLAFOND_FILS[plan], plafond_jetons, cle,
+                                 temperature)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as secours:
+            f_local = secours.submit(_rattraper, vers_local, "local")
+            f_cloud = secours.submit(_rattraper, vers_cloud, "cloud")
+            for futur, plan in ((f_local, "local"), (f_cloud, "cloud")):
+                try:
+                    for indice, res in futur.result():
+                        if not _manquante(res):
+                            sorties[indice] = res
+                            if journal is not None:
+                                journal.append(
+                                    "fenetre %d rattrapee sur le plan %s"
+                                    % (indice + 1, plan))
+                except Exception as exc:
+                    if journal is not None:
+                        journal.append("rattrapage %s en echec : %s" % (plan, exc))
+
+        # UNE seule tentative. Si les deux plans echouent sur la meme fenetre,
+        # insister ne fait que retarder le lot entier.
+        for i in perdus:
+            if _manquante(sorties[i]) and journal is not None:
+                journal.append("fenetre %d perdue sur les deux plans" % (i + 1))
+
     return sorties
 
 
