@@ -113,9 +113,33 @@ def executer_audit(cible: Path, consigne: str, modele: str,
         resultat = agent.executer(payload, cle)
         return resultat if isinstance(resultat, dict) else {}
 
-    resultat = appeler(4096)
-    if resultat.get("tronque"):
-        resultat = appeler(8192)
+    # Trois paliers, et non deux.
+    #
+    # Mesure du 2026-08-30, audit delegue sur six scripts : trois ont
+    # echoue a 8192 jetons -- nexus_agent.py (21260 jetons d'entree),
+    # nexus_patch.py (13175) et nexus_capability.py. Le modele epuise son
+    # budget de sortie EN RAISONNANT, avant d'avoir ecrit une ligne : le
+    # retour est vide et marque tronque.
+    #
+    # Chaque palier coute du temps et rien d'autre, le plan etant gratuit.
+    # Un echec, lui, coute l'audit entier.
+    for plafond in (4096, 8192, 16384):
+        resultat = appeler(plafond)
+        if not resultat.get("tronque"):
+            return resultat
+
+    # Toujours tronque au dernier palier : le dire, et dire lequel.
+    #
+    # Le message d'origine, « augmenter le plafond », laissait croire qu'on
+    # n'avait pas essaye. Un operateur ne peut pas savoir quoi augmenter si
+    # on ne lui dit pas jusqu'ou on est alle.
+    detail = resultat.get("erreur") or resultat.get("detail") or "reponse tronquee"
+    resultat["erreur"] = (
+        "%s — trois paliers epuises (4096, 8192, 16384 jetons). "
+        "La cible est probablement trop grosse pour un audit d'un seul "
+        "tenant : la decouper, ou employer nexus_context qui procede par "
+        "fenetres." % detail
+    )
     return resultat
 
 # --------------------------------------------------------------------------- #
