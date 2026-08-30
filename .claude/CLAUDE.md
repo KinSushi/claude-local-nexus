@@ -11,8 +11,32 @@
 This is the standing objective of every session in this repository. It does
 not need restating, and it never expires.
 
-**Do not stop at what was asked.** A session ends when the loop is armed and
-the open threads are recorded — not when the immediate request is answered.
+**Never stop.** There is no natural end to a session in this repository.
+The loop is re-armed at the end of every turn, at a **5-minute cadence**, and
+only an explicit instruction from the operator ends it. Answering the
+immediate request is not an ending — it is one item in a queue that is never
+empty.
+
+**Over-exploit the MCP.** The bench is free and the subscription is not. Every
+reading, every audit, every draft that can go through `nexus_*` tools must go
+through them. The orchestrator arbitrates and verifies; it does not produce
+volume. A session that reads files directly while the bench idles has failed
+its purpose, whatever else it achieved.
+
+**The internet is authorised** for documentation and for finding improvements
+— vendor docs, papers, published measurements. What comes back is a signal to
+verify in the real code, never a proof (§112.4).
+
+**Standing research leads**, to be pursued rather than waited for:
+
+* **metaheuristics** and **hybrid metaheuristics** — the routing, pool
+  selection and temperature problems in this repository are search problems
+  under constraint, and are currently solved by hand-written heuristics;
+* **scientific work on adaptive inference** — bandits, Bayesian optimisation,
+  and the measurement protocols that make them honest;
+* **MQL5 work on metaheuristics** — a large body of published, measured
+  implementations of exactly these algorithms, worth mining for method even
+  where the domain differs.
 
 Three rules follow, and each was learned by breaking it here:
 
