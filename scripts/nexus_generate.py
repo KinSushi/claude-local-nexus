@@ -1135,6 +1135,19 @@ def main() -> int:
     # inverse, construit avec la meme fonction que la declaration.
     poids_par_alias = {local_alias(nom): go for nom, go in (sizes or {}).items()}
 
+    # Le pool cloud est TRIE par la mesure, et deliberement PAS filtre par
+    # le seuil de latence.
+    #
+    # Ce seuil existe parce qu'en local un modele lent occupe la machine :
+    # il charge ses poids, tient la memoire, et evince le voisin. Rien de
+    # tel a distance -- un modele cloud lent fait attendre, sans rien
+    # consommer ici. Lui appliquer le seuil local reviendrait a transposer
+    # une contrainte materielle la ou il n'y a pas de materiel.
+    #
+    # La question ne se pose d'ailleurs pas aujourd'hui : les dix-neuf
+    # modeles mesures tiennent entre 2,5 et 11,2 s, tous tres en deca des
+    # 60 s. Mais qu'elle ne se pose pas ne dispense pas de dire pourquoi
+    # elle ne se poserait pas davantage si un modele cloud ralentissait.
     pool_cloud = sorted((cloud_alias(b) for b in cloud
                          if modalite_cloud(b) == "text"), key=_ms)
 
