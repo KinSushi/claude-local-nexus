@@ -30,6 +30,7 @@ Deux precautions, apprises a leurs depens :
 import os
 import sys
 import json
+import re
 import time
 import argparse
 import urllib.request
@@ -262,6 +263,81 @@ def mesurer_embedding(gateway: str, alias: str, timeout: float) -> dict:
     except Exception as exc:
         motif = (str(exc).splitlines() or ["erreur inattendue"])[0][:60]
         return {"latence_ms": None, "marge": None, "ok": False, "motif": motif}
+
+
+QUESTIONS_BINAIRES = [
+    "L'eau bout-elle a 100 degres au niveau de la mer ?",
+    "Un triangle a-t-il toujours trois cotes ?",
+    "Le francais est-il une langue officielle en Belgique ?",
+    "Un cercle a-t-il toujours un rayon ?",
+    "Le nombre 7 est-il pair ?",
+]
+
+
+def mesurer_binaire(gateway: str, alias: str, timeout: float,
+                    repetitions: int = 5) -> dict:
+    """
+    Cout fixe d'un appel rendant une reponse BINAIRE, modele deja chaud.
+
+    Troisieme grandeur du banc, distincte des deux autres. La sortie fait un
+    jeton : le DEBIT ne joue donc pas, et le DEMARRAGE est ecarte par un
+    reveil non chronometre. Ce qui reste est le cout fixe par appel --
+    serialisation, file d'attente, decodage du premier jeton.
+
+    C'est la grandeur qui decide pour un modele minuscule servant de garde
+    ou d'aiguilleur : on ne lui demande pas de rediger, on lui demande OUI
+    ou NON. Et c'est la que le local devrait l'emporter sur le cloud par
+    construction, n'ayant aucun aller-retour reseau a payer -- affirmation
+    a mesurer, non a supposer.
+
+    La MEDIANE et non la moyenne : sur cinq points, un seul appel lent
+    fausserait une moyenne.
+
+    Le respect du format est compte a part de la vitesse. Un modele qui
+    repond vite mais pas par OUI ou NON ne remplit pas le role, et les deux
+    chiffres doivent rester lisibles separement.
+
+    Ecrite par le banc gratuit, integrée apres correction : tirets Unicode
+    ramenes a l'ASCII, une faute d'accord, un motif en anglais, et une
+    correspondance trop stricte qui rejetait « OUI. ».
+    """
+    url = "%s/v1/chat/completions" % gateway.rstrip("/")
+    resultat = {"median_ms": None, "min_ms": None, "max_ms": None,
+                "respecte_format": 0, "ok": False, "motif": ""}
+
+    def _appel(question):
+        return appel_post(url, {
+            "model": alias, "max_tokens": 3, "temperature": 0,
+            "cache": {"no-cache": True, "no-store": True},
+            "messages": [
+                {"role": "system", "content": "Reponds par un seul mot : OUI ou NON."},
+                {"role": "user", "content": question}]}, timeout)
+
+    try:
+        _appel("Reveil.")
+        durees = []
+        for i in range(repetitions):
+            depart = time.monotonic()
+            reponse = _appel(QUESTIONS_BINAIRES[i % len(QUESTIONS_BINAIRES)])
+            durees.append(int((time.monotonic() - depart) * 1000))
+            texte = ""
+            try:
+                texte = reponse["choices"][0]["message"]["content"] or ""
+            except (KeyError, IndexError, TypeError):
+                pass
+            # Tolerant a la ponctuation et a la casse, strict sur le reste :
+            # « OUI. » compte, « Oui, parce que... » non.
+            net = re.sub(r"[^a-zA-Z]", "", texte).upper()
+            if net in ("OUI", "NON"):
+                resultat["respecte_format"] += 1
+        tri = sorted(durees)
+        n = len(tri)
+        mediane = tri[n // 2] if n % 2 else (tri[n // 2 - 1] + tri[n // 2]) // 2
+        resultat.update({"median_ms": mediane, "min_ms": tri[0],
+                         "max_ms": tri[-1], "ok": True, "motif": ""})
+    except Exception as exc:
+        resultat["motif"] = ("%s: %s" % (type(exc).__name__, exc))[:60]
+    return resultat
 
 
 def latences_existantes(racine) -> dict:
