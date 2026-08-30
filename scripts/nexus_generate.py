@@ -27,9 +27,11 @@ from __future__ import annotations
 import argparse
 import datetime
 import io
+import itertools
 import json
 import os
 import re
+import statistics
 import subprocess
 import sys
 import urllib.request
@@ -183,6 +185,75 @@ def discover_cloud() -> list[str]:
     if not names:
         raise RuntimeError("catalogue cloud vide")
     return sorted(names, key=lambda n: (cloud_rank(n), n))
+
+
+def choisir_pool_exact(candidats: list, budget_go: float,
+                       taille_min: int = 2, taille_max: int = 6) -> tuple:
+    """
+    Meilleur sous-ensemble de modeles, par ENUMERATION EXACTE.
+
+    C'est un sac a dos 0-1 a contrainte de cardinalite. La piste
+    metaheuristique a ete poursuivie puis REJETEE SUR MESURE (106.2) : pour
+    40 candidats en tailles 4 a 6, il y a 4 587 778 combinaisons, et le
+    balayage complet des tailles 2 a 4 s'acheve en 0,00 s sur cet hote. Une
+    metaheuristique rendrait une reponse approchee a un probleme qui en a une
+    exacte, avec plus de code et plus de parametres a regler.
+
+    Le glouton qu'elle remplace n'etait pas optimal non plus : trier puis
+    accumuler jusqu'au budget donne l'optimum quand les poids sont egaux, et
+    seulement alors. Ici ils vont de 0,4 a 20 Go.
+
+    Trois departages, dans cet ordre, et chacun compte :
+
+      score decroissant   la qualite d'abord ;
+      POIDS CROISSANT     a score egal, laisser de la memoire libre est
+                          strictement meilleur -- elle sert au moteur ;
+      taille croissante,  pour que le resultat soit DETERMINISTE. Deux
+      puis alphabetique   executions sur les memes donnees doivent rendre
+                          exactement le meme pool, sinon la configuration
+                          generee change sans raison et le diff ment.
+
+    Un debit non mesure prend la MEDIANE des debits connus, et non zero :
+    l'absence de mesure n'est pas une mesure de zero. Si rien n'est mesure,
+    tous prennent 1.0 et le score retombe sur le seul tier.
+    """
+    mesures = [c["debit"] for c in candidats if c.get("debit") is not None]
+    defaut = statistics.median(mesures) if mesures else 1.0
+
+    # Les scores sont calcules A COTE, jamais ecrits dans les dicts recus :
+    # muter l'entree d'une fonction de choix est un effet de bord silencieux
+    # que l'appelant ne voit pas venir.
+    score = {c["alias"]: c.get("tier", 0) *
+             (c["debit"] if c.get("debit") is not None else defaut)
+             for c in candidats}
+    poids = {c["alias"]: float(c.get("poids") or 0.0) for c in candidats}
+    alias = sorted(poids)
+
+    meilleur, cle_meilleure, examinees = None, None, 0
+    haut = min(taille_max, len(alias))
+    for taille in range(max(taille_min, 1), haut + 1):
+        for combo in itertools.combinations(alias, taille):
+            examinees += 1
+            p = sum(poids[a] for a in combo)
+            if p > budget_go:
+                continue
+            s = sum(score[a] for a in combo)
+            # Maximiser le score, minimiser le poids, minimiser la taille,
+            # puis ordre alphabetique croissant -- d'ou les signes.
+            cle = (-s, p, taille, combo)
+            if cle_meilleure is None or cle < cle_meilleure:
+                cle_meilleure, meilleur = cle, combo
+
+    if meilleur is None:
+        # Aucun sous-ensemble admissible : les plus legers, plutot que rien.
+        # Un pool vide ne route pas, et un minimum degrade se voit dans la
+        # configuration alors qu'une absence passerait inapercue.
+        legers = sorted(alias, key=lambda a: (poids[a], a))[:taille_min]
+        return legers, 0.0, sum(poids[a] for a in legers), examinees
+
+    ordonnes = sorted(meilleur, key=lambda a: (-score[a], a))
+    return (ordonnes, sum(score[a] for a in meilleur),
+            sum(poids[a] for a in meilleur), examinees)
 
 
 def capacites_ollama(nom_base: str, timeout: int = 20) -> set:
@@ -1308,21 +1379,27 @@ def main() -> int:
         return (-e.tier, 0 if d is not None else 1,
                 -(d or 0), _ms(e.alias))
 
-    classes = sorted(local_text, key=_rang)
-    pool_local, cumul = [], 0.0
-    for e in classes:
-        poids = float(poids_par_alias.get(e.alias) or 0)
-        if pool_local and cumul + poids > budget_go:
-            continue
-        pool_local.append(e.alias)
-        cumul += poids
-    # Deux au minimum, meme si les deux premiers depassent le budget : un
-    # pool a un seul membre ne route rien.
-    for e in classes:
-        if len(pool_local) >= 2:
-            break
-        if e.alias not in pool_local:
-            pool_local.append(e.alias)
+    # Le choix est EXACT, plus glouton.
+    #
+    # Le glouton -- trier puis accumuler jusqu'au budget -- n'est optimal que
+    # si les poids sont egaux. Ici ils vont de 0,4 a 20 Go, et le contre-
+    # exemple est immediat : avec un budget de 20 Go et trois candidats
+    # pesant 19, 10 et 10 Go pour des scores de 22, 20 et 20, le glouton
+    # prend le lourd en premier, bloque le budget et rend 22 ; l'exact refuse
+    # le lourd et rend 40. Verifie.
+    #
+    # L'exhaustif tient parce que le probleme est petit : 4 587 778
+    # combinaisons pour 40 candidats en tailles 4 a 6, et 0,00 s mesurees
+    # pour un balayage complet des tailles 2 a 4 (106.2).
+    candidats = [{"alias": e.alias, "tier": e.tier, "debit": _debit(e.alias),
+                  "poids": float(poids_par_alias.get(e.alias) or 0)}
+                 for e in local_text]
+    pool_local, score_pool, poids_pool, examinees = choisir_pool_exact(
+        candidats, budget_go, taille_min=2, taille_max=6)
+    print("  Pool local : %d modele(s), score %.1f, %.1f Go sur %.0f, "
+          "%s combinaison(s) examinees"
+          % (len(pool_local), score_pool, poids_pool, budget_go,
+             format(examinees, ",")))
 
     blocks = {
         # Le bloc couvre le modele par defaut ET la liste : les deux sont

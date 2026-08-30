@@ -217,7 +217,31 @@ def recover_swapped_config() -> None:
     if not os.path.exists(swapped):
         return
     if os.path.exists(CONFIG):
-        # La configuration est revenue : le fichier de secours est un reste.
+        # CONFIG present ne veut PAS dire configuration saine.
+        #
+        # Si le processus meurt APRES l'echange, CONFIG contient la
+        # configuration de TEST et .testswap la vraie. L'ancienne version
+        # supprimait alors .testswap en croyant a un reste : elle detruisait
+        # la vraie configuration et laissait la fausse en place.
+        #
+        # C'est arrive le 2026-08-30. Trois suites de tests ont ete tuees, et
+        # « modele-trop-lourd-local » -- une cible de test referencant
+        # llama4:scout, absent d'Ollama -- s'est retrouve declare ET designe
+        # comme default_model du routeur local, puis commite.
+        #
+        # Le critere qui les distingue est net : yaml.safe_dump perd les
+        # commentaires, donc une configuration de test n'a AUCUN marqueur
+        # AUTOGEN. La vraie en a onze.
+        try:
+            with io.open(CONFIG, encoding="utf-8", errors="replace") as fh:
+                actuelle_saine = "# >>> AUTOGEN:" in fh.read()
+        except OSError:
+            actuelle_saine = False
+        if not actuelle_saine:
+            os.replace(swapped, CONFIG)
+            print("  [!] configuration de TEST trouvee en place : la vraie a "
+                  "ete restauree depuis .testswap")
+            return
         os.remove(swapped)
         print("  [i] reste d'une execution interrompue supprime")
     else:
