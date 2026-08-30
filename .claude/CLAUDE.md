@@ -3756,7 +3756,55 @@ free ones**.
 | --- | --- | --- | --- |
 | `gpt-oss-120b-cloud` | 20–35 s for 10–30k tokens | 0 | Ollama Cloud subscription. Data leaves to ollama.com; the repository is public, so this is acceptable. The workhorse. |
 | `glm-4.7-flash-local` | slower | 0 | Free **and** private. Also the declared local relay: 4/4 on protocol, tool request, result use, chaining. |
-| any local >= 30B | **times out at 900 s** | — | Measured on `qwen3-coder-30b-local` and `qwen2.5-coder-32b-local`. Do not delegate to them. |
+| `qwen3-coder-30b-local` | 2.4 s to first tokens | 0 | See the correction below: the earlier "times out at 900 s" was a task measurement read as a model property. |
+| `qwen2.5-coder-32b-local` | 3.4 s to first tokens | 0 | Same. |
+| `gemma4-12b-local` | **51 s** to first tokens | 0 | Twelve billion parameters, and the slowest of the bench. Size does not predict speed. |
+
+### Correction, 2026-08-30 — and the limit of the correction
+
+An earlier revision of this table stated that **any** local model of 30B or
+more "times out at 900 s", naming those two. Re-measured with the Redis exact
+cache neutralised (`no-cache` / `no-store`) and load and steady state timed
+separately, they answer in 2.4 s and 3.4 s.
+
+Two errors were compounded, and both are worth naming:
+
+* A **generalisation from two readings to a whole class**. The rule said "any
+  local >= 30B". Nothing measured the class; two models were measured.
+* A **cache-contaminated, single-phase reading**. The first call pays for
+  loading the weights; every subsequent one does not. Timing them together
+  attributes the load to the model, permanently.
+
+The measured order of the bench, sorted, refutes the parameter count outright:
+
+| Model | Parameters | Steady state |
+| --- | --- | --- |
+| `qwen3-coder-30b` | 30 B | 2.4 s |
+| `codestral-22b` | 22 B | 2.8 s |
+| `qwen2.5-coder-32b` | 32 B | 3.4 s |
+| `gpt-oss-20b` | 20 B | 7.7 s |
+| `phi3-medium` | 14 B | 20.2 s |
+| `gemma4-12b` | 12 B | 51.5 s |
+
+A threshold on parameter count would have excluded `codestral-22b` and admitted
+`gemma4-12b` — exactly backwards. Hence `scripts/nexus_bench.py`, and hence
+`SEUIL_POOL_MS` in `scripts/nexus_generate.py` gating on the reading rather
+than on the size.
+
+**What this measurement does not say.** The bench asks for sixteen tokens. It
+measures the time to *start* answering, not the throughput of a real task. A
+model quick to reply "PRET" may still crawl on two thousand tokens, and the
+900 s figure it replaces very probably came from exactly such a task. The two
+statements are therefore not contradictory: they measure different things, and
+the old one was wrong only in presenting a task result as a property of the
+model.
+
+So the promotion criterion built on this reading is **necessary and not
+sufficient**: a model too slow to start is unusable, but a model quick to start
+is not thereby proven usable. Any model this bench admits and that then proves
+slow in production is a defect of the criterion, not of the reading — the
+remedy is a second bench measuring tokens per second, not a return to counting
+parameters.
 
 The call path that survives a broken MCP root, because it derives its own root
 from `__file__`:

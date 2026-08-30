@@ -4,6 +4,27 @@ Module nexus_bench
 Ce script mesure la latence des modeles locaux exposes par la passerelle Nexus.
 Il genere un releve (latences.json) que le generateur lira pour decide quels
 modeles entrer dans les pools de routage.
+
+CE QUE CE BANC MESURE, ET CE QU'IL NE MESURE PAS
+------------------------------------------------
+Il demande seize jetons. Il mesure donc le delai avant de COMMENCER a
+repondre, pas le debit sur une tache reelle. Un modele prompt a rendre
+« PRET » peut ramer sur deux mille jetons.
+
+Le critere de promotion bati sur ce releve est par consequent NECESSAIRE et
+NON SUFFISANT : un modele trop lent a demarrer est inutilisable, mais un
+modele rapide a demarrer n'est pas pour autant prouve utilisable. Un modele
+admis ici puis lent en production est un defaut du critere, pas du releve ;
+le remede est un second banc en jetons par seconde, pas un retour au comptage
+des parametres.
+
+Deux precautions, apprises a leurs depens :
+
+* Le cache exact de Redis est neutralise (no-cache / no-store). Sans cela le
+  second appel mesure le cache et non le modele -- observe : phi3-mini rendu
+  a « 2,1 s » mesurait en realite 8,6 s.
+* Le chargement des poids et le regime etabli sont chronometres separement.
+  Les confondre attribue au modele, definitivement, un cout paye une fois.
 """
 
 import os

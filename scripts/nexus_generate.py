@@ -381,6 +381,16 @@ def read_env(name: str) -> str | None:
 # Ce nombre est une DECISION, pas une mesure : au-dela d'une minute pour
 # rendre un mot, un modele n'a pas sa place dans un routage automatique, quoi
 # qu'il reponde ensuite. Surchargeable par NEXUS_POOL_LATENCE_MAX.
+#
+# Le releve porte sur seize jetons : il mesure le delai avant de commencer a
+# repondre, pas le debit d'une tache reelle. Ce filtre est donc NECESSAIRE et
+# NON SUFFISANT -- il ecarte a coup sur les modeles inutilisables, il ne
+# prouve pas utilisables ceux qu'il laisse passer.
+#
+# Il reste malgre tout le bon critere, parce que l'alternative mesuree est
+# pire : trie par latence, le banc donne qwen3-coder-30b a 2,4 s et
+# gemma4-12b a 51 s. Un seuil sur le nombre de parametres aurait garde le
+# lent et jete le rapide.
 SEUIL_POOL_MS = int(os.environ.get("NEXUS_POOL_LATENCE_MAX", "60000"))
 
 
