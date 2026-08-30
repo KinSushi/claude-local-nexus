@@ -791,28 +791,59 @@ const PROFILES = {
     latency: { target_ms: 30000, hard_limit_ms: 600000 },
     description: "implementation, debogage, refactorisation",
     contextMin: 32768,
-    models: ["releve-locale", "glm-4.7-flash-local", "qwen3-coder-30b-local",
-             "qwen2.5-coder-32b-local", "kimi-k2.7-code-cloud", "gpt-oss-120b-cloud"],
+    // Ordre etabli par la mesure (.nexus/latences.json, 2026-08-30), a
+    // specialisation egale. Il l'etait auparavant a l'estime, et cela
+    // coutait cher : les deux premiers etaient releve-locale et
+    // glm-4.7-flash-local, soit le MEME modele mesure a 61,8 s -- le plus
+    // lent du banc en tete d'un profil que le premier expose emporte (109).
+    models: ["qwen3-coder-30b-local",      // 2,4 s
+             "codestral-22b-local",        // 2,8 s
+             "qwen2.5-coder-32b-local",    // 3,4 s
+             "deepseek-coder-33b-local",   // 3,9 s
+             "glm-4.7-flash-local",        // 61,8 s, garde en dernier local :
+                                           // lent a demarrer mais 4/4 aux epreuves
+             "kimi-k2.7-code-cloud", "gpt-oss-120b-cloud"],
   },
   reasoning: {
     latency: { target_ms: 60000, hard_limit_ms: 900000 },
     description: "architecture, raisonnement difficile, arbitrages",
     contextMin: 32768,
-    models: ["glm-4.7-flash-local", "gemma4-31b-local", "nemotron-3-ultra-cloud",
-             "gpt-oss-120b-cloud"],
+    // Meme correction. qwen2.5-32b est de meme rang de qualite que
+    // gemma4-31b et repond en 3,8 s contre 41,6 : rien ne justifiait de le
+    // laisser derriere.
+    models: ["qwen2.5-32b-local",          // 3,8 s
+             "qwen3-coder-30b-local",      // 2,4 s
+             "gemma4-31b-local",           // 41,6 s
+             "glm-4.7-flash-local",        // 61,8 s
+             "nemotron-3-ultra-cloud", "gpt-oss-120b-cloud"],
   },
   rapide: {
     latency: { target_ms: 5000, hard_limit_ms: 120000 },
     description: "classification, extraction, transformation courte",
     contextMin: 8192,
-    models: ["llama3.2-3b-local", "phi3-mini-local", "gemma4-12b-local",
+    // gemma4-12b-local est retire de ce profil : 51,5 s mesurees, dans une
+    // liste nommee « rapide » et dont le budget vise 5 s. Il y figurait par
+    // supposition -- douze milliards de parametres, donc suppose leger --
+    // et c'est le plus lent du banc entier.
+    models: ["llama3.2-3b-local",          // 2,3 s
+             "llama3.2-1b-local",          // 2,3 s
+             "phi3-mini-local",            // 2,5 s
+             "qwen2.5-coder-7b-local",     // 2,5 s
              "gpt-oss-20b-cloud"],
   },
   multimodal: {
     latency: { target_ms: 60000, hard_limit_ms: 900000 },
     description: "image, capture d'ecran, OCR",
     contextMin: 8192,
-    models: ["llava-7b-local", "llama3.2-vision-11b-local", "qwen3-vl-8b-local"],
+    // Deja dans le bon ordre, la mesure le confirme : llava-7b 2,8 s,
+    // llava-13b 4,1 s, llama3.2-vision-11b 9,5 s, qwen3-vl-8b 38,2 s.
+    // llava-34b (3,1 s) est intercale : plus gros et pourtant plus rapide
+    // que les deux derniers.
+    models: ["llava-7b-local",             // 2,8 s
+             "llava-34b-local",            // 3,1 s
+             "llava-13b-local",            // 4,1 s
+             "llama3.2-vision-11b-local",  // 9,5 s
+             "qwen3-vl-8b-local"],         // 38,2 s
   },
 };
 
