@@ -470,6 +470,30 @@ const TEMPERATURE_DEFAUT = process.env.NEXUS_TEMPERATURE !== undefined
   ? Number(process.env.NEXUS_TEMPERATURE)
   : 0.2;
 
+// Temperature PAR PROFIL : une valeur unique convient mal a quatre classes
+// de taches qui ne demandent pas la meme chose.
+//
+//   coding      0.1  une implementation doit etre exacte et reproductible ;
+//                    la variete n'y apporte rien et coute des defauts
+//   rapide      0.0  classification et extraction : il n'y a qu'une bonne
+//                    reponse, toute variete est du bruit
+//   reasoning   0.4  arbitrages et architecture : explorer plusieurs voies
+//                    a un interet reel, la rigueur venant de l'arbitrage
+//   multimodal  0.2  DECRIRE une image demande l'exactitude, pas
+//                    l'imagination -- c'est meme le cas ou une temperature
+//                    haute fait inventer ce qui n'est pas dans l'image
+//
+// Ce dernier point est un arbitrage contre le banc, qui proposait 0.5 en
+// arguant que « l'ambiguite est courante » sur une image. C'est justement
+// pourquoi il faut BAISSER la temperature : face a l'ambiguite, on veut un
+// modele qui doute, pas un qui comble.
+const TEMPERATURE_PROFIL = {
+  coding: 0.1,
+  rapide: 0.0,
+  reasoning: 0.4,
+  multimodal: 0.2,
+};
+
 async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
@@ -1829,12 +1853,17 @@ async function callTool(name, args) {
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
-    const result = await chat(model, messages, args.max_tokens || 2048, delaiMs);
+    const result = await chat(model, messages, args.max_tokens || 2048, delaiMs,
+                              temperature);
 
     // Le plan est annonce, pas sous-entendu : ce qui a ete facture et ce
     // qui est sorti de la machine doit se lire sans enquete.
     const coupe = result.tronquee ? " · REPONSE TRONQUEE a max_tokens" : "";
-    return `[${result.model} · ${planOf(result.model)}${note} · ${result.tokens} tokens${coupe}]\n\n${result.text}`;
+    // La TEMPERATURE employee est journalisee : un reglage qui varie
+    // sans etre dit rendrait un resultat inexplicable, ce qui est le
+    // seul argument serieux contre l'adaptation automatique.
+    const tAff = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
+    return `[${result.model} · ${planOf(result.model)}${note} · T=${tAff} · ${result.tokens} tokens${coupe}]\n\n${result.text}`;
   }
 
   if (name === "nexus_route") {

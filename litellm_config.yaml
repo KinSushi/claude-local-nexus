@@ -125,6 +125,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 32768
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 32768
       description: "GLM-4.7-Flash — 30B-A3B MoE"
@@ -157,6 +158,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 65536
       num_predict: 8192
+      temperature: 0.2
     model_info:
       max_input_tokens: 65536
       description: "Releve locale — 64K de contexte, prend la suite sans abonnement"
@@ -170,6 +172,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Gemma 4 31B — généraliste, raisonnement et agentic workflows"
@@ -188,6 +191,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Qwen3-Coder 30B — 3.3B actifs, codage agentique"
@@ -206,6 +210,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Qwen2.5-Coder 32B"
@@ -223,6 +228,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Qwen2.5-Coder 14B"
@@ -240,6 +246,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "DeepSeek Coder 33B"
@@ -257,6 +264,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Codestral"
@@ -274,6 +282,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Qwen2.5 32B — généraliste"
@@ -291,6 +300,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Gemma 4 12B — rapide"
@@ -307,6 +317,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Llama 3.2 3B — modèle léger"
@@ -323,6 +334,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Phi-3 Mini 3.8B — ultime recours"
@@ -348,6 +360,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "ULTIME RECOURS - Phi-3 Mini 3.8B"
@@ -363,6 +376,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "Llama 3.2 Vision 11B"
@@ -377,6 +391,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "LLaVA 34B"
@@ -392,6 +407,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "LLaVA 13B"
@@ -407,6 +423,7 @@ model_list:
       litellm_health_check: true
       num_ctx: 8192
       num_predict: 2048
+      temperature: 0.2
     model_info:
       max_input_tokens: 8192
       description: "LLaVA 7B"
@@ -452,6 +469,7 @@ model_list:
       api_base: http://host.docker.internal:11434
       num_ctx: 32768
       num_predict: 4096
+      temperature: 0.2
     model_info:
       max_input_tokens: 32768
       description: "Granite 3.3 8B — generaliste local a large contexte ; hors lui et glm-4.7-flash, le pool local plafonne a 8192"
