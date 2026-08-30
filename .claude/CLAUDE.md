@@ -3545,12 +3545,26 @@ complete pass on the real epreuves — protocol, tool request, result use,
 chaining. Never measured means never promoted: absence of evidence is not
 evidence.
 
-The second clause is not a softening of the first. It exists because the two
-readings disagreed on a real model. `glm-4.7-flash-local` starts in 61.8 s —
-1.8 s over the threshold — and passes 4/4. It is also the declared local
-relay. Excluding it would have preferred the weak measurement to the strong
-one; raising the threshold to 65 s would have admitted, in the same gesture,
-models that had proven nothing.
+The second clause is not a softening of the first: raising the threshold to
+accommodate a slow-but-capable model would admit, in the same gesture, models
+that have proven nothing. The derogation is anchored to a proof; a threshold
+is anchored to nothing.
+
+**Correction, same day.** This clause was first justified by
+`glm-4.7-flash-local` — 61.8 s to start, 1.8 s over the threshold, 4/4 on the
+epreuves — said to be "excluded from the pool" without it. Checked against
+`litellm_config.yaml`, that is false: the model is declared **by hand**,
+outside the AUTOGEN zone and with no `nexus_pool` field, so the latency
+criterion never judges it at all.
+
+The error came from a script that called `eligible_au_pool()` on every alias
+in the reading, without checking which aliases actually travel that code
+path — analysis mistaken for proof, the one thing §112.4 forbids.
+
+The mechanism stands, and is kept: the day an **auto-exposed** model proves
+slow to start yet capable, the strong measurement must win. It simply has no
+demonstrated case today, and saying so is worth more than letting one be
+assumed.
 
 So the derogation is anchored to the proof, never to the number. An
 incomplete pass grants nothing, and the total is read from `EPREUVES` rather

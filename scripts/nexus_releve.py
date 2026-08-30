@@ -525,11 +525,15 @@ def consigner(rapport: dict) -> None:
     protocole, demande d'outil, exploitation du resultat, enchainement. Elle
     prouve la CAPACITE.
 
-    Mesure : glm-4.7-flash-local demarre en 61,8 s, soit 1,8 s au-dessus du
-    seuil de pool, et reussit 4/4 aux epreuves. Le laisser tomber du pool sur
-    le seul delai de demarrage reviendrait a preferer la mesure faible a la
-    mesure forte. Relever le seuil a 65 s serait pire encore : cela ferait
-    entrer d'autres modeles qui, eux, n'ont rien prouve.
+    Correction du 2026-08-30 : ce registre a d'abord ete justifie par
+    glm-4.7-flash-local, donne pour « sortant du pool a 61,8 s ». Verification
+    faite dans litellm_config.yaml, c'est faux -- ce modele est declare a la
+    main, hors zone AUTOGEN, et le critere de latence ne le juge jamais.
+
+    Le registre garde sa raison d'etre pour les modeles AUTO-EXPOSES : un
+    modele lent a demarrer mais prouve capable doit pouvoir entrer, et
+    relever le seuil pour l'accueillir ferait entrer du meme geste des
+    modeles n'ayant rien prouve. Aucun cas de ce type n'existe a ce jour.
 
     N'echoue jamais : un registre non ecrit ne doit pas faire echouer une
     releve qui, elle, a abouti.

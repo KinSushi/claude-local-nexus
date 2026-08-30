@@ -449,10 +449,21 @@ def eligible_au_pool(alias, releve, seuil_ms=SEUIL_POOL_MS):
     # quatre epreuves de capacite -- protocole, demande d'outil, exploitation
     # du resultat, enchainement. La seconde est la preuve forte.
     #
-    # Sans cette derogation, glm-4.7-flash-local sortait du pool a 61,8 s,
-    # 1,8 s au-dessus du seuil, alors qu'il est le relais local declare et
-    # qu'il passe 4/4. Relever le seuil a 65 s aurait sauve celui-la en
-    # faisant entrer, du meme geste, des modeles n'ayant rien prouve.
+    # CORRECTION, 2026-08-30. Cette derogation a d'abord ete justifiee par
+    # glm-4.7-flash-local, « qui sortait du pool a 61,8 s ». C'etait FAUX :
+    # ce modele est declare A LA MAIN dans litellm_config.yaml, hors de la
+    # zone AUTOGEN, et sans champ nexus_pool. Ce chemin ne le juge donc
+    # jamais -- ni avant la derogation, ni apres.
+    #
+    # L'erreur venait d'un script qui appelait eligible_au_pool() sur tous
+    # les alias du releve, sans verifier lesquels traversent reellement ce
+    # code. L'analyse avait ete prise pour une preuve.
+    #
+    # Le mecanisme, lui, reste juste et il est conserve : le jour ou un
+    # modele AUTO-EXPOSE se revele lent a demarrer mais capable, la preuve
+    # forte doit l'emporter sur la faible. Il n'a simplement, a ce jour,
+    # aucun cas d'usage demontre -- et cela vaut d'etre ecrit plutot que
+    # d'etre laisse croire.
     epreuve = epreuves_relevees().get(alias)
     if isinstance(epreuve, dict) and epreuve.get("complet"):
         return True, "epreuve reelle %s/%s" % (epreuve.get("reussies"),
