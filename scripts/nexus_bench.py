@@ -119,6 +119,26 @@ def mesurer_latence(gateway: str, alias: str, timeout: float) -> tuple:
         return (charge_ms, None, False, motif2)
     return (charge_ms, etabli_ms, True, "")
 
+def latences_existantes(racine) -> dict:
+    """
+    Releve deja sur disque, ou dictionnaire vide.
+
+    Permet de reprendre une mesure interrompue sans refaire ce qui a ete
+    mesure. Ne leve jamais : un fichier absent ou abime doit conduire a
+    tout remesurer, pas a s'arreter.
+    """
+    chemin = racine / ".nexus" / "latences.json"
+    try:
+        with chemin.open(encoding="utf-8") as fh:
+            donnees = json.load(fh)
+        modeles = donnees.get("modeles")
+        if isinstance(modeles, dict):
+            return modeles
+    except Exception:
+        pass
+    return {}
+
+
 def ecrire_json(racine: Path, mesures: dict):
     """Ecrire le fichier latences.json avec encodage UTF-8 explicite."""
     sortie_dir = racine / ".nexus"
@@ -192,7 +212,13 @@ def main():
             sys.stderr.write("Aucun des modeles demandes n'est disponible.\n")
             sys.exit(1)
 
-    resultats = {}
+    # Le releve existant est REPRIS, pas ecrase.
+    #
+    # Mesurer quarante modeles demande des heures. La version precedente
+    # n'ecrivait qu'a la fin : une interruption perdait tout le travail --
+    # constate. On repart donc de ce qui existe, et on ecrit apres CHAQUE
+    # modele. Une mesure faite est une mesure gardee.
+    resultats = dict(latences_existantes(racine))
     for alias in modeles:
         charge_ms, etabli_ms, ok, motif = mesurer_latence(gateway, alias, timeout)
         resultats[alias] = {
@@ -205,6 +231,12 @@ def main():
             "ok": ok,
             "motif": motif,
         }
+        # Ecriture immediate : le prochain arret n'effacera que la mesure en
+        # cours, jamais celles qui la precedent.
+        ecrire_json(racine, {
+            "mesure_le": datetime.now(timezone.utc).isoformat(),
+            "modeles": resultats,
+        })
 
     # ecrire le fichier json
     mesures = {
