@@ -3844,6 +3844,50 @@ A paragraph documents. Only a check protects.
 
 ---
 
+# 106.2 Metaheuristics: where they are warranted here, and where they are not
+
+The standing research lead (§0) asks for metaheuristics. Applied honestly, it
+splits the repository's optimisation problems in two — and rules the method
+out of one of them.
+
+**Pool selection: exact, not heuristic.** Choosing 4–6 models out of 40 that
+minimise expected latency under a 40 GB memory bound is a 0-1 knapsack with a
+cardinality constraint. Measured on this host: 4 587 778 admissible
+combinations for 40 models, 3 930 511 for the 39 currently eligible, and a
+full sweep of sizes 2–4 completes in **0.00 s**. Branch-and-bound or plain
+enumeration returns the *guaranteed optimum* in milliseconds.
+
+A metaheuristic here would be strictly worse: more code, more parameters to
+tune, and an approximate answer to a problem that has an exact one. The lead
+was pursued, the problem was sized, and the method was **rejected on
+measurement** — which is the useful outcome of pursuing a lead.
+
+**Temperature learning: metaheuristic territory, genuinely.** The other
+problem has none of those properties. The search space is continuous, the
+objective is *noisy* — the same input yields different outputs — and every
+evaluation costs seconds of real compute. That is the exact regime where
+exhaustive search is impossible and where the method earns its place.
+
+Three candidates, and their failure modes in this specific setting:
+
+| Approach | Fits when | Fails on |
+| --- | --- | --- |
+| Contextual bandit (UCB, Thompson) | many repeated trials per (model, profile) | assumes stationarity; noisy rewards keep exploration local |
+| Bayesian optimisation | each trial is very expensive | surrogate degrades with dimensions and non-stationarity |
+| Simulated annealing | refining around a known-good start | no global guarantee, and evaluation count explodes |
+
+**Two traps of noisy, expensive online optimisation**, which apply whichever
+is chosen: treating a single evaluation as reliable — the remedy is confidence
+intervals or a surrogate before accepting a point; and sizing the algorithm
+without regard to evaluation cost — the remedy is a fixed evaluation budget
+that the algorithm must respect, not aim at.
+
+The observation store (§AIC brique 8) exists precisely to make the first
+remedy possible: without accumulated repeats, no confidence interval can be
+computed, and any of the three methods would be optimising noise.
+
+---
+
 # 107.0 The engine's own settings come first — they change every reading below
 
 Established 2026-08-30 by a parallel session, and it reframes §107.1 to §107.3.
