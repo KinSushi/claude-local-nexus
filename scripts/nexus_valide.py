@@ -24,9 +24,49 @@ import shutil  # pour vérifier la présence de pwsh
 
 # ---------------------------------------------------------------------------
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "scripts"))
+# Deux racines distinctes, et les confondre casse l'un des deux usages.
+#
+# PLATEFORME : d'ou l'on importe le banc et ou vit nexus_conformite.py. Elle
+# se derive de __file__ et de rien d'autre -- une racine deduite du projet
+# appelant ne contiendrait pas scripts/nexus_agent.py, et l'import echouerait
+# des le premier appel depuis un autre depot.
+PLATEFORME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(PLATEFORME, "scripts"))
 import nexus_agent as agent  # noqa: E402
+
+
+def _racine_de_travail() -> str:
+    """
+    Depot sur lequel porte la validation.
+
+    Sans cela, ROOT valait la plateforme et `nexus_valide.py --base main`
+    lance depuis un autre projet validait le depot Nexus au lieu du projet
+    appelant : un verdict sur le mauvais code, rendu avec assurance. Le
+    contrat presente pourtant cet outil comme employable depuis n'importe
+    quel projet.
+
+    Meme ordre que nexus_agent.py, pour que les deux repondent pareil :
+    reglage explicite, puis variable fournie par l'hote, puis le depot git
+    contenant le repertoire courant. A defaut, la plateforme elle-meme.
+    """
+    for var in ("NEXUS_WORK_ROOT", "CLAUDE_PROJECT_DIR"):
+        valeur = os.environ.get(var)
+        if valeur and os.path.isdir(valeur):
+            return os.path.abspath(valeur)
+    try:
+        resultat = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=os.getcwd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", errors="replace",
+        )
+        if resultat.returncode == 0 and resultat.stdout.strip():
+            return os.path.abspath(resultat.stdout.strip())
+    except Exception:
+        pass
+    return PLATEFORME
+
+
+ROOT = _racine_de_travail()
 
 # Constantes configurables
 DEFAULT_MAX_TOKENS = 8000
@@ -125,10 +165,12 @@ def run_conformite():
     """Lance le script de conformité et attend un code de sortie 0."""
     cmd = [
         sys.executable,
-        os.path.join(ROOT, "scripts", "nexus_conformite.py"),
+        os.path.join(PLATEFORME, "scripts", "nexus_conformite.py"),
         "--avant-demarrage",
     ]
-    result = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # La conformite juge la PLATEFORME (moteur, secrets, pile), pas le projet
+    # valide : elle doit donc s'executer chez elle.
+    result = subprocess.run(cmd, cwd=PLATEFORME, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode != 0:
         raise RuntimeError(
             f"nexus_conformite.py a renvoye un code d'erreur ({result.returncode})\n"
