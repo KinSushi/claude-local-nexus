@@ -239,7 +239,7 @@ def main():
     reussites = 0
     echecs = 0
     traitees = 0
-    total_jetons = 0
+    total_jetons = 0          # total des tokens consommés
     cibles_echouees = []
 
     total_cibles = len(cibles)
@@ -305,12 +305,13 @@ def main():
         sauver_journal(journal)   # ecriture atomique apres chaque mise a jour
         traitees += 1
 
-        # 8. Accumulation des jetons (si disponible)
-        total_jetons += resultat.get("jetons", 0)
+        # 8. Accumulation des jetons (si disponible) - on utilise la clef correcte "tokens"
+        total_jetons += resultat.get("tokens", 0)
 
         # 9. Affichage apres le traitement de la cible
         duree = resultat.get("duree", "N/A")
-        jetons = resultat.get("jetons", "N/A")
+        # on lit la valeur "tokens" mais on l'affiche sous le libelle "jetons" pour garder la sortie attendue
+        jetons = resultat.get("tokens", "N/A")
         print(
             f"Fin traitement de {cible}: verdict={verdict}, plan={plan_courant}, "
             f"jetons={jetons}, duree={duree}"
@@ -328,7 +329,8 @@ def main():
     print(f"Cibles traitees      : {traitees}")
     print(f"  - reussies        : {reussites}")
     print(f"  - echecs          : {echecs}")
-    print(f"Cibles sautees (deja dans le journal) : {len(cibles) - traitees - (len(cibles) - len([c for c in cibles if str(c) in journal]))}")
+    # Le nombre de cibles sautees ne peut etre calcule sans modifier lister_cibles.
+    # On prefere ne pas l'afficher que de fournir une valeur fausse.
     print(f"Jetons gratuits consommes : {total_jetons}")
     if cibles_echouees:
         print("Cibles en echec :")
