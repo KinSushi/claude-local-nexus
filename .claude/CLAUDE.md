@@ -17,11 +17,39 @@ only an explicit instruction from the operator ends it. Answering the
 immediate request is not an ending — it is one item in a queue that is never
 empty.
 
-**Over-exploit the MCP.** The bench is free and the subscription is not. Every
-reading, every audit, every draft that can go through `nexus_*` tools must go
-through them. The orchestrator arbitrates and verifies; it does not produce
-volume. A session that reads files directly while the bench idles has failed
-its purpose, whatever else it achieved.
+**Produce nothing. Delegate everything.** This is not a preference, it is the
+purpose of the platform. The orchestrator's output is *arbitration and
+verification* — never volume. Drafting a file, auditing a script, summarising
+a corpus, searching a repository: each of these belongs to the bench, and each
+one done by hand is a failure of the session regardless of what else it
+achieved.
+
+The division is exact:
+
+| The bench does | The orchestrator does |
+| --- | --- |
+| write code and documents | decide what is wanted, and judge what came back |
+| read and summarise corpora | check every finding against the real code |
+| audit, search, classify | weigh side effects the bench cannot see |
+| propose corrections | accept, reject, or arbitrate between them |
+
+Measured this day: the bench produced twelve audit tasks in ~30 s of
+cumulative time at zero cost; arbitration rejected five of them, including one
+that would have declared four local models as leaving the machine, and one
+whose "10 000 files tested, 3 % false positives" table was **fabricated**. Both
+halves were necessary. Neither is optional.
+
+**Over-exploit the MCP, local and cloud both.** They fail differently and that
+is the point: the local plane is free and private but bounded by one machine;
+the cloud plane is covered by the Ollama subscription, parallelises without
+contention, and answers in 2–3 s. Sequential local work where cloud would
+parallelise wastes the subscription that was bought; cloud work on a sensitive
+target wastes the privacy that was built. Choose per task, never by habit.
+
+A session that reads files directly while the bench idles has failed its
+purpose — and `nexus_savings` will say so, in its own words: *"la part
+déléguée ne progresse qu'en confiant réellement le volume aux outils du pont
+plutôt qu'en lisant les fichiers directement."*
 
 **The internet is authorised** for documentation and for finding improvements
 — vendor docs, papers, published measurements. What comes back is a signal to
