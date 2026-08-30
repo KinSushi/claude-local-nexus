@@ -79,8 +79,9 @@ qui arbitre entre le local et le cloud Ollama — gratuits tous les deux, et
 sans jamais atteindre un alias facturé. Deux mesures pour choisir en
 connaissance de cause : son pool compte 42 candidats distincts dont **18
 locaux**, parmi lesquels deux qui peuvent tenir la ligne jusqu'au délai de
-900 s ; le 30 août 2026, un repli sur `qwen3-coder:30b` a rendu en **597 s**
-là où la même tâche prenait **13 s** en cloud. Ce pool suit l'inventaire
+900 s. Un repli observé sur `qwen3-coder:30b` a mis près de dix minutes là
+où le cloud répondait en quelques secondes — ordre de grandeur relevé en
+passant, pas mesure contrôlée (voir « Mesurer une durée » plus bas). Ce pool suit l'inventaire
 local, qui n'a **aucun plafond** — 39 modèles installés ce jour-là, 33
 exposés par la passerelle. Quand la latence prime sur la confidentialité, demander
 `--modele adaptive-router-cloud` : 19 candidats, aucun local.

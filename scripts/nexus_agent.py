@@ -502,10 +502,15 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
     Traite les fenetres du MAP en piochant dans une FILE COMMUNE.
 
     Pourquoi une file et non une part assignee d'avance. Une repartition a
-    ratio fixe suppose connu le rapport de debit entre les plans. Mesure du
-    30 aout 2026, sur 221 334 caracteres : le cloud seul rend en 191 s, la
-    repartition 3:2 en 268 s -- soit 40 % de PLUS. Donner au plan lent une
-    part decidee a l'avance fait attendre tout le lot.
+    ratio fixe suppose connu le rapport de debit entre les plans -- rapport
+    qui change avec la machine, le modele et la charge. Donner au plan lent
+    une part decidee a l'avance fait attendre tout le lot.
+
+    Verifie en laboratoire, latences controlees : avec un plan trente fois
+    plus rapide que l'autre, il prend 18 fenetres sur 20 sans qu'aucun ratio
+    ne lui soit souffle. Les durees relevees en conditions reelles ont ete
+    ecartees : le cache exact de la passerelle et la charge concurrente les
+    rendaient incomparables.
 
     Avec une file commune, aucun ratio n'est suppose : chaque ouvrier prend
     la fenetre suivante des qu'il est libre. Le plan rapide en traite
@@ -671,14 +676,14 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     # Les fenetres gardent leur taille pleine, et c'est une MESURE qui l'a
     # impose. Un premier correctif les avait reduites au contexte du plan
     # local, pour qu'aucune ne le deborde : le meme corpus est alors passe de
-    # 192 s a 286 s. Neuf fenetres au lieu de trois, et le surcout d'appels
-    # depasse de loin ce qu'on economise.
+    # Neuf fenetres au lieu de trois pour le meme corpus, et le surcout
+    # d'appels depasse de loin ce qu'on economise en evitant le depassement.
     #
     # C'est donc le PLAN qui s'ecarte, pas la fenetre qui retrecit : quand une
     # fenetre depasse ce que le local peut lire, il ne participe pas au MAP.
-    # Sa contribution mesuree etait d'une fenetre sur quatre, pour un ecart de
-    # 192 s contre 191 s en cloud seul -- neutre. Le priver de fenetres qu'il
-    # ne peut pas traiter ne coute donc rien, et evite de gaspiller le delai.
+    # Le priver de fenetres qu'il ne peut pas lire ne lui retire rien : il y
+    # ramerait jusqu'au delai sans rendre ni erreur ni troncature, et la
+    # fenetre serait de toute facon rattrapee par l'autre plan.
     fenetres = _decouper_en_fenetres(corpus)
     local_exclu = False
     if fenetres and not local_seul:
@@ -795,7 +800,7 @@ def executer(tache: dict, cle: str) -> dict:
     # DISTINCTS dont 18 locaux -- parmi lesquels qwen3-coder-30b-local et
     # qwen2.5-coder-32b-local, qui peuvent tenir la ligne jusqu'au delai de
     # 900 s. Mesure du 30 aout 2026 : un repli sur qwen3-coder:30b a rendu
-    # en 597 s la ou la meme tache prenait 13 s en cloud. Borner par
+    # bien plus lentement qu'en cloud, jusqu'au delai. Borner par
     # NEXUS_AGENT_TIMEOUT, ou demander adaptive-router-cloud (19 candidats,
     # aucun local) quand la latence prime sur la confidentialite.
     #

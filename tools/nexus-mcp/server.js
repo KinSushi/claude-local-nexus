@@ -1037,13 +1037,16 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
   // Les ouvriers piochent dans une FILE COMMUNE plutot que de recevoir une
   // part decidee d'avance.
   //
-  // Mesure du 30 aout 2026, sur 221 334 caracteres : cloud seul 191 s, plan
-  // local seul 687 s -- 3,6 fois plus lent. Une repartition a ratio fixe 3:2
-  // rendait en 268 s, soit 40 % de PLUS que le cloud seul : la part donnee au
-  // plan lent faisait attendre tout le lot. La file commune a rendu en 192 s,
-  // le local ayant tout de meme porte une fenetre sur quatre -- soit 75 % au
-  // cloud, tres pres du partage optimal, sans qu'aucun ratio ne lui soit
-  // souffle.
+  // Un ratio fixe suppose connu le rapport de debit entre les plans, rapport
+  // qui change avec la machine, le modele et la charge. Une file ne suppose
+  // rien : chaque ouvrier prend la fenetre suivante des qu'il est libre, donc
+  // le plan rapide en traite naturellement davantage.
+  //
+  // Verifie en laboratoire, latences controlees : avec un plan trente fois
+  // plus rapide, il prend 18 fenetres sur 20 sans qu'aucun ratio ne lui soit
+  // souffle. Les durees relevees en conditions reelles ont ete ecartees, le
+  // cache exact de la passerelle et la charge concurrente les rendant
+  // incomparables.
   //
   // L'equilibre se mesure donc a l'execution au lieu de se deviner. Et si un
   // plan s'effondre, l'autre vide la file sans qu'aucune regle ne l'ait prevu.
