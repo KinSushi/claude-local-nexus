@@ -186,7 +186,8 @@ quelle que soit la qualité du paragraphe.
 
 | Règle | Où elle est écrite | Ce qui manque pour la fermer |
 |---|---|---|
-| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **partiellement mécanisé** : `controle_travail_sur_original` rend l'écart visible (voir ci-dessous), mais `nexus_essaim.py` écrit toujours sur la cible elle-même |
+| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **fermé pour l'essaim** (`test_isolation`, 6/6, éprouvé contre la version d'avant : 4 échecs sur 4). **Reste ouvert pour les appels MCP directs** : `nexus_summarize`/`nexus_context` lancés à la main lisent toujours l'arbre principal, et rien ne l'empêche |
+| Chaque worker dans un **worktree isolé** | contrat §0.4 | l'essaim écrit désormais hors du dépôt, à côté de `.nexus-arbres` — mais c'est un répertoire, **pas un worktree git**. Le dire plutôt que de laisser croire la case cochée |
 
 > **Où la règle est enfreinte, mesuré le 30/08.** En cherchant à mécaniser
 > §0.4, le défaut trouvé n'était pas celui attendu. Le pont MCP, lui, est
@@ -211,9 +212,20 @@ quelle que soit la qualité du paragraphe.
 >
 > Un reste est désormais un signal : `controle_travail_sur_original` le voit
 > aux deux emplacements, en AVERTISSEMENT — bloquer punirait l'opérateur venu
-> nettoyer. Le sujet reste **OUVERT** : rendre l'écart visible n'est pas le
-> supprimer.
-| Chaque worker dans un **worktree isolé** | contrat §0.4 | `nexus_worktree.py` existe mais rien n'oblige à passer par lui |
+> nettoyer.
+>
+> **Puis l'écart a été supprimé, pas seulement rendu visible.** Le cycle est
+> renversé : copier, corriger la copie, promouvoir après vérification de
+> syntaxe. La différence ne se voit pas quand tout va bien — dans les deux
+> ordres, un cycle réussi laisse le même fichier. Elle se voit quand rien ne
+> va : un processus tué laissait l'original **écrasé** par une sortie de
+> modèle jamais relue ; il le laisse désormais **intact**, n'ayant jamais été
+> ouvert en écriture.
+>
+> Le backup n'est pas supprimé mais **réduit à ce qu'il protège vraiment** :
+> la fenêtre de promotion. Le `finally` restaurait auparavant dans tous les
+> cas non gérés — ce qui, après renversement, réécrirait par-dessus un fichier
+> sain. Une protection au mauvais endroit devient une régression.
 | Préserver le contexte de l'orchestrateur | contrat §0.4 | mesurable (jetons facturés par jeton délégué) mais non mesuré par tour |
 | Tout mécaniser, ne rien oublier dans les câblages | contrat §0.2.1 | la checklist des six maillons est écrite ; aucun contrôle ne vérifie qu'un mécanisme neuf les a tous |
 
