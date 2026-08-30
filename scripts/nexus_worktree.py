@@ -64,7 +64,17 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-ROOT = agent.ROOT
+# La racine est DECOUVERTE, jamais declaree.
+#
+# Ce module figeait ROOT sur la racine de la plateforme. Consequence
+# mesuree par une session travaillant sur un autre depot, le 2026-08-30 :
+# « --lister » rendait C:/local-llm-docker quel que soit le repertoire
+# courant, et lancer l'outil depuis son projet y aurait cree des worktrees
+# et fait ecrire un modele -- dans le depot voisin.
+#
+# La racine suit donc le projet appelant, comme le fait deja
+# nexus_ruche.py, et « --racine » permet de la forcer.
+ROOT = agent.racine_travail()
 # Hors du dépôt : un arbre de travail placé dedans serait vu par git comme
 # un dépôt imbriqué, et `git add -A` l'ajouterait à l'index — c'est
 # exactement l'accident déjà survenu une fois sur ce dépôt.
@@ -448,6 +458,9 @@ def jeter(nom: str) -> int:
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--nom", help="Nom de la tache, donc de l'arbre et de la branche.")
+    p.add_argument("--racine",
+                   help="Racine du depot a traiter. Par defaut, celle du "
+                        "projet courant -- jamais celle de la plateforme.")
     p.add_argument("--fichier", help="Fichier a relire, relatif a la racine.")
     p.add_argument(
         "--fichiers",
@@ -470,6 +483,13 @@ def main() -> int:
     p.add_argument("--fusionner", metavar="NOM")
     p.add_argument("--jeter", metavar="NOM")
     a = p.parse_args()
+
+    # --racine force la racine du depot traite. Sans elle, celle du projet
+    # courant s'applique -- decouverte, jamais celle de la plateforme.
+    if a.racine:
+        global ROOT, ARBRES
+        ROOT = os.path.abspath(a.racine)
+        ARBRES = os.path.join(os.path.dirname(ROOT), ".nexus-arbres")
 
     if a.lister:
         return lister()

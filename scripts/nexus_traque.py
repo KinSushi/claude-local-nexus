@@ -35,7 +35,24 @@ ACTIONS = {"write", "write_text", "writelines", "dump", "makedirs", "mkdir",
            "rmtree", "run", "check_call", "Popen", "urlopen"}
 
 # Fragments de NOM sur lesquels on a deja decide a tort.
-NOMS = ("-local", "-cloud", "anthropic", "claude", "embed", "vision", "coder")
+#
+# Reduits apres examen des 21 constats du premier passage : la plupart
+# etaient legitimes, et les signaler noyait les vrais.
+#
+# ECARTES, parce que ce ne sont pas des devinettes :
+#   « anthropic/ »        prefixe de provider LiteLLM, un FAIT de la
+#                         configuration et non une supposition sur un nom
+#   « -local », « -cloud » nos propres alias, dont controle_frontiere_alias
+#                         garantit qu'ils ne mentent pas sur l'api_base
+#   « claude- »           prefixe employe pour EXCLURE, jamais pour deduire
+#
+# CONSERVES, parce qu'ils devinent une CAPACITE que le moteur declare :
+#   « embed », « vision », « coder », « llava », « minilm »
+#
+# Les trois premiers ont produit de vrais defauts le 2026-08-30 : deux
+# modeles de vision classes texte, six generalistes pris pour des
+# specialistes du code, un embedding non reconnu.
+NOMS = ("embed", "vision", "coder", "llava", "minilm")
 
 NEUTRES = (0, 0.0, "", False)
 ECHEC = re.compile(r"refus|impossible|echec|erreur", re.I)

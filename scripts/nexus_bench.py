@@ -533,6 +533,24 @@ def main():
     # modele. Une mesure faite est une mesure gardee.
     resultats = dict(latences_existantes(racine))
     for alias in modeles:
+        # Un embedding ne repond pas a un endpoint de conversation : le
+        # banc le classait « non applicable » et n'en mesurait aucun. Il a
+        # desormais sa propre mesure -- latence et marge discriminante --
+        # et l'ecarter reviendrait a garder l'angle mort apres l'avoir
+        # comble.
+        if est_embedding(alias):
+            m = mesurer_embedding(gateway, alias, timeout)
+            resultats[alias] = dict(resultats.get(alias) or {},
+                                    embed_latence_ms=m["latence_ms"],
+                                    embed_marge=m["marge"],
+                                    embed_ok=m["ok"], embed_motif=m["motif"],
+                                    ok=m["ok"], motif=m["motif"] or "embedding")
+            print("  %-34s %8s ms  marge %-7s %s"
+                  % (alias, m["latence_ms"] or "-", m["marge"] or "-",
+                     m["motif"] or "OK"))
+            ecrire_json(racine, resultats)
+            continue
+
         if args.debit:
             # Le debit s'ecrit A COTE de la latence, jamais a sa place : ce
             # sont deux grandeurs distinctes, et ecraser l'une par l'autre
