@@ -46,7 +46,7 @@ lui donner les modèles **comme outils**.
    ┌────┴──────────────┬──────────────────┐
    ▼                   ▼                  ▼
  LOCAL              OLLAMA CLOUD       ANTHROPIC
- 40 alias           6 alias            4 alias
+ 33 alias           19 alias           4 alias
  coût 0             abonnement Ollama  crédits API
  rien ne sort       sort vers          facturé au token
                     ollama.com
@@ -193,11 +193,13 @@ python scripts/nexus_preserve.py --backup    # sauvegarde l'irremplaçable
 ```
 
 La question n'est jamais « est-ce volumineux » mais **« existe-t-il une
-source pour le reconstruire »**. Sur cette installation, 552 Go se
-retéléchargent — poids de modèles, images Docker, caches — tandis que
-**85 Mo n'ont aucune source** : l'historique de dépense, l'historique git non
-poussé, les secrets. L'irremplaçable représente 0,015 % du volume, et c'est
-lui seul qui mérite une sauvegarde.
+source pour le reconstruire »**. Depuis la sortie d'Ollama du périmètre
+Docker, ce script n'audite plus que les volumes conteneurisés : sur cette
+installation, 10,8 Go se retéléchargent — images Docker, cache Redis —
+tandis que **88 Mo n'ont aucune source** : l'historique de dépense, les
+sessions, les clés (volume PostgreSQL). L'irremplaçable représente 0,79 %
+du volume mesuré, et c'est lui seul qui mérite une sauvegarde. Les poids
+Ollama, hors de Docker, se retéléchargent séparément depuis `model_list.txt`.
 
 C'est ce même critère qui décide de l'implantation : PostgreSQL reste
 conteneurisé, Ollama en sort.
