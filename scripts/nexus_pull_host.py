@@ -137,6 +137,16 @@ def _valide_modele(modele: str) -> bool:
     return re.fullmatch(r"[A-Za-z0-9_\-./:]+", modele) is not None
 
 
+# Pourquoi un poids n'a pas pu etre lu, par modele.
+#
+# « poids inconnu : refuse par prudence » ne disait pas SI le modele
+# n'existe pas ou SI le reseau a lache. Mesure du 2026-08-30 : sept
+# candidats refuses d'un coup, sans pouvoir distinguer les noms inventes
+# des pannes passageres -- et la difference commande la suite, corriger la
+# liste ou reessayer.
+POURQUOI = {}
+
+
 def taille_registre(modele: str) -> float | None:
     """
     Poids annoncé par le registre Ollama, en Go, avant tout téléchargement.
@@ -159,7 +169,18 @@ def taille_registre(modele: str) -> float | None:
             manifeste = json.loads(reponse.read().decode("utf-8"))
         octets = sum(couche.get("size", 0) for couche in manifeste.get("layers", []))
         return octets / 1e9
-    except (urllib.error.URLError, json.JSONDecodeError, OSError):
+    except urllib.error.HTTPError as exc:
+        # 404 : le modele n'existe pas. Autre code : le registre a repondu,
+        # mais pas ce qu'on attendait.
+        POURQUOI[modele] = ("inexistant" if exc.code == 404
+                            else "registre HTTP %s" % exc.code)
+        return None
+    except (urllib.error.URLError, OSError) as exc:
+        # Reseau. Le modele existe peut-etre parfaitement.
+        POURQUOI[modele] = "reseau : %s" % str(getattr(exc, "reason", exc))[:40]
+        return None
+    except json.JSONDecodeError:
+        POURQUOI[modele] = "manifeste illisible"
         return None
 
 
@@ -304,8 +325,9 @@ def main() -> int:
             taille = taille_registre(modele)
         if taille is None:
             print(
-                "  [%2d/%d] %-28s poids inconnu : refuse par prudence"
-                % (i, len(voulus), modele)
+                "  [%2d/%d] %-28s poids inconnu (%s) : refuse par prudence"
+                % (i, len(voulus), modele,
+                   POURQUOI.get(modele, "raison non relevee"))
             )
             ignores += 1
             continue
