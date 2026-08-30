@@ -3531,6 +3531,36 @@ installed does not make a model eligible for automatic routing (§76):
 auto-exposed models carry `model_info.nexus_pool: false` and stay out of
 every pool and every fallback chain. Promote one by declaring it by hand.
 
+**Correction, 2026-08-30 — pool membership is no longer hand-maintained.**
+`nexus_pool` is now computed, from two measurements that answer different
+questions:
+
+| Source | Question | Written by |
+| --- | --- | --- |
+| `.nexus/latences.json` | how long before it *starts* answering? | `nexus_bench.py` |
+| `.nexus/epreuves.json` | can it actually do the work? | `nexus_releve.py` |
+
+The rule: `ACCEPT` on hardware (§107) **and** under `SEUIL_POOL_MS`, **or** a
+complete pass on the real epreuves — protocol, tool request, result use,
+chaining. Never measured means never promoted: absence of evidence is not
+evidence.
+
+The second clause is not a softening of the first. It exists because the two
+readings disagreed on a real model. `glm-4.7-flash-local` starts in 61.8 s —
+1.8 s over the threshold — and passes 4/4. It is also the declared local
+relay. Excluding it would have preferred the weak measurement to the strong
+one; raising the threshold to 65 s would have admitted, in the same gesture,
+models that had proven nothing.
+
+So the derogation is anchored to the proof, never to the number. An
+incomplete pass grants nothing, and the total is read from `EPREUVES` rather
+than fixed at four, so a future fifth epreuve does not let `4/5` keep passing
+for a clean sheet.
+
+Both files live under `.nexus/`, which is gitignored — and must stay so. They
+measure *this* machine. Committing them would ship one host's verdicts to
+every other.
+
 ## 105.3 Live sources of truth
 
 ```text
