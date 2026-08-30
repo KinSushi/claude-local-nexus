@@ -186,7 +186,33 @@ quelle que soit la qualité du paragraphe.
 
 | Règle | Où elle est écrite | Ce qui manque pour la fermer |
 |---|---|---|
-| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | un contrôle qui constate qu'un appel MCP a reçu un chemin de l'arbre principal ; rien ne l'empêche aujourd'hui |
+| Ne jamais fournir les **fichiers originaux** au MCP — un worker reçoit une copie | contrat §0.4, `workers-locaux-cout-zero.md` | **partiellement mécanisé** : `controle_travail_sur_original` rend l'écart visible (voir ci-dessous), mais `nexus_essaim.py` écrit toujours sur la cible elle-même |
+
+> **Où la règle est enfreinte, mesuré le 30/08.** En cherchant à mécaniser
+> §0.4, le défaut trouvé n'était pas celui attendu. Le pont MCP, lui, est
+> borné : `insideRepo()` refuse tout chemin hors de `WORK_ROOT`, et
+> `NEXUS_WORK_ROOT` permet de le pointer sur un worktree — la voie propre
+> existe, rien ne l'impose.
+>
+> C'est `nexus_essaim.py` qui enfreint la règle : il travaille sur **la cible
+> elle-même**, sauvegarde en `.nexus/backup-*.bak`, laisse le banc réécrire,
+> puis restaure. Et sa racine était fausse : `racine_depot()` rendait
+> `scripts/` en se nommant « racine du dépôt ». Elle servait à deux fins
+> contradictoires — localiser `.nexus` (racine) et `nexus_patch.py`
+> (`scripts`) — donc chaque appel était juste pour son besoin et faux pour
+> l'autre, et aucun n'échouait. **Quarante sauvegardes** avaient atterri dans
+> `scripts/.nexus/`, invisibles à qui cherchait à la racine.
+>
+> Rien n'a fuité, vérifié et non supposé : le motif `.nexus/` du .gitignore
+> n'a pas de barre oblique initiale, donc s'applique à tous les niveaux
+> (`git check-ignore -v`, `git ls-files` vide). Aucune cible n'a été laissée
+> abîmée : l'arbre était propre. Les quarante fichiers ne sont **pas**
+> supprimés — ce sont des données, et leur sort appartient à l'opérateur.
+>
+> Un reste est désormais un signal : `controle_travail_sur_original` le voit
+> aux deux emplacements, en AVERTISSEMENT — bloquer punirait l'opérateur venu
+> nettoyer. Le sujet reste **OUVERT** : rendre l'écart visible n'est pas le
+> supprimer.
 | Chaque worker dans un **worktree isolé** | contrat §0.4 | `nexus_worktree.py` existe mais rien n'oblige à passer par lui |
 | Préserver le contexte de l'orchestrateur | contrat §0.4 | mesurable (jetons facturés par jeton délégué) mais non mesuré par tour |
 | Tout mécaniser, ne rien oublier dans les câblages | contrat §0.2.1 | la checklist des six maillons est écrite ; aucun contrôle ne vérifie qu'un mécanisme neuf les a tous |
