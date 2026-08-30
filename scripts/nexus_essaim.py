@@ -225,7 +225,7 @@ def traiter_cible(
                 restaurer_backup(cible, backup_path)
                 backup_gere = True
                 return (
-                    f"{nom_cible},echec,0,0,none,{plan}",
+                    f"{nom_cible},echec,0,0,none,{plan},consigne audit introuvable",
                     False,
                     False,
                 )
@@ -240,7 +240,7 @@ def traiter_cible(
             restaurer_backup(cible, backup_path)
             backup_gere = True
             return (
-                f"{nom_cible},echec,0,0,none,{plan}",
+                f"{nom_cible},echec,0,0,none,{plan},reponse d'audit malformee",
                 False,
                 False,
             )
@@ -250,8 +250,9 @@ def traiter_cible(
             print(f"Audit error for {nom_cible}")
             restaurer_backup(cible, backup_path)
             backup_gere = True
+            detail_audit = str(audit_res.get('erreur', '')).replace(',', ';').replace('\n', ' ')[:160]
             return (
-                f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
+                f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_audit}",
                 False,
                 False,
             )
@@ -409,6 +410,8 @@ def traiter_cible(
                 print(f"Restoration failed for {nom_cible}: {e}")
             finally:
                 backup_path.unlink(missing_ok=True)
+
+
 
 # --------------------------------------------------------------------------- #
 # Fonction principale
