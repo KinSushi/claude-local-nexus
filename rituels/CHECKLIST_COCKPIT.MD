@@ -375,6 +375,9 @@ repayer ce qui est déjà acquis.
 | Banc cloud Ollama — abonnement payé | employé ; parallélise sans contention, 2–3 s de réponse |
 | Douze outils voisins repérés (ci-dessous) | aucun évalué au-delà des cinq repris |
 | Internet, autorisé par le contrat §0 | jamais employé cette session |
+| Espace disque `C:` — **320 Go libres** sur 930 | sous-exploité : place pour d'autres modèles, sous réserve du verdict matériel |
+| 54 modèles locaux, 434 Go installés | 71 mesurés en latence, **7 seulement en débit** |
+| RAM 66,2 Go, aucun offload GPU | c'est ELLE qui décide de ce qui tourne, pas le disque |
 
 ### Outils voisins repérés, non encore évalués — par ordre de rendement
 
