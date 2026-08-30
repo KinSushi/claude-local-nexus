@@ -328,6 +328,59 @@ def ecritures_hors_reserve(source: str) -> list:
     return trouves
 
 
+def controle_hooks_cables() -> None:
+    """
+    Chaque hook declare pointe-t-il sur un script qui existe ?
+
+    C'est le maillon « le cablage » de la checklist du contrat (0.2.1), et
+    celui dont l'absence ne se voit pas : Claude Code n'annonce pas qu'un
+    hook a echoue, il continue. Un garde dont le script a ete renomme,
+    deplace ou supprime ne protege plus rien, et le seul symptome est que
+    le defaut qu'il surveillait revient sans que personne comprenne
+    pourquoi.
+
+    Sept hooks armes au 2026-08-30 : la reprise de session, les gardes de
+    lecture (sur Read et sur les ecritures), le garde d'agent, le garde
+    shell, le rituel de fin de tour, et le garde d'edition.
+
+    BLOQUANT : un depot dont les gardes sont debranches est un depot sans
+    gardes, et il vaut mieux le savoir avant de travailler que apres.
+    """
+    chemin = os.path.join(ROOT, ".claude", "settings.json")
+    if not os.path.isfile(chemin):
+        return ignorer("hooks cables", "settings.json introuvable")
+    try:
+        with io.open(chemin, encoding="utf-8", errors="replace") as f:
+            declare = json.load(f)
+    except Exception as exc:
+        # Un settings.json illisible desarme TOUS les hooks d'un coup, en
+        # silence. C'est le pire cas, et il est bloquant.
+        return noter("hooks cables", False, BLOQUANT,
+                     "settings.json illisible : %s" % str(exc)[:70]) and None
+
+    manquants, comptes = [], 0
+    for evenement, blocs in (declare.get("hooks") or {}).items():
+        for bloc in blocs or []:
+            for h in bloc.get("hooks") or []:
+                commande = str(h.get("command") or "")
+                trouve = re.search(r"scripts[/\\](\w+\.py)", commande)
+                if not trouve:
+                    continue
+                comptes += 1
+                script = os.path.join(ROOT, "scripts", trouve.group(1))
+                if not os.path.isfile(script):
+                    manquants.append("%s -> %s" % (evenement, trouve.group(1)))
+
+    if not comptes:
+        return noter("hooks cables", False, BLOQUANT,
+                     "aucun hook ne reference de script : gardes desarmes") and None
+    if manquants:
+        return noter("hooks cables", False, BLOQUANT,
+                     "script absent : " + " ; ".join(manquants[:3])) and None
+    noter("hooks cables", True, BLOQUANT,
+          "%d hook(s) pointent sur un script present" % comptes)
+
+
 def controle_imports() -> None:
     """
     Chaque script s'importe-t-il, et son import fait-il quelque chose ?
@@ -1080,6 +1133,7 @@ def main() -> int:
         controle_pont_lecture_seule,
         controle_cablage,
         controle_imports,
+        controle_hooks_cables,
         controle_mcp_a_jour,
         controle_secrets,
         controle_env_hors_git,
