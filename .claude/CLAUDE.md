@@ -201,7 +201,7 @@ A model physically exists in the Ollama environment.
 Example:
 
 ```powershell
-docker exec ollama-server ollama list
+ollama list
 ```
 
 ## 6.2 Declared
@@ -844,13 +844,25 @@ docker compose logs -f litellm
 
 ## Ollama
 
+The engine runs on the HOST, not in Docker. The `ollama` service exists in
+the compose file but sits behind the `embedded` profile and is not started,
+so `docker exec ollama-server ...` fails with "no such container".
+
 ```powershell
-docker exec ollama-server ollama list
-docker exec ollama-server ollama ps
-docker exec ollama-server ollama pull <model>
-docker exec ollama-server ollama rm <model>
-docker exec ollama-server ollama run <model>
+ollama list
+ollama ps
+ollama pull <model>
+ollama rm <model>
+ollama run <model>
 ```
+
+Only when the embedded profile is deliberately started
+(`docker compose --profile embedded up -d`) do the `docker exec
+ollama-server ...` forms apply instead.
+
+The engine has no automatic start of its own, unlike Docker Desktop. After a
+reboot the stack comes back alone and the engine does not; `scripts/start.ps1`
+relights it before the conformity check that would otherwise refuse to start.
 
 ## Health
 
@@ -915,8 +927,8 @@ docker compose logs litellm --tail 100
 ## Step 3 — Ollama
 
 ```powershell
-docker exec ollama-server ollama list
-docker exec ollama-server ollama ps
+ollama list
+ollama ps
 ```
 
 ## Step 4 — direct model test
@@ -3522,7 +3534,7 @@ every pool and every fallback chain. Promote one by declaring it by hand.
 ## 105.3 Live sources of truth
 
 ```text
-docker exec ollama-server ollama list   ->  local inventory (no ceiling)
+ollama list                             ->  local inventory (no ceiling)
 https://ollama.com/api/tags             ->  cloud catalogue
 a real request per cloud model          ->  what the account may actually run
 ```
