@@ -247,6 +247,13 @@ inspire, on n'y touche pas.
 | `hook_anti_derive_pollution.py` | à reprendre — refuse les fichiers hors périmètre |
 | `recolter_rapports_agents.py --hook` | **à reprendre** — récolte automatique des worktrees des workers en fin de tour |
 
+> **Défaut vécu le jour même où il était inscrit « à reprendre ».** Le message
+> de commit du garde d'édition est passé par un heredoc shell : deux passages
+> ont été VIDÉS par la substitution des accents graves, amputant le commit de
+> ses noms techniques. Réparé par fichier. La leçon est celle du contrat
+> §106.1 : la règle était écrite, récente, et son auteur l'a enfreinte dans
+> l'heure. Seul un contrôle protège.
+
 > **Non-concurrence, règle posée le 30/08.** Un mécanisme neuf ne doit ni
 > doubler ni concurrencer les automatismes déjà en place. `NexusTraque`
 > (PT10M) régénère le cockpit, `NexusVitrine` (PT6H) commite et pousse : un
