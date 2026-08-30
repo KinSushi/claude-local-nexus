@@ -1047,16 +1047,15 @@ model_list:
   - model_name: adaptive-router-local
     litellm_params:
       model: auto_router/adaptive_router
-      adaptive_router_default_model: gemma4-12b-local
+      # >>> AUTOGEN:LOCAL_POOL
+      adaptive_router_default_model: qwen3-coder-30b-local
       adaptive_router_config:
         available_models:
-          - glm-4.7-flash-local
-          - gemma4-31b-local
           - qwen3-coder-30b-local
           - qwen2.5-coder-32b-local
           - qwen2.5-32b-local
-          - gemma4-12b-local
-          - llama3.2-3b-local
+          - deepseek-coder-33b-local
+      # <<< AUTOGEN:LOCAL_POOL
         weights:
           quality: 1.0
           cost: 0.0
@@ -1208,6 +1207,34 @@ router_settings:
 
     - qwen2.5-32b-local:
         - qwen2.5-coder-14b-local
+        - codestral-22b-local
+
+    - qwen2.5-coder-14b-local:
+        - codestral-22b-local
+        - deepseek-coder-6.7b-local
+
+    - codestral-22b-local:
+        - deepseek-coder-6.7b-local
+        - qwen2.5-coder-7b-local
+
+    - deepseek-coder-6.7b-local:
+        - qwen2.5-coder-7b-local
+        - qwen3-vl-8b-local
+
+    - qwen2.5-coder-7b-local:
+        - qwen3-vl-8b-local
+        - qwen3.6-27b-local
+
+    - qwen3-vl-8b-local:
+        - qwen3.6-27b-local
+        - qwen3-14b-local
+
+    - qwen3.6-27b-local:
+        - qwen3-14b-local
+        - qwen3-8b-local
+
+    - qwen3-14b-local:
+        - qwen3-8b-local
 
     - qwen3-embedding-8b-local:
         - nomic-embed-text-local
@@ -1238,6 +1265,38 @@ router_settings:
 
     - bge-m3-local:
         - granite3.3-8b-local
+        - gemma4-26b-local
+
+    - granite3.3-8b-local:
+        - gemma4-26b-local
+        - gemma4-local
+
+    - gemma4-26b-local:
+        - gemma4-local
+        - gpt-oss-20b-local
+
+    - gemma4-local:
+        - gpt-oss-20b-local
+        - llama3.1-8b-local
+
+    - gpt-oss-20b-local:
+        - llama3.1-8b-local
+        - llama3.2-1b-local
+
+    - llama3.1-8b-local:
+        - llama3.2-1b-local
+        - mistral-7b-local
+
+    - llama3.2-1b-local:
+        - mistral-7b-local
+        - mixtral-8x7b-local
+
+    - mistral-7b-local:
+        - mixtral-8x7b-local
+        - phi3-medium-local
+
+    - mixtral-8x7b-local:
+        - phi3-medium-local
 
     - llama3.2-vision-11b-local:
         - llava-34b-local
@@ -1370,50 +1429,110 @@ context_window_fallbacks:
 
   # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
   - gemma4-31b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - qwen3-coder-30b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - qwen2.5-coder-32b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - deepseek-coder-33b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - codestral-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - qwen2.5-32b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - qwen2.5-coder-14b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - gemma4-12b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - llama3.2-3b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - phi3-mini-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
 
   - ultime-recourse-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - bge-m3-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - codestral-22b-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - deepseek-coder-6.7b-local:
       - glm-4.7-flash-local
       - granite3.3-8b-local
 
-  - bge-m3-local:
+  - gemma4-26b-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - gemma4-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - gpt-oss-20b-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - llama3.1-8b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - llama3.2-1b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - mistral-7b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - mixtral-8x7b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - phi3-medium-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - qwen2.5-coder-7b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - qwen3-vl-8b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - qwen3.6-27b-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - qwen3-14b-local:
+      - deepseek-coder-6.7b-local
+      - llama3.1-8b-local
+
+  - qwen3-8b-local:
       - glm-4.7-flash-local
       - granite3.3-8b-local
 

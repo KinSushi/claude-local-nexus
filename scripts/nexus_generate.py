@@ -1058,7 +1058,75 @@ def main() -> int:
     local_text.sort(key=lambda e: (-e.tier, e.order))
     terminal_local = [e.alias for e in local_text[:2]]
 
+    # Le pool du routeur local, trie par latence MESUREE.
+    #
+    # Il etait tenu a la main, et la mesure du 2026-08-30 a montre ce que
+    # cela coutait : sur ses sept modeles, trois figuraient parmi les plus
+    # lents du banc -- glm-4.7-flash a 61,8 s, gemma4-12b a 51,5 s,
+    # gemma4-31b a 41,6 s -- et gemma4-12b etait le modele PAR DEFAUT.
+    # Le routeur partait donc, par defaut, sur un modele 22 fois plus lent
+    # que le meilleur dont il disposait.
+    #
+    # Pendant ce temps, quinze modeles mesures rapides portaient bien
+    # nexus_pool: true et n'etaient cites nulle part : le marquage etait
+    # ecrit, et sans effet. La promotion s'arretait au YAML sans atteindre
+    # le routeur.
+    #
+    # Le tri combine QUALITE puis latence, et l'ordre compte : le premier
+    # de la liste sert de modele par defaut au routeur.
+    #
+    # Trier par la seule latence serait l'erreur symetrique de celle qu'on
+    # corrige. Elle mettrait llama3.2-1b en tete -- 2,3 s, un milliard de
+    # parametres -- et ce modele deviendrait le defaut du routeur local.
+    # La 37 interdit de promouvoir sur la seule vitesse, comme la 10
+    # interdit de choisir sur la seule taille.
+    #
+    # A qualite egale, la mesure tranche. Resultat sur ce banc :
+    # qwen3-coder-30b-local, tier 2 et 2,4 s -- capable et rapide.
+    latences = latences_relevees()
+
+    def _ms(alias):
+        # Un modele sans releve part en fin de liste plutot que d'etre
+        # exclu : il est deja passe par eligible_au_pool, donc soit il a
+        # une mesure, soit il tient par une epreuve reelle -- laquelle ne
+        # produit pas de latence. L'exclure ici annulerait la derogation.
+        mesure = latences.get(alias) or {}
+        return mesure.get("latence_etablie_ms") or mesure.get("latence_ms") or 10 ** 9
+
+    # Le pool local est BORNE, et cette borne est la lecon d'une mesure.
+    #
+    # Ouvert d'abord a tous les modeles eligibles (29), il a DEGRADE la
+    # latence qu'il devait ameliorer. Trois appels au routeur, trois
+    # modeles differents, chacun payant le chargement de ses poids :
+    # 78 s, 41 s, 60 s -- pour des modeles mesures a 22, 4 et 12 s.
+    #
+    # La cause est physique : « ollama ps » montre qu'UN SEUL modele reste
+    # chaud a la fois, avec expiration a quatre minutes. Tout pool plus
+    # large disperse donc les appels sur des modeles froids, et plus il est
+    # large, plus le chargement devient certain. Le choix theorique se paie
+    # en secondes reelles.
+    #
+    # La borne est donc petite a dessein. Le levier complementaire est
+    # OLLAMA_MAX_LOADED_MODELS cote moteur : le relever permettrait
+    # d'elargir cette borne d'autant, la memoire du moteur le permettant
+    # (66 Go). Tant qu'il vaut 1, elargir le pool nuit.
+    PLAFOND_POOL_LOCAL = int(os.environ.get("NEXUS_POOL_LOCAL_MAX", "4"))
+
+    pool_local = [e.alias for e in
+                  sorted(local_text, key=lambda e: (-e.tier, _ms(e.alias)))
+                  ][:PLAFOND_POOL_LOCAL]
+
     blocks = {
+        # Le bloc couvre le modele par defaut ET la liste : les deux sont
+        # dictes par la meme mesure, et les separer laisserait le defaut
+        # derriver a la main -- ce qui est precisement ce qui s'etait
+        # produit, gemma4-12b restant defaut a 51,5 s.
+        "LOCAL_POOL": ([
+            "      adaptive_router_default_model: %s" % (pool_local[0]
+                                                         if pool_local else "phi3-mini-local"),
+            "      adaptive_router_config:",
+            "        available_models:",
+        ] + ["          - %s" % a for a in pool_local]),
         "LOCAL_MODELS_EXTRA": local_extra,
         "CLOUD_MODELS": render_cloud_models(cloud),
         # Seuls les modeles textuels entrent dans un pool de routage : un
