@@ -119,6 +119,28 @@ Puis lancer `claude` et approuver le serveur MCP `nexus-local`.
 .\rituels\RESUME.ps1                        # état mesuré et sujets ouverts
 ```
 
+### Reprise
+
+L'installation ci-dessus ne se refait pas. Au quotidien, et après un
+redémarrage de la machine :
+
+```powershell
+.\scripts\start.ps1              # moteur, conformité, pile, passerelle — 46 s mesurées
+.\scripts\start.ps1 -Verifier    # + local, cloud et les trois routeurs
+.\scripts\start.ps1 -Restart     # LiteLLM seul, après modification de la configuration
+```
+
+Le contrôle de conformité passe **avant** le démarrage, et il est bloquant :
+une passerelle qui monte devant une configuration fausse accepte toutes les
+requêtes et les fait toutes échouer.
+
+`start.ps1` rallume aussi le moteur Ollama au besoin. Celui-ci vit sur
+l'hôte, hors Docker, et n'a **aucun** démarrage automatique là où Docker
+Desktop en a un : après un redémarrage, la pile remontait seule et le moteur
+restait éteint. `-Verifier` reste hors du chemin par défaut parce que charger
+un modèle local prend des minutes — redémarrer vite et vérifier à fond sont
+deux besoins distincts.
+
 ---
 
 ## Les outils exposés à Claude Code

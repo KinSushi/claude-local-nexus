@@ -156,52 +156,104 @@ def get_diff_uncommitted():
 
 def extract_changed_functions(diff_text):
     """
-    Extrait les noms de fonctions dont la signature a changé.
-    Recherche des paires -def ... / +def ... (avec ou sans annotation de retour).
+    Noms des fonctions TOUCHEES par le diff.
+
+    La version precedente ne retenait que les SIGNATURES modifiees, c'est-a-dire
+    les paires -def/+def de meme nom. Un changement de corps -- le cas le plus
+    courant, et la source la plus frequente de regressions -- ne produisait
+    donc aucun nom, et main() concluait « Aucune regression detectee » sans
+    avoir rien fait juger. Un verdict rassurant rendu sans examen est pire
+    qu'aucun verdict : il tient lieu de preuve.
+
+    Trois sources sont reunies :
+      a) les paires -def/+def de meme nom (comportement d'origine) ;
+      b) le contexte que git place apres le second @@ d'un en-tete de hunk ;
+      c) toute ligne ajoutee ou supprimee qui definit une fonction.
     """
     changed = set()
-    # Le groupe capture le nom de fonction ; la partie retour est optionnelle.
-    pattern = re.compile(r"^[-+]def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*\)\s*(?:->\s*[^:]*)?")
     lines = diff_text.splitlines()
+
+    # a) signature modifiee
+    sig = re.compile(r"^[-+]def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
     for i in range(len(lines) - 1):
-        m1 = pattern.match(lines[i])
-        m2 = pattern.match(lines[i + 1])
-        if m1 and m2 and lines[i].startswith("-") and lines[i + 1].startswith("+"):
-            if m1.group(1) == m2.group(1):
+        if lines[i].startswith("-") and lines[i + 1].startswith("+"):
+            m1, m2 = sig.match(lines[i]), sig.match(lines[i + 1])
+            if m1 and m2 and m1.group(1) == m2.group(1):
                 changed.add(m1.group(1))
-    return sorted(changed)
+
+    # b) contexte de hunk : "@@ -1,2 +3,4 @@ def foo(" ou "... @@ function Bar"
+    hunk = re.compile(
+        r"@@.*@@\s*(?:def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\("
+        r"|function\s+([A-Za-z_][A-Za-z0-9_-]*))",
+        re.IGNORECASE,
+    )
+    # c) definition ajoutee ou supprimee. Les noms PowerShell portent un
+    #    tiret (Confirm-MoteurOllama), que le motif Python exclut.
+    py_def = re.compile(r"^[+-]\s*def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+    ps_def = re.compile(r"^[+-]\s*function\s+([A-Za-z_][A-Za-z0-9_-]*)", re.IGNORECASE)
+
+    for line in lines:
+        if line.startswith("@@"):
+            m = hunk.search(line)
+            if m:
+                changed.add(m.group(1) or m.group(2))
+            continue
+        for motif in (py_def, ps_def):
+            m = motif.match(line)
+            if m:
+                changed.add(m.group(1))
+                break
+
+    return sorted(n for n in changed if n)
+
+
+def git_grep(motif):
+    """
+    Enveloppe de `git grep` qui distingue « rien trouve » de « en panne ».
+
+    git grep rend 1 quand aucune ligne ne correspond -- un resultat, pas une
+    erreur. run_git levait sur tout code non nul, si bien que l'absence
+    d'appelant remontait comme une panne de recherche.
+    """
+    result = subprocess.run(
+        ["git", "grep", "-n", motif, "--", "."],
+        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace",
+    )
+    if result.returncode == 0:
+        return result.stdout
+    if result.returncode == 1:
+        return ""
+    raise RuntimeError("git grep a echoue : %s" % result.stderr.strip())
+
 
 def find_callers(func_names):
     """
-    Recherche les appelants de chaque fonction dans le dépôt.
-    Retourne un dict {func: [(file, line_no, line_text), ...]}.
-    Lève une exception si aucun appelant n’est trouvé pour une fonction.
+    Appelants de chaque fonction, sous la forme {nom: [(fichier, ligne, texte)]}.
+
+    Une fonction sans appelant n'est PAS une erreur : elle peut etre neuve,
+    privee, ou appelee dynamiquement. La version precedente levait dans ce
+    cas, main() rendait alors le code 2, et ce code pousse l'operateur vers
+    un agent PAYANT -- une fonction nouvellement ecrite suffisait donc a
+    declencher une depense. La liste reste simplement vide.
     """
     callers = {fn: [] for fn in func_names}
     for fn in func_names:
-        # Échapper le nom de fonction pour éviter toute injection dans git grep
-        escaped_fn = re.escape(fn)
-        try:
-            out = run_git(["grep", "-n", f"{escaped_fn}\\s*\\(", "--", "."])
-        except RuntimeError as e:
-            # Loguer l’erreur mais ne pas masquer le problème
-            print(f"Warning: git grep failed for {fn} : {e}", file=sys.stderr)
-            raise RuntimeError(f"Impossible de rechercher les appelants de {fn}") from e
-
-        for line in out.splitlines():
-            # format: path:line:content
+        sortie = git_grep(r"%s\s*(" % re.escape(fn))
+        for line in sortie.splitlines():
             parts = line.split(":", 2)
             if len(parts) != 3:
                 continue
             path, lineno, content = parts
-            # ignorer la ligne de définition déjà capturée
-            if re.search(rf"\bdef\s+{re.escape(fn)}\s*\(", content):
+            # La definition elle-meme n'est pas un appelant.
+            if re.search(r"\b(def|function)\s+%s\b" % re.escape(fn), content, re.IGNORECASE):
                 continue
-            callers[fn].append((path, int(lineno), content.strip()))
-
-        if not callers[fn]:
-            raise RuntimeError(f"Aucun appelant trouvé pour la fonction '{fn}'")
+            try:
+                callers[fn].append((path, int(lineno), content.strip()))
+            except ValueError:
+                continue
     return callers
+
 
 def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
     """
@@ -214,6 +266,30 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
     for fn, lst in callers.items():
         for path, lineno, line in lst:
             appelants_str += f"{fn} : {path}:{lineno} : {line}\n"
+    if not appelants_str:
+        # Sans appelant, la consigne d'origine (« pour chaque appelant... »)
+        # ne demandait rien de faisable : le modele repondait en prose, et
+        # analyse_result n'y voyait aucune REGRESSION. Juger le diff
+        # lui-meme est le seul examen possible, et il vaut mieux que rien.
+        consigne = (
+            "Analyse le diff suivant a la recherche de REGRESSIONS reelles :\n"
+            "code qui casserait a l'execution, variable renommee mais encore\n"
+            "referencee, condition inversee, flux ou code de sortie perdu.\n"
+            "Aucun appelant externe n'a ete identifie : juge le diff seul.\n"
+            "Commence chaque constat par un mot parmi TRAITE, REGRESSION,\n"
+            "INDETERMINE, suivi d'une phrase courte.\n"
+            "N'invente aucun defaut pour remplir la liste.\n\n"
+            "DIFF:\n"
+            f"{diff_text}\n"
+        )
+        return {
+            "nom": "validation_nexus",
+            "modele": "gpt-oss-120b-cloud",
+            "tache": consigne,
+            "fichiers": [],
+            "max_tokens": max_tokens,
+        }
+
     consigne = (
         "Analyse le diff suivant et la liste des appelants ci-dessous.\n"
         "Pour chaque appelant, réponds d'un seul mot parmi : TRAITE, REGRESSION, INDETERMINE, "
@@ -232,14 +308,30 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
         "max_tokens": max_tokens,
     }
 
+# Les trois verdicts que build_task impose au modele. On retient le PREMIER
+# rencontre sur la ligne : le format demande est « <nom> : VERDICT - phrase »,
+# donc le verdict qui compte precede toujours l'explication. Cela evite de
+# lire « INDETERMINE - aucune REGRESSION visible » comme une regression.
+VERDICT = re.compile(r"\b(REGRESSION|TRAITE|INDETERMINE)\b")
+
+
 def analyse_result(text):
     """
-    Parcourt le texte renvoyé par le modèle et détecte la présence d'une
-    régression. Retourne True si au moins une ligne contient le mot
-    REGRESSION (exact, majuscules).
+    Vrai des qu'une ligne rend le verdict REGRESSION.
+
+    La version precedente exigeait que la ligne COMMENCE par « REGRESSION ».
+    Or build_task demande au modele le format « <nom> : VERDICT - phrase » :
+    le verdict n'est jamais en tete. Le validateur pouvait donc lire quatre
+    lignes « _safe_int : REGRESSION - la signature attend un parametre de
+    plus » et conclure « aucune regression detectee ». Faux negatif mesure,
+    sur une signature reellement cassee et trois appelants.
+
+    Le mot est cherche en MAJUSCULES sans accent : « regression » ou
+    « régression » en prose ne declenche rien, seul le verdict compte.
     """
     for line in text.splitlines():
-        if line.strip().upper().startswith("REGRESSION"):
+        m = VERDICT.search(line)
+        if m and m.group(1) == "REGRESSION":
             return True
     return False
 
@@ -259,12 +351,19 @@ def free_plan_judgment(diff_text, callers):
         except Exception as e:
             raise RuntimeError(f"Erreur lors de l'appel à l'agent gratuit : {e}")
 
-        # Vérifier la présence des clés attendues
-        for key in ("texte", "erreur", "modele", "plan", "tokens"):
+        # `erreur` n'est presente QUE sur les chemins d'echec de
+        # nexus_agent.executer ; une reponse reussie ne la porte pas.
+        # L'exiger faisait donc rejeter TOUTE reponse valide comme
+        # « incomplete » : le jugement du banc n'a jamais pu aboutir. Le
+        # defaut est reste invisible parce qu'un autre, en amont,
+        # empechait d'atteindre cette ligne.
+        for key in ("texte", "modele", "plan", "tokens"):
             if key not in reponse:
-                raise RuntimeError("Réponse de l'agent incomplète")
+                # Nommer la cle : sans elle, le diagnostic est a refaire
+                # entierement a chaque fois.
+                raise RuntimeError("Réponse de l'agent incomplète : clé '%s' absente" % key)
 
-        if reponse["erreur"]:
+        if reponse.get("erreur"):
             raise RuntimeError(f"Erreur de l'agent : {reponse['erreur']}")
 
         # Cas de troncature détecté
@@ -343,16 +442,20 @@ def main():
 
     changed_funcs = extract_changed_functions(diff_text)
 
-    if not changed_funcs:
-        # Aucun changement de contrat détecté
+    # Un diff vide est le seul cas ou l'on peut conclure sans juger.
+    if not diff_text.strip():
         if args.json:
-            print(json.dumps({"verdict": "OK", "code": 0}))
+            print(json.dumps({"verdict": "RIEN", "code": 0}))
         else:
-            print("Aucune regression detectee.")
+            print("Aucun changement a juger.")
         return 0
 
+    # Sans fonction identifiee, on juge le diff LUI-MEME plutot que de
+    # conclure. Conclure ici etait le defaut central : « Aucune regression
+    # detectee » tombait sans qu'aucun examen ait eu lieu, et rien dans le
+    # message ne permettait de le savoir.
     try:
-        callers = find_callers(changed_funcs)
+        callers = find_callers(changed_funcs) if changed_funcs else {}
     except Exception as e:
         print("Erreur lors de la recherche des appelants :", e)
         return 2
@@ -376,7 +479,9 @@ def main():
             print("Regression detectee.")
             return 1
         else:
-            print("Aucune regression detectee.")
+            portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
+                      if changed_funcs else "diff entier, aucune fonction isolee")
+            print("Aucune regression detectee — juge par le banc gratuit (%s)." % portee)
             return 0
 
 if __name__ == "__main__":
