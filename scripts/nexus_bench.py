@@ -69,31 +69,55 @@ def est_embedding(nom: str) -> bool:
 
 def mesurer_latence(gateway: str, alias: str, timeout: float) -> tuple:
     """
-    Mesurer la latence du modele alias.
-    Retourne (latence_ms, ok, motif)
+    Mesure un modele DEUX fois, et rend (chargement_ms, etabli_ms, ok, motif).
+
+    Une mesure unique confond deux grandeurs tres differentes. Un modele local
+    doit d'abord etre charge en memoire, ce qui domine le premier appel :
+    constate le 30 aout 2026, phi3-mini-local a depasse 60 s au premier appel
+    apres qu'un autre modele eut occupe la RAM, puis a rendu en 8,6 s au
+    suivant. Promouvoir ou ecarter sur le seul premier chiffre reviendrait a
+    juger un modele sur son reveil.
+
+    Le cache reste neutralise sur les deux appels : le second recalcule
+    vraiment, il ne relit pas la reponse du premier.
     """
     if est_embedding(alias):
-        return (None, False, "non applicable")
+        return (None, None, False, "non applicable")
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
     payload = {
         "model": alias,
         "messages": [{"role": "user", "content": "Repond par le seul mot: PRET"}],
         "max_tokens": 16,
+        # Cache desactive en LECTURE et en ECRITURE. Une mesure servie par un
+        # cache ne mesure que le cache -- constate : 2,1 s annonces pour un
+        # modele qui en demande 8,6. Et y ecrire fausserait les mesures
+        # suivantes, celles des autres modeles comprises.
+        "cache": {"no-cache": True, "no-store": True},
     }
-    start = time.monotonic()
-    try:
-        appel_post(url, payload, timeout)
-        elapsed = time.monotonic() - start
-        return (int(elapsed * 1000), True, "")
-    except urllib.error.URLError as e:
-        # timeout ou autre erreur de connexion
-        elapsed = time.monotonic() - start
-        if isinstance(e.reason, TimeoutError) or isinstance(e.reason, socket.timeout):
-            return (int(timeout * 1000), False, "timeout")
-        return (int(elapsed * 1000), False, str(e.reason))
-    except Exception as e:
-        elapsed = time.monotonic() - start
-        return (int(elapsed * 1000), False, str(e))
+
+    def _un_appel():
+        depart = time.monotonic()
+        try:
+            appel_post(url, payload, timeout)
+            return int((time.monotonic() - depart) * 1000), True, ""
+        except urllib.error.URLError as exc:
+            duree = int((time.monotonic() - depart) * 1000)
+            if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+                return int(timeout * 1000), False, "timeout"
+            return duree, False, str(exc.reason)
+        except Exception as exc:
+            return int((time.monotonic() - depart) * 1000), False, str(exc)
+
+    charge_ms, ok1, motif1 = _un_appel()
+    if not ok1:
+        return (charge_ms, None, False, motif1)
+
+    # Un modele qui repond une fois puis echoue n'est pas fiable : on ne
+    # retient pas le premier chiffre comme s'il avait tenu.
+    etabli_ms, ok2, motif2 = _un_appel()
+    if not ok2:
+        return (charge_ms, None, False, motif2)
+    return (charge_ms, etabli_ms, True, "")
 
 def ecrire_json(racine: Path, mesures: dict):
     """Ecrire le fichier latences.json avec encodage UTF-8 explicite."""
@@ -170,9 +194,14 @@ def main():
 
     resultats = {}
     for alias in modeles:
-        lat_ms, ok, motif = mesurer_latence(gateway, alias, timeout)
+        charge_ms, etabli_ms, ok, motif = mesurer_latence(gateway, alias, timeout)
         resultats[alias] = {
-            "latence_ms": lat_ms,
+            # latence_ms reste la clef lue par nexus_generate : c'est le
+            # REGIME ETABLI qui decide de l'admission au pool, le cout de
+            # chargement etant paye une fois et non a chaque requete.
+            "latence_ms": etabli_ms if etabli_ms is not None else charge_ms,
+            "latence_chargement_ms": charge_ms,
+            "latence_etablie_ms": etabli_ms,
             "ok": ok,
             "motif": motif,
         }
