@@ -1383,6 +1383,31 @@ router_settings:
   cooldown_time: 120
 
   fallbacks:
+    # Le relais local, seul repli declare A LA MAIN.
+    #
+    # Il est marque nexus_pool: false -- c'est un profil dedie, pas un
+    # candidat de routage -- et le generateur l'exclut donc de toutes les
+    # chaines. Consequence mesuree le 2026-08-30 par une session voisine :
+    # « No fallback model group found for releve-locale », et un delai
+    # depasse a 180 s sans que rien ne le rattrape.
+    #
+    # C'est le modele le plus critique du depot : celui qui prend la suite
+    # quand l'abonnement s'epuise. Le laisser sans secours revient a n'avoir
+    # aucun dernier recours le jour ou il sert.
+    #
+    # La cible est choisie sur mesure : qwen3-coder-30b-local demarre en
+    # 2,4 s et rend 20,2 jetons/s, les meilleurs chiffres de l'hote sur les
+    # deux grandeurs. Meme domaine et meme modalite, donc la 17 et la 108
+    # sont respectees -- le repli ne sort pas de la machine.
+    #
+    # glm-4.7-flash-local avait d'abord ete mis en second, et le validateur
+    # l'a refuse : c'est le MEME modele amont que releve-locale
+    # (ollama_chat/glm-4.7-flash). Un repli vers soi-meme tombe en meme
+    # temps que sa source et ne rattrape rien.
+    - releve-locale:
+        - qwen3-coder-30b-local
+        - qwen2.5-coder-32b-local
+
     # >>> AUTOGEN:ANTHROPIC_FALLBACKS
     - claude-fable-5:
         - claude-opus-5
