@@ -4464,3 +4464,68 @@ Pour cela il faut `nexus_index_build` — une indexation par embeddings sur
 **18 073 entrees**, dont le cout n'est pas mesure. C'est le prochain geste, et
 il se chiffre avant de se faire.
 
+---
+
+## 44. LE COUT DE L'INDEXATION PAR EMBEDDINGS — chiffre avant d'etre engage
+
+§43.5 laissait ouvert : « il faudrait une indexation par embeddings sur
+18 073 entrees, dont le cout n'est pas mesure ». Il l'est.
+
+### 44.1 Trois mesures, et les deux premieres etaient MAL POSEES
+
+| mesure | resultat | ce qu'elle valait |
+| --- | --- | --- |
+| appels **en serie** | 2,83 s/entree → **16 h** | **fausse** : le pont ne procede pas ainsi |
+| lot de 12 | 0,17 s/entree, gain **×13,9** | juste, mais pas le regime reel |
+| **lot de 32** — le regime du pont | **0,328 s/entree** | **111 minutes** pour 20 304 entrees |
+
+**La premiere extrapolation portait sur un scenario inexistant.** J'ai mesure
+des appels en serie et extrapole sans verifier ce que le pont fait : il groupe
+par lots de 32 depuis toujours (`NEXUS_EMBED_BATCH`, defaut 32). *L'instrument
+repondait a la question voisine* — troisieme fois du jour.
+
+### 44.2 Le cout en DISQUE, que je n'avais pas regarde du tout
+
+Un vecteur `bge-m3` porte **1024 dimensions**. En JSON, cela pese ~15 Ko par
+entree :
+
+> **~312 Mo** pour 20 304 entrees, **sans compter le texte** conserve a cote.
+
+L'index vit dans `.nexus/`, ignore par git : **rien ne serait publie**.
+
+### 44.3 Et une alarme que j'ai failli rapporter a tort
+
+`loadIndex()` fait `JSON.parse(readFileSync(...))` : j'allais annoncer que
+chaque recherche relit 312 Mo. **Il y a un cache**, indexe sur `mtime` et
+`size`. L'analyse a lieu **une fois par processus**, pas par recherche.
+
+Ce qui reste vrai : **~312 Mo residents en memoire** pour la vie du serveur.
+Sur cette machine, l'iGPU n'a pas de VRAM dediee et partage les memes 61,6 Go
+que les poids des modeles (§107.0) — la depense est modeste mais reelle.
+
+### 44.4 VERDICT : abordable, et NON ENGAGE
+
+| | |
+| --- | --- |
+| temps | **111 minutes**, sans surveillance |
+| disque | ~312 Mo, ignore par git |
+| memoire | ~312 Mo residents par processus serveur |
+| reversible | oui — l'index se reconstruit |
+
+**C'est abordable. Ce n'est pas pour autant lance.** Deux raisons :
+
+* deux heures de machine s'engagent, elles ne se prennent pas d'autorite ;
+* l'index est PARTAGE. Y verser 20 304 entrees de livres change ce que
+  `nexus_search` rend **pour tous les projets** qui l'emploient — c'est un
+  choix de perimetre, pas une optimisation.
+
+Le geste, si vous le voulez :
+
+```
+python scripts/nexus_mcp_probe.py index_build references/livres/code bge-m3-local
+```
+
+Et le corpus de **code** est le meilleur candidat pour commencer : 2 231
+entrees — **12 minutes** — dont 1 277 sur les agents, et ses identifiants sont
+deja consultables sans embeddings.
+
