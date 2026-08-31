@@ -2612,3 +2612,50 @@ fois l'outillage. Le contrat §106.1 dit que la discipline ne survit pas à une
 longue session ; la mesure du jour est plus dure : **elle ne survit pas à
 l'heure**, et elle ne survit pas non plus à la délégation. Le code du banc
 n'est pas plus discipliné que le mien ; seul le contrôle l'est.
+
+---
+
+## 20. Mettre à jour la stack locale — le geste n'existait pas
+
+`Update-NexusModels.ps1 -SyncLocal` rapatrie les modèles **absents**. Rien ne
+rafraîchissait ceux **déjà installés** : la tâche quotidienne de 04:00
+régénère la configuration, jamais les poids.
+
+**Mécanisme.** Ollama n'a pas de commande « vérifier les mises à jour », mais
+`ollama pull` ne retélécharge que les couches **changées** et annonce sinon
+que le modèle est à jour. Rafraîchir = rejouer le tirage et **lire** la
+réponse : `DÉJÀ À JOUR`, `MIS À JOUR`, `ÉCHEC`.
+
+**Simulation par défaut, et c'est délibéré** : le parc pèse 430 Go. Sans
+`--appliquer`, aucun octet ne part. Le geste est câblé à l'entrée unique
+(`nexus maj-modeles`) mais **n'est pas armé dans la tâche quotidienne** —
+engager la bande passante et le disque sans que personne l'ait demandé n'est
+pas une décision d'outil.
+
+**Garde disque** : refus sous 50 Go libres, **et** refus si l'espace n'a pas
+pu être mesuré. Une garde qui abandonne en silence vaut moins que pas de
+garde, parce qu'elle donne confiance.
+
+### 20.1 Quatre défauts, tous trouvés en l'exécutant
+
+| # | Défaut | Ce que cela produisait |
+|---|---|---|
+| 1 | `os.statvfs` n'existe pas sous Windows | la garde disque échouait, annonçait « impossible de déterminer », **et continuait** |
+| 2 | `text=False` **et** `encoding=` se contredisent | le `.decode()` suivant levait `AttributeError`, avalé par un `except` générique et affiché comme **« Ollama introuvable »** — alors qu'Ollama répondait |
+| 3 | la taille tient en **deux** champs (`6.7` puis `GB`) | total de **0,00 Go** pour cinquante modèles, comparé tel quel au seuil de la garde |
+| 4 | `--limite` ne bornait que la boucle d'application | la simulation affichait cinquante modèles là où l'application en aurait traité quatre |
+
+Le quatrième mérite d'être retenu : **une simulation dont le chiffre ne
+correspond pas à sa liste ne simule rien** — et c'est précisément le geste
+censé protéger de la surprise.
+
+Le deuxième aussi : un diagnostic faux né d'un défaut interne envoie chercher
+au mauvais endroit. C'est la troisième fois aujourd'hui qu'un outil de ce
+dépôt accuse son environnement d'une panne qui venait de lui (après « entrée
+illisible » sur une console cp1252, et « casse » sur un PSScriptAnalyzer sain).
+
+### 20.2 Ce qui n'est pas prouvé
+
+Le chemin `--appliquer` n'a pas encore rendu son verdict : le tirage réel
+tournait toujours à la clôture du tour. La **simulation** et la **garde**
+sont éprouvées ; le tirage ne l'est pas.
