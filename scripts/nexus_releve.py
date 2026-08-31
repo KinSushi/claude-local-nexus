@@ -462,10 +462,22 @@ def juger(modele: str, cle: str) -> dict:
         # Ce que le script distinguait deja a l'ecran, et perdait a l'ecriture.
         "echouees": echouees,
         "ignorees": ignorees,
-        # La mesure a-t-elle seulement ATTEINT le modele ? Un plan inconnu et
-        # une adresse « ? » signifient que l'appel n'a jamais abouti : ce
-        # n'est pas un verdict de capacite, c'est une absence de verdict.
-        "concluante": bool(plan and plan != "inconnu" and adresse != "?"),
+        # La mesure a-t-elle seulement ATTEINT le modele ?
+        #
+        # Le signal est `servi` : le nom du modele qui a REELLEMENT repondu.
+        # Un « ? » signifie qu'aucune reponse n'est revenue -- absence de
+        # verdict, non verdict d'absence.
+        #
+        # Le premier jet ajoutait `adresse != "?"`, et c'etait FAUX : l'adresse
+        # amont n'est pas toujours resolvable meme quand l'appel aboutit.
+        # Mesure du 2026-08-30 : qwen2.5-0.5b-local a rendu 3/4, servi par
+        # ollama_chat/qwen2.5:0.5b, et se voyait marquer « concluante: false ».
+        #
+        # La consequence n'etait pas cosmetique. `deja_mesures()` ne reprend
+        # que les verdicts concluants : ces modeles auraient ete remesures
+        # INDEFINIMENT, et la reprise posee une heure plus tot n'aurait servi
+        # a rien pour eux.
+        "concluante": bool(servi and servi != "?" and plan and plan != "inconnu"),
         "plan": plan,
         "adresse": adresse,
         "epreuves": resultats,

@@ -1861,6 +1861,40 @@ def test_registre_epreuves() -> None:
                  d.get("epreuves_non_mesurees") == ["chainage"],
                  str(d.get("epreuves_non_mesurees")))
 
+        # 4 ter. « Concluante » se juge sur SERVI, jamais sur l'adresse.
+        #
+        # Mon premier critere ajoutait `adresse != "?"`, et c'etait faux :
+        # l'adresse amont n'est pas toujours resolvable meme quand l'appel
+        # aboutit. Mesure du 2026-08-30 : qwen2.5-0.5b-local a rendu 3/4,
+        # servi par ollama_chat/qwen2.5:0.5b, et se voyait marquer
+        # « concluante: false ». HUIT entrees etaient dans ce cas, dont TROIS
+        # a 4/4.
+        #
+        # La consequence n'etait pas cosmetique : `deja_mesures()` ne reprend
+        # que les verdicts concluants, donc ces modeles auraient ete remesures
+        # INDEFINIMENT et la reprise n'aurait servi a rien pour eux.
+        servi_sans_adresse = dict(rapport("adresse-inconnue-local",
+                                          "ollama_chat/quelque-chose", 3,
+                                          "local", "?"))
+        servi_sans_adresse["concluante"] = bool(
+            servi_sans_adresse["servi"] and servi_sans_adresse["servi"] != "?"
+            and servi_sans_adresse["plan"] != "inconnu")
+        releve.consigner(servi_sans_adresse)
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        e = reg.get("adresse-inconnue-local", {})
+        check("un modele qui a REPONDU est concluant, meme sans adresse",
+                 e.get("concluante") is True,
+                 "servi=%s concluante=%s" % (e.get("servi"), e.get("concluante")))
+
+        # Le critere du code REEL, et non une reformulation : si quelqu'un
+        # remet `adresse` dans la condition, ce controle doit tomber.
+        with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
+                     encoding="utf-8") as fh:
+            code = fh.read()
+        check("le critere ne s'appuie plus sur l'adresse",
+                 '"concluante": bool(servi and servi != "?"' in code,
+                 "fonde sur servi")
+
         # 5. CONTRE-EPREUVE : l'ancienne regle, qui ecrasait sans condition, doit
         # etre VUE par cette epreuve. Sans elle, les cas d'avant ne prouvent rien.
         reg2 = {"modeles": {"x": {"reussies": 4, "complet": True, "concluante": True}}}
