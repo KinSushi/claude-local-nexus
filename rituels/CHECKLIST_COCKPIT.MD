@@ -786,6 +786,54 @@ enfreinte. Un paragraphe ne ferme rien.
 > **La borne, elle, se voit dans les chiffres.** Vague non bornée : 19 échecs
 > sur 34. Vague bornée à quatre : **1 échec sur 28**.
 
+### L'audit des 38 scripts, arbitré — 30/08, tard
+
+> Vague `wf_ec9ac764-a7e` close : **105 agents, 38 audits, 1 seul échec
+> d'appel**. Elle a rendu **43 défauts « réels et cités »**. Voici ce qu'ils
+> valaient après lecture du code réel.
+
+| Verdict du banc | Nombre | Arbitrage |
+|---|---|---|
+| Motif avouant lui-même un comportement délibéré | 12 | écartés d'office : le drapeau contredit le motif |
+| Vérifiés et **retenus** | 2 | `socket` jamais importé ; `UnicodeDecodeError` non attrapé |
+| Vérifiés et **rejetés** | 3 | voir ci-dessous |
+| Non encore relus | 26 | restent à arbitrer, et comptés comme tels |
+
+> **Le défaut le plus instructif visait le fichier livré une heure plus tôt.**
+> `nexus_portee_import.py` lisait ses fichiers avec `except (OSError,
+> IOError)`. Or `UnicodeDecodeError` est un **ValueError**, jamais un
+> OSError : un fichier non UTF-8 faisait tomber le détecteur avec une trace.
+> Et la porte de conformité l'appelle — **un seul fichier mal encodé dans
+> `scripts/` aurait bloqué le démarrage**, ce que ce dépôt nomme exactement
+> « un garde qui plante arrête le travail qu'il protégeait ». Éprouvé sur un
+> fichier UTF-16 fabriqué, avant et après.
+>
+> **Trois rejets, et leurs motifs valent autant que les retenues :**
+>
+> * `nexus_relais.py` — « `subprocess.run` avec `encoding` sans `text=True` ».
+>   **Faux** : préciser `encoding` implique le mode texte depuis Python 3.6.
+> * `nexus_portee_import.py` — « `ast.AugAssign` non collecté au niveau
+>   module ». **Impossible** : un `X += 1` au niveau module exige que `X`
+>   existe déjà, il ne peut donc jamais être la seule liaison.
+> * `nexus_cablage.py` — « `except Exception` attrape `KeyboardInterrupt` ».
+>   **Faux** : `KeyboardInterrupt` dérive de `BaseException`, non de
+>   `Exception`.
+>
+> Un quatrième est réel mais mineur, et n'appelle aucun correctif :
+> `nexus_releve.py:242` ouvre un fichier sans `with`. En CPython le compteur
+> de références ferme le descripteur aussitôt la ligne finie.
+>
+> **CE QUE CETTE VAGUE APPREND SUR LE HARNAIS, et c'est le plus utile.** Douze
+> vérificateurs sur quarante-trois ont marqué `reel: true` tout en
+> **expliquant dans leur propre motif** que le comportement était délibéré et
+> commenté. Ma consigne disait pourtant « un commentaire qui l'explique fait
+> foi » : ils l'ont appliquée au motif et pas au drapeau. Un champ booléen
+> demandé à côté d'un champ libre se remplit sans être pesé. La leçon pour la
+> prochaine vague : **ne jamais lire le drapeau seul**, et de préférence ne
+> plus demander de drapeau du tout — faire répondre à la question « quel
+> commentaire ou quelle ligne rend ce comportement délibéré ? », dont
+> l'absence de réponse vaut rejet.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |

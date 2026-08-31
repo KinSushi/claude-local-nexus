@@ -251,8 +251,17 @@ def analyse_file(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
             source = f.read()
-    except (OSError, IOError) as exc:
-        sys.stderr.write(f"Erreur de lecture {path} : {exc}\n")
+    except (OSError, UnicodeDecodeError) as exc:
+        # UnicodeDecodeError est un ValueError, JAMAIS un OSError : un fichier
+        # non UTF-8 traversait donc ce filtre et faisait planter le detecteur
+        # avec une trace. Or ce detecteur est appele par la porte de
+        # conformite : un seul fichier mal encode dans scripts/ aurait bloque
+        # le demarrage, ce qui est exactement le defaut que ce depot nomme
+        # « un garde qui plante arrete le travail qu'il protegeait ».
+        #
+        # Trouve le 2026-08-30 par une vague d'audit deleguee, sur ce fichier
+        # meme, quelques minutes apres sa livraison.
+        sys.stderr.write("Fichier ignore, illisible en utf-8 : %s (%s)\n" % (path, exc))
         return [], False
 
     try:

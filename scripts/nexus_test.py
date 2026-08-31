@@ -1456,6 +1456,29 @@ def test_portee_import() -> None:
               code == 0 and lignes == ["OK"],
               "silence" if lignes == ["OK"] else "; ".join(lignes)[:70])
 
+    # -- Un garde qui plante arrete le travail qu'il protegeait.
+    #
+    # `UnicodeDecodeError` est un ValueError, JAMAIS un OSError : un fichier
+    # non utf-8 traversait le filtre de lecture et faisait tomber le
+    # detecteur avec une trace. Or la porte de conformite l'appelle : un seul
+    # fichier mal encode dans scripts/ aurait bloque le demarrage.
+    #
+    # Trouve le 2026-08-30 par une vague d'audit deleguee, sur un fichier
+    # livre quelques minutes plus tot dans le meme tour.
+    dossier = tempfile.mkdtemp(prefix="epreuve_portee_")
+    try:
+        cible = os.path.join(dossier, "mal_encode.py")
+        with open(cible, "wb") as fh:
+            fh.write(b"\xff\xfe\x00i\x00m\x00p\x00o\x00r\x00t\n")
+        r = subprocess.run([sys.executable, outil, cible], capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=120)
+        sortie = [l for l in r.stdout.splitlines() if l.strip()]
+        check("fichier non utf-8 : le detecteur survit et continue",
+              r.returncode == 0 and sortie == ["OK"] and "Traceback" not in (r.stderr or ""),
+              "code=%s sortie=%s" % (r.returncode, "; ".join(sortie)[:40]))
+    finally:
+        shutil.rmtree(dossier, ignore_errors=True)
+
 
 def test_semaphore_local() -> None:
     """
