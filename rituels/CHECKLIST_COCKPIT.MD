@@ -1364,6 +1364,44 @@ enfreinte. Un paragraphe ne ferme rien.
 > exit 0. Le verrou fait son office — un second relevé ne peut plus écrire
 > par-dessus, ce qui était le vrai danger.
 
+### Le parc entier est mesuré, pour la première fois — 31/08
+
+> **« Tous les candidats ont déjà un verdict concluant. »** 44 modèles
+> éprouvés, 25 avec le détail de leurs lacunes. Au début de la nuit, **un
+> seul modèle sur 71** avait jamais prouvé qu'il sait orchestrer.
+
+**Dix-huit modèles capables**, prouvés sur les quatre épreuves :
+codestral · gemma3-1b · gemma4 · gemma4-12b · gemma4-26b · gemma4-31b ·
+glm-4.7-flash · gpt-oss-20b · llama3.1-8b · llama3.2-3b · qwen2.5-32b ·
+qwen3-8b · qwen3-14b · qwen3-32b · qwen3-coder-30b · qwen3.5-9b ·
+qwen3.6-27b · relais déclaré.
+
+| épreuve | échecs / 25 | |
+|---|---|---|
+| parle le protocole `/v1/messages` | 2 | 8 % |
+| **demande un outil** | 14 | **56 %** |
+| exploite le résultat d'outil | 5 (+ 11 non mesurées) | 20 % |
+| **enchaîne deux outils** | 14 | **56 %** |
+
+> Le goulot n'est pas le protocole — **92 % des modèles savent parler** —
+> c'est l'appel d'outil, et il bloque mécaniquement l'exploitation du
+> résultat, d'où les onze non mesurées.
+>
+> **Six modèles sont à une épreuve près**, dont deux dont on sait exactement
+> ce qui manque : `qwen3-0.6b` et `qwen3-1.7b` échouent sur « exploite le
+> résultat d'outil » seul.
+>
+> **MA CORRECTION ÉTAIT PRÉMATURÉE, et c'est la troisième fois cette nuit.**
+> La série a donné 71 % (n=10), 56 % (n=18), 52 % (n=23), puis **56 %**
+> (n=25). J'ai annoncé 71 % trop tôt, puis corrigé à 52 % trop tôt également.
+> La valeur oscillait ; seul l'échantillon complet la fixe. **§112.3 vaut
+> aussi contre l'empressement à se corriger.**
+>
+> **Ce que cela ne dit pas.** Aucun verdict n'a été confirmé par un *second*
+> passage : `stable` exige deux mesures, et aucun modèle n'en a. `qwen3-0.6b`
+> a déjà rendu 4/4 puis 3/4 — la capacité varie. Dix-huit « capables » sont
+> donc dix-huit résultats uniques, pas dix-huit certitudes.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
