@@ -239,6 +239,22 @@ switch ($Commande.ToLower()) {
         exit 0
     }
 
+    'maj-modeles' {
+        # Rafraichit les modeles Ollama DEJA INSTALLES. Le depot savait
+        # rapatrier un modele ABSENT (-SyncLocal) ; il ne savait pas mettre a
+        # jour ceux qui sont la.
+        #
+        # SIMULATION PAR DEFAUT, et c'est deliberé : un rafraichissement du
+        # parc entier represente des centaines de gigaoctets. Il faut
+        # `--appliquer` pour qu'un octet soit telecharge.
+        #
+        # Non arme dans la tache quotidienne : engager la bande passante et
+        # le disque sans que personne l'ait demande n'est pas une decision
+        # d'outil.
+        & python (Join-Path $PSScriptRoot 'nexus_maj_modeles.py') @Reste
+        Exit-Avec $LASTEXITCODE
+    }
+
     'rendu-vide' {
         # Livre par le banc, cable ici : un outil que personne n'appelle est
         # un fichier. Il MESURE le rendu vide sur longue generation au lieu
