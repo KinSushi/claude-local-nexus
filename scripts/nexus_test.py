@@ -1252,7 +1252,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota", "maj", "sujets"],
+                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1315,6 +1315,8 @@ def main() -> int:
         test_maj_modeles()
     if args.only in (None, "sujets"):
         test_sujets_filtre()
+    if args.only in (None, "shellps"):
+        test_garde_shell_powershell()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2279,6 +2281,44 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_garde_shell_powershell() -> None:
+    """
+    Le garde shell juge-t-il PowerShell, avec SES PROPRES regles ?
+
+    CE QUI ETAIT FAUX, mesure le 2026-08-31 : la meme commande dangereuse,
+    soumise sous deux noms d'outil, donnait deux verdicts opposes.
+
+        tool_name = "Bash"        -> REFUSE
+        tool_name = "PowerShell"  -> PASSE
+
+    Le trou avait DEUX etages -- le matcher de `.claude/settings.json`, qui ne
+    nommait que « Bash », et la ligne `if tool_name != "Bash": return` du
+    garde. En elargir un seul aurait laisse l'autre fermer la porte. Or
+    l'outil PowerShell est actif dans cette session et sert en permanence.
+
+    ELARGIR SANS ADAPTER AURAIT ETE PIRE QUE LE TROU. Les deux regles
+    existantes sont propres a bash : le heredoc du CAS A n'existe pas en
+    PowerShell, et l'accent grave du CAS B y est le caractere d'ECHAPPEMENT
+    ordinaire, la ou bash en fait une substitution de commande. Un garde qui
+    refuse le travail normal se fait desarmer -- c'est le risque principal.
+
+    D'ou une regle PROPRE a PowerShell : le delimiteur de fermeture d'une
+    here-string doit etre en colonne zero ; l'indenter est une erreur de
+    syntaxe, et la commande echoue avant d'avoir rien fait.
+
+    HONNETETE SUR LA PORTEE : un seul des dix cas discrimine, verifie en
+    rejouant l'epreuve contre le garde d'avant. Les neuf autres sont des
+    ANTI-CONTROLES -- ils doivent passer dans les deux versions, c'est leur
+    office : sans eux, un garde qui refuserait tout paraitrait parfait.
+
+    Prouve EN VRAI, pas seulement en simulation : la here-string indentee est
+    refusee par le hook vivant, sans redemarrage de session ; la here-string
+    correcte et l'accent grave d'echappement passent.
+    """
+    print("\n--- GARDE SHELL : PowerShell est-il juge, et avec ses regles ? ---")
+    jouer_epreuve_python("epreuve_garde_shell_ps.py", "garde shell PowerShell")
 
 
 def test_sujets_filtre() -> None:

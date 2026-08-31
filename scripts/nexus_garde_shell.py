@@ -137,11 +137,65 @@ def detecter_cas_b(commande):
     return False
 
 
+def detecter_cas_ps(commande):
+    """
+    Une here-string PowerShell dont le delimiteur de FERMETURE est indente.
+
+    En PowerShell une here-string s'ouvre par @' ou @" en fin de ligne, et se
+    ferme par '@ ou "@ qui DOIT etre en colonne zero, seul sur sa ligne.
+    L'indenter est une erreur de syntaxe -- pas un avertissement.
+
+    CETTE REGLE EST PROPRE A POWERSHELL, et c'est tout l'objet du decoupage
+    par outil dans main(). Les deux regles bash ne s'y appliquent pas :
+      - le heredoc du CAS A n'existe pas en PowerShell ;
+      - l'accent grave du CAS B y est le caractere d'ECHAPPEMENT ordinaire,
+        parfaitement legitime, la ou bash en fait une substitution de
+        commande. Appliquer le CAS B a PowerShell refuserait du travail
+        normal -- et un garde qui refuse le travail normal se fait desarmer.
+        C'est le risque principal, plus grave que le trou lui-meme.
+    """
+    lignes = commande.splitlines()
+
+    ouverture = None
+    for idx, ligne in enumerate(lignes):
+        depouillee = ligne.rstrip()
+        if depouillee.endswith("@'") or depouillee.endswith('@"'):
+            ouverture = idx
+            break
+    if ouverture is None:
+        return False
+
+    for ligne in lignes[ouverture + 1:]:
+        # LA FERMETURE S'ECRIT « '@ », JAMAIS « @' ».
+        #
+        # CE QUI ETAIT FAUX dans le premier jet : il cherchait la fermeture
+        # sous la forme @' -- qui est la forme d'OUVERTURE. Le controle ne se
+        # serait donc JAMAIS declenche, tout en donnant a croire qu'il jouait.
+        # Meme classe que le motif en capitales compare a du texte minuscule.
+        contenu = ligne.lstrip()
+        if contenu.startswith("'@") or contenu.startswith('"@'):
+            return not (ligne.startswith("'@") or ligne.startswith('"@'))
+    # Une here-string non fermee est un autre defaut, que ce garde ne juge
+    # pas : refuser ici melangerait deux diagnostics et rendrait le message
+    # faux dans un cas sur deux.
+    return False
+
+
 def main():
     donnees = lire_entree()
     if not isinstance(donnees, dict):
         return
-    if donnees.get("tool_name") != "Bash":
+    # LES DEUX OUTILS, ET DES REGLES CHOISIES SELON L'OUTIL.
+    #
+    # CE QUI ETAIT FAUX : ce garde ne jugeait que Bash, alors que l'outil
+    # PowerShell est actif dans cette session et sert en permanence. Mesure du
+    # 2026-08-31 : la meme commande dangereuse est REFUSEE sous « Bash » et
+    # PASSE sous « PowerShell ».
+    #
+    # Le trou avait DEUX etages -- le matcher de .claude/settings.json et
+    # cette ligne. En elargir un seul aurait laisse l'autre fermer la porte.
+    outil = donnees.get("tool_name")
+    if outil not in ("Bash", "PowerShell"):
         return
     entree = donnees.get("tool_input")
     entree = entree if isinstance(entree, dict) else {}
@@ -149,7 +203,7 @@ def main():
     if not isinstance(commande, str) or not commande:
         return
 
-    if detecter_cas_a(commande):
+    if outil == "Bash" and detecter_cas_a(commande):
         refuser(
             "CAS A -- heredoc Python portant un antislash. Le shell le "
             "consomme AVANT que Python ne voie le texte, et le code arrive "
@@ -159,7 +213,7 @@ def main():
             "echappements. REMEDE : ecrire le fichier avec l'outil Write, "
             "puis l'executer.")
 
-    if detecter_cas_b(commande):
+    if outil == "Bash" and detecter_cas_b(commande):
         refuser(
             "CAS B -- accent grave non echappe entre guillemets doubles. Le "
             "shell execute ce qu'il entoure et REMPLACE le tout par sa "
@@ -167,6 +221,15 @@ def main():
             "noms techniques, sans que rien ne le signale. Arrive ici le "
             "2026-08-30. REMEDE : passer le texte par un fichier (-F "
             "fichier) plutot qu'en ligne de commande.")
+
+    if outil == "PowerShell" and detecter_cas_ps(commande):
+        refuser(
+            "CAS PS -- here-string dont le delimiteur de FERMETURE est "
+            "indente. En PowerShell, '@ et \"@ doivent se trouver en COLONNE "
+            "ZERO, seuls sur leur ligne : les indenter est une erreur de "
+            "syntaxe, pas un avertissement, et la commande echoue avant "
+            "d'avoir rien fait. REMEDE : ecrire le fichier avec l'outil "
+            "Write, puis l'executer.")
 
 
 if __name__ == "__main__":
