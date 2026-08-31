@@ -459,10 +459,17 @@ def juger(modele: str, cle: str) -> dict:
         "modele": modele,
         "servi": servi,
         "reussies": reussies,
+        # Ce que le script distinguait deja a l'ecran, et perdait a l'ecriture.
+        "echouees": echouees,
+        "ignorees": ignorees,
+        # La mesure a-t-elle seulement ATTEINT le modele ? Un plan inconnu et
+        # une adresse « ? » signifient que l'appel n'a jamais abouti : ce
+        # n'est pas un verdict de capacite, c'est une absence de verdict.
+        "concluante": bool(plan and plan != "inconnu" and adresse != "?"),
         "plan": plan,
         "adresse": adresse,
         "epreuves": resultats,
-        "version": "1.0",
+        "version": "1.1",
     }
     consigner(rapport)
     return rapport
@@ -566,6 +573,9 @@ def consigner(rapport: dict) -> None:
             "reussies": rapport["reussies"],
             "total": len(EPREUVES),
             "complet": rapport["reussies"] >= len(EPREUVES),
+            "echouees": rapport.get("echouees"),
+            "ignorees": rapport.get("ignorees"),
+            "concluante": rapport.get("concluante", True),
             "plan": rapport["plan"],
             "servi": rapport.get("servi"),
             "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -577,8 +587,29 @@ def consigner(rapport: dict) -> None:
         # que le premier laissait la derogation chercher un nom jamais ecrit :
         # elle n'aurait servi a rien, sans que rien ne le signale.
         for nom in {rapport["modele"], alias_expose(rapport.get("servi"))}:
-            if nom:
-                registre["modeles"][nom] = dict(entree, demande=rapport["modele"])
+            if not nom:
+                continue
+            # UNE MESURE RATEE N'EFFACE PAS UNE PREUVE ACQUISE.
+            #
+            # Mesure du 2026-08-30, et le defaut etait invisible dans le
+            # fichier : `releve-locale` avait passe 4/4, et comme cette
+            # boucle ecrit sous les DEUX noms, `glm-4.7-flash-local` portait
+            # 4/4 lui aussi -- a juste titre, c'est le meme modele. Puis
+            # `--tous` a interroge `glm-4.7-flash-local` directement, l'appel
+            # n'a jamais abouti, et le 0/4 a ECRASE le 4/4.
+            #
+            # Le registre affirmait donc simultanement que le meme modele
+            # orchestre et n'orchestre pas. 105.2 est explicite : l'absence
+            # de preuve n'est pas une preuve d'absence. Une tentative qui
+            # n'atteint pas le modele est consignee A PART, sans toucher au
+            # verdict existant.
+            precedent = registre["modeles"].get(nom)
+            if not entree["concluante"] and precedent and precedent.get("concluante", True):
+                precedent = dict(precedent)
+                precedent["derniere_tentative_vaine"] = entree["date"]
+                registre["modeles"][nom] = precedent
+                continue
+            registre["modeles"][nom] = dict(entree, demande=rapport["modele"])
         registre["mesure_le"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         with open(chemin, "w", encoding="utf-8") as f:
             json.dump(registre, f, indent=2, ensure_ascii=False)

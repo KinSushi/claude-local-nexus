@@ -1247,7 +1247,7 @@ def main() -> int:
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
-                                 "terminal", "noms"],
+                                 "terminal", "noms", "registre"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1290,6 +1290,8 @@ def main() -> int:
         test_terminal_repli()
     if args.only in (None, "noms"):
         test_noms_js()
+    if args.only in (None, "registre"):
+        test_registre_epreuves()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1739,6 +1741,110 @@ def test_noms_js() -> None:
     """
     jouer_epreuve_node("epreuve_noms_js.js", "noms du pont",
                        "NOMS DU PONT : une fonction appelee existe-t-elle ?")
+
+
+def test_registre_epreuves() -> None:
+    """
+    Une mesure ratee efface-t-elle une preuve acquise ?
+
+    Defaut mesure le 2026-08-30, et invisible dans le fichier. `consigner`
+    ecrit sous DEUX noms : l'alias demande et l'alias reellement servi. Quand
+    `releve-locale` a passe 4/4, `glm-4.7-flash-local` portait donc 4/4 lui
+    aussi -- a juste titre, c'est le meme modele. Puis `--tous` a interroge
+    `glm-4.7-flash-local` directement, l'appel n'a jamais abouti, et le 0/4
+    a ECRASE le 4/4.
+
+    Le registre affirmait alors simultanement que le meme modele orchestre
+    et n'orchestre pas. Ce n'est pas un etiquetage trompeur : c'est une
+    preuve detruite. 105.2 est explicite -- l'absence de preuve n'est pas une
+    preuve d'absence.
+
+    Un echec REEL, lui, doit bien remplacer le verdict : sans quoi un modele
+    qui se degrade resterait promu sur une mesure perimee.
+    """
+    import json as _json
+    import shutil as _shutil
+    import tempfile as _tempfile
+
+    print("\n--- REGISTRE DES EPREUVES : une mesure ratee efface-t-elle ? ---")
+
+    try:
+        import nexus_releve as releve
+    except Exception as exc:
+        skip("registre des epreuves", str(exc).splitlines()[0][:60])
+        return
+
+    json = _json
+    shutil = _shutil
+    tempfile = _tempfile
+
+    def rapport(modele, servi, reussies, plan, adresse):
+        return {
+            "modele": modele, "servi": servi, "reussies": reussies,
+            "echouees": 4 - reussies if plan != "inconnu" else 0,
+            "ignorees": 0 if plan != "inconnu" else 4,
+            "concluante": bool(plan and plan != "inconnu" and adresse != "?"),
+            "plan": plan, "adresse": adresse, "epreuves": [], "version": "1.1",
+        }
+
+
+    bac = tempfile.mkdtemp(prefix="epreuve_consigner_")
+    ancien_root = releve.PLATEFORME
+    try:
+        releve.PLATEFORME = bac
+        chemin = os.path.join(bac, ".nexus", "epreuves.json")
+
+        # 1. Une reussite s'inscrit.
+        #
+        # L'epreuve ne s'appuie PAS sur la resolution d'alias : `alias_expose`
+        # interroge le catalogue de la passerelle, qui n'a rien a voir avec la
+        # regle testee ici. On consigne donc deux fois sous le MEME nom, ce qui
+        # est exactement la sequence qui a detruit la preuve en production.
+        releve.consigner(rapport("glm-4.7-flash-local", "ollama_chat/glm-4.7-flash",
+                                 4, "local", "http://host.docker.internal:11434"))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        check("une reussite s'inscrit",
+                 reg.get("glm-4.7-flash-local", {}).get("complet") is True,
+                 "noms inscrits : %s" % ", ".join(sorted(reg)))
+
+        # 2. LE CAS REEL. Une tentative qui n'atteint pas le modele ne doit pas
+        # effacer le 4/4 precedent.
+        releve.consigner(rapport("glm-4.7-flash-local", "?", 0, "inconnu", "?"))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        garde = reg.get("glm-4.7-flash-local", {})
+        check("une tentative vaine n'efface pas la preuve acquise",
+                 garde.get("complet") is True and garde.get("reussies") == 4,
+                 "reussies=%s complet=%s" % (garde.get("reussies"), garde.get("complet")))
+        check("la tentative vaine est tout de meme tracee",
+                 bool(garde.get("derniere_tentative_vaine")),
+                 garde.get("derniere_tentative_vaine") or "aucune trace")
+
+        # 3. Un ECHEC REEL, lui, doit bien remplacer : c'est un verdict, pas une
+        # absence de verdict. Sans quoi un modele qui se degrade resterait promu.
+        releve.consigner(rapport("glm-4.7-flash-local", "ollama_chat/glm-4.7-flash", 1,
+                                 "local", "http://host.docker.internal:11434"))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        garde = reg.get("glm-4.7-flash-local", {})
+        check("un echec REEL remplace bien le verdict precedent",
+                 garde.get("reussies") == 1 and garde.get("complet") is False,
+                 "reussies=%s complet=%s" % (garde.get("reussies"), garde.get("complet")))
+
+        # 4. La distinction est PERSISTEE, pas seulement affichee.
+        check("echouees, ignorees et concluante sont ecrits",
+                 all(k in garde for k in ("echouees", "ignorees", "concluante")),
+                 "champs presents : %s" % ", ".join(sorted(garde)))
+
+        # 5. CONTRE-EPREUVE : l'ancienne regle, qui ecrasait sans condition, doit
+        # etre VUE par cette epreuve. Sans elle, les cas d'avant ne prouvent rien.
+        reg2 = {"modeles": {"x": {"reussies": 4, "complet": True, "concluante": True}}}
+        entree_vaine = {"reussies": 0, "complet": False, "concluante": False}
+        reg2["modeles"]["x"] = dict(entree_vaine)          # l'ancienne regle
+        check("contre-epreuve : l'ancienne regle est bien VUE",
+                 reg2["modeles"]["x"]["reussies"] == 0,
+                 "sans garde, le 4/4 devient 0/4")
+    finally:
+        releve.PLATEFORME = ancien_root
+        shutil.rmtree(bac, ignore_errors=True)
 
 
 def test_ruche() -> None:
