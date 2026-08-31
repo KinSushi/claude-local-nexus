@@ -366,6 +366,43 @@ def main() -> int:
                         "%s : '%s' (%s) retombe sur '%s' (%s) — un repli ne "
                         "peut aller que vers plus de confidentialite"
                         % (label, source, src_domain, target, dst_domain))
+                # TOUS LES ALIAS D'UN MEME COMPTE SONT UN SEUL AMONT.
+                #
+                # Le contrôle de direction ci-dessus compare des DOMAINES :
+                # `cloud -> cloud` a le même domaine des deux côtés, donc
+                # `src_domain != dst_domain` est faux et la règle ne se
+                # déclenche jamais. Le trou est exactement là.
+                #
+                # Or les modèles Ollama Cloud partagent tous un compte et
+                # donc un plafond. Un 429 « too many concurrent requests »
+                # ne peut pas être rattrapé par un alias qui partage la
+                # ressource épuisée : le repli TRIPLE la charge qui a causé
+                # le refus. Mesuré par une session voisine sur cet hôte :
+                # 40 connexions sortantes pour 3 appels clients, 46 refus en
+                # cinq minutes pour une seule réponse aboutie.
+                #
+                # Le validateur refusait déjà qu'un modèle se replie sur
+                # lui-même — « un repli vers soi-même tombe en même temps
+                # que sa source ». Il lui manquait de savoir que deux alias
+                # d'un même compte tombent ensemble tout autant.
+                #
+                # LES ROUTEURS SONT EXEMPTS, et ce n'est pas une faveur :
+                # un routeur cloud n'a par définition que des candidats
+                # cloud, et sa liste est un POOL de choix, pas un repli
+                # subi. Le lui interdire reviendrait à interdire le routeur.
+                #
+                # ÉTAT AU MOMENT DE LA POSE : zéro cas hors routeur. Ce
+                # contrôle est donc un cliquet — il ne répare rien
+                # aujourd'hui, il empêche le retour d'un état qui a
+                # réellement existé, avant le correctif d'amplification.
+                if (src_domain == "cloud" and dst_domain == "cloud"
+                        and source not in routers and source != "*"):
+                    errors.append(
+                        "%s : '%s' retombe sur '%s' — meme compte Ollama "
+                        "Cloud, donc meme plafond : un repli vers un quota "
+                        "epuise triple la charge qui a cause le refus"
+                        % (label, source, target))
+
                 # Cas spécial : source "*"
                 if source == "*" and dst_domain and dst_domain != "local":
                     errors.append(

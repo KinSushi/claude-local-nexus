@@ -1248,7 +1248,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde"],
+                                 "cablage", "doc", "sonde", "quota"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1303,6 +1303,8 @@ def main() -> int:
         test_doc_annexe()
     if args.only in (None, "sonde"):
         test_sonde_mcp()
+    if args.only in (None, "quota"):
+        test_quota_partage()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2239,6 +2241,56 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_quota_partage() -> None:
+    """
+    Un repli peut-il encore viser un quota deja epuise ?
+
+    LE TROU. Le validateur garde la DIRECTION des replis -- on ne sort
+    jamais vers plus d'exposition -- en comparant des DOMAINES. Mais
+    `cloud -> cloud` a le meme domaine des deux cotes : la comparaison
+    `src != dst` est fausse et la regle ne se declenche jamais.
+
+    Or tous les modeles Ollama Cloud partagent un compte, donc un plafond.
+    Un 429 « too many concurrent requests » ne peut pas etre rattrape par un
+    alias qui partage la ressource epuisee : le repli TRIPLE la charge qui a
+    cause le refus. Mesure d'une session voisine sur cet hote : 40 connexions
+    sortantes pour 3 appels clients, 46 refus en cinq minutes pour une seule
+    reponse aboutie.
+
+    Le validateur refusait deja qu'un modele se replie sur LUI-MEME. Il lui
+    manquait de savoir que deux alias d'un meme compte tombent ensemble tout
+    autant.
+
+    LES ROUTEURS SONT EXEMPTS, et ce n'est pas une faveur : la liste d'un
+    routeur cloud est un POOL de choix, pas un repli subi. Le lui interdire
+    reviendrait a interdire le routeur.
+
+    CE QUI A ETE VERIFIE PLUTOT QUE REPRIS. Le rapport voisin annoncait
+    37 replis cloud -> cloud. Compte dans la configuration REELLE : il y en a
+    DEUX, tous deux portes par `adaptive-router-cloud`, contre 20 arcs
+    cloud -> local qui vont dans le bon sens. Le chiffre decrivait sans doute
+    l'etat d'avant le correctif d'amplification. Le controle reste utile : il
+    ne repare rien aujourd'hui, il empeche le retour d'un etat qui a existe.
+    """
+    print("\n--- QUOTA PARTAGE : un repli peut-il viser un plafond epuise ? ---")
+    epreuve = os.path.join(ROOT, "scripts", "epreuve_quota_partage.py")
+    if not os.path.isfile(epreuve):
+        skip("quota partage", "epreuve_quota_partage.py introuvable")
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=420)
+    except subprocess.TimeoutExpired:
+        check("quota partage", False, "pas de reponse en 420 s")
+        return
+    sortie = (r.stdout or "")
+    detecte = "la regle detecte" in sortie
+    check("le validateur refuse un repli vers le meme compte", detecte,
+          [l.strip() for l in sortie.splitlines() if l.startswith("configuration FAUTIVE")][:1]
+          or ["aucune ligne de verdict (code %s)" % r.returncode])
 
 
 def test_cablage_epreuves() -> None:
