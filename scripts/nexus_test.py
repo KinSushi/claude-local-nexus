@@ -1247,7 +1247,7 @@ def main() -> int:
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
-                                 "terminal", "noms", "registre"],
+                                 "terminal", "noms", "registre", "atomique"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1292,6 +1292,8 @@ def main() -> int:
         test_noms_js()
     if args.only in (None, "registre"):
         test_registre_epreuves()
+    if args.only in (None, "atomique"):
+        test_ecriture_atomique()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2057,6 +2059,64 @@ def test_registre_epreuves() -> None:
     check("la reprise annonce ce qu'elle saute",
           "deja mesure(s), repris la ou on en etait" in code_releve,
           "le nombre saute est imprime")
+
+
+def test_ecriture_atomique() -> None:
+    """
+    Le docstring promettait une suppression qui n'avait pas lieu.
+
+    `_atomic_write` annonce « en cas d'exception, le fichier temporaire est
+    supprime ». C'etait faux pour le cas le plus probable : si `write_func`
+    levait, le `finally` fermait le fichier, l'exception remontait, et le
+    second try/except -- seul a supprimer -- n'etait JAMAIS atteint. Le
+    temporaire restait sur disque a chaque echec d'ecriture.
+
+    Une documentation qui affirme une garantie inexistante est pire qu'une
+    absence de garantie : on cesse de verifier ce qu'on croit acquis.
+
+    Trouve le 2026-08-31 par une vague de relecture, puis confirme en
+    ouvrant le fichier -- le signalement seul ne vaut pas preuve.
+    """
+    import shutil as _shutil
+    import tempfile as _tempfile
+
+    print("\n--- ECRITURE ATOMIQUE : le temporaire disparait-il ? ---")
+
+    try:
+        import nexus_boussole
+    except Exception as exc:
+        skip("ecriture atomique", str(exc).splitlines()[0][:60])
+        return
+
+    dossier = _tempfile.mkdtemp(prefix="epreuve_atomique_")
+    try:
+        cible = os.path.join(dossier, "cible.txt")
+
+        def casse(fh):
+            raise ValueError("panne simulee pendant l'ecriture")
+
+        leve = False
+        try:
+            nexus_boussole._atomic_write(cible, casse)
+        except ValueError:
+            leve = True
+        restes = os.listdir(dossier)
+        check("l'exception d'ecriture remonte bien", leve, "ValueError propagee")
+        check("aucun temporaire ne survit a l'echec", restes == [],
+              "restants : %s" % (restes or "aucun"))
+
+        def bien(fh):
+            fh.write("contenu")
+
+        nexus_boussole._atomic_write(cible, bien)
+        with io.open(cible, encoding="utf-8") as fh:
+            contenu = fh.read()
+        autres = [f for f in os.listdir(dossier) if f != "cible.txt"]
+        check("l'ecriture normale aboutit et ne laisse rien",
+              contenu == "contenu" and not autres,
+              "contenu=%r restes=%s" % (contenu, autres or "aucun"))
+    finally:
+        _shutil.rmtree(dossier, ignore_errors=True)
 
 
 def test_ruche() -> None:

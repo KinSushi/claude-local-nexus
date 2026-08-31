@@ -33,3 +33,5 @@ audit_ps.json
 audit_ps_err.txt
 lot_ps.json
 batir_lot_ps.py
+backlog.json
+correctifs.json

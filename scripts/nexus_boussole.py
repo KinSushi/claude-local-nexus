@@ -194,16 +194,31 @@ def _atomic_write(path: str, write_func) -> None:
     tmp = tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", newline="\n", delete=False, dir=dir_name
     )
+    # LA PROMESSE DU DOCSTRING, TENUE.
+    #
+    # Il annonce « en cas d'exception, le fichier temporaire est supprime ».
+    # C'etait faux pour le cas le plus probable : si `write_func` levait, le
+    # `finally` fermait le fichier, l'exception remontait, et le second
+    # try/except -- seul a supprimer -- n'etait JAMAIS atteint. Le
+    # temporaire restait sur disque a chaque echec d'ecriture.
+    #
+    # Une documentation qui affirme une garantie inexistante est pire qu'une
+    # absence de garantie : on cesse de verifier ce qu'on croit acquis.
     try:
-        write_func(tmp)
-        tmp.flush()
-        os.fsync(tmp.fileno())
-    finally:
-        tmp.close()
-    try:
+        try:
+            write_func(tmp)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        finally:
+            tmp.close()
         os.replace(tmp.name, path)
     except Exception:
-        os.remove(tmp.name)
+        # La suppression ne doit pas masquer l'erreur d'origine : si le
+        # temporaire a deja disparu, on laisse remonter la vraie cause.
+        try:
+            os.remove(tmp.name)
+        except OSError:
+            pass
         raise
 
 

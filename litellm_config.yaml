@@ -583,9 +583,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "gemma3:1b (expose automatiquement — hors pool : mesure en echec : timed out)"
+      description: "gemma3:1b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gemma4-26b-local
     litellm_params:
@@ -597,9 +597,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "gemma4:26b (expose automatiquement — hors pool : mesure en echec : timed out)"
+      description: "gemma4:26b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gemma4-local
     litellm_params:
@@ -611,9 +611,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "gemma4:latest (expose automatiquement — hors pool : mesure en echec : timed out)"
+      description: "gemma4:latest (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: gpt-oss-20b-local
     litellm_params:
@@ -625,9 +625,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "gpt-oss:20b (expose automatiquement — hors pool : mesure en echec : timed out)"
+      description: "gpt-oss:20b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: granite3.1-moe-1b-local
     litellm_params:
@@ -639,7 +639,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "granite3.1-moe:1b (promu automatiquement — 2.2 s)"
+      description: "granite3.1-moe:1b (promu automatiquement — 2.2 s — mais epreuve 1/4 : detail non releve)"
       nexus_generated: true
       nexus_pool: true
 
@@ -653,7 +653,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "llama3.1:8b (promu automatiquement — 2.6 s)"
+      description: "llama3.1:8b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
       nexus_pool: true
 
@@ -667,7 +667,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "llama3.2:1b (promu automatiquement — 6.5 s)"
+      description: "llama3.2:1b (promu automatiquement — 6.5 s — mais epreuve 1/4 : demande un outil, exploite le resultat d'outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -681,7 +681,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "mistral:7b (promu automatiquement — 2.5 s)"
+      description: "mistral:7b (promu automatiquement — 2.5 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -695,7 +695,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "mixtral:8x7b (promu automatiquement — 56.0 s)"
+      description: "mixtral:8x7b (promu automatiquement — 56.0 s — mais epreuve 0/4 : parle le protocole /v1/messages, demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -709,7 +709,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "phi3.5:latest (promu automatiquement — 2.2 s)"
+      description: "phi3.5:latest (promu automatiquement — 2.2 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -723,7 +723,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "phi3:medium (promu automatiquement — 20.2 s)"
+      description: "phi3:medium (promu automatiquement — 20.2 s — mais epreuve 0/4 : parle le protocole /v1/messages, demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -737,7 +737,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen2.5-coder:7b (promu automatiquement — 2.5 s)"
+      description: "qwen2.5-coder:7b (promu automatiquement — 2.5 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
 
@@ -751,7 +751,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen2.5:0.5b (promu automatiquement — 2.1 s)"
+      description: "qwen2.5:0.5b (promu automatiquement — 2.1 s — mais epreuve 3/4 : detail non releve)"
       nexus_generated: true
       nexus_pool: true
 
@@ -765,7 +765,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen2.5:1.5b (promu automatiquement — 2.1 s)"
+      description: "qwen2.5:1.5b (promu automatiquement — 2.1 s — mais epreuve 2/4 : detail non releve)"
       nexus_generated: true
       nexus_pool: true
 
@@ -807,9 +807,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen3.5:9b (expose automatiquement — hors pool : trop lent : 71.1 s)"
+      description: "qwen3.5:9b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3.6-27b-local
     litellm_params:
@@ -821,7 +821,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "qwen3.6:27b (promu automatiquement — 45.8 s)"
+      description: "qwen3.6:27b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
       nexus_pool: true
 
@@ -863,7 +863,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "qwen3:14b (promu automatiquement — 28.0 s)"
+      description: "qwen3:14b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
       nexus_pool: true
 
@@ -877,9 +877,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 8192
-      description: "qwen3:32b (expose automatiquement — hors pool : trop lent : 102.9 s)"
+      description: "qwen3:32b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
-      nexus_pool: false
+      nexus_pool: true
 
   - model_name: qwen3-8b-local
     litellm_params:
@@ -891,7 +891,7 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen3:8b (promu automatiquement — 22.4 s)"
+      description: "qwen3:8b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
       nexus_pool: true
 
@@ -1503,21 +1503,9 @@ router_settings:
 
     - qwen2.5-32b-local:
         - qwen2.5-coder-14b-local
-        - codegemma-7b-local
-
-    - qwen2.5-coder-14b-local:
-        - codegemma-7b-local
-        - codestral-22b-local
-
-    - codegemma-7b-local:
-        - codestral-22b-local
-        - deepseek-coder-6.7b-local
-
-    - codestral-22b-local:
-        - deepseek-coder-6.7b-local
         - qwen2.5-coder-7b-local
 
-    - deepseek-coder-6.7b-local:
+    - qwen2.5-coder-14b-local:
         - qwen2.5-coder-7b-local
         - qwen2.5-0.5b-local
 
@@ -1557,21 +1545,9 @@ router_settings:
 
     - ultime-recourse-local:
         - granite3.3-8b-local
-        - command-r-local
-
-    - granite3.3-8b-local:
-        - command-r-local
-        - gemma3-1b-local
-
-    - command-r-local:
-        - gemma3-1b-local
-        - gpt-oss-20b-local
-
-    - gemma3-1b-local:
-        - gpt-oss-20b-local
         - granite3.1-moe-1b-local
 
-    - gpt-oss-20b-local:
+    - granite3.3-8b-local:
         - granite3.1-moe-1b-local
         - llama3.1-8b-local
 
@@ -1616,17 +1592,9 @@ router_settings:
 
     - llava-13b-local:
         - llava-7b-local
-        - gemma4-26b-local
-
-    - llava-7b-local:
-        - gemma4-26b-local
-        - gemma4-local
-
-    - gemma4-26b-local:
-        - gemma4-local
         - qwen3-vl-8b-local
 
-    - gemma4-local:
+    - llava-7b-local:
         - qwen3-vl-8b-local
         - qwen3.6-27b-local
 
@@ -1734,64 +1702,40 @@ context_window_fallbacks:
 
   # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
   - qwen3-coder-30b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - qwen2.5-coder-32b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - deepseek-coder-33b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - codestral-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - qwen2.5-32b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - qwen2.5-coder-14b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - llama3.2-3b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - phi3-mini-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - ultime-recourse-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
-
-  - codegemma-7b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - codestral-22b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
-
-  - command-r-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
-
-  - deepseek-coder-6.7b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - gemma3-1b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - gpt-oss-20b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - granite3.1-moe-1b-local:
       - glm-4.7-flash-local
@@ -1814,12 +1758,12 @@ context_window_fallbacks:
       - granite3.3-8b-local
 
   - phi3.5-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - phi3-medium-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - qwen2.5-coder-7b-local:
       - glm-4.7-flash-local
@@ -1834,8 +1778,8 @@ context_window_fallbacks:
       - granite3.3-8b-local
 
   - qwen3-14b-local:
-      - codegemma-7b-local
-      - deepseek-coder-6.7b-local
+      - granite3.1-moe-1b-local
+      - llama3.1-8b-local
 
   - qwen3-8b-local:
       - glm-4.7-flash-local
@@ -1857,12 +1801,6 @@ context_window_fallbacks:
       - qwen3-vl-8b-local
 
   - llava-7b-local:
-      - qwen3-vl-8b-local
-
-  - gemma4-26b-local:
-      - qwen3-vl-8b-local
-
-  - gemma4-local:
       - qwen3-vl-8b-local
 
   - qwen3.6-27b-local:

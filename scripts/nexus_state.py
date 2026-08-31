@@ -120,6 +120,19 @@ def run(args, timeout=TIMEOUT_RUN):
         )
         if result.stderr:
             print(result.stderr, file=sys.stderr)
+        # UN ECHEC N'EST PAS UNE SORTIE VIDE.
+        #
+        # `stdout` etait rendu sans jamais regarder le code de retour. Un
+        # `git status` lance hors d'un depot rend 128 et une sortie VIDE :
+        # indiscernable, pour l'appelant, d'un arbre de travail propre. Le
+        # tableau de bord affichait alors « propre » la ou il aurait fallu
+        # « inconnu » -- une panne presentee comme un etat sain.
+        #
+        # `None` est deja le signal d'echec de cette fonction, rendu par la
+        # branche d'exception ci-dessous : les appelants le traitent donc
+        # deja. On ne cree pas un second vocabulaire.
+        if result.returncode != 0:
+            return None
         return result.stdout.strip()
     except (subprocess.SubprocessError, OSError, subprocess.TimeoutExpired) as exc:
         # FileNotFoundError est déjà une sous‑classe d'OSError.
