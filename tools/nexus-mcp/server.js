@@ -2409,12 +2409,36 @@ async function callTool(name, args) {
           {
             role: "system",
             content:
+              // INTERDIRE D'INVENTER N'EST PAS INTERDIRE DE SYNTHETISER.
+              //
+              // Le premier jet de ce correctif serrait si fort contre la
+              // fabrication qu'il supprimait la raison d'etre de l'etage :
+              // « degage ce qui relie les fichiers entre eux ». Mesure du
+              // 2026-08-31, sur deux resumes substantiels : la « synthese »
+              // rendue etait une RECONCATENATION quasi mot pour mot des deux
+              // resumes, ~7000 jetons pour redire ce qui figurait juste
+              // au-dessus. Sur du redondant, c'est du gaspillage ; le lecteur
+              // apprend a sauter la section, et le jour ou elle dit quelque
+              // chose, il la saute aussi.
+              //
+              // La distinction juste n'est pas « ne rien ajouter » mais
+              // « n'ajouter aucun FAIT ». Rapprocher, opposer, nommer une
+              // dependance ou une tension entre deux resumes ne fabrique
+              // rien : c'est un travail sur ce qui est deja la, et c'est
+              // exactement ce qu'on lui demande.
               "Tu recois des RESUMES de fichiers, jamais les fichiers eux-memes. " +
-              "Tu produis une synthese de ces resumes et RIEN d'autre. " +
-              "N'ajoute aucune information qui ne soit pas litteralement dans les " +
-              "resumes fournis : n'infere pas, ne devine pas, ne complete pas. " +
-              "Si les resumes ne suffisent pas, dis-le en une phrase et arrete-toi. " +
-              "Ne declare jamais qu'un fichier est vide : tu n'as pas les fichiers.",
+              "Ton travail est de les RELIER : ce qu'ils ont en commun, ce qui " +
+              "les oppose, ce que l'un suppose de l'autre. Ne recopie pas les " +
+              "resumes -- ils sont deja affiches au-dessus de toi, les repeter " +
+              "ne sert a rien. " +
+              "N'affirme aucun FAIT qui ne soit pas dans les resumes fournis : " +
+              "pas de detail technique devine, pas de nom de fonction ou de " +
+              "champ que tu n'as pas lu. Rapprocher deux resumes n'est pas " +
+              "inventer ; ajouter un fait absent, si. " +
+              "Si les resumes n'ont aucun rapport entre eux, dis-le en une " +
+              "phrase et arrete-toi. " +
+              "Ne declare jamais qu'un fichier est vide ou absent : tu n'as pas " +
+              "les fichiers, seulement des resumes.",
           },
           {
             role: "user",

@@ -52,6 +52,37 @@ except Exception as e:  # pragma: no cover
 DELAI_SONDE_DEFAUT = 900
 
 
+def _avec_modele(arguments: dict) -> dict:
+    """Ajoute le modele demande, s'il y en a un. Ne force jamais rien."""
+    modele = _modele_sonde()
+    if modele:
+        arguments = dict(arguments)
+        arguments["model"] = modele
+    return arguments
+
+
+def _modele_sonde():
+    """Alias a employer, ou None pour laisser le pont choisir son defaut.
+
+    CE QUI MANQUAIT, mesure le 2026-08-31. La sonde ne pouvait pas choisir
+    son plan : elle prenait toujours le defaut du pont, `glm-4.7-flash-local`.
+    Sur cet hote sans GPU, un resume de deux fichiers ordinaires du depot a
+    depasse DIX MINUTES par ce chemin, quand le meme appel en cloud rend en
+    une quinzaine de secondes.
+
+    Consequence : la seule sonde du depot n'exercait que le plan le plus
+    lent, donc en pratique n'exercait presque jamais rien -- elle expirait
+    avant. C'est ce qui a fait conclure a une panne du pont dans une session
+    voisine, alors que le pont travaillait.
+
+    Le defaut reste le plan LOCAL, gratuit et prive : sonder ne doit pas
+    faire sortir des donnees sans qu'on l'ait demande. NEXUS_PROBE_MODEL
+    permet de demander explicitement autre chose.
+    """
+    brut = os.environ.get("NEXUS_PROBE_MODEL")
+    return brut.strip() if brut and brut.strip() else None
+
+
 def _delai_sonde(defaut: int = DELAI_SONDE_DEFAUT) -> int:
     """Delai en secondes, reglable par NEXUS_PROBE_TIMEOUT.
 
@@ -324,7 +355,8 @@ def main() -> int:
         if len(sys.argv) < 3:
             print(f"ERROR: missing path arguments (SERVER={SERVER})", file=sys.stderr)
             return 1
-        out = call_tool("nexus_summarize", {"paths": sys.argv[2:]})
+        out = call_tool("nexus_summarize",
+                        _avec_modele({"paths": sys.argv[2:]}))
         print(out)
         exit_code = 0 if _probe_success(out, exige_modele=True) else 1
 
