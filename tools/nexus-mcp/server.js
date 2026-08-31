@@ -711,20 +711,60 @@ function observer(evenement) {
 //
 // L'alias est inscrit AVANT l'appel interne : c'est ce qui arrete la
 // recursion, `chat()` appelant cette fonction en tete.
+// DEUX drapeaux, et non un seul, parce qu'ils repondent a deux questions
+// differentes que l'unique Set confondait :
+//   _reveilEnCours    un reveil est-il EN TRAIN de se faire ?  (garde d'auto-appel)
+//   _modelesReveilles un reveil a-t-il REUSSI ?                (ne pas refaire)
+// L'ancien Set unique servait aux deux, donc marquait « reveille » un modele
+// dont le reveil venait d'expirer -- voir reveillerModele().
+const _reveilEnCours = new Set();
 const _modelesReveilles = new Set();
 
-async function reveillerModele(model) {
+async function reveillerModele(model, timeoutMs) {
   // Un modele distant n'a pas de poids a charger ici : le reveiller serait
   // une depense sans objet, et sur un plan facture, une depense tout court.
   const plan = planOf(model);
   if (!/^local\b/i.test(plan)) return;
   if (_modelesReveilles.has(model)) return;
-  _modelesReveilles.add(model);
+
+  // CE QUI ETAIT FAUX, et mesure chez une session voisine : le drapeau etait
+  // pose AVANT la tentative. Un reveil qui EXPIRAIT etait donc enregistre
+  // comme reussi, et le modele n'etait plus jamais reveille ensuite.
+  // qwen3.6-27b-local a ainsi echoue DEUX FOIS SUR DEUX -- le second appel
+  // ne beneficiant d'aucun reveil, precisement parce que le premier avait
+  // rate. Un drapeau qui ne peut pas rougir ne mesure rien.
+  //
+  // Mais ce placement n'etait pas QUE un defaut : chat() appelle cette
+  // fonction a sa premiere ligne, donc le `chat` ci-dessous la rappelle
+  // aussitot. Le drapeau precoce etait aussi la garde d'auto-appel. La
+  // deplacer sans la remplacer aurait produit une recursion infinie -- et
+  // memoriser une promesse partagee, un interblocage : l'appel interieur
+  // attendrait ce que seul l'appel exterieur peut resoudre.
+  // D'ou deux drapeaux : celui-ci garde la recursion et la concurrence,
+  // l'autre n'enregistre que le succes.
+  if (_reveilEnCours.has(model)) return;
+  _reveilEnCours.add(model);
+
+  // LE BUDGET VIENT DE L'APPELANT, et non d'un nombre grave dans le code.
+  // Mesure ce jour contre le moteur en direct : qwen3.6:27b demande 31 s a
+  // froid et 2 s a chaud ; le releve du depot donne 61,8 s pour
+  // glm-4.7-flash. Les 15 s ecrites ici ne chargeaient donc PAS un modele de
+  // dix-sept gigaoctets : le reveil expirait a coup sur, sur les modeles
+  // memes qu'il existait pour couvrir.
+  // Un modele qui ne charge pas dans le budget de l'appelant faisait de
+  // toute facon echouer l'appel : il n'y a rien de plus a proteger.
+  const budget = Math.max(15000, timeoutMs || 0);
   try {
-    await chat(model, [{ role: "user", content: "ping" }], 1, 15000);
+    await chat(model, [{ role: "user", content: "ping" }], 1, budget);
+    _modelesReveilles.add(model);
   } catch (err) {
+    // PAS de relance. Le reveil est une optimisation, jamais un prerequis :
+    // propager l'erreur ici annulerait l'appel reel que chat() s'apprete a
+    // faire, et transformerait un chargement lent en panne franche.
     log("reveil de " + model + " sans reponse (" +
         String(err && err.message).slice(0, 60) + ") — le moteur charge encore");
+  } finally {
+    _reveilEnCours.delete(model);
   }
 }
 
@@ -735,7 +775,7 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // nexus_ask, nexus_summarize, nexus_context, mapReduce et les autres --
   // plutot que trois appels a maintenir separement, qu'un quatrieme outil
   // oublierait le jour de sa creation.
-  await reveillerModele(model);
+  await reveillerModele(model, timeoutMs);
   const t = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
   const depart = Date.now();
   const corps = { model, messages, max_tokens: maxTokens || 2048 };

@@ -1250,7 +1250,7 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee", "semaphore", "mentions", "protocole",
+                                 "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota"],
                         help="ne joue qu'une famille de tests")
@@ -1287,6 +1287,8 @@ def main() -> int:
         test_portee_import()
     if args.only in (None, "semaphore"):
         test_semaphore_local()
+    if args.only in (None, "reveil"):
+        test_reveil_modele()
     if args.only in (None, "mentions"):
         test_mentions_reponse()
     if args.only in (None, "protocole"):
@@ -1525,6 +1527,34 @@ def test_semaphore_local() -> None:
     """
     jouer_epreuve_node("epreuve_semaphore.js", "semaphore local",
                        "SEMAPHORE DU PLAN LOCAL : la borne tient-elle ?")
+
+
+def test_reveil_modele() -> None:
+    """
+    Un reveil qui ECHOUE peut-il etre rejoue ?
+
+    CE QUI ETAIT FAUX, et mesure chez une session voisine : le drapeau
+    `_modelesReveilles` etait pose AVANT la tentative de reveil. Un reveil
+    qui expirait s'enregistrait donc comme REUSSI, et le modele n'etait plus
+    jamais reveille. qwen3.6-27b-local a echoue deux fois sur deux -- non pas
+    deux incidents, mais un seul mecanisme qui se repete.
+
+    C'est un fail-open par construction : la branche non prevue -- l'echec --
+    prend la valeur « autoriser », et le second passage ne peut plus rien
+    corriger puisque l'etat dit que tout va bien. La meme forme que le garde
+    d'agent qui imprimait « deny » en sortant zero.
+
+    Le budget aggravait la chose : 15 s graves dans le code contre 31 s
+    mesurees a froid pour qwen3.6:27b (2 s a chaud). Le reveil expirait a
+    coup sur, sur les modeles memes qu'il existait pour couvrir.
+
+    CONTRE-EPREUVE jouee : verte sur le code sain, rouge -- et NOMMANT le cas
+    -- sur chacun des trois defauts remis un par un. Un rouge muet ne compte
+    pas : la relance tuait d'abord le harnais en rejet non intercepte, sans
+    dire ce qui avait lache.
+    """
+    jouer_epreuve_node("epreuve_reveil.js", "reveil des modeles locaux",
+                       "REVEIL DU PLAN LOCAL : un echec peut-il se rejouer ?")
 
 
 def jouer_epreuve_node(fichier: str, etiquette: str, titre: str) -> None:
