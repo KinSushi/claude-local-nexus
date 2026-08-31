@@ -2961,7 +2961,7 @@ messages de commit et ce fichier.
 | **Lenteur du pont MCP** | >120 s contre 10,6 s en direct. L'hypothèse de la ruée sur le cache est **réfutée** (CACHE_MS 60 s, concurrence bornée) | mesurée, inexpliquée |
 | **P4 : six familles rendent vide à 2 200 jetons** | `mesure_rendu_vide.py` livré et câblé, jamais joué sur les neuf familles | jouer l'outil, deux passes par modèle |
 | **`--fusionner` : cause non établie** | sous `true`, deux familles ont déclaré les fichiers vides ; la session voisine a rétracté sa cause | reproduire sans clause d'échappement |
-| **Contrat §3 périmé** | il annonce Ollama sur `127.0.0.1:11435` ; mesuré, **11434 répond, 11435 non** | corriger le contrat |
+| ~~Contrat §3 périmé~~ | **FERMÉ le 31/08** : 11434 répond (`{"version":"0.33.1"}`), 11435 non. Le contrat confondait le moteur natif et le conteneur du profil `embedded`, que §22 dit lui-même non démarré | corrigé, avec la mesure inscrite en §3.1 |
 | **40 `.bak` dans `scripts/.nexus/`** | signalés en ALERTE à chaque passage de la porte | données de l'opérateur |
 | **Promotion sans démotion** | les épreuves promeuvent, ne démeuvent jamais ; une promotion peut tenir sur un seul passage | décisions réservées à l'opérateur |
 

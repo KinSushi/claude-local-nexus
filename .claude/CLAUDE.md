@@ -542,7 +542,7 @@ The repository currently defines the following infrastructure characteristics:
 | PostgreSQL         | `postgres:16`                         |
 | Redis              | `redis:7-alpine`                      |
 | LiteLLM            | `ghcr.io/berriai/litellm:main-latest` |
-| Ollama host port   | `127.0.0.1:11435`                     |
+| Ollama host port   | `127.0.0.1:11434` (mesure, voir 3.1)   |
 | LiteLLM host port  | `127.0.0.1:4000`                      |
 | Persistent storage | Docker volumes                        |
 | Tracing            | Langfuse Cloud                        |
@@ -550,6 +550,31 @@ The repository currently defines the following infrastructure characteristics:
 The repository currently explicitly forces Ollama toward CPU execution and disables Vulkan in the Docker configuration.
 
 Do not remove these settings unless GPU execution has been deliberately revalidated.
+
+---
+
+## 3.1 The host port was measured, not assumed — and the contract had it wrong
+
+Corrected 2026-08-31. Sections 3 and 4 both announced the host-native Ollama
+engine on `127.0.0.1:11435`. Measured the same day, twice:
+
+```
+127.0.0.1:11434/api/version  ->  {"version":"0.33.1"}
+127.0.0.1:11435/api/version  ->  no response
+```
+
+11434 is Ollama's own default; 11435 is the port the **containerised** engine
+publishes under the `embedded` profile — which section 22 already says is not
+started. The two were conflated, and the figure that survived describes an
+engine nobody runs.
+
+It cost something before being caught: a first attempt at exposing resident
+models targeted the gateway instead of the engine, and would have returned an
+empty list forever without saying so. The address had to be measured before
+the code could be specified.
+
+**A frozen measurement lies the next day** — the rule this repository borrowed
+from its neighbour (§0) and had, here, stopped applying to itself.
 
 ---
 
@@ -561,7 +586,7 @@ Current host interfaces:
 
 ```text
 Ollama:
-127.0.0.1:11435
+127.0.0.1:11434
 
 LiteLLM:
 127.0.0.1:4000
