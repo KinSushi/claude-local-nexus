@@ -57,6 +57,14 @@ def chemin_ecrit(charge) -> str:
     return ""
 
 
+# CE GARDE EST AGNOSTIQUE A L OUTIL : il se cale sur la presence d un
+# champ `file_path` dans tool_input, jamais sur un nom d outil. `None` le
+# dit explicitement, pour que le controle « gardes accordes » ne l exige
+# pas -- et pour qu un futur lecteur ne prenne pas l absence de constante
+# pour un oubli. Voir nexus_garde_shell.py pour le motif complet.
+OUTILS_JUGES = None
+
+
 def main() -> int:
     try:
         brut = sys.stdin.read()

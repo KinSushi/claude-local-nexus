@@ -116,6 +116,14 @@ def refuser(chemin_affiche: str) -> None:
         pass
 
 
+# CE GARDE EST AGNOSTIQUE A L'OUTIL : il se cale sur la presence d'un
+# champ `file_path` ou `notebook_path`, jamais sur un nom d'outil.
+# `None` le dit explicitement, pour que le controle ne l'exige pas --
+# et pour qu'un futur lecteur ne prenne pas l'absence de constante
+# pour un oubli.
+OUTILS_JUGES = None
+
+
 def main() -> None:
     try:
         brut = sys.stdin.read()

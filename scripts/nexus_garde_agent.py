@@ -208,6 +208,11 @@ def _handle_workflow(charge: Dict[str, Any]) -> int:
     )
     return _refuse(reason)
 
+# Les outils que ce garde JUGE -- voir OUTILS_JUGES dans
+# nexus_garde_shell.py pour le motif.
+OUTILS_JUGES = ("Agent", "Workflow")
+
+
 def main() -> int:
     """
     Point d'entree du garde.

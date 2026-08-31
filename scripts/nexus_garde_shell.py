@@ -82,6 +82,13 @@ def refuser(motif):
     sys.exit(0)
 
 
+# Les outils que ce garde JUGE. Compare au matcher de
+# .claude/settings.json par le controle « gardes accordes » de
+# nexus_conformite.py : les deux etages avaient deja diverge, le
+# 2026-08-31, sans que rien ne puisse le dire.
+OUTILS_JUGES = ("Bash", "PowerShell")
+
+
 def detecter_cas_a(commande):
     """
     Heredoc Python portant un antislash dans son corps.

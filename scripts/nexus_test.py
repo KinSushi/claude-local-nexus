@@ -29,6 +29,8 @@ import io
 import json
 import os
 import re
+import contextlib
+import shutil
 import subprocess
 import sys
 import random
@@ -1252,7 +1254,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps"],
+                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1317,6 +1319,8 @@ def main() -> int:
         test_sujets_filtre()
     if args.only in (None, "shellps"):
         test_garde_shell_powershell()
+    if args.only in (None, "accord"):
+        test_gardes_accordes()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2283,6 +2287,39 @@ def test_sonde_mcp() -> None:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
 
 
+def test_gardes_accordes() -> None:
+    """
+    Les deux etages d un garde disent-ils la meme chose ?
+
+    CE QUI ETAIT FAUX, et vecu le 2026-08-31 : le matcher de settings.json
+    disait « Bash|PowerShell » pendant que le garde disait `!= "Bash"`.
+    PowerShell etait ROUTE vers un garde qui refusait de le juger -- un
+    correctif a moitie, qui SE LIT comme fait. Rien ne pouvait le dire : le
+    trou n a ete trouve qu en soumettant a la main la meme commande sous deux
+    noms d outil.
+
+    Chaque garde DECLARE desormais ce qu il juge (OUTILS_JUGES), et le
+    controle compare cette declaration au routage. `None` dit l agnosticisme
+    -- nexus_garde_lecture se cale sur un champ `file_path`, jamais sur un nom
+    d outil -- et ce n est PAS un oubli.
+
+    Le SENS du desaccord decide de la severite, et ce n est pas un detail :
+    route mais non declare BLOQUE, car l outil arrive et rien ne le juge ;
+    declare mais non route ALERTE, car c est une declaration morte. Bloquer
+    sur le second arreterait le travail pour une capacite inemployee.
+
+    Pose ce jour, ce controle a trouve dans la minute un trou reel :
+    nexus_garde_edition.py ne declarait pas ce qu il juge.
+
+    CONTRE-EPREUVE : quatre defauts remis un par un -- agnosticisme confondu
+    avec constante absente, BLOQUE degrade en ALERTE, settings illisible
+    bloquant, matchers non reunis. Chacun rougit en nommant son cas.
+    """
+    print("")
+    print("--- GARDES ACCORDES : matcher et garde disent-ils la meme chose ? ---")
+    jouer_epreuve_python("epreuve_gardes_accordes.py", "gardes accordes")
+
+
 def test_garde_shell_powershell() -> None:
     """
     Le garde shell juge-t-il PowerShell, avec SES PROPRES regles ?
@@ -2395,6 +2432,31 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
     if not os.path.isfile(epreuve):
         skip(etiquette, "%s introuvable" % fichier)
         return
+
+    # LE BYTECODE EST PURGE AVANT DE JOUER, ET CE N'EST PAS UNE PRECAUTION
+    # DECORATIVE.
+    #
+    # Python valide un `.pyc` sur la paire (mtime, taille) de la source. Une
+    # contre-epreuve qui echange deux chaines de MEME LONGUEUR -- « ALERTE »
+    # et « BLOQUE » font six caracteres -- et rejoue dans la meme seconde
+    # laisse ces deux valeurs inchangees : Python sert le bytecode PERIME.
+    #
+    # Mesure du 2026-08-31 : une epreuve verte est devenue rouge sans qu'une
+    # seule ligne du depot ait change, et un echec a ete attribue au mauvais
+    # cas. Une contre-epreuve peut ainsi declarer un defaut NON DETECTE --
+    # un faux vert sur le mecanisme meme qui existe pour detecter les faux
+    # verts.
+    #
+    # `PYTHONDONTWRITEBYTECODE` ne suffit pas : il empeche d'ECRIRE un cache,
+    # pas de LIRE celui qui existe. Seule la suppression tranche.
+    #
+    # L'echec de suppression n'est PAS bloquant : un cache verrouille par un
+    # autre processus ne doit pas empecher la suite de tourner. Le risque
+    # revient alors au niveau d'avant, il n'augmente pas.
+    cache = os.path.join(ROOT, "scripts", "__pycache__")
+    with contextlib.suppress(Exception):
+        shutil.rmtree(cache, ignore_errors=True)
+
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",

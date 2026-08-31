@@ -36,6 +36,7 @@ Codes de sortie :
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import io
 import json
@@ -93,6 +94,126 @@ def ignorer(nom: str, motif: str) -> None:
 # ----------------------------------------------------------------------
 # Contrôles statiques — ne demandent aucun service en marche
 # ----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# LES DEUX ETAGES D'UN GARDE DOIVENT DIRE LA MEME CHOSE.
+#
+# CE QUI ETAIT FAUX, et vecu dans le tour meme du 2026-08-31 : le matcher de
+# .claude/settings.json disait « Bash|PowerShell » pendant que le garde disait
+# `!= "Bash"`. PowerShell etait donc ROUTE vers un garde qui refusait de le
+# juger -- un correctif a moitie, qui SE LIT comme fait.
+#
+# Rien ne pouvait le dire, et le trou n'a ete trouve qu'en soumettant a la
+# main la meme commande sous deux noms d'outil. Ce controle rend la derive
+# impossible : chaque garde DECLARE ce qu'il juge, et la declaration est
+# comparee au routage.
+#
+# Le sens du desaccord decide de la severite, et ce n'est pas un detail :
+#   route mais non declare  -> BLOQUE : l'outil arrive et rien ne le juge ;
+#   declare mais non route  -> ALERTE : une declaration morte, jamais un trou.
+# Bloquer sur le second arreterait le travail pour une capacite inemployee.
+# ---------------------------------------------------------------------------
+
+
+def controle_gardes_accordes(racine):
+    """Controle la coherence entre les matchers du settings.json et les
+    declarations OUTILS_JUGES des gardes. Retourne (etat, detail)."""
+    # 1. lecture du settings.json
+    settings_path = os.path.join(racine, ".claude", "settings.json")
+    try:
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception as e:
+        return ("ALERTE", f"settings.json illisible : {e}")
+
+    # 2. extraction des scripts et des outils routes
+    scripts_routes = {}          # nom_fichier -> set(outils)
+    hooks_by_event = settings.get("hooks", {})
+    # Le nom de l'evenement ne sert pas ici : un hook est juge sur son
+    # matcher et son script, quel que soit l'evenement qui le declenche.
+    for _event, blocs in hooks_by_event.items():
+        if not isinstance(blocs, list):
+            continue
+        for bloc in blocs:
+            matcher = bloc.get("matcher")
+            if not matcher:
+                continue          # bloc sans matcher n'apporte aucun outil
+            outils = set(matcher.split("|"))
+            for hook in bloc.get("hooks", []):
+                cmd = hook.get("command", "")
+                # extraction du nom de fichier du script
+                # on retire les guillemets éventuels en fin de chaine
+                cmd = cmd.strip().strip('"').strip("'")
+                # dernier segment apres '/' ou '\'
+                nom = cmd.replace("\\", "/").split("/")[-1]
+                if not nom.startswith("nexus_garde_"):
+                    continue
+                scripts_routes.setdefault(nom, set()).update(outils)
+
+    # 3. lecture de chaque garde et verification
+    nb_gardes = len(scripts_routes)
+    for nom_fichier, outils_routes in scripts_routes.items():
+        garde_path = os.path.join(racine, "scripts", nom_fichier)
+        try:
+            with open(garde_path, "r", encoding="utf-8") as f:
+                source = f.read()
+        except Exception as e:
+            return ("ALERTE", f"{nom_fichier} : impossible de lire le fichier ({e})")
+
+        # parsing avec ast
+        try:
+            tree = ast.parse(source, filename=nom_fichier)
+        except Exception as e:
+            return ("ALERTE", f"{nom_fichier} : parsing ast impossible ({e})")
+
+        # UNE SENTINELLE, ET NON None.
+        #
+        # `OUTILS_JUGES = None` est une DECLARATION -- celle de
+        # nexus_garde_lecture, qui se cale sur la presence d'un champ
+        # `file_path` et non sur un nom d'outil. La confondre avec « constante
+        # absente » ferait crier a l'alerte sur le seul cas que ce controle
+        # doit tolerer, et rendrait le test suivant inatteignable.
+        ABSENT = object()
+        outils_declare = ABSENT
+        for node in ast.iter_child_nodes(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == "OUTILS_JUGES":
+                        try:
+                            outils_declare = ast.literal_eval(node.value)
+                        except Exception:
+                            outils_declare = ABSENT   # valeur non litterale
+                        break
+            if outils_declare is not ABSENT:
+                break
+
+        # 4. comparaison
+        if outils_declare is ABSENT:
+            return ("ALERTE", f"{nom_fichier} : ne declare pas ce qu'il juge")
+        if outils_declare is None:
+            # Agnostique, et il le DIT. Rien a exiger de lui.
+            continue
+
+        # on attend un tuple ou une liste
+        if not isinstance(outils_declare, (list, tuple)):
+            # type inattendu -> alerte
+            return ("ALERTE", f"{nom_fichier} : OUTILS_JUGES a un type invalide")
+
+        declared_set = set(outils_declare)
+
+        # outil route mais non declare -> bloque
+        for outil in outils_routes:
+            if outil not in declared_set:
+                return ("BLOQUE", f"{nom_fichier} : {outil} est route mais non declare")
+
+        # outil declare mais non route -> alerte
+        for outil in declared_set:
+            if outil not in outils_routes:
+                return ("ALERTE", f"{nom_fichier} : {outil} est declare mais non route")
+
+    # 5. aucun desaccord
+    return ("OK", f"{nb_gardes} garde(s) accordes a leur matcher")
+
+
 def controle_config_valide() -> None:
     """Le validateur d'intégrité, tel quel : il est déjà la référence."""
     r = subprocess.run(
@@ -1169,6 +1290,24 @@ def passerelle_vivante() -> bool:
         return False
 
 
+def controle_gardes_accordes_wrap() -> None:
+    """
+    Adapte controle_gardes_accordes a la sequence, qui appelle sans argument
+    et attend que le controle NOTE lui-meme.
+
+    La fonction jugee garde sa signature (racine) -> (etat, detail) : c est
+    ainsi qu elle est eprouvable sur un depot jetable, sans toucher au vrai
+    .claude/settings.json.
+    """
+    etat, detail = controle_gardes_accordes(ROOT)
+    if etat == "OK":
+        noter("gardes accordes", True, BLOQUANT, detail)
+    elif etat == "ALERTE":
+        noter("gardes accordes", False, AVERTISSEMENT, detail)
+    else:
+        noter("gardes accordes", False, BLOQUANT, detail)
+
+
 def controle_runtime(avant_demarrage: bool) -> None:
     if avant_demarrage:
         ignorer("releve operationnelle", "controle avant demarrage")
@@ -1406,6 +1545,7 @@ def main() -> int:
         controle_doc_python,
         controle_mcp_double_portee,
         controle_garde_agent,
+        controle_gardes_accordes_wrap,
     ):
         try:
             controle()
