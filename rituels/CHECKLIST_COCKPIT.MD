@@ -2405,3 +2405,30 @@ publication.**
 la forme qui réussit (§16.3). Deux défauts d'application corrigés ici : trois
 `\r` induits par une consigne ambiguë de ma part, et une coquille
 `for v v in`.
+
+### 17.4 Ce qui n'est PAS clos, et que j'ai d'abord annoncé comme clos
+
+Cette section a d'abord affirmé « le rituel ne bloque plus sur STATE.md ».
+**C'est faux, et la mesure suivante l'a démenti dans la minute.**
+
+État réel, mesuré :
+
+* **l'oscillation a disparu** — deux régénérations consécutives donnent zéro
+  ligne différente, là où l'écart était garanti ;
+* **le blocage subsiste** — juste après un commit, le fichier est réécrit
+  (mtime modifié) alors que le diff ne montre que **deux lignes, toutes deux
+  volatiles** : l'horodatage et l'empreinte du commit.
+
+La cause de cette réécriture n'est **pas identifiée**. `ecrire_si_change`,
+éprouvée isolément, refuse bien d'écrire quand seules des volatiles diffèrent
+— et repère bien les six lignes volatiles du fichier réel. Quelque chose
+diffère donc entre les lignes que `main()` construit et celles qui sont sur
+le disque, sans apparaître au diff.
+
+**La publication fonctionne** en commitant `STATE.md` juste avant — c'est ce
+qui a été fait, et la vitrine est publiée et prouvée (`6635b086` des deux
+côtés). Mais c'est un contournement, pas une fermeture.
+
+Trois hypothèses restent ouvertes, aucune vérifiée : un écart de nombre de
+lignes en fin de fichier, une normalisation d'encodage entre l'écriture et la
+relecture, ou un champ qui varie sans apparaître au diff de git.
