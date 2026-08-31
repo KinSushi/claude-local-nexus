@@ -303,7 +303,12 @@ def charger_index_annexe(racine: Path) -> list[tuple[str, str, int, int]]:
     #
     # CE QUI ETAIT FAUX : cette ligne portait `("shell_docs", "lecons")`,
     # deux noms graves. Un corpus neuf depose sous `references/` etait donc
-    # indexe et VERIFIE -- 201 offsets relus par seek, tous concordants --
+    # indexe -- et pourtant INTROUVABLE a la consultation.
+    #
+    # (Ce commentaire disait « et VERIFIE -- 201 offsets relus par seek ».
+    #  C'etait FAUX : ce nombre vient de construire_index, qui indexe la
+    #  documentation Python, et ne dit rien des annexes. Corrige le
+    #  2026-08-31 en cablant la verification qui manquait.)
     # et pourtant INTROUVABLE a la consultation. Produit, verifie,
     # invisible.
     #
@@ -613,6 +618,60 @@ def main(argv=None) -> int:
         # construction — c'est la garde qui porte la preuve, pas ce message.
         print(f"offsets relus par seek : {v} vérifiés, tous concordants "
               f"(une seule discordance aurait levé RuntimeError)")
+
+        # LES ANNEXES SONT VERIFIEES AUSSI -- elles ne l'etaient PAR PERSONNE.
+        #
+        # CE QUI ETAIT FAUX : `verifier_offsets_annexe` etait definie et
+        # appelee nulle part. Le compte affiche juste au-dessus vient de
+        # `construire_index`, qui indexe la documentation Python : il ne dit
+        # rien des corpus annexes.
+        #
+        # La consequence n'est pas cosmetique. Un corpus etranger dont les
+        # offsets seraient decales -- calcules en caracteres au lieu d'octets,
+        # LE piege du format -- serait servi en silence : chaque consultation
+        # rendrait le contenu d'une AUTRE entree, et rien ne le signalerait
+        # puisque le fichier est parfaitement lisible.
+        #
+        # Trouve en absorbant un corpus produit par une instance voisine : le
+        # producteur etant independant, rien ne garantissait que ses offsets
+        # suivent la meme convention que les notres.
+        entrees_annexe = charger_index_annexe(racine)
+        if entrees_annexe:
+            # L'ECHANTILLON EST REPARTI PAR CORPUS, ET NON SUR LA LISTE A
+            # PLAT.
+            #
+            # CE QUI ETAIT FAUX, mesure a l'instant meme ou la verification
+            # fut posee : 60 tirages repartis sur 3769 entrees ne touchent
+            # jamais un corpus de 28. Les 28 offsets du corpus voisin ont ete
+            # decales de 7 octets -- la construction passait, code 0, aucun
+            # mot. Un vert qui ne peut pas rougir.
+            #
+            # Augmenter l'echantillon ne reglerait rien : a 1,6 % de
+            # couverture il faudrait le multiplier par soixante pour ESPERER.
+            # Repartir par corpus rend structurellement impossible qu'un
+            # corpus entier echappe -- et c'est le seul cas qui compte, un
+            # corpus etant produit par un outil unique dont l'erreur, s'il en
+            # fait une, porte sur TOUTES ses entrees.
+            par_corpus = {}
+            for entree in entrees_annexe:
+                par_corpus.setdefault(entree[1], []).append(entree)
+            bons = mauvais = 0
+            for _chemin, lot in sorted(par_corpus.items()):
+                b, m = verifier_offsets_annexe(racine, lot, combien=12)
+                bons += b
+                mauvais += m
+            corpus = len({e[1] for e in entrees_annexe})
+            if mauvais:
+                # On ne leve PAS : un corpus annexe fautif ne doit pas empecher
+                # l'index Python d'exister. Mais on le DIT, et le code de sortie
+                # le porte -- un avertissement qu'aucun code de sortie
+                # n'accompagne finit par ne plus etre lu.
+                print(f"ANNEXES : {mauvais} offset(s) DISCORDANT(S) sur "
+                      f"{bons + mauvais} verifies, {len(entrees_annexe)} entrees, "
+                      f"{corpus} corpus")
+                return 1
+            print(f"annexes : {bons} offset(s) verifies sur "
+                  f"{len(entrees_annexe)} entrees, {corpus} corpus")
         return 0
     if args.paquets:
         paquets(racine)

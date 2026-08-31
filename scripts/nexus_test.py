@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer"],
+                                 "cibles", "ingerer", "resumer", "offsets"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1328,6 +1328,8 @@ def main() -> int:
         test_ingerer()
     if args.only in (None, "resumer"):
         test_resumer()
+    if args.only in (None, "offsets"):
+        test_offsets_annexes()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2292,6 +2294,41 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_offsets_annexes() -> None:
+    """
+    Les offsets d un corpus annexe sont-ils verifies, et cela mord-il ?
+
+    DEUX DEFAUTS trouves en absorbant un corpus produit par une instance
+    voisine -- donc par un producteur INDEPENDANT, dont rien ne garantissait
+    qu il suive la meme convention d offsets.
+
+      1. `verifier_offsets_annexe` etait DEFINIE et appelee nulle part. Le
+         message « offsets relus par seek : 201 verifies » vient de
+         `construire_index`, qui indexe la documentation PYTHON : il ne dit
+         rien des annexes. J avais moi-meme cite ce nombre comme preuve que
+         mon corpus ingere etait verifie -- une inference, faite parce que
+         j ingerais 201 entrees au moment ou je lisais 201.
+
+      2. Une fois cablee, la verification NE MORDAIT PAS : les 28 offsets du
+         corpus voisin tous decales de 7 octets donnaient une construction
+         verte, code 0, aucun mot. 60 tirages repartis sur une liste A PLAT de
+         3769 entrees ne touchent jamais un corpus de 28.
+
+    Le remede n est pas d agrandir l echantillon -- a 1,6 % de couverture il
+    aurait fallu le multiplier par soixante pour ESPERER -- mais de le
+    repartir PAR CORPUS. Un corpus est produit par un outil unique : si cet
+    outil se trompe, il se trompe sur TOUTES ses entrees.
+
+    CE QUE LE DEFAUT AURAIT COUTE : un corpus aux offsets decales est
+    parfaitement LISIBLE. Chaque consultation rend simplement le contenu d une
+    AUTRE entree. L index annonce un sujet, le seek en rend un autre, et rien
+    ne le signale.
+    """
+    print("")
+    print("--- OFFSETS ANNEXES : verifies, et la verification mord-elle ? ---")
+    jouer_epreuve_python("epreuve_offsets_annexes.py", "offsets des annexes")
 
 
 def test_resumer() -> None:

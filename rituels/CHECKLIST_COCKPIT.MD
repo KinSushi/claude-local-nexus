@@ -3825,13 +3825,14 @@ python scripts/nexus_ingerer.py --source docs/securite --nom securite \
 | Defaut | Ce qu'il causait |
 | --- | --- |
 | identifiants finissant par un **compteur** | le chercheur matche le DERNIER segment (`bash.trap` → « trap ») : corpus correct et **introuvable** |
-| chargeur portant `("shell_docs", "lecons")` **grave** | corpus neuf indexe et **verifie** (201 offsets relus par seek) et pourtant invisible |
+| chargeur portant `("shell_docs", "lecons")` **grave** | corpus neuf indexe et pourtant invisible a la consultation |
 | `type` ecrit dans l'index, **pas dans l'objet** | chaque entree d'un corpus sain s'annoncait « type non reconnu » |
 | resume du modele local ecrit dans l'objet, **pas dans l'index** | « 4 resumes produits » et **aucun** dans la colonne que le petit modele lit |
 
 Le deuxieme a produit **deux verites contradictoires dont aucune ne mentait** :
 « 201 offsets verifies » et « aucun symbole ne correspond ». Elles portaient
-sur deux chemins de code differents.
+sur deux chemins de code differents -- et le « 201 » ne portait meme pas sur
+les annexes : il vient de l'index PYTHON. Corrige en §36.
 
 Le quatrieme est la **troisieme occurrence du jour** de « produit, non
 consomme » — apres `modelesResidents` ecrite et jamais appelee, et le format
@@ -3876,4 +3877,94 @@ plutot que d'ecrire au hasard dans un fichier qui fonctionne.
 | la securite recolte sa documentation | l'outil l'attend ; c'est son geste (§33) |
 | les 33 000 fichiers | l'outil existe maintenant ; le choix de ce qu'on absorbe reste entier |
 | resumer un GROS corpus | mesure sur 4 entrees. 200 entrees feraient ~17 lots ; le cout reste a mesurer |
+
+---
+
+## 36. LE CORPUS VOISIN ABSORBE — et ce qu'un producteur INDEPENDANT revele
+
+L'instance chargee de la securite (§33) a livre son corpus et son extracteur.
+Emprunte **par copie**, jamais lu en place, conformement au contrat §0.
+
+### 36.1 Le contrat de format tient des deux bouts
+
+`references/securite_confinement/` — **28 entrees**, produites par un outil
+que je n'ai pas ecrit, absorbees par le lecteur bati ici : decouvertes, lues
+a leur offset, rendues. Leur index porte meme **six colonnes** au lieu de cinq
+— une colonne `convention` inseree — et le lecteur tient, ne lisant que les
+trois premieres.
+
+C'est la validation que mon propre essai ne pouvait pas donner : le producteur
+etait moi.
+
+### 36.2 Une affirmation FAUSSE de ma part, corrigee
+
+J'ai ecrit deux fois — dans un commentaire de code et au cockpit §35 — que le
+corpus ingere etait « **verifie**, 201 offsets relus par seek ». **C'etait
+faux.** Ce nombre vient de `construire_index`, qui indexe la documentation
+PYTHON. Il ne dit rien des annexes.
+
+J'ai lu 201 au moment ou j'ingerais 201 entrees, et attribue la coincidence.
+La classe est nommee dans ce depot : *l'instrument qui repond a la question
+voisine*.
+
+### 36.3 Le fait grave etait derriere : rien ne verifiait les annexes
+
+`verifier_offsets_annexe` etait **definie et appelee nulle part**. Un corpus
+etranger aux offsets decales — calcules en caracteres au lieu d'octets, **le**
+piege du format — aurait ete servi en silence : chaque consultation rendant le
+contenu d'une AUTRE entree, sans que rien ne le signale, le fichier etant
+parfaitement lisible.
+
+**Et une fois cablee, la verification NE MORDAIT PAS.** Contre-epreuve : les
+28 offsets du corpus voisin tous decales de 7 octets → construction verte,
+code 0, aucun mot. **60 tirages repartis sur une liste a plat de 3769 entrees
+ne touchent jamais un corpus de 28.** Je venais de poser un vert qui ne peut
+pas rougir.
+
+Le remede n'est pas d'agrandir l'echantillon — a 1,6 % de couverture il
+faudrait le multiplier par soixante pour *esperer* — mais de le **repartir par
+corpus**. Un corpus est produit par un outil unique : s'il se trompe, il se
+trompe sur TOUTES ses entrees.
+
+Ferme par `scripts/epreuve_offsets_annexes.py`, 5 cas, cablee
+(`--only offsets`), avec son corpus jetable a offsets decales.
+
+### 36.4 La confrontation des deux extracteurs — 26 commandes
+
+| | |
+| --- | --- |
+| accords | **19** |
+| desaccords | **4** |
+| indetermines | 3 |
+
+L'arbitrage donne tort **aux deux**, sur des cas differents :
+
+| commande | le mien | le leur | verdict |
+| --- | --- | --- | --- |
+| `Set-Content f.txt 'x'` | `[]` | `['f.txt']` | **eux** — trou chez moi |
+| `Out-File -FilePath f.txt` | `[]` | `['f.txt']` | **eux** |
+| `bash -c 'echo x > f.txt'` | `["f.txt'"]` | `[]` | **ni l'un ni l'autre** |
+| `eval 'echo x > f.txt'` | `["f.txt'"]` | `[]` | idem |
+
+Le troisieme est le plus instructif : mon chemin est **malforme** —
+l'apostrophe fermante de l'argument y est collee — et leur liste vide est un
+**fail-open**, l'ecriture devenant invisible. La bonne reponse est `['f.txt']`.
+
+### 36.5 Le correctif a ete TENTE et RETIRE
+
+Le rendu du banc a casse **13 cas sur 16**. Restaure immediatement : *on ne
+laisse pas un correctif regressif en place le temps de reflechir* — la meme
+regle que la session voisine a appliquee a sa greffe le matin. 16/16 apres
+restauration.
+
+### 36.6 Reste OUVERT, avec son sol exact
+
+* **Set-Content, Add-Content, Out-File** ne sont pas reconnus par mon
+  extracteur. Le sol est ci-dessus, mesure ; le correctif reste a produire.
+* **L'apostrophe orpheline** en fin de cible non citee. Anti-controle a tenir :
+  un nom de fichier peut legitimement contenir une apostrophe au MILIEU.
+* **Leur fail-open sur `bash -c`** — a leur transmettre : leur extracteur rend
+  `[]` la ou l'ecriture a lieu.
+* Leur `cibles_shell.py`, `eprouver_cibles.py` (19 cas) et `mesurer_classes.py`
+  (28 vecteurs mesures) sont **sur disque** ici, jamais encore joues en entier.
 

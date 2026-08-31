@@ -1,0 +1,29 @@
+id	offset_octets	longueur_octets	type	convention	resume
+securite.sed_i_chemin_litteral	0	675	vecteur	sas-securite	sed -i chemin litteral ACCIDENT VU
+securite.cp_destination_litterale	675	675	vecteur	sas-securite	cp destination litterale ACCIDENT VU
+securite.dd_of_litteral	1350	652	vecteur	sas-securite	dd of= litteral ACCIDENT VU
+securite.tee_litteral	2002	640	vecteur	sas-securite	tee litteral ACCIDENT VU
+securite.tilde_vu_non_resolu	2642	668	vecteur	sas-securite	tilde : vu, non resolu ACCIDENT VU
+securite.lien_vu_non_resolu	3310	676	vecteur	sas-securite	lien : vu, non resolu EVASION VU
+securite.variable_d_environnement	3986	681	vecteur	sas-securite	variable d'environnement ACCIDENT AVEUGLE
+securite.sed_i_bak_colle	4667	659	vecteur	sas-securite	sed -i.bak colle ACCIDENT VU
+securite.curl_o	5326	638	vecteur	sas-securite	curl -o ACCIDENT AVEUGLE
+securite.wget_o	5964	638	vecteur	sas-securite	wget -O ACCIDENT AVEUGLE
+securite.rsync_option	6602	660	vecteur	sas-securite	rsync option ACCIDENT AVEUGLE
+securite.rsync_destination	7262	667	vecteur	sas-securite	rsync destination ACCIDENT AVEUGLE
+securite.tar_c	7929	630	vecteur	sas-securite	tar -C EVASION AVEUGLE
+securite.git_work_tree	8559	668	vecteur	sas-securite	git --work-tree ACCIDENT AVEUGLE
+securite.script_tiers	9227	635	vecteur	sas-securite	script tiers ACCIDENT AVEUGLE
+securite.ecriture_indirecte	9862	667	vecteur	sas-securite	ecriture indirecte ACCIDENT AVEUGLE
+securite.env	10529	642	vecteur	sas-securite	$env: ACCIDENT AVEUGLE
+securite.bash_c	11171	634	vecteur	sas-securite	bash -c EVASION AVEUGLE
+securite.sh_c	11805	626	vecteur	sas-securite	sh -c EVASION AVEUGLE
+securite.eval	12431	623	vecteur	sas-securite	eval EVASION AVEUGLE
+securite.find_exec	13054	653	vecteur	sas-securite	find -exec EVASION AVEUGLE
+securite.substitution	13707	659	vecteur	sas-securite	substitution EVASION AVEUGLE
+securite.descripteur_ouvert	14366	673	vecteur	sas-securite	descripteur ouvert EVASION AVEUGLE
+securite.commande_distante	15039	674	vecteur	sas-securite	commande distante EVASION AVEUGLE
+securite.source	15713	633	vecteur	sas-securite	source EVASION AVEUGLE
+securite.puits_anodin	16346	648	vecteur	sas-securite	puits : anodin AUCUNE AVEUGLE
+securite.lecture_pure	16994	652	vecteur	sas-securite	lecture pure AUCUNE AVEUGLE
+securite.chevron_gauche_lecture	17646	679	vecteur	sas-securite	chevron gauche : lecture AUCUNE AVEUGLE
