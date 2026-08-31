@@ -320,17 +320,14 @@ def installed_models(location: dict | None = None) -> dict[str, float] | None:
     Les deux échouaient *ouverts*, ensemble, exactement là où le module
     prétend fermer.
 
-    Un inventaire illisible n'est pas un inventaire vide : l'appelant doit
-    s'arrêter, pas supposer.
-
-    Un seul moteur est interrogé, celui que `ollama_location()` désigne
-    comme servant. Les deux inventaires étaient auparavant fusionnés, et
-    `setdefault` donnait la priorité au conteneur : un modèle présent dans
-    le seul volume Docker était attribué au moteur de l'hôte, qui ne
-    l'avait pas — donc un verdict rendu sur un poids que ce moteur-là
-    n'aurait jamais pu charger. Le budget de `build_profile()` vient
-    désormais du même moteur que cet inventaire : les deux ne peuvent plus
-    décrire des machines différentes.
+    Les modèles Ollama Cloud apparaissent sans poids (« - ») **ou** portent
+    le suffixe «:cloud».  Le premier critère (poids «-») était déjà filtré,
+    mais ce n'est pas suffisant : si Ollama venait à publier un poids pour
+    les références cloud, le critère unique laisserait ces entrées passer,
+    les faisant entrer dans l'inventaire local comme s'ils étaient
+    chargeables.  Le second critère (suffixe «:cloud») empêche cette
+    dérive.  Ainsi, on exclut une entrée dès que **l'un OU l'autre** des
+    critères est vrai.
     """
     if location is None:
         location = ollama_location()
@@ -342,13 +339,17 @@ def installed_models(location: dict | None = None) -> dict[str, float] | None:
     sizes: dict[str, float] = {}
     for line in out.splitlines()[1:]:
         parts = line.split()
-        # Les modèles Ollama Cloud apparaissent sans poids (« - ») : ils
-        # pèsent rien ici, et leur donner un poids nul les ferait entrer
-        # dans l'inventaire local comme s'ils y étaient chargeables.
-        if len(parts) >= 4 and parts[2] != "-":
-            sizes.setdefault(parts[0], parse_size(parts[2] + parts[3]))
+        # On attend au moins 4 colonnes : nom, id, poids, âge.
+        if len(parts) < 4:
+            continue
+        name = parts[0]
+        weight_col = parts[2]
+        # Exclure les modèles cloud : poids «-» OU suffixe «:cloud».
+        if weight_col == "-" or name.endswith(":cloud"):
+            continue
+        # Le poids est composé de la valeur et de l'unité (ex. «18 GB»).
+        sizes.setdefault(name, parse_size(weight_col + parts[3]))
     return sizes
-
 
 # ----------------------------------------------------------------------
 # Profil et verdicts

@@ -256,7 +256,6 @@ def controle_auteur(fenetre_heures: Optional[Tuple[str, str]] = None) -> Tuple[O
     hash_re = re.compile(r"^[0-9a-f]{40}$")
     code_ext = (".py", ".ps1", ".js")
     ignore_dirs = ("rituels/",)  # répertoire à ignorer
-    ignore_ext = (".md", ".yaml", ".json", ".txt")
 
     # Mots‑clés (sans accents, casse ignorée)
     keywords = [
@@ -346,10 +345,7 @@ def main():
             print('Error: cannot measure delegated calls')
         __import__('sys').exit(exit_code)
     ratio = delegated / commits if commits != 0 else 0
-    if delegated >= commits and commits > 0:
-        exit_code = 0
-    else:
-        exit_code = 1
+    exit_code = 0 if delegated >= commits and commits > 0 else 1
     if json_out:
         json_mod = __import__('json')
         print(json_mod.dumps({
