@@ -55,6 +55,11 @@ lot_outillage.json
 brouillon_outillage.txt
 references/shell_docs/
 references/lecons/
+# Livres COMMERCIAUX empruntes PAR COPIE a un depot voisin. Jamais
+# publies : ce depot est une vitrine PUBLIQUE, et ce qui part sur
+# GitHub reste indexe meme efface ensuite. L'ignorance est posee
+# AVANT la copie, jamais apres.
+references/livres/
 patchs.jsonl
 reparations.jsonl
 lot_patchs.json

@@ -418,7 +418,11 @@ def _rendre_doc(objet: dict) -> str:
     if prov:
         ligne = objet.get("ligne")
         bouts.append("source : %s%s" % (prov, (" ligne %s" % ligne) if ligne else ""))
-    texte = str(objet.get("texte") or "")
+    # Deux corpus, deux orthographes : « texte » ici, « text » chez un
+    # producteur anglophone. Accepter les deux coute une ligne ; ne pas
+    # les accepter rend un objet vide qui se lit comme une absence de
+    # contenu -- le pire des trois etats.
+    texte = str(objet.get("texte") or objet.get("text") or "")
     if texte.strip():
         lignes_txt = texte.splitlines()
         bouts.append("\n".join(lignes_txt[:30]))
@@ -547,7 +551,22 @@ def rendre_symbole_annexe(objet: dict) -> str:
         lignes.append(_rendre_doc(objet))
 
     if not lignes:
-        lignes.append("[type de corpus non reconnu : %r]" % typ)
+        # UN TYPE INCONNU N'EST PAS UN OBJET VIDE.
+        #
+        # CE QUI ETAIT FAUX : tout type non prevu criait « corpus non
+        # reconnu », y compris quand l'objet portait un titre et un texte
+        # parfaitement rendables -- un corpus sain s'annoncant casse a chaque
+        # entree. Corriger cela type par type est un remede qui se represente
+        # a chaque corpus neuf ; le troisieme l'a montre.
+        #
+        # On distingue donc RENDABLE de VIDE. Le cri reste, mais seulement
+        # quand il dit vrai.
+        rendable = _rendre_doc(objet)
+        if rendable.strip():
+            lignes.append("[type « %s », rendu generique]" % typ)
+            lignes.append(rendable)
+        else:
+            lignes.append("[type de corpus non reconnu : %r]" % typ)
         for cle in ("titre", "nom_court", "resume", "signature", "texte",
                     "docstring_brut"):
             valeur = objet.get(cle)

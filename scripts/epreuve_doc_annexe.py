@@ -144,6 +144,49 @@ def jouer() -> int:
     )
 
     # -----------------------------------------------------------------
+    # Cas 5 bis – TYPE INCONNU MAIS RENDABLE : on rend, sans crier.
+    #
+    # CE QUI ETAIT FAUX : tout type non prevu criait « corpus non reconnu »,
+    # y compris quand l'objet portait un titre et un texte parfaitement
+    # rendables. Un corpus sain -- 18 000 entrees de livres empruntes --
+    # s'annoncait casse a chaque entree.
+    #
+    # Corriger cela type par type est un remede qui se represente a chaque
+    # corpus neuf : c'est le troisieme qui l'a montre. On distingue donc
+    # RENDABLE de VIDE.
+    rendable = {"type": "section", "titre": "Un titre de chapitre",
+                "texte": "Le contenu du chapitre, parfaitement lisible."}
+    texte_rendable = nexus_doc.rendre_symbole_annexe(rendable)
+    condition5b = (
+        isinstance(texte_rendable, str)
+        and "Un titre de chapitre" in texte_rendable
+        and "parfaitement lisible" in texte_rendable
+        and "non reconnu" not in texte_rendable
+    )
+    verifier(
+        "Cas 5 bis – type inconnu mais rendable",
+        condition5b,
+        "le contenu remonte, sans cri",
+    )
+
+    # Cas 5 ter – ANTI-CONTROLE : l'alarme reste quand elle dit vrai.
+    #
+    # Sans ce cas, une correction qui supprimerait le cri partout passerait --
+    # et un objet reellement vide se lirait comme une absence de contenu,
+    # « le pire des trois etats » selon ce fichier lui-meme.
+    vide = {"type": "inconnu-total"}
+    texte_vide2 = nexus_doc.rendre_symbole_annexe(vide)
+    condition5t = (
+        isinstance(texte_vide2, str)
+        and "non reconnu" in texte_vide2
+    )
+    verifier(
+        "Cas 5 ter – l'alarme reste quand elle dit vrai",
+        condition5t,
+        "un objet sans rien a montrer doit le DIRE",
+    )
+
+    # -----------------------------------------------------------------
     # Cas 6 – chercher doit privilégier le vrai suffixe avant la sous‑chaine
     index_manuel = [
         ("bash.trap", "shell.jsonl", 0, 10),

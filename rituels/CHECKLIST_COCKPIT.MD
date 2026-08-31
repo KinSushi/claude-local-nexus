@@ -4352,3 +4352,79 @@ Il cherchait l'ouverture de bloc `python` et rendait « aucun debut de code
 reconnu » sur un rendu **JavaScript parfaitement bon**. Elargi une fois, aux
 six ouvertures possibles — plutot que contourne.
 
+---
+
+## 43. LES LIVRES A2A / MCP, EMPRUNTES PAR COPIE — et le risque qu'ils portaient
+
+L'operateur signale des livres sur A2A et MCP dans les depots voisins, « et
+meme du code source ». Emprunte, mais pas sans mesurer d'abord.
+
+### 43.1 Ce qui a ete trouve
+
+`_REFERENCE_LIVRES/` du depot voisin porte des corpus **deja au format que ce
+lecteur consomme** — `index.tsv` + `symbols.jsonl`. Aucune ingestion
+necessaire : une copie suffit.
+
+| corpus | entrees | matiere A2A / MCP / agents |
+| --- | --- | --- |
+| `epub` | 11 376 | **502 lignes d'index** |
+| `packt` | 6 697 | **373 lignes** |
+| `pdf_references` | 21 | 0 |
+
+**875 entrees** de matiere pertinente.
+
+### 43.2 LE RISQUE, ET IL ETAIT REEL
+
+La matiere est faite de **livres commerciaux** — « 30 Agents Every AI Engineer
+Must Build » est un titre Packt. Or `references/` **est publie** : sept
+fichiers y etaient deja suivis.
+
+Copier 51 Mo d'oeuvres sous droits dans une vitrine **publique** aurait ete une
+faute irreversible : *ce qui part sur GitHub reste indexe meme efface ensuite*
+— la raison d'etre du controle absolu de §0.3.
+
+**L'ignorance a donc ete posee AVANT la copie, et prouvee avant :**
+
+```
+.gitignore:62:references/livres/   references/livres/x/essai.txt
+```
+
+Puis verifie apres : **0 fichier suivi** sous `references/livres/`. Le depot
+avait deja la convention — `python_libs_docs`, `shell_docs` et `lecons` sont
+ignores individuellement — et elle a ete suivie plutot qu'inventee.
+
+### 43.3 Ce que cela donne
+
+L'index couvre desormais **21 842 entrees sur 7 corpus**, offsets verifies par
+corpus. Le contenu des livres remonte a son offset, verifie.
+
+### 43.4 Un troisieme corpus qui s'annoncait casse
+
+`[type de corpus non reconnu : 'section']` sur **chacune** des 18 000 entrees.
+La meme classe que pour le type `doc`, corrigee une premiere fois en ajoutant
+une branche.
+
+**Ajouter une branche PAR TYPE est un remede qui se represente a chaque corpus
+neuf** — le troisieme l'a montre. Le repli distingue maintenant deux etats que
+le cri confondait :
+
+* l'objet porte de quoi etre rendu -> on le rend, en NOMMANT le type sans le
+  declarer fautif ;
+* l'objet ne porte rien -> le cri est justifie, et il enumere les champs
+  presents.
+
+LOI 1 a signale que **la branche neuve n'etait couverte par rien** — le cas
+existant testait un objet SANS contenu et exercait toujours l'alarme. Deux cas
+ajoutes, dont **l'anti-controle** : l'alarme doit RESTER quand elle dit vrai,
+sans quoi un objet reellement vide se lirait comme une absence de contenu.
+
+### 43.5 Reste OUVERT — et c'est une limite de nature, pas un defaut
+
+`nexus_doc.py` est une **recherche par IDENTIFIANT**, pas par contenu. On
+atteint un chapitre en connaissant le nom du livre ; on n'atteint pas « ce que
+les livres disent d'A2A » par le sujet.
+
+Pour cela il faut `nexus_index_build` — une indexation par embeddings sur
+**18 073 entrees**, dont le cout n'est pas mesure. C'est le prochain geste, et
+il se chiffre avant de se faire.
+
