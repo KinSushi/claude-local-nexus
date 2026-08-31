@@ -1128,6 +1128,39 @@ enfreinte. Un paragraphe ne ferme rien.
 > modèles ont subi une tentative sans lendemain après leur vrai verdict, et
 > l'ont gardée.
 
+### Le champ censé rendre la reprise sûre la rendait vaine
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `concluante` jugé sur l'adresse au lieu de `servi` | `FAIT` | `--only registre`, 14 cas dont un contrôle structurel |
+| Les embeddings encore candidats | `FAIT` | configuration rechargée : 44 candidats → 43, plus aucun embedding |
+| Les tâches de fond tuées ici | `CONTOURNÉ` | mesure en premier plan, bornée ; chaque modèle achevé est consigné |
+
+> **Défaut de mon fait, posé il y a une heure, trouvé en lisant les données
+> qu'il produisait.** J'avais écrit `concluante = plan connu ET adresse
+> != "?"`. Or l'adresse amont n'est pas toujours résolvable **même quand
+> l'appel aboutit**. `qwen2.5-0.5b-local` a rendu 3/4, servi par
+> `ollama_chat/qwen2.5:0.5b`, et se voyait marquer `concluante: false`.
+>
+> **Huit entrées dans ce cas, dont trois à 4/4** — gemma4-31b, gemma4,
+> gpt-oss-20b.
+>
+> **La conséquence n'était pas cosmétique.** `deja_mesures()` ne reprend que
+> les verdicts concluants : ces huit modèles auraient été remesurés
+> **indéfiniment**. C'est très exactement le plafond que la reprise devait
+> lever, réintroduit par le champ censé la rendre sûre.
+>
+> Le bon signal était sous la main : `servi`, le nom du modèle qui a
+> réellement répondu. Le registre est réparé **sans rien fabriquer** — le
+> champ dérivé est recalculé à partir de données déjà stockées. Effet
+> immédiat : la reprise passe de 11 à **19** entrées.
+>
+> **Comment il a été trouvé.** Les tâches de fond sont tuées ici, cinq fois,
+> cause inconnue. Plutôt que de relancer une sixième fois à l'identique, j'ai
+> changé de méthode — mesure en premier plan, bornée par le délai de l'outil.
+> C'est en lisant les entrées fraîches que le défaut est apparu. Contourner un
+> défaut est la façon dont il survit.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
