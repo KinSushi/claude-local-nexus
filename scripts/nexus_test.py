@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets"],
+                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1330,6 +1330,10 @@ def main() -> int:
         test_resumer()
     if args.only in (None, "offsets"):
         test_offsets_annexes()
+    if args.only in (None, "sources"):
+        test_conformite_sources()
+    if args.only in (None, "decoupage"):
+        test_decoupage_emoji()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2294,6 +2298,74 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_conformite_sources() -> None:
+    """
+    Deux sources publiees ou actives peuvent-elles mentir sans que rien ne le
+    dise ?
+
+    CE QUI ETAIT FAUX, et les deux ont ete trouves dans le meme tour :
+
+      1. LES CHIFFRES DU README. Il est la VITRINE PUBLIEE. Il portait « 33
+         alias » la ou la configuration en declare 54, et « 40 modeles locaux
+         mesures » la ou le releve en porte 48. Ces chiffres ont ete CITES PAR
+         UN TIERS qui lisait le README, et repris comme vrais. Rien ne
+         rougissait.
+
+      2. LA CONFIGURATION ACTIVE. Le contrat §82 dit « ne jamais supposer que
+         la configuration est active parce que le fichier est correct », et
+         RIEN ne le mecanisait. Mesure : fichier modifie a 10:22, conteneur
+         demarre la veille a 23:41 -- DIX HEURES ET QUARANTE MINUTES de
+         derive. Un alias ajoute entre-temps, deepseek-ocr-local, etait
+         declare sur le disque et repondait « Invalid model name » : une
+         capacite d OCR installee, declaree, inutilisable. Et toute mesure
+         prise contre la passerelle ce jour-la decrivait un processus perime.
+
+    LES SEVERITES SONT RAISONNEES, et c est la moitie du sujet :
+      README divergent    -> BLOQUE : le fichier est publie, et corriger un
+                             nombre est trivial ;
+      configuration derivee -> ALERTE : la conformite tourne AVANT le
+                             demarrage, et bloquer empecherait la sequence qui
+                             redemarre ;
+      source illisible    -> IGNORE : une mesure impossible n est pas une
+                             mesure a zero.
+
+    Les deux controles recoivent leur lecteur en ARGUMENT -- c est ce qui les
+    rend eprouvables sans passerelle ni Docker.
+    """
+    print("")
+    print("--- SOURCES : le README et la configuration active disent-ils vrai ? ---")
+    jouer_epreuve_python("epreuve_conformite_sources.py", "sources de verite")
+
+
+def test_decoupage_emoji() -> None:
+    """
+    Le decoupage coupe-t-il un emoji en deux ?
+
+    DEFAUT SIGNALE par une instance voisine, avec differentiel et
+    reproduction -- un rapport de defaut exemplaire :
+
+        corpus AVEC emojis (10 fichiers sur 184) -> HTTP 500 « surrogates not
+                                                    allowed » sur \\ud83d
+        corpus SANS emoji  (0 sur 106)           -> SUCCES, 470 extraits
+
+    Meme modele, meme appel. Ils ont d abord soupconne le corpus ; leur scan a
+    rendu ZERO fichier fautif sur 184, et c est ce zero qui a retourne
+    l enquete vers l outil. « Avant d accuser une matiere, mesurer si elle
+    porte vraiment le defaut qu on lui prete. »
+
+    CAUSE, confirmee ici : une chaine JavaScript est stockee en UTF-16, et
+    `slice` coupe en UNITES DE CODE, pas en points de code. Un emoji en occupe
+    DEUX. La frontiere a CHUNK_CHARS = 1400 tombait entre les deux, laissant
+    une moitie HAUTE seule -- d ou la « position 1425 » de leur message.
+
+    CE QUE L EPREUVE GARDE EN PLUS DU DEFAUT : qu on ne PERDE RIEN. Un `break`
+    sur cas degenere abandonnerait la fin du texte SANS LE DIRE, et l erreur
+    d origine, elle, se voyait. Une perte silencieuse serait pire.
+    """
+    jouer_epreuve_node("epreuve_decoupage.js", "decoupage des extraits",
+                       "DECOUPAGE : un emoji peut-il etre coupe en deux ?")
 
 
 def test_offsets_annexes() -> None:

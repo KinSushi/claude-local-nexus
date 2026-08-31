@@ -46,7 +46,7 @@ lui donner les modèles **comme outils**.
    ┌────┴──────────────┬──────────────────┐
    ▼                   ▼                  ▼
  LOCAL              OLLAMA CLOUD       ANTHROPIC
- 33 alias           19 alias           4 alias
+ 54 alias           19 alias           4 alias
  coût 0             abonnement Ollama  crédits API
  rien ne sort       sort vers          facturé au token
                     ollama.com
@@ -301,7 +301,7 @@ large.
 Elles sont documentées plutôt que tues.
 
 - **Hôte CPU.** La latence reste la contrainte dominante. Elle ne se déduit
-  pas du nombre de paramètres : sur les 40 modèles locaux mesurés,
+  pas du nombre de paramètres : sur les 48 modèles locaux mesurés,
   `qwen3-coder:30b` commence à répondre en **2,4 s** et `llava:34b` en
   **3,1 s**, quand `qwen3.5:9b` demande **71 s** et `gemma4:12b` **51 s**.
   Un seuil fondé sur la taille aurait gardé les lents et écarté les rapides ;

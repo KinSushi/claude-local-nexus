@@ -4117,3 +4117,104 @@ jets etroits, trois reussites.**
 Et le motif d'extraction, retape six fois dans la journee avec une variante et
 parfois un defaut a chaque fois, a ete pose UNE fois dans le bac a sable.
 
+---
+
+## 39. DEUX SOURCES QUI MENTAIENT — et un emoji coupe en deux
+
+### 39.1 Les chiffres du README, gardes par un controle qui BLOQUE
+
+Le README est la **vitrine publiee**. Il portait « 33 alias » la ou la
+configuration en declare **54**, et « 40 modeles locaux mesures » pour **48**.
+Ces chiffres ont ete **cites par un tiers** qui lisait le README, et repris
+comme vrais — c'est ainsi qu'ils ont ete decouverts.
+
+`controle_readme_chiffres` compare desormais les trois nombres a la
+**configuration declaree** — et non a la passerelle, car la conformite tourne
+AVANT le demarrage : lire la passerelle exigerait qu'elle soit allumee
+precisement quand elle ne l'est pas.
+
+Severite raisonnee : **BLOQUE**, parce que le fichier est publie et que
+corriger un nombre est trivial. La phrase « NN modeles mesures » n'est
+qu'une **ALERTE** : les modeles mesures sont une sous-population des alias, et
+les deux peuvent legitimement differer.
+
+### 39.2 Ce que ce controle a trouve dans la minute suivante
+
+Il annoncait **54 declares** contre **53 exposes**. L'ecart tenait a un seul
+alias : **`deepseek-ocr-local`, declare sur le disque et repondant « Invalid
+model name »**. Une capacite d'OCR installee, declaree, inutilisable — et
+c'est l'entree « exposition a verifier » de §34.4, fermee par la mesure.
+
+### 39.3 La cause : DIX HEURES ET QUARANTE MINUTES de derive
+
+```
+litellm_config.yaml modifie a   10:22
+conteneur litellm demarre a     23:41 la veille
+```
+
+Le contrat §82 dit « ne jamais supposer que la configuration est active parce
+que le fichier est correct ». **Rien ne le mecanisait** — mesure : zero
+occurrence dans les controles.
+
+Consequence plus large : **toute mesure prise contre la passerelle ce jour-la
+decrivait un processus perime**, y compris des comptes que j'ai inscrits en
+documentation.
+
+`controle_config_active` le dit desormais, **en ALERTE et jamais en BLOQUE** :
+bloquer sur « la passerelle sert une configuration perimee » empecherait
+precisement la sequence qui la redemarre. Le detail porte le geste :
+`docker compose restart litellm`.
+
+**Et j'ai accuse ce controle a tort** : son instant m'a paru faux de cinq
+heures. La machine est en **UTC−5**, pas UTC+2 — j'avais deduit le fuseau de
+la langue de l'interface. Inferer d'un signal voisin, exactement la classe que
+ce depot nomme.
+
+### 39.4 Un emoji coupe en deux — defaut signale par l'instance voisine
+
+Rapport exemplaire : symptome verbatim, differentiel, reproduction minimale.
+
+```
+corpus AVEC emojis (10 fichiers sur 184) -> HTTP 500 « surrogates not allowed »
+corpus SANS emoji  (0 sur 106)           -> SUCCES, 470 extraits
+```
+
+Ils ont d'abord soupconne le corpus. Leur scan a rendu **zero fichier fautif
+sur 184**, et c'est ce zero qui a retourne l'enquete vers l'outil. *Avant
+d'accuser une matiere, mesurer si elle porte vraiment le defaut qu'on lui
+prete.*
+
+**Cause confirmee ici, ligne 958** : une chaine JavaScript est stockee en
+UTF-16, et `slice` coupe en **unites de code**, pas en points de code. Un
+emoji en occupe **deux**. La frontiere a `CHUNK_CHARS = 1400` tombait entre
+les deux — d'ou la « position 1425 » de leur message.
+
+**Prouve en vrai** : un corpus portant un emoji **exactement a la frontiere**
+s'indexe maintenant, 5 extraits, aucun 500.
+
+Ce que l'epreuve garde **en plus** du defaut : qu'on ne PERDE RIEN. Un `break`
+sur cas degenere abandonnerait la fin du texte **sans le dire**, et l'erreur
+d'origine, elle, se voyait.
+
+### 39.5 Un FAUX ANTI-CONTROLE dans l'epreuve que je livrais
+
+```python
+for case in ["FORWARD", "REVERSE", "DETAIL COMPLET", "FUITE"]:
+    # nothing to do, verifier already checked
+    pass
+```
+
+Une boucle vide se declarant « deja couverte ». Elle n'affirmait **rien** — un
+vert qui ne peut pas rougir, dans l'epreuve meme qui garde les autres. Le
+cliquet l'a signalee comme variable de boucle inemployee : **un motif de style
+pointant un defaut de fond**. Remplacee par un anti-controle qui joue les
+quatre situations.
+
+### 39.6 Reste OUVERT
+
+| Sujet | Etat |
+| --- | --- |
+| **`.nexus/index.json` est un index UNIQUE** | signale par l'instance voisine : en construire un second ECRASE le premier. Indexer plusieurs corpus demande une racine commune ou un choix. Non traite |
+| la derive de configuration mesuree | le redemarrage est un geste d'operateur ; la tache quotidienne le fait a 04:00 |
+| assertions visant un MOT plutot qu'une valeur | une l'a fait ici, et a casse au premier reformulage. Aucun controle ne garde ce motif |
+

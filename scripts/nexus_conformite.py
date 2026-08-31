@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import datetime
 import hashlib
 import io
 import json
@@ -1308,6 +1309,227 @@ def controle_gardes_accordes_wrap() -> None:
         noter("gardes accordes", False, BLOQUANT, detail)
 
 
+# ---------------------------------------------------------------------------
+# LES CHIFFRES DU README NE SONT GARDES PAR RIEN.
+#
+# Le README est la VITRINE PUBLIEE sur GitHub. Deux de ses chiffres avaient
+# gele : « 33 alias » pour le plan local, la ou la configuration en declare
+# 53, et « 40 modeles locaux mesures » la ou le releve en porte 48.
+#
+# Ils ont ete CITES PAR UN TIERS qui lisait le README, et repris comme vrais.
+# C'est la regle de ce depot -- « une mesure gelee ment le lendemain » --
+# empruntee au depot voisin, appliquee aux pools, au port du moteur, aux
+# corpus annexes, et pas a sa propre vitrine.
+#
+# LA SEVERITE, et elle est raisonnee :
+#   divergence sur les trois alias -> BLOQUE. Le fichier est PUBLIE, et la
+#     correction est triviale : changer un nombre. Un avertissement qu'aucun
+#     code de sortie n'accompagne finit par ne plus etre lu.
+#   phrase « NN modeles mesures » -> ALERTE. Les modeles MESURES sont une
+#     sous-population des alias exposes ; les deux peuvent legitimement
+#     differer, et bloquer la-dessus serait un garde trop large.
+#   configuration illisible -> IGNORE. Une mesure impossible n'est pas une
+#     mesure a zero, et bloquer empecherait de reparer.
+# ---------------------------------------------------------------------------
+
+
+def _alias_declares(racine):
+    """
+    Compte les alias par plan, depuis la CONFIGURATION.
+
+    La conformite tourne AVANT le demarrage : lire la passerelle exigerait
+    qu'elle soit allumee, precisement quand elle ne l'est pas encore. La
+    configuration est la source declaree -- et c'est bien ce que le README
+    decrit quand il ecrit « alias ».
+
+    Leve si la configuration est illisible : l'appelant en fait un IGNORE,
+    car une mesure impossible n'est pas une mesure a zero.
+
+    Les ROUTEURS sont exclus du compte : un alias de routeur ne designe pas un
+    moteur mais une politique, et le tableau du README compte des moteurs.
+    """
+    import yaml
+    with io.open(os.path.join(racine, "litellm_config.yaml"),
+                 encoding="utf-8") as fh:
+        conf = yaml.safe_load(fh)
+    comptes = {"local": 0, "cloud": 0, "anthropic": 0}
+    for entree in (conf.get("model_list") or []):
+        params = entree.get("litellm_params") or {}
+        brut = str(params.get("model") or "")
+        base = str(params.get("api_base") or "")
+        if brut.startswith("auto_router/"):
+            continue
+        if brut.startswith("anthropic/"):
+            comptes["anthropic"] += 1
+        elif "ollama.com" in base:
+            comptes["cloud"] += 1
+        else:
+            comptes["local"] += 1
+    return comptes
+
+
+def controle_readme_chiffres(racine, lire_modeles):
+    """Controle la coherence des chiffres du README avec la passerelle."""
+    # helper pour tronquer le detail a 90 caracteres
+    def _tronque(txt):
+        return txt[:90] if len(txt) > 90 else txt
+
+    # 1. lecture du README
+    chemin = os.path.join(racine, "README.md")
+    try:
+        with io.open(chemin, "r", encoding="utf-8") as f:
+            contenu = f.read()
+    except Exception:
+        return ("ALERTE", _tronque("README absent ou illisible"))
+
+    # 2. appel de lire_modeles une seule fois
+    try:
+        mesures = lire_modeles()
+    except Exception:
+        return ("IGNORE", _tronque("passerelle injoignable : chiffres non verifiables"))
+
+    # verification du dictionnaire attendu
+    if not isinstance(mesures, dict):
+        return ("ALERTE", _tronque("resultat de lire_modeles invalide"))
+
+    # 3. recherche de la ligne avec trois nombres precedes de "alias"
+    pattern_alias = re.compile(r'(\d+)\s+alias.*?(\d+)\s+alias.*?(\d+)\s+alias', re.DOTALL)
+    match = pattern_alias.search(contenu)
+    if not match:
+        return ("ALERTE", _tronque("ligne des trois alias introuvable dans le README"))
+    try:
+        local_r = int(match.group(1))
+        cloud_r = int(match.group(2))
+        anthropic_r = int(match.group(3))
+    except Exception:
+        return ("ALERTE", _tronque("impossible d'extraire les nombres d'alias"))
+
+    # 4. comparaison avec les mesures
+    divergences = []
+    if mesures.get("local") != local_r:
+        divergences.append(f"README dit {local_r} alias locaux, la configuration en declare {mesures.get('local')}")
+    if mesures.get("cloud") != cloud_r:
+        divergences.append(f"README dit {cloud_r} alias cloud, la configuration en declare {mesures.get('cloud')}")
+    if mesures.get("anthropic") != anthropic_r:
+        divergences.append(f"README dit {anthropic_r} alias anthropic, la configuration en declare {mesures.get('anthropic')}")
+    if divergences:
+        # LE COMPTE D'ABORD : le detail est borne a 90 signes, et trois
+        # divergences le depassent. Sans le compte en tete, la troisieme
+        # disparait SANS que rien ne le signale -- « la reponse partielle
+        # rendue sans le dire ». Huit caracteres survivent a toute
+        # troncature.
+        detail = "%d divergence(s) : %s" % (
+            len(divergences), " ; ".join(divergences))
+        return ("BLOQUE", _tronque(detail))
+
+    # 5. recherche de la phrase sur le nombre de modeles locaux mesures
+    pattern_modele = re.compile(r'sur les (\d+) modeles locaux mesures')
+    match_modele = pattern_modele.search(contenu)
+    if match_modele:
+        nb_modele = int(match_modele.group(1))
+        if nb_modele != mesures.get("local"):
+            detail = f"README dit {nb_modele} modeles locaux mesures, la configuration en declare {mesures.get('local')}"
+            return ("ALERTE", _tronque(detail))
+
+    # 6. tout concorde
+    return ("OK", "3 chiffres du README concordent avec la configuration declaree")
+
+def controle_readme_chiffres_wrap() -> None:
+    """Adapte le controle a la sequence, qui appelle sans argument."""
+    etat, detail = controle_readme_chiffres(ROOT, lambda: _alias_declares(ROOT))
+    if etat == "OK":
+        noter("chiffres du README", True, BLOQUANT, detail)
+    elif etat == "IGNORE":
+        noter("chiffres du README", True, IGNORE, detail)
+    elif etat == "ALERTE":
+        noter("chiffres du README", False, AVERTISSEMENT, detail)
+    else:
+        noter("chiffres du README", False, BLOQUANT, detail)
+
+
+
+def _demarrage_passerelle():
+    """
+    L'instant ou le conteneur de la passerelle a demarre.
+
+    LEVE si Docker est absent, si le conteneur n'existe pas ou s'il est
+    arrete : l'appelant en fait un IGNORE. Un conteneur arrete n'est pas une
+    derive -- c'est un conteneur arrete, et le dire autrement enverrait
+    chercher au mauvais endroit.
+    """
+    import datetime
+    import subprocess
+    r = subprocess.run(
+        ["docker", "inspect", "-f", "{{.State.StartedAt}}", "litellm-proxy"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=20)
+    if r.returncode != 0 or not (r.stdout or "").strip():
+        raise RuntimeError("conteneur litellm-proxy introuvable ou arrete")
+    brut = r.stdout.strip()
+    # Docker rend un instant UTC en ISO 8601 ; on le ramene en heure locale,
+    # sans quoi la comparaison avec un mtime local serait decalee du fuseau --
+    # et rendrait une derive fantome ou en masquerait une vraie.
+    txt = brut.replace("Z", "+00:00")
+    if "." in txt:
+        avant, apres = txt.split(".", 1)
+        fuseau = ""
+        for marque in ("+", "-"):
+            if marque in apres:
+                i = apres.index(marque)
+                fuseau = apres[i:]
+                break
+        txt = avant + fuseau
+    inst = datetime.datetime.fromisoformat(txt)
+    return inst.astimezone().replace(tzinfo=None)
+
+
+def controle_config_active(racine, date_demarrage):
+    """Controle si le fichier de config est plus ancien que le demarrage.
+    Retourne (etat, detail) où etat est "OK", "ALERTE" ou "IGNORE".
+    """
+    try:
+        demarrage = date_demarrage()
+    except Exception:
+        return ("IGNORE", "date_demarrage indisponible")
+    try:
+        chemin = os.path.join(racine, "litellm_config.yaml")
+        if not os.path.isfile(chemin):
+            return ("ALERTE", "litellm_config.yaml introuvable")
+        mtime = os.path.getmtime(chemin)
+        modif = datetime.datetime.fromtimestamp(mtime)
+        modif_str = modif.strftime("%Y-%m-%d %H:%M")
+        dem_str = demarrage.strftime("%Y-%m-%d %H:%M")
+        if modif <= demarrage:
+            return ("OK", f"{modif_str} <= {dem_str}")
+        delta = modif - demarrage
+        secs = int(delta.total_seconds())
+        h, r = divmod(secs, 3600)
+        m = r // 60
+        detail = f"{modif_str} > {dem_str} ({h}h{m}m) - docker compose restart litellm"
+        if len(detail) > 90:
+            detail = detail[:90]
+        return ("ALERTE", detail)
+    except Exception as e:
+        msg = str(e)
+        if len(msg) > 90:
+            msg = msg[:90]
+        return ("ALERTE", msg)
+
+def controle_config_active_wrap() -> None:
+    """Adapte le controle a la sequence, qui appelle sans argument."""
+    etat, detail = controle_config_active(ROOT, _demarrage_passerelle)
+    if etat == "OK":
+        noter("configuration active", True, BLOQUANT, detail)
+    elif etat == "IGNORE":
+        noter("configuration active", True, IGNORE, detail)
+    else:
+        # ALERTE et non blocage : la conformite tourne AVANT le demarrage de
+        # la pile. Bloquer sur « la passerelle sert une configuration
+        # perimee » empecherait precisement la sequence qui la redemarre.
+        noter("configuration active", False, AVERTISSEMENT, detail)
+
+
+
 def controle_runtime(avant_demarrage: bool) -> None:
     if avant_demarrage:
         ignorer("releve operationnelle", "controle avant demarrage")
@@ -1546,6 +1768,8 @@ def main() -> int:
         controle_mcp_double_portee,
         controle_garde_agent,
         controle_gardes_accordes_wrap,
+        controle_readme_chiffres_wrap,
+        controle_config_active_wrap,
     ):
         try:
             controle()

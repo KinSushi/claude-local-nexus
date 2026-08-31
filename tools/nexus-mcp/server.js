@@ -950,14 +950,89 @@ function walk(dir, out) {
   return out;
 }
 
+// UNE FRONTIERE DE DECOUPE NE COUPE PAS UN EMOJI EN DEUX.
+//
+// DEFAUT SIGNALE le 2026-08-31 par une instance voisine, avec differentiel :
+//     corpus AVEC emojis (10 sur 184)  -> HTTP 500 « surrogates not allowed »
+//     corpus SANS emoji  (0 sur 106)   -> SUCCES, 470 extraits
+// Meme modele, meme appel. La seule variable etait la presence d'emojis.
+//
+// CAUSE : une chaine JavaScript est stockee en UTF-16, et `slice` coupe en
+// UNITES DE CODE, pas en points de code. Un emoji en occupe DEUX. La
+// frontiere a CHUNK_CHARS = 1400 tombait entre les deux, laissant une moitie
+// HAUTE seule -- qui ne peut pas s'encoder en UTF-8. D'ou la « position
+// 1425 » de leur message d'erreur.
+//
+// CE QUE LE CORRECTIF DOIT AUSSI GARANTIR, et c'est ce qui l'a fait eprouver
+// avant d'etre greffe : ne RIEN PERDRE. Un `break` sur cas degenere
+// abandonnerait la fin du texte SANS LE DIRE -- et l'erreur d'origine, elle,
+// se voyait. Une perte silencieuse serait pire que le defaut.
+//
+// Eprouve par tools/nexus-mcp/epreuve_decoupage.js, 9 cas, dont l'emoji
+// EXACTEMENT a la frontiere, l'emoji en tete, et une rafale de 2000 emojis.
 function chunkText(text) {
-  const chunks = [];
   let start = 0;
-  while (start < text.length) {
-    const end = Math.min(start + CHUNK_CHARS, text.length);
-    chunks.push({ start, text: text.slice(start, end) });
-    if (end >= text.length) break;
-    start = end - CHUNK_OVERLAP;
+  const chunks = [];
+
+  if (text && text.length > 0) {
+    while (true) {
+      // calcul de la fin brute
+      let end = Math.min(start + CHUNK_CHARS, text.length);
+
+      // eviter de couper une paire de substitution en deux
+      if (end > start && end < text.length) {
+        const prevCode = text.charCodeAt(end - 1);
+        if (prevCode >= 0xD800 && prevCode <= 0xDBFF) {
+          // le caractere avant la frontiere est une moitie haute
+          // on recule d'une unite si cela ne rend pas le segment vide
+          if (end - 1 > start) {
+            end -= 1;
+          } else {
+            // impossible de decouper sans rendre le segment vide -> on sort
+            break;
+          }
+        }
+      }
+
+      // si le debut tombe sur une moitie basse, on avance d'une unite
+      if (start < text.length) {
+        const startCode = text.charCodeAt(start);
+        if (startCode >= 0xDC00 && startCode <= 0xDFFF) {
+          // on decale le debut pour inclure la moitie haute dans le segment precedent
+          start += 1;
+          // si le decalage rend start >= end, on ajuste end
+          if (start >= end) {
+            end = Math.min(start + CHUNK_CHARS, text.length);
+          }
+        }
+      }
+
+      // on ajoute le segment
+      chunks.push({ start, text: text.slice(start, end) });
+
+      // fin du texte ?
+      if (end >= text.length) break;
+
+      // calcul du prochain debut avec recouvrement
+      let nextStart = end - CHUNK_OVERLAP;
+
+      // eviter que le recouvrement commence sur une moitie basse
+      if (nextStart > start && nextStart < text.length) {
+        const nextCode = text.charCodeAt(nextStart);
+        if (nextCode >= 0xDC00 && nextCode <= 0xDFFF) {
+          // on avance d'une unite pour commencer sur la moitie haute
+          nextStart += 1;
+        }
+      }
+
+      // garantir progression stricte
+      if (nextStart <= start) {
+        // fallback pour eviter boucle infinie
+        nextStart = start + 1;
+      }
+
+      start = nextStart;
+    }
   }
   return chunks;
 }
