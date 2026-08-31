@@ -1204,6 +1204,36 @@ enfreinte. Un paragraphe ne ferme rien.
 > *demande un outil*, *exploite le résultat*, *enchaîne deux outils*. C'est
 > cela qui dira quel modèle ajouter, jamais la taille.
 
+### La lacune se dessine : demander un outil, pas la taille — 31/08
+
+> **Premier relevé des lacunes**, sur les six modèles qui portent le détail
+> (34 éprouvés, 13 complets) :
+>
+> | épreuve | échecs |
+> |---|---|
+> | demande un outil | **4** |
+> | enchaîne deux outils | **4** |
+> | exploite le résultat d'outil | 2 (+ 2 *non mesurées*) |
+> | parle le protocole `/v1/messages` | 1 |
+>
+> **L'échec cascade, et c'est mécanique, non statistique.** « Exploite le
+> résultat » apparaît *non mesurée* chez deux modèles : on ne peut pas tester
+> l'exploitation d'un résultat qu'aucun outil n'a produit. L'épreuve 2 commande
+> les épreuves 3 et 4. Un « 1/4 » et un « 0/4 » sont donc parfois plus proches
+> qu'ils n'en ont l'air, et un modèle qui franchirait la seule demande d'outil
+> pourrait gagner trois points d'un coup.
+>
+> **La taille ne prédit rien, une fois de plus.** `gemma3-1b` passe **4/4**
+> quand `llama3.2-1b` rend **1/4** — même ordre de grandeur, verdicts opposés.
+> C'est la même leçon que §112.3 sur la latence et §107.3 sur le débit, cette
+> fois sur la capacité d'orchestration : elle tient à l'entraînement, non au
+> nombre de paramètres.
+>
+> **Ce que cela commence à dire pour enrichir le parc** : ce qui manque n'est
+> pas un gros modèle, c'est un modèle *entraîné à l'appel d'outils*. Six
+> modèles restent un signal, pas une loi — la conclusion attendra que huit à
+> dix portent le détail, comme §112.3 l'exige.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |

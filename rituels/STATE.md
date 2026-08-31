@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 00:19 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 00:39 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `965b469` |
+| Commit | `d0075b4` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 34 hours (healthy)
-litellm-proxy	litellm	Up 38 minutes
+litellm-proxy	litellm	Up 58 minutes
 litellm-redis	redis	Up 34 hours (healthy)
 ```
 
