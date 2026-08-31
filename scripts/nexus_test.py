@@ -1885,6 +1885,23 @@ def test_registre_epreuves() -> None:
         check("un verdict qui varie n'est pas dit stable",
                  h.get("stable") is False, "stable=%s" % h.get("stable"))
 
+        # UNE SEULE MESURE N'EST PAS UNE STABILITE.
+        #
+        # Le champ `stable` valait True des la premiere passe -- un ensemble
+        # d'un element est trivialement uniforme. Le champ cense empecher de
+        # conclure sur une passe unique concluait sur une passe unique, et
+        # les deux cas ci-dessus ne l'attrapaient pas : tous deux portaient
+        # sur DEUX mesures. Trouve en lisant la sortie, jamais en relisant le
+        # code.
+        releve.consigner(dict(rapport("seule-local", "ollama_chat/seule", 4,
+                                      "local",
+                                      "http://host.docker.internal:11434")))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        u = reg.get("seule-local", {})
+        check("une seule mesure n'est PAS dite stable",
+                 u.get("stable") is False and u.get("mesures") == 1,
+                 "mesures=%s stable=%s" % (u.get("mesures"), u.get("stable")))
+
         releve.consigner(dict(rapport("constant-local", "ollama_chat/constant",
                                       4, "local",
                                       "http://host.docker.internal:11434")))

@@ -654,7 +654,16 @@ def consigner(rapport: dict) -> None:
             historique.append(entree["reussies"])
             entree["historique"] = historique[-5:]
             entree["mesures"] = (precedent or {}).get("mesures", 0) + 1
-            entree["stable"] = len(set(entree["historique"])) == 1
+            # UNE SEULE MESURE N'EST PAS UNE STABILITE.
+            #
+            # Ecrit d'abord `len(set(historique)) == 1`, ce champ rendait
+            # True des la premiere passe : un ensemble d'un element est
+            # trivialement uniforme. C'etait une fausse assurance, et pire
+            # qu'aucun champ -- un lecteur s'y serait fie. Le champ censé
+            # empecher de conclure sur une passe unique concluait sur une
+            # passe unique.
+            entree["stable"] = (len(entree["historique"]) >= 2
+                                and len(set(entree["historique"])) == 1)
             if not entree["concluante"] and precedent and precedent.get("concluante", True):
                 precedent = dict(precedent)
                 precedent["derniere_tentative_vaine"] = entree["date"]
