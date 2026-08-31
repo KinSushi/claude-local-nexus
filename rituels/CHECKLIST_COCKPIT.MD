@@ -2825,3 +2825,44 @@ l'outil pour ce cas.
 
 C'est la même conclusion que pour `SIM105` en Python : **le linter signale, il
 ne juge pas** — et sur 17 signaux, deux étaient des défauts.
+
+---
+
+## 23. `SIM115` arbitré — trois fuites qui comptaient sur dix-neuf signaux
+
+Dix-neuf descripteurs non fermés signalés ; tous ne se valent pas. Dix vivent
+dans un harnais de test à courte durée. Trois méritaient une correction.
+
+| Fuite | Où | Pourquoi elle compte |
+|---|---|---|
+| 1 | `nexus_traque.py` — `analyser()` | appelée sur **chaque fichier suivi, toutes les dix minutes** par tâche planifiée. Sous Windows un descripteur ouvert **verrouille** le fichier |
+| 2 | `nexus_agent.py` — lecture du `.env` | le `break` sortait dès la première ligne utile : le descripteur restait ouvert dans le **chemin nominal**, pas dans un cas rare |
+| 3 | `nexus_agent.py` — sortie incrémentale | le `close()` était **après** la boucle : si elle levait, on n'y arrivait jamais |
+
+### 23.1 Le remède que le banc a proposé ne remédiait à rien
+
+Pour la troisième, le banc a proposé d'envelopper le `close()` dans un
+`try/except`. Cela ne change **rien** : le problème n'est pas que la
+fermeture échoue, c'est qu'on **n'y arrive pas**. C'est la **boucle** qu'il
+faut envelopper.
+
+Et un simple `with` ne convient pas ici : l'ouverture est **conditionnelle**
+et le descripteur traverse tout le bloc. `try/finally` est la forme juste.
+
+**Conséquence que je n'avais pas anticipée** : ajouter un `try:` impose de
+**réindenter son corps**. Quatorze lignes — faites, et les bornes repérées par
+leur **contenu**, jamais par un numéro de ligne, qui devient faux dès la
+première insertion ailleurs dans le fichier.
+
+### 23.2 Mesure
+
+| Vérification | Résultat |
+|---|---|
+| `SIM115` global | 21 → **17** |
+| `nexus_traque` rejoué | code 0, six classes rapportées comme avant |
+| lot de test | rend `OK`, 185 jetons, 0 échec |
+| sortie incrémentale | **1 ligne écrite** — le chemin traverse le `try/finally` intact |
+
+Le `SIM115` restant sur l'ouverture conditionnelle ne disparaîtra pas : le
+linter signale l'absence de `with`, **non** l'absence de fermeture. La
+correctitude passe avant le compteur — et elle est désormais garantie.
