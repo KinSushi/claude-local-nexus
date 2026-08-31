@@ -1518,6 +1518,53 @@ qwen3.6-27b · relais déclaré.
 > — une option documentée qui ne faisait rien. **Un patch qui échoue à
 > mi-chemin est plus dangereux qu'un patch qui échoue tout net.**
 
+### La documentation Python absorbée, et ce qu'un linter a vu en une seconde
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Documentation Python officielle | `FAIT` | `controle_doc_python` + annonce à chaque reprise de session |
+| Un drapeau mort maintenu à 9 endroits | `FAIT` | retiré ; `ruff` échoue s'il revient |
+| Une option documentée sans effet | `FAIT` | son aide dit désormais « sans effet » |
+
+> **166 507 symboles** sur 63 couches, ancrés sur les versions *réellement
+> installées*. Repris du dépôt voisin par **copie**, jamais par dépendance à
+> son chemin.
+>
+> « Toujours en contexte » ne veut pas dire *chargé* : le corpus fait 136 Mo,
+> et l'index à offsets lit l'entrée demandée par `seek`. Mesuré sur
+> `subprocess.run` : **1 114 octets, ~280 jetons**, signature et version
+> d'ancrage comprises — moins cher que relire trois lignes de code.
+>
+> **L'index a été RECONSTRUIT et non copié** : des offsets ne survivent pas à
+> un changement de fichier, et les recopier aurait produit un index qui ment.
+> 201 offsets relus par `seek`, tous concordants.
+>
+> La règle qu'elle sert vient d'une panne réelle chez le voisin : un `axis`
+> refusé par `scipy.stats.bootstrap`, un `TypeError` avalé par un `except`,
+> et le tout présenté comme une **impossibilité statistique**. Un résultat
+> scientifique faux, né d'un défaut de signature.
+
+### Ce qu'un linter a vu que des heures de vagues n'avaient pas vu
+
+> **`ruff`, une seconde, onze défauts** — et deux n'étaient pas des scories.
+>
+> **`backup_gere`** était initialisé puis mis à `True` dans **huit branches**
+> de `nexus_essaim.py`, et lu **nulle part**. Le `finally` consulte
+> `promotion_en_cours`, et son commentaire explique le changement. Le refactor
+> a changé la condition et laissé neuf assignations derrière lui : un lecteur
+> y voit un drapeau qui compte, et se trouve **invité à rebrancher la
+> régression que le commentaire dit avoir corrigée**.
+>
+> **`--etat`** était déclaré dans `nexus_verrou_machine.py`, cité dans l'usage,
+> et jamais consulté. C'est le défaut que j'ai moi-même commis deux heures
+> plus tôt avec `--sortie`. Conservé — un appelant pourrait le passer — mais
+> son aide dit maintenant la vérité.
+>
+> **La distinction qui manquait.** J'avais *écarté* cette nuit un détecteur
+> général de noms non définis, faute de linter, en invoquant la règle « stdlib
+> seule ». Elle vaut pour les **gardes**, pas pour l'**outillage d'audit**.
+> L'environnement UV lève la contrainte sans salir le dépôt.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
