@@ -1,4 +1,8 @@
 {
+  "eslint": {
+    "no-unused-vars": 5,
+    "require-atomic-updates": 6
+  },
   "psscriptanalyzer": {
     "PSAvoidGlobalVars": 1,
     "PSAvoidOverwritingBuiltInCmdlets": 1,

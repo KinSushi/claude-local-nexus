@@ -70,7 +70,49 @@ RUFF_VENV = OUTIL_DIR / "ruff_venv"
 RUFF_BIN = (RUFF_VENV / ("Scripts" if os.name == "nt" else "bin")
             / ("ruff.exe" if os.name == "nt" else "ruff"))
 ESLINT_BIN = OUTIL_DIR / "node_modules" / ".bin" / ("eslint.cmd" if os.name == "nt" else "eslint")
-ESLINT_CONFIG = OUTIL_DIR / ".eslintrc.json"
+# ESLINT 9+ A SUPPRIME LE FORMAT .eslintrc, ET 10 A SUPPRIME --no-eslintrc.
+#
+# Mesure du 2026-08-31 : la version disponible est 10.9.1. L'installateur
+# ecrivait une configuration au format herite que cette version ne sait plus
+# lire, et la commande passait un drapeau qui n'existe plus. L'outil se
+# serait rapporte « casse » apres installation reussie -- ou pire, aurait
+# rendu zero.
+ESLINT_CONFIG = OUTIL_DIR / "eslint.config.mjs"
+ESLINT_CONFIG_TEXTE = """export default [
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "commonjs",
+      globals: {
+        require: "readonly", module: "writable", process: "readonly",
+        console: "readonly", Buffer: "readonly", __dirname: "readonly",
+        __filename: "readonly", setTimeout: "readonly", clearTimeout: "readonly",
+        setInterval: "readonly", clearInterval: "readonly", exports: "writable",
+        URL: "readonly", TextEncoder: "readonly", TextDecoder: "readonly",
+        fetch: "readonly", AbortController: "readonly", structuredClone: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "^_" }],
+      "no-unreachable": "error",
+      "no-constant-condition": "error",
+      "no-dupe-keys": "error",
+      "no-dupe-args": "error",
+      "no-duplicate-case": "error",
+      "no-self-compare": "error",
+      "no-unsafe-negation": "error",
+      "no-async-promise-executor": "error",
+      "require-atomic-updates": "error",
+      "no-fallthrough": "error",
+      "valid-typeof": "error",
+      "use-isnan": "error",
+    },
+  },
+]
+"""
+
 PS_ANALYZER_RULES = [
     "PSAvoidUsingEmptyCatchBlock",
     "PSUseDeclaredVarsMoreThanAssignments",
@@ -121,29 +163,20 @@ def _install_eslint() -> bool:
     """Installe eslint via npm dans OUTIL_DIR.
     Retourne True si l'installation a reussi, False sinon."""
     try:
-        _run_cmd(["npm", "install", "eslint"], cwd=OUTIL_DIR)
-        config = {
-            "root": True,
-            "env": {"es6": True, "node": True},
-            "parserOptions": {"ecmaVersion": 2021},
-            "rules": {
-                "no-undef": "error",
-                "no-unused-vars": "error",
-                "no-unreachable": "error",
-                "no-constant-condition": "error",
-                "no-dupe-keys": "error",
-                "no-dupe-args": "error",
-                "no-duplicate-case": "error",
-                "no-self-compare": "error",
-                "no-unsafe-negation": "error",
-                "no-async-promise-executor": "error",
-                "require-atomic-updates": "error",
-                "no-fallthrough": "error",
-                "valid-typeof": "error",
-                "use-isnan": "error",
-            },
-        }
-        ESLINT_CONFIG.write_text(json.dumps(config, ensure_ascii=True, indent=2))
+        # NPM PORTE UNE EXTENSION SOUS WINDOWS, exactement comme ruff.
+        # Mesure : « Installation eslint echouee : [WinError 2] Le fichier
+        # specifie est introuvable » alors que npm ETAIT dans le PATH --
+        # c'est npm.cmd qui s'y trouve, jamais npm.
+        npm = "npm.cmd" if os.name == "nt" else "npm"
+        _run_cmd([npm, "install", "eslint"], cwd=OUTIL_DIR)
+        # PAS DE STYLE, QUE DU COMPORTEMENT FAUX OU MORT.
+        #
+        # Le depot n'a pas de convention JavaScript ecrite, et imposer un
+        # style par un linter serait inventer une regle que personne n'a
+        # decidee. On ne garde que ce qui designe un defaut : variable non
+        # definie, code inatteignable, condition constante, promesse mal
+        # geree, ecriture concurrente sur une variable partagee.
+        ESLINT_CONFIG.write_text(ESLINT_CONFIG_TEXTE, encoding="utf-8")
         return True
     except Exception as e:
         print(f"Installation eslint echouee : {e}", file=sys.stderr)
@@ -286,14 +319,15 @@ def _run_eslint() -> Dict[str, Any]:
         result = _run_cmd(
             [
                 str(ESLINT_BIN),
-                ".",
-                "-c",
+                "tools",
+                "--config",
                 str(ESLINT_CONFIG),
                 "-f",
                 "json",
-                "--no-eslintrc",
                 "--ignore-pattern",
-                "node_modules/",
+                "**/node_modules/**",
+                "--ignore-pattern",
+                ".nexus/**",
             ],
             cwd=RACINE,
         )
@@ -619,6 +653,7 @@ def _jouer_cliquet(tool_results: List[Dict[str, Any]],
 
     regressions = []
     ameliorations = []
+    premieres: Dict[str, Dict[str, int]] = {}
     for tr in tool_results:
         outil = tr.get("outil")
         if tr.get("etat") != "joue":
@@ -626,6 +661,30 @@ def _jouer_cliquet(tool_results: List[Dict[str, Any]],
                   % (outil, tr.get("etat")))
             continue
         actuel = comptes_joues.get(outil, {})
+        # UN OUTIL JAMAIS MESURE NE DEGRADE RIEN.
+        #
+        # Mesure du 2026-08-31 : eslint, absent depuis toujours faute de npm,
+        # a ete provisionne et a rendu 11 violations. Le cliquet a annonce
+        # « 2 REGRESSION(S) ». C'est faux : la dette etait deja la, personne
+        # ne la voyait. Rien ne s'est aggrave -- on a ouvert les yeux.
+        #
+        # Et la confusion coute plus que le mot : elle force un --rebaseline,
+        # lequel devient alors indiscernable d'une degradation reellement
+        # assumee. Le geste qui sert a dire « oui, j'accepte que ce soit
+        # pire » aurait servi a dire « je viens d'allumer la lumiere ».
+        #
+        # La distinction est ETROITE : elle ne joue que si l'outil est
+        # ABSENT DE LA REFERENCE, jamais si une regle nouvelle apparait dans
+        # un outil deja connu. Effacer une entree pour blanchir une dette se
+        # verrait dans le diff -- la reference est versionnee.
+        if outil not in reference:
+            total = sum(actuel.values())
+            print("  %s : PREMIERE MESURE, %d violation(s) inscrite(s)"
+                  % (outil, total))
+            print("     dette preexistante, non une aggravation ;"
+                  " elle sera comparee des le prochain appel")
+            premieres[outil] = actuel
+            continue
         ancien = reference.get(outil, {})
         for regle, n in sorted(actuel.items()):
             avant = ancien.get(regle, 0)
@@ -638,6 +697,10 @@ def _jouer_cliquet(tool_results: List[Dict[str, Any]],
             if n < avant:
                 ameliorations.append("%s : %s %d -> %d" % (outil, regle, avant, n))
 
+    # Une premiere mesure s'INSCRIT sans etre jugee. Ne pas l'inscrire
+    # reposerait la meme question a chaque appel, sans jamais rien comparer.
+    if premieres:
+        _ecrire_reference(premieres, ancienne=reference)
     if regressions:
         print("Outillage : %d REGRESSION(S)." % len(regressions))
         for ligne in regressions:
