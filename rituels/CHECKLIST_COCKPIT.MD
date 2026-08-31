@@ -3480,3 +3480,101 @@ plausible, infonde** — mais il fallait le mesurer pour le dire.
 | **Worker dans un worktree git** | `nexus_essaim.py` ecrit hors du depot, mais dans un repertoire, **pas un worktree** |
 | **Un troisieme lanceur, demain** | rien ne surveille l'apparition d'un outil shell non garde |
 
+---
+
+## 31. LES DEUX ETAGES D'UN GARDE — et un defaut de METHODE plus lourd
+
+### 31.1 Le defaut, cree puis ferme dans le meme tour
+
+Le matcher de `.claude/settings.json` disait `Bash|PowerShell` pendant que le
+garde disait `!= "Bash"`. PowerShell etait **route** vers un garde qui
+refusait de le juger — un correctif a moitie, qui **se lit** comme fait.
+Trouve seulement en soumettant a la main la meme commande sous deux noms
+d'outil.
+
+Ferme par `controle_gardes_accordes` : chaque garde **declare** ce qu'il juge
+(`OUTILS_JUGES`), et la declaration est comparee au routage, **sans importer**
+le garde — l'importer executerait son code. Il a mordu dans la minute :
+`nexus_garde_edition.py` ne declarait rien.
+
+Le **sens** du desaccord decide de la severite : route mais non declare
+**BLOQUE** ; declare mais non route **ALERTE**. Bloquer sur le second
+arreterait le travail pour une capacite inemployee.
+
+### 31.2 Le .pyc perime — un faux vert sur le mecanisme anti-faux-vert
+
+La contre-epreuve a attribue un echec au **mauvais cas**. Deux hypotheses
+posees puis **refutees par la mesure** avant la bonne. La cause, prouvee en
+supprimant `__pycache__` :
+
+> Python valide un `.pyc` sur la paire **(mtime, taille)** de la source.
+> « ALERTE » et « BLOQUE » font **six caracteres** chacune. Une reecriture
+> dans la meme seconde laisse les deux valeurs inchangees, et Python sert le
+> bytecode **perime**.
+
+La premiere hypothese etait juste sur le fond et **fausse sur le test** :
+`PYTHONDONTWRITEBYTECODE` empeche d'**ecrire** un cache, pas de **lire** celui
+qui existe. *Une refutation par le mauvais instrument est pire qu'aucune
+refutation — elle ferme une piste correcte.*
+
+**Portee.** Toute contre-epreuve qui echange des chaines de **meme longueur**
+dans un module et le rejoue dans la seconde peut declarer un defaut **non
+detecte**. C'est un faux vert sur le mecanisme meme qui existe pour detecter
+les faux verts.
+
+Mecanise : `jouer_epreuve_python` purge `scripts/__pycache__` avant chaque
+epreuve. L'echec de purge n'est pas bloquant.
+
+La session voisine a transpose immediatement, et sa cible est pire que la
+mienne : **un testeur de mutation est concu pour muter a l'identique**. Elle a
+trouve chez elle un commentaire declarant le phenomene « n'affecte AUCUN
+verdict » — affirmation non mesuree — et a decouvert que sa protection reelle
+venait d'ailleurs (exclusion de `__pycache__` a la copie). *Une protection
+attribuee au mauvais mecanisme est une protection qu'on peut retirer par
+inadvertance.*
+
+Elle a aussi corrige un point qui vaut ici : `os.environ["PYTHONDONTWRITEBYTECODE"]`
+pose **apres** le demarrage n'a aucun effet — Python lit ce reglage une seule
+fois, au lancement. `sys.dont_write_bytecode` agit vraiment.
+
+### 31.3 L'angle mort du garde « lire avant d'ecrire », CHIFFRE
+
+Promis au tour precedent, mesure ici :
+
+| | |
+| --- | --- |
+| `Write` sur un fichier non lu | **REFUSE** — le garde fonctionne |
+| `sed -i` par Bash | **PASSE** |
+| `echo >` par Bash | **PASSE** |
+| `Set-Content` par PowerShell | **PASSE** |
+| part shell des invocations de cette session | **79,5 %** (1416 Bash / 353 Write) |
+
+Reserve d'honnetete : « invocation » n'est pas « ecriture » — la plupart des
+appels Bash lisent. **Le fait decisif est le 3 sur 3, pas le pourcentage.**
+
+**Ce que je ne fais PAS, et pourquoi.** Elargir naivement le garde a Bash
+demande d'extraire les cibles d'ecriture d'une ligne de commande. La session
+voisine l'a tente aujourd'hui : sa greffe a atteint l'effet (6/6 -> 1/6) et a
+**casse `ls > /dev/null` et la restauration depuis sauvegarde**. Elle a
+restaure immediatement — *on ne laisse pas un garde trop large en production
+le temps de reflechir.*
+
+Sa formule resume l'etat : **« voir l'outil et voir la cible sont deux choses
+distinctes »**. Elargir le matcher a PowerShell etait le premier etage ; le
+second reste entier, et il est ouvert.
+
+### 31.4 Le garde shell a mordu son auteur, sur une forme qu'il ne couvre pas
+
+Un `cat > x.py <<'ZZ'` portant `\n` a coupe une chaine en deux dans
+`nexus_test.py`. **Meme mecanisme que le CAS A** — mais `detecter_cas_a` ne
+vise que `python - <<'EOF'`, pas `cat > fichier.py <<'EOF'`. Motif aveugle a
+une forme equivalente. **Ouvert.**
+
+### 31.5 Reste OUVERT apres ce tour
+
+* extraire les cibles d'ecriture d'une ligne shell — **decision de conception**,
+  avec un echec mesure chez le voisin le jour meme ;
+* `detecter_cas_a` aveugle a `cat > f.py <<'EOF'` ;
+* rien ne surveille l'apparition d'un **troisieme lanceur** ;
+* les 6 `require-atomic-updates`, arbitres non-defauts, sans promesse en vol.
+
