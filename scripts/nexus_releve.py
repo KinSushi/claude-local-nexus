@@ -742,7 +742,60 @@ def main() -> int:
         "--refaire", action="store_true",
         help="Rejouer meme les modeles deja mesures. Par defaut, --tous "
              "REPREND la ou il en etait.")
+    p.add_argument(
+        "--sans-verrou", action="store_true", dest="sans_verrou",
+        help="Mesurer meme si un autre releve tourne. A n'employer que "
+             "deliberement : deux releves se recouvrent dans le registre.")
+    p.add_argument(
+        "--attente-verrou", type=float, default=0.0, dest="attente_verrou",
+        metavar="S", help="Attendre S secondes que le verrou se libere.")
+    p.add_argument(
+        "--limite", type=int, default=0, metavar="N",
+        help="N'eprouver que N modeles, puis s'arreter proprement. Sert aux "
+             "environnements ou un long processus est interrompu : la reprise "
+             "fait avancer chaque tranche. 0 = sans limite.")
     a = p.parse_args()
+
+    # UN SEUL RELEVE A LA FOIS.
+    #
+    # Mesure du 2026-08-31 : SIX processus de releve tournaient ensemble,
+    # issus de trois lancements successifs -- 22:51, 23:21, 00:02 -- et tous
+    # ecrivaient dans le meme .nexus/epreuves.json, chacun avec la version du
+    # code chargee a SON demarrage. Ils se recouvraient mutuellement.
+    #
+    # Les consequences ont ete poursuivies pendant une heure comme si elles
+    # etaient des defauts distincts : des champs neufs absents d'entrees
+    # fraiches, des `concluante` qui regressaient, un compte de modeles
+    # complets qui montait puis descendait. Un seul de ces symptomes etait un
+    # vrai defaut ; les autres n'etaient que le recouvrement.
+    #
+    # Le verrou existait deja et servait au banc de latence. Il manquait ici,
+    # alors que ce script ECRIT un registre partage, ce que le banc fait
+    # aussi. Le refus NE LEVE PAS : il se lit sur « obtenu » -- piege
+    # documente dans nexus_bench.py, et un mutex nomme est REENTRANT dans le
+    # meme processus, si bien qu'un essai en un seul interpreteur donne a
+    # croire que tout va bien.
+    verrou_pris = None
+    if not a.sans_verrou:
+        try:
+            import nexus_verrou_machine
+            verrou_pris = nexus_verrou_machine.verrou(
+                "releve", projet="claude-local-nexus",
+                attente_s=float(a.attente_verrou or 0), bavard=False)
+            tenu = verrou_pris.__enter__()
+            if not getattr(tenu, "obtenu", False):
+                verrou_pris.__exit__(None, None, None)
+                print("[!] verrou refuse : un autre releve est en cours.")
+                print("    Attendre, ou --sans-verrou pour mesurer quand meme.")
+                return 75  # EX_TEMPFAIL : contention, pas erreur
+        except ImportError:
+            # « Pas de verrou » et « verrou refuse » sont deux etats
+            # distincts, et les confondre ferait passer l'un pour l'autre.
+            print("[i] verrou indisponible : mesure sans exclusion")
+            verrou_pris = None
+        except Exception as exc:
+            print("[!] verrou refuse : %s" % str(exc).splitlines()[0][:90])
+            return 75
 
     cle = agent.cle_maitre()
     if a.tous:
@@ -763,6 +816,21 @@ def main() -> int:
             if not cibles:
                 print("  Tous les candidats ont deja un verdict concluant.")
                 return 0
+        # UNE TRANCHE PLUTOT QU'UN MARATHON.
+        #
+        # Mesure du 2026-08-30 : six lancements successifs de --tous ont ete
+        # INTERROMPUS avant la fin, sans cause connue et sans qu'aucun
+        # n'atteigne le bout des soixante-et-onze candidats. Chaque modele
+        # acheve etant consigne, rien n'etait perdu -- mais rien ne se
+        # terminait non plus, et un processus qui ne s'acheve jamais ne rend
+        # jamais de verdict global.
+        #
+        # Borner la tranche rend chaque invocation capable de FINIR. Avec la
+        # reprise, la somme des tranches couvre le parc.
+        if a.limite and a.limite > 0 and len(cibles) > a.limite:
+            print("  Tranche de %d sur %d restants ; relancer pour la suite."
+                  % (a.limite, len(cibles)))
+            cibles = cibles[:a.limite]
     else:
         cibles = [a.modele or RELEVE]
 

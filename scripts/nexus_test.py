@@ -1895,6 +1895,34 @@ def test_registre_epreuves() -> None:
                  '"concluante": bool(servi and servi != "?"' in code,
                  "fonde sur servi")
 
+        # 4 quater. UN SEUL RELEVE A LA FOIS.
+        #
+        # Mesure du 2026-08-31 : SIX processus de releve tournaient ensemble,
+        # issus de trois lancements successifs, tous ecrivant dans le meme
+        # registre avec la version du code chargee a leur demarrage. Ils se
+        # recouvraient mutuellement.
+        #
+        # Les symptomes ont ete poursuivis une heure durant comme s'ils
+        # etaient des defauts distincts : champs neufs absents d'entrees
+        # fraiches, `concluante` qui regressait, compte de complets qui
+        # montait puis descendait. Un seul etait un vrai defaut ; les autres
+        # n'etaient que le recouvrement.
+        #
+        # Le controle est STRUCTUREL parce qu'eprouver deux processus
+        # concurrents depuis un seul interpreteur ne prouverait rien : un
+        # mutex nomme est REENTRANT dans le meme processus, et rendrait
+        # obtenu=True deux fois de suite.
+        check("le releve prend le verrou machine",
+                 "nexus_verrou_machine" in code and 'verrou(\n                "releve"' in code
+                 or ('nexus_verrou_machine' in code and '"releve"' in code),
+                 "verrou de classe releve")
+        check("le refus du verrou se lit sur « obtenu », il ne leve pas",
+                 'getattr(tenu, "obtenu", False)' in code,
+                 "piege documente dans nexus_bench.py, evite ici")
+        check("« pas de verrou » et « verrou refuse » restent distincts",
+                 "verrou indisponible" in code and "verrou refuse" in code,
+                 "les deux etats sont dits separement")
+
         # 5. CONTRE-EPREUVE : l'ancienne regle, qui ecrasait sans condition, doit
         # etre VUE par cette epreuve. Sans elle, les cas d'avant ne prouvent rien.
         reg2 = {"modeles": {"x": {"reussies": 4, "complet": True, "concluante": True}}}
