@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 12:39 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 12:49 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,16 +9,16 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `7baf862` |
-| Arbre de travail | modifie |
+| Commit | `5c55b6b` |
+| Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
-litellm-db	db	Up 46 hours (healthy)
+litellm-db	db	Up 47 hours (healthy)
 litellm-proxy	litellm	Up 13 hours
-litellm-redis	redis	Up 46 hours (healthy)
+litellm-redis	redis	Up 47 hours (healthy)
 ```
 
 ## Moteur d'inférence
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 46 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 333.6 Go |
+| Disque libre | 333.5 Go |
 
 ## Inventaire exposé — 80 modèles
 

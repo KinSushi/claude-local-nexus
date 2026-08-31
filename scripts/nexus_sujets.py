@@ -48,6 +48,174 @@ MARKERS = [
     "reste inexplique",
 ]
 
+# ---------------------------------------------------------------------------
+# UN MARQUEUR N'EST PAS UN SUJET.
+#
+# CE QUI ETAIT FAUX, mesure sur une vraie execution : l'outil ne distinguait
+# pas UNE PHRASE CONTENANT le mot « ouvert » d'UN SUJET OUVERT. Il rendait de
+# la doctrine (« docs(doctrine): une regle non mecanisee ne protege pas »),
+# ma propre narration d'un travail DEJA FAIT (« Reste a l'appeler »), et des
+# lignes de commande (« grep -n "aucun contenu a traiter" »).
+#
+# L'outil bati pour eviter de deviner obligeait donc a deviner.
+#
+# Le remede tient en une distinction : un marqueur FORT se suffit, un
+# marqueur FAIBLE demande une corroboration dans les 200 caracteres qui
+# l'entourent. Et deux rejets francs : les lignes de commande, la doctrine.
+# ---------------------------------------------------------------------------
+
+MARQUEURS_FORTS = [
+    "reste ouvert", "restent ouverts",
+    "n'est pas clos", "je ne tranche pas",
+    "revient a l'operateur", "decision de l'operateur",
+    "non arbitre", "reste inexplique"
+]
+
+MARQUEURS_FAIBLES = [
+    "reste a", "il reste",
+    "a traiter", "pas encore",
+    "hypothese", "non verifie",
+    "non prouve", "non mecanise",
+    "pas mecanise"
+]
+
+# motifs a exclure
+MOTIFS_COMMANDES = [
+    "grep ", "sed ", "python ", "git ",
+    " | head", " | tail", "&&", "```", "$(", "0x",
+    # « -- » a ete RETIRE de cette liste. Il sert de tiret cadratin dans
+    # presque tous les commentaires et messages de ce depot : le garder aurait
+    # rejete la prose legitime, donc supprime des sujets EN SILENCE -- soit
+    # l'inverse exact du but. Un filtre trop large ne fait pas moins de bruit,
+    # il fait du bruit invisible.
+]
+
+MOTIFS_DOCTRINE = [
+    "regle non mecanisee ne protege",
+    "docs(doctrine)",
+    "docs(cockpit)",
+    "c'est la these",
+    "la trouvaille centrale"
+]
+
+MOTS_DECISION = [
+    "operateur", "arbitrer", "trancher", "a decider",
+]
+
+# « OUVERT » en CAPITALES est un signal a part : dans ce depot, la casse EST
+# l'information -- une section titree « Reste OUVERT » n'a rien de commun avec
+# le mot « ouvert » au fil d'une phrase. Il est donc cherche dans le texte
+# D'ORIGINE, jamais dans sa forme minuscule.
+#
+# CE QUI ETAIT FAUX : il figurait dans MOTS_DECISION, liste comparee a
+# `fragment_min`. Un motif en capitales confronte a du texte minuscule ne
+# correspond JAMAIS : le controle etait mort, et sa presence donnait a croire
+# qu'il jouait.
+MOT_DECISION_CASSE = "OUVERT"
+
+# Renvoyer la decision a l'operateur OUVRE un sujet, il ne le ferme pas -- et
+# aucun mot de fermeture presente dans la meme phrase ne doit l'emporter.
+# Liste etroite a dessein : le seul mot « operateur » serait trop large, il
+# figure dans la moitie des messages de ce depot.
+RENVOIS_OPERATEUR = [
+    "a l'operateur",
+    "revient a l'operateur",
+    "decision de l'operateur",
+    "je ne tranche pas",
+    "a arbitrer",
+    "a trancher",
+]
+
+MOTIFS_CLOS = [
+    "ferme par", "fermee par", "corrige", "corrigee",
+    "desormais", "est maintenant", "a ete pose",
+    "prouve en le rejouant", "epreuve tenue",
+    # « FAIT » a ete RETIRE : compare en minuscule, il attrapait « en fait »
+    # et « il a fait », donc cloturait des sujets ouverts au fil d'une phrase.
+    # La colonne `FAIT` du cockpit est reconnue autrement, par sa casse.
+    "cablee au", "resolu"
+]
+
+def _fragment_autour(texte: str, position: int, marqueur: str, marge: int = 200) -> str:
+    """extrait le fragment de marge caracteres autour du marqueur."""
+    debut = max(0, position - marge)
+    fin = min(len(texte), position + len(marqueur) + marge)
+    return texte[debut:fin]
+
+def _contient_un(motif_liste, texte_min: str) -> bool:
+    """renvoie True si l'un des motifs de la liste se trouve dans le texte."""
+    return any(motif in texte_min for motif in motif_liste)
+
+def marqueur_fiable(texte: str, position: int, marqueur: str) -> bool:
+    """Ce marqueur, a cet endroit, designe-t-il un SUJET OUVERT ?"""
+    fragment = _fragment_autour(texte, position, marqueur)
+    fragment_min = fragment.lower()
+
+    # rejet des lignes de commande
+    if _contient_un(MOTIFS_COMMANDES, fragment_min):
+        return False
+
+    # rejet de la doctrine
+    if _contient_un(MOTIFS_DOCTRINE, fragment_min):
+        return False
+
+    # detection du type de marqueur
+    marqueur_min = marqueur.lower()
+    est_fort = marqueur_min in MARQUEURS_FORTS
+    est_faible = marqueur_min in MARQUEURS_FAIBLES
+
+    if est_fort:
+        return True
+
+    if est_faible:
+        # corroboration : recherche d'un fort ou d'un mot de decision
+        if _contient_un(MARQUEURS_FORTS, fragment_min):
+            return True
+        if _contient_un(MOTS_DECISION, fragment_min):
+            return True
+        return MOT_DECISION_CASSE in fragment
+
+    # marqueur inconnu : on ne le considere pas fiable
+    return False
+
+def semble_clos(texte: str) -> bool:
+    """
+    Ce fragment decrit-il quelque chose de DEJA FERME ?
+    ATTENTION : si un marqueur FORT est present dans le meme fragment,
+    le resultat de cette fonction ne doit pas etre utilise pour masquer le
+    sujet ouvert. La decision finale doit verifier l'absence de marqueur
+    fort avant de conclure a la fermeture.
+    """
+    texte_min = texte.lower()
+    if not _contient_un(MOTIFS_CLOS, texte_min):
+        return False
+    # L'EXEMPTION EST PORTEE ICI, ET NON CONFIEE A L'APPELANT.
+    #
+    # CE QUI ETAIT FAUX : le premier jet se contentait de DOCUMENTER que
+    # l'appelant devait verifier l'absence de marqueur fort avant de conclure.
+    # Les appelants existent deja et ne le feront pas -- et une regle en
+    # paragraphe ne protege personne, pas meme son auteur le meme jour.
+    #
+    # Le cas reel : « X est corrige, mais Y reste ouvert ». Sans l'exemption,
+    # « corrige » l'emporte et le sujet Y disparait.
+    if _contient_un(MARQUEURS_FORTS, texte_min):
+        return False
+    if MOT_DECISION_CASSE in texte:
+        return False
+    # UNE DECISION DIFFEREE N'EST JAMAIS CLOSE, quoi que dise le reste du
+    # fragment.
+    #
+    # CE QUI ETAIT FAUX, et c'est l'epreuve qui l'a montre, contre mon code :
+    # « Le generateur l'ANNONCE desormais ; la decision de politique reste a
+    # l'operateur » etait rejete. « desormais » decrit la moitie FAITE, et
+    # emportait la moitie OUVERTE avec elle. Or ce fragment est un vrai sujet
+    # ouvert -- il vient d'une execution reelle.
+    #
+    # C'est la meme exemption que pour le marqueur fort, sur une variante que
+    # j'avais manquee : le premier jet ne l'exemptait que d'un cote.
+    return not _contient_un(RENVOIS_OPERATEUR, texte_min)
+
+
 MOTIFS_BRUIT: List[str] = [
     r"VERDICT\s*:",
     r"\[BLOQUE\]",
@@ -203,6 +371,15 @@ def process_transcription(path: Path) -> List[Dict]:
                         ctx = extract_context(txt, pos, len(marker))
                         if is_noise(ctx):
                             continue
+                        # UN MARQUEUR N'EST PAS UN SUJET. Sans ces deux filtres, la
+                        # recolte rendait de la doctrine, des lignes de commande et sa
+                        # propre narration d'un travail deja fait -- mesure sur une
+                        # vraie execution. L'outil bati pour eviter de deviner
+                        # obligeait alors a deviner.
+                        if not marqueur_fiable(txt, pos, marker):
+                            continue
+                        if semble_clos(ctx):
+                            continue
                         occurrences.append(
                             {
                                 "source": "transcription",
@@ -248,6 +425,15 @@ def git_log_commits() -> List[Dict]:
                 ctx = extract_context(message, pos, len(marker))
                 if is_noise(ctx):
                     continue
+                # UN MARQUEUR N'EST PAS UN SUJET. Sans ces deux filtres, la
+                # recolte rendait de la doctrine, des lignes de commande et sa
+                # propre narration d'un travail deja fait -- mesure sur une
+                # vraie execution. L'outil bati pour eviter de deviner
+                # obligeait alors a deviner.
+                if not marqueur_fiable(message, pos, marker):
+                    continue
+                if semble_clos(ctx):
+                    continue
                 occurrences.append(
                     {
                         "source": "commit",
@@ -280,6 +466,15 @@ def process_cockpit(path: Path) -> List[Dict]:
         for pos, marker in find_markers(content, MARKERS):
             ctx = extract_context(content, pos, len(marker))
             if is_noise(ctx):
+                continue
+            # UN MARQUEUR N'EST PAS UN SUJET. Sans ces deux filtres, la
+            # recolte rendait de la doctrine, des lignes de commande et sa
+            # propre narration d'un travail deja fait -- mesure sur une
+            # vraie execution. L'outil bati pour eviter de deviner
+            # obligeait alors a deviner.
+            if not marqueur_fiable(content, pos, marker):
+                continue
+            if semble_clos(ctx):
                 continue
             occurrences.append(
                 {

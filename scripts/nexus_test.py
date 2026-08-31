@@ -1252,7 +1252,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota", "maj"],
+                                 "cablage", "doc", "sonde", "quota", "maj", "sujets"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1313,6 +1313,8 @@ def main() -> int:
         test_quota_partage()
     if args.only in (None, "maj"):
         test_maj_modeles()
+    if args.only in (None, "sujets"):
+        test_sujets_filtre()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2277,6 +2279,42 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_sujets_filtre() -> None:
+    """
+    Un marqueur est-il pris pour un sujet ?
+
+    CE QUI ETAIT FAUX, mesure sur une vraie execution : `nexus_sujets.py` ne
+    distinguait pas UNE PHRASE CONTENANT le mot « ouvert » d'UN SUJET OUVERT.
+    Il rendait 499 occurrences, dont de la doctrine (« docs(doctrine): une
+    regle non mecanisee ne protege pas »), ma propre narration d'un travail
+    DEJA FAIT (« Reste a l'appeler »), et des lignes de commande. L'outil bati
+    pour eviter de deviner obligeait a deviner.
+
+    Les fragments de l'epreuve ne sont pas inventes : ce sont les sorties
+    REELLES de cette execution, et l'une d'elles est un VRAI sujet qui doit
+    SURVIVRE au filtre. Sans elle, l'epreuve ne prouverait que la severite --
+    un filtre qui rejette tout est aussi inutile qu'un filtre qui passe tout.
+
+    Trois pieges y sont graves, chacun rencontre :
+
+    * « -- » figurait parmi les motifs de commande. Il sert de tiret cadratin
+      dans presque tous les commentaires de ce depot : le garder aurait
+      supprime des sujets EN SILENCE, l'inverse exact du but.
+    * « OUVERT » en capitales etait compare a du texte MINUSCULE : controle
+      mort, dont la presence donnait a croire qu'il jouait.
+    * une decision renvoyee a l'operateur n'est jamais close, quoi que dise le
+      reste du fragment. C'est l'EPREUVE qui l'a impose, contre le code.
+
+    Effet mesure : 499 occurrences -> 231, et les 17 vrais sujets qu'une
+    premiere version du filtre emportait sont revenus.
+
+    CONTRE-EPREUVE jouee sur quatre defauts remis un par un : chacun rougit en
+    nommant son cas.
+    """
+    print("\n--- RECOLTE DES SUJETS : un marqueur est-il un sujet ? ---")
+    jouer_epreuve_python("epreuve_sujets_filtre.py", "filtre de recolte")
 
 
 def test_maj_modeles() -> None:
