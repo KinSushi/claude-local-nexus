@@ -2387,8 +2387,17 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_context") {
+    // Ce qui était faux : le paramètre mal orthographié 'files' était simplement ignoré parce que seul "paths" était testé.
+    // Le script continuait alors avec un tableau vide et ne signalait aucune source de contenu, masquant l’erreur de l’appelant.
     exigerTexte(args.instruction, "instruction");
     if (args.paths !== undefined) exigerTableau(args.paths, "paths");
+    if (
+        (args.paths === undefined || args.paths.length === 0) &&
+        (args.text === undefined || args.text.length === 0)
+    ) {
+        const recus = Object.keys(args).filter(k => args[k] !== undefined).join(', ');
+        throw new ErreurProtocole(`Parametres acceptes: paths, text. Parametres recus: ${recus}`);
+    }
     const model = args.model || DEFAULT_CHAT_MODEL;
     const contextTokens = args.context_tokens || 32768;
 
