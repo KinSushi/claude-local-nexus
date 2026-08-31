@@ -1861,6 +1861,42 @@ def test_registre_epreuves() -> None:
                  d.get("epreuves_non_mesurees") == ["chainage"],
                  str(d.get("epreuves_non_mesurees")))
 
+        # 4 quinquies. UN 4/4 OBTENU UNE FOIS N'EST PAS UN 4/4 CONFIRME.
+        #
+        # Mesure du 2026-08-31 : qwen3-0.6b-local a rendu 4/4 puis 3/4 sur
+        # deux passages, echouant la seconde fois sur « exploite le resultat
+        # d'outil ». Meme modele, deux verdicts. Or eligible_au_pool promeut
+        # sur un `complet` obtenu en UNE passe : un modele peut entrer dans le
+        # pool sur un coup de chance, et rien ne distinguait un 4/4 unique
+        # d'un 4/4 confirme.
+        #
+        # On ne decide rien : la politique de promotion appartient a
+        # l'operateur. On rend la stabilite LISIBLE.
+        for score in (4, 3):
+            releve.consigner(dict(rapport("variable-local", "ollama_chat/variable",
+                                          score, "local",
+                                          "http://host.docker.internal:11434")))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        h = reg.get("variable-local", {})
+        check("le nombre de mesures est compte",
+                 h.get("mesures") == 2, "mesures=%s" % h.get("mesures"))
+        check("l'historique des scores est garde",
+                 h.get("historique") == [4, 3], str(h.get("historique")))
+        check("un verdict qui varie n'est pas dit stable",
+                 h.get("stable") is False, "stable=%s" % h.get("stable"))
+
+        releve.consigner(dict(rapport("constant-local", "ollama_chat/constant",
+                                      4, "local",
+                                      "http://host.docker.internal:11434")))
+        releve.consigner(dict(rapport("constant-local", "ollama_chat/constant",
+                                      4, "local",
+                                      "http://host.docker.internal:11434")))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        s = reg.get("constant-local", {})
+        check("deux fois le meme verdict est dit stable",
+                 s.get("stable") is True and s.get("mesures") == 2,
+                 "stable=%s mesures=%s" % (s.get("stable"), s.get("mesures")))
+
         # 4 ter. « Concluante » se juge sur SERVI, jamais sur l'adresse.
         #
         # Mon premier critere ajoutait `adresse != "?"`, et c'etait faux :

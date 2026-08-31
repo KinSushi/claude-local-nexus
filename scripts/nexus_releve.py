@@ -635,6 +635,26 @@ def consigner(rapport: dict) -> None:
             # n'atteint pas le modele est consignee A PART, sans toucher au
             # verdict existant.
             precedent = registre["modeles"].get(nom)
+            # COMBIEN DE FOIS, et avec quels resultats.
+            #
+            # Mesure du 2026-08-31 : qwen3-0.6b-local a rendu 4/4 puis 3/4 sur
+            # deux passages, echouant la seconde fois sur « exploite le
+            # resultat d'outil ». Meme modele, deux verdicts.
+            #
+            # Or `eligible_au_pool` promeut sur un `complet` obtenu en UNE
+            # SEULE passe : un modele peut donc entrer dans le pool sur un
+            # coup de chance, et rien ne distinguait un 4/4 unique d'un 4/4
+            # confirme. Le contrat le dit deja pour les modeles (§97) : ne pas
+            # surinterpreter une execution, comparer des intervalles plutot
+            # que proclamer un vainqueur sur une anecdote.
+            #
+            # On ne DECIDE rien ici -- la politique de promotion appartient a
+            # l'operateur. On rend seulement la stabilite lisible.
+            historique = list((precedent or {}).get("historique") or [])
+            historique.append(entree["reussies"])
+            entree["historique"] = historique[-5:]
+            entree["mesures"] = (precedent or {}).get("mesures", 0) + 1
+            entree["stable"] = len(set(entree["historique"])) == 1
             if not entree["concluante"] and precedent and precedent.get("concluante", True):
                 precedent = dict(precedent)
                 precedent["derniere_tentative_vaine"] = entree["date"]
