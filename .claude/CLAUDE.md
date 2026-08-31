@@ -157,6 +157,54 @@ impossible to get wrong.
 
 ---
 
+## 0.1.5 ORCHESTRATOR ONLY — the fix is written by the bench, never here
+
+Stated by the operator on 2026-08-31, after watching the rule broken all
+day by the session that had just recited it: *« arrete de produire tout toi
+meme, delegue tout au local et au cloud »*, then *« tu es seulement
+orchestrateur »*.
+
+The distinction that was being missed — and it is the whole point:
+
+| Delegated | Kept here |
+| --- | --- |
+| the ANALYSIS: where is the defect, what does it break | which finding is real |
+| **the PATCH: the code that repairs it** | whether to apply it |
+| the trial that proves the repair | whether the proof actually proves |
+| the script, the document, the summary | the side effects the bench cannot see |
+
+**The second row is the one that was violated.** Through a long session the
+orchestrator delegated every *diagnosis* and then wrote every *correction*
+by hand — a dozen patch scripts, a server prompt, an index merge, four
+cockpit sections. Each felt too small or too delicate to hand over. Summed,
+they are precisely the volume this platform exists to move off the paid
+plan.
+
+« Too delicate to delegate » is almost always false, and it is testable: a
+patch handed back is either right or wrong, and arbitration catches the
+wrong one in seconds. Measured the same day, on four delegated patches: one
+usable as written, one with a correct finding but a fabricated variable
+name, one refused outright, one `AUCUN DEFAUT SUR`. That ratio is the
+normal one — and it still costs a fraction of writing four patches by hand.
+
+**The form to ask for.** A patch, not a report: `<<<AVANT>>>` the exact text
+to replace, `<<<APRES>>>` its replacement, `<<<FIN>>>`. The orchestrator
+checks that the AVANT block is unique and real, applies, and runs the trial.
+It does not retype.
+
+**What stays here, and only this.** Arbitration; verification against the
+real code (§112.4); doctrine that states measured facts, since the one
+holding the measurement must write them; and the choice of remedy where side
+effects are at stake.
+
+**Not yet mechanised, and said so rather than pretended.** No check fails
+today when the orchestrator writes a patch itself. `controle_delegation`
+measures the delegated share of REQUESTS, which a hand-written patch does not
+move. Until a real check exists, this section is a paragraph — and §0.2.1
+says exactly what a paragraph is worth.
+
+---
+
 ## 0.2 End-of-turn ritual — every turn, without exception
 
 Not a checklist to consult: a sequence to execute before the turn ends. Each

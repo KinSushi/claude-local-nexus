@@ -178,9 +178,17 @@ def discover_cloud() -> list[str]:
         with urllib.request.urlopen(TAGS_URL, timeout=30) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
+        # LA CAUSE VOYAGE AVEC LE REFUS.
+        #
+        # Sans `from exc`, Python affiche « During handling of the above
+        # exception, another exception occurred » et le traceback d'origine
+        # devient un bruit dont rien ne dit qu'il EST la cause. Le message
+        # cite deja `exc`, mais un message n'est pas un traceback : il ne
+        # porte ni le fichier, ni la ligne, ni la pile de l'echec reel.
+        # C'est la classe 1 de nexus_traque, sous une forme plus discrete.
         raise RuntimeError(
             "catalogue cloud illisible sur %s (%s) — regeneration interrompue "
-            "plutot que d'ecrire une zone CLOUD_MODELS vide" % (TAGS_URL, exc))
+            "plutot que d'ecrire une zone CLOUD_MODELS vide" % (TAGS_URL, exc)) from exc
     names = sorted({m["name"] for m in payload.get("models", [])})
     if not names:
         raise RuntimeError("catalogue cloud vide")
