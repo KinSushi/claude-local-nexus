@@ -29,6 +29,12 @@
 .PARAMETER NoValidate
     Désactive la vérification des droits Ollama Cloud. Déconseillé : le pool
     peut alors contenir des modèles que le compte ne peut pas exécuter.
+.PARAMETER SyncWeights
+    Rafraichit les POIDS des modeles deja installes (ollama pull sur chacun),
+    avant la regeneration. A ne pas confondre avec -SyncLocal, qui ne tire que
+    les modeles DECLARES ET ABSENTS : jusqu'ici, rien ne mettait a jour un
+    modele deja present.
+
 .PARAMETER SyncLocal
     Rapatrie sur le moteur les modèles que la configuration déclare
     sans qu'ils y soient présents.
@@ -51,6 +57,7 @@ param(
     [switch]$Validate,
     [switch]$NoValidate,
     [switch]$SyncLocal,
+    [switch]$SyncWeights,
     [switch]$Restart,
     [string]$LogPath
 )
@@ -118,6 +125,34 @@ if ($SyncLocal) {
         # Non bloquant : un modele de second rang manquant ne doit pas
         # empecher la mise a jour du reste. La conformite, elle, tranchera.
         Write-Log "Rapatriement incomplet : voir la conformite plus bas" "WARN"
+    }
+}
+
+# ------------------------------------------------------------
+# 1 bis. Rafraichissement des POIDS deja installes
+# ------------------------------------------------------------
+# CE QUI MANQUAIT. -SyncLocal ne tire que les modeles DECLARES ET ABSENTS.
+# Un modele deja installe n'etait donc jamais mis a jour par la tache
+# quotidienne : nexus_maj_modeles.py existait, mais son seul appelant etait
+# nexus.ps1, a la main. Un script sans appelant automatique est un fichier,
+# pas un mecanisme.
+#
+# L'ORDRE COMPTE. Le rafraichissement precede la generation pour que la
+# configuration derive des poids FRAIS. Et il invalide les mesures des
+# modeles reellement changes : un modele dont les poids ont bouge sort donc
+# des pools jusqu'a sa prochaine mesure. C'est voulu -- « jamais mesure vaut
+# jamais promu » (contrat 105.2), et une mesure prise sur d'autres poids est
+# pire qu'aucune, parce qu'elle se lit comme valide.
+if ($SyncWeights) {
+    Write-Log "Rafraichissement des poids des modeles installes"
+    $majArgs = @((Join-Path $PSScriptRoot "nexus_maj_modeles.py"))
+    if (-not $DryRun) { $majArgs += "--appliquer" }
+    & $python @majArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    if ($LASTEXITCODE -ne 0) {
+        # Non bloquant, pour la meme raison que le rapatriement : un modele
+        # qui refuse de se mettre a jour ne doit pas empecher la mise a jour
+        # du reste, et la conformite tranchera plus bas.
+        Write-Log "Rafraichissement incomplet : voir la conformite plus bas" "WARN"
     }
 }
 

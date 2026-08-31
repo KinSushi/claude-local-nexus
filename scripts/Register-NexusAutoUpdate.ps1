@@ -5,7 +5,7 @@
 .DESCRIPTION
     Enregistre une tache planifiee Windows qui execute chaque jour :
 
-        Update-NexusModels.ps1 -SyncLocal -Validate -Restart
+        Update-NexusModels.ps1 -SyncLocal -SyncWeights -Validate -Restart
 
     Concretement, chaque nuit la plateforme :
       - retélécharge les modeles locaux manquants ;
@@ -168,7 +168,7 @@ $logFile = Join-Path $logDir "update.log"
 # LastTaskResult 1 et zero journal -- une panne muette, exactement ce que le
 # journal existait pour rendre visible.
 $escapedLog = $logFile -replace "'", "''"
-$arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""& '$escapedUpdater' -SyncLocal -Validate -Restart *> '$escapedLog'"""
+$arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""& '$escapedUpdater' -SyncLocal -SyncWeights -Validate -Restart *> '$escapedLog'"""
 
 $action = New-ScheduledTaskAction -Execute $shell -Argument $arguments -WorkingDirectory $RepoRoot
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time

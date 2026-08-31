@@ -1252,7 +1252,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota"],
+                                 "cablage", "doc", "sonde", "quota", "maj"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1311,6 +1311,8 @@ def main() -> int:
         test_sonde_mcp()
     if args.only in (None, "quota"):
         test_quota_partage()
+    if args.only in (None, "maj"):
+        test_maj_modeles()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2275,6 +2277,67 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_maj_modeles() -> None:
+    """
+    Un modele mis a jour invalide-t-il ses propres mesures ?
+
+    `.nexus/latences.json` et `.nexus/epreuves.json` decrivent le
+    comportement MESURE de chaque modele, et la configuration en DERIVE
+    l'appartenance aux pools (contrat 105.2). Quand `ollama pull` change
+    reellement les poids, ces mesures decrivent les ANCIENS poids : le modele
+    continuerait d'etre route sur une preuve perimee, sans que rien ne le
+    dise. « Jamais mesure » vaut « jamais promu » ; « mesure sur d'autres
+    poids » est pire, parce que cela se lit comme une mesure valide.
+
+    CONTRE-EPREUVE jouee sur trois defauts remis un par un dans le fichier
+    sain -- drapeau partage entre les deux relevés, suffixe « :latest » non
+    retire, releve illisible ecrase -- chacun rougit en nommant son cas.
+
+    Le premier de ces trois etait le defaut REEL du premier jet : un modele
+    nettoye dans latences.json etait saute dans epreuves.json, et sa preuve
+    de CAPACITE survivait au changement de poids. Une demi-invalidation se
+    lit comme faite.
+    """
+    print("\n--- MISE A JOUR DU PARC : les mesures perimees partent-elles ? ---")
+    jouer_epreuve_python("epreuve_maj_modeles.py", "mise a jour du parc")
+
+
+def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
+    """
+    Joue une epreuve Python autonome et reverse ses cas dans la suite.
+
+    Meme contrat que `jouer_epreuve_node` : l'epreuve imprime « [OK  ] nom :
+    detail » ou « [RATE] ... », et une epreuve MUETTE est un echec -- si elle
+    n'imprime rien, c'est elle qui est cassee, et le silence se lirait comme
+    un succes.
+    """
+    epreuve = os.path.join(ROOT, "scripts", fichier)
+    if not os.path.isfile(epreuve):
+        skip(etiquette, "%s introuvable" % fichier)
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=300)
+    except subprocess.TimeoutExpired:
+        check(etiquette, False, "pas de reponse en 300 s")
+        return
+
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    if not vus:
+        check(etiquette, False, "aucun cas rendu par l'epreuve (code %s)" % r.returncode)
 
 
 def test_quota_partage() -> None:

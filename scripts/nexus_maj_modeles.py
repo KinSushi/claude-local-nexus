@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 import shutil
+import json
+import tempfile
 
 # Constantes
 MARGE_DISQUE_GO = 50
@@ -136,6 +138,141 @@ def rafraichir_modele(nom, delai_s):
         return 'echec'
 
 
+
+# ---------------------------------------------------------------------------
+# UN MODELE MIS A JOUR INVALIDE SES PROPRES MESURES.
+#
+# .nexus/latences.json et .nexus/epreuves.json decrivent le comportement
+# MESURE de chaque modele, et la configuration en DERIVE l'appartenance aux
+# pools de routage (contrat 105.2). Quand `ollama pull` change reellement les
+# poids, ces mesures decrivent les ANCIENS poids : le modele continuerait
+# d'etre route sur une preuve perimee, sans que rien ne le dise.
+#
+# « Jamais mesure » vaut « jamais promu ». « Mesure sur d'autres poids » est
+# PIRE, parce que cela se lit comme une mesure valide.
+# ---------------------------------------------------------------------------
+
+def invalider_mesures(noms_modeles, racine="."):
+    """
+    Supprime les mesures associees aux modeles mis a jour.
+    Retourne un dict {"latences": [...], "epreuves": [...], "absents": [...]}
+    """
+    if not noms_modeles:
+        # LA FORME NE VARIE PAS. Une cle presente seulement quand le cas
+        # survient oblige chaque appelant a un .get() defensif, et le
+        # premier qui l ecrit en acces direct leve KeyError le jour ou
+        # tout va bien -- le pire moment pour tomber.
+        return {"latences": [], "epreuves": [], "absents": [], "illisibles": []}
+
+    # Normalisation du nom du modele : suppression du suffixe ":latest",
+    # puis ne garder que les caracteres alphanumeriques en minuscule.
+    def _norm_modele(nom):
+        if nom.endswith(":latest"):
+            nom = nom[:-7]
+        return "".join(ch for ch in nom.lower() if ch.isalnum())
+
+    # Normalisation de l'alias : suppression du suffixe "-local",
+    # puis ne garder que les caracteres alphanumeriques en minuscule.
+    def _norm_alias(alias):
+        if alias.endswith("-local"):
+            alias = alias[:-6]
+        return "".join(ch for ch in alias.lower() if ch.isalnum())
+
+    # Charge un fichier JSON en toute securite.
+    def _load_json(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return None          # fichier absent, pas d'erreur
+        except Exception as e:
+            sys.stderr.write(f"Erreur de lecture JSON {path}: {e}\n")
+            return "ILLISIBLE"   # signaler que le fichier ne doit pas etre ecrit
+
+    # Ecriture atomique du JSON uniquement si des modifications ont ete faites.
+    def _write_json_atomique(data, path):
+        dir_name = os.path.dirname(path)
+        fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
+                json.dump(data, tmp_file, ensure_ascii=False, indent=2)
+                tmp_file.flush()
+                os.fsync(tmp_file.fileno())
+            os.replace(tmp_path, path)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    # Recherche l'alias correspondant a un modele normalise dans le dictionnaire.
+    def _trouver_alias(data, norm_modele):
+        # data peut etre un dict d'alias direct ou {"modeles": {...}}
+        if "modeles" in data and isinstance(data["modeles"], dict):
+            candidates = data["modeles"]
+        else:
+            candidates = data
+        for alias in list(candidates.keys()):
+            if _norm_alias(alias) == norm_modele:
+                return alias, candidates
+        return None, None
+
+    result = {"latences": [], "epreuves": [], "absents": [], "illisibles": []}
+    fichiers = {
+        "latences": os.path.join(racine, ".nexus", "latences.json"),
+        "epreuves": os.path.join(racine, ".nexus", "epreuves.json")
+    }
+
+    # Preparer un mapping modele_norm -> alias trouve (ou None)
+    mapping = {}
+    for nom in noms_modeles:
+        norm = _norm_modele(nom)
+        mapping[nom] = {"norm": norm, "alias": None, "found": False, "vu": {}}
+
+    for key, path in fichiers.items():
+        data = _load_json(path)
+        if data is None:
+            # fichier absent : rien a faire
+            continue
+        if data == "ILLISIBLE":
+            # NE PAS ECRIRE : ecraser un releve illisible detruirait des
+            # mesures recuperables a la main, qui coutent des heures.
+            # Mais le SIGNALER : traite comme un fichier absent, l'appelant
+            # croirait l'invalidation faite alors que rien ne l'a ete.
+            result["illisibles"].append(path)
+            continue
+
+        modified = False
+        for nom, info in mapping.items():
+            # LE DRAPEAU EST PAR FICHIER, ET NON PARTAGE.
+            #
+            # CE QUI ETAIT FAUX : un `found` unique faisait sauter, dans
+            # epreuves.json, tout modele deja nettoye dans latences.json. Sa
+            # preuve de CAPACITE aurait donc survecu au changement de poids,
+            # alors que c'est precisement elle qui autorise une derogation au
+            # seuil de latence (contrat 105.2). Une demi-invalidation est pire
+            # qu'aucune : elle se lit comme faite.
+            if info["vu"].get(key):
+                continue
+            alias, container = _trouver_alias(data, info["norm"])
+            if alias:
+                # suppression de l'entree
+                del container[alias]
+                info["alias"] = alias
+                info["vu"][key] = True
+                info["found"] = True
+                result[key].append(alias)
+                modified = True
+
+        if modified:
+            _write_json_atomique(data, path)
+
+    # Les modeles dont aucun alias n'a ete trouve sont listes dans "absents"
+    for nom, info in mapping.items():
+        if not info["found"]:
+            result["absents"].append(nom)
+
+    return result
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Mise a jour des modeles Ollama deja installes.')
@@ -229,6 +366,8 @@ def main():
     up_to_date = 0
     failed = 0
 
+    changes = []
+
     for name, _taille in models_to_update:
 
         print(f"Traitement de : {name}")
@@ -238,10 +377,38 @@ def main():
             print("  deja a jour")
         elif etat == 'mis_a_jour':
             updated += 1
+            changes.append(name)
             print("  MIS A JOUR")
         else:
             failed += 1
             print("  ECHEC")
+
+    # LES MESURES DES MODELES CHANGES SONT PERIMEES, ET DOIVENT PARTIR.
+    #
+    # Sans cet appel, la fonction ci-dessus existerait sans que rien ne
+    # l'invoque -- un fichier, pas un mecanisme. Le parc serait rafraichi et
+    # la configuration continuerait de router sur les mesures des anciens
+    # poids.
+    #
+    # Seuls les modeles REELLEMENT changes sont touches : un `pull` sur un
+    # modele deja a jour ne doit rien invalider, sans quoi une passe
+    # quotidienne effacerait tout le releve chaque nuit et le banc
+    # remesurerait 47 modeles pour rien.
+    if changes:
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        bilan = invalider_mesures(changes, racine=racine)
+        n = len(bilan.get('latences', [])) + len(bilan.get('epreuves', []))
+        print(f"\nMesures invalidees : {n} entree(s) sur {len(changes)} modele(s) change(s)")
+        for cle in ('latences', 'epreuves'):
+            if bilan.get(cle):
+                print(f"  {cle} : {', '.join(bilan[cle])}")
+        if bilan.get('absents'):
+            # Un modele sans alias n'est pas une anomalie -- tous les
+            # installes ne sont pas exposes -- mais le taire empecherait de
+            # voir un apparieur casse, qui rendrait TOUS les modeles absents.
+            print(f"  sans alias : {', '.join(bilan['absents'])}")
+        if bilan.get('illisibles'):
+            print(f"  RELEVE ILLISIBLE, laisse intact : {', '.join(bilan['illisibles'])}")
 
     print("\nRapport final :")
     print(f"  Deja a jour : {up_to_date}")
