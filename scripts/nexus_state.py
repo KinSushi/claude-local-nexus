@@ -223,6 +223,83 @@ def exposed_models():
         return None
 
 
+# ---------------------------------------------------------------------------
+# UN FICHIER QUI ENREGISTRE L'EMPREINTE DU COMMIT DONT IL FAIT PARTIE
+# NE PEUT JAMAIS ETRE PROPRE.
+#
+# CE QUI ETAIT FAUX, mesure le 2026-08-31. STATE.md est suivi par git et
+# porte deux lignes qui changent a chaque execution : l'horodatage de
+# generation et l'empreinte du dernier commit. Apres chaque commit, la
+# regeneration salissait l'arbre ; commiter STATE.md creait un nouveau
+# commit, donc une nouvelle empreinte, donc un nouveau salissement.
+#
+# CE QUE CELA PRODUISAIT : `nexus_vitrine.py` joue `nexus_rituel.py`, dont
+# les controles regenerent STATE.md. L'arbre devenait sale PENDANT la
+# verification, le controle « travail commite » echouait, et la publication
+# etait REFUSEE -- alors que le rituel joue une seconde plus tot rendait
+# « tenu ». Une porte qui se fermait sur ce qu'elle venait d'ecrire.
+#
+# La comparaison ignore donc les lignes volatiles. Quand tout le reste est
+# identique, le fichier n'est PAS REECRIT DU TOUT -- pas meme a l'identique,
+# car un simple changement de date de modification suffit a inquieter
+# certains outils. Le contrat 0.2 le dit deja : STATE et le cockpit se
+# regenerent sans qu'on le demande, « ce qui est precisement pourquoi ce ne
+# sont pas des rituels ». Un fichier derive n'a pas a bloquer une
+# publication.
+#
+# Ecrit par le banc gratuit (qwen3-coder-30b-local) sur specification ;
+# trois `\r` corriges en `\n`, induits par une consigne ambigue de ma part.
+# ---------------------------------------------------------------------------
+
+
+def ecrire_si_change(chemin, lignes, volatiles):
+    # Lecture du contenu existant
+    try:
+        with io.open(chemin, 'r', encoding='utf-8', newline='\n') as f:
+            anciennes_lignes = [l.rstrip('\n') for l in f.readlines()]
+    except (OSError, IOError):
+        # Si on ne peut pas lire le fichier, on écrit le nouveau contenu
+        anciennes_lignes = None
+
+    # Si le fichier n'existe pas, on écrit
+    if anciennes_lignes is None:
+        _ecrire_atomique(chemin, lignes)
+        return True
+
+    # Filtrage des lignes volatiles dans l'ancien contenu
+    anciennes_non_volatiles = [l for l in anciennes_lignes if not any(v in l for v in volatiles)]
+
+    # Filtrage des lignes volatiles dans le nouveau contenu
+    nouvelles_non_volatiles = [l for l in lignes if not any(v in l for v in volatiles)]
+
+    # Comparaison des contenus non-volatils
+    if anciennes_non_volatiles == nouvelles_non_volatiles:
+        return False
+
+    # Si les contenus diffèrent, on écrit le nouveau fichier
+    _ecrire_atomique(chemin, lignes)
+    return True
+
+def _ecrire_atomique(chemin, lignes):
+    # Utilisation d'un fichier temporaire voisin pour l'écriture atomique
+    repertoire = os.path.dirname(chemin) or '.'
+    nom_fichier = os.path.basename(chemin)
+    chemin_temp = os.path.join(repertoire, f'.{nom_fichier}.tmp')
+
+    try:
+        with io.open(chemin_temp, 'w', encoding='utf-8', newline='\n') as f:
+            for ligne in lignes:
+                f.write(ligne + '\n')
+        os.replace(chemin_temp, chemin)
+    except (OSError, IOError):
+        # En cas d'échec, on nettoie le fichier temporaire
+        try:
+            os.remove(chemin_temp)
+        except (OSError, IOError):
+            pass
+        raise
+
+
 def main() -> int:
     # Horodatage avec fuseau horaire afin d'éviter toute ambiguïté.
     now = datetime.datetime.now(datetime.timezone.utc).astimezone().strftime(
@@ -458,18 +535,47 @@ def main() -> int:
     # S'assurer que le répertoire cible existe avant d'écrire le fichier temporaire.
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
 
-    temp_path = STATE + ".tmp"
-    try:
-        with io.open(temp_path, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write("\n".join(lines) + "\n")
-        os.replace(temp_path, STATE)
-    finally:
-        # Nettoyage du fichier temporaire en cas d'échec.
-        if os.path.exists(temp_path):
-            try:
-                os.unlink(temp_path)
-            except OSError:
-                pass
+    # Les deux lignes qui changent a chaque execution, et elles seules :
+    # l'horodatage de generation et l'empreinte du dernier commit. Voir
+    # l'explication en tete de `ecrire_si_change`.
+    # TROIS CHAMPS SONT AUTO-REFERENTIELS, ET NON DEUX.
+    #
+    # Le troisieme n'est apparu qu'a la mesure : « Arbre de travail » note si
+    # l'arbre est propre. Ecrire ce fichier SALIT l'arbre, donc la valeur
+    # qu'il vient d'inscrire devient fausse au moment meme ou il l'inscrit.
+    # Mesure : arbre propre -> le fichier ecrit « propre » -> l'arbre devient
+    # sale -> la regeneration suivante ecrit « modifie » -> et ainsi de
+    # suite. Une oscillation, la ou l'empreinte du commit donnait une derive.
+    #
+    # Les trois ont la meme forme : un fichier ne peut pas decrire fidelement
+    # un etat que sa propre ecriture modifie. On les exclut donc de la
+    # comparaison plutot que de les supprimer -- ils restent utiles a lire,
+    # ils ne doivent simplement pas decider d'une reecriture.
+    # LE QUATRIEME CHANGE POUR UNE AUTRE RAISON, ET IL EST LE PLUS TENACE.
+    #
+    # Les trois premiers sont auto-referentiels : le fichier decrit un etat
+    # que sa propre ecriture modifie. Le quatrieme, non -- il avance avec
+    # l'HORLOGE, quoi qu'on fasse. C'est la duree de fonctionnement des
+    # conteneurs, telle que `docker ps` la rend :
+    #     litellm-proxy  litellm  Up 8 hours
+    #     litellm-proxy  litellm  Up 9 hours     <- une heure plus tard
+    #
+    # Il n'a ete trouve qu'en comparant DEUX regenerations consecutives entre
+    # elles, et non le fichier a sa version commitee : le diff contre git
+    # melangeait les changements de plusieurs passages et masquait celui-ci.
+    #
+    # Tant qu'il comptait, `rituels/STATE.md` ne pouvait etre propre plus
+    # d'une heure, et la porte de publication se refermait toute seule. La
+    # ligne reste ECRITE et lisible -- elle cesse seulement de decider d'une
+    # reecriture. Le motif vise le format de `docker ps`, ou l'etat est
+    # separe du nom par des tabulations.
+    VOLATILES = (
+        "Généré par `python scripts/nexus_state.py`",
+        "| Commit |",
+        "| Arbre de travail |",
+        "\tUp ",
+    )
+    ecrire_si_change(STATE, lines, VOLATILES)
 
     if passerelle_muette:
         print(
