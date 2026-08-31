@@ -1219,28 +1219,40 @@ async function buildIndex(root, embedModel) {
   // la recherche rendrait le meme extrait plusieurs fois.
   const VERSION_INDEX = 2;
   const prefixe = path.relative(WORK_ROOT, root).replace(/\\/g, "/");
+  // Le nombre d'extraits PERDUS par un remplacement. Compte AVANT que
+  // `anciens` ne soit vide : compter apres donnerait toujours zero, un
+  // chiffre FAUX plutot qu'une absence de chiffre.
+  let perdus = 0;
   let anciens = [];
   let racines = [];
   let motifRemplacement = null;
   try {
-    if (fs.existsSync(INDEX_PATH)) {
-      const precedent = JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
-      if (precedent.version !== VERSION_INDEX) {
-        motifRemplacement = "format anterieur (chemins non ancres au depot)";
-      } else if (precedent.model !== embedModel) {
-        motifRemplacement = "modele different (" + precedent.model +
-          " -> " + embedModel + ") : vecteurs non comparables";
-      } else if (Array.isArray(precedent.records)) {
-        anciens = precedent.records.filter((r) =>
-          !(prefixe === "" || r.file === prefixe || r.file.startsWith(prefixe + "/")));
-        racines = Array.isArray(precedent.roots) ? precedent.roots.slice() : [];
-      }
+  if (fs.existsSync(INDEX_PATH)) {
+    const precedent = JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
+    const recordsArray = Array.isArray(precedent.records) ? precedent.records : null;
+
+    if (precedent.version !== VERSION_INDEX) {
+      // format anterieur : les chemins ne sont pas ancrés au depot
+      motifRemplacement = "format anterieur (chemins non ancres au depot)";
+      perdus = recordsArray ? recordsArray.length : 0;   // cas 2
+    } else if (precedent.model !== embedModel) {
+      // modele different : vecteurs non comparables
+      motifRemplacement = "modele different (" + precedent.model +
+        " -> " + embedModel + ") : vecteurs non comparables";
+      perdus = recordsArray ? recordsArray.length : 0;   // cas 2
+    } else if (recordsArray) {
+      // fusion : on conserve les enregistrements qui ne correspondent pas au prefixe
+      anciens = precedent.records.filter((r) =>
+        !(prefixe === "" || r.file === prefixe || r.file.startsWith(prefixe + "/")));
+      racines = Array.isArray(precedent.roots) ? precedent.roots.slice() : [];
+      // perdus reste a 0 car aucun remplacement n'est effectue
     }
+  }
   } catch (err) {
-    // Un index illisible se REMPLACE, mais on ne se tait pas dessus : le
-    // silence ferait passer une perte pour une construction normale.
-    motifRemplacement = "index precedent illisible (" +
-      String(err && err.message).slice(0, 60) + ")";
+  // index precedent illisible : on ne peut pas connaitre le nombre d'extraits perdus
+  motifRemplacement = "index precedent illisible (" +
+    String(err && err.message).slice(0, 60) + "), nombre d'extraits perdus inconnu";
+  // perdus reste a 0 (cas 3)
   }
   if (motifRemplacement) {
     log("index REMPLACE et non fusionne — " + motifRemplacement);
@@ -1260,6 +1272,13 @@ async function buildIndex(root, embedModel) {
     files: files.length,
     chunks: tous.length,
     chunks_ajoutes: records.length,
+    // CE QUI ETAIT FAUX : le motif de remplacement partait dans `log()`,
+    // donc sur stderr, invisible a l'appelant MCP. Il lisait « Index
+    // construit » sans savoir qu'il venait de perdre son corpus
+    // precedent. Une perte silencieuse est pire que le defaut d'origine :
+    // une erreur, elle, se voit.
+    remplacement: motifRemplacement,
+    extraits_perdus: motifRemplacement ? perdus : 0,
     records: tous,
   };
   fs.mkdirSync(INDEX_DIR, { recursive: true });
@@ -2852,7 +2871,19 @@ async function callTool(name, args) {
       `  fichiers: ${index.files}\n` +
       `  extraits: ${index.chunks}\n` +
       `  modele  : ${index.model}\n` +
-      `  stocke  : ${INDEX_PATH} (local, jamais transmis)`
+      `  stocke  : ${INDEX_PATH} (local, jamais transmis)` +
+      // LA PERTE SE DIT, ET SE CHIFFRE QUAND ON PEUT.
+      //
+      // Sans cette ligne, l'appelant lit « Index construit » et croit
+      // avoir ajoute un corpus, alors qu'il vient d'en detruire un. Une
+      // instance voisine l'a vecu : elle a rapporte « en construire un
+      // autre ecrase le precedent », juste sur l'effet et faux sur la
+      // cause, faute d'avoir ete informee de la condition.
+      (index.remplacement
+        ? `\n  ATTENTION : l'index precedent a ete REMPLACE, non fusionne.` +
+          `\n    motif   : ${index.remplacement}` +
+          `\n    perdus  : ${index.extraits_perdus} extrait(s)`
+        : ``)
     );
   }
 

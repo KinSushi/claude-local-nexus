@@ -4298,3 +4298,57 @@ le separateur demande, et la greffe a ete refusee par son propre assert plutot
 qu'appliquee au hasard. Le sol est mesure et inscrit ici ; rien n'a ete pose a
 moitie.
 
+---
+
+## 42. LA PERTE D'INDEX CESSE D'ETRE SILENCIEUSE — §41.1 ferme
+
+Ce que l'appelant lit desormais quand un remplacement a lieu :
+
+```
+Index construit.
+  fichiers: 1
+  extraits: 4
+  modele  : nomic-embed-text-local
+  ATTENTION : l'index precedent a ete REMPLACE, non fusionne.
+    motif   : modele different (bge-m3-local -> nomic-embed-text-local)
+    perdus  : 8 extrait(s)
+```
+
+Le cas de fusion reste intact : deux corpus au meme modele donnent toujours
+2 fichiers et 8 extraits, sans avertissement.
+
+**Le compte se prend AVANT la perte.** Quand il y a remplacement, la liste des
+anciens est deja vide : compter dessus donnerait toujours zero — un chiffre
+FAUX plutot qu'une absence de chiffre.
+
+**Et quand l'index precedent est ILLISIBLE, le compte est INCONNU.** Le motif
+le dit, et le compte reste a zero. Rendre un chiffre serait mentir ; le taire
+ferait croire a zero perte.
+
+### 42.1 TROIS DEFAUTS DE L'EPREUVE ELLE-MEME, et le second certifie a tort
+
+| Defaut de la fixture | Effet |
+| --- | --- |
+| champ `modele` au lieu de `model` | le modele du precedent valait toujours `undefined` |
+| modele courant passe comme **objet** | un objet n'est jamais egal a une chaine |
+| enregistrements portant `id` au lieu de `file` | le code levait, et le rempart transformait la levee en « index illisible » |
+
+Les deux premiers se combinent : la comparaison des modeles etait **toujours
+vraie**, et **deux cas passaient par coincidence** — ils attendaient
+precisement cette branche.
+
+**Deux verts pour la mauvaise raison, dans l'epreuve censee garder les
+autres.** Une epreuve verte a tort est pire qu'une epreuve absente : elle
+certifie.
+
+Le troisieme est du meme ordre : la fixture faisait lever le code, et le
+diagnostic rendu — « index precedent illisible » — accusait le code d'une
+panne qui n'existait pas. Le rempart, en transformant la levee en motif
+plausible, l'a rendue credible.
+
+### 42.2 Et mon extracteur ne connaissait que Python
+
+Il cherchait l'ouverture de bloc `python` et rendait « aucun debut de code
+reconnu » sur un rendu **JavaScript parfaitement bon**. Elargi une fois, aux
+six ouvertures possibles — plutot que contourne.
+

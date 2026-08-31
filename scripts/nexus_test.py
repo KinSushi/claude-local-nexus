@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande"],
+                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1336,6 +1336,8 @@ def main() -> int:
         test_decoupage_emoji()
     if args.only in (None, "commande"):
         test_commande_nexus()
+    if args.only in (None, "perte"):
+        test_perte_index()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2339,6 +2341,44 @@ def test_conformite_sources() -> None:
     print("")
     print("--- SOURCES : le README et la configuration active disent-ils vrai ? ---")
     jouer_epreuve_python("epreuve_conformite_sources.py", "sources de verite")
+
+
+def test_perte_index() -> None:
+    """
+    La perte d un index precedent est-elle DITE a l appelant, et chiffree ?
+
+    MESURE. Une instance voisine rapporte « en construire un autre ecrase le
+    precedent ». Verifie :
+
+        second corpus, MEME modele      -> S AJOUTE : 2 fichiers, 8 extraits
+        second corpus, modele DIFFERENT -> remplace : 2 fichiers -> 1
+
+    Le remplacement est CORRECT -- des vecteurs de deux modeles ne sont pas
+    comparables. LE DEFAUT ETAIT QU IL ETAIT SILENCIEUX : le motif partait
+    dans `log()`, donc sur stderr, invisible a l appelant MCP, qui lisait
+    « Index construit » sans savoir qu il venait de perdre son corpus. Leur
+    rapport etait juste sur l EFFET et faux sur la CAUSE, faute d avoir ete
+    informe de la condition.
+
+    L ANTI-CONTROLE QUI COMPTE LE PLUS est le cas ILLISIBLE : le nombre
+    d extraits perdus est alors INCONNU. Rendre un chiffre serait mentir ; le
+    taire ferait croire a zero perte. Le motif doit donc porter « inconnu ».
+
+    L epreuve n APPELLE PAS le pont : elle extrait le bloc de lecture du CODE
+    REEL de server.js et l exerce sur des objets fabriques. Construire un vrai
+    index demanderait un moteur allume et des dizaines de secondes, et une
+    epreuve qui depend d un moteur rougit pour des raisons sans rapport.
+
+    TROIS DEFAUTS DE SES PROPRES FIXTURES ont ete trouves en la posant, et le
+    deuxieme est le plus instructif : `embedModel` etait passe comme OBJET, et
+    le champ ecrit `modele` au lieu de `model`. La comparaison
+    `precedent.model !== embedModel` etait donc TOUJOURS vraie, et deux cas
+    passaient PAR COINCIDENCE -- ils attendaient precisement cette branche.
+    Deux verts pour la mauvaise raison, dans l epreuve censee garder les
+    autres.
+    """
+    jouer_epreuve_node("epreuve_perte_index.js", "perte d index",
+                       "PERTE D INDEX : le remplacement est-il DIT ?")
 
 
 def test_commande_nexus() -> None:
