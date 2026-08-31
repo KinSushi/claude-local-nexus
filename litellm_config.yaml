@@ -1382,6 +1382,37 @@ router_settings:
   allowed_fails: 2
   cooldown_time: 120
 
+  # Ne pas rejouer ce qui vient de dire non, ni ce qui n'a jamais repondu.
+  #
+  # `num_retries: 2` reste le defaut : sur une coupure de socket ou un 5xx
+  # passager, rejouer aide vraiment. Deux classes d'erreur font exception, et
+  # chacune a sa mesure du 2026-08-30 derriere elle.
+  #
+  # RateLimitErrorRetries: 0
+  #   Un 429 DIT de ralentir. Le rejouer ajoute a la pression qui l'a cause.
+  #   Mesure : six taches simultanees ont produit 36 refus et ZERO succes en
+  #   six minutes, chaque appel client se demultipliant en tentatives et en
+  #   replis sur le meme quota de compte. Le repli local doit partir tout de
+  #   suite : il ne consomme aucun quota, et il termine la chaine.
+  #
+  # TimeoutErrorRetries: 0
+  #   Une expiration signifie 180 s de silence. La rejouer deux fois coute
+  #   six minutes de plus pour le meme silence, AVANT que le repli local ne
+  #   soit tente. Mesure le meme soir : gpt-oss-120b-cloud pendait au-dela de
+  #   120 s sans jamais basculer, alors que le repli local existait.
+  #
+  # Cle verifiee dans la documentation LiteLLM avant d'etre ecrite : le
+  # contrat de ce depot interdit d'inventer une capacite d'un fournisseur.
+  retry_policy:
+    RateLimitErrorRetries: 0
+    TimeoutErrorRetries: 0
+
+  # Un 429 n'est pas la faute du modele : il vient du quota du COMPTE, donc
+  # de tous les alias cloud a la fois. Le mettre en quarantaine pour 120 s
+  # punirait un modele sain et retrecirait le pool au pire moment.
+  allowed_fails_policy:
+    RateLimitErrorAllowedFails: 100
+
   fallbacks:
     # Le relais local, seul repli declare A LA MAIN.
     #
