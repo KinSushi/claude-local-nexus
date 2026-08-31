@@ -2659,3 +2659,10 @@ illisible » sur une console cp1252, et « casse » sur un PSScriptAnalyzer sain
 Le chemin `--appliquer` n'a pas encore rendu son verdict : le tirage réel
 tournait toujours à la clôture du tour. La **simulation** et la **garde**
 sont éprouvées ; le tirage ne l'est pas.
+
+### 20.3 Le cliquet a mordu, cinquième fois du jour
+
+`B007`, `RET504` et deux autres introduits par le livrable du banc, attrapés
+au rituel de clôture et corrigés par `ruff --fix`. Cinquième fois aujourd hui
+qu un contrôle de ce dépôt mord le travail du tour même. Le code du banc n est
+pas plus discipliné que le mien ; seul le contrôle l est.
