@@ -2925,3 +2925,67 @@ restaurée et valide.
 | `B904` | 4 | **0** |
 | `B905` | 2 | **0** |
 | `SIM115` | 21 | 17 |
+
+---
+
+# 25. POINT DE REPRISE — 31/08/2026, contexte saturé
+
+Écrit pour survivre à une perte de contexte. **Rien ici ne dépend de ma
+mémoire** : `nexus sujets` régénère cette liste depuis la transcription, les
+messages de commit et ce fichier.
+
+## 25.1 Ce qui est FERMÉ par un contrôle qui échoue si la règle est enfreinte
+
+| Fermé | Contrôle qui garde |
+|---|---|
+| le garde des sous-agents ne voyait pas `Workflow` (460 sous-agents, 32,1 M de jetons facturés) | matcher `Agent\|Workflow`, `--only plan`, 8 cas |
+| un refus sortait en 0 — il s'affichait sans bloquer | `epreuve_garde_plan`, cas « un REFUS sort en 2 » |
+| le cliquet de câblage punissait la première épreuve Python | `--only cablage`, 8 cas dont 4 garde-fous |
+| l'outillage annonçait « 0 violation » à trois étages (108 défauts cachés) | `nexus_outillage --cliquet`, câblé au rituel |
+| la traque cherchait un refus en MOTS, celui du garde était en DONNÉES | motifs A et B, éprouvés par sonde |
+| la sonde MCP rendait SUCCÈS sur ses propres échecs | `--only sonde`, 10 cas |
+| un repli pouvait viser un quota déjà épuisé | `--only quota`, contre-épreuve par injection |
+| `STATE.md` ne pouvait être propre plus d'une heure | écriture idempotente, 4 champs volatils |
+| l'index écrasait au lieu de fusionner | fusion + 2 gardes (modèle, format) |
+| le relevé de latences écrasait | accumulation + dispersion, 4 propriétés |
+| 7 modèles mentaient sur leur modalité | `controle_modalites`, câblé au validateur |
+| l'orchestrateur écrivait sans le dire | `nexus_redaction`, câblé au rituel — **71 MUETS** affichés |
+
+## 25.2 Ce qui reste OUVERT — aucun contrôle ne le garde
+
+| Sujet | Pourquoi il reste ouvert | Prochain geste |
+|---|---|---|
+| **Le cliquet ne RESSERRE pas** | il note les améliorations sans abaisser la référence : un retour en arrière passerait. `nexus_cablage` a le même trou | décider si écrire la référence pendant le rituel est acceptable — cela salit l'arbre au moment où le rituel le vérifie |
+| **~85 violations Python non arbitrées** | `SIM115` ×17 (dont 10 dans le harnais de test), `B007` ×12, `RET503` ×9 | arbitrer par classe, comme pour PowerShell : 2 vrais défauts sur 17 |
+| **`insert` et `audio` mesurés, exposés par rien** | 5 modèles déclarent `insert`, 2 déclarent `audio`. Les exposer demande des chemins d'API nouveaux | décision d'architecture — **je ne la prends pas seul** |
+| **Lenteur du pont MCP** | >120 s contre 10,6 s en direct. L'hypothèse de la ruée sur le cache est **réfutée** (CACHE_MS 60 s, concurrence bornée) | mesurée, inexpliquée |
+| **P4 : six familles rendent vide à 2 200 jetons** | `mesure_rendu_vide.py` livré et câblé, jamais joué sur les neuf familles | jouer l'outil, deux passes par modèle |
+| **`--fusionner` : cause non établie** | sous `true`, deux familles ont déclaré les fichiers vides ; la session voisine a rétracté sa cause | reproduire sans clause d'échappement |
+| **Contrat §3 périmé** | il annonce Ollama sur `127.0.0.1:11435` ; mesuré, **11434 répond, 11435 non** | corriger le contrat |
+| **40 `.bak` dans `scripts/.nexus/`** | signalés en ALERTE à chaque passage de la porte | données de l'opérateur |
+| **Promotion sans démotion** | les épreuves promeuvent, ne démeuvent jamais ; une promotion peut tenir sur un seul passage | décisions réservées à l'opérateur |
+
+## 25.3 Les cinq propositions de la session voisine, arbitrées
+
+| # | Verdict |
+|---|---|
+| P1 garde d'indexation au mauvais niveau | **retenu** — la raison était fausse, le garde reste, le motif est réécrit |
+| P2 exposer les modèles résidents | **retenu** — `OLLAMA_URL` + `modelesResidents()` |
+| P3 traces verbatim dans l'arbre | **pas de mon ressort** — `_RAPPORTS_VERBATIM` n'existe pas ici |
+| P4 l'échec a la forme d'un résultat | **pas de mon ressort** — `Task failed:` vient de l'enveloppe Claude Code |
+| P5 un brief doit porter le sol entier | **déjà mesuré ici** (§16.3), convergence indépendante |
+
+## 25.4 Les quatre leçons que la journée a payées
+
+1. **Une leçon appliquée d'un côté et pas de l'autre** — six occurrences :
+   accumulation des mesures, garde sur les vecteurs, sortie machine sur
+   stderr, deux critères d'exclusion cloud, réveil du modèle, et le cliquet.
+   *Chercher systématiquement le jumeau d'un correctif.*
+2. **Un artefact d'observation pris pour un défaut** — trois fois : un
+   `grep -A9` trop court, un `2>&1` qui fusionne les flux, une fenêtre de
+   1 400 caractères débordant sur le bloc voisin. *Borner par le contenu.*
+3. **La forme de la délégation compte plus que le modèle** — les livrables
+   **complets** réussissent, les **diffs verbatim** échouent, les **reprises**
+   dégradent. *Relancer à neuf plutôt que reprendre.*
+4. **Un vert qui ne peut pas rougir ne mesure rien** — construit deux fois
+   sans le voir avant de l'exécuter. *La contre-épreuve est le livrable.*
