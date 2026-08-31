@@ -47,7 +47,14 @@ if sys.version_info < (3, 7):
 try:
     import nexus_capability as capability  # noqa: E402
 except ImportError as exc:  # pragma: no cover
-    print("Erreur : le module requis 'nexus_capability' est introuvable.", file=sys.stderr)
+    # LA CAUSE EST DITE, pas seulement le symptome.
+    #
+    # `exc` etait capture puis jete : l'operateur lisait « module
+    # introuvable » sans jamais savoir POURQUOI -- chemin absent, dependance
+    # manquante du module lui-meme, erreur de syntaxe a l'import. Trois
+    # pannes differentes derriere un seul message.
+    print("Erreur : le module requis 'nexus_capability' est introuvable — %s"
+          % exc, file=sys.stderr)
     sys.exit(2)
 
 # ---------------------------------------------------------------------------

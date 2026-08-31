@@ -232,8 +232,20 @@ def main(argv=None) -> int:
         except (AttributeError, ValueError, OSError):
             pass
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--etat", action="store_true", help="qui tient quoi, en ce moment")
-    a = ap.parse_args(argv)
+    # `--etat` EST le comportement, il ne le declenche pas.
+    #
+    # Le drapeau etait declare, documente dans l'usage en tete de fichier, et
+    # JAMAIS consulte : le script affiche l'etat qu'on le passe ou non. Une
+    # option documentee qui ne fait rien est pire qu'une option absente --
+    # elle laisse croire qu'il existe un autre mode.
+    #
+    # Il est CONSERVE plutot que retire : l'usage du fichier le cite, et un
+    # appelant pourrait le passer. Mais son aide dit maintenant la verite.
+    ap.add_argument("--etat", action="store_true",
+                    help="sans effet : ce script n'affiche que l'etat, "
+                         "avec ou sans ce drapeau. Conserve pour les "
+                         "appelants qui le passent deja.")
+    ap.parse_args(argv)
 
     horodatage = datetime.now().astimezone().replace(microsecond=0).isoformat()
     print(f"VERROUS MACHINE — {horodatage}")

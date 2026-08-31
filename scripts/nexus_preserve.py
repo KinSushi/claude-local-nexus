@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import io
 import os
 import re
 import shutil

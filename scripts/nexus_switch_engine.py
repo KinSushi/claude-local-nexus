@@ -41,7 +41,7 @@ import datetime
 import tempfile
 import socket
 import subprocess
-from typing import TypedDict, Literal, NotRequired
+from typing import TypedDict, Literal
 
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows

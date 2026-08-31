@@ -22,7 +22,6 @@ Les messages console sont sans accents pour compatibilite Windows.
 
 import argparse
 import ast
-import json
 import os
 import re
 import shutil

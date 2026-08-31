@@ -25,14 +25,13 @@ Les messages affichés sur la console sont sans accents (compatibilité Windows)
 import argparse
 import ast
 import hashlib
-import json
 import os
 import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple
 
 # --------------------------------------------------------------------------- #
 # Pré‑chargement du module nexus_agent (une seule fois, avant le multithreading)
@@ -315,7 +314,6 @@ def traiter_cible(
         return f"{nom_cible},echec,0,0,none,{plan}", False, False
 
     # Flag indiquant si le backup a déjà été géré (restauré ou supprimé)
-    backup_gere = False
 
     # La copie de travail. Tout ce qui suit -- audit, correction,
     # verification -- porte sur ELLE. L'original n'est touche qu'a l'etape 7,
@@ -340,7 +338,6 @@ def traiter_cible(
             except FileNotFoundError as e:
                 print(f"Consigne audit introuvable: {e}")
                 restaurer_backup(cible, backup_path)
-                backup_gere = True
                 return (
                     f"{nom_cible},echec,0,0,none,{plan},consigne audit introuvable",
                     False,
@@ -357,7 +354,6 @@ def traiter_cible(
             print(f"Audit result malformed for {nom_cible}")
             # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             return (
                 f"{nom_cible},echec,0,0,none,{plan},reponse d'audit malformee",
                 False,
@@ -369,7 +365,6 @@ def traiter_cible(
             print(f"Audit error for {nom_cible}")
             # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             detail_audit = str(audit_res.get('erreur', '')).replace(',', ';').replace('\n', ' ')[:160]
             return (
                 f"{nom_cible},echec,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_audit}",
@@ -384,7 +379,6 @@ def traiter_cible(
         if not audit_texte:
             print(f"{nom_cible} sans trouvaille")
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             return (
                 f"{nom_cible},sans trouvaille,0,{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan}",
                 True,
@@ -498,7 +492,6 @@ def traiter_cible(
             print(f"Correction failed for {nom_cible}")
             # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},{detail_correction}",
                 False,
@@ -510,7 +503,6 @@ def traiter_cible(
             print(f"Verification failed for {nom_cible}")
             # Rien a restaurer : l'original n'a jamais ete ouvert en ecriture.
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},syntaxe invalide apres correction",
                 False,
@@ -529,7 +521,6 @@ def traiter_cible(
             print(f"Promotion impossible pour {nom_cible}: {e}")
             restaurer_backup(cible, backup_path)
             backup_path.unlink(missing_ok=True)
-            backup_gere = True
             return (
                 f"{nom_cible},echec,{nb_trouvailles},{audit_res.get('tokens',0)},{audit_res.get('modele','none')},{plan},promotion impossible",
                 False,
@@ -537,7 +528,6 @@ def traiter_cible(
             )
         promotion_en_cours = False
         backup_path.unlink(missing_ok=True)
-        backup_gere = True
 
         # Détection d'une fuite : cible prévue locale mais audit exécuté avec le modèle cloud
         fuite = False
