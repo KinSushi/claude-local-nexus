@@ -158,9 +158,24 @@ _PROHIBITED = set('$(`*?')
 
 
 def _strip_quotes(s):
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
-        return s[1:-1]
+    """
+    Retire les guillemets encadrants identiques puis, si le dernier caractere
+    est une apostrophe ou un guillemet orphelin, le supprime.
+    """
+    # 1. Traitement existant : enlever une paire de guillemets identiques
+    m = re.fullmatch(r'([\'"])(.*)\1', s)
+    if m:
+        s = m.group(2)
+
+    # 2. Supprimer un guillemet/apostrophe orphelin en derniere position
+    # Le caractere doit apparaitre UNE SEULE FOIS : c'est ce qui le rend
+    # orphelin. Deux apostrophes -- « don't.txt' » -- et l'on ne devine plus
+    # laquelle ferme quoi ; on ne touche alors a rien.
+    if len(s) > 1 and s[-1] in ('"', "'") and s.count(s[-1]) == 1:
+        s = s[:-1]
+
     return s
+
 
 def _analyse_target(tok):
     t = _strip_quotes(tok)
@@ -234,62 +249,128 @@ def _parse_commands(seg):
     tokens = _tokenize(seg)
     if not tokens:
         return [], False
-    cmd = tokens[0].lower()
-    targets = []
+    chemins = []
     indet = False
+    cmd = tokens[0]
+    ancre = cmd.lower()
 
-    # cp, mv, tee : last argument is destination
-    if cmd in ('cp', 'mv', 'tee'):
-        tgt, det = _analyse_target(tokens[-1])
-        if tgt:
-            targets.append(tgt)
-        indet = indet or det
-        return targets, indet
-
-    # dd : look for of=FICHIER
-    if cmd == 'dd':
-        for tok in tokens[1:]:
-            if tok.startswith('of='):
-                raw = tok[3:]
-                tgt, det = _analyse_target(raw)
-                if tgt:
-                    targets.append(tgt)
-                indet = indet or det
+    if ancre in ("cp", "mv"):
+        args = [t for t in tokens[1:] if not t.startswith("-")]
+        if len(args) >= 2:
+            t, d = _analyse_target(args[-1])
+            if t:
+                chemins.append(t)
+            indet = indet or d
+    elif ancre == "tee":
+        args = [t for t in tokens[1:] if not t.startswith("-")]
+        if args:
+            t, d = _analyse_target(args[-1])
+            if t:
+                chemins.append(t)
+            indet = indet or d
+    elif ancre.startswith("sed"):
+        # Verifier la presence de l'option -i (edition en place)
+        has_i = any(t.startswith("-i") for t in tokens[1:])
+        if not has_i:
+            # sans -i, sed ne produit aucun fichier ecrit
+            pass
+        else:
+            script_seen = False          # indique si le script a ete rencontre
+            i = 1                        # on commence apres le token "sed"
+            while i < len(tokens):
+                t = tokens[i]
+                if t.startswith("-"):
+                    # option -i (peut contenir un suffixe, ex: -i.bak)
+                    if t.startswith("-i"):
+                        i += 1
+                        continue
+                    # options -e ou -f, qui prennent une valeur (collee ou separee)
+                    if t.startswith("-e") or t.startswith("-f"):
+                        # valeur collee (ex: -es/x/y/)
+                        if len(t) > 2:
+                            script_seen = True
+                            i += 1
+                        else:
+                            # valeur separee : le token suivant est la valeur
+                            script_seen = True
+                            i += 2
+                        continue
+                    # autres options (ex: -n, -r, ...)
+                    i += 1
+                    continue
+                # token positionnel
+                if not script_seen:
+                    # le premier token positionnel est le script
+                    script_seen = True
+                    i += 1
+                else:
+                    # token suivant sont des fichiers
+                    t_path, d = _analyse_target(t)
+                    if t_path:
+                        chemins.append(t_path)
+                    indet = indet or d
+                    i += 1
+    elif ancre == "dd":
+        for t in tokens[1:]:
+            if t.startswith("of="):
+                cible, d = _analyse_target(t[3:])
+                if cible:
+                    chemins.append(cible)
+                indet = indet or d
+    # ---------- DEBUT DE LA BRANCHE POWER SHELL ----------
+    elif ancre in ("set-content", "add-content", "out-file"):
+        # recherche d'une option explicite
+        opt_name = "-path" if ancre in ("set-content", "add-content") else "-filepath"
+        target = None
+        # première passe : option explicite
+        for i, t in enumerate(tokens[1:]):
+            if t.lower() == opt_name:
+                # valeur suivante, si elle existe et n'est pas une autre option
+                if i + 1 < len(tokens[1:]) and not tokens[1:][i + 1].startswith("-"):
+                    target = tokens[1:][i + 1]
                 break
-        return targets, indet
+        # deuxième passe : premier argument positionnel non consommé par une option
+        if target is None:
+            # indices des valeurs d'options déjà consommées
+            consumed = set()
+            for i, t in enumerate(tokens[1:]):
+                if t.lower() in ("-path", "-filepath") and i + 1 < len(tokens[1:]):
+                    consumed.add(i + 1)
+            for i, t in enumerate(tokens[1:]):
+                if i in consumed:
+                    continue
+                if not t.startswith("-"):
+                    target = t
+                    break
+        # si on a trouvé une cible, on la traite comme les autres branches
+        if target is not None:
+            t, d = _analyse_target(target)
+            if t:
+                chemins.append(t)
+            indet = indet or d
+    # ---------- FIN DE LA BRANCHE POWER SHELL ----------
+    return chemins, indet
 
-    # PowerShell Set-Content, Add-Content, Out-File
-    if cmd in ('set-content', 'add-content', 'out-file'):
-        for i, tok in enumerate(tokens[1:]):
-            low = tok.lower()
-            if low in ('-path', '-literalpath'):
-                if i + 2 < len(tokens):
-                    raw = tokens[i + 2]
-                    tgt, det = _analyse_target(raw)
-                    if tgt:
-                        targets.append(tgt)
-                    indet = indet or det
-                break
-        return targets, indet
-
-    # sed -i[.suffix] ... file
-    if cmd == 'sed':
-        inplace = any(re.match(r'^-i(\..*)?$', t) for t in tokens[1:])
-        if not inplace:
-            return [], False
-        # last non-option token is file
-        non_opt = [t for t in tokens[1:] if not t.startswith('-')]
-        if non_opt:
-            raw = non_opt[-1]
-            tgt, det = _analyse_target(raw)
-            if tgt:
-                targets.append(tgt)
-            indet = indet or det
-        return targets, indet
-
-    return [], False
 
 def cibles_ecrites(commande):
+    # UNE CITATION NON FERMEE REND LA COMMANDE INDECOUPABLE.
+    #
+    # DEFAUT MESURE sur les cas d'une equipe voisine :
+    #     echo x > "non ferme    rendait ['"non']   attendu [], indetermine
+    #
+    # Rendre un chemin commencant par un guillemet est PIRE que ne rien
+    # rendre : c'est un chemin FAUX presente comme sur, et le journal en
+    # porterait la trace. « Une mesure impossible n'est pas une mesure a
+    # zero » -- on le DIT par `indetermine`, on ne devine pas.
+    #
+    # ANTI-CONTROLE : `echo "a | b" > f.txt` porte DEUX guillemets, compte
+    # PAIR, et continue de rendre ['f.txt']. Une garde qui refuserait toute
+    # commande citee refuserait le travail ordinaire -- et un garde qui refuse
+    # le travail ordinaire se fait desarmer.
+    if isinstance(commande, str) and (
+            commande.count('"') % 2 or commande.count("'") % 2):
+        return [], True
+
     try:
         segments = _split_segments(commande)
         all_targets = []

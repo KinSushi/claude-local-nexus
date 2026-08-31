@@ -3968,3 +3968,152 @@ restauration.
 * Leur `cibles_shell.py`, `eprouver_cibles.py` (19 cas) et `mesurer_classes.py`
   (28 vecteurs mesures) sont **sur disque** ici, jamais encore joues en entier.
 
+---
+
+## 37. LE SCHEMA D'ARCHITECTURE SOUMIS — a examiner
+
+Transmis par l'operateur le 2026-08-31. **Inscrit ici comme SOUMISSION, pas
+comme fait etabli** : c'est ce qu'il a demande, et le contrat veut qu'on
+verifie avant d'adopter.
+
+### 37.1 Ce qu'il affirme, et qui est JUSTE
+
+**Les trois voies ne sont pas symetriques**, et c'est le point central :
+
+```
+CLAUDE CODE (abonnement claude.ai)   -->  orchestrateur, NE passe PAS par LiteLLM
+        |
+       MCP
+        |
+   nexus-local  -->  LiteLLM  -->  Ollama local / Ollama Cloud / Anthropic API
+```
+
+Cela concorde avec le contrat §106 : mettre une clef de passerelle devant
+Claude Code lui ferait employer cette clef plutot que l'abonnement. La
+formulation exacte du contrat est plus fine — `ANTHROPIC_BASE_URL` seul ne
+remplace PAS l'abonnement ; `ANTHROPIC_AUTH_TOKEN` (ou `apiKeyHelper`) si.
+
+La distinction **Anthropic API != abonnement Claude** est juste, et elle
+merite d'etre repetee : la branche `LiteLLM -> Anthropic` est facturee au
+jeton sur le compte API, jamais sur l'abonnement.
+
+### 37.2 Ce qui est FAUX, et d'ou cela vient
+
+| Affirmation | Mesure du 2026-08-31 |
+| --- | --- |
+| « 33 alias locaux » | **53** |
+| « 19 alias cloud » | 19 — juste |
+| « 4 alias Anthropic » | 4 — juste |
+| six outils MCP cites | **12** exposes (la liste etait illustrative) |
+
+**Le schema cite fidelement le README. C'est le README qui est perime** — et
+il est la VITRINE PUBLIEE. Deux chiffres y ont gele :
+
+* ligne 49 : « 33 alias » pour le plan local, contre 53 mesures ;
+* ligne 304 : « sur les 40 modeles locaux mesures », contre 47 mesures et
+  installes (52 installes, dont 5 embeddings et OCR qu'un banc *chat* ne
+  mesure pas).
+
+C'est la regle de ce depot retournee contre lui : *une mesure gelee ment le
+lendemain*. Elle a ete empruntee au depot voisin, appliquee aux pools, au
+port du moteur, aux corpus annexes — et pas au README.
+
+### 37.3 Ce qui reste a EXAMINER, et que je ne tranche pas
+
+* **A2A — Agent2Agent.** Le schema le place « plus tard et au-dessus » de
+  MCP, pour faire cooperer des agents specialises (dev, test, securite). Rien
+  n'existe ici pour cela, et il ne faut pas le confondre avec MCP : *MCP
+  branche un agent a des CAPACITES ; A2A branche des agents ENTRE EUX.* Ce
+  depot pratique deja une forme artisanale d'A2A — deux sessions qui
+  s'echangent des mesures, des refutations et du code par l'operateur — et
+  cette journee en montre le rendement : la confrontation de deux extracteurs
+  a trouve cinq defauts qu'aucun des deux bancs internes ne voyait, chacun
+  ayant ete ecrit par l'auteur de sa fonction. **Ce qu'il faut examiner n'est
+  donc pas « faut-il de l'A2A » — il y en a — mais s'il doit etre MECANISE.**
+  L'operateur signale des livres sur A2A et MCP, plus du code source, dans les
+  depots voisins : matiere a emprunter PAR COPIE, et matiere a INGERER
+  (§35).
+
+* **MCP : ce que le schema dit, et ce que la mesure dit.** Il affirme que
+  « Nexus decide ensuite quel backend/modele utiliser ». Mesure sur les douze
+  outils du pont : **un seul** (`nexus_ask`) accepte un **profil**, et
+  `nexus_route` route par la tache. Tous les autres prennent un **modele
+  nomme par l'appelant**. *L'architecture decrite est donc plus automatique
+  que celle qui est implementee* — l'orchestrateur choisit, Nexus execute.
+  C'est un ecart a trancher : etendre les profils, ou corriger la description.
+* **« Nexus doit rester une infrastructure generique »**, socle des futurs
+  projets, et ne pas devenir un projet de negoce ou de science des donnees.
+  C'est une orientation, pas un fait mesurable — et elle a des consequences
+  concretes : ce qui entre dans `scripts/` doit servir toute plateforme, pas
+  un domaine.
+* Le schema ne mentionne pas les **4 routeurs** adaptatifs, qui sont pourtant
+  une voie a part entiere — un alias de routeur ne designe pas un moteur mais
+  une politique.
+
+### 37.4 Ce que cela ouvre immediatement
+
+**Aucun controle ne garde les chiffres du README.** Ils sont publies, cites
+par d'autres — ce schema en est la preuve vivante — et rien ne rougit quand
+ils divergent du parc reel. C'est un sujet ouvert, et il est mecanisable.
+
+---
+
+## 38. LE SUJET OUVERT DE §36.6, CLOS — cinq defauts, un a la fois
+
+### 38.1 Le resultat
+
+| | avant | apres |
+| --- | --- | --- |
+| notre banc interne | 16 cas | **28 cas, 0 echec** |
+| leurs 19 cas independants | **17/19** | **19/19** |
+| confrontation croisee, 26 commandes | 19 accords, 4 desaccords | **21 accords, 2 desaccords** |
+
+Et les **deux desaccords restants sont des cas ou nous avons raison et eux
+non** : sur `bash -c 'echo x > f.txt'` nous rendons `['f.txt']`, ils rendent
+`[]` — leur ecriture devient invisible. **A leur transmettre.**
+
+### 38.2 Les cinq defauts fermes
+
+| Defaut | Rendu mesure | Attendu |
+| --- | --- | --- |
+| trois verbes PowerShell absents | `[]` | `['f.txt']` |
+| `sed` ne prenait que le DERNIER fichier | `['b.py']` | `['a.py','b.py']` |
+| `sed` sans `-i` — l'anti-controle | — | `[]`, il LIT |
+| citation non fermee | `['"non']` | `[]`, **indetermine** |
+| apostrophe orpheline collee | `["f.txt'"]` | `['f.txt']` |
+
+Les deux derniers sont la meme classe : **un chemin malforme rendu comme s'il
+etait sur**. Le journal en porterait la trace, et l'analyse qui en decoulerait
+serait fausse.
+
+### 38.3 LA LECON DU TOUR : la forme de la delegation etait le defaut
+
+| Forme | Resultat |
+| --- | --- |
+| une consigne portant les **cinq** defauts | **13 cas casses sur 16**, retiree |
+| une seconde, memes cinq, avec les echecs mesures | **13 casses**, retiree |
+| **un defaut a la fois**, trois fois de suite | **0 regression**, chaque fois |
+
+Le delegue n'etait pas en cause. Une consigne large invite a une reecriture
+globale, et une reecriture globale casse ce qu'elle ne vise pas. *Un defaut
+par consigne, avec la liste de non-regression en entier.*
+
+C'est mesurable et il faut le dire : **deux jets larges, deux echecs ; trois
+jets etroits, trois reussites.**
+
+### 38.4 Trois defauts de MES propres outils, trouves en chemin
+
+* Le harnais qui lit leurs cas s'ancrait sur le **premier crochet apres
+  `CAS`** — celui de l'ANNOTATION `list[tuple[...]]`, pas de la liste. Le
+  message d'erreur etait exact et se lisait « leur fichier est illisible ».
+* Mon extracteur de rendu a **rejete un rendu correct** de 592 octets : son
+  plancher visait de gros blocs. Pire, son message accusait le banc — « n'a
+  probablement rien rendu » — alors qu'il avait rendu juste. *Un garde qui
+  diagnostique a la place envoie chercher au mauvais endroit.*
+* Ma garde d'idempotence a vu « Set-Content » **dans la docstring** et conclu
+  « cas deja graves » sur un fichier ou aucun ne l'etait. **Troisieme fois du
+  jour** que je vise un nom au lieu de sa forme reelle.
+
+Et le motif d'extraction, retape six fois dans la journee avec une variante et
+parfois un defaut a chaque fois, a ete pose UNE fois dans le bac a sable.
+
