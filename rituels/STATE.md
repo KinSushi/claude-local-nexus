@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 09:49 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 09:59 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `14a874c` |
-| Arbre de travail | propre |
+| Commit | `9c666a1` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
@@ -61,7 +61,7 @@ Verdict : **valide**
 | `model_list.txt` | `310b5f8a5f8367a09771645407e199854f44f0c1ff6571c5ac7fdb0e7a6ceace` |
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
-| `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e30152239b48128cbd68a4ef887acec3c21bd79f` |
+| `Set-ClaudeModel.ps1` | `c9e49eec98c0e482634eb3faefc4a5b6b577ad02ec40acb71817d357e9e19d64` |
 | `tools/nexus-mcp/server.js` | `df49e25d80ec8e5120cc9ba5a9086b8ac293db25a8aca9ae9e7ef1b4a7a7d404` |
 | `scripts/nexus_generate.py` | `7bdb7c9b0626e3392c5b12fb5a4985ca246440aa036132b3a79a7d0131047d9b` |
 | `scripts/nexus_validate.py` | `6c5f0f3dc45ffdde431cfddf0cafea0d52a20f1b891cab1e5e10eb06fa2da7a0` |

@@ -30,7 +30,17 @@ try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 # ------------------------------------------------------------
 # Variables globales
 # ------------------------------------------------------------
-$global:backupDir = $null   # initialise pour Cleanup-And-Exit
+# PORTEE SCRIPT, ET NON GLOBALE.
+#
+# CE QUI ETAIT FAUX. `$global:` fait vivre la variable dans la SESSION de
+# l'operateur, bien apres la fin du script -- une sauvegarde ne doit rien
+# laisser derriere elle.
+#
+# Et la globale ne servait meme pas : la ligne qui assigne reellement le
+# repertoire, plus bas, cree une variable de portee SCRIPT, que
+# `Cleanup-And-Exit` lit par la portee parente. La globale etait donc
+# vestigiale, et polluait pour rien.
+$script:backupDir = $null   # initialise pour Cleanup-And-Exit
 
 # ------------------------------------------------------------
 # Fonctions utilitaires

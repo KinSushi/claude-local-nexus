@@ -248,8 +248,27 @@ switch ($Mode) {
 
         $env:ANTHROPIC_BASE_URL   = $BaseUrl
         $env:ANTHROPIC_AUTH_TOKEN = $key
-        # Masquer le token en memoire : on supprime la variable plain après usage
-        $secureKey = ConvertTo-SecureString $key -AsPlainText -Force
+        # LE TOKEN EST DANS L'ENVIRONNEMENT, ET C'EST VOULU.
+        #
+        # CE QUI ETAIT FAUX. Ces lignes annonçaient « masquer le token en
+        # memoire » et creaient un `$secureKey` avec ConvertTo-SecureString.
+        # Ce `$secureKey` n'etait JAMAIS relu -- une seule occurrence dans
+        # tout le fichier, l'affectation elle-meme. Il ne protegeait donc
+        # rien.
+        #
+        # Et il ne pouvait rien proteger : deux lignes plus haut, le token est
+        # ecrit EN CLAIR dans $env:ANTHROPIC_AUTH_TOKEN, ou il doit rester --
+        # c'est par la que la passerelle s'authentifie, et le script le relit
+        # lui-meme plus bas. Vider `$key` pendant que la variable
+        # d'environnement garde la valeur ne cache rien a personne : tout
+        # processus fils la voit.
+        #
+        # Un masquage decoratif est pire qu'aucun masquage : il donne
+        # confiance sans rien fournir. La ligne est retiree, et le
+        # commentaire dit desormais ce qui se passe reellement.
+        #
+        # Reste `$key = $null`, qui lui a un effet : la variable locale ne
+        # traine plus dans la portee du script.
         $key = $null
 
         # Appliquer le modele retenu explicitement

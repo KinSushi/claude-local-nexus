@@ -2760,3 +2760,68 @@ En revanche le contrat **actuel** est mesuré, pas lu : en forçant un échec
 sans rien télécharger, le script rend **1**. C'est la même classe que le
 `exit 0` de la sonde MCP corrigé le matin même — un vert sur un échec
 rapporté — et elle ne se vérifie qu'en la provoquant.
+
+---
+
+## 22. Les 17 violations PowerShell, arbitrées — deux vraies, quinze rejetées
+
+Jamais examinées jusqu'ici, alors que ce dépôt tourne sur ces scripts.
+
+### 22.1 Le seul défaut sérieux était du théâtre de sécurité
+
+`Set-ClaudeModel.ps1` portait :
+
+```powershell
+$env:ANTHROPIC_AUTH_TOKEN = $key        # le token, EN CLAIR
+# Masquer le token en memoire : on supprime la variable plain après usage
+$secureKey = ConvertTo-SecureString $key -AsPlainText -Force
+$key = $null
+```
+
+`$secureKey` apparaît **une seule fois** dans tout le fichier — l'affectation
+elle-même. Il n'est jamais relu, donc il ne protège rien. Et il ne **pouvait**
+rien protéger : deux lignes plus haut le token est écrit en clair dans la
+variable d'environnement, où il doit rester puisque c'est par là que la
+passerelle s'authentifie — le script la relit lui-même trois fois plus bas.
+
+Vider `$key` pendant que l'environnement garde la valeur ne cache rien : tout
+processus fils la voit.
+
+**Un masquage décoratif est pire qu'aucun masquage : il donne confiance sans
+rien fournir.** La ligne est retirée et le commentaire dit désormais ce qui se
+passe réellement.
+
+### 22.2 `$global:` fuyait dans la session de l'opérateur
+
+`backup.ps1` déclarait `$global:backupDir`, qui survit à la fin du script dans
+la session — une sauvegarde ne doit rien laisser derrière elle. Et la globale
+ne servait même pas : la ligne qui assigne réellement le répertoire crée une
+variable de portée **script**, que `Cleanup-And-Exit` lit par la portée
+parente. Elle était vestigiale, et polluait pour rien.
+
+### 22.3 Quinze rejets, chacun vérifié
+
+| Règle | Occurrences | Verdict |
+|---|---|---|
+| `PSAvoidUsingEmptyCatchBlock` | **9** | **rejetées** — voir ci-dessous |
+| `PSUseApprovedVerbs` (`Cleanup-And-Exit`) | 1 | cosmétique ; le nommage approuvé sert la découvrabilité d'un **module**, pas d'un script autonome |
+| `PSAvoidOverwritingBuiltInCmdlets` (`Write-Log`) | 1 | **faux positif vérifié** : `Get-Command Write-Log` ne rend **rien** sur cet hôte. La règle compare à une liste statique |
+
+**Les neuf `catch` vides sont légitimes**, et c'est vérifié un par un :
+
+* `start.ps1:99`, `:126`, `:153` et `Update-NexusModels.ps1:211` — le `catch`
+  est la **branche négative d'une sonde** (« le moteur répond-il ? »). Y écrire
+  une erreur en ferait crier une sur le chemin **normal** ;
+* `backup.ps1:28`, `restore.ps1:22`, `Register-NexusTraque.ps1:31`,
+  `Register-NexusVitrine.ps1:35`, `Initialize-Nexus.ps1:150` — ajustement
+  d'encodage de console, **déjà documenté** comme volontaire : « un souci
+  d'affichage ne doit jamais faire échouer une sauvegarde ».
+
+**Et le remède est de ne rien faire.** Le cliquet d'outillage gèle déjà ces
+neuf comme dette acceptée ; un **dixième** serait une régression et
+échouerait. Retirer la règle ferait perdre cette protection ; la « corriger »
+ferait crier le linter sur des chemins sains. Le ratchet est exactement
+l'outil pour ce cas.
+
+C'est la même conclusion que pour `SIM105` en Python : **le linter signale, il
+ne juge pas** — et sur 17 signaux, deux étaient des défauts.
