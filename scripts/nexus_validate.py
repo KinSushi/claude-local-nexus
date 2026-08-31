@@ -186,11 +186,131 @@ def flatten_fallbacks(entries) -> list[tuple[str, list[str]]]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# LA MODALITE DECLAREE DOIT CORRESPONDRE A CE QUE LE MOTEUR DECLARE.
+#
+# CE QUI ETAIT FAUX, mesure le 2026-08-31. Le moteur Ollama dit lui-meme ce
+# que chaque modele sait faire :
+#     ollama show deepseek-ocr   ->  Capabilities: completion, vision
+#     ollama show llama3.2:3b    ->  Capabilities: completion, tools
+# Sur QUATORZE modeles locaux dont le moteur declare « vision », SEPT
+# seulement portaient `mode: vision` dans la configuration. Les six autres
+# sont declares A LA MAIN, hors de la zone generee, donc hors de portee du
+# correctif qui emet desormais la modalite sur le chemin auto-expose.
+#
+# CE QUE CELA PRODUIT : la regle du contrat 17 -- un modele de vision ne
+# retombe jamais sur un modele texte -- ne peut pas s'appliquer, faute de
+# savoir lesquels sont des modeles de vision. Deux modeles declarent meme
+# « audio » sans qu'aucun `mode: audio` n'existe nulle part.
+#
+# Le controle ne signale PAS l'inverse -- un mode present que le moteur ne
+# declare pas -- car un modele peut etre absent du moteur sans que la
+# configuration soit fausse.
+#
+# Et quand `ollama` est injoignable, il le DIT au lieu de se taire : un
+# controle muet est indiscernable d'un depot sain.
+# ---------------------------------------------------------------------------
+
+
+def controle_modalites(model_list, erreurs):
+    # Cache pour stocker les capacites des modeles ollama
+    cache = {}
+    
+    # Verifier si 'ollama' est disponible
+    try:
+        result = subprocess.run(['ollama', '--version'], capture_output=True,
+                                text=True, encoding='utf-8',
+                                errors='replace', timeout=15)
+        if result.returncode != 0:
+            erreurs.append("Controle impossible : commande 'ollama' introuvable ou non fonctionnelle")
+            return
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        erreurs.append("Controle impossible : commande 'ollama' introuvable ou non fonctionnelle")
+        return
+    
+    for model in model_list:
+        # Ne traiter que les modeles locaux
+        params = model.get('litellm_params') or {}
+        cible = params.get('model') or ''
+        if not cible.startswith(('ollama/', 'ollama_chat/')):
+            continue
+            
+        model_name = model['model_name']
+        ollama_model = cible
+        
+        # Extraire le nom:tag
+        if '/' in ollama_model:
+            tag = ollama_model.split('/', 1)[1]
+        else:
+            tag = ollama_model
+            
+        # Verifier si deja dans le cache
+        if tag in cache:
+            capabilities = cache[tag]
+        else:
+            try:
+                result = subprocess.run(['ollama', 'show', tag], capture_output=True,
+                                        text=True, encoding='utf-8',
+                                        errors='replace', timeout=15)
+                if result.returncode != 0:
+                    continue  # Ne pas signaler si echec, mais ne pas ajouter au cache
+                
+                lines = result.stdout.splitlines()
+                in_capabilities = False
+                capabilities = []
+                
+                for line in lines:
+                    if line.strip().rstrip(':') == 'Capabilities':
+                        in_capabilities = True
+                        continue
+                    elif in_capabilities:
+                        if line.strip() == '':
+                            break
+                        elif line.startswith(' '):
+                            capabilities.append(line.strip())
+                        else:
+                            in_capabilities = False
+                
+                cache[tag] = capabilities
+            except (subprocess.TimeoutExpired, Exception):
+                continue  # Ne pas ajouter au cache en cas d'erreur
+        
+        # Obtenir le mode de la configuration si present
+        config_mode = (model.get('model_info') or {}).get('mode')
+        
+        # Verifier les capacites
+        has_vision = 'vision' in capabilities
+        has_embedding = 'embedding' in capabilities
+        
+        if has_vision and config_mode != 'vision':
+            erreurs.append(f"Modele {model_name} declare 'vision' mais n'a pas 'mode: vision' dans la configuration")
+        
+        if has_embedding and config_mode != 'embedding':
+            erreurs.append(f"Modele {model_name} declare 'embedding' mais n'a pas 'mode: embedding' dans la configuration")
+
+
 def main() -> int:
     cfg = load_config()
 
     # --- 1. Alias déclarés, doublons -------------------------------------
     model_list = cfg.get("model_list") or []
+
+    # LA MODALITE DECLAREE EST CONFRONTEE A CELLE DU MOTEUR.
+    #
+    # Le controle recoit sa propre liste : ce qu'il rend est de deux natures,
+    # et les melanger serait faux. Un ECART est une erreur -- la regle du
+    # contrat 17 ne peut pas s'appliquer sur une modalite fausse. Mais
+    # « ollama injoignable » n'est PAS une erreur de configuration : sur une
+    # machine sans moteur, la faire bloquer refuserait une configuration
+    # parfaitement saine. Elle part donc en avertissement, ou elle reste
+    # VISIBLE -- se taire serait indiscernable d'un depot verifie.
+    _modalites: list[str] = []
+    controle_modalites(model_list, _modalites)
+    for _ligne in _modalites:
+        if _ligne.startswith("Controle impossible"):
+            warnings.append(_ligne)
+        else:
+            errors.append(_ligne)
     declared: list[str] = []
     for m in model_list:
         name = m.get("model_name")
