@@ -684,9 +684,58 @@ function observer(evenement) {
   }
 }
 
+// LE REVEIL EXISTAIT POUR LES EMBEDDINGS, JAMAIS POUR LA GENERATION.
+//
+// CE QUI ETAIT FAUX. `buildIndex` reveille son modele avant sa boucle depuis
+// ce matin, et son commentaire explique pourquoi. Le meme remede n'avait
+// jamais ete applique au chemin de GENERATION, qu'empruntent nexus_ask,
+// nexus_summarize et nexus_context. Cinquieme fois ce jour qu'une lecon
+// existe dans le depot, appliquee d'un cote et pas de l'autre.
+//
+// CE QUE CELA PRODUISAIT, rapporte par une session voisine :
+//     Task failed: Echec de nexus_ask : delai depasse apres 600s
+//     Task failed: Echec de nexus_context : delai depasse apres 600s
+//     Task failed: Echec de nexus_summarize : delai depasse apres 600s
+// Ces 600 secondes sont exactement DEFAULT_TIMEOUT_MS. Un modele local dont
+// les poids ne sont pas residents paie leur chargement A L'INTERIEUR du
+// budget de l'appel -- et ce chargement peut a lui seul le consommer.
+//
+// Mesures du 2026-08-31 sur cet hote sans GPU : le modele par defaut demande
+// 61,8 s rien que pour COMMENCER a repondre quand il est froid ; une sonde
+// entiere a pris 233,8 s a froid contre 60,9 s a chaud ; un appel
+// d'embeddings a rendu 408 apres 180,3 s a froid, et 2,90 s a chaud.
+//
+// L'appel de reveil ECHOUE souvent : la passerelle renonce avant que le
+// moteur ait fini. Sans consequence -- le moteur, lui, POURSUIT le
+// chargement. C'est le declenchement qui compte, pas la reponse.
+//
+// L'alias est inscrit AVANT l'appel interne : c'est ce qui arrete la
+// recursion, `chat()` appelant cette fonction en tete.
+const _modelesReveilles = new Set();
+
+async function reveillerModele(model) {
+  // Un modele distant n'a pas de poids a charger ici : le reveiller serait
+  // une depense sans objet, et sur un plan facture, une depense tout court.
+  const plan = planOf(model);
+  if (!/^local\b/i.test(plan)) return;
+  if (_modelesReveilles.has(model)) return;
+  _modelesReveilles.add(model);
+  try {
+    await chat(model, [{ role: "user", content: "ping" }], 1, 15000);
+  } catch (err) {
+    log("reveil de " + model + " sans reponse (" +
+        String(err && err.message).slice(0, 60) + ") — le moteur charge encore");
+  }
+}
+
 async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
+  // Le reveil couvre TOUS les chemins de generation en un seul point --
+  // nexus_ask, nexus_summarize, nexus_context, mapReduce et les autres --
+  // plutot que trois appels a maintenir separement, qu'un quatrieme outil
+  // oublierait le jour de sa creation.
+  await reveillerModele(model);
   const t = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
   const depart = Date.now();
   const corps = { model, messages, max_tokens: maxTokens || 2048 };
