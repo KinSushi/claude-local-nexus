@@ -1007,6 +1007,32 @@ enfreinte. Un paragraphe ne ferme rien.
 > deux modèles à 3/4 sont à un pas. La sélection naturelle avait la donnée
 > qu'il lui fallait ; personne ne la lui avait fournie.
 
+### Trois lancements pour douze modèles — la reprise manquait
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `--tous` ne reprenait pas | `FAIT` | `--only registre`, 10 cas dont un contrôle structurel sur l'annonce |
+| Deux tâches de fond tuées sans cause connue | `OUVERT` | ce n'était pas moi ; la reprise en réduit le coût sans l'expliquer |
+
+> **Le chiffre dit tout mieux qu'une analyse.** Trois lancements de `--tous`,
+> interrompus chacun avant la fin, ont mesuré les **mêmes douze premiers
+> modèles par ordre alphabétique** — codegemma, codestral, command-r,
+> deepseek, gemma, glm — et ne sont jamais allés au-delà. Le parc en compte
+> soixante-et-onze.
+>
+> La cause était à nu : `cibles = candidats_locaux(cle)` puis une boucle sur
+> tout, sans jamais consulter les verdicts acquis. Or le registre persiste
+> après **chaque** modèle : **la donnée était là, personne ne la lisait.**
+>
+> Ce n'est pas une lenteur, c'est un **plafond** : refaire une épreuve déjà
+> acquise n'ajoute rien *et* empêche le reste d'être mesuré.
+>
+> Seuls les verdicts **concluants** sont sautés — une tentative qui n'a pas
+> atteint le modèle sera rejouée. C'est la règle du commit précédent,
+> appliquée cette fois à la *lecture* et non à l'écriture. Et le saut est
+> **dit** : une reprise muette se lirait comme « tout a été mesuré », ce qui
+> est exactement le contraire.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
