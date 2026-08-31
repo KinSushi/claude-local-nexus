@@ -2259,3 +2259,36 @@ Ce n'est pas un défaut d'attention : c'est que **l'instrument répond
 correctement à la question réellement posée**, et qu'on lit sa réponse comme
 si elle portait sur la question qu'on croyait poser. Seule une mesure en deux
 phases — froid, puis chaud — sépare les deux.
+
+---
+
+## 15. Capacites locales elargies, et la modalite enfin ecrite
+
+**Mission** : doter le plan local de capacites manquantes.
+
+* Le banc a propose trois modeles pour combler les manques -- `whisper`,
+  `deepseek-math-7b`, `bge-reranker-base`. **Les trois sont inventes** :
+  « pull model manifest: file does not exist » pour chacun, malgre une
+  consigne interdisant explicitement d'inventer un tag. Il declarait aussi
+  « CATEGORIE OCR : AUCUN MODELE SUR » alors que la bibliotheque en porte au
+  moins trois. Le tirage tranche ; la memoire d'un modele ne prouve rien.
+* `deepseek-ocr` installe (6,7 Go), verdict materiel ACCEPT.
+
+**Le cablage automatique, observe et non relu** : au tirage la configuration
+ne bouge pas ; apres regeneration le modele est declare et marque « hors
+pool : non mesure ». Il fonctionne, et la selection naturelle joue. Mais il
+n'est **pas declenche par le tirage** -- il attend la tache de 04:00. Delai
+nomme, pas panne.
+
+**Defaut trouve par ce meme usage** : la modalite etait **calculee** (le bloc
+ligne 866 fait deja primer `ollama show` sur le nom) mais **jamais ecrite**
+sur le chemin auto-expose. Un modele de vision restait invisible aux
+controles de modalite. Corrige : `mode: vision` est desormais emis, et rien
+n'est ecrit quand la capacite est inconnue -- un `mode` faux serait pire
+qu'un `mode` absent.
+
+**Deux erreurs de ma part**, dites plutot que tues : j'ai affirme que
+`capacites_ollama` n'existait pas alors que la commande de la meme phrase
+prouvait le contraire, et conclu a la disparition d'un modele sur un
+`grep -A9` dont la fenetre s'arretait une ligne trop tot. Deux fois,
+l'affirmation a precede la verification.
