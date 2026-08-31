@@ -1,0 +1,30 @@
+{
+  "psscriptanalyzer": {
+    "PSAvoidGlobalVars": 1,
+    "PSAvoidOverwritingBuiltInCmdlets": 1,
+    "PSAvoidUsingEmptyCatchBlock": 12,
+    "PSReviewUnusedParameter": 1,
+    "PSUseApprovedVerbs": 1,
+    "PSUseDeclaredVarsMoreThanAssignments": 1
+  },
+  "ruff": {
+    "B007": 12,
+    "B023": 5,
+    "B904": 4,
+    "B905": 2,
+    "C401": 1,
+    "F401": 2,
+    "RET503": 9,
+    "RET504": 3,
+    "RET505": 4,
+    "RET507": 1,
+    "SIM102": 2,
+    "SIM103": 1,
+    "SIM105": 18,
+    "SIM108": 3,
+    "SIM112": 1,
+    "SIM113": 1,
+    "SIM114": 1,
+    "SIM115": 21
+  }
+}

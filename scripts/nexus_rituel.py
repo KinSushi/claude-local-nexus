@@ -260,6 +260,41 @@ def cablage_tenu(racine: Path) -> tuple[str, str]:
         return IGNORE, str(exc).splitlines()[0][:60]
 
 
+def outillage_tenu(racine) -> tuple[str, str]:
+    """
+    La dette que les linters mesurent a-t-elle AUGMENTE ce tour ?
+
+    Trois linters deterministes -- ruff, PSScriptAnalyzer, eslint -- voient
+    en quelques secondes, a cout facture nul, ce qu'une vague de modeles
+    cherche des heures. Encore faut-il qu'on les lance.
+
+    UN CLIQUET, ET NON UNE PORTE. Le depot porte 108 violations. Une porte
+    qui refuse au premier defaut bloquerait tout des le premier appel et
+    serait desarmee dans l'heure. Le cliquet n'exige pas de reparer le
+    passe : il refuse l'aggravation, regle par regle -- jamais sur un total,
+    qui masquerait un echange.
+
+    Le controle est LONG (PSScriptAnalyzer ratisse le depot entier) : son
+    expiration rend IGNORE et non MANQUE, car un tour ne doit pas etre
+    declare non clos par la lenteur d'une mesure.
+    """
+    try:
+        r = subprocess.run([sys.executable, "scripts/nexus_outillage.py",
+                            "--cliquet"],
+                           cwd=racine, capture_output=True, text=True,
+                           timeout=420, encoding="utf-8", errors="replace")
+        lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
+        verdict = next((l for l in lignes if l.startswith("Outillage :")), "")
+        if r.returncode == 0:
+            return OK, (verdict or "aucune aggravation")
+        regressions = [l for l in lignes if "->" in l]
+        return MANQUE, " | ".join([verdict] + regressions[:2])[:90]
+    except subprocess.TimeoutExpired:
+        return IGNORE, "nexus_outillage n'a pas repondu en 420 s"
+    except Exception as exc:
+        return IGNORE, str(exc).splitlines()[0][:60]
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -279,6 +314,7 @@ def main() -> int:
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
         ("cablage tenu", lambda: cablage_tenu(racine)),
+        ("outillage tenu", lambda: outillage_tenu(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 

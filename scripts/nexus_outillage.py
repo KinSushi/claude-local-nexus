@@ -533,12 +533,145 @@ def _determine_exit_code(tool_results: List[Dict[str, Any]], findings: List[Dict
 # ----------------------------------------------------------------------
 
 
+REFERENCE_OUTILLAGE = "rituels/outillage_reference.json"
+
+
+def _compter_regles(tool_result: Dict[str, Any]) -> Dict[str, int]:
+    """Nombre de violations PAR REGLE pour un outil, jamais un total.
+
+    Un total masque un echange : une violation corrigee pendant qu'une autre
+    apparait laisse la somme identique, et l'etat se degrade en silence.
+    """
+    comptes: Dict[str, int] = {}
+    for v in tool_result.get("violations", []):
+        regle = v.get("regle") or "?"
+        comptes[regle] = comptes.get(regle, 0) + 1
+    return comptes
+
+
+def _lire_reference():
+    """La reference sur disque, ou None si elle n'existe pas encore."""
+    chemin = RACINE / REFERENCE_OUTILLAGE
+    if not chemin.is_file():
+        return None
+    try:
+        with open(chemin, "r", encoding="utf-8") as f:
+            charge = json.load(f)
+    except Exception:
+        return None
+    return charge if isinstance(charge, dict) else None
+
+
+def _ecrire_reference(comptes_joues: Dict[str, Dict[str, int]],
+                      ancienne=None) -> None:
+    """Ecrit la reference SANS effacer ce qui n'a pas ete mesure.
+
+    CE QUI SERAIT FAUX SANS CETTE FUSION. Un premier jet ne conservait que
+    les outils joues. Desinstaller eslint puis rebaseliner aurait donc
+    SUPPRIME sa dette de la reference, et le cliquet n'aurait plus jamais
+    rien eu a comparer -- une dette effacee par la disparition de son
+    mesureur, sans qu'une seule ligne le dise.
+    """
+    fusion: Dict[str, Dict[str, int]] = dict(ancienne or {})
+    fusion.update(comptes_joues)
+    chemin = RACINE / REFERENCE_OUTILLAGE
+    chemin.parent.mkdir(parents=True, exist_ok=True)
+    with open(chemin, "w", encoding="utf-8") as f:
+        json.dump(fusion, f, ensure_ascii=True, indent=2, sort_keys=True)
+
+
+def _jouer_cliquet(tool_results: List[Dict[str, Any]],
+                   rebaseline: bool = False) -> int:
+    """Le passe n'est pas exige repare ; l'aggravation est refusee.
+
+    POURQUOI UN CLIQUET ET NON UNE PORTE. Le depot porte 108 violations. Une
+    porte qui refuse au premier defaut bloquerait tout des le premier appel,
+    et serait desarmee dans l'heure -- c'est le sort de toute regle qui coute
+    plus qu'elle ne protege le jour ou on la pose.
+
+    UN OUTIL QUI N'A PAS JOUE N'EST NI COMPARE NI MIS A JOUR. Sans cela, un
+    outil absent ne contribue aucune regle, toutes les siennes passent pour
+    DISPARUES, et un linter desinstalle se lit comme un depot assaini. C'est
+    le faux negatif que ce fichier entier combat, et il se serait reintroduit
+    par la porte du cliquet.
+    """
+    comptes_joues: Dict[str, Dict[str, int]] = {
+        tr["outil"]: _compter_regles(tr)
+        for tr in tool_results if tr.get("etat") == "joue"
+    }
+
+    reference = _lire_reference()
+    if reference is None:
+        _ecrire_reference(comptes_joues)
+        print("Reference absente : creee a partir des outils JOUES.")
+        print("Aucune comparaison possible ce coup-ci -- c'est le point de depart,")
+        print("pas un verdict. Le prochain appel comparera.")
+        return 0
+
+    if rebaseline:
+        _ecrire_reference(comptes_joues, ancienne=reference)
+        print("Reference REBASELINEE, degradation assumee explicitement.")
+        for tr in tool_results:
+            if tr.get("etat") != "joue":
+                print("  %s : non joue (%s), sa reference est CONSERVEE"
+                      % (tr["outil"], tr.get("etat")))
+        return 0
+
+    regressions = []
+    ameliorations = []
+    for tr in tool_results:
+        outil = tr.get("outil")
+        if tr.get("etat") != "joue":
+            print("  %s : NON COMPARE (%s) -- reference conservee"
+                  % (outil, tr.get("etat")))
+            continue
+        actuel = comptes_joues.get(outil, {})
+        ancien = reference.get(outil, {})
+        for regle, n in sorted(actuel.items()):
+            avant = ancien.get(regle, 0)
+            if n > avant:
+                regressions.append("%s : %s %d -> %d%s"
+                                   % (outil, regle, avant, n,
+                                      "  (regle neuve)" if avant == 0 else ""))
+        for regle, avant in sorted(ancien.items()):
+            n = actuel.get(regle, 0)
+            if n < avant:
+                ameliorations.append("%s : %s %d -> %d" % (outil, regle, avant, n))
+
+    if regressions:
+        print("Outillage : %d REGRESSION(S)." % len(regressions))
+        for ligne in regressions:
+            print("  " + ligne)
+    else:
+        print("Outillage : aucune regression.")
+    if ameliorations:
+        print("  %d amelioration(s) :" % len(ameliorations))
+        for ligne in ameliorations:
+            print("    " + ligne)
+    if regressions:
+        print("\nLe passe n'a pas a etre repare pour passer : seule")
+        print("l'AGGRAVATION est refusee. Si elle est voulue, l'assumer")
+        print("par --cliquet --rebaseline.")
+    return 1 if regressions else 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Outillage Nexus")
     parser.add_argument(
         "--installer",
         action="store_true",
         help="Provisionner ruff, eslint et PSScriptAnalyzer",
+    )
+    parser.add_argument(
+        "--cliquet",
+        action="store_true",
+        help="Refuser toute AGGRAVATION par rapport a "
+             + REFERENCE_OUTILLAGE + " (le passe n'a pas a etre repare)",
+    )
+    parser.add_argument(
+        "--rebaseline",
+        action="store_true",
+        help="Avec --cliquet : reecrire la reference et assumer la degradation",
     )
     parser.add_argument(
         "--json",
@@ -565,6 +698,10 @@ def main() -> None:
 
     tool_results = _collect_tool_results()
     findings = _aggregate_violations(tool_results)
+
+    if args.cliquet:
+        _print_tool_status(tool_results)
+        sys.exit(_jouer_cliquet(tool_results, args.rebaseline))
 
     if args.json:
         try:
