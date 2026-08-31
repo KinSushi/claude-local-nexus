@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage"],
+                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1334,6 +1334,8 @@ def main() -> int:
         test_conformite_sources()
     if args.only in (None, "decoupage"):
         test_decoupage_emoji()
+    if args.only in (None, "commande"):
+        test_commande_nexus()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2337,6 +2339,35 @@ def test_conformite_sources() -> None:
     print("")
     print("--- SOURCES : le README et la configuration active disent-ils vrai ? ---")
     jouer_epreuve_python("epreuve_conformite_sources.py", "sources de verite")
+
+
+def test_commande_nexus() -> None:
+    """
+    La commande `nexus` est-elle servie dans TOUTES les editions de PowerShell ?
+
+    INCIDENT VECU le 2026-08-31. L operateur ouvre un terminal sur un autre
+    projet et tape `nexus mcp` : « Le terme nexus n est pas reconnu ». Il etait
+    bloque -- sans cette commande, impossible de brancher le pont sur un
+    nouveau projet.
+
+    CAUSE MESUREE. Windows porte DEUX editions de PowerShell, avec DEUX
+    profils dans deux repertoires distincts. La commande n etait installee que
+    dans celui de pwsh 7, parce que l installateur vise le $PROFILE de la
+    session QUI LE LANCE. L edition 5.1 ne l a jamais eue, sans que rien ne le
+    dise.
+
+    COMPLICATION, presente sur cette machine : Documents est REDIRIGE VERS
+    ONEDRIVE. Un controle qui ne regarderait que ~/Documents ne verrait rien
+    et conclurait a tort que la commande est absente PARTOUT -- un faux
+    negatif qui enverrait chercher au mauvais endroit. Les huit chemins
+    possibles sont donc examines, et le detail DIT lequel a servi.
+
+    ALERTE et non blocage : une commande de confort absente n empeche pas la
+    plateforme de fonctionner.
+    """
+    print("")
+    print("--- COMMANDE NEXUS : servie dans les deux editions ? ---")
+    jouer_epreuve_python("epreuve_commande_nexus.py", "commande nexus")
 
 
 def test_decoupage_emoji() -> None:

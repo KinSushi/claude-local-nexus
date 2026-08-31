@@ -1530,6 +1530,118 @@ def controle_config_active_wrap() -> None:
 
 
 
+# ---------------------------------------------------------------------------
+# LA COMMANDE `nexus` PEUT MANQUER DANS UNE EDITION DE POWERSHELL.
+#
+# INCIDENT VECU le 2026-08-31. L'operateur ouvre un terminal sur un autre
+# projet et tape :
+#
+#     PS G:\TRADING_LIVE_IA> nexus mcp
+#     nexus : Le terme «nexus» n'est pas reconnu...
+#
+# Il etait bloque : sans cette commande, impossible de brancher le pont sur un
+# nouveau projet.
+#
+# CAUSE MESUREE. Windows porte DEUX editions de PowerShell, avec DEUX profils
+# dans deux repertoires differents :
+#
+#     Documents/WindowsPowerShell/...   -> Windows PowerShell 5.1
+#     Documents/PowerShell/...          -> pwsh 7
+#
+# La commande n'etait installee que dans le second, parce que
+# `Install-NexusCommande.ps1` vise le `$PROFILE` de la session QUI LE LANCE --
+# et il avait ete lance depuis pwsh 7. L'edition 5.1 ne l'a jamais eue, sans
+# que rien ne le dise.
+#
+# COMPLICATION, presente sur cette machine : le dossier Documents est REDIRIGE
+# VERS ONEDRIVE. Un controle qui ne regarderait que ~/Documents ne verrait
+# rien et conclurait a tort que la commande est absente partout. Les huit
+# chemins possibles sont donc examines.
+#
+# ALERTE et non BLOQUE : une commande de confort absente n'empeche pas la
+# plateforme de fonctionner, et bloquer le demarrage pour cela serait un garde
+# trop large.
+# ---------------------------------------------------------------------------
+
+
+def controle_commande_nexus(accueil):
+    """Controle la presence de la commande nexus dans les profils PowerShell.
+    Retourne (etat, detail) selon l'algorithme specifie."""
+    try:
+        bases = [
+            os.path.join(accueil, "Documents"),
+            os.path.join(accueil, "OneDrive", "Documents")
+        ]
+        editions = ["WindowsPowerShell", "PowerShell"]
+        profils = ["Microsoft.PowerShell_profile.ps1", "profile.ps1"]
+
+        # dictionnaire edition -> liste des chemins existants
+        existants = {e: [] for e in editions}
+        bases_trouves = set()
+
+        for base in bases:
+            if not os.path.isdir(base):
+                continue
+            for edition in editions:
+                for nom in profils:
+                    chemin = os.path.join(base, edition, nom)
+                    if os.path.isfile(chemin):
+                        existants[edition].append(chemin)
+                        bases_trouves.add(base)
+
+        if not any(existants[e] for e in editions):
+            return ("IGNORE", "aucun profil PowerShell trouve")
+
+        # detection de la presence du mot 'nexus' (sans casse)
+        servies = set()
+        for edition, chemins in existants.items():
+            for chemin in chemins:
+                try:
+                    with io.open(chemin, "r", encoding="utf-8", errors="replace") as f:
+                        contenu = f.read()
+                    if "nexus" in contenu.lower():
+                        servies.add(edition)
+                        break   # une fois trouve, on peut passer a l'edition suivante
+                except Exception:
+                    # lecture impossible, on ignore ce profil
+                    continue
+
+        presentes = {e for e, lst in existants.items() if lst}
+        manquantes = presentes - servies
+
+        # preparation du detail
+        base_desc = ", ".join(
+            "OneDrive/Documents" if "OneDrive" in b else "Documents"
+            for b in sorted(bases_trouves)
+        )
+        if not manquantes:
+            detail = f"editions servies: {', '.join(sorted(servies))} ({base_desc})"
+            return ("OK", detail)
+        miss = ", ".join(sorted(manquantes))
+        detail = (f"edition manquante: {miss}, voir scripts/Install-NexusCommande.ps1 "
+                  f"({base_desc})")
+        # on tronque a 90 caracteres si necessaire
+        if len(detail) > 90:
+            detail = detail[:90]
+        return ("ALERTE", detail)
+    except Exception as e:
+        msg = str(e).replace("\n", " ").replace("\r", " ")
+        if len(msg) > 90:
+            msg = msg[:90]
+        return ("ALERTE", msg)
+
+def controle_commande_nexus_wrap() -> None:
+    """Adapte le controle a la sequence, qui appelle sans argument."""
+    etat, detail = controle_commande_nexus(os.path.expanduser("~"))
+    if etat == "OK":
+        noter("commande nexus", True, BLOQUANT, detail)
+    elif etat == "IGNORE":
+        noter("commande nexus", True, IGNORE, detail)
+    else:
+        noter("commande nexus", False, AVERTISSEMENT, detail)
+
+
+
 def controle_runtime(avant_demarrage: bool) -> None:
     if avant_demarrage:
         ignorer("releve operationnelle", "controle avant demarrage")
@@ -1770,6 +1882,7 @@ def main() -> int:
         controle_gardes_accordes_wrap,
         controle_readme_chiffres_wrap,
         controle_config_active_wrap,
+        controle_commande_nexus_wrap,
     ):
         try:
             controle()

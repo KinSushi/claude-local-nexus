@@ -4218,3 +4218,83 @@ quatre situations.
 | la derive de configuration mesuree | le redemarrage est un geste d'operateur ; la tache quotidienne le fait a 04:00 |
 | assertions visant un MOT plutot qu'une valeur | une l'a fait ici, et a casse au premier reformulage. Aucun controle ne garde ce motif |
 
+---
+
+## 40. `nexus` INTROUVABLE DANS UNE EDITION DE POWERSHELL — incident vecu
+
+### 40.1 Le blocage
+
+L'operateur ouvre un terminal sur un autre projet :
+
+```
+PS G:\TRADING_LIVE_IA> nexus mcp
+nexus : Le terme «nexus» n'est pas reconnu...
+```
+
+Bloque : sans cette commande, impossible de brancher le pont sur un nouveau
+projet. **Trouve en se servant, pas en relisant.**
+
+### 40.2 La cause, mesuree
+
+Windows porte **deux editions** de PowerShell, avec **deux profils** dans deux
+repertoires distincts :
+
+| profil | edition | `nexus` |
+| --- | --- | --- |
+| `Documents/PowerShell/...` | pwsh 7 | 5 occurrences |
+| `Documents/WindowsPowerShell/...` | **5.1** | **0** |
+
+`Install-NexusCommande.ps1` vise le `$PROFILE` de la session **qui le lance**.
+Il avait ete lance depuis pwsh 7 ; l'edition 5.1 ne l'a jamais eue, et rien ne
+le disait.
+
+**Complication qui aurait fait chercher au mauvais endroit** : le dossier
+Documents est **redirige vers OneDrive** sur cette machine. Les profils vivent
+sous `~/OneDrive/Documents/`, pas sous `~/Documents/`. Un controle naif ne
+verrait rien et conclurait a tort que la commande est absente **partout**.
+
+### 40.3 Ferme par un controle qui echoue
+
+`controle_commande_nexus` examine les **huit** chemins possibles — deux bases,
+deux editions, deux noms de profil — regroupe par EDITION, et **dit laquelle
+manque et quel geste repare**. ALERTE et non blocage : une commande de confort
+absente n'empeche pas la plateforme de fonctionner.
+
+`scripts/epreuve_commande_nexus.py`, 7 cas, cablee (`--only commande`), dont le
+piege OneDrive et le cas « aucun profil » qui doit rendre IGNORE — *une machine
+neuve n'est pas une machine mal configuree.*
+
+Verifie apres correction : les deux editions sont servies.
+
+## 41. LE RAPPORT VOISIN SUR L'INDEX — juste sur l'effet, faux sur la cause
+
+L'instance voisine rapporte : « `.nexus/index.json` est un seul index — en
+construire un autre ecrase le precedent ».
+
+**Mesure faite, et elle les corrige :**
+
+| situation | resultat |
+| --- | --- |
+| second corpus, **meme modele** | **s'AJOUTE** — 2 fichiers, 8 extraits |
+| second corpus, **modele different** | **remplace** — 2 fichiers → 1 |
+
+Le remplacement est **correct** : des vecteurs produits par deux modeles ne
+sont pas comparables. **Le defaut est qu'il est SILENCIEUX.**
+
+Le code calcule bien un motif — « modele different : vecteurs non
+comparables » — mais l'envoie dans `log()`, donc sur **stderr**, invisible a
+l'appelant MCP. La reponse annonce « Index construit » sans dire que le
+precedent a ete detruit.
+
+Leur rapport est donc **juste sur l'effet, faux sur la cause — et le vrai
+defaut est pire que celui qu'ils decrivaient** : ils croyaient a un ecrasement
+systematique ; c'est une perte conditionnelle et muette.
+
+### 41.1 OUVERT
+
+Le correctif — porter le motif et le nombre d'extraits perdus dans la reponse
+rendue — a ete redige mais **non greffe** : le rendu du banc n'a pas respecte
+le separateur demande, et la greffe a ete refusee par son propre assert plutot
+qu'appliquee au hasard. Le sol est mesure et inscrit ici ; rien n'a ete pose a
+moitie.
+
