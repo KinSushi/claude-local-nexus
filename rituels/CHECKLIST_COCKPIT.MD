@@ -2866,3 +2866,62 @@ première insertion ailleurs dans le fichier.
 Le `SIM115` restant sur l'ouverture conditionnelle ne disparaîtra pas : le
 linter signale l'absence de `with`, **non** l'absence de fermeture. La
 correctitude passe avant le compteur — et elle est désormais garantie.
+
+---
+
+## 24. `B023`, `B904`, `B905` — cinq signaux, cinq décisions distinctes
+
+Ce n'est pas une correction en bloc : chaque signal demandait son propre
+arbitrage.
+
+### 24.1 `B905` — le score plausible et faux
+
+Les deux `zip()` sont des **similarités cosinus**. Tronquer sur la plus courte
+rendrait un score *plausible et faux* — le pire résultat possible pour une
+recherche. Et le risque est réel dans ce dépôt : quatre modèles d'embedding de
+dimensions **différentes** (bge-m3 1024, nomic 768, all-minilm 384), reliés
+entre eux par des chaînes de repli.
+
+Vérifié : les deux cas sont **sûrs** — l'un garde ses dimensions quatre lignes
+plus haut, l'autre les tient par construction. Mais l'invariant y était **non
+local** : un lecteur du `zip` ne le sait pas, et une suppression de la garde
+passerait inaperçue. `strict=True` le rend local pour zéro coût.
+
+**Le pont JavaScript gardait déjà ce cas**, et son commentaire disait mot pour
+mot ce qu'il fallait argumenter : *« tronquer silencieusement sur la plus
+courte donnerait un score plausible mais faux »*. La leçon existait dans le
+dépôt, appliquée d'un côté et pas de l'autre — exactement comme pour
+l'accumulation des mesures (§18).
+
+### 24.2 `B904` — trois raise, trois décisions
+
+| Cas | Décision | Pourquoi |
+|---|---|---|
+| deux `raise SystemExit(2)` | `from None` | la cause est **déjà** dans le message juste au-dessus ; accrocher une trace à une sortie de contrôle n'ajoute que du bruit à un arrêt volontaire |
+| un `raise RuntimeError(f"… {e}")` | `from e` | ici la trace est **ce qui manque** : le message dit *que* l'appel a échoué, seule la trace dit *où* — réseau, passerelle, décodage |
+
+### 24.3 `B023` — une fermeture sur un nom réaffecté
+
+`visit()` est définie dans une boucle et capture `graph`, `color`, `label` par
+leur **nom**. Sans conséquence aujourd'hui — elle est appelée dans la même
+itération. Mais `graph` est **réaffectée huit lignes plus bas, dans la même
+portée**. Un déplacement d'appel la ferait parcourir silencieusement le
+mauvais graphe, et rendre un verdict de cycle portant sur autre chose.
+
+Liaison par arguments par défaut : les valeurs sont capturées à la définition,
+l'appel récursif hérite des mêmes défauts, le comportement est inchangé —
+seule la fragilité disparaît.
+
+**Preuve positive**, car j'avais touché la détection de cycles : un cycle
+injecté est bien nommé — `cycle dans fallbacks : qwen3-8b-local ->
+llama3.2-3b-local -> qwen3-8b-local` — la configuration refusée, puis
+restaurée et valide.
+
+### 24.4 État des compteurs
+
+| Règle | Avant | Après |
+|---|---|---|
+| `B023` | 5 | **0** |
+| `B904` | 4 | **0** |
+| `B905` | 2 | **0** |
+| `SIM115` | 21 | 17 |
