@@ -1374,6 +1374,63 @@ let cacheExpire = 0;
 let plansConnus = null;
 let plansExpire = 0;
 
+
+// Adresse du moteur Ollama, surchargeable via la variable d'environnement.
+// Valeur par défaut : http://127.0.0.1:11434
+const OLLAMA_URL = process.env.NEXUS_OLLAMA_URL || 'http://127.0.0.1:11434';
+
+/**
+ * Interroge Ollama sur /api/ps et renvoie la liste des noms de modèles chargés.
+ * Aucun rejet n'est propagé ; tout échec est journalisé et une liste vide est
+ * retournée. Le délai maximal est de 5 secondes.
+ *
+ * @returns {Promise<string[]>}
+ */
+async function modelesResidents() {
+  return new Promise((resolve) => {
+    const url = new URL('/api/ps', OLLAMA_URL);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'GET',
+      timeout: 5000,
+    };
+
+    const req = http.request(options, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const data = JSON.parse(body);
+          const models = Array.isArray(data.models)
+            ? data.models.map((m) => (typeof m === 'object' && m.name ? m.name : String(m)))
+            : [];
+          resolve(models);
+        } catch (err) {
+          console.error('Erreur de parsing de la réponse Ollama :', err.message);
+          resolve([]);
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('Echec de la requête Ollama :', err.message);
+      resolve([]);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      console.error('Timeout (5 s) lors de l\'appel à Ollama /api/ps');
+      resolve([]);
+    });
+
+    req.end();
+  });
+}
+
+
 async function exposedModels() {
   if (cachedExposed && cachedExposed.size && Date.now() < cacheExpire) {
     return cachedExposed;
@@ -2045,12 +2102,20 @@ function insideRepo(target) {
     (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+/**
+ * Le garde était présenté à tort comme une barrière d'exfiltration.
+ * En réalité WORK_ROOT est déclaré par le client ; le garde ne fait que
+ * borner l'espace que le pont accepte de toucher (rayon d'action) et ne
+ * prétend pas empêcher une fuite que l'appelant pourrait provoquer lui‑même.
+ * Le message indique la limite actuelle et invite à déclarer une autre racine
+ * si l'appelant en a le droit.
+ */
 function requireInsideRepo(target, quoi) {
   if (!insideRepo(target)) {
     throw new Error(
-      quoi + " hors du depot refuse : " + target + ". " +
-      "Le pont ne lit que sous " + WORK_ROOT + " ; ses extraits remontent " +
-      "a l'orchestrateur et quitteraient donc la machine."
+      quoi + ' hors du depot refuse : ' + target + '. ' +
+      'Le pont ne lit que sous ' + WORK_ROOT + ' ; ' +
+      'déclarez une autre racine si vous avez le droit.'
     );
   }
   return target;
