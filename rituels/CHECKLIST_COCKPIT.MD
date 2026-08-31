@@ -2666,3 +2666,67 @@ sont éprouvées ; le tirage ne l'est pas.
 au rituel de clôture et corrigés par `ruff --fix`. Cinquième fois aujourd hui
 qu un contrôle de ce dépôt mord le travail du tour même. Le code du banc n est
 pas plus discipliné que le mien ; seul le contrôle l est.
+
+---
+
+## 21. Le chemin `--appliquer`, mis à l'épreuve — il aurait inventé cent pour cent de pannes
+
+Livré non prouvé au tour précédent, et je l'avais écrit. Mis à l'épreuve, il
+portait deux défauts dont l'un rendait l'outil **nuisible**.
+
+### 21.1 La classification ne pouvait jamais être vraie
+
+Mesuré sur la **vraie sortie** de la commande. Un `ollama pull` sur un modèle
+déjà à jour affiche :
+
+```
+pulling manifest
+pulling 548455b72658: 100% ▕████████▏ 407 B
+verifying sha256 digest
+writing manifest
+success
+```
+
+…et sort en code 0. Il ne dit **jamais** « already up to date », et jamais
+« done ». Or la classification était :
+
+| Condition | Verdict |
+|---|---|
+| `'already up to date'` présent | déjà à jour |
+| `'pulling'` **et** `'done'` présents | mis à jour |
+| sinon | **ÉCHEC** |
+
+Aucune des deux premières ne pouvait être vraie. **Chaque modèle aurait été
+classé ÉCHEC** — l'outil aurait annoncé cent pour cent de pannes sur un parc
+parfaitement sain. Un outil qui invente des pannes est pire qu'un outil
+absent : il envoie réparer ce qui fonctionne.
+
+La seule méthode exacte est de comparer l'**empreinte** avant et après :
+identique, le modèle n'a pas bougé ; différente, il a été mis à jour. Le texte
+de la sortie ne distingue pas les deux cas.
+
+### 21.2 Le sommeil de trente minutes
+
+`time.sleep(1800)` **entre** chaque tirage. Le nombre avait été spécifié comme
+un **délai d'expiration** par modèle, pas comme une pause. Le script dormait
+donc une demi-heure après chaque modèle, et l'exécution lancée au tour
+précédent n'a jamais rendu la main — fichier de sortie à **zéro octet**, que
+j'aurais pu prendre pour une panne du tirage lui-même.
+
+Le délai est désormais passé à `subprocess.run(timeout=...)`, où il a toujours
+eu sa place.
+
+### 21.3 Mesure après correction
+
+| Cas | Résultat |
+|---|---|
+| empreinte de `all-minilm` et `all-minilm:latest` | `1b226e2802db` (les deux) |
+| modèle inexistant | `None` |
+| rafraîchissement d'un modèle à jour | `a_jour` en **0,7 s** |
+| modèle absent | `echec` en 0,1 s |
+| `--limite 1 --appliquer` en réel | 1 déjà à jour, 0 échec, code 0 |
+
+**Ce qui a permis la correction** : avoir cité la **sortie réelle de la
+commande** dans la spécification. C'est elle qui a fait proposer la
+comparaison d'empreintes plutôt qu'une énième tentative de lecture du texte.
+Mesurer avant de spécifier vaut mieux que corriger après avoir supposé.
