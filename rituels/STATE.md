@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 05:22 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 05:38 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `a90fb1e` |
+| Commit | `09d6f99` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -66,13 +66,13 @@ Verdict : **valide**
 | `scripts/nexus_generate.py` | `d9aef51096bd1ec4741f635069353377840dc60d0abe2dcba8f6ef452d0be6a9` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f79d24bd59c14a067c86087b28961ab4d1` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966eb6b3dacbb4a7e63d7fd3cf0fb7da643` |
-| `scripts/nexus_test.py` | `d52d14e32356233ec6707ed644b1facba5f2d3e05f9706141a0f2a1e07ce319f` |
+| `scripts/nexus_test.py` | `d6c882769eb93afe2719b8437084d7fb1f6b705c2970eb5b461d265467d7a8d6` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d08ce1f7f38a711e29b4cc6b2fba58043b` |
 
 ## Traque mecanique
 
 ```
-44 fichier(s) analyse(s)
+45 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       29
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5

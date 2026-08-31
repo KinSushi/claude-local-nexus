@@ -2063,3 +2063,60 @@ donc que s'il est **employé** hors de sa propre ligne.
   seule la ligne BASCULE le dit.
 * Les 88 violations Python et 17 PowerShell restent non arbitrées.
 * Le cliquet **ne resserre toujours pas** (question posée au §10.3).
+
+---
+
+## 12. P0 — la sonde du pont rendait SUCCÈS sur ses propres échecs
+
+Signalé par la session voisine, reproduit ici avant toute correction.
+
+| Cas | Sortie | Code avant | Code après |
+|---|---|---|---|
+| fichier hors dépôt | `(refuse : hors du depot)` | **0** | 1 |
+| fichier inexistant | `(introuvable)` | **0** | 1 |
+| délai expiré | `ERROR: timeout expired after 60s` | **0** | 1 |
+| résumé réel réussi | en-tête + contenu | 0 | 0 |
+
+**Cause** : `_probe_success` ne testait que des **préfixes** de la sortie
+entière. Or le pont écrit son en-tête, puis `## Par fichier`, puis le corps —
+le marqueur d'échec est *toujours* au corps. Et le `startswith(" [ERREUR]")`,
+avec son espace initial, n'a probablement jamais été vrai une seule fois.
+
+Un garde dont le vert ne signifie rien est pire que pas de garde : il consomme
+de l'attention et confère une fausse assurance.
+
+**Le piège symétrique, refusé au brouillon.** Chercher les marqueurs n'importe
+où aurait condamné tout résumé d'un fichier qui *parle* de délais — plusieurs
+fichiers d'ici sont dans ce cas. Les marqueurs sont donc cherchés **en début
+de ligne**, et seule la phrase que la sonde émet elle-même compte. Et une
+regex proposée exigeait des **tirets** comme séparateurs là où le pont écrit
+un **point médian** — elle n'aurait jamais rien reconnu, se comportant
+exactement comme le défaut qu'elle devait corriger.
+
+**Second défaut, trouvé en vérifiant que le SUCCÈS passait encore — il ne
+passait plus.** Le délai de la sonde porté à 900 s, mais le serveur se ferme
+seul après `NEXUS_GRACE_MS`, 120 s par défaut :
+
+```
+[nexus-local] fermeture forcee : 1 appel(s) toujours en vol
+ERROR: aucune reponse
+```
+
+Deux budgets indépendants que **rien** ne faisait s'accorder : porter l'un
+sans l'autre fabriquait une panne à partir d'un réglage. La sonde transmet
+désormais son délai au serveur.
+
+**Épreuve** : `epreuve_sonde_mcp.py`, 10 cas, câblée en `--only sonde`. Preuve
+positive : jouée contre le code d'avant, elle échoue sur les cas 1 à 3 et ne
+compile pas le cas 7.
+
+### 12.1 Ce que cet échange a montré, au-delà du défaut
+
+Trois rapports successifs de la session voisine, dont **deux rétractés par
+elle-même** — et les deux rétractations étaient justes. Ce qui les a produits :
+une clause d'échappement dans une consigne (« si vide, dis VIDE ») est plus
+facile à satisfaire qu'une tâche, d'autant plus que la consigne s'allonge. Le
+modèle prenait la porte offerte.
+
+Ce qui restait après tri était réel, et de mon côté : un vert qui ne signifie
+rien, et deux étages qui concluaient au-delà de ce qu'ils voyaient.
