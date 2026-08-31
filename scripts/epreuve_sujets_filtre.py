@@ -39,77 +39,87 @@ def juge(texte, marqueur):
     return not semble_clos(texte)
 
 
-# --- Les quatre fragments REELS ------------------------------------------- #
+def main():
+    """Les cas, joues seulement quand ce fichier est EXECUTE."""
+    global echecs
+    echecs = 0
 
-DOCTRINE = (
-    "docs(doctrine): une regle non mecanisee ne protege pas, meme son auteur. "
-    "Enonce par l'operateur apres l'avoir vu se produire toute la journee."
-)
-NARRATION = (
-    "Reste a l'appeler -- une fonction que personne n'invoque est un fichier, "
-    "pas un mecanisme."
-)
-COMMANDE = (
-    'rm -f _INDEX.md; grep -n "aucun contenu a traiter" -B14 '
-    "tools/nexus-mcp/server.js | head -8"
-)
-VRAI_SUJET = (
-    "inutile au pool, ce que rien ne mesure. Le generateur l'ANNONCE "
-    "desormais ; la decision de politique reste a l'operateur."
-)
 
-verifier("doctrine rejetee", juge(DOCTRINE, "non mecanise") is not True,
-         "une doctrine enonce une regle, elle n'ouvre pas de sujet")
-verifier("narration rejetee", juge(NARRATION, "reste a") is not True,
-         "ma propre narration d'un travail deja fait")
-verifier("commande rejetee", juge(COMMANDE, "a traiter") is not True,
-         "une ligne de commande n'est jamais un sujet")
-verifier("vrai sujet GARDE", juge(VRAI_SUJET, "reste a") is True,
-         "corrobore par « l'operateur » : decision differee")
+    # --- Les quatre fragments REELS ------------------------------------------- #
 
-# --- Le marqueur fort se suffit ------------------------------------------- #
+    DOCTRINE = (
+        "docs(doctrine): une regle non mecanisee ne protege pas, meme son auteur. "
+        "Enonce par l'operateur apres l'avoir vu se produire toute la journee."
+    )
+    NARRATION = (
+        "Reste a l'appeler -- une fonction que personne n'invoque est un fichier, "
+        "pas un mecanisme."
+    )
+    COMMANDE = (
+        'rm -f _INDEX.md; grep -n "aucun contenu a traiter" -B14 '
+        "tools/nexus-mcp/server.js | head -8"
+    )
+    VRAI_SUJET = (
+        "inutile au pool, ce que rien ne mesure. Le generateur l'ANNONCE "
+        "desormais ; la decision de politique reste a l'operateur."
+    )
 
-FORT = "Trois hypotheses ouvertes ; ce point reste ouvert et personne ne le garde."
-verifier("marqueur fort seul", juge(FORT, "reste ouvert") is True,
-         "sa seule presence suffit, sans corroboration")
+    verifier("doctrine rejetee", juge(DOCTRINE, "non mecanise") is not True,
+             "une doctrine enonce une regle, elle n'ouvre pas de sujet")
+    verifier("narration rejetee", juge(NARRATION, "reste a") is not True,
+             "ma propre narration d'un travail deja fait")
+    verifier("commande rejetee", juge(COMMANDE, "a traiter") is not True,
+             "une ligne de commande n'est jamais un sujet")
+    verifier("vrai sujet GARDE", juge(VRAI_SUJET, "reste a") is True,
+             "corrobore par « l'operateur » : decision differee")
 
-# --- Le piege documente : ferme ET ouvert dans le meme fragment ------------ #
-#
-# « X est corrige, mais Y reste ouvert ». Le premier jet confiait cette
-# exemption a l'appelant, par un commentaire. Les appelants existent deja et ne
-# l'auraient pas lue -- et une regle en paragraphe ne protege personne.
-MIXTE = (
-    "Le port du contrat est corrige et prouve. En revanche l'appariement de "
-    "noms reste ouvert : aucune epreuve ne le garde."
-)
-verifier("ferme ET ouvert : l'ouvert l'emporte", juge(MIXTE, "reste ouvert") is True,
-         "semble_clos ne doit pas masquer un marqueur fort")
-verifier("semble_clos exempte le marqueur fort", semble_clos(MIXTE) is False,
-         "l'exemption vit DANS la fonction, pas dans un commentaire")
+    # --- Le marqueur fort se suffit ------------------------------------------- #
 
-# --- Le tiret cadratin n'est pas une commande ----------------------------- #
-#
-# « -- » figurait dans les motifs de commande. Il sert de tiret cadratin dans
-# presque tous les commentaires de ce depot : le garder aurait supprime des
-# sujets EN SILENCE, soit l'inverse exact du but.
-CADRATIN = (
-    "Le crible AST -- celui que la session voisine construit -- reste ouvert "
-    "ici : aucun motif ne le porte."
-)
-verifier("le tiret cadratin ne disqualifie pas", juge(CADRATIN, "reste ouvert") is True,
-         "un filtre trop large fait du bruit invisible")
+    FORT = "Trois hypotheses ouvertes ; ce point reste ouvert et personne ne le garde."
+    verifier("marqueur fort seul", juge(FORT, "reste ouvert") is True,
+             "sa seule presence suffit, sans corroboration")
 
-# --- « OUVERT » en capitales est un signal, et il doit JOUER --------------- #
-#
-# Il figurait dans une liste comparee a du texte MINUSCULE : le controle etait
-# mort, et sa presence donnait a croire qu'il jouait.
-CAPITALES = "Section 9.3 -- Ce qui reste OUVERT : il reste a decider du perimetre."
-verifier("OUVERT en capitales corrobore", juge(CAPITALES, "il reste") is True,
-         "la casse EST l'information dans ce depot")
+    # --- Le piege documente : ferme ET ouvert dans le meme fragment ------------ #
+    #
+    # « X est corrige, mais Y reste ouvert ». Le premier jet confiait cette
+    # exemption a l'appelant, par un commentaire. Les appelants existent deja et ne
+    # l'auraient pas lue -- et une regle en paragraphe ne protege personne.
+    MIXTE = (
+        "Le port du contrat est corrige et prouve. En revanche l'appariement de "
+        "noms reste ouvert : aucune epreuve ne le garde."
+    )
+    verifier("ferme ET ouvert : l'ouvert l'emporte", juge(MIXTE, "reste ouvert") is True,
+             "semble_clos ne doit pas masquer un marqueur fort")
+    verifier("semble_clos exempte le marqueur fort", semble_clos(MIXTE) is False,
+             "l'exemption vit DANS la fonction, pas dans un commentaire")
 
-print("")
-if echecs:
-    print("epreuve ratee : %d cas" % echecs)
-    sys.exit(1)
-print("epreuve tenue")
-sys.exit(0)
+    # --- Le tiret cadratin n'est pas une commande ----------------------------- #
+    #
+    # « -- » figurait dans les motifs de commande. Il sert de tiret cadratin dans
+    # presque tous les commentaires de ce depot : le garder aurait supprime des
+    # sujets EN SILENCE, soit l'inverse exact du but.
+    CADRATIN = (
+        "Le crible AST -- celui que la session voisine construit -- reste ouvert "
+        "ici : aucun motif ne le porte."
+    )
+    verifier("le tiret cadratin ne disqualifie pas", juge(CADRATIN, "reste ouvert") is True,
+             "un filtre trop large fait du bruit invisible")
+
+    # --- « OUVERT » en capitales est un signal, et il doit JOUER --------------- #
+    #
+    # Il figurait dans une liste comparee a du texte MINUSCULE : le controle etait
+    # mort, et sa presence donnait a croire qu'il jouait.
+    CAPITALES = "Section 9.3 -- Ce qui reste OUVERT : il reste a decider du perimetre."
+    verifier("OUVERT en capitales corrobore", juge(CAPITALES, "il reste") is True,
+             "la casse EST l'information dans ce depot")
+
+    print("")
+    if echecs:
+        print("epreuve ratee : %d cas" % echecs)
+        sys.exit(1)
+    print("epreuve tenue")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
