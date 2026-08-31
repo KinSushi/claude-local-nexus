@@ -2188,3 +2188,9 @@ En vérifiant en vivo le correctif de fusion :
 * **P4** — six familles sur neuf rendent vide à 2 200 jetons ; la bascule sauve
   le travail mais détruit la décorrélation des familles, et seule la ligne
   BASCULE le dit.
+
+* **Le cliquet a mordu son auteur une troisième fois** le même jour, sur
+  l'épreuve du quota écrite une heure plus tôt : deux `io.open` sans
+  gestionnaire de contexte et un `except OSError: pass`. Réparé, jamais
+  rebaseliné — une dégradation assumée le jour de la pose viderait le cliquet
+  de son sens.
