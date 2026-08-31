@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 19:49 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 20:09 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `181bf2f` |
+| Commit | `dbc2ebe` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 30 hours (healthy)
-litellm-proxy	litellm	Up 6 hours
+litellm-proxy	litellm	Up 7 hours
 litellm-redis	redis	Up 30 hours (healthy)
 ```
 
@@ -62,7 +62,7 @@ Verdict : **valide**
 | `cloud_models.txt` | `c3dd69a2673b53559124fd20e9e93c84` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
-| `tools/nexus-mcp/server.js` | `afbb565b08197d3716c6f0a7964061e4` |
+| `tools/nexus-mcp/server.js` | `8a94ecd4ef9a1a24adbae936895c91a7` |
 | `scripts/nexus_generate.py` | `bbb16e11531b9e90e2f3c8889950a9bc` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f7` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |

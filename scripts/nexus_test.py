@@ -1402,6 +1402,60 @@ def test_portee_import() -> None:
               code == 0 and lignes == ["OK"],
               "silence" if lignes == ["OK"] else "; ".join(lignes)[:70])
 
+    # -- Seconde famille : un module employe sans etre importe NULLE PART.
+    #
+    # Trouve le 2026-08-30 par une vague d'audit, et invisible aux deux
+    # controles existants : le module s'importe proprement, et le nom n'est
+    # pas mal place -- il est absent. Dans nexus_bench.py, socket.timeout
+    # etait employe aux lignes 127 et 195 sans aucun import de socket.
+    #
+    # L'effet etait grave : les deux usages sont dans un bloc
+    # `except urllib.error.URLError`, et une exception levee dans un except
+    # n'est pas rattrapee par les except FRERES du meme try. Le NameError
+    # s'echappait donc de la fonction, et le banc de latence plantait sur la
+    # condition meme qu'il mesure.
+    absent = (
+        "import urllib.error\n"
+        "\n"
+        "def mesurer():\n"
+        "    try:\n"
+        "        pass\n"
+        "    except urllib.error.URLError as exc:\n"
+        "        if isinstance(exc.reason, (TimeoutError, socket.timeout)):\n"
+        "            return 'timeout'\n"
+    )
+    code, lignes = jouer(absent)
+    check("module jamais importe : signale",
+          code == 1 and any("socket" in l for l in lignes),
+          lignes[0][:70] if lignes else "aucune sortie")
+
+    # Les pieges qui ont fait rejeter un premier jet : il rendait 581 faux
+    # positifs, prenant pour non liees les variables de comprehension et les
+    # cibles de for, with et except. Le controle est volontairement ETROIT --
+    # un nom de module standard, employe en attribut, lie nulle part -- et
+    # c'est cette etroitesse qui le rend sur.
+    muets = {
+        "module bien importe":
+            "import socket\n\ndef f():\n    return socket.timeout\n",
+        "variables de comprehension":
+            "def f(l):\n    return [n.strip() for n in l if n]\n",
+        "nom de module en variable de boucle":
+            "def f(c):\n    for io in c:\n        if io.strip():\n            return io\n",
+        "cible de with et de except":
+            ("def f(p):\n    with open(p) as json:\n        return json.read()\n"
+             "\ndef g():\n    try:\n        pass\n"
+             "    except ValueError as time:\n        return time.args\n"),
+        "dunder de module":
+            "import os\n\nRACINE = os.path.dirname(__file__)\n",
+        "parametre nomme comme un module":
+            "def f(re):\n    return re.sub('a', 'b', 'aa')\n",
+    }
+    for nom, source in muets.items():
+        code, lignes = jouer(source)
+        check("silence sur piege a faux positif : %s" % nom,
+              code == 0 and lignes == ["OK"],
+              "silence" if lignes == ["OK"] else "; ".join(lignes)[:70])
+
 
 def test_semaphore_local() -> None:
     """
