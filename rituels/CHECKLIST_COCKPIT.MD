@@ -3186,3 +3186,87 @@ rougit jamais sur le code de son auteur ne mesure rien.
 Les 23 cas restent verts et la contre-epreuve reste rouge sur les trois
 defauts. La correction n'a rien desarme.
 
+---
+
+## 28. LA RECOLTE DES SUJETS — un marqueur n'est pas un sujet
+
+L'operateur a demande de recuperer les sujets ouverts **par l'outil bati pour
+cela**, plutot que de deviner. L'outil rendait **499 occurrences**, et le
+premier coup d'oeil a suffi : il ne distingue pas une phrase contenant le mot
+« ouvert » d'un sujet ouvert.
+
+| Sortie reelle | Ce que c'etait | Marqueur qui l'a fait passer |
+| --- | --- | --- |
+| `docs(doctrine): une regle non mecanisee ne protege pas` | de la doctrine | « non mecanise » |
+| `Reste a l'appeler -- une fonction que personne n'invoque` | ma narration d'un travail **fait** | « reste a » |
+| `grep -n "aucun contenu a traiter" -B14 server.js` | une ligne de commande | « a traiter » |
+
+L'outil bati pour eviter de deviner obligeait a deviner. **Defaut trouve en
+s'en servant, pas en le relisant** — il ne se voyait qu'au moment ou il genait.
+
+### 28.1 Le remede, et les cinq defauts arbitres
+
+Un marqueur **fort** se suffit ; un marqueur **faible** exige une
+corroboration dans les 200 caracteres qui l'entourent. Plus deux rejets
+francs : lignes de commande, doctrine.
+
+Cinq defauts dans le premier jet, **dont deux auraient supprime des sujets en
+silence** :
+
+| Defaut | Effet |
+| --- | --- |
+| `--` compte comme marque de commande | il sert de tiret cadratin partout ici : la prose legitime aurait ete rejetee |
+| `OUVERT` en capitales compare a du texte minuscule | **controle mort**, dont la presence donnait a croire qu'il jouait |
+| `FAIT` en minuscule | attrapait « en fait », « il a fait » |
+| l'exemption du marqueur fort **confiee a l'appelant** par un commentaire | les appelants existent deja et ne l'auraient pas lue |
+| « desormais » emportait la moitie ouverte d'une phrase | *impose par l'epreuve, contre mon code* |
+
+Le dernier merite d'etre lu deux fois. Le fragment « le generateur l'ANNONCE
+**desormais** ; la decision de politique **reste a l'operateur** » etait
+rejete : le mot de cloture decrivait la moitie faite et emportait la moitie
+ouverte avec elle. **Une decision renvoyee a l'operateur n'est jamais close,
+quoi que dise le reste.** C'est la meme exemption que pour le marqueur fort,
+sur une variante manquee — sixieme occurrence du jour d'une lecon appliquee
+d'un cote et pas de son jumeau.
+
+**Mesure : 499 -> 231**, et les 17 vrais sujets qu'une premiere version du
+filtre emportait sont revenus.
+
+### 28.2 Ferme par un controle qui echoue
+
+`scripts/epreuve_sujets_filtre.py`, 9 cas, cablee (`--only sujets`). Ses
+fragments **ne sont pas inventes** : ce sont les sorties reelles de
+l'execution bruitee, et l'une d'elles est un VRAI sujet qui doit **survivre**.
+Sans elle l'epreuve ne prouverait que la severite — un filtre qui rejette tout
+est aussi inutile qu'un filtre qui passe tout. Contre-epreuve : quatre defauts
+remis un par un, chacun rougit en nommant son cas.
+
+### 28.3 Deux defauts de MON outillage, trouves en chemin
+
+* **L'epreuve jouait a l'import**, et son `sys.exit()` aurait **tue**
+  l'importateur. Trouve par le controle de conformite, qui importe tous les
+  scripts. Referme derriere `main()`.
+* **Trois pieges d'extraction**, notes parce qu'ils se reproduiront :
+  `str.find` rend `-1` quand le marqueur manque et un `min` naif retient ce
+  `-1` ; le **code extrait contenait son propre delimiteur** (la chaine des
+  trois accents graves figure dans les motifs de commande), coupant
+  l'extraction a 486 octets au lieu de 2878 ; et le banc emploie parfois un
+  tiret **insecable** dans ses marqueurs.
+
+### 28.4 Ce qui n'est PAS un defaut, et que j'ai failli « corriger »
+
+Le rapport humain sort sur `stderr`, `stdout` restant pur pour `--json`. J'ai
+d'abord cru a un defaut. **C'est la meme confusion qui m'a fait accuser
+`nexus_savings` a tort ce matin**, en fusionnant les flux par un `2>&1`. Une
+convention n'est pas un bug, et se tromper deux fois de la meme facon dans la
+journee valait d'etre inscrit.
+
+### 28.5 Reste OUVERT
+
+La transcription demeure la source la plus bruyante : **193 des 231**
+occurrences en viennent, contre 13 du cockpit et 10 des commits. Le cockpit
+est structure, la transcription ne l'est pas — et aucun filtre lexical ne
+rendra structure ce qui ne l'est pas. La piste serait de ne miner que les
+messages de l'OPERATEUR dans la transcription, jamais ma propre prose ; elle
+n'est pas ouverte ici.
+
