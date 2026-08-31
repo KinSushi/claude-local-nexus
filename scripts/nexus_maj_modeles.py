@@ -241,7 +241,9 @@ def invalider_mesures(noms_modeles, racine="."):
             continue
 
         modified = False
-        for nom, info in mapping.items():
+        # Le nom ne sert plus dans ce corps depuis que le drapeau est par
+        # fichier : seul l'etat compte. Le souligner dit l'intention.
+        for _nom, info in mapping.items():
             # LE DRAPEAU EST PAR FICHIER, ET NON PARTAGE.
             #
             # CE QUI ETAIT FAUX : un `found` unique faisait sauter, dans

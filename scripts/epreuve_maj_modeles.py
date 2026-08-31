@@ -10,7 +10,6 @@ c'est elle qui autorise une derogation au seuil de latence (contrat
 import os
 import sys
 import json
-import io
 import shutil
 import tempfile
 
