@@ -522,6 +522,84 @@ async function avecJetonDuPlan(alias, fn) {
   }
 }
 
+// Retire la chaine de pensee que certains modeles laissent dans `content`.
+//
+// Constate le 30 aout 2026 cote Python : une reponse rendue a l'utilisateur
+// contenait tout le raisonnement du modele, puis « </think>702 ». Le chemin
+// MCP recopiait content tel quel et avait le meme defaut -- or c'est lui que
+// Claude Code appelle. Le raisonnement n'est pas la reponse : le livrer donne
+// un brouillon a la place d'un resultat, et le MAP-REDUCE concatenerait ces
+// hesitations dans le texte soumis au REDUCE.
+const BALISES_PENSEE = ["think", "thinking", "reasoning"];
+
+function sansRaisonnement(texte) {
+  if (!texte) return "";
+  let s = String(texte);
+
+  // Blocs complets, une balise a la fois : une backreference  serait lue
+  // comme un echappement octal dans un template literal, ce que Node refuse.
+  for (const b of BALISES_PENSEE) {
+    s = s.replace(new RegExp("<\\s*" + b + "\\s*>[\\s\\S]*?<\\s*/\\s*" + b + "\\s*>", "gi"), "");
+  }
+
+  // Ouverture sans fermeture : la reponse n'est jamais venue. Rendre le
+  // raisonnement brut serait pire que ne rien rendre -- l'appelant croirait
+  // tenir un resultat.
+  for (const b of BALISES_PENSEE) {
+    if (new RegExp("<\\s*" + b + "\\s*>", "i").test(s)) return "";
+  }
+
+  // Fermeture sans ouverture : le raisonnement a ete tronque en amont, la
+  // reponse est ce qui suit la derniere fermeture.
+  let dernier = -1;
+  for (const b of BALISES_PENSEE) {
+    const re = new RegExp("<\\s*/\\s*" + b + "\\s*>", "gi");
+    let m;
+    while ((m = re.exec(s)) !== null) {
+      const bout = m.index + m[0].length;
+      if (bout > dernier) dernier = bout;
+    }
+  }
+  if (dernier >= 0) s = s.slice(dernier);
+  return s.trim();
+}
+
+// Ce qu'il faut DIRE d'une reponse, en un seul endroit.
+//
+// `sansRaisonnement` rend la chaine vide quand un modele ouvre une balise de
+// pensee sans la refermer, et ce choix est juste : livrer le brouillon serait
+// pire. Mais le vide etait rendu SANS explication, alors que `chat()` detient
+// de quoi la donner. Mesure du 2026-08-30 : nexus_compare a affiche
+// « ### glm-5.3-cloud » suivi de rien, a cote de « 50.4s 8234 tokens ».
+// L'appelant en a conclu « reponse tronquee » -- la conclusion normale quand
+// l'outil sait et se tait. Meme famille que le refus qui ne nommait pas
+// --racine : le code detient la raison et ne la dit pas.
+//
+// La regle vit ici et nulle part ailleurs. Elle etait recopiee dans deux
+// appelants et absente des deux autres, ce qui est precisement la facon dont
+// deux copies finissent par diverger.
+function mentionsReponse(result) {
+  const mentions = [];
+  // Le libelle est repris MOT POUR MOT. « max_tokens » y est le nom du
+  // parametre, non une valeur a substituer : un premier jet l'avait pris pour
+  // un gabarit et aurait affiche « a undefined tokens », transformant une
+  // mention juste en mention cassee.
+  if (result.tronquee) mentions.push("REPONSE TRONQUEE a max_tokens");
+
+  const vide = !result.text || !String(result.text).trim();
+  const produits = Number(result.tokens_sortie) || 0;
+  if (vide && produits > 0) {
+    mentions.push("REPONSE VIDE apres retrait du raisonnement (" +
+                  produits + " jetons produits)");
+  } else if (vide) {
+    // Cas different, et il ne faut pas accuser le retrait du raisonnement
+    // d'un vide qu'il n'a pas cause : le modele n'a rien emis du tout.
+    mentions.push("REPONSE VIDE : le modele n'a produit aucun jeton");
+  }
+
+  return mentions.length ? " · " + mentions.join(" · ") : "";
+}
+
 // Temperature par defaut des outils du pont.
 //
 // Le serveur n'en envoyait AUCUNE, si bien que les douze outils tournaient

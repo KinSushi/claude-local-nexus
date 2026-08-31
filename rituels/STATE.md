@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 21:49 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 21:59 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `6ab1a34` |
+| Commit | `9cbd81c` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 32 hours (healthy)
-litellm-proxy	litellm	Up 8 hours
+litellm-proxy	litellm	Up 9 hours
 litellm-redis	redis	Up 32 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 32 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 346.0 Go |
+| Disque libre | 346.1 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -57,9 +57,9 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `92a860365e08bc93dcb833f81306cf64` |
+| `litellm_config.yaml` | `562c1fbd32e8ffdb87c4d888d2df42b1` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
-| `cloud_models.txt` | `c3dd69a2673b53559124fd20e9e93c84` |
+| `cloud_models.txt` | `81981ee156670d3d08686ec569fe194e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
 | `tools/nexus-mcp/server.js` | `8a94ecd4ef9a1a24adbae936895c91a7` |

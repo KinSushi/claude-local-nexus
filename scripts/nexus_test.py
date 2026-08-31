@@ -1247,7 +1247,7 @@ def main() -> int:
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
-                                 "terminal"],
+                                 "terminal", "noms"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1288,6 +1288,8 @@ def main() -> int:
         test_protocole_refus()
     if args.only in (None, "terminal"):
         test_terminal_repli()
+    if args.only in (None, "noms"):
+        test_noms_js()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1712,6 +1714,31 @@ def test_terminal_repli() -> None:
                if t in ordre and ordre[t] <= ordre[s]]
     check("acyclicite structurelle preservee", not retours,
              "aucun retour en arriere" if not retours else str(retours))
+
+
+def test_noms_js() -> None:
+    """
+    Une fonction appelee dans le pont existe-t-elle encore ?
+
+    Defaut REEL du 2026-08-30, paye en production. Un correctif a remplace
+    une REGION de server.js delimitee par deux commentaires, et cette region
+    contenait aussi sansRaisonnement() et mentionsReponse(). Les deux sont
+    restees appelees en six endroits.
+
+    Rien ne pouvait le voir : `node --check` valide la SYNTAXE et jamais la
+    resolution des noms, et les autres epreuves extraient des blocs isoles.
+    Le serveur a plante a son redemarrage suivant, chez une session voisine,
+    sur « sansRaisonnement is not defined ».
+
+    Le controle est volontairement ETROIT, comme son cousin Python : un appel
+    NU a un nom lie nulle part et absent des globals connus. Un detecteur qui
+    crie a tort est desarme le jour meme -- trois faux positifs ont d'ailleurs
+    du etre traites avant qu'il ne serve : deux mots-cles, et « separement
+    (phase MAP) » dans un commentaire francais, dont le fragment « ment » se
+    lisait comme un appel.
+    """
+    jouer_epreuve_node("epreuve_noms_js.js", "noms du pont",
+                       "NOMS DU PONT : une fonction appelee existe-t-elle ?")
 
 
 def test_ruche() -> None:
