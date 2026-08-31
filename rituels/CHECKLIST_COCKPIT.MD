@@ -1923,3 +1923,60 @@ supplément : c'est la seule preuve qu'un silence veut dire quelque chose.
   le contrôle de conformité exercent le garde — pas encore vécue.
 * **40 sauvegardes résiduelles** dans `scripts/.nexus/`, signalées en
   ALERTE à chaque passage de la porte. Données de l'opérateur.
+
+---
+
+## 10. Tour autonome — les trois plans mesurés, et une hypothèse réfutée
+
+### 10.1 Fermé
+
+* **`eslint` provisionné.** Trois défauts empilés l'en empêchaient, les
+  mêmes classes que pour `ruff` : `npm` appelé sans `.cmd`, une
+  configuration au format `.eslintrc` que la version installée (**10.9.1**)
+  ne lit plus, et un drapeau `--no-eslintrc` supprimé. Les 2500 lignes du
+  pont MCP n'avaient **jamais** été regardées par un outil.
+* **Les trois plans ensemble** : ruff 91, eslint 11, PSScriptAnalyzer 17.
+* **Le cliquet distingue « jamais mesuré » de « aggravé ».** Il annonçait
+  « 2 RÉGRESSION(S) » sur un outil qui venait d'être branché. Faux : la
+  dette était là, personne ne la voyait. Et la confusion forçait un
+  `--rebaseline` alors indiscernable d'une dégradation réellement assumée.
+* **Trois `catch` du pont jetaient la cause** de l'échec qu'ils
+  rapportaient — la classe 1 de `nexus_traque`, écrite en JavaScript.
+  eslint 11 → 8, les quatre épreuves du pont passent.
+
+### 10.2 Arbitrage des onze constats JavaScript
+
+Un linter signale, il ne juge pas. Sur onze : **trois** vrais défauts
+(corrigés), **trois** faux positifs ou intentionnels, **cinq** requalifiés.
+
+Le `group` de `mapReduce` est un faux positif net : `flush()` est attendu
+dans une boucle `for...of` séquentielle, deux `flush` ne se chevauchent
+jamais. La règle est statique et ignore l'ordonnancement.
+
+**L'hypothèse commode, et sa réfutation.** Cinq `require-atomic-updates`
+décrivent une ruée sur le cache. Il était tentant d'y voir la cause de la
+lenteur du pont mesurée cette session — **>120 s contre 10,6 s en
+direct**. L'arithmétique la refuse : `CACHE_MS` vaut 60 s et le sémaphore
+borne la concurrence à 1 local / 4 cloud, soit au plus ~5 requêtes
+`/v1/models` en double **par minute**. Négligeable devant 120 s par appel.
+
+**La lenteur du pont reste donc mesurée et inexpliquée.** L'écrire vaut
+mieux que de laisser une explication plausible tenir lieu de mesure.
+
+### 10.3 Ouvert, et nommé
+
+* **Le cliquet ne RESSERRE pas.** Il enregistre l'amélioration (eslint
+  5 → 2) mais laisse la référence à 5 : un retour à 4 passerait. Un
+  cliquet qui ne resserre est un seuil. `nexus_cablage.py` porte le même
+  trou, et la raison en est probablement bonne — écrire la référence
+  pendant le rituel salirait l'arbre au moment même où le rituel vérifie
+  qu'il est propre. **Question posée, non tranchée seul.**
+* **Le `B023` de `nexus_validate.py` n'est pas un défaut** : la fermeture
+  est consommée dans la même itération. Mais `graph` est **réaffectée huit
+  lignes plus bas dans la même portée** — inoffensif aujourd'hui,
+  silencieux demain. Liaison explicite à envisager.
+* **Les 88 violations Python et 17 PowerShell restantes** ne sont pas
+  arbitrées. Le cliquet empêche qu'elles augmentent ; rien n'exige
+  qu'elles baissent.
+* **La lenteur du pont MCP** — mesurée, inexpliquée, hypothèse principale
+  réfutée ci-dessus.
