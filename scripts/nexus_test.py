@@ -1846,6 +1846,49 @@ def test_registre_epreuves() -> None:
         releve.PLATEFORME = ancien_root
         shutil.rmtree(bac, ignore_errors=True)
 
+    # -- La REPRISE. Sans elle, une interruption fait tout recommencer.
+    #
+    # Mesure du 2026-08-30 : trois lancements de --tous, interrompus chacun
+    # avant la fin, ont remesure les MEMES douze premiers modeles par ordre
+    # alphabetique et ne sont jamais alles au-dela. Le parc en compte 71.
+    bac2 = _tempfile.mkdtemp(prefix="epreuve_reprise_")
+    ancien2 = releve.PLATEFORME
+    try:
+        releve.PLATEFORME = bac2
+        import os as _os
+        _os.makedirs(_os.path.join(bac2, ".nexus"), exist_ok=True)
+        registre = {"modeles": {
+            "acquis-local": {"reussies": 4, "total": 4, "complet": True,
+                             "concluante": True},
+            "vain-local": {"reussies": 0, "total": 4, "complet": False,
+                           "concluante": False},
+            "ancien-local": {"reussies": 3, "total": 4, "complet": False},
+        }}
+        with open(_os.path.join(bac2, ".nexus", "epreuves.json"), "w",
+                  encoding="utf-8") as fh:
+            _json.dump(registre, fh)
+
+        acquis = releve.deja_mesures()
+        check("un verdict concluant est repris, donc saute",
+              "acquis-local" in acquis, "acquis-local reconnu")
+        check("une tentative vaine n'est PAS reprise : elle ne prouve rien",
+              "vain-local" not in acquis, "vain-local sera rejoue")
+        check("une entree sans le champ est tenue pour concluante",
+              "ancien-local" in acquis,
+              "compatibilite avec les registres ecrits avant le champ")
+    finally:
+        releve.PLATEFORME = ancien2
+        shutil.rmtree(bac2, ignore_errors=True)
+
+    # Le saut doit etre DIT : une reprise muette se lirait comme « tout a ete
+    # mesure », ce qui est exactement le contraire.
+    with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
+                 encoding="utf-8") as fh:
+        code_releve = fh.read()
+    check("la reprise annonce ce qu'elle saute",
+          "deja mesure(s), repris la ou on en etait" in code_releve,
+          "le nombre saute est imprime")
+
 
 def test_ruche() -> None:
     """

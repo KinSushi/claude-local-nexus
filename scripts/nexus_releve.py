@@ -671,6 +671,35 @@ def candidats_locaux(cle: str) -> list[str]:
     return sorted(set(noms))
 
 
+def deja_mesures() -> dict:
+    """
+    Les verdicts CONCLUANTS deja acquis, pour ne pas les refaire.
+
+    Sans cela, `--tous` repartait du premier candidat a chaque lancement.
+    Mesure du 2026-08-30 : trois lancements successifs, interrompus chacun
+    avant la fin, ont remesure les MEMES douze premiers modeles par ordre
+    alphabetique -- codegemma, codestral, command-r, deepseek, gemma, glm --
+    et ne sont jamais alles au-dela. Le parc en compte soixante-et-onze.
+
+    Une epreuve dure des minutes et coute une place en memoire du moteur :
+    la refaire quand le verdict est acquis n'ajoute rien et empeche le reste
+    d'etre mesure.
+
+    Seuls les verdicts CONCLUANTS comptent. Une tentative qui n'a pas atteint
+    le modele ne prouve rien et doit etre rejouee.
+    """
+    try:
+        with open(os.path.join(PLATEFORME, ".nexus", "epreuves.json"),
+                  encoding="utf-8") as f:
+            registre = json.load(f)
+        modeles = registre.get("modeles") or {}
+        return {n: v for n, v in modeles.items() if v.get("concluante", True)}
+    except Exception:
+        # Registre absent ou illisible : on mesure tout, ce qui est le
+        # comportement d'avant. Ne jamais empecher une mesure faute d'archive.
+        return {}
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--modele", help="Alias a eprouver. Defaut : " + RELEVE)
@@ -678,6 +707,10 @@ def main() -> int:
         "--tous", action="store_true", help="Eprouver tous les candidats locaux (long)."
     )
     p.add_argument("--json", action="store_true")
+    p.add_argument(
+        "--refaire", action="store_true",
+        help="Rejouer meme les modeles deja mesures. Par defaut, --tous "
+             "REPREND la ou il en etait.")
     a = p.parse_args()
 
     cle = agent.cle_maitre()
@@ -686,6 +719,19 @@ def main() -> int:
         if not cibles:
             print("Aucun candidat local a eprouver.")
             return 1
+        if not a.refaire:
+            acquis = deja_mesures()
+            restants = [m for m in cibles if m not in acquis]
+            # Le saut est DIT, jamais silencieux : une reprise muette se
+            # lirait comme « tout a ete mesure », ce qui est le contraire.
+            if len(restants) != len(cibles):
+                print("  %d modele(s) deja mesure(s), repris la ou on en etait."
+                      % (len(cibles) - len(restants)))
+                print("  --refaire pour tout rejouer.")
+            cibles = restants
+            if not cibles:
+                print("  Tous les candidats ont deja un verdict concluant.")
+                return 0
     else:
         cibles = [a.modele or RELEVE]
 
