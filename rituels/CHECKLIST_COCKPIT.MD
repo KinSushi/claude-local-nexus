@@ -834,6 +834,53 @@ enfreinte. Un paragraphe ne ferme rien.
 > commentaire ou quelle ligne rend ce comportement délibéré ? », dont
 > l'absence de réponse vaut rejet.
 
+### L'amplification des replis — la cause racine, 30/08 au soir
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Un `-cloud` repliait sur un autre `-cloud` du même compte | `FAIT` (générateur) | `--only terminal`, 7 cas dont une contre-épreuve |
+| La LOI 1 dépendait d'un seul plan | `FAIT` | `--modele` / `NEXUS_VALIDE_MODELE` |
+| `num_retries: 2` sur un 429 | `OUVERT` | exige de vérifier la politique par type d'erreur dans la doc LiteLLM |
+| `litellm_config.yaml` porte toujours les 37 chaînes | `OUVERT` | régénération + redémarrage, à la main de l'opérateur |
+
+> **Le chiffre qui explique toute la soirée**, mesuré par une session voisine
+> et vérifié ici : chaque appel client devient **~13 requêtes vers
+> ollama.com** — une, fois trois tentatives (`num_retries: 2`), fois trois
+> groupes (l'original plus deux replis cloud→cloud). Constaté : **40
+> connexions sortantes pour 3 appels clients**. Le plafond du compte porte
+> sur ces 40, jamais sur les 3.
+>
+> Vérifié dans ma propre configuration avant d'y croire : **37 replis
+> cloud→cloud contre 4 cloud→local**. Le chiffre annoncé était exact.
+>
+> Et il explique ce que j'ai mesuré indépendamment : six tâches simultanées,
+> **36 refus 429 et zéro succès en six minutes**. Le régime encadré par la
+> session voisine dit la même chose : 3 appels en vol → 752/h sans un échec ;
+> 8 à 32 → **0**.
+>
+> **Deux défauts distincts dans le générateur.** Le premier : la sortie
+> locale n'était greffée que s'il restait de la place, donc uniquement sur
+> les deux derniers maillons — alors que le docstring *et* le commentaire de
+> l'appelant affirmaient tous deux que « toute chaîne externe s'achève en
+> local ». Le second, découvert en corrigeant le premier : même greffée, la
+> chaîne gardait un successeur cloud. Or un voisin cloud n'aide **jamais**
+> sous 429, puisque le refus frappe le quota du compte. Les chaînes cloud
+> sont désormais rendues avec `width=1` : un seul groupe atteint ollama.com,
+> le repli part sur la machine et ne consomme aucun quota.
+>
+> **Ce que je n'ai pas touché, et pourquoi.** `num_retries: 2` reste en
+> place. La demande d'un `num_retries: 0` sur 429 est juste dans le principe,
+> mais la politique de tentatives *par type d'erreur* est une capacité de
+> LiteLLM qu'il faut **vérifier dans sa documentation** avant de l'écrire —
+> le contrat interdit d'inventer une capacité d'un fournisseur.
+>
+> **La LOI 1 dépendait du plan le plus fragile.** `nexus_valide.py` nommait
+> `gpt-oss-120b-cloud` en dur à deux endroits. Pendant le 429, la validation
+> obligatoire avant tout commit est devenue **impossible à exécuter** — deux
+> tentatives sont restées dix minutes sans rendre. Une validation qui ne
+> s'exécute pas ne protège de rien. Le commit qui corrige cela a été validé
+> par `qwen3-coder-30b-local`, cloud indisponible : c'est sa propre preuve.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
