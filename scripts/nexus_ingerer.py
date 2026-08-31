@@ -47,6 +47,8 @@ import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.request
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXTENSIONS = (".md", ".markdown", ".txt", ".rst")
@@ -201,7 +203,18 @@ def ecrire_corpus(entrees, dossier, prefixe, type_entree="doc"):
             f_jsonl.write(ligne_json + "\n")
 
             # preparation du resume pour l'index (120 chars max, tabs -> espace, newlines -> espace)
-            resume_idx = obj["titre"]
+            # LE RESUME DU MODELE LOCAL PASSE AVANT LE TITRE.
+            #
+            # CE QUI ETAIT FAUX : cette colonne portait le titre, meme
+            # quand un modele local avait produit un resume. L'outil
+            # annoncait « 4 resumes produits » et l'index n'en portait
+            # aucun -- le resume atteignait l'objet JSON, que personne ne
+            # lit pour CHOISIR, jamais la colonne que le petit modele
+            # parcourt en entier.
+            #
+            # Le titre reste le repli : une entree sans resume doit se
+            # lire quand meme.
+            resume_idx = (obj.get("resume") or "").strip() or obj["titre"]
             resume_idx = resume_idx.replace("\t", " ").replace("\n", " ")
             if len(resume_idx) > 120:
                 resume_idx = resume_idx[:120]
@@ -212,6 +225,130 @@ def ecrire_corpus(entrees, dossier, prefixe, type_entree="doc"):
             offset += longueur
 
     return len(entrees)
+
+# ---------------------------------------------------------------------------
+# LE RESUME EST PRODUIT PAR UN MODELE LOCAL.
+#
+# L'index est ce qu'un petit modele -- 1 a 3 milliards de parametres -- lit EN
+# ENTIER pour choisir quelle entree consulter par seek. Sa colonne `resume`
+# portait le TITRE brut de la section : un titre dit de quoi ca parle, un
+# resume dit ce que ca AFFIRME.
+#
+# TROIS CONTRAINTES, chacune motivee :
+#
+#   - PAR LOTS. Un appel par entree serait ruineux : un corpus de 200 entrees
+#     ferait 200 appels, et un modele local paie son chargement une fois mais
+#     son inference a chaque fois.
+#   - NE JAMAIS BLOQUER. Un modele froid ou injoignable laisse les titres en
+#     place et compte des echecs. Un outil d'ingestion qui echoue parce qu'un
+#     modele n'a pas repondu rend le corpus inutilisable pour une raison sans
+#     rapport avec le corpus.
+#   - NE JAMAIS REDISTRIBUER. Si la reponse est plus courte que le lot, les
+#     entrees sans ligne gardent leur titre. Redistribuer ferait GLISSER tous
+#     les resumes d'un cran, et chaque entree porterait le resume d'une autre
+#     -- un corpus faux qui se lit comme bon. C'est le seul defaut de ce
+#     mecanisme qui serait invisible.
+# ---------------------------------------------------------------------------
+
+
+def _entetes(cle):
+    return {"Content-Type": "application/json",
+            "Authorization": "Bearer " + cle}
+
+def appel_post(url, payload, timeout, cle):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers=_entetes(cle))
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+def _nettoyer_resume(txt):
+    # remplace tabulations et sauts de ligne par espace, reduit espaces multiples,
+    # tronque a 120 caracteres
+    txt = re.sub(r'[\t\r\n]+', ' ', txt)
+    txt = re.sub(r'\s+', ' ', txt).strip()
+    return txt[:120]
+
+def resumer_entrees(entrees, alias, lot=12, timeout=180.0, journal=None):
+    """
+    entrees : liste de dicts contenant au moins les cles "titre" et "texte"
+    alias   : nom du modele local (ex: "glm-4.7-flash-local")
+    rend    : (nb_resumes, nb_echecs)
+    effet   : ajoute la cle "resume" a chaque entree traitee
+    """
+    nb_resumes = 0
+    nb_echecs = 0
+    gateway = os.getenv("NEXUS_GATEWAY", "http://localhost:4000")
+    url = f"{gateway.rstrip('/')}/v1/chat/completions"
+    cle = os.getenv("LITELLM_MASTER_KEY", "")
+
+    for debut in range(0, len(entrees), lot):
+        batch = entrees[debut:debut+lot]
+        # construction du prompt
+        instruction = (
+            "Vous devez produire un resume concis en une seule ligne pour chaque "
+            "entree numerotee. Ne recopiez pas le titre. Formatez chaque ligne comme "
+            "'N: resume' sans aucun preambule ni conclusion. La reponse servira "
+            "d'index a un modele plus petit."
+        )
+        items = []
+        for idx, ent in enumerate(batch, start=1):
+            texte = ent.get("texte", "")
+            texte_tronque = texte[:600]
+            items.append(f"{idx}. Titre: {ent.get('titre','')}\nTexte: {texte_tronque}")
+        prompt = instruction + "\n\n" + "\n\n".join(items)
+
+        payload = {
+            "model": alias,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 1024,
+            "temperature": 0.2
+        }
+
+        try:
+            reponse = appel_post(url, payload, timeout, cle)
+            # extraction du texte brut de la reponse
+            contenu = reponse.get("choices", [{}])[0].get("message", {}).get("content", "")
+            lignes = [l.strip() for l in contenu.splitlines() if l.strip()]
+            # map numero -> resume
+            mapping = {}
+            for ligne in lignes:
+                match = re.match(r'^(\d+)\s*[:\-]\s*(.*)$', ligne)
+                if match:
+                    num = int(match.group(1))
+                    resume = match.group(2)
+                    mapping[num] = resume
+
+            for i, ent in enumerate(batch, start=1):
+                resume_brut = mapping.get(i)
+                if resume_brut is None:
+                    # pas de ligne pour ce numero : garder le titre
+                    ent["resume"] = ent.get("titre", "")
+                    nb_echecs += 1
+                    if journal:
+                        journal(f"Lot {debut}-{debut+len(batch)-1} : aucune ligne pour entree {i}")
+                    continue
+                resume_nettoye = _nettoyer_resume(resume_brut)
+                if not resume_nettoye:
+                    # resume vide ou espaces seulement
+                    ent["resume"] = ent.get("titre", "")
+                    nb_echecs += 1
+                    if journal:
+                        journal(f"Lot {debut}-{debut+len(batch)-1} : resume vide pour entree {i}")
+                else:
+                    ent["resume"] = resume_nettoye
+                    nb_resumes += 1
+        except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, KeyError, Exception) as e:
+            # en cas d'erreur, toutes les entrees du lot conservent le titre
+            for ent in batch:
+                ent["resume"] = ent.get("titre", "")
+            nb_echecs += len(batch)
+            if journal:
+                journal(f"Lot {debut}-{debut+len(batch)-1} : erreur '{e}'")
+            continue
+
+    return nb_resumes, nb_echecs
+
 
 def parcourir(source, taille_max):
     """
@@ -247,6 +384,11 @@ def main(argv=None):
                     help="nom du corpus : references/<nom>/")
     ap.add_argument("--taille-max", type=int, default=1200,
                     help="caracteres par entree (defaut 1200, ~300 jetons)")
+    ap.add_argument("--resumer", metavar="ALIAS",
+                    help="fait produire le resume de chaque entree par un "
+                         "MODELE LOCAL, p.ex. glm-4.7-flash-local")
+    ap.add_argument("--lot", type=int, default=12,
+                    help="entrees par appel au modele (defaut 12)")
     ap.add_argument("--appliquer", action="store_true",
                     help="ecrit reellement ; sans lui, rien n'est ecrit")
     a = ap.parse_args(argv)
@@ -270,6 +412,14 @@ def main(argv=None):
     print("%d entree(s), %d caracteres, %.0f caracteres par entree en moyenne"
           % (len(entrees), total, total / len(entrees)))
     print("  la plus longue : %d caracteres" % max(len(e["texte"]) for e in entrees))
+
+    if a.resumer:
+        # Le resume precede l'ecriture : c'est lui qui remplit la colonne que
+        # le petit modele lira.
+        faits, rates = resumer_entrees(entrees, a.resumer, lot=a.lot,
+                                       journal=lambda m: print("  " + m))
+        print("resumes par %s : %d produits, %d entrees gardent leur titre"
+              % (a.resumer, faits, rates))
 
     if not a.appliquer:
         print("SIMULATION : rien n'a ete ecrit. Ajouter --appliquer.")

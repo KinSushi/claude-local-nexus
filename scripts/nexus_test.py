@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer"],
+                                 "cibles", "ingerer", "resumer"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1326,6 +1326,8 @@ def main() -> int:
         test_cibles_shell()
     if args.only in (None, "ingerer"):
         test_ingerer()
+    if args.only in (None, "resumer"):
+        test_resumer()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2290,6 +2292,29 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_resumer() -> None:
+    """
+    Le resume produit par un modele local peut-il GLISSER d une entree ?
+
+    C est le seul defaut de ce mecanisme qui serait INVISIBLE. Si la reponse
+    du modele est plus courte que le lot -- ce qui arrive des qu il tronque --
+    et que l on redistribue les lignes recues dans l ordre, alors chaque
+    entree porte le resume d une AUTRE. Le corpus est faux et se lit comme
+    bon : l index annonce un contenu, le seek en rend un different, et rien ne
+    signale la discordance puisque les offsets, eux, sont exacts.
+
+    Le transport est BOUCHONNE : on eprouve la logique, pas le reseau. Un
+    modele froid rendrait l epreuve rouge pour une raison sans rapport avec ce
+    qu elle mesure.
+
+    Mesure reelle, hors epreuve : 4 resumes produits par glm-4.7-flash-local
+    en 68 s, chargement a froid compris, zero echec.
+    """
+    print("")
+    print("--- RESUME PAR MODELE LOCAL : un resume peut-il glisser ? ---")
+    jouer_epreuve_python("epreuve_resumer.py", "resume par modele local")
 
 
 def test_ingerer() -> None:

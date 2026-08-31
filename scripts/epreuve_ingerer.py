@@ -126,6 +126,33 @@ def main():
         verifier("les identifiants sont uniques", len(set(ids)) == len(ids),
                  "%d identifiants, %d distincts" % (len(ids), len(set(ids))))
 
+        # --- LE RESUME ATTEINT-IL L'INDEX ? ------------------------------
+        #
+        # CE QUI ETAIT FAUX : la colonne `resume` de l'index portait toujours
+        # le TITRE, meme quand un modele local avait produit un resume.
+        # L'outil annoncait « 4 resumes produits » et l'index n'en portait
+        # aucun -- produit, non consomme. Aucune epreuve ne le voyait, parce
+        # qu'aucune ne reliait les deux moities.
+        avec_resume = [{"titre": "Un titre", "ligne": 1, "texte": "du texte",
+                        "resume": "LE RESUME DU MODELE"}]
+        tmp2 = tempfile.mkdtemp()
+        try:
+            ecrire_corpus(avec_resume, tmp2, "res")
+            with open(os.path.join(tmp2, "index.tsv"), encoding="utf-8") as fh:
+                derniere = [x for x in fh.read().split("\n") if x.strip()][-1]
+            verifier("le resume fourni atteint la colonne de l'index",
+                     derniere.split("\t")[4] == "LE RESUME DU MODELE",
+                     repr(derniere.split("\t")[4]))
+            sans = [{"titre": "Un titre", "ligne": 1, "texte": "du texte"}]
+            ecrire_corpus(sans, tmp2, "res")
+            with open(os.path.join(tmp2, "index.tsv"), encoding="utf-8") as fh:
+                derniere = [x for x in fh.read().split("\n") if x.strip()][-1]
+            verifier("sans resume, le titre reste le repli",
+                     derniere.split("\t")[4] == "Un titre",
+                     "une entree sans resume doit se lire quand meme")
+        finally:
+            shutil.rmtree(tmp2, ignore_errors=True)
+
         # --- LE TYPE VIT DANS L'OBJET ------------------------------------
         with open(jsonl, encoding="utf-8") as fh:
             premier = json.loads(fh.readline())
