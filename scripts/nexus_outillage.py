@@ -137,12 +137,30 @@ TIMEOUT = 240  # secondes
 def _run_cmd(cmd: List[str], cwd: Path) -> subprocess.CompletedProcess:
     """Execute une commande sans shell, avec timeout.
     Retourne l'objet CompletedProcess, l'exception est capturee par l'appelant."""
+    # L'ENCODAGE EST DIT, JAMAIS DEDUIT DE LA CONSOLE.
+    #
+    # CE QUI ETAIT FAUX, diagnostique le 2026-08-31 en instrumentant cette
+    # fonction : `text=True` sans `encoding` fait decoder avec la page de code
+    # de la console -- cp1252 ici. Le JSON d'eslint porte un octet 0x81, venant
+    # des commentaires accentues UTF-8 de server.js. Le decodage leve
+    # UnicodeDecodeError DANS LE THREAD LECTEUR de subprocess, exception que
+    # subprocess AVALE : communicate() rend alors des chaines VIDES.
+    #
+    # Trace relevee : returncode 1, stdout 0 octet, stderr 0 octet.
+    # L'outil rapportait « eslint : JOUE (0 violations) » la ou eslint en
+    # trouvait NEUF, dont deux require-atomic-updates dans server.js.
+    #
+    # Les trois linters rendent de l'UTF-8. La page de code de la console n'a
+    # rien a voir la-dedans, et elle varie d'une machine a l'autre : la deduire
+    # revenait a faire dependre le verdict de la locale de l'operateur.
     return subprocess.run(
         cmd,
         cwd=str(cwd),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=TIMEOUT,
     )
 
@@ -354,6 +372,24 @@ def _run_eslint() -> Dict[str, Any]:
             "detail": f"unexpected exit {result.returncode}",
         }
 
+    # UN CODE 1 AVEC UN FLUX VIDE EST UNE CONTRADICTION, PAS UN DEPOT PROPRE.
+    #
+    # eslint sort 1 QUAND IL A TROUVE des problemes, et 0 quand tout est
+    # propre. Un code 1 accompagne d'une sortie vide dit donc que le flux n'a
+    # pas ete lu, ou qu'il a ete tronque -- jamais que le code est sain.
+    #
+    # Cette garde est le vrai livrable : elle aurait rougi MEME SANS la
+    # correction d'encodage ci-dessus, alors que cette correction, seule,
+    # laisserait le meme piege revenir au premier octet illisible d'une autre
+    # source. « Une mesure impossible n'est pas une mesure a zero. »
+    if result.returncode == 1 and not (result.stdout or "").strip():
+        return {
+            "outil": "eslint",
+            "etat": "casse",
+            "violations": [],
+            "detail": "contradiction : code 1 (des problemes) mais flux vide",
+        }
+
     try:
         data = json.loads(result.stdout or "[]")
     except Exception:
@@ -376,6 +412,17 @@ def _run_eslint() -> Dict[str, Any]:
                     "message": msg.get("message"),
                 }
             )
+    if result.returncode == 1 and not violations:
+        # Le document etait lisible mais ne portait aucun message, alors
+        # qu'eslint dit en avoir trouve. Une troncature au milieu du JSON
+        # produirait exactement cela.
+        return {
+            "outil": "eslint",
+            "etat": "casse",
+            "violations": [],
+            "detail": "contradiction : code 1 mais aucune violation analysee",
+        }
+
     return {
         "outil": "eslint",
         "etat": "joue",

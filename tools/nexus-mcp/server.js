@@ -2878,6 +2878,30 @@ async function callTool(name, args) {
     // local -- l'orchestrateur l'evitait donc pour du confidentiel, ou
     // renoncait au profil coding dont il est le premier candidat.
     const plans = await chargerPlans();
+    // LES MODELES RESIDENTS, ENFIN BRANCHES.
+    //
+    // C'etait l'objet du P2 de la session voisine : ce qui rend le plan local
+    // lent n'est pas l'inference, c'est le CHARGEMENT des poids -- 31 s a
+    // froid contre 2 s a chaud, mesure sur qwen3.6:27b. L'appelant qui sait
+    // ce qui est deja chaud supprime la cause dominante de la latence au lieu
+    // d'en subir l'effet.
+    //
+    // CE QUI ETAIT FAUX : `modelesResidents()` a bien ete ecrite, et jamais
+    // appelee. La capacite avait ete annoncee faite ; elle n'existait pas.
+    // Aucun humain ne l'a vu, et le seul outil qui l'aurait vu -- eslint --
+    // rendait « 0 violation » parce que son flux etait illisible.
+    //
+    // L'echec ne bloque pas : le moteur peut etre arrete alors que la
+    // passerelle repond. Une liste vide est alors dite comme telle, jamais
+    // presentee comme « aucun modele chaud ».
+    let residents = null;
+    try {
+      residents = await modelesResidents();
+    } catch {
+      // La liaison n'etait jamais lue : le motif de l'echec ne change
+      // rien ici, seul compte qu'on ne sache pas.
+      residents = null;
+    }
     const groups = { local: [], cloud: [], anthropic: [], routeurs: [] };
     for (const id of ids) {
       const plan = plans && plans.get(id);
@@ -2889,8 +2913,22 @@ async function callTool(name, args) {
       else if (id.endsWith("-cloud")) groups.cloud.push(id);
       else groups.anthropic.push(id);
     }
+    // « Non mesurable » et « aucun » sont dits SEPAREMENT : confondre les deux
+    // ferait croire le moteur vide alors qu'il est injoignable.
+    let ligneChauds;
+    if (residents === null) {
+      ligneChauds = "MODELES CHAUDS — moteur injoignable, etat inconnu\n";
+    } else if (residents.length === 0) {
+      ligneChauds = "MODELES CHAUDS — aucun : le premier appel paiera le chargement des poids\n";
+    } else {
+      ligneChauds =
+        `MODELES CHAUDS — deja en memoire, repondent sans payer le chargement (${residents.length})\n  ` +
+        residents.join("\n  ") + "\n";
+    }
+
     return (
-      `LOCAL — aucune donnee ne quitte la machine (${groups.local.length})\n  ` +
+      ligneChauds +
+      `\nLOCAL — aucune donnee ne quitte la machine (${groups.local.length})\n  ` +
       groups.local.join("\n  ") +
       `\n\nOLLAMA CLOUD — les donnees sortent vers ollama.com (${groups.cloud.length})\n  ` +
       groups.cloud.join("\n  ") +

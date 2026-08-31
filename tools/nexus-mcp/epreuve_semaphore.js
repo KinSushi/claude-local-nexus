@@ -130,7 +130,7 @@ const dors = (ms) => new Promise((r) => setTimeout(r, ms));
         await m.avecJetonDuPlan("glm-4.7-flash-local", async () => {
           throw new Error("panne simulee");
         });
-      } catch (e) { /* attendu */ }
+      } catch { /* attendu : la liaison n'etait jamais lue */ }
     }
     let passe = false;
     await m.avecJetonDuPlan("glm-4.7-flash-local", async () => { passe = true; });
@@ -188,7 +188,7 @@ const dors = (ms) => new Promise((r) => setTimeout(r, ms));
           try { courant++; maximum = Math.max(maximum, courant); await dors(5); courant--; }
           finally { s.rendre(); }
         })()));
-      } catch (e) { maximum = -1; }
+      } catch { maximum = -1; }
       // `maximum !== 1` passait aussi quand maximum valait ZERO -- c'est-a-dire
       // quand la variante fautive ne laissait passer AUCUN appel, donc quand
       // elle etait cassee autrement. La contre-epreuve acceptait alors une
