@@ -2419,7 +2419,23 @@ async function callTool(name, args) {
         sources.push(`${raw} (illisible : ${String(err.message).slice(0, 60)})`);
       }
     }
-    if (!corpus.trim()) throw new Error("aucun contenu a traiter");
+    // CE QUI ETAIT FAUX : le throw ne transmettait pas les raisons, ne distinguait pas le cas d'absence de chemins, et masquait le nombre de fichiers examinés.
+    // Il ne renvoyait que le message générique 'aucun contenu a traiter'.
+
+    if (!corpus.trim()) {
+        const totalExamines = sources.length;
+        let errorMsg;
+        if (sources.length === 0) {
+            errorMsg = 'Aucun chemin fourni.';
+        } else {
+            const limit = 10;
+            const displayed = sources.slice(0, limit).join('; ');
+            const omitted = sources.length - limit;
+            const suffix = omitted > 0 ? ` ... et ${omitted} autres` : '';
+            errorMsg = `${totalExamines} chemin(s) examine(s) : ${displayed}${suffix}`;
+        }
+        throw new Error(errorMsg);
+    }
 
     const approxTokens = Math.round(corpus.length / CHARS_PER_TOKEN);
     const result = await mapReduce(corpus, args.instruction, model, contextTokens,
