@@ -4418,6 +4418,42 @@ existant testait un objet SANS contenu et exercait toujours l'alarme. Deux cas
 ajoutes, dont **l'anti-controle** : l'alarme doit RESTER quand elle dit vrai,
 sans quoi un objet reellement vide se lirait comme une absence de contenu.
 
+### 43.6 Le CODE SOURCE des livres, ajoute — et pourquoi la projection
+
+L'operateur : « il y a des codes sources aussi ». Deux formes existaient chez
+le voisin :
+
+| forme | volume | etat |
+| --- | --- | --- |
+| depots bruts | **1,87 Go** | inexploitable tel quel |
+| **projection** | **17,8 Mo** | deja au format consommable |
+
+La projection a ete prise : **2 231 entrees, dont 1 277 portant sur les
+agents, MCP ou A2A** — 57 % du corpus. Sous le meme chemin ignore, verifie a
+zero fichier suivi.
+
+**Ses identifiants finissent par un NOM DE SYMBOLE REEL**, ce qui les rend
+directement consultables — a la difference des livres, dont l'identifiant est
+un slug de titre.
+
+Preuve, sur `nexus_doc.py build_react_agent` :
+
+```
+### code.0117127e.Context-Engineering-for-Multi-Agent-Systems.langchain.lc_boot.build_react_agent
+    source : references/livres/code/symbols.jsonl (offset 15339, 2861 o)
+[type « function », rendu generique]
+def build_react_agent(engine: ContextEngine):
+    The same four tools handed to LangChain's standard agent builder.
+    Difference from Route A: there is no plan object...
+```
+
+Le code source d'un livre sur les systemes multi-agents, sa docstring et son
+commentaire de conception, a ~280 jetons la consultation. **L'index couvre
+desormais 24 073 entrees sur 8 corpus.**
+
+Et le rendu generique pose au meme tour (§43.4) sert immediatement : le type
+`function` n'aurait pas ete reconnu autrement.
+
 ### 43.5 Reste OUVERT — et c'est une limite de nature, pas un defaut
 
 `nexus_doc.py` est une **recherche par IDENTIFIANT**, pas par contenu. On
