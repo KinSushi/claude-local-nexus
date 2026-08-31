@@ -3270,3 +3270,95 @@ rendra structure ce qui ne l'est pas. La piste serait de ne miner que les
 messages de l'OPERATEUR dans la transcription, jamais ma propre prose ; elle
 n'est pas ouverte ici.
 
+---
+
+## 29. LE GARDE SHELL NE JUGEAIT QUE BASH — deux etages, et une lecon empruntee
+
+L'operateur : « il ne faut pas seulement graver, mais l'appliquer ». Applique,
+apres avoir chiffre le vecteur — on ne colmate pas un fail-open qu'on n'a pas
+mesure.
+
+### 29.1 La mesure
+
+La meme commande dangereuse, soumise sous deux noms d'outil :
+
+```
+tool_name = "Bash"        -> REFUSE
+tool_name = "PowerShell"  -> PASSE
+```
+
+L'outil PowerShell est actif dans cette session et sert en permanence. Tout ce
+que ce garde protege etait donc contournable **en changeant d'outil**, sans
+rien d'autre.
+
+### 29.2 Deux etages, et c'est le point
+
+| Etage | Ce qu'il portait |
+| --- | --- |
+| `.claude/settings.json` | matcher `Bash` seul |
+| `nexus_garde_shell.py` | `if tool_name != "Bash": return` |
+
+En elargir **un seul** aurait laisse l'autre fermer la porte, et le correctif
+aurait paru fait. C'est la forme la plus courante du cablage a moitie.
+
+### 29.3 Elargir sans adapter aurait ete PIRE que le trou
+
+Les deux regles existantes sont propres a bash : le heredoc du CAS A n'existe
+pas en PowerShell, et l'accent grave du CAS B y est le caractere
+d'**echappement ordinaire**, la ou bash en fait une substitution de commande.
+
+Les appliquer a PowerShell aurait refuse du travail parfaitement normal. **Un
+garde qui refuse le travail normal se fait desarmer** — c'est le risque
+principal, plus grave que le trou. Les regles sont donc choisies selon
+l'outil.
+
+La regle propre a PowerShell : le delimiteur de fermeture d'une here-string
+doit etre en **colonne zero** ; l'indenter est une erreur de syntaxe.
+
+### 29.4 Un controle MORT, rejete dans le rendu du banc
+
+Sa fonction cherchait la fermeture sous la forme `@'` — qui est la forme
+**d'ouverture**. La fermeture s'ecrit `'@`, inversee. Le controle ne se serait
+**jamais** declenche, tout en donnant a croire qu'il jouait. Meme classe que
+le motif en capitales compare a du texte minuscule (§28.1), **le meme jour**.
+
+### 29.5 Prouve en vrai, et honnetete sur la portee
+
+Le hook vivant, sans redemarrage de session : la here-string indentee est
+refusee en nommant le remede ; la here-string correcte et l'accent grave
+d'echappement passent.
+
+`scripts/epreuve_garde_shell_ps.py` porte dix cas, mais rejouee contre le
+garde d'avant elle n'en rougit qu'**un**. Les neuf autres sont des
+**anti-controles** : ils doivent passer dans les deux versions, c'est leur
+office. Sans eux, un garde qui refuserait tout paraitrait parfait — et serait
+desarme le lendemain. Le dire vaut mieux que compter dix cas comme dix
+preuves.
+
+### 29.6 Ce qui autorise un agent a ecrire dans settings.json
+
+La session voisine refuse d'y toucher, et elle a raison sur le principe. La
+distinction qui autorise ce commit : **ce changement elargit la portee du
+garde, il ne la desserre pas.** Etendre ce qui me contraint n'est pas
+desserrer ce qui me contraint. Toute modification qui RETIRERAIT un outil du
+matcher releverait, elle, de l'operateur.
+
+### 29.7 Le garde a mordu pendant sa propre correction
+
+La commande composee qui posait ce correctif portait un heredoc a antislash :
+refusee. Le script n'a donc pas tourne, laissant un moment le **matcher
+elargi et le garde inchange** — incoherent mais sans danger, le garde se
+contentant de sortir. Repose seul ensuite. Un garde qui gene son auteur au
+moment ou celui-ci le repare est un garde qui fonctionne.
+
+### 29.8 Reste OUVERT
+
+* **`nexus_garde_lecture.py` couvre `Read|Edit|Write` — pas `Bash`.** Or le
+  harnais oriente desormais les lectures vers `cat` et les ecritures vers
+  `sed`. La garde « lire avant d'ecrire » est donc contournable par
+  construction, et je l'ai contournee sans le vouloir plusieurs fois
+  aujourd'hui. Le vecteur n'est PAS chiffre : ce sujet reste ouvert tant qu'il
+  ne l'est pas, car corriger avant de mesurer est ce que §29 vient de refuser.
+* **La classe fail-open n'a toujours pas de motif dans `nexus_traque.py`.**
+  Quatre occurrences connues maintenant, toutes trouvees a la main.
+
