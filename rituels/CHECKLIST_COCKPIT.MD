@@ -3670,3 +3670,131 @@ La formule de la session voisine resume les deux tours : **« voir l'outil et
 voir la cible sont deux choses distinctes »**. Le premier etage a ete ferme
 en §31, le second l'est ici — en observation.
 
+---
+
+## 33. LA SECURITE EST DELEGUEE — et le besoin qu'elle renvoie
+
+Decide par l'operateur le 2026-08-31 : **une instance voisine est
+temporairement chargee de la securite**, et notamment de recolter la
+documentation de securite.
+
+Ce depot cesse donc d'ouvrir des chantiers de securite de son propre chef. Ce
+qui est deja pose ici reste en place et continue de mesurer :
+
+| Pose ici | Etat |
+| --- | --- |
+| `nexus_garde_shell` juge Bash **et** PowerShell, regles par shell | actif, 10 cas |
+| `controle_gardes_accordes` — les deux etages ne peuvent plus diverger | actif, 7 cas |
+| journal des ecritures shell non lues | actif, **observation seule** |
+
+**Ce qui reste ouvert cote securite est transmis, pas abandonne** : la
+politique de refus attend les chiffres du journal ; ce depot n'a **aucun**
+garde de perimetre pour un sous-agent ; `detecter_cas_a` est aveugle a
+`cat > f.py <<'EOF'`.
+
+### 33.1 Le besoin renvoye : une documentation ingerable par un petit modele
+
+L'instance de securite demande *une documentation complete, parsee, prete a
+l'ingestion par des agents, digeste **meme pour un qwen 1b ou 3b***.
+
+Ce depot possede deja la moitie de la reponse et l'ignorait : `nexus_doc.py`
+sert **166 507 symboles** par `seek`, a **~280 jetons la consultation** —
+l'entree est lue a son offset, jamais le fichier. C'est exactement le profil
+qu'un modele de 1 a 3 milliards de parametres peut absorber.
+
+**Mais la voie d'INGESTION n'existait pas.** Les trois corpus annexes — bash,
+PowerShell, lecons — sont arrives **deja indexes** depuis un depot voisin. Le
+format est CONSOMME ici, jamais PRODUIT :
+
+```
+references/<corpus>/index.tsv       id, offset_octets, longueur_octets, type, resume
+references/<corpus>/symbols.jsonl   une entree JSON par ligne
+```
+
+C'est la capacite a construire, et elle sert les deux besoins a la fois : la
+securite obtient son corpus ingerable, et ce depot gagne le moyen d'absorber
+n'importe quelle documentation — les **33 000 fichiers** repertories et jamais
+exploites en tete de ce cockpit.
+
+---
+
+# 34. LA LISTE UNIQUE DES SUJETS OUVERTS — au 2026-08-31
+
+> Onze sections « Reste OUVERT » etaient dispersees dans ce cockpit
+> (§184, §9.3, §10.3, §25.2, §26.3, §27.5, §28.5, §29.8, §30.6, §31.5, §32.6).
+> Elles gardent leur contexte et leurs mesures ; **cette table les reunit**, et
+> c'est elle qu'on lit d'abord.
+>
+> Rappel du critere : un sujet ne se clot que lorsqu'un **controle echoue** si
+> la regle est enfreinte. Un paragraphe ne ferme rien.
+
+## 34.1 DECISIONS DE L'OPERATEUR — je ne les prends pas seul
+
+| Sujet | Ce qui est en jeu |
+| --- | --- |
+| Exposer `insert` et `audio` | 5 modeles declarent `insert`, 2 declarent `audio`. Les exposer demande des chemins d'API nouveaux |
+| Promotion sans demotion | les epreuves promeuvent, ne demeuvent jamais ; une promotion peut tenir sur un seul passage |
+| 40 `.bak` dans `scripts/.nexus/` | signales en ALERTE a chaque passage de la porte — ce sont vos donnees |
+| Le cliquet ne RESSERRE pas | ecrire la reference pendant le rituel salit l'arbre au moment ou il le verifie |
+| Indexation hors depot | la session voisine a tranche « non par defaut, oui sur opt-in trace ». Non implemente ici |
+
+## 34.2 SECURITE — delegue a l'instance voisine (§33), transmis et non abandonne
+
+| Sujet | Etat |
+| --- | --- |
+| La politique de REFUS des ecritures shell | attend les chiffres du journal `.nexus/ecritures_shell.jsonl` — c'est son objet |
+| **Aucun garde de PERIMETRE** ici | le confinement d'un sous-agent n'existe pas dans ce depot ; l'emprunt SAS « agent-perimeter » est toujours ouvert |
+| `detecter_cas_a` aveugle a `cat > f.py <<'EOF'` | meme mecanisme que le CAS A, forme non couverte. **A mordu son auteur le 31/08** |
+| Un TROISIEME lanceur, demain | rien ne surveille l'apparition d'un outil shell non garde |
+| Anti-drift, recolte automatique des worktrees | empruntes a SAS, jamais poses |
+
+## 34.3 MESURE ET OUTILLAGE — mesures faites, causes non etablies
+
+| Sujet | Ce qui est mesure | Ce qui manque |
+| --- | --- | --- |
+| Lenteur du pont MCP | >120 s contre 10,6 s en direct | cause. L'hypothese de la ruee sur le cache est **refutee** |
+| P4 : six familles rendent vide a 2200 jetons | `mesure_rendu_vide.py` livre et cable | **jamais joue** sur les neuf familles |
+| `--fusionner` : deux familles ont declare les fichiers vides | la session voisine a retracte sa cause | reproduire sans clause d'echappement |
+| ~75 violations Python | `SIM115` x17, `B007` x12, `RET503` x9 | arbitrage par classe |
+| 6 `require-atomic-updates` | arbitres **non-defauts** : caches memo, appel duplique et non corruption | la promesse en vol partagee, si on la veut |
+| Cecite d'un tour du cliquet de cablage | `git ls-files` ignore un script neuf non commite | **mesure : la cecite dure UN TOUR**, pas plus |
+| Un apparieur de noms sans epreuve | a rendu **deux inventaires faux en un jour**, dans deux depots | une epreuve |
+
+## 34.4 CAPACITES LOCALES — le gisement, et ce qui n'est pas branche
+
+| Sujet | Chiffre |
+| --- | --- |
+| **La voie d'INGESTION de documentation n'existe pas** | le format `index.tsv` + `symbols.jsonl` est CONSOMME ici, jamais PRODUIT. C'est le besoin renvoye par l'instance de securite (§33.1) |
+| 33 000 fichiers de documentation et bibliotheques | jamais exploites |
+| Les livres | 12 793 fichiers, plus 5 381 de code associe |
+| Douze outils voisins reperes | jamais repris |
+| 5 modeles installes sans mesure | 4 embeddings + 1 OCR/vision — un banc *chat* ne les mesure pas, et ne le devrait pas |
+| `deepseek-ocr` installe | **vision + completion declarees** ; exposition a verifier |
+
+## 34.5 REGLES ECRITES QUE RIEN NE GARDE
+
+| Regle | Ou elle est ecrite | Ce qui manque |
+| --- | --- | --- |
+| Chaque worker dans un **worktree git isole** | contrat §0.4 | `nexus_essaim.py` ecrit hors du depot, mais dans un repertoire — **pas un worktree** |
+| Preserver le contexte de l'orchestrateur | contrat §0.4 | aucun controle |
+| L'orchestrateur n'ecrit pas le correctif | contrat §0.1.5 | `controle_delegation` mesure les REQUETES, qu'un patch ecrit a la main ne bouge pas |
+| La classe **fail-open** | §26 | aucun motif dans `nexus_traque.py` — **quatre occurrences trouvees a la main** |
+
+## 34.6 PISTES OUVERTES PAR L'OPERATEUR, jamais traitees
+
+* **Meta-learner** — apprendre le routage depuis les traces
+* **Harnais** — au sens large
+* **AST** — crible syntaxique plutot que lexical
+* **Temperature des modeles locaux** — territoire metaheuristique reconnu (§106.2), observation store construit, jamais exploite
+* **Reseaux de neurones et apprentissage automatique pour ce projet**
+* **Metaheuristiques hybrides**, bandits, optimisation bayesienne (§0)
+
+## 34.7 VERIFICATIONS JAMAIS FAITES
+
+* `Start-Claude.ps1` jamais joue de bout en bout
+* Les modeles cloud echouent en serie — cause non etablie
+* 9 appels Anthropic sur 9 echouent
+* `nexus_test_outillage.py` orphelin
+* `import subprocess` en portee locale (`nexus_ruche.py:205`)
+* Trois scripts « mieux cables » sans cause etablie
+
