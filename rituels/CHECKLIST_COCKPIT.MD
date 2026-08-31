@@ -2429,6 +2429,47 @@ le disque, sans apparaître au diff.
 qui a été fait, et la vitrine est publiée et prouvée (`6635b086` des deux
 côtés). Mais c'est un contournement, pas une fermeture.
 
-Trois hypothèses restent ouvertes, aucune vérifiée : un écart de nombre de
-lignes en fin de fichier, une normalisation d'encodage entre l'écriture et la
-relecture, ou un champ qui varie sans apparaître au diff de git.
+### 17.5 La cause, trouvée — et aucune des trois hypothèses n'était la bonne
+
+Les trois hypothèses posées ci-dessus (écart de lignes en fin de fichier,
+normalisation d'encodage, champ invisible au diff) étaient **toutes fausses**.
+Aucune n'aurait été départagée par relecture.
+
+Ce qui a tranché : **instrumenter la comparaison pour qu'elle dise elle-même
+où elle diverge**, plutôt que de raisonner dessus. Le verdict est tombé en une
+exécution :
+
+```
+83 lignes proposées, 91 lignes relues
+écart au rang 68
+   disque  : '47 fichier(s) analyse(s)'
+   proposé : '47 fichier(s) analyse(s)\n  classe 1  handler muet...\n  classe 2...'
+```
+
+**Un élément de liste n'est pas une ligne de fichier.** Certains éléments
+portent des sauts de ligne **internes** — un bloc entier de sortie de commande
+tenu dans une seule chaîne. Écrits, ils deviennent plusieurs lignes physiques ;
+relus, ils reviennent séparés. Les deux listes ne pouvaient donc **jamais**
+coïncider, et le fichier était réécrit à chaque appel.
+
+Les deux côtés sont désormais normalisés en lignes physiques **sans** leurs
+fins de ligne. La symétrie compte : `readlines()` conserve le `\n` final,
+`'\n'.join()` n'en met pas après la dernière — le dernier élément aurait
+toujours différé, et le défaut serait revenu sous une autre forme.
+
+**Mesure après correction** : après un commit, deux régénérations consécutives
+ne réécrivent **pas** le fichier (`mtime` inchangé), l'arbre reste propre, et
+la vitrine ne bloque plus que sur ce qu'elle doit bloquer — la fraîcheur du
+cockpit.
+
+**La leçon de méthode, et c'est la même qu'au §17.2 poussée d'un cran** : j'ai
+posé trois hypothèses plausibles et je me suis trompé trois fois. Ce qui a
+marché n'est pas une meilleure hypothèse, c'est d'avoir fait **parler
+l'instrument** — lui faire imprimer le rang et le contenu de la divergence.
+Une comparaison qui échoue sait toujours où elle échoue ; encore faut-il le
+lui demander.
+
+Note sur le banc : la même coquille exacte, `for v v in volatiles`, a été
+produite **deux fois au même endroit** par `qwen3-coder-30b-local` sur deux
+sollicitations distinctes. Singularité reproductible, à connaître avant
+d'appliquer un livrable de ce modèle.

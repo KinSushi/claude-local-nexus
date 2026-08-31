@@ -224,78 +224,72 @@ def exposed_models():
 
 
 # ---------------------------------------------------------------------------
-# UN FICHIER QUI ENREGISTRE L'EMPREINTE DU COMMIT DONT IL FAIT PARTIE
-# NE PEUT JAMAIS ETRE PROPRE.
+# UN ELEMENT DE LISTE N'EST PAS UNE LIGNE DE FICHIER.
 #
-# CE QUI ETAIT FAUX, mesure le 2026-08-31. STATE.md est suivi par git et
-# porte deux lignes qui changent a chaque execution : l'horodatage de
-# generation et l'empreinte du dernier commit. Apres chaque commit, la
-# regeneration salissait l'arbre ; commiter STATE.md creait un nouveau
-# commit, donc une nouvelle empreinte, donc un nouveau salissement.
+# CE QUI ETAIT FAUX. La version precedente comparait element par element la
+# liste `lignes` avec le resultat de `readlines()`. Elle supposait qu'un
+# element vaut une ligne. C'est vrai a l'ECRITURE, faux au RETOUR : certains
+# elements portent des sauts de ligne INTERNES -- un bloc entier de sortie de
+# commande tenu dans une seule chaine. Ecrits, ils deviennent plusieurs
+# lignes physiques ; relus, ils reviennent separes.
 #
-# CE QUE CELA PRODUISAIT : `nexus_vitrine.py` joue `nexus_rituel.py`, dont
-# les controles regenerent STATE.md. L'arbre devenait sale PENDANT la
-# verification, le controle « travail commite » echouait, et la publication
-# etait REFUSEE -- alors que le rituel joue une seconde plus tot rendait
-# « tenu ». Une porte qui se fermait sur ce qu'elle venait d'ecrire.
+# MESURE, par instrumentation de la comparaison elle-meme : 83 elements
+# proposes contre 91 lignes relues. Les deux listes ne pouvaient donc JAMAIS
+# coincider, le fichier etait reecrit a chaque appel, et la porte de
+# publication se refermait dessus indefiniment.
 #
-# La comparaison ignore donc les lignes volatiles. Quand tout le reste est
-# identique, le fichier n'est PAS REECRIT DU TOUT -- pas meme a l'identique,
-# car un simple changement de date de modification suffit a inquieter
-# certains outils. Le contrat 0.2 le dit deja : STATE et le cockpit se
-# regenerent sans qu'on le demande, « ce qui est precisement pourquoi ce ne
-# sont pas des rituels ». Un fichier derive n'a pas a bloquer une
-# publication.
+# Trois hypotheses avaient ete posees au tour precedent -- ecart de lignes en
+# fin de fichier, normalisation d'encodage, champ invisible au diff. Aucune
+# n'etait la bonne, et aucune n'aurait ete departagee par relecture : c'est
+# en faisant DIRE a la comparaison ou elle divergeait qu'elle est apparue.
 #
-# Ecrit par le banc gratuit (qwen3-coder-30b-local) sur specification ;
-# trois `\r` corriges en `\n`, induits par une consigne ambigue de ma part.
+# Les deux cotes sont desormais normalises en lignes physiques SANS leurs
+# fins de ligne. La symetrie compte : `readlines()` conserve le \n final,
+# `'\n'.join()` n'en met pas apres la derniere -- le dernier element aurait
+# toujours differe, et le defaut serait revenu sous une autre forme.
 # ---------------------------------------------------------------------------
 
 
 def ecrire_si_change(chemin, lignes, volatiles):
-    # Lecture du contenu existant
+    # Lecture du fichier existant
     try:
-        with io.open(chemin, 'r', encoding='utf-8', newline='\n') as f:
-            anciennes_lignes = [l.rstrip('\n') for l in f.readlines()]
-    except (OSError, IOError):
-        # Si on ne peut pas lire le fichier, on écrit le nouveau contenu
-        anciennes_lignes = None
-
-    # Si le fichier n'existe pas, on écrit
-    if anciennes_lignes is None:
+        with io.open(chemin, 'r', encoding='utf-8') as f:
+            contenu_existant = f.read().splitlines()
+    except (IOError, OSError):
+        # Fichier absent ou illisible : ecrire et retourner True
         _ecrire_atomique(chemin, lignes)
         return True
 
-    # Filtrage des lignes volatiles dans l'ancien contenu
-    anciennes_non_volatiles = [l for l in anciennes_lignes if not any(v in l for v in volatiles)]
+    # Normalisation des deux cotes en lignes physiques
+    # Avant : lignes est une liste de chaines potentiellement multi-lignes
+    # Apres : contenu_normalise est une liste de lignes physiques (sans sauts internes)
+    contenu_normalise = '\n'.join(lignes).splitlines()
 
-    # Filtrage des lignes volatiles dans le nouveau contenu
-    nouvelles_non_volatiles = [l for l in lignes if not any(v in l for v in volatiles)]
+    # Filtrage des lignes volatiles
+    lignes_existantes_filtrees = [l for l in contenu_existant if not any(v in l for v in volatiles)]
+    lignes_normalisees_filtrees = [l for l in contenu_normalise if not any(v in l for v in volatiles)]
 
-    # Comparaison des contenus non-volatils
-    if anciennes_non_volatiles == nouvelles_non_volatiles:
+    # Comparaison des contenus normalises
+    if lignes_existantes_filtrees == lignes_normalisees_filtrees:
+        # Identiques : ne rien faire, retourner False
         return False
 
-    # Si les contenus diffèrent, on écrit le nouveau fichier
+    # Différents : ecrire et retourner True
     _ecrire_atomique(chemin, lignes)
     return True
 
 def _ecrire_atomique(chemin, lignes):
-    # Utilisation d'un fichier temporaire voisin pour l'écriture atomique
-    repertoire = os.path.dirname(chemin) or '.'
-    nom_fichier = os.path.basename(chemin)
-    chemin_temp = os.path.join(repertoire, f'.{nom_fichier}.tmp')
-
+    # Ecriture atomique : fichier temporaire voisin
+    chemin_temp = chemin + '.tmp'
     try:
         with io.open(chemin_temp, 'w', encoding='utf-8', newline='\n') as f:
-            for ligne in lignes:
-                f.write(ligne + '\n')
+            f.write('\n'.join(lignes) + '\n')
         os.replace(chemin_temp, chemin)
-    except (OSError, IOError):
-        # En cas d'échec, on nettoie le fichier temporaire
+    except (IOError, OSError):
+        # Nettoyage en cas d'erreur
         try:
             os.remove(chemin_temp)
-        except (OSError, IOError):
+        except (IOError, OSError):
             pass
         raise
 
