@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 08:25 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 08:59 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,16 +9,16 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `ea9bde7` |
+| Commit | `e723f55` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
-litellm-db	db	Up 42 hours (healthy)
+litellm-db	db	Up 43 hours (healthy)
 litellm-proxy	litellm	Up 9 hours
-litellm-redis	redis	Up 42 hours (healthy)
+litellm-redis	redis	Up 43 hours (healthy)
 ```
 
 ## Moteur d'inférence
@@ -57,14 +57,14 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a675092a96fc184c8dc51777362ea383dca2ef` |
-| `litellm_config.yaml` | `3e2d986d92ca791e3c426d00216ec7d8261274a375b50fc020e2f437e7b9dcf2` |
+| `litellm_config.yaml` | `b04522a0be29ba8deddbf255a6b31172f93ff2e8dd7078464616c0cb7f53db4b` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e199854f44f0c1ff6571c5ac7fdb0e7a6ceace` |
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e30152239b48128cbd68a4ef887acec3c21bd79f` |
 | `tools/nexus-mcp/server.js` | `df49e25d80ec8e5120cc9ba5a9086b8ac293db25a8aca9ae9e7ef1b4a7a7d404` |
 | `scripts/nexus_generate.py` | `7bdb7c9b0626e3392c5b12fb5a4985ca246440aa036132b3a79a7d0131047d9b` |
-| `scripts/nexus_validate.py` | `aa4e3fa47246de807f29be46ba12b895d06f99811fca0fba489f8b375d2d72dd` |
+| `scripts/nexus_validate.py` | `cb655e3d422b97832f00834b6701e123b93f45081320f0065c827a5371574405` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966eb6b3dacbb4a7e63d7fd3cf0fb7da643` |
 | `scripts/nexus_test.py` | `4cec77acd5b6f22fc60461ad582ddfd9d718caaf9f049dd749544366db0b8bfd` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d08ce1f7f38a711e29b4cc6b2fba58043b` |
@@ -73,7 +73,7 @@ Verdict : **valide**
 
 ```
 47 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       29
+  classe 1  handler muet sur un try qui agit       30
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     5

@@ -2521,3 +2521,80 @@ Et la singularité relevée au §17.5 — la coquille `for v v in`, produite deu
 fois au même endroit par `qwen3-coder-30b-local` — a été **corrigée
 préventivement** avant même de lire le livrable. Elle n'est pas réapparue.
 Connaître les défauts reproductibles d'un modèle vaut une passe entière.
+
+---
+
+## 19. Le parc déclare ses capacités — personne ne les lisait
+
+Mesuré en interrogeant le **moteur** plutôt qu'en devinant. `ollama show`
+déclare ce que chaque modèle sait faire ; sur les 54 modèles installés :
+
+| Capacité | Modèles |
+|---|---|
+| `completion` | 51 |
+| `tools` | 35 |
+| `thinking` | 18 |
+| `vision` | **14** |
+| `insert` (complétion au milieu) | 5 |
+| `embedding` | 4 |
+| `audio` | **2** |
+
+**Deux faits que personne n'avait vus** :
+
+* le parc porte **déjà** deux modèles `audio` — `gemma4:latest` et
+  `gemma4:12b` — alors que le banc avait affirmé « CATÉGORIE TRAITEMENT
+  AUDIO : AUCUN MODÈLE SÛR ». Encore une affirmation de modèle démentie par
+  une mesure ;
+* cinq modèles déclarent `insert`, la complétion au milieu, que **rien** dans
+  la plateforme n'expose ni ne route. Capacité installée, invisible.
+
+### 19.1 L'écart, et le huitième cas que je n'avais pas vu
+
+Sur **quatorze** modèles dont le moteur déclare `vision`, **sept** seulement
+portaient `mode: vision`. Les autres sont déclarés **à la main**, hors de la
+zone générée — donc hors de portée du correctif posé le matin même, qui
+n'émet la modalité que sur le chemin auto-exposé.
+
+La règle du contrat §17 — un modèle de vision ne retombe jamais sur un modèle
+texte — ne pouvait donc pas s'appliquer, faute de savoir lesquels sont des
+modèles de vision.
+
+Le contrôle a trouvé un **huitième** cas absent de mon relevé manuel :
+`qwen3-embedding-8b-local` déclare `embedding` sans porter `mode: embedding`.
+Les huit sont comblés.
+
+### 19.2 Ce qui dure : un contrôle, pas huit lignes corrigées
+
+`controle_modalites` confronte à chaque validation ce que la configuration
+déclare à ce que le moteur déclare. Il ne signale **pas** l'inverse — un mode
+présent que le moteur ne déclare pas — car un modèle peut être absent du
+moteur sans que la configuration soit fausse.
+
+« ollama injoignable » part en **avertissement** et non en erreur : sur une
+machine sans moteur, bloquer refuserait une configuration parfaitement saine.
+Mais le fait reste **visible** — se taire serait indiscernable d'un dépôt
+vérifié.
+
+**Preuve positive** : un seul `mode: vision` retiré, et `Test-NexusConfig`
+rend « Configuration INVALIDE » en nommant le modèle fautif.
+
+### 19.3 Trois défauts refusés, et deux fois la même erreur de fenêtre
+
+Refusés au livrable du banc :
+
+* le parseur cherchait `Capabilities:` **avec deux-points**, or la sortie
+  réelle affiche `  Capabilities` indenté et sans deux-points — la liste
+  serait restée vide et le contrôle n'aurait **rien** signalé. Un contrôle
+  muet est indiscernable d'un dépôt sain ;
+* accès direct `model['litellm_params']['model']`, qui tombe sur une entrée de
+  routeur sans `litellm_params` ;
+* `model_info` pouvant valoir `None`.
+
+Et le sous-processus était lu en **cp1252** : un octet indécodable faisait
+tomber un fil de lecture.
+
+**Deux fois une fenêtre mal bornée, le même jour.** Un `grep -A9` qui
+s'arrêtait avant le champ cherché — d'où une conclusion fausse sur un modèle
+« disparu » — puis une garde de 1 400 caractères qui débordait sur le bloc
+voisin, y trouvait un `mode:` et sautait trois blocs à tort. **La borne juste
+est le bloc suivant, jamais un nombre de caractères.**
