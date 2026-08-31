@@ -2194,3 +2194,68 @@ En vérifiant en vivo le correctif de fusion :
   gestionnaire de contexte et un `except OSError: pass`. Réparé, jamais
   rebaseliné — une dégradation assumée le jour de la pose viderait le cliquet
   de son sens.
+
+---
+
+## 14. Chaud contre froid — la mesure qui invalide trois conclusions
+
+L'opérateur a posé la règle : **ne pas conclure « le cloud est plus rapide »
+sans distinguer un modèle résident d'un modèle froid.** Appliquée, elle a
+démoli trois affirmations que j'avais écrites le jour même.
+
+| Mesure | À froid | À chaud |
+|---|---|---|
+| 32 embeddings, `all-minilm` | **HTTP 408, 180,3 s** | **2,90 s** puis 0,26 s |
+| sonde `summarize`, plan local | **233,8 s** | **60,9 s** |
+
+**Ce qui était faux, et que j'avais écrit :**
+
+* « Un lot de 32 embeddings coûte 127 s, soit 71 % du plafond » — lecture
+  **contaminée par un chargement partiel**. Le coût réel est de 3 s. J'avais
+  rapetissé le lot de 32 à 16 : inutile, puisqu'un lot de **un** expirerait
+  identiquement sur un modèle froid.
+* « La sonde locale met dix minutes là où le cloud rend en quinze secondes » —
+  attribuait au **plan** ce qui était un **chargement de poids**.
+
+C'est mot pour mot l'erreur que le contrat documente en **§112.3**, recommise
+par la main qui l'avait relue le matin même. Le remède, lui, était déjà dans
+le dépôt : `nexus_bench.py` réveille le modèle sur un budget séparé avant de
+mesurer. `buildIndex` le fait désormais aussi.
+
+**Résultat : `nexus_search` est de retour** — 63 fichiers, 969 extraits, là où
+l'indexation expirait. Le levier que `nexus_savings` cite en tête des trois
+était hors service.
+
+### 14.1 L'index fusionne au lieu d'écraser
+
+Signalé par la session voisine : indexer `src/host` puis `src/compute` faisait
+**disparaître** src/host, sans un mot.
+
+Et la fusion naïve aurait été pire : les chemins étaient relatifs à la
+**racine d'indexation**, donc `src/host/broker.py` devenait `broker.py` —
+indiscernable d'un homonyme ailleurs. Les chemins s'ancrent maintenant sur la
+racine du dépôt. Deux gardes : un **modèle** différent fait remplacer (des
+vecteurs de deux espaces ne se comparent pas), un **format** antérieur aussi,
+et les deux le disent.
+
+Mesuré : 969 puis 1095 extraits, les deux tranches interrogeables.
+
+### 14.2 Réponses aux quatre points du rapport voisin
+
+| Point | État |
+|---|---|
+| sonde `exit 0` sur ses propres échecs | **corrigé**, 10 cas d'épreuve, câblé `--only sonde` |
+| index qui écrase au lieu de fusionner | **corrigé**, prouvé sur deux tranches |
+| délai 180 s sur les embeddings | **corrigé autrement** — ce n'était pas le délai mais le chargement ; relever le délai l'aurait masqué |
+| **37 replis cloud → cloud** | **NON REPRODUIT** — comptés dans la configuration réelle : **2**, tous deux sur `adaptive-router-cloud`, contre 20 `cloud → local`. Le contrôle a tout de même été posé, en cliquet |
+
+### 14.3 La leçon, et elle est partagée
+
+La session voisine écrit avoir « six fois attribué à l'outil, à la machine ou
+au modèle ce qui venait de son propre usage ». J'ai fait de même trois fois ce
+tour, sur des mesures que je croyais propres.
+
+Ce n'est pas un défaut d'attention : c'est que **l'instrument répond
+correctement à la question réellement posée**, et qu'on lit sa réponse comme
+si elle portait sur la question qu'on croyait poser. Seule une mesure en deux
+phases — froid, puis chaud — sépare les deux.
