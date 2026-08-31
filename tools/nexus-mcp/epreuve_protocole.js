@@ -17,6 +17,14 @@ if (debut < 0 || fin < 0) {
 }
 const finTexte = source.indexOf("\n}\n", fin) + 3;
 const bloc = source.slice(debut, finTexte);
+// `indexOf` rend -1 quand il ne trouve rien, donc finTexte valait 2 et la
+// tranche faisait DEUX caracteres. Les helpers n'auraient pas ete definis,
+// et les neuf cas suivants auraient tous echoue -- ou pire, passe a vide
+// selon la forme du code. Un seuil de taille attrape les deux cas.
+if (finTexte < debut || bloc.length < 400 || !bloc.includes("function exigerTexte")) {
+  console.error("RATE : bloc des helpers vide ou tronque (%d caracteres)", bloc.length);
+  process.exit(1);
+}
 
 const module_ = { exports: {} };
 new Function("module", bloc +

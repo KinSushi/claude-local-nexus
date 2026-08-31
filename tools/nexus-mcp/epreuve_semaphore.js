@@ -9,11 +9,22 @@ const source = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
 
 const debut = source.indexOf("const CONCURRENCE_LOCALE");
 const fin = source.indexOf("// Temperature par defaut des outils du pont.");
-if (debut < 0 || fin < 0 || fin < debut) {
+if (debut < 0 || fin < 0 || fin <= debut) {
   console.error("RATE : semaphore introuvable dans server.js");
   process.exit(1);
 }
 const bloc = source.slice(debut, fin);
+// Un bloc VIDE ou minuscule ne doit pas se lire comme un bloc valide.
+//
+// `fin < debut` laissait passer `fin === debut`, donc une tranche vide :
+// toutes les epreuves suivantes se seraient executees sur RIEN et auraient
+// rendu « epreuve tenue » sans avoir teste une seule ligne. Un seuil de
+// taille est plus sur qu'une comparaison d'index, parce qu'il attrape aussi
+// le cas ou les deux reperes se rapprochent sans se croiser.
+if (bloc.length < 400 || !bloc.includes("function creerSemaphore")) {
+  console.error("RATE : bloc extrait vide ou tronque (%d caracteres)", bloc.length);
+  process.exit(1);
+}
 
 let echecs = 0;
 function verifier(nom, condition, detail) {
@@ -178,7 +189,12 @@ const dors = (ms) => new Promise((r) => setTimeout(r, ms));
           finally { s.rendre(); }
         })()));
       } catch (e) { maximum = -1; }
-      verifier("contre-epreuve : la variante fautive est bien VUE", maximum !== 1,
+      // `maximum !== 1` passait aussi quand maximum valait ZERO -- c'est-a-dire
+      // quand la variante fautive ne laissait passer AUCUN appel, donc quand
+      // elle etait cassee autrement. La contre-epreuve acceptait alors une
+      // regression au lieu de la voir. Ce qu'il faut exiger est qu'elle
+      // depasse la borne, pas qu'elle en differe.
+      verifier("contre-epreuve : la variante fautive est bien VUE", maximum > 1,
                `la variante fautive atteint ${maximum} appels simultanes la ou la corrigee reste a 1`);
     }
   }
