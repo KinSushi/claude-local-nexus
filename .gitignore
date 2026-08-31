@@ -40,3 +40,8 @@ lot_essai.json
 sortie_incr.jsonl
 essai_err.txt
 claims_ps.json
+
+# Documentation Python officielle, absorbee du depot voisin (136 Mo).
+# Reference locale, jamais du code de ce depot : elle ne part pas a la vitrine.
+references/python_libs_docs/
+.nexus/index_doc_libs.tsv
