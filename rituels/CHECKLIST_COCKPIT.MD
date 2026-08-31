@@ -2598,3 +2598,17 @@ s'arrêtait avant le champ cherché — d'où une conclusion fausse sur un modè
 « disparu » — puis une garde de 1 400 caractères qui débordait sur le bloc
 voisin, y trouvait un `mode:` et sautait trois blocs à tort. **La borne juste
 est le bloc suivant, jamais un nombre de caractères.**
+
+### 19.4 Le cliquet d'outillage a mordu le code délégué, dans l'heure
+
+`RET507`, `RET508` et `SIM108` introduits par le livrable du banc, attrapés
+par `nexus_outillage.py --cliquet` au rituel de clôture. Corrigés par
+`ruff --fix`, jamais rebaselinés : assumer une dégradation le jour de la pose
+viderait le cliquet de son sens.
+
+**Quatrième fois aujourd'hui** qu'un contrôle de ce dépôt mord le travail du
+tour même — après la porte de conformité, le cliquet de câblage, et déjà une
+fois l'outillage. Le contrat §106.1 dit que la discipline ne survit pas à une
+longue session ; la mesure du jour est plus dure : **elle ne survit pas à
+l'heure**, et elle ne survit pas non plus à la délégation. Le code du banc
+n'est pas plus discipliné que le mien ; seul le contrôle l'est.
