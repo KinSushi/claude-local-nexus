@@ -4529,3 +4529,53 @@ Et le corpus de **code** est le meilleur candidat pour commencer : 2 231
 entrees — **12 minutes** — dont 1 277 sur les agents, et ses identifiants sont
 deja consultables sans embeddings.
 
+---
+
+## 45. DEUX SIGNALEMENTS VOISINS — dont un qui vaut ICI, mesure
+
+### 45.1 OUVERT — la troncature a `max_tokens` n'est PAS annoncee
+
+Une instance voisine rapporte `done_reason='length'` : un modele a heurte son
+plafond de sortie, la reponse est tronquee. Verifie ici plutot que suppose.
+
+Le pont **calcule** bien la troncature (`choice.finish_reason === "length"`,
+ligne 806) et une mention existe (« REPONSE TRONQUEE a max_tokens »,
+ligne 601). **Elle n'atteint pas le chemin de `nexus_ask`.**
+
+Mesure du 2026-08-31, `max_tokens: 12` sur une question a dix phrases :
+
+```
+[gpt-oss-120b-cloud · Ollama Cloud · T=0.2 · 452 tokens]
+1. Un agent logiciel est un programme autonome capable d'observer son
+environnement, de le raisonner et d'agir en consequ
+```
+
+Coupe en plein mot, **et aucune mention**. L'appelant conclut sur une phrase
+interrompue sans savoir qu'elle l'est — exactement ce que le commentaire de la
+ligne 803 dit vouloir empecher.
+
+**C'est la troisieme fois du jour que ce depot calcule une information et ne
+la dit pas** : le motif de remplacement d'index, la trace de `log()` sur
+stderr, et celle-ci. La classe merite son nom : *calcule, non dit.*
+
+Non corrige — releve, mesure, et inscrit ici.
+
+### 45.2 OUVERT — le worktree isole, confirme par un incident voisin
+
+La meme instance : « j'ai edite `src/trading/risk_policy.py` dans l'arbre vif.
+Filet de peche, pas l'arbre. »
+
+C'est la regle §0.4 de ce contrat, deja inscrite ouverte en §34.5 — « chaque
+worker dans un worktree git isole », qu'aucun controle ne garde. Leur incident
+en est la confirmation vivante : *une regle qu'aucun controle ne garde se
+transgresse, y compris par qui la connait.*
+
+### 45.3 Et une lecon de routage, qui n'est pas un defaut
+
+Leur modele etait `llama3.2:3b` sur une tache d'ASSEMBLAGE. Un modele de trois
+milliards de parametres, avec un budget de sortie court, n'est pas le bon
+candidat pour cela — c'est un choix de profil (§109), pas une panne. Le
+diagnostic « le harnais est sain, c'est le budget qui est trop court » est
+juste, et la conclusion utile est en amont : *choisir le modele selon la
+tache, explicitement.*
+
