@@ -1326,6 +1326,44 @@ enfreinte. Un paragraphe ne ferme rien.
 > | exploite le résultat | 4 | 7 |
 > | **enchaîne deux outils** | **10** | 0 |
 
+### J'ai parlé trop tôt, et la mesure me corrige — 31/08
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `stable` vrai dès la première passe | `FAIT` | `--only registre`, 22 cas ; deux mesures exigées |
+| « sept échecs sur dix » | **CORRIGÉ** | 10 sur 18, soit 56 % et non 71 % |
+
+> **Le champ censé empêcher de conclure sur une passe unique concluait sur
+> une passe unique.** `stable` valait `len(set(historique)) == 1` : avec une
+> seule mesure, un ensemble d'un élément est trivialement uniforme. Quatre
+> modèles portaient « mesures=1, stable=True ».
+>
+> C'est une fausse assurance, **pire qu'aucun champ** — un lecteur s'y serait
+> fié, alors que le champ existait précisément pour l'en empêcher. Et **mes
+> deux cas de test ne l'attrapaient pas** : tous deux portaient sur *deux*
+> mesures. Le piège s'est refermé sur son auteur, une heure après avoir été
+> posé.
+>
+> **CE QUI CORRIGE MA PROPRE FORMULATION**, et c'est le résultat le plus utile
+> du tour. J'ai annoncé « sept échecs sur dix » pour l'appel d'outil. Les
+> modèles détaillés sont passés de 14 à 18, et les compteurs d'échec sont
+> **restés à 10** : les quatre nouveaux réussissent tous l'appel d'outil.
+>
+> | épreuve | échecs / 18 |
+> |---|---|
+> | parle le protocole | 2 |
+> | demande un outil | **10** |
+> | exploite le résultat | 5 (+ 7 non mesurées) |
+> | enchaîne deux outils | **10** |
+>
+> Le taux tombe de **71 % à 56 %**. La lacune reste majoritaire et reste la
+> même, mais elle est **moins massive que je ne l'ai écrit**. C'est très
+> exactement ce que §112.3 impose d'attendre, et j'ai parlé trop tôt.
+>
+> Note : la tranche partie en tâche de fond s'est **achevée** cette fois,
+> exit 0. Le verrou fait son office — un second relevé ne peut plus écrire
+> par-dessus, ce qui était le vrai danger.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
