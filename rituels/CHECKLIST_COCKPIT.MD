@@ -686,7 +686,7 @@ enfreinte. Un paragraphe ne ferme rien.
 
 | Sujet | Statut | Ce qui le fermera |
 |---|---|---|
-| Concurrence **cloud** non bornée | `OUVERT` | une borne cloud, distincte et plus haute que la borne locale |
+| Concurrence **cloud** non bornée | `FAIT` | `NEXUS_CLOUD_CONCURRENCE`, défaut 4, deux files indépendantes ; `--only semaphore`, 9 cas dont une contre-épreuve |
 | `This model isn't mapped yet` sur les alias `ollama_chat/*` | `OUVERT` | la passerelle ignore tarif et fenêtre de ces modèles ; effet réel à établir |
 | Refus qui ne nomment pas l'issue | `FAIT` | `--only protocole`, 9 cas dont un contrôle structurel |
 
@@ -730,6 +730,26 @@ enfreinte. Un paragraphe ne ferme rien.
 > haute — sept appels simultanés ont tenu — mais elle ne peut pas être absente.
 > Le sémaphore est déjà écrit et éprouvé : seule manque une seconde borne,
 > distincte, et le prédicat qui l'aiguille.
+>
+> **Fait le soir même.** Deux files, jamais une seule : un appel cloud qui
+> attendrait derrière un appel local paierait la lenteur du local — 600 s
+> d'expiration mesurées — et annulerait l'intérêt d'avoir deux plans.
+> L'épreuve le chiffre : **cloud rendu à 14 ms pendant que le local prenait
+> 202 ms**. Anthropic et le plan inconnu ne sont bornés par personne : le
+> premier se limite par le portefeuille, le second n'est pas assez connu pour
+> qu'on lui impose quoi que ce soit.
+>
+> Une mécanique, deux instances — `creerSemaphore`. Deux copies de la même
+> règle finiraient par diverger, ce qui est exactement le défaut corrigé le
+> même soir sur les mentions de réponse, où une règle vivait en deux copies
+> et manquait aux deux autres appelants.
+>
+> **Un défaut de ma délégation, pas du banc, et il vaut d'être noté** : le
+> premier envoi joignait les 102 Ko de `server.js` pour une tâche qui avait
+> besoin de quarante lignes. Trois fenêtres de MAP-REDUCE, toutes perdues,
+> sept minutes. Le même travail avec le seul extrait utile : **19 s, coût 0**.
+> Déléguer ne suffit pas ; ce qu'on joint décide du résultat.
+
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
