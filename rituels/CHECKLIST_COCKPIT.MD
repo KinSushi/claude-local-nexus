@@ -1071,6 +1071,28 @@ enfreinte. Un paragraphe ne ferme rien.
 > un seul 429. Le pont ajoute un coût que je n'attribue à rien tant que je ne
 > l'ai pas mesuré.
 
+### Dix modèles complets, et les faux zéros vengés
+
+> Les épreuves reprennent bien : **18 éprouvés, 10 complets** — codestral,
+> gemma3-1b, gemma4, gemma4-12b, gemma4-26b, gemma4-31b, glm-4.7-flash,
+> gpt-oss-20b, llama3.1-8b, et le relais déclaré.
+>
+> **Deux de ces dix portaient les faux 0/4 que j'avais effacés** plutôt que
+> corrigés en 4/4 supposé : `gemma4-31b-local` et `gemma4-local`. Remesurés,
+> ils rendent 4/4 par eux-mêmes. Ne rien fabriquer était la bonne décision,
+> et le parc vient de le démontrer.
+>
+> **Les tâches de fond longues sont tuées ici** — trois fois, sans cause
+> connue et sans que ce soit moi. La reprise rend l'incident peu coûteux :
+> chaque relance avance. C'est une contrainte de l'environnement à laquelle
+> on s'adapte, non un défaut à corriger dans le dépôt.
+>
+> **Sur le surcoût du pont, je m'arrête à ce qui est mesuré.** Un fait
+> discriminant : à 19 h, ce serveur refusait déjà `max_tokens: -1` avec le
+> message écrit ce soir. Il n'est donc pas aussi ancien que je le supposais.
+> Établir la cause demanderait d'instrumenter le serveur en cours, que je ne
+> peux pas redémarrer moi-même. La spéculation s'arrête là.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
