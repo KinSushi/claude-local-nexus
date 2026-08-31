@@ -1248,7 +1248,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage"],
+                                 "cablage", "doc"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1299,6 +1299,8 @@ def main() -> int:
         test_garde_plan_paye()
     if args.only in (None, "cablage"):
         test_cablage_epreuves()
+    if args.only in (None, "doc"):
+        test_doc_annexe()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2122,6 +2124,67 @@ def test_ecriture_atomique() -> None:
               "contenu=%r restes=%s" % (contenu, autres or "aucun"))
     finally:
         _shutil.rmtree(dossier, ignore_errors=True)
+
+
+def test_doc_annexe() -> None:
+    """
+    La documentation absorbee est-elle CONSULTABLE, ou seulement copiee ?
+
+    Trois corpus ont ete absorbes par copie depuis le depot voisin le
+    2026-08-31 : 61 primitives bash, 306 cmdlets PowerShell, 306 lecons. Le
+    depot porte dix-sept scripts PowerShell et son contrat interdit d'ecrire
+    contre une bibliotheque de memoire -- regle deja payee deux fois ici,
+    par une tache silencieusement muette (`pwsh -File` passe tout en
+    arguments) et par un fichier tronque (`New-Item -Force` sur un FICHIER).
+
+    QUATRE DEFAUTS MESURES QUE CETTE EPREUVE GARDE, tous trouves en
+    CONSULTANT plutot qu'en relisant :
+
+    * le code d'un exemple est une LISTE de lignes, pas une chaine :
+      `New-Item` levait TypeError. Et `notes` est une chaine, testee comme
+      une liste, donc jamais affichee -- une rubrique silencieusement absente.
+    * une lecon ne porte AUCUNE cle `type` (sa nature est dans `methode`) :
+      le rendu sortait VIDE sous un en-tete normal. Un rendu vide est le pire
+      des trois etats, car il se lit comme une absence de contenu.
+    * le tri de departage LOCALFIRST portait sur la liste ENTIERE au lieu de
+      departager a rang egal : chercher `trap` rendait
+      `scipy.stats.BootstrapMethod` au lieu de `bash.trap`.
+    * `console_tools` etait importe dans un try/except alors qu'il
+      N'EXISTAIT PAS : le forcage UTF-8 promis depuis le 2026-08-10 n'avait
+      jamais tourne, et une lecon etoilee se rapportait ILLISIBLE quand
+      seule la console cp1252 ne savait pas l'ecrire.
+
+    Le cas 2 verifie que les offsets, calcules sur une AUTRE machine, ont
+    survecu a la copie. On ne le suppose pas.
+    """
+    print("\n--- DOC ANNEXE : bash, PowerShell et lecons sont-ils lisibles ? ---")
+    epreuve = os.path.join(ROOT, "scripts", "epreuve_doc_annexe.py")
+    if not os.path.isfile(epreuve):
+        skip("doc annexe", "epreuve_doc_annexe.py introuvable")
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=300)
+    except subprocess.TimeoutExpired:
+        check("doc annexe", False, "pas de reponse en 300 s")
+        return
+
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    # Aucun cas rendu est un ECHEC. Une epreuve muette -- import casse, corpus
+    # absent -- se lirait sinon comme une epreuve tenue.
+    if not vus:
+        check("doc annexe", False, "aucun cas rendu (code %s)" % r.returncode)
 
 
 def test_cablage_epreuves() -> None:

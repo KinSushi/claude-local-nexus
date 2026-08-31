@@ -264,8 +264,30 @@ def bloc_gestes() -> None:
     print("  python scripts/nexus_test.py --only isolation  regle 0.4 tenue ?")
     print("")
     print("  NE JAMAIS ECRIRE CONTRE UNE BIBLIOTHEQUE DE MEMOIRE :")
-    print("    python scripts/nexus_doc.py <symbole>   # ex. subprocess.run")
-    print("    166 507 symboles, ancres sur les versions INSTALLEES ici.")
+    print("    python scripts/nexus_doc.py <symbole>   # ex. subprocess.run,")
+    print("                                            #    New-Item, trap")
+    # LE NOMBRE SE DERIVE. Il etait ecrit en dur, donc juste un seul jour :
+    # l'absorption des corpus shell et des lecons y a ajoute 673 entrees sans
+    # qu'une ligne bouge. Un hook de demarrage ne doit rien faire de long --
+    # ici, un parcours d'index, aucun corpus ouvert.
+    try:
+        # `Path` n'est pas importe dans ce fichier, et `scripts/` n'est pas sur
+        # sys.path quand la reprise est lancee par le hook. Le premier jet
+        # supposait les deux : le repli s'est declenche et a TU la cause, ce
+        # qui est precisement le defaut que ce depot traque en classe 1.
+        from pathlib import Path as _Path
+        _ici = _Path(__file__).resolve().parent
+        if str(_ici) not in sys.path:
+            sys.path.insert(0, str(_ici))
+        import nexus_doc as _doc
+        _p, _a = _doc.compter_symboles(_ici.parent)
+        print("    %d symboles Python + %d annexes (PowerShell, bash, lecons),"
+              % (_p, _a))
+        print("    ancres sur les versions INSTALLEES ici.")
+    except Exception:
+        # Un compteur en panne ne doit pas priver la reprise du reste : la
+        # regle vaut meme sans son chiffre.
+        print("    doc Python, PowerShell, bash et lecons, ancrees ici.")
     print("    ~280 jetons par consultation : l'index lit l'entree par seek,")
     print("    jamais le fichier. Moins cher que relire trois lignes de code.")
     print()

@@ -35,6 +35,7 @@ un DÉRIVÉ, il se régénère ; le corpus est une source, il ne se touche pas.
 """
 from __future__ import annotations
 
+import json
 import argparse
 import re
 import sys
@@ -201,10 +202,25 @@ def chercher(index, requete: str, limite: int = 12):
     exact = [e for e in index if e[0].lower() == r]
     suffixe = [e for e in index if e[0].lower().endswith("." + r) and e not in exact]
     partiel = [e for e in index if r in e[0].lower() and e not in exact and e not in suffixe]
-    ordonne = exact + suffixe + partiel
-    # À symbole identique, préférer la page LOCALFIRST : l'ancienne se déclare elle-même incomplète.
-    ordonne.sort(key=lambda e: (0 if PREFERE in e[1] else 1))
-    return ordonne[:limite]
+    # LE DEPARTAGE NE DOIT PAS ECRASER LE CLASSEMENT.
+    #
+    # CE QUI ETAIT FAUX. Le tri LOCALFIRST portait sur la liste ENTIERE, donc
+    # sur un seul critere : toute correspondance PARTIELLE situee dans une page
+    # LOCALFIRST passait devant une correspondance par SUFFIXE situee ailleurs.
+    # Le commentaire disait « a symbole identique » ; le code ne le faisait pas.
+    #
+    # Mesure du 2026-08-31, en cherchant une primitive bash : `trap` rendait
+    # `scipy.stats.BootstrapMethod` -- une sous-chaine, dans une page
+    # LOCALFIRST -- au lieu de `bash.trap`, pourtant reconnu par suffixe. Un
+    # modele qui ne lit que le premier resultat recevait donc la mauvaise
+    # documentation, en silence et avec l'autorite d'une reponse.
+    #
+    # Le rang devient la cle PRINCIPALE, LOCALFIRST la secondaire. C'est ce que
+    # le commentaire annoncait depuis le debut.
+    rangs = [(0, e) for e in exact] + [(1, e) for e in suffixe] \
+        + [(2, e) for e in partiel]
+    rangs.sort(key=lambda re: (re[0], 0 if PREFERE in re[1][1] else 1))
+    return [e for _r, e in rangs][:limite]
 
 
 def extraire(racine: Path, fichier: str, offset: int, longueur: int, contexte: int = 22) -> str:
@@ -234,6 +250,293 @@ def paquets(racine: Path) -> None:
     print(f"{len(docs)} paquets documentés localement :\n")
     for i in range(0, len(docs), 6):
         print("  " + "  ".join(f"{d:<18}" for d in docs[i:i + 6]))
+
+
+# ---------------------------------------------------------------------------
+# CORPUS ANNEXES — bash, PowerShell, et les lecons des projets voisins.
+#
+# Absorbes PAR COPIE le 2026-08-31 depuis le depot voisin, jamais lus en place :
+# une dependance au chemin d'un voisin casse le jour ou ce depot bouge, et le
+# contrat interdit d'ecrire chez lui.
+#
+#   references/shell_docs/bash/5.3/         61 primitives
+#   references/shell_docs/powershell/7.5/   306 cmdlets
+#   references/lecons/                      306 lecons, erreurs et remedes
+#
+# POURQUOI CELA COMPTE ICI. Le depot porte dix-sept scripts PowerShell, et son
+# contrat interdit d'ecrire contre une bibliotheque de memoire. Il a deja paye
+# cette regle deux fois : `pwsh -File` passe TOUT ce qui suit en arguments, si
+# bien qu'une redirection n'atteint jamais PowerShell ; et `New-Item -Force`
+# sur un FICHIER en tronque le contenu. Deux faits qui tiennent en une ligne de
+# documentation, et qui ont coute une tache silencieusement muette et un
+# fichier ecrase.
+#
+# Ces corpus arrivent avec un index a offsets DEJA construit, de meme forme que
+# celui bati ici pour Python. On ne le reconstruit donc pas -- on le VERIFIE,
+# ce qui n'est pas la meme chose : un offset calcule ailleurs peut avoir
+# survecu a la copie ou non, et le supposer serait exactement le defaut que ce
+# fichier documente depuis le 2026-08-10.
+# ---------------------------------------------------------------------------
+
+
+def charger_index_annexe(racine: Path) -> list[tuple[str, str, int, int]]:
+    """
+    Parcourt les fichiers ``index.tsv`` situés sous ``references/shell_docs`` et
+    ``references/lecons`` (quel que soit le niveau de profondeur) et renvoie une
+    liste de quadruplets compatibles avec :func:`charger_index`.
+
+    Chaque ligne de l'index possède les colonnes :
+    ``id``, ``offset_octets``, ``longueur_octets``, ``type`` et ``resume``.
+    Le chemin retourné pointe vers le fichier ``symbols.jsonl`` qui se trouve dans
+    le même répertoire que le ``index.tsv``.
+    """
+    # Un outil de documentation est appele depuis n'importe ou, y compris
+    # par une epreuve qui passe une chaine plutot qu'un Path. Accepter les
+    # deux formes coute une ligne ; les refuser coute un TypeError a
+    # l'instant precis ou l'on venait consulter pour ne pas se tromper.
+    racine = Path(racine)
+    # FAUX : on ne lève aucune exception si le répertoire ``references`` n’existe pas.
+    base = racine / "references"
+    result: list[tuple[str, str, int, int]] = []
+
+    for sous in ("shell_docs", "lecons"):
+        # FAUX : on ignore silencieusement les dossiers manquants.
+        dossier = base / sous
+        if not dossier.is_dir():
+            continue
+
+        for idx_path in dossier.rglob("index.tsv"):
+            # Le fichier ``symbols.jsonl`` est supposé être au même endroit.
+            symbols_path = idx_path.parent / "symbols.jsonl"
+            rel_symbols = symbols_path.relative_to(racine).as_posix()
+
+            try:
+                lignes = idx_path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                # FAUX : on ne signale pas l’erreur de lecture, on passe au suivant.
+                continue
+
+            # Ignorer l’en‑tête.
+            for ligne in lignes[1:]:
+                parts = ligne.rstrip("\r\n").split("\t")
+                if len(parts) < 5:
+                    # FAUX : les lignes mal formées sont simplement sautées.
+                    continue
+                ident, off_str, lg_str = parts[0], parts[1], parts[2]
+                try:
+                    off = int(off_str)
+                    lg = int(lg_str)
+                except ValueError:
+                    # FAUX : on ne lève pas d’erreur, on ignore la ligne.
+                    continue
+                result.append((ident, rel_symbols, off, lg))
+    return result
+
+
+def verifier_offsets_annexe(racine: Path, entrees: list[tuple[str, str, int, int]],
+                           combien: int = 20) -> tuple[int, int]:
+    """
+    Vérifie que les offsets enregistrés pointent bien vers l’objet attendu.
+
+    ``combien`` indique le nombre d’entrées à tester, réparties régulièrement
+    sur la liste fournie.  La fonction renvoie le nombre de vérifications
+    concordantes et le nombre de discordances détectées.
+    """
+    # Un outil de documentation est appele depuis n'importe ou, y compris
+    # par une epreuve qui passe une chaine plutot qu'un Path. Accepter les
+    # deux formes coute une ligne ; les refuser coute un TypeError a
+    # l'instant precis ou l'on venait consulter pour ne pas se tromper.
+    racine = Path(racine)
+    if not entrees:
+        return 0, 0
+
+    pas = max(1, len(entrees) // combien) if combien else 1
+    verifies = 0
+    discordances = 0
+
+    for id_sym, rel_jsonl, off, lg in entrees[::pas][:combien]:
+        jsonl_path = racine / rel_jsonl
+        try:
+            with open(jsonl_path, "rb") as f:
+                f.seek(off)
+                raw = f.read(lg)
+        except OSError:
+            # FAUX : l’impossibilité d’ouvrir le fichier compte comme une discordance.
+            discordances += 1
+            continue
+
+        try:
+            obj = json.loads(raw.decode("utf-8", errors="replace"))
+        except json.JSONDecodeError:
+            # FAUX : une ligne JSON invalide est traitée comme une discordance.
+            discordances += 1
+            continue
+
+        if obj.get("id") == id_sym:
+            verifies += 1
+        else:
+            discordances += 1
+    return verifies, discordances
+
+
+def rendre_symbole_annexe(objet: dict) -> str:
+    """
+    Produit une représentation compacte (max ≈ 40 lignes) d’un symbole annexé.
+
+    Le rendu dépend du champ ``type`` :
+    - ``cmdlet`` : nom, module, résumé, signature, paramètres (une ligne chacun),
+      jusqu’à deux exemples et les notes tronquées à trois lignes.
+    - ``builtin`` (bash) : nom, résumé, signature, docstring brut tronqué à 25 lignes.
+    - ``lecon`` : titre, registre, provenance (chemin + ligne) et texte tronqué à 30 lignes.
+    Les champs absents sont simplement omis.
+    """
+    # LE TYPE NE VIT PAS AU MEME ENDROIT SELON LE CORPUS.
+    #
+    # CE QUI ETAIT FAUX, et silencieusement. Une lecon ne porte AUCUN champ
+    # `type` : sa nature est dans `methode`. La variable valait donc "" ,
+    # aucune branche ne s'appliquait, et l'outil rendait une chaine VIDE sous
+    # un en-tete parfaitement normal -- « ce symbole n'a rien a montrer »,
+    # alors que 1888 octets de lecon attendaient juste dessous.
+    #
+    # Un rendu vide est le pire des trois etats possibles : plus trompeur
+    # qu'une erreur, qui au moins se voit.
+    typ = (objet.get("type") or objet.get("methode") or "").lower()
+    lignes: list[str] = []
+
+    if typ == "cmdlet":
+        # Nom et module.
+        nom = objet.get("nom_court", "")
+        module = objet.get("module", "")
+        header = f"{nom} ({module})" if module else nom
+        if header:
+            lignes.append(header)
+
+        # Résumé et signature.
+        if "resume" in objet:
+            lignes.append(objet["resume"])
+        if "signature" in objet:
+            lignes.append(objet["signature"])
+
+        # Paramètres – chaque paramètre sur une ligne.
+        for param in objet.get("parametres", []):
+            p_nom = param.get("nom", "")
+            p_type = param.get("type_declare", "")
+            # Abréger le type en retirant le préfixe « System. ».
+            if isinstance(p_type, str) and p_type.startswith("System."):
+                p_type = p_type[len("System.") :]
+            requis = "requis" if param.get("requis") else "optionnel"
+            pos = param.get("position")
+            pos_str = f"pos={pos}" if pos is not None else ""
+            ligne = " ".join(filter(None, [p_nom, p_type, requis, pos_str]))
+            lignes.append(ligne)
+
+        # Exemples – au plus deux.
+        #
+        # LE CODE D'UN EXEMPLE EST UNE LISTE DE LIGNES, pas une chaine, et
+        # « notes » est une CHAINE, pas une liste. Le premier jet supposait
+        # l'inverse des deux : `New-Item` levait
+        #     TypeError: sequence item 21: expected str instance, list found
+        # et les notes, testees par `isinstance(list)`, ne s'affichaient
+        # jamais -- une rubrique silencieusement absente, ce qui est pire
+        # qu'une erreur puisque rien ne le signale.
+        for ex in objet.get("exemples", [])[:2]:
+            titre = ex.get("titre")
+            if titre:
+                lignes.append(titre)
+            code = ex.get("code")
+            if isinstance(code, (list, tuple)):
+                for bout in code:
+                    lignes.extend(str(bout).splitlines())
+            elif code:
+                lignes.extend(str(code).splitlines())
+
+        # Notes – tronquées à trois lignes.
+        notes = objet.get("notes")
+        if isinstance(notes, str):
+            lignes.extend([l for l in notes.splitlines() if l.strip()][:3])
+        elif isinstance(notes, (list, tuple)):
+            lignes.extend(str(n) for n in notes[:3])
+
+    elif typ == "builtin":
+        # Bash builtin.
+        nom = objet.get("nom_court", "")
+        if nom:
+            lignes.append(nom)
+        if "resume" in objet:
+            lignes.append(objet["resume"])
+        if "signature" in objet:
+            lignes.append(objet["signature"])
+
+        doc = objet.get("docstring_brut", "")
+        if isinstance(doc, str):
+            lignes.extend(doc.splitlines()[:25])
+
+    elif typ == "lecon":
+        # Leçon.
+        titre = objet.get("titre")
+        if titre:
+            lignes.append(titre)
+        if "registre" in objet:
+            lignes.append(objet["registre"])
+
+        chemin = objet.get("chemin")
+        ligne_num = objet.get("ligne")
+        if chemin and ligne_num is not None:
+            lignes.append(f"{chemin}:{ligne_num}")
+
+        texte = objet.get("texte", "")
+        if isinstance(texte, str):
+            lignes.extend(texte.splitlines()[:30])
+
+    # AUCUNE BRANCHE N'A REPONDU : on rend tout de meme ce que l'on a.
+    #
+    # Un corpus futur, ou un champ renomme en amont, ne doit pas produire le
+    # silence. Mieux vaut un rendu grossier et signale qu'une reponse vide qui
+    # se lit comme une absence de contenu.
+    if not lignes:
+        lignes.append("[type de corpus non reconnu : %r]" % typ)
+        for cle in ("titre", "nom_court", "resume", "signature", "texte",
+                    "docstring_brut"):
+            valeur = objet.get(cle)
+            if isinstance(valeur, str) and valeur.strip():
+                lignes.extend(valeur.splitlines()[:20])
+
+    # Limiter à 40 lignes au total.
+    #
+    # Le `str()` est une ceinture : un champ de forme inattendue doit degrader
+    # l'affichage, jamais faire tomber l'outil. Un lecteur de documentation
+    # qui plante sur une entree mal formee prive de TOUTES les autres.
+    return "\n".join(str(l) for l in lignes[:40])
+
+
+def compter_symboles(racine: Path) -> tuple[int, int]:
+    """Nombre de symboles indexes : (doc Python, corpus annexes).
+
+    DERIVE, JAMAIS FIGE. Le message de reprise annoncait « 166 507 symboles »
+    en dur. Le chiffre etait juste le jour ou il fut ecrit, et faux le
+    lendemain : l'absorption des corpus shell et des lecons y a ajoute 673
+    entrees sans qu'une ligne bouge. La regle vient du depot voisin et vaut
+    d'etre repetee -- tout deriver, ne rien coder en dur, parce qu'une mesure
+    gelee ment ensuite avec l'autorite d'un fichier ecrit.
+
+    Le comptage est un parcours d'index, jamais une lecture de corpus : les
+    .jsonl et les .md ne sont pas ouverts. Un index absent rend 0 pour sa
+    part, sans erreur -- l'absence d'un corpus n'est pas une panne.
+    """
+    # Un outil de documentation est appele depuis n'importe ou, y compris
+    # par une epreuve qui passe une chaine plutot qu'un Path. Accepter les
+    # deux formes coute une ligne ; les refuser coute un TypeError a
+    # l'instant precis ou l'on venait consulter pour ne pas se tromper.
+    racine = Path(racine)
+    principal = 0
+    chemin = racine / INDEX
+    if chemin.is_file():
+        try:
+            with open(chemin, "rb") as fh:
+                principal = sum(1 for _ in fh)
+        except OSError:
+            principal = 0
+    return principal, len(charger_index_annexe(racine))
 
 
 def main(argv=None) -> int:
@@ -271,6 +574,16 @@ def main(argv=None) -> int:
         return 1
 
     index = charger_index(racine)
+    # LES CORPUS ANNEXES REJOIGNENT L'INDEX, sous la MEME commande.
+    #
+    # Un second outil pour la doc shell serait un second outil a oublier. Le
+    # contrat de ce depot le dit d'une autre facon : un mecanisme sans appelant
+    # est un fichier. Ici l'appelant existe deja et il est unique -- on lui
+    # ajoute une source, pas un jumeau.
+    #
+    # Les annexes viennent APRES : a egalite de correspondance, la doc Python,
+    # construite et verifiee ici, passe devant une doc copiee d'ailleurs.
+    index = list(index) + charger_index_annexe(racine)
     if not index:
         print(f"index absent — le construire : python {Path(__file__).name} --construire")
         return 2
@@ -298,7 +611,38 @@ def main(argv=None) -> int:
     # existant`) : il exécute la CLI comme un appelant réel, seule façon d'attraper cette classe.
     sym, fic, off, lg = trouves[0]
     print(f"### {sym}\n    source : {fic} (offset {off}, {lg} o)\n")
-    print(extraire(racine, fic, off, lg, args.contexte))
+    # LE RENDU SUIT LE CORPUS, jamais un drapeau que l'appelant devrait poser.
+    #
+    # Un .jsonl porte un objet JSON par ligne : l'afficher brut rendrait
+    # plusieurs milliers de mots pour un seul cmdlet, et cet outil existe pour
+    # REDUIRE le contexte. Le rendre tel quel le retournerait contre son but.
+    if fic.endswith(".jsonl"):
+        chemin = racine / fic
+        with open(chemin, "rb") as fh:
+            fh.seek(off)
+            brut = fh.read(lg)
+        # LA PORTEE DU try S'ARRETE A LA LECTURE, ELLE N'ENGLOBE PAS L'AFFICHAGE.
+        #
+        # CE QUI ETAIT FAUX, et c'est moi qui l'ai ecrit une heure plus tot.
+        # Le `print` etait DANS le try, et `UnicodeEncodeError` derive de
+        # `ValueError` : une console cp1252 incapable d'ecrire une etoile
+        # faisait donc rapporter « ENTREE ILLISIBLE » sur une entree
+        # parfaitement lisible. Mesure : une lecon de 1888 octets declaree
+        # illisible alors que seule la CONSOLE ne savait pas la rendre.
+        #
+        # C'est la meme confusion que « absent » contre « casse », corrigee le
+        # meme jour dans nexus_outillage : diagnostiquer la donnee quand la
+        # panne est a l'affichage envoie chercher au mauvais endroit.
+        try:
+            objet = json.loads(brut.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as exc:
+            # Une entree vraiment illisible se DIT. La rendre vide se lirait
+            # comme « ce symbole n'a rien a montrer », ce qui est faux.
+            print("ENTREE ILLISIBLE a l'offset %d : %s" % (off, exc))
+            return 2
+        print(rendre_symbole_annexe(objet))
+    else:
+        print(extraire(racine, fic, off, lg, args.contexte))
     if len(trouves) > 1:
         print(f"\n--- {len(trouves) - 1} autre(s) correspondance(s) ---")
         for s, f, _o, _l in trouves[1:8]:
