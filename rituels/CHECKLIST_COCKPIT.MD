@@ -933,7 +933,7 @@ enfreinte. Un paragraphe ne ferme rien.
 |---|---|---|
 | `retry_policy` : ne pas rejouer un 429 ni une expiration | `FAIT` | clés vérifiées dans la doc LiteLLM avant écriture |
 | Un embedding déclaré `mode: chat` | `FAIT` | `mode: embedding` déclaré ; le filtre lit la déclaration |
-| Un **échec d'appel** enregistré comme un **échec de capacité** | `OUVERT` | il faut les distinguer dans `epreuves.json` |
+| Un **échec d'appel** enregistré comme un **échec de capacité** | `FAIT` | `--only registre`, 6 cas dont une contre-épreuve |
 | Les épreuves sur les 71 modèles | `EN COURS` | 14 rendus |
 
 > **Le plan cloud est rétabli, et mesuré :** `gpt-oss-120b-cloud` **10,6 s**
@@ -971,6 +971,41 @@ enfreinte. Un paragraphe ne ferme rien.
 > passerelle deux fois sous elles** — les « Remote end closed connection »
 > n'étaient pas un défaut du parc, c'était moi. Le manuel interdit de mesurer
 > sous charge.
+
+### Six modèles savent orchestrer, contre un mesuré — 30/08, nuit
+
+> **Le pire défaut de la soirée, et il était invisible dans le fichier.**
+> `consigner` écrit sous **deux** noms — l'alias demandé et l'alias servi —
+> à juste titre, c'est le même modèle. `releve-locale` a passé 4/4, donc
+> `glm-4.7-flash-local` portait 4/4. Puis `--tous` l'a interrogé
+> directement, l'appel n'a jamais abouti, et le **0/4 a écrasé le 4/4**.
+>
+> Le registre affirmait simultanément que le même modèle orchestre et
+> n'orchestre pas. Ce n'est pas un étiquetage trompeur : c'est une **preuve
+> détruite**. Et le script distinguait pourtant déjà les deux cas *à
+> l'écran* — « Rien n'est prouvé, rien n'est infirmé » — pour tout perdre à
+> l'écriture.
+>
+> Une tentative non concluante ne remplace plus un verdict concluant ; elle
+> est tracée à part. Un échec **réel**, lui, remplace toujours : sans quoi un
+> modèle qui se dégrade resterait promu sur une mesure périmée.
+>
+> **Le registre est réparé sans rien fabriquer.** Trois entrées portaient 0/4
+> avec `plan: inconnu` : elles sont **effacées**, non corrigées en 4/4
+> supposé. « Jamais mesuré » est l'état vrai, et jamais mesuré n'est jamais
+> promu.
+>
+> **CE QUE LA JAMBE MANQUANTE A RENDU, et c'est le résultat de la nuit.** La
+> capacité d'orchestration n'avait jamais été éprouvée que sur **un** modèle
+> sur 71. Onze verdicts tiennent désormais, dont **six complets** :
+>
+> | 4/4 | 3/4 | 1/4 |
+> |---|---|---|
+> | codestral, gemma3-1b, gemma4-12b, gemma4-26b, glm-4.7-flash, relais déclaré | command-r, deepseek-coder-33b | codegemma-7b, codestral-22b, deepseek-coder-6.7b |
+>
+> Le parc sait orchestrer **bien plus largement** qu'on ne le mesurait — et
+> deux modèles à 3/4 sont à un pas. La sélection naturelle avait la donnée
+> qu'il lui fallait ; personne ne la lui avait fournie.
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
