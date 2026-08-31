@@ -1885,6 +1885,39 @@ function exigerTableau(valeur, nom) {
   return valeur;
 }
 
+function exigerTableauNonVide(valeur, nom, minimum, quoi) {
+  // Nommer L'ISSUE, pas seulement le symptome. Mesure du 2026-08-30 sur
+  // 32 cas de protocole : douze refus nommaient le parametre fautif sans
+  // jamais dire ce qu'il fallait fournir. « tableau vide » decrit ; « au
+  // moins 1 chemin de fichier attendu » indique par ou passer.
+  //
+  // Le bon exemple existait deja dans ce fichier, chez nexus_compare : la
+  // regle est ici centralisee pour qu'il n'en subsiste aucune copie.
+  const tableau = exigerTableau(valeur, nom);
+  const seuil = minimum === undefined ? 1 : minimum;
+  if (tableau.length < seuil) {
+    throw new ErreurProtocole(
+      "parametre '" + nom + "' : au moins " + seuil + " " + quoi +
+      " attendu, recu " + tableau.length
+    );
+  }
+  return tableau;
+}
+
+function exigerEntierPositif(valeur, nom) {
+  // `undefined` passe : le parametre est optionnel et un defaut s'applique.
+  if (valeur === undefined || valeur === null) return valeur;
+  if (!Number.isInteger(valeur) || valeur <= 0) {
+    // La VALEUR est montree quand c'est un nombre, jamais son type seul :
+    // « recu number » ne dit pas a l'appelant que son -1 est le fautif.
+    const recu = typeof valeur === "number" ? String(valeur) : typeof valeur;
+    throw new ErreurProtocole(
+      "parametre '" + nom + "' : un entier strictement positif est attendu, recu " + recu
+    );
+  }
+  return valeur;
+}
+
 function exigerTexte(valeur, nom) {
   if (typeof valeur !== "string" || !valeur.trim()) {
     throw new ErreurProtocole(
@@ -2011,7 +2044,12 @@ async function callTool(name, args) {
   await chargerPlans();
 
   if (name === "nexus_ask") {
-    if (!args.prompt) throw new ErreurProtocole("parametre 'prompt' requis");
+    // `!args.prompt` laissait passer une chaine d'espaces, et laissait passer
+    // un NOMBRE -- la negation d'un nombre non nul etant fausse. Le refus
+    // ecrit a la main etait donc moins clair ET moins correct que le helper
+    // que tous les autres outils emploient.
+    exigerTexte(args.prompt, "prompt");
+    exigerEntierPositif(args.max_tokens, "max_tokens");
 
     // Un modele explicite l'emporte sur un profil : demander un modele
     // precis est une decision, la laisser deduire n'en est pas une.
@@ -2055,6 +2093,7 @@ async function callTool(name, args) {
 
   if (name === "nexus_route") {
     exigerTexte(args.prompt, "prompt");
+    exigerEntierPositif(args.max_tokens, "max_tokens");
     const plane = args.plane || "local";
     const router = {
       local: "adaptive-router-local",
@@ -2167,8 +2206,7 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_summarize") {
-    const paths = exigerTableau(args.paths, "paths");
-    if (!paths.length) throw new ErreurProtocole("parametre 'paths' : tableau vide");
+    const paths = exigerTableauNonVide(args.paths, "paths", 1, "chemin de fichier");
     const instruction =
       args.instruction || "Fais une synthese technique fidele, structuree et concise.";
     const model = args.model || DEFAULT_CHAT_MODEL;
@@ -2310,8 +2348,7 @@ async function callTool(name, args) {
   }
 
   if (name === "nexus_batch") {
-    const tasks = exigerTableau(args.tasks, "tasks");
-    if (!tasks.length) throw new ErreurProtocole("parametre 'tasks' : tableau vide");
+    const tasks = exigerTableauNonVide(args.tasks, "tasks", 1, "tache");
     const parts = [];
     let total = 0;
     for (let i = 0; i < tasks.length; i++) {
@@ -2346,8 +2383,8 @@ async function callTool(name, args) {
 
   if (name === "nexus_compare") {
     exigerTexte(args.prompt, "prompt");
-    const models = exigerTableau(args.models, "models");
-    if (models.length < 2) throw new ErreurProtocole("parametre 'models' : au moins deux modeles");
+    const models = exigerTableauNonVide(args.models, "models", 2, "modeles");
+    exigerEntierPositif(args.max_tokens, "max_tokens");
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
     messages.push({ role: "user", content: args.prompt });
@@ -2410,7 +2447,13 @@ async function callTool(name, args) {
     );
   }
 
-  throw new ErreurProtocole("outil inconnu : " + name);
+  // La liste est DEDUITE de TOOLS, jamais recopiee : une liste en dur
+  // divergerait le jour ou un outil est ajoute, et un refus qui ment sur ce
+  // qui existe est pire qu'un refus muet.
+  throw new ErreurProtocole(
+    "outil inconnu : " + name + ". Outils connus : " +
+    TOOLS.map(function (t) { return t.name; }).sort().join(", ")
+  );
 }
 
 // ---------------------------------------------------------------------------

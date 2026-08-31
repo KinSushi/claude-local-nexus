@@ -1246,7 +1246,7 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee", "semaphore", "mentions"],
+                                 "shell", "portee", "semaphore", "mentions", "protocole"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1283,6 +1283,8 @@ def main() -> int:
         test_semaphore_local()
     if args.only in (None, "mentions"):
         test_mentions_reponse()
+    if args.only in (None, "protocole"):
+        test_protocole_refus()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1491,6 +1493,26 @@ def test_mentions_reponse() -> None:
     """
     jouer_epreuve_node("epreuve_mentions.js", "mentions de reponse",
                        "MENTIONS DE REPONSE : un corps vide dit-il pourquoi ?")
+
+
+def test_protocole_refus() -> None:
+    """
+    Un refus nomme-t-il le parametre ET l'issue ?
+
+    Mesure du 2026-08-30, vague 2 sur le pont : sur 32 cas de protocole,
+    DOUZE refus nommaient le parametre fautif sans jamais dire ce qu'il
+    fallait fournir. Le critere est celui que ce depot s'applique a
+    lui-meme : un garde qui refuse sans dire par ou passer se fait
+    contourner, ou renoncer.
+
+    L'epreuve porte aussi un defaut de CORRECTION, et non de seule
+    ergonomie : `if (!args.prompt)` laissait passer une chaine d'espaces et
+    un NOMBRE -- la negation d'un nombre non nul etant fausse. Le refus
+    ecrit a la main etait moins clair ET moins juste que le helper que tous
+    les autres outils employaient deja.
+    """
+    jouer_epreuve_node("epreuve_protocole.js", "refus du protocole",
+                       "REFUS DU PROTOCOLE : nomment-ils l'issue ?")
 
 
 def test_ruche() -> None:
