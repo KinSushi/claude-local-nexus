@@ -239,7 +239,15 @@ def epreuve_exploite_retour(modele: str, cle: str, appel: dict | None) -> dict:
         }
 
     try:
-        premiere = io.open(chemin_readme, encoding="utf-8").readline().strip()
+        # LE DESCRIPTEUR SE FERME, MEME SI LA SUITE LEVE.
+        #
+        # `io.open(...).readline()` laisse le fichier ouvert jusqu'au passage
+        # du ramasse-miettes. Sous Windows cela VERROUILLE le fichier : le
+        # prochain qui veut y ecrire echoue pour une raison sans rapport avec
+        # sa propre faute -- et ce releve tourne en boucle sur README.md,
+        # donc le descripteur s'accumule.
+        with io.open(chemin_readme, encoding="utf-8") as fh:
+            premiere = fh.readline().strip()
     except Exception as exc:
         return {"ok": None, "detail": "README.md illisible : %s" % exc, "duree": 0}
 
@@ -337,7 +345,11 @@ def epreuve_enchainement(modele: str, cle: str) -> dict:
         }
 
     try:
-        nb = sum(1 for _ in io.open(chemin_readme, encoding="utf-8"))
+        # Meme cas, et plus insidieux : le generateur retient le fichier tant
+        # qu'il n'est pas epuise, et `sum()` ne garantit pas sa fermeture si
+        # une exception traverse.
+        with io.open(chemin_readme, encoding="utf-8") as fh:
+            nb = sum(1 for _ in fh)
     except Exception as exc:
         return {"ok": None, "detail": "README.md illisible : %s" % exc, "duree": _now() - depart}
     r2 = messages(

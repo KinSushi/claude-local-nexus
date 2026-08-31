@@ -950,10 +950,56 @@ async function buildIndex(root, embedModel) {
     }
   }
 
-  // Les embeddings partent par lots : un seul appel par chunk saturerait
-  // inutilement Ollama, et un lot unique dépasserait la fenêtre.
+  // LE MODELE EST REVEILLE AVANT D'ETRE MESURE — ET C'EST LE VRAI REMEDE.
+  //
+  // CE QUI EST MESURE, le 2026-08-31, trois passes du MEME appel : 32
+  // extraits vers `all-minilm-local`, le plus leger des modeles declares.
+  //
+  //     passe 1, modele FROID   HTTP 408    180,3 s   coupe par la passerelle
+  //     passe 2, modele CHAUD   HTTP 200      2,90 s
+  //     passe 3, modele CHAUD   HTTP 200      0,26 s
+  //
+  // Le cout reel d'un lot de 32 est de TROIS SECONDES. Ce qui depasse le
+  // `request_timeout: 180` de LiteLLM est le CHARGEMENT DES POIDS, paye une
+  // seule fois. C'est exactement l'erreur que le contrat documente en
+  // 112.3 -- une lecture en une seule phase attribue le chargement au
+  // travail, definitivement -- et un premier jet de ce correctif l'a
+  // recommise : il rapetissait le lot de 32 a 16 sur une lecture de 127 s
+  // contaminee par un chargement partiel. Rapetisser ne sert a RIEN : un
+  // lot de UN expirerait identiquement sur un modele froid.
+  //
+  // Le remede est celui que `nexus_bench.py` applique deja pour le debit :
+  // reveiller d'abord, sur un budget separe, pour que le chargement ne soit
+  // impute a personne. L'appel de reveil ECHOUE souvent -- la passerelle
+  // rend 408 avant qu'Ollama ait fini -- mais Ollama, lui, POURSUIT le
+  // chargement. Son echec est donc attendu et sans consequence : c'est le
+  // declenchement qui compte, pas la reponse.
+  //
+  // C'est aussi la cause de l'echec rapporte par une session voisine --
+  // « litellm.Timeout: Timeout passed=180, time taken=179.996 » -- qui
+  // mettait `nexus_search` hors service alors que rien n'etait casse.
   const vectors = [];
-  const BATCH = 32;
+  const BATCH = (() => {
+    const brut = Number(process.env.NEXUS_EMBED_BATCH);
+    return Number.isInteger(brut) && brut > 0 ? brut : 32;
+  })();
+
+  if (pending.length) {
+    for (let essai = 1; essai <= 3; essai++) {
+      try {
+        await embed(embedModel, [pending[0]]);
+        if (essai > 1) log("modele d'embedding reveille apres " + essai + " essai(s)");
+        break;
+      } catch (err) {
+        // Un reveil qui echoue n'est pas une panne : la passerelle a
+        // renonce, le moteur charge encore. On le DIT plutot que de le
+        // taire, pour que trois echecs de suite restent lisibles.
+        log("reveil " + essai + "/3 du modele d'embedding : " +
+            String(err && err.message).slice(0, 80));
+      }
+    }
+  }
+
   for (let i = 0; i < pending.length; i += BATCH) {
     const batch = pending.slice(i, i + BATCH);
     const result = await embed(embedModel, batch);
