@@ -29,7 +29,11 @@ def jouer() -> int:
     d'un MODELE cloud vers un autre alias cloud -- et l'on exige que le
     validateur le refuse.
     """
-    src = io.open(CONFIG, encoding="utf-8").read()
+    # Le fichier se ferme, meme si la suite leve. Un descripteur laisse
+    # ouvert verrouille le fichier sous Windows, et le prochain qui veut
+    # y ecrire echoue pour une raison sans rapport avec sa propre faute.
+    with io.open(CONFIG, encoding="utf-8") as fh:
+        src = fh.read()
 
     # On INJECTE un repli modele -> modele entre deux alias cloud, c'est-a-dire
     # exactement le defaut que la regle doit voir. On le pose dans la liste
@@ -43,7 +47,8 @@ def jouer() -> int:
     fautif = src.replace(motif.group(0) + "\n", injection, 1)
     assert fautif != src, "injection sans effet"
 
-    io.open(COPIE, "w", encoding="utf-8", newline="\n").write(fautif)
+    with io.open(COPIE, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(fautif)
 
     code_sain, sortie_saine = jouer_validateur(CONFIG)
     code_fautif, sortie_fautive = jouer_validateur(COPIE)
@@ -61,8 +66,14 @@ def jouer() -> int:
 
     try:
         os.remove(COPIE)
-    except OSError:
-        pass
+    except OSError as exc:
+        # UN MENAGE QUI ECHOUE SE DIT. Le remplacer par un `pass` -- ou par
+        # `contextlib.suppress`, ce qui revient au meme en plus elegant --
+        # ferait de cette ligne un handler muet de plus, la classe 1 que
+        # nexus_traque compte deja vingt-huit fois ici. Une copie de
+        # configuration laissee sur le disque n'est pas grave ; ne pas savoir
+        # qu'elle y est l'est davantage.
+        print("menage incomplet : %s subsiste (%s)" % (COPIE, exc))
 
     ok = (code_sain == 0) and (code_fautif != 0) and vu
     print("-" * 66)
