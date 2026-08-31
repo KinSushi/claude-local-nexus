@@ -3798,3 +3798,82 @@ exploites en tete de ce cockpit.
 * `import subprocess` en portee locale (`nexus_ruche.py:205`)
 * Trois scripts « mieux cables » sans cause etablie
 
+---
+
+## 35. LA VOIE D'INGESTION — le format etait consomme, jamais produit
+
+Repond au besoin renvoye par l'instance de securite (§33.1), et ouvre le
+gisement des **33 000 fichiers** de §34.4.
+
+### 35.1 Ce qui existait, et ce qui manquait
+
+`nexus_doc.py` sert **166 507 symboles par `seek`**, a ~280 jetons la
+consultation. C'est exactement le profil qu'un modele de 1 a 3 milliards de
+parametres peut absorber. Mais les trois corpus annexes etaient arrives
+**deja indexes** d'un depot voisin : le format etait **consomme ici, jamais
+produit**.
+
+`scripts/nexus_ingerer.py` le produit desormais :
+
+```
+python scripts/nexus_ingerer.py --source docs/securite --nom securite \
+       --resumer glm-4.7-flash-local --appliquer
+```
+
+### 35.2 Quatre defauts, tous trouves EN S'EN SERVANT
+
+| Defaut | Ce qu'il causait |
+| --- | --- |
+| identifiants finissant par un **compteur** | le chercheur matche le DERNIER segment (`bash.trap` → « trap ») : corpus correct et **introuvable** |
+| chargeur portant `("shell_docs", "lecons")` **grave** | corpus neuf indexe et **verifie** (201 offsets relus par seek) et pourtant invisible |
+| `type` ecrit dans l'index, **pas dans l'objet** | chaque entree d'un corpus sain s'annoncait « type non reconnu » |
+| resume du modele local ecrit dans l'objet, **pas dans l'index** | « 4 resumes produits » et **aucun** dans la colonne que le petit modele lit |
+
+Le deuxieme a produit **deux verites contradictoires dont aucune ne mentait** :
+« 201 offsets verifies » et « aucun symbole ne correspond ». Elles portaient
+sur deux chemins de code differents.
+
+Le quatrieme est la **troisieme occurrence du jour** de « produit, non
+consomme » — apres `modelesResidents` ecrite et jamais appelee, et le format
+d'index lui-meme.
+
+**Le piege PRINCIPAL, lui, a ete tenu du premier jet** : les offsets sont en
+octets, jamais en caracteres. Parce qu'il etait **dit dans la consigne**. Le
+document d'essai de l'epreuve porte des accents : sur un corpus sans accent,
+octets et caracteres coincident et l'epreuve serait verte a tort.
+
+### 35.3 Le resume est produit par un MODELE LOCAL
+
+Mesure avec `glm-4.7-flash-local` : **4 resumes, 0 echec, 68 s** chargement a
+froid compris. Ce que l'index porte desormais, la ou il portait un titre :
+
+> « Highlights measured improvements and the necessity of rejecting bad tasks,
+> advocating for over-exploiting MCP tools on both planes »
+
+**Le seul defaut invisible de ce mecanisme** est le glissement : si la reponse
+est plus courte que le lot, redistribuer les lignes dans l'ordre donne a
+chaque entree le resume d'une AUTRE. L'index annonce un contenu, le seek en
+rend un different, et **rien ne signale la discordance puisque les offsets
+sont exacts**. Le cas est joue en premier, ligne manquante au milieu.
+
+### 35.4 Deux defauts de ma propre main, attrapes avant la production
+
+* j'ai **invente un nom de variable** — la boucle s'appelle `ent`, pas
+  `entree`. Exactement le reproche fait au banc trois fois ce jour ;
+* mon bloc de collision a ete pose **a la mauvaise indentation** : sorti du
+  `for`, il a fait avaler la construction de l'objet par le `else`. Le fichier
+  **compilait**. *Une substitution textuelle dans du Python doit porter son
+  indentation, sinon elle deplace la portee sans rien dire.*
+
+Deux gardes de pose ont **refuse de deviner** et montre les formes reelles
+plutot que d'ecrire au hasard dans un fichier qui fonctionne.
+
+### 35.5 Reste OUVERT
+
+| Sujet | Etat |
+| --- | --- |
+| **quel corpus ingerer** | le corpus d'essai a ete retire : c'etait une copie du contrat, et une copie ment des que l'original bouge |
+| la securite recolte sa documentation | l'outil l'attend ; c'est son geste (§33) |
+| les 33 000 fichiers | l'outil existe maintenant ; le choix de ce qu'on absorbe reste entier |
+| resumer un GROS corpus | mesure sur 4 entrees. 200 entrees feraient ~17 lots ; le cout reste a mesurer |
+
