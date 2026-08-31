@@ -1121,6 +1121,43 @@ def controle_portee_import() -> None:
     noter("portee des imports", False, BLOQUANT,
           "%s defaut(s) : %s" % (compte, " | ".join(autres[:2])))
 
+def controle_doc_python() -> None:
+    """
+    La documentation officielle est-elle consultable, ou seulement promise ?
+
+    Absorbee du depot voisin le 2026-08-31 : 166 507 symboles sur 63 couches,
+    ancres sur les versions REELLEMENT installees. La regle qu'elle sert est
+    plus ancienne, et vient d'une panne precise chez le voisin : une
+    statistique passee a `scipy.stats.bootstrap(vectorized=True)` n'acceptait
+    pas le mot-cle `axis` que scipy passe pourtant dans ce mode. Le TypeError
+    a ete avale par un except et presente comme une IMPOSSIBILITE
+    STATISTIQUE -- un resultat scientifique faux, ne d'un defaut de signature,
+    parce que la documentation n'avait pas ete ouverte.
+
+    AVERTISSEMENT et non BLOQUANT : une documentation absente n'empeche pas la
+    plateforme de tourner, et refuser le demarrage punirait l'operateur venu
+    la reconstruire. Mais le silence serait pire -- on croirait la consulter.
+    """
+    corpus = os.path.join(ROOT, "references", "python_libs_docs")
+    index = os.path.join(ROOT, ".nexus", "index_doc_libs.tsv")
+    if not os.path.isdir(corpus):
+        return noter("doc python", False, AVERTISSEMENT,
+                     "corpus absent — la reabsorber depuis le depot voisin")
+    if not os.path.isfile(index):
+        return noter("doc python", False, AVERTISSEMENT,
+                     "index absent — python scripts/nexus_doc.py --construire")
+    try:
+        with io.open(index, encoding="utf-8") as f:
+            lignes = sum(1 for _ in f)
+    except Exception as exc:
+        return noter("doc python", False, AVERTISSEMENT,
+                     "index illisible : %s" % str(exc)[:60])
+    # Un index vide se lit comme un index present : c'est le pire des deux.
+    if lignes < 1000:
+        return noter("doc python", False, AVERTISSEMENT,
+                     "index suspect : %d symboles seulement" % lignes)
+    noter("doc python", True, AVERTISSEMENT, "%d symboles consultables" % lignes)
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -1353,6 +1390,7 @@ def main() -> int:
         controle_env_hors_git,
         controle_disque,
         controle_pont_mcp,
+        controle_doc_python,
         controle_mcp_double_portee,
         controle_garde_agent,
     ):
