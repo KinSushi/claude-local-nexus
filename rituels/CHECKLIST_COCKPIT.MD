@@ -1161,6 +1161,49 @@ enfreinte. Un paragraphe ne ferme rien.
 > C'est en lisant les entrées fraîches que le défaut est apparu. Contourner un
 > défaut est la façon dont il survit.
 
+### Six relevés dans le même registre — une heure passée à poursuivre des ombres
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Aucun verrou sur `nexus_releve` | `FAIT` | `--only registre`, 17 cas dont trois structurels |
+| Une mesure qui ne s'achève jamais | `FAIT` | `--limite N`, tranche bornée + reprise |
+| La lacune dominante du parc | `EN COURS` | le détail arrive enfin, 4 modèles l'ont |
+
+> **Six processus de relevé tournaient ensemble**, issus de trois lancements
+> — 22:51, 23:21, 00:02 — chacun portant la version du code chargée à *son*
+> démarrage, et tous écrivant dans le même `epreuves.json`.
+>
+> **J'ai poursuivi leurs symptômes pendant une heure comme s'il s'agissait de
+> défauts distincts** : champs neufs absents d'entrées pourtant fraîches,
+> `concluante` qui régressait après correction, compte de complets qui montait
+> puis redescendait. **Un seul** était un vrai défaut — le critère fondé sur
+> l'adresse. Les autres n'étaient que le recouvrement.
+>
+> Ce qui a rendu le diagnostic si long : le signal « killed » tue le shell,
+> mais **l'enfant Python survit** et continue d'écrire. Les processus étaient
+> réputés morts.
+>
+> **Le verrou existait déjà** et servait au banc de latence. Il manquait ici,
+> alors que ce script écrit un registre partagé — exactement ce que le banc
+> fait aussi. Son refus **ne lève pas** : il se lit sur `obtenu`. Piège
+> documenté dans `nexus_bench.py`, et tenace parce qu'un mutex nommé est
+> **réentrant** dans le même processus : un essai en un seul interpréteur
+> donne à croire que tout va bien. D'où trois contrôles **structurels**.
+>
+> `--limite N` répond à l'autre moitié : six lancements de `--tous`
+> interrompus sans qu'aucun n'atteigne le bout. Chaque modèle achevé était
+> consigné, mais rien ne se terminait — et un processus qui ne s'achève jamais
+> ne rend jamais de verdict global. Une épreuve coûte plus de trois minutes,
+> soit ~2 h pour 43 candidats.
+>
+> **Vérifié de bout en bout, en une invocation qui S'ACHÈVE** : verrou pris,
+> 21 modèles repris, tranche de 1 sur 22 restants, 4/4.
+>
+> **Et la première donnée de lacune**, impossible à obtenir il y a deux
+> heures : `llama3.2-1b-local` rend 1/4 — il passe le protocole et échoue sur
+> *demande un outil*, *exploite le résultat*, *enchaîne deux outils*. C'est
+> cela qui dira quel modèle ajouter, jamais la taille.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
