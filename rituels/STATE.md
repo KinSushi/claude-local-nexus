@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 04:53 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 05:16 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `a8ece6e` |
+| Commit | `7ef85e7` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 39 hours (healthy)
-litellm-proxy	litellm	Up 5 hours
+litellm-proxy	litellm	Up 6 hours
 litellm-redis	redis	Up 39 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 39 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 337.6 Go |
+| Disque libre | 337.9 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -62,18 +62,18 @@ Verdict : **valide**
 | `cloud_models.txt` | `4cacc5ffa16f30eb984272ea6425abec8dc449d4c93eab567da61969ea083155` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e30152239b48128cbd68a4ef887acec3c21bd79f` |
-| `tools/nexus-mcp/server.js` | `a847c3daf178cf033f3676e4c22a33a97c356f852be1e78b6fe9841197ed636a` |
+| `tools/nexus-mcp/server.js` | `aec5dc3c373a0ac6cf17ec847017bdb2fac21e039fea49f74fe2772903391796` |
 | `scripts/nexus_generate.py` | `d9aef51096bd1ec4741f635069353377840dc60d0abe2dcba8f6ef452d0be6a9` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f79d24bd59c14a067c86087b28961ab4d1` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966eb6b3dacbb4a7e63d7fd3cf0fb7da643` |
-| `scripts/nexus_test.py` | `5b11d627d0f028bea3943a5572a6800098e03379ce25750ee6d13dbb54381b3f` |
+| `scripts/nexus_test.py` | `d52d14e32356233ec6707ed644b1facba5f2d3e05f9706141a0f2a1e07ce319f` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d08ce1f7f38a711e29b4cc6b2fba58043b` |
 
 ## Traque mecanique
 
 ```
-42 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       28
+44 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       29
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     5
