@@ -4533,32 +4533,44 @@ deja consultables sans embeddings.
 
 ## 45. DEUX SIGNALEMENTS VOISINS — dont un qui vaut ICI, mesure
 
-### 45.1 OUVERT — la troncature a `max_tokens` n'est PAS annoncee
+### 45.1 CORRIGE — mon affirmation etait FAUSSE, et la vraie trouvaille est ailleurs
 
-Une instance voisine rapporte `done_reason='length'` : un modele a heurte son
-plafond de sortie, la reponse est tronquee. Verifie ici plutot que suppose.
+**Ce que j'ai ecrit ici et qui est faux** : « le pont calcule la troncature et
+ne la dit pas ». J'avais vu un texte coupe en plein mot et conclu.
 
-Le pont **calcule** bien la troncature (`choice.finish_reason === "length"`,
-ligne 806) et une mention existe (« REPONSE TRONQUEE a max_tokens »,
-ligne 601). **Elle n'atteint pas le chemin de `nexus_ask`.**
-
-Mesure du 2026-08-31, `max_tokens: 12` sur une question a dix phrases :
+**Mesure a la source, qui me dementit :**
 
 ```
-[gpt-oss-120b-cloud · Ollama Cloud · T=0.2 · 452 tokens]
-1. Un agent logiciel est un programme autonome capable d'observer son
-environnement, de le raisonner et d'agir en consequ
+gpt-oss-120b-cloud     finish_reason='stop'   completion=326 jetons
+glm-4.7-flash-local    finish_reason='stop'   completion=1544 jetons
 ```
 
-Coupe en plein mot, **et aucune mention**. L'appelant conclut sur une phrase
-interrompue sans savoir qu'elle l'est — exactement ce que le commentaire de la
-ligne 803 dit vouloir empecher.
+Aucune troncature. `nexus_ask` appelle bien `mentionsReponse(result)` et
+insere `${coupe}` dans sa banniere : **il n'a rien annonce parce qu'il n'y
+avait rien a annoncer**. Le « coupe en plein mot » etait la troncature
+d'affichage **de mon propre script de test**, a 200 signes.
 
-**C'est la troisieme fois du jour que ce depot calcule une information et ne
-la dit pas** : le motif de remplacement d'index, la trace de `log()` sur
-stderr, et celle-ci. La classe merite son nom : *calcule, non dit.*
+*Deduire d'une apparence au lieu de mesurer a la source* — l'erreur que ce
+role existe pour empecher, commise dans le tour meme ou je la nommais. Et
+c'est la deuxieme fois du jour qu'un artefact de MA mesure passe pour un
+defaut du code.
 
-Non corrige — releve, mesure, et inscrit ici.
+### 45.1.1 OUVERT — la vraie trouvaille : `max_tokens` est IGNORE
+
+Les deux appels ci-dessus portaient **`max_tokens: 12`**. Ils ont rendu **326**
+et **1544** jetons de completion.
+
+Le plafond de sortie n'est donc pas applique — ni sur le plan cloud, ni sur le
+plan local. Un appelant qui borne sa sortie **n'obtient aucune borne**.
+
+Consequence, et elle porte loin : `nexus_summarize`, `nexus_context` et
+`nexus_batch` bornent leur sortie par ce parametre. Si le moteur l'ignore, ces
+budgets ne tiennent pas — et la MAP-REDUCE de §110, dont tout le principe est
+de tenir dans des fenetres bornees, repose sur une borne qui n'existe pas.
+
+Non corrige. La cause reste a etablir : LiteLLM traduit-il `max_tokens` vers
+`num_predict` pour Ollama, ou le laisse-t-il tomber ? C'est mesurable en
+interrogeant le moteur directement, et c'est le prochain geste.
 
 ### 45.2 OUVERT — le worktree isole, confirme par un incident voisin
 
