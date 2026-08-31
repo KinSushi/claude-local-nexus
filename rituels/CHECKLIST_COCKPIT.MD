@@ -4568,9 +4568,38 @@ Consequence, et elle porte loin : `nexus_summarize`, `nexus_context` et
 budgets ne tiennent pas — et la MAP-REDUCE de §110, dont tout le principe est
 de tenir dans des fenetres bornees, repose sur une borne qui n'existe pas.
 
-Non corrige. La cause reste a etablir : LiteLLM traduit-il `max_tokens` vers
-`num_predict` pour Ollama, ou le laisse-t-il tomber ? C'est mesurable en
-interrogeant le moteur directement, et c'est le prochain geste.
+**CAUSE ETABLIE, et elle est chez nous.** La configuration epingle
+`num_predict: 4096` dans les `litellm_params` — sur **70 declarations** :
+
+```yaml
+  - model_name: glm-4.7-flash-local
+    litellm_params:
+      model: ollama_chat/glm-4.7-flash
+      num_ctx: 32768
+      num_predict: 4096        # <-- ce plafond-ci gagne
+```
+
+LiteLLM applique ses `litellm_params` **par-dessus** la requete. Le
+`max_tokens` de l'appelant est donc ecrase par la configuration,
+silencieusement. Ce n'est pas le moteur qui ignore la borne : c'est le depot
+qui en impose une autre sans le dire.
+
+**Le remede n'est pas trivial — et c'est pourquoi il n'est pas pris dans ce
+tour.**
+
+| voie | ce qu'elle coute |
+| --- | --- |
+| retirer `num_predict` des 70 declarations | le plafond disparait pour tout appelant qui n'en fournit pas — or il protege d'une generation qui s'emballe, sur une machine ou cela se paie en minutes |
+| garder l'epinglage et prendre le minimum des deux | LiteLLM ne compose pas ainsi : ses parametres gagnent, il n'y a pas de `min()` a activer |
+| porter `num_predict` a une valeur haute | deplace le plafond sans rendre la main a l'appelant |
+
+C'est un changement **R3** au sens du contrat §47 : il touche le routage et
+modifie le comportement de **chaque** appel. Il se teste avant de se deployer.
+
+**Ce qui est acquis malgre tout** : la cause n'est plus une hypothese. Le
+prochain geste n'est plus « mesurer », il est « arbitrer entre trois voies
+connues » — et la mesure qui tranchera est celle du cout d'une generation non
+bornee sur cette machine.
 
 ### 45.2 OUVERT — le worktree isole, confirme par un incident voisin
 
