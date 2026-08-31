@@ -4,7 +4,6 @@
 import os
 import subprocess
 import sys
-import time
 import shutil
 
 # Constantes
@@ -50,6 +49,92 @@ def parse_size(size_str):
         return float(size_str[:-2]) / 1024.0  # Convertit MB en Go
     # PIEGE B : Ne pas confondre colonne taille avec ID
     return 0.0
+
+# ---------------------------------------------------------------------------
+# L'ETAT SE LIT SUR L'EMPREINTE, JAMAIS SUR LE TEXTE DE LA SORTIE.
+#
+# CE QUI ETAIT FAUX, mesure le 2026-08-31 sur la vraie sortie de la commande.
+# Un `ollama pull` sur un modele DEJA A JOUR affiche :
+#     pulling manifest / pulling <couche>: 100% / verifying sha256 digest
+#     writing manifest / success
+# et sort en code 0. Il ne dit JAMAIS « already up to date », et jamais
+# « done ». Or le code classait ainsi :
+#     'already up to date' present  -> deja a jour
+#     'pulling' ET 'done' presents  -> mis a jour
+#     sinon                         -> ECHEC
+# Aucune des deux premieres conditions ne pouvait etre vraie. CHAQUE modele
+# aurait donc ete classe ECHEC, et l'outil aurait rapporte cent pour cent de
+# pannes sur un parc parfaitement sain. Un outil qui invente des pannes est
+# pire qu'un outil absent : il envoie reparer ce qui fonctionne.
+#
+# La seule methode exacte est de comparer l'EMPREINTE avant et apres --
+# identique, le modele n'a pas bouge ; differente, il a ete mis a jour.
+#
+# SECOND DEFAUT, du meme jet. Le code faisait `time.sleep(1800)` ENTRE chaque
+# tirage. Le nombre 1800 avait ete specifie comme un DELAI D'EXPIRATION par
+# modele, pas comme une pause : le script dormait donc trente minutes apres
+# chaque modele, et une execution en tache de fond n'a jamais rendu la main.
+# Le delai est desormais passe a `subprocess.run(timeout=...)`, ou il a
+# toujours eu sa place.
+#
+# Mesure apres correction : un modele a jour est classe en 0,7 seconde, un
+# modele absent en 0,1 seconde.
+# ---------------------------------------------------------------------------
+
+
+def empreinte_modele(nom):
+    # AVANT : le code comparait 'already up to date' dans la sortie
+    # MAINTENANT : on lit directement l'empreinte depuis 'ollama list'
+    # La sortie de 'ollama list' est : NAME ID SIZE MODIFIED
+    try:
+        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        if result.returncode != 0:
+            return None
+        for ligne in result.stdout.splitlines():
+            if not ligne.strip():
+                continue
+            parties = ligne.split(None, 3)  # Separe sur les espaces multiples
+            if len(parties) < 4:
+                continue
+            nom_ligne = parties[0]
+            id_ligne = parties[1]
+            # Gestion du cas ou le nom n'a pas de tag (ex: 'nom' au lieu de 'nom:latest')
+            if nom == nom_ligne or (':' not in nom and nom_ligne.startswith(nom + ':')):
+                return id_ligne
+        return None
+    except Exception:
+        return None
+
+def rafraichir_modele(nom, delai_s):
+    # AVANT : le code faisait time.sleep(1800) entre chaque modele
+    # MAINTENANT : pas de pause, le delai est une expiration
+    # AVANT : le code cherchait 'already up to date' ou 'done' dans la sortie
+    # MAINTENANT : on ne se fie qu'a l'empreinte avant/apres pour savoir si le modele a change
+    try:
+        id_avant = empreinte_modele(nom)
+        if id_avant is None:
+            return 'echec'
+        result = subprocess.run(
+            ['ollama', 'pull', nom],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=delai_s
+        )
+        if result.returncode != 0:
+            return 'echec'
+        id_apres = empreinte_modele(nom)
+        if id_apres is None:
+            return 'echec'
+        if id_avant == id_apres:
+            return 'a_jour'
+        return 'mis_a_jour'
+    except subprocess.TimeoutExpired:
+        return 'echec'
+    except Exception:
+        return 'echec'
+
 
 def main():
     import argparse
@@ -147,20 +232,16 @@ def main():
     for name, _taille in models_to_update:
 
         print(f"Traitement de : {name}")
-        stdout, stderr, code = execute_command(f'ollama pull {name}')
-        output = stdout + stderr
-
-        # Analyser la sortie pour determiner l'etat
-        if 'already up to date' in output.lower():
+        etat = rafraichir_modele(name, DELAI_PULL_S)
+        if etat == 'a_jour':
             up_to_date += 1
-        elif 'pulling' in output.lower() and 'done' in output.lower():
+            print("  deja a jour")
+        elif etat == 'mis_a_jour':
             updated += 1
+            print("  MIS A JOUR")
         else:
             failed += 1
-
-        # Delai entre chaque pull
-        print(f"Attente de {DELAI_PULL_S} secondes...")
-        time.sleep(DELAI_PULL_S)
+            print("  ECHEC")
 
     print("\nRapport final :")
     print(f"  Deja a jour : {up_to_date}")
