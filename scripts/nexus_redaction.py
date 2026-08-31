@@ -11,7 +11,6 @@ vérifier.
 """
 
 import math
-import re
 import unicodedata
 import subprocess
 import json
@@ -65,7 +64,7 @@ def get_window_and_json():
 def count_commits(window_hours):
     subprocess = __import__('subprocess')
     time = __import__('time')
-    now = int(time.time())
+    int(time.time())
     since = borne_since(window_hours)
     cmd = [
         'git', 'log',
@@ -226,7 +225,6 @@ def count_delegated(window_hours):
 #
 # `%B` rend le message entier, mais il est multiligne : un decoupage par
 # ligne ne suffit plus, d'ou le separateur d'enregistrement.
-from typing import List, Tuple, Optional
 
 # LES SEPARATEURS ETAIENT BONS ; L'ASSOCIATION NE L'ETAIT PAS.
 #
@@ -345,38 +343,88 @@ def controle_auteur(fenetre_heures):
     return (declares, muets, details)
 
 
+# LE CHIFFRE QUI DOIT GENER DOIT ETRE CELUI QU'ON VOIT.
+#
+# CE QUI ETAIT FAUX. `controle_auteur` existait, fonctionnait, et main() ne
+# l'appelait JAMAIS : sa logique etait orpheline A L'INTERIEUR d'un script
+# pourtant cable au rituel. Le rituel affichait donc « Commits de code: 101 »
+# -- le VOLUME -- quand le chiffre qui compte est celui des commits MUETS.
+#
+# Un chiffre qu'on lit chaque tour finit par gener ; un chiffre qu'on ne voit
+# pas ne gene jamais. C'est toute la difference entre un controle et une
+# fonction qui existe.
 def main():
+    # Récupération des paramètres de fenêtre et du mode JSON
     fenetre, json_out = get_window_and_json()
+
+    # 1️⃣ Mesure du nombre de commits touchant le code
     commits = count_commits(fenetre)
     if commits is None:
+        # Mesure impossible → code sortie 2
         exit_code = 2
         if json_out:
             print('{"error":"cannot measure commits"}')
         else:
             print('Error: cannot measure commits')
-        __import__('sys').exit(exit_code)
+        sys.exit(exit_code)
+
+    # 2️⃣ Contrôle de la déclaration d’auteur (fonction auparavant orpheline)
+    declares, muets, details = controle_auteur(fenetre)
+    if declares is None and muets is None:
+        # Le contrôle auteur n’a pas pu être exécuté → code sortie 2
+        exit_code = 2
+        if json_out:
+            # on renvoie le motif d’échec dans le JSON
+            print(json.dumps({"error": "cannot measure author declarations", "reason": details}))
+        else:
+            print(f"Error: {details}")
+        sys.exit(exit_code)
+
+    # 3️⃣ Mesure des appels délégués aux plans gratuits
     delegated, err = count_delegated(fenetre)
     if delegated is None:
+        # Mesure impossible → code sortie 2
         exit_code = 2
         if json_out:
             print('{"error":"cannot measure delegated calls"}')
         else:
             print('Error: cannot measure delegated calls')
-        __import__('sys').exit(exit_code)
+        sys.exit(exit_code)
+
+    # 4️⃣ Calcul du ratio et détermination du code de sortie
     ratio = delegated / commits if commits != 0 else 0
+    # Le nombre de MUETS ne doit pas à lui seul déclencher l’échec (voir consignes)
     exit_code = 0 if delegated >= commits and commits > 0 else 1
+
+    # 5️⃣ Affichage / génération du JSON
     if json_out:
-        json_mod = __import__('json')
-        print(json_mod.dumps({
+        payload = {
             "commits": commits,
             "delegated": delegated,
-            "ratio": ratio
-        }))
+            "ratio": ratio,
+            "declares": declares,
+            "muets": muets
+        }
+        print(json.dumps(payload))
     else:
+        # Affichage classique
         print(f"Commits de code: {commits}")
         print(f"Appels delegues: {delegated}")
         print(f"Rapport appels/commit: {ratio:.2f}")
-    __import__('sys').exit(exit_code)
+
+        # Ligne visible du nombre de déclarations et de muets
+        total = declares + muets
+        print(f"Auteur declare : {declares} sur {total} commits de code -- {muets} MUETS")
+
+        # Liste des empreintes muettes (max 10)
+        if details:
+            print("Empreintes muettes (max 10) :")
+            for hsh, first_line in details:
+                print(f"{hsh}: {first_line}")
+
+    # 6️⃣ Retour du code de sortie
+    sys.exit(exit_code)
+
 
 if __name__ == '__main__':
     main()

@@ -295,6 +295,36 @@ def outillage_tenu(racine) -> tuple[str, str]:
         return IGNORE, str(exc).splitlines()[0][:60]
 
 
+def redaction_declaree(racine):
+    try:
+        r = subprocess.run([sys.executable, 'scripts/nexus_redaction.py'],
+                           cwd=racine, capture_output=True, text=True,
+                           timeout=180, encoding='utf-8', errors='replace')
+    except subprocess.TimeoutExpired:
+        return IGNORE, 'nexus_redaction n a pas repondu en 180 s'
+    except Exception as exc:
+        return IGNORE, str(exc).splitlines()[0][:60]
+    if r.returncode == 2:
+        return IGNORE, 'mesure impossible'
+    lignes = [l.strip() for l in (r.stdout or '').splitlines() if l.strip()]
+    detail = ''
+    # CORRECTION : on prefere la ligne commencant par 'Auteur declare'
+    for l in lignes:
+        if l.startswith('Auteur declare'):
+            detail = l
+            break
+    # Si cette ligne n'existe pas, on retombe sur 'Commits de code:'
+    if not detail:
+        for l in lignes:
+            if l.startswith('Commits de code:'):
+                detail = l
+                break
+    # Si aucune des deux n'existe, on prend la premiere ligne non vide
+    if not detail and lignes:
+        detail = lignes[0]
+    return OK, detail[:90]
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -315,6 +345,7 @@ def main() -> int:
         ("releves lisibles", lambda: releves_lisibles(racine)),
         ("cablage tenu", lambda: cablage_tenu(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),
+        ("redaction declaree", lambda: redaction_declaree(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 
