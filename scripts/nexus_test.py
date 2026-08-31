@@ -1246,7 +1246,8 @@ def main() -> int:
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee", "semaphore", "mentions", "protocole"],
+                                 "shell", "portee", "semaphore", "mentions", "protocole",
+                                 "terminal"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1285,6 +1286,8 @@ def main() -> int:
         test_mentions_reponse()
     if args.only in (None, "protocole"):
         test_protocole_refus()
+    if args.only in (None, "terminal"):
+        test_terminal_repli()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -1590,6 +1593,125 @@ def test_protocole_refus() -> None:
     """
     jouer_epreuve_node("epreuve_protocole.js", "refus du protocole",
                        "REFUS DU PROTOCOLE : nomment-ils l'issue ?")
+
+
+def test_terminal_repli() -> None:
+    """
+    Chaque maillon d'une chaine externe porte-t-il SA PROPRE sortie locale ?
+
+    Mesure du 2026-08-30. Le docstring de `render_chain` et le commentaire de
+    son appelant affirmaient tous deux que « toute chaine externe s'acheve en
+    local ». La configuration produite disait le contraire : 35 replis
+    cloud -> cloud pour 3 cloud -> local. Le terminal n'etait greffe que s'il
+    restait de la place, donc uniquement sur les deux derniers maillons.
+
+    Ce que cela coutait : le mode de panne dominant du plan cloud est le 429,
+    qui frappe le QUOTA DU COMPTE. Les successeurs cloud echouaient donc
+    comme le premier, et chaque tentative ajoutait a la pression qui avait
+    cause le 429. Mesure du meme soir : six taches simultanees, 36 refus et
+    ZERO succes en six minutes, chacune se demultipliant en replis cloud.
+
+    L'epreuve importe le code REEL de nexus_generate, et porte une
+    contre-epreuve : l'ancienne regle laissait 4 maillons sur 6 sans issue.
+    """
+    import types
+
+    print("\n--- TERMINAL DE REPLI : une issue locale a chaque maillon ? ---")
+
+    try:
+        import nexus_generate as gen
+    except Exception as exc:
+        skip("terminal de repli", str(exc).splitlines()[0][:60])
+        return
+
+    def faux(alias, modality="text"):
+        e = types.SimpleNamespace()
+        e.alias = alias
+        e.modality = modality
+        return e
+
+
+    TERMINAL = ["glm-4.7-flash-local", "qwen3-coder-30b-local"]
+
+
+    def cibles_de(lignes):
+        """Rend {source: [cibles]} a partir du YAML produit."""
+        res, courant = {}, None
+        for l in lignes:
+            s = l.strip()
+            if s.endswith(":") and s.startswith("- "):
+                courant = s[2:-1]
+                res[courant] = []
+            elif s.startswith("- ") and courant:
+                res[courant].append(s[2:])
+        return res
+
+
+    # 1. Le cas qui a produit le defaut : une chaine cloud de six maillons.
+    chaine = [faux("m%d-cloud" % i) for i in range(6)]
+    rendu = cibles_de(gen.render_chain({"cloud": chaine}, 4, width=2, terminal=TERMINAL))
+    sans_sortie = [s for s, c in rendu.items() if not any(t.endswith("-local") for t in c)]
+    check("chaine cloud de six : chaque maillon a une sortie locale",
+             not sans_sortie,
+             "tous couverts" if not sans_sortie else "sans sortie : %s" % sans_sortie)
+
+    trop_larges = {s: c for s, c in rendu.items() if len(c) > 2}
+    check("la largeur demandee n'est jamais depassee", not trop_larges,
+             "au plus 2 cibles" if not trop_larges else str(trop_larges))
+
+    # 2. CONTRE-EPREUVE. L'ancienne regle -- greffer le terminal seulement s'il
+    # restait de la place -- doit etre VUE par cette epreuve, sinon le cas 1 ne
+    # prouve rien.
+    def ancienne(chain, width, terminal):
+        res = {}
+        for i, entry in enumerate(chain):
+            targets = [e.alias for e in chain[i + 1:i + 1 + width]]
+            if terminal and len(targets) < width:
+                for extra in terminal:
+                    if extra not in targets and extra != entry.alias:
+                        targets.append(extra)
+                    if len(targets) >= width:
+                        break
+            if targets:
+                res[entry.alias] = targets
+        return res
+
+    avant = ancienne(chaine, 2, TERMINAL)
+    sans_avant = [s for s, c in avant.items() if not any(t.endswith("-local") for t in c)]
+    check("contre-epreuve : l'ancienne regle est bien VUE",
+             len(sans_avant) > 0,
+             "l'ancienne laissait %d maillon(s) sans sortie locale" % len(sans_avant))
+
+    # 3. La chaine LOCALE ne sort jamais : c'est une interdiction de
+    # souverainete, pas une preference.
+    locale = [faux("l%d-local" % i) for i in range(4)]
+    rendu_local = cibles_de(gen.render_chain({"local": locale}, 4, width=2, terminal=None))
+    fuites = [s for s, c in rendu_local.items()
+              if any(t.endswith("-cloud") or t.startswith("claude-") for t in c)]
+    check("la chaine locale ne sort jamais du plan", not fuites,
+             "aucune fuite" if not fuites else str(fuites))
+
+    # 4. Le controle de modalite tient : greffer un terminal TEXTUEL sur une
+    # chaine de vision enverrait une image a un modele aveugle, qui ne rend pas
+    # une erreur mais une reponse fausse.
+    vision = [faux("v%d-cloud" % i, modality="vision") for i in range(3)]
+    rendu_v = cibles_de(gen.render_chain({"vision": vision}, 4, width=2, terminal=TERMINAL))
+    greffes = [s for s, c in rendu_v.items() if any(t in TERMINAL for t in c)]
+    check("aucun terminal textuel greffe sur une chaine de vision", not greffes,
+             "modalite preservee" if not greffes else str(greffes))
+
+    # 5. width = 1 : mieux vaut une sortie locale que rien.
+    rendu_1 = cibles_de(gen.render_chain({"cloud": chaine}, 4, width=1, terminal=TERMINAL))
+    sans_1 = [s for s, c in rendu_1.items() if not any(t.endswith("-local") for t in c)]
+    check("width=1 : la sortie locale prime", not sans_1,
+             "tous couverts" if not sans_1 else str(sans_1))
+
+    # 6. L'acyclicite reste structurelle : on ne retombe que sur des suivants.
+    ordre = {e.alias: i for i, e in enumerate(chaine)}
+    retours = [(s, t) for s, c in rendu.items() for t in c
+               if t in ordre and ordre[t] <= ordre[s]]
+    check("acyclicite structurelle preservee", not retours,
+             "aucun retour en arriere" if not retours else str(retours))
 
 
 def test_ruche() -> None:

@@ -356,7 +356,20 @@ def find_callers(func_names):
     return callers
 
 
-def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
+# Le juge de la LOI 1, et par ou passer quand son plan tombe.
+#
+# Ce modele etait ecrit EN DUR a deux endroits. Le 2026-08-30, le plan cloud
+# a rendu « 429 Too Many Requests » pendant plus d'une heure : la validation
+# obligatoire avant tout commit est devenue impossible a executer, et une
+# validation qui ne s'execute pas ne protege de rien. La regle centrale du
+# contrat dependait d'un seul plan, sans issue.
+#
+# NEXUS_VALIDE_MODELE, ou --modele, permet de juger en local quand le cloud
+# est indisponible. On perd de la capacite, jamais la verification.
+MODELE_JUGE = os.environ.get("NEXUS_VALIDE_MODELE", "gpt-oss-120b-cloud")
+
+
+def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS, modele=None):
     """
     Construit le dictionnaire de tâche attendu par l'agent gratuit.
     La clé `tache` contient le texte complet à analyser.
@@ -389,7 +402,7 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
         )
         return {
             "nom": "validation_nexus",
-            "modele": "gpt-oss-120b-cloud",
+            "modele": modele or MODELE_JUGE,
             "tache": consigne,
             "fichiers": [],
             "max_tokens": max_tokens,
@@ -411,7 +424,7 @@ def build_task(diff_text, callers, max_tokens=DEFAULT_MAX_TOKENS):
     )
     return {
         "nom": "validation_nexus",
-        "modele": "gpt-oss-120b-cloud",
+        "modele": modele or MODELE_JUGE,
         "tache": consigne,
         "fichiers": [],
         "max_tokens": max_tokens,
@@ -473,7 +486,7 @@ def analyse_result(text):
             return True, False
     return False, False
 
-def free_plan_judgment(diff_text, callers):
+def free_plan_judgment(diff_text, callers, modele=None):
     """
     Envoie la tâche à l'agent gratuit et interprète le résultat.
     Gère les cas de troncature (clé `tronque`) en relançant une fois avec
@@ -482,7 +495,7 @@ def free_plan_judgment(diff_text, callers):
     """
     plafond = DEFAULT_MAX_TOKENS  # plafond minimal requis
     for attempt in range(2):  # première tentative + une relance éventuelle
-        tache = build_task(diff_text, callers, max_tokens=plafond)
+        tache = build_task(diff_text, callers, max_tokens=plafond, modele=modele)
         cle = agent.cle_maitre()
         try:
             reponse = agent.executer(tache, cle)
@@ -554,6 +567,10 @@ def main():
         help="Base de comparaison git (defaut HEAD~1).",
     )
     parser.add_argument("--json", action="store_true", help="Sortie JSON detaillee")
+    parser.add_argument(
+        "--modele", default=None,
+        help="Modele juge. Defaut %s, ou NEXUS_VALIDE_MODELE. A nommer en "
+             "local quand le plan cloud est indisponible." % MODELE_JUGE)
     args = parser.parse_args()
 
     # -----------------------------------------------------------------------
@@ -603,7 +620,7 @@ def main():
         return 2
 
     try:
-        regression, bascule, texte = free_plan_judgment(diff_text, callers)
+        regression, bascule, texte = free_plan_judgment(diff_text, callers, args.modele)
     except Exception as e:
         print("Plan gratuit indisponible :", e)
         return 2
@@ -627,7 +644,7 @@ def main():
     desaccord = None
     if regression:
         try:
-            regression2, _, texte2 = free_plan_judgment(diff_text, callers)
+            regression2, _, texte2 = free_plan_judgment(diff_text, callers, args.modele)
         except Exception as e:
             # La seconde passe indisponible ne doit pas effacer la premiere.
             regression2, texte2 = True, "seconde passe indisponible : %s" % e

@@ -934,7 +934,10 @@ def render_chain(groups: dict, indent: int, width: int = 2,
     précédent — l'acyclicité est donc structurelle.
 
     `terminal` prolonge la chaîne au-delà de son plan, et n'est légitime
-    que dans un seul sens.
+    que dans un seul sens. Une place lui est RÉSERVÉE dans la liste de chaque
+    maillon : sans cela, seuls les derniers maillons en recevaient un, et une
+    chaîne externe pouvait n'offrir aucune issue au moment où son plan entier
+    tombe.
 
     Règle de direction, asymétrique et volontairement stricte :
 
@@ -960,12 +963,32 @@ def render_chain(groups: dict, indent: int, width: int = 2,
         terminal_valide = terminal if modalite == "text" else None
 
         for i, entry in enumerate(chain):
-            targets = [e.alias for e in chain[i + 1:i + 1 + width]]
-            if terminal_valide and len(targets) < width:
+            # UNE PLACE EST RESERVEE au terminal, au lieu de ne le greffer
+            # que s'il reste de la place.
+            #
+            # Mesure du 2026-08-30 : la version precedente n'ajoutait le
+            # terminal QUE si `len(targets) < width`, donc uniquement sur les
+            # deux derniers maillons de chaque chaine. Resultat dans la
+            # configuration produite : 35 replis cloud -> cloud pour 3
+            # cloud -> local, alors que ce docstring et l'appelant affirmaient
+            # tous deux que « toute chaine externe s'acheve en local ».
+            #
+            # Le mode de panne dominant du plan cloud est le 429, qui frappe
+            # le QUOTA DU COMPTE : les successeurs cloud echouent donc
+            # exactement comme le premier. Pire, chaque tentative ajoute a la
+            # pression qui a cause le 429 -- mesure le meme soir, six taches
+            # simultanees produisaient 36 refus et zero succes, parce que
+            # chacune se demultipliait en replis cloud.
+            #
+            # Une sortie locale dans la liste de CHAQUE maillon transforme
+            # cette amplification en degradation : on perd de la capacite,
+            # jamais le service.
+            reserve = 1 if terminal_valide else 0
+            targets = [e.alias for e in chain[i + 1:i + 1 + max(0, width - reserve)]]
+            if terminal_valide:
                 for extra in terminal_valide:
                     if extra not in targets and extra != entry.alias:
                         targets.append(extra)
-                    if len(targets) >= width:
                         break
             if not targets:
                 continue
@@ -1448,7 +1471,21 @@ def main() -> int:
         "ANTHROPIC_FALLBACKS": render_chain(anthropic_groups, 4,
                                             terminal=terminal_local),
         "LOCAL_FALLBACKS": render_chain(local_groups, 4),
-        "CLOUD_FALLBACKS": render_chain(cloud_groups, 4,
+        # width=1 : un -cloud replie sur le LOCAL, et sur rien d'autre.
+        #
+        # Un voisin cloud n'aide jamais dans le mode de panne dominant : le
+        # 429 frappe le QUOTA DU COMPTE, donc tous les alias cloud a la fois.
+        # Pire, il amplifie. Mesure d'une session voisine le 2026-08-30 :
+        # chaque appel client devenait environ TREIZE requetes vers
+        # ollama.com -- une, fois trois tentatives, fois trois groupes
+        # (l'original plus deux replis cloud) -- soit 40 connexions
+        # sortantes constatees pour 3 appels clients. Le plafond du compte
+        # porte sur ces 40.
+        #
+        # Avec un repli local unique, un seul groupe atteint ollama.com : le
+        # repli, lui, part sur la machine et ne consomme aucun quota. Il
+        # termine la chaine au lieu de la propager.
+        "CLOUD_FALLBACKS": render_chain(cloud_groups, 4, width=1,
                                         terminal=terminal_local),
         "ROUTER_FALLBACKS": render_router_fallbacks(entries, cloud),
         "ANTHROPIC_CTX_FALLBACKS": render_ctx_chain(
