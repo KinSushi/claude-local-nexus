@@ -2292,3 +2292,65 @@ qu'un `mode` absent.
 prouvait le contraire, et conclu a la disparition d'un modele sur un
 `grep -A9` dont la fenetre s'arretait une ligne trop tot. Deux fois,
 l'affirmation a precede la verification.
+
+---
+
+## 16. Ce que six passes de délégation apprennent sur la FORME à demander
+
+### 16.1 Les cinq pistes ML, arbitrées
+
+| Piste | Verdict |
+|---|---|
+| Bandit pour le choix du modèle | **retenue, sous prérequis** — voir 16.2 |
+| Optimisation bayésienne de la température | retenue, mais sa réfutation cite « une règle fixe à 0,7 serait plus stable » — or **0,7 est précisément la valeur que ce dépôt a mesurée catastrophique** : toutes les mesures inventées et une boucle de 589 s, là où 0,2 réussit en 11 s |
+| Arbre de décision pour la composition du pool | **rejetée** — §106.2 a déjà tranché : sac à dos 0-1, énumération complète, optimum **garanti** en 0,00 s sur 4,5 M de combinaisons. La consigne interdisait explicitement ce type de piste ; elle a été proposée quand même |
+| Quantisation INT8 via `torch.quantization` | **rejetée sur un fait** : les modèles sont des GGUF servis par Ollama, déjà quantisés — Q4_K_M et F16 vérifiés par `ollama show`. Le pipeline PyTorch n'existe pas ici |
+| Apprentissage par renforcement pour l'allocation CPU | ajournée : la concurrence est déjà bornée par un sémaphore mesuré |
+
+### 16.2 Le prérequis manque, et il est à moitié construit
+
+Mesure décisive :
+
+| Relevé | Comportement |
+|---|---|
+| `.nexus/epreuves.json` | **accumule** — `historique` de 5 entrées, compteur `mesures: 6` |
+| `.nexus/latences.json` | **écrase** — une lecture par modèle, un horodatage global |
+
+Or §106.2 le dit : sans répétitions accumulées, aucun intervalle de confiance
+n'est calculable, et **toute méthode d'apprentissage optimiserait du bruit**.
+Le patron existe donc dans le dépôt, appliqué à un relevé et pas à l'autre.
+C'est le prérequis de toute piste ML, et il reste **ouvert**.
+
+### 16.3 La forme de la délégation compte plus que le modèle
+
+Six passes sur le même patch, mesurées :
+
+| Forme demandée | Modèle | Résultat |
+|---|---|---|
+| diff AVANT/APRÈS | `gpt-oss-120b-cloud` | bloc AVANT **inventé**, inapplicable |
+| diff AVANT/APRÈS | `gpt-oss-120b-cloud` | défaut logique : le repli par le nom **écrasait** la déclaration du moteur |
+| diff AVANT/APRÈS | `gpt-oss-120b-cloud` | patchs **vides** (accents seuls), et déni d'un défaut qu'il avait lui-même écrit |
+| fonctions **complètes** | `qwen3-coder-30b-local` | **Python correct**, structure juste, un seul défaut (un `None` empilé) |
+| reprise | `qwen3-coder-30b-local` | **pseudo-code français** (`fonction`, `si`, `retourner`), inapplicable |
+| reprise, contrainte de langage | `qwen3-coder-30b-local` | Python valide mais **structure détruite** : `historique` global au lieu de par modèle |
+
+**Ce que cela établit** — et c'est un résultat sur la plateforme, pas sur un
+modèle : les livraisons **autonomes et complètes** réussissent (fichier
+entier, fonction entière) ; les **diffs verbatim** échouent, parce que le
+modèle doit recopier un texte à l'identique que le découpage MAP-REDUCE lui
+interdit de tenir ; et les **reprises dégradent** — chaque tour perd de la
+structure du précédent.
+
+**Conséquence pratique** : demander un livrable complet du premier coup, et
+en cas de défaut **relancer à neuf** plutôt que demander une reprise.
+
+Le choix délibéré du modèle a compté aussi : un spécialiste du code, local et
+privé, a produit en 72 s ce que trois passes du plan cloud n'avaient pas
+donné.
+
+### 16.4 Et le shell a mutilé la commande qui écrivait ceci
+
+Cette section a d'abord été perdue : un `printf` portant des accents graves a
+vu le shell exécuter leur contenu (« n: command not found »). Le fichier est
+resté intact et rien n'a été écrit. C'est la classe que le contrat documente
+déjà — et elle vient d'être recommise par la main qui la relisait.
