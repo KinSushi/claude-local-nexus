@@ -417,7 +417,7 @@ def main() -> int:
     for relative in TRACKED:
         path = os.path.join(ROOT, relative)
         digest = sha256(path)
-        lines.append(f"| `{relative}` | `{digest[:32] if digest else 'absent'}` |")
+        lines.append(f"| `{relative}` | `{digest if digest else 'absent'}` |")
 
     # La traque, mesuree a chaque regeneration.
     #

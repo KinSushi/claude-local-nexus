@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 03:00 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 03:09 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `c0695b1` |
+| Commit | `9f8a4d6` |
 | Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
@@ -57,23 +57,23 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `8eeca6c62c30380dce421440542edbaf` |
+| `litellm_config.yaml` | `4b18871e8a59e095c2e9321b1092202f` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
-| `cloud_models.txt` | `81981ee156670d3d08686ec569fe194e` |
+| `cloud_models.txt` | `7565ac0a0376fafa2b126349c10e6916` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e3015223` |
 | `tools/nexus-mcp/server.js` | `437be329ba1d91cdc4f0b8aa038d35a2` |
 | `scripts/nexus_generate.py` | `1beed176ed26550f0decf5b644ad6e0b` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f7` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |
-| `scripts/nexus_test.py` | `337e700765d3d9f513a341850053181d` |
+| `scripts/nexus_test.py` | `8fa3b5e5da5a030a30e3c322f81486d8` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d0` |
 
 ## Traque mecanique
 
 ```
 38 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       26
+  classe 1  handler muet sur un try qui agit       27
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     4

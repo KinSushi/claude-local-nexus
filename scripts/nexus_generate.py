@@ -1542,6 +1542,7 @@ def main() -> int:
     ])
     router_version = "r%s" % __import__("hashlib").sha256(
         signature.encode("utf-8")).hexdigest()[:10]
+    hardware_sig = capability.profile_signature(profile)
 
     default_cloud = cloud_alias(cloud[0])
     for i, line in enumerate(lines):
@@ -1550,6 +1551,8 @@ def main() -> int:
             lines[i] = match.group(1) + default_cloud
         if line.startswith("# NEXUS-ROUTER-VERSION:"):
             lines[i] = "# NEXUS-ROUTER-VERSION: %s" % router_version
+        if line.startswith("# NEXUS-HARDWARE-SIGNATURE:"):
+            lines[i] = "# NEXUS-HARDWARE-SIGNATURE: %s" % hardware_sig
 
     # Écriture en deux temps : un candidat, puis le remplacement.
     #

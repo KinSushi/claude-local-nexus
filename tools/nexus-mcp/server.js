@@ -1509,25 +1509,21 @@ ${windows[i]}`,
     let size = 0;
     const flush = async () => {
       if (!group.length) return;
-      if (group.length === 1) {
-        next.push(group[0]);
-      } else {
-        const result = await chat(
-          model,
-          [
-            { role: "system", content: REDUCE_SYSTEM },
-            {
-              role: "user",
-              content:
-                `Consigne d'origine : ${instruction}\n\n` +
-                group.map((t, i) => `--- analyse ${i + 1} ---\n${t}`).join("\n\n"),
-            },
-          ],
-          mapTokens
-        );
-        tokens += result.tokens;
-        next.push((result.text || "").trim());
-      }
+      const result = await chat(
+        model,
+        [
+          { role: "system", content: REDUCE_SYSTEM },
+          {
+            role: "user",
+            content:
+              `Consigne d'origine : ${instruction}\n\n` +
+              group.map((t, i) => `--- analyse ${i + 1} ---\n${t}`).join("\n\n"),
+          },
+        ],
+        mapTokens
+      );
+      tokens += result.tokens;
+      next.push((result.text || "").trim());
       group = [];
       size = 0;
     };
