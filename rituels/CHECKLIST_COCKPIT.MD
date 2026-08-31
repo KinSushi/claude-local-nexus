@@ -1425,6 +1425,45 @@ qwen3.6-27b · relais déclaré.
 > et `stable` vrai dès la première passe. Le motif est constant : **le calcul
 > était juste, la donnée qu'il lisait ne l'était pas.**
 
+### Le pool confirmé sur deux mesures — et le code le savait déjà
+
+| membre du pool local | verdict ×2 | ce qui manque |
+|---|---|---|
+| `codestral-local` | **4/4** | — |
+| `llama3.2-3b-local` | **4/4** | — |
+| `deepseek-coder-33b-local` | **3/4** | **parle le protocole `/v1/messages`** |
+| `phi3-mini-local` | **1/4** | les trois épreuves d'outils |
+
+> **Chaque verdict tient sur deux mesures identiques.** Ce n'est plus une
+> impression tirée d'une passe unique : la moitié du pool qui sert
+> l'orchestration est *confirmée* incapable de l'assurer.
+>
+> **Plus grave que je ne le croyais.** `deepseek-coder-33b` échoue sur
+> « parle le protocole `/v1/messages` » — l'API que Claude Code emploie — et
+> c'est l'un des **deux seuls modèles sur vingt-cinq** dans ce cas. Un modèle
+> qui ne parle pas le protocole n'est pas une relève dégradée : **il n'est pas
+> une relève**. Je l'annonçais en échec sur les outils ; la mesure dit autre
+> chose, et pire.
+>
+> **ET LE CODE LE SAVAIT DÉJÀ.** Les deux modèles portent, en commentaire à
+> côté de leur nom dans les profils de `server.js`, la mention `outils=non` :
+>
+> ```
+> profil coding  : deepseek-coder-33b-local   // 3,9 s, outils=non
+> profil rapide  : phi3-mini-local            // 2,5 s, outils=non
+> ```
+>
+> Le fait était **écrit**, et il n'agissait pas. §0.2.1 dans sa forme la plus
+> nue — une règle non mécanisée ne protège personne, pas même celui qui l'a
+> écrite. Les épreuves confirment ce que le commentaire annonçait, et
+> ajoutent ce qu'il ne disait pas : l'échec de protocole.
+>
+> **Je ne retire toujours personne.** La décision reste à l'opérateur, pour la
+> même raison qu'il y a deux heures : rien ne mesure ce que coûterait
+> l'exclusion, et un modèle incapable d'orchestrer peut parfaitement résumer
+> ou compléter du code. Ce qui a changé, c'est que le constat repose désormais
+> sur **deux mesures par modèle**, corroborées par les commentaires du code.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
