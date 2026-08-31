@@ -2473,3 +2473,51 @@ Note sur le banc : la même coquille exacte, `for v v in volatiles`, a été
 produite **deux fois au même endroit** par `qwen3-coder-30b-local` sur deux
 sollicitations distinctes. Singularité reproductible, à connaître avant
 d'appliquer un livrable de ce modèle.
+
+---
+
+## 18. Le relevé de latences accumule — le prérequis des pistes ML est posé
+
+`.nexus/latences.json` ne gardait qu'**une** lecture par modèle. Or une mesure
+isolée ne dit pas laquelle de deux réalités très différentes elle a attrapée :
+le même appel a rendu **180 300 ms à froid et 2 900 ms à chaud**.
+
+Sans répétitions, aucune dispersion n'est calculable, donc aucun intervalle de
+confiance : toute méthode qui apprendrait sur ces mesures **optimiserait du
+bruit** (§106.2). C'était le prérequis des cinq pistes arbitrées au §16 — et
+`epreuves.json` accumulait déjà. Le patron existait, appliqué à un relevé et
+pas à l'autre.
+
+**Mesuré, quatre propriétés :**
+
+| Cas | Résultat |
+|---|---|
+| 71 alias avant / après | aucun modèle perdu |
+| deux lectures proches | `stable: true`, historique accumulé |
+| une mesure **échouée** (`latence_ms: None`) | historique et compteur **inchangés** |
+| un écart énorme (95 000 ms) | `stable: false` |
+
+`stable` se calcule sur la **dispersion**, jamais sur l'égalité : une latence
+est continue, et exiger deux valeurs égales au millième rendrait l'indicateur
+toujours faux — miroir exact d'un défaut déjà corrigé ailleurs, où un ensemble
+à un élément était trivialement uniforme et le rendait toujours vrai.
+
+### 18.1 Quatre défauts refusés avant intégration
+
+| Jet | Défaut | Effet |
+|---|---|---|
+| 1 | confondait « fichier absent » et « illisible » | n'écrivait **jamais** rien sur une machine neuve |
+| 1 | supprimait les modèles absents du lot courant | détruisait l'historique qu'il devait accumuler — le relevé se fait par lots |
+| 2 | n'écrivait jamais les champs de la mesure courante | un fichier qui grossit en perdant ce qu'on vient d'y mesurer ; `nexus_generate` lit `latence_ms` pour les pools |
+| 2 | n'initialisait l'historique que pour les alias **neufs** | `KeyError` sur les 71 alias de l'ancien format — un format nouveau qui refuse celui qu'il remplace |
+
+### 18.2 La méthode du §16.3 se confirme
+
+Le premier jet a été **relancé à neuf** plutôt que repris, en pliant les deux
+défauts dans une spécification complète. Le second est arrivé en Python valide
+du premier coup, structure juste.
+
+Et la singularité relevée au §17.5 — la coquille `for v v in`, produite deux
+fois au même endroit par `qwen3-coder-30b-local` — a été **corrigée
+préventivement** avant même de lire le livrable. Elle n'est pas réapparue.
+Connaître les défauts reproductibles d'un modèle vaut une passe entière.
