@@ -2354,3 +2354,54 @@ Cette section a d'abord été perdue : un `printf` portant des accents graves a
 vu le shell exécuter leur contenu (« n: command not found »). Le fichier est
 resté intact et rien n'a été écrit. C'est la classe que le contrat documente
 déjà — et elle vient d'être recommise par la main qui la relisait.
+
+---
+
+## 17. La porte qui se refermait sur ce qu'elle venait d'écrire
+
+`nexus_vitrine.py` joue `nexus_rituel.py`, dont les contrôles régénèrent
+`rituels/STATE.md`. L'arbre devenait sale **pendant** la vérification, le
+contrôle « travail commité » échouait, et la publication était refusée —
+alors que le même rituel, joué une seconde plus tôt, rendait « tenu ».
+
+### 17.1 Quatre champs, trouvés un par un
+
+| # | Champ | Pourquoi il empêchait la stabilité |
+|---|---|---|
+| 1 | horodatage de génération | change à chaque exécution |
+| 2 | empreinte du dernier commit | **un fichier qui enregistre le commit dont il fait partie ne peut jamais être propre** : le régénérer après un commit change son contenu, et le commiter change le commit qu'il devrait enregistrer — une dérive sans fin |
+| 3 | « Arbre de travail : propre / modifié » | écrire le fichier **salit** l'arbre, donc la valeur qu'il inscrit devient fausse à l'instant où il l'inscrit — une **oscillation** |
+| 4 | durée de fonctionnement des conteneurs (`Up 8 hours`) | n'est **pas** auto-référentiel : il avance avec l'**horloge**. Tant qu'il comptait, le fichier ne pouvait être propre plus d'une heure |
+
+### 17.2 La méthode qui a échoué trois fois, et celle qui a tranché
+
+J'ai conclu **trois fois** « c'est corrigé » en lisant `git diff` — le diff
+entre le fichier et sa version commitée. Il mélangeait les changements de
+plusieurs passages et masquait le quatrième champ. Trois fois la vitrine a
+redit non.
+
+Ce qui a tranché : **comparer deux régénérations consécutives entre elles**,
+sans passer par git. Zéro ligne différente après correction, là où l'écart
+était garanti.
+
+La leçon est générale : pour savoir ce qu'une opération change, comparer
+**avant et après cette opération** — pas l'état courant à une référence qui
+englobe autre chose.
+
+### 17.3 Le remède
+
+`ecrire_si_change` compare les contenus **après** avoir retiré les lignes
+volatiles, et n'écrit **rien** quand le reste est identique — pas même à
+l'identique, un simple changement de date de modification suffisant à
+inquiéter certains outils. Les lignes volatiles restent écrites et lisibles ;
+elles cessent seulement de décider d'une réécriture.
+
+Le contrat §0.2 le disait déjà sans en tirer la conséquence : STATE et le
+cockpit « se régénèrent sans être demandés, ce qui est précisément pourquoi
+ce ne sont pas des rituels ». **Un fichier dérivé n'a pas à bloquer une
+publication.**
+
+Écrit par le banc gratuit (`qwen3-coder-30b-local`) en un seul jet complet —
+la forme qui réussit (§16.3). Deux défauts d'application corrigés ici : trois
+`\r` induits par une consigne ambiguë de ma part, et une coquille
+`for v v in`.
