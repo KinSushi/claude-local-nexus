@@ -238,10 +238,14 @@ def cle_maitre() -> str:
     if not valeur:
         chemin = os.path.join(ROOT, ".env")
         if os.path.exists(chemin):
-            for ligne in io.open(chemin, encoding="utf-8", errors="replace"):
-                if ligne.startswith("LITELLM_MASTER_KEY="):
-                    valeur = ligne.split("=", 1)[1]
-                    break
+            # LE `break` QUITTAIT LA BOUCLE SANS FERMER LE FICHIER.
+            # Or il quitte des la premiere ligne utile : le descripteur
+            # restait donc ouvert dans le cas NOMINAL, pas dans un cas rare.
+            with io.open(chemin, encoding="utf-8", errors="replace") as fh:
+                for ligne in fh:
+                    if ligne.startswith("LITELLM_MASTER_KEY="):
+                        valeur = ligne.split("=", 1)[1]
+                        break
     if not valeur:
         raise SystemExit(
             "LITELLM_MASTER_KEY introuvable (ni dans l'environnement, ni dans .env)."
@@ -1143,23 +1147,36 @@ def main() -> int:
                   file=sys.stderr)
             flux = None
     faits = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
-        futurs = {pool.submit(executer, t, cle): t for t in taches}
-        for futur in concurrent.futures.as_completed(futurs):
-            r = futur.result()
-            resultats.append(r)
-            faits += 1
-            if flux is not None:
-                flux.write(json.dumps(r, ensure_ascii=False) + "\n")
-                flux.flush()
-            # L'AVANCEMENT VA SUR STDERR, jamais sur stdout : celui-ci porte
-            # le rapport, et le polluer le rendrait illisible a un appelant
-            # qui le parse.
-            print("  [%d/%d] %s" % (faits, len(taches),
-                                    r.get("nom") or r.get("modele") or "?"),
-                  file=sys.stderr)
-    if flux is not None:
-        flux.close()
+    # LA FERMETURE EST GARANTIE, ET NE L'ETAIT PAS.
+    #
+    # Le `flux.close()` se trouvait APRES la boucle : si celle-ci levait --
+    # une tache qui echoue, une interruption -- la ligne n'etait jamais
+    # atteinte et le fichier restait ouvert. Un `try/except` autour du
+    # `close()` n'y aurait rien change : le probleme n'est pas que la
+    # fermeture echoue, c'est qu'on n'y arrive pas.
+    #
+    # Un simple `with` ne convient pas ici : l'ouverture est CONDITIONNELLE et
+    # le descripteur traverse tout le bloc. Le `try/finally` est la forme
+    # juste.
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
+            futurs = {pool.submit(executer, t, cle): t for t in taches}
+            for futur in concurrent.futures.as_completed(futurs):
+                r = futur.result()
+                resultats.append(r)
+                faits += 1
+                if flux is not None:
+                    flux.write(json.dumps(r, ensure_ascii=False) + "\n")
+                    flux.flush()
+                # L'AVANCEMENT VA SUR STDERR, jamais sur stdout : celui-ci porte
+                # le rapport, et le polluer le rendrait illisible a un appelant
+                # qui le parse.
+                print("  [%d/%d] %s" % (faits, len(taches),
+                                        r.get("nom") or r.get("modele") or "?"),
+                      file=sys.stderr)
+    finally:
+        if flux is not None:
+            flux.close()
 
     if args.json:
         print(json.dumps(resultats, ensure_ascii=False, indent=2))

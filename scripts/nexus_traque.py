@@ -114,7 +114,15 @@ def _charge_de_refus(appel, portee) -> bool:
 def analyser(chemin):
     constats = []
     try:
-        source = open(chemin, encoding="utf-8", errors="replace").read()
+        # LE DESCRIPTEUR SE FERME, MEME SI L'ANALYSE LEVE.
+        #
+        # Cette fonction est appelee sur CHAQUE fichier suivi du depot, toutes
+        # les dix minutes par une tache planifiee. Un descripteur laisse au
+        # ramasse-miettes s'accumule, et sous Windows il VERROUILLE le fichier :
+        # le prochain qui veut y ecrire echoue pour une raison sans rapport
+        # avec sa propre faute.
+        with open(chemin, encoding="utf-8", errors="replace") as fh:
+            source = fh.read()
         arbre = ast.parse(source, filename=chemin)
     except Exception as exc:
         return [(0, 0, "illisible : %s" % str(exc)[:60])]
