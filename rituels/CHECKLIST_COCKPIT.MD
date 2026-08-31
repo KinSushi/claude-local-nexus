@@ -3578,3 +3578,95 @@ une forme equivalente. **Ouvert.**
 * rien ne surveille l'apparition d'un **troisieme lanceur** ;
 * les 6 `require-atomic-updates`, arbitres non-defauts, sans promesse en vol.
 
+---
+
+## 32. SECURITE 1 — le garde ne voyait pas le shell
+
+### 32.1 Le P0, chiffre avant d'etre corrige
+
+| | |
+| --- | --- |
+| `Write` sur un fichier non lu | **REFUSE** — le garde fonctionnait |
+| `sed -i` par Bash | **PASSE** |
+| `echo >` par Bash | **PASSE** |
+| `Set-Content` par PowerShell | **PASSE** |
+| part shell des invocations de la session | **79,5 %** (1416 Bash / 353 Write) |
+
+Reserve : « invocation » n'est pas « ecriture » — la plupart des appels Bash
+lisent. **Le fait decisif est le 3 sur 3, pas le pourcentage.**
+
+### 32.2 Ce qui est pose NE REFUSE RIEN — et c'est une decision
+
+Le garde **journalise** dans `.nexus/ecritures_shell.jsonl`.
+
+Une session voisine a tente le refus direct le meme jour. Sa greffe a atteint
+son effet (6/6 → 1/6 de vecteurs aveugles) **et** a refuse `ls > /dev/null` et
+bloque une restauration depuis sauvegarde. Retiree de la production dans
+l'heure.
+
+> *Un garde trop large se fait desarmer, et c'est pire que le trou.*
+
+On produit donc la mesure sur laquelle decider la politique de refus, au lieu
+de la deviner. **Le journal est l'entree de cette decision, pas un substitut.**
+
+### 32.3 Le banc d'acceptation, ecrit AVANT de juger le rendu
+
+Il a paye immediatement : **9 echecs sur 17** au premier jet.
+
+| commande | rendu | attendu |
+| --- | --- | --- |
+| `echo x > rapport.txt` | `['r']` | `['rapport.txt']` |
+| `sed -i 's/a/b/' bench.py` | `['s/a/b/']` | `['bench.py']` |
+| `python - < entree.txt` | `['e']` | `[]` — c'est une **lecture** |
+| `ls > /dev/null` | `['/']` | `[]` |
+
+### 32.4 Deux defauts de plus, MASQUES PAR UN REMPART
+
+C'est le point le plus instructif du lot.
+
+* Un **decalage d'un cran** dans la numerotation des groupes. Il ne se voyait
+  **que** dans le cas guillemets doubles : le `or` court-circuitant, l'index
+  invalide n'etait atteint que la, et son `IndexError` etait avale par le
+  `except` global qui rend `([], True)`.
+* **Deux constantes de module** laissees dehors par mon extraction, meme
+  effet.
+
+Dans les deux cas, un filet de securite transformait un bug en
+« indetermine » **parfaitement plausible**. *Un rempart qui empeche de planter
+empeche aussi de VOIR.*
+
+Et ma garde d'idempotence visait a cote : `"_IGNORED" not in source` rendait
+« deja pose » alors que le nom n'y figurait que par ses **usages**, jamais par
+sa **definition**.
+
+### 32.5 Trois epreuves, et l'anti-controle qui compte le plus
+
+| | |
+| --- | --- |
+| **forward** | `Write` sur un fichier non lu reste REFUSE — rien n'est affaibli |
+| **reverse** | une redirection non lue est JOURNALISEE, le chemin nomme |
+| **fuite** | cinq commandes, dont `ls > /dev/null`, **PASSENT** |
+
+Plus : une commande sans ecriture n'inscrit **rien** — sinon le journal
+mesurerait le bruit. `scripts/epreuve_cibles_shell.py`, 16 cas, cablee
+(`--only cibles`). Les anti-controles portent **la moitie** du banc.
+
+**Prouve en vrai** : le hook a capte une ecriture reelle de la session, avec
+son identifiant. Le premier essai avait echoue pour une raison instructive —
+sa premiere action etait `rm -f` sur le journal, execute **apres** que le hook
+y eut ecrit. *Une mesure qui s'efface elle-meme.*
+
+### 32.6 Ce qui RESTE ouvert
+
+| Sujet | Etat |
+| --- | --- |
+| **la politique de refus** | attend les chiffres du journal — c'est son objet |
+| **pas de garde de PERIMETRE ici** | le confinement d'un sous-agent n'existe pas dans ce depot ; l'emprunt SAS « agent-perimeter » est toujours ouvert |
+| `detecter_cas_a` aveugle a `cat > f.py <<'EOF'` | meme mecanisme, forme non couverte — il a mordu son auteur ce jour |
+| un **troisieme lanceur**, demain | rien ne surveille son apparition |
+| 6 `require-atomic-updates` | arbitres non-defauts, sans promesse en vol |
+
+La formule de la session voisine resume les deux tours : **« voir l'outil et
+voir la cible sont deux choses distinctes »**. Le premier etage a ete ferme
+en §31, le second l'est ici — en observation.
+
