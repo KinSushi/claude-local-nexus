@@ -1980,3 +1980,86 @@ mieux que de laisser une explication plausible tenir lieu de mesure.
   qu'elles baissent.
 * **La lenteur du pont MCP** — mesurée, inexpliquée, hypothèse principale
   réfutée ci-dessus.
+
+---
+
+## 11. Documentation shell absorbée, et « conclure sans avoir vu »
+
+### 11.1 Absorbé par copie, jamais lu en place
+
+`references/shell_docs/` (61 primitives bash, 306 cmdlets PowerShell) et
+`references/lecons/` (306 leçons, erreurs, remèdes), depuis le dépôt voisin.
+Index à offsets déjà construits, de même forme que celui bâti ici pour
+Python : on ne les reconstruit pas, on les **vérifie** — 25 offsets relus par
+`seek`, zéro discordance.
+
+Une seule entrée : `nexus_doc.py <symbole>` répond désormais pour `New-Item`,
+`trap` et les leçons. Le compte affiché à la reprise est **dérivé**
+(166 507 Python + 673 annexes) et non plus récité en dur.
+
+Le dépôt porte dix-sept scripts PowerShell et a déjà payé deux fois la règle
+« ne jamais écrire de mémoire » : `pwsh -File` passe tout en arguments,
+`New-Item -Force` tronque un fichier existant. Deux faits d'une ligne, qu'aucune
+documentation locale ne portait.
+
+### 11.2 Cinq défauts, tous trouvés en CONSULTANT
+
+| Ce qui était faux | Effet |
+|---|---|
+| le `code` d'un exemple est une **liste**, `notes` une **chaîne** | `New-Item` levait `TypeError` ; la rubrique notes ne s'affichait jamais |
+| une leçon n'a **aucune clé `type`** (sa nature est dans `methode`) | rendu **vide** sous un en-tête normal, 1888 octets juste dessous |
+| le tri LOCALFIRST triait la liste **entière** au lieu de départager à rang égal | `trap` rendait `scipy.stats.BootstrapMethod` — défaut **antérieur** à ce tour |
+| `console_tools` importé dans un `try/except` alors que **le module n'existait pas** | le forçage UTF-8 promis depuis le 2026-08-10 n'avait **jamais** tourné |
+| mon propre `try` enveloppait le `print` | `UnicodeEncodeError` dérive de `ValueError` : une console cp1252 faisait rapporter « ENTRÉE ILLISIBLE » sur une entrée lisible |
+
+### 11.3 Conclure sans avoir vu — deux étages, la même faute
+
+Échange avec la session voisine. Elle a rapporté, puis **rétracté**, un défaut
+de `nexus_summarize` : `fusionner:true` fusionne des **résumés**, jamais les
+fichiers, et c'est documenté. Sa rétractation est juste.
+
+Ce qui est corrigé ici est autre chose, et mesuré :
+
+* **la fusion inventait** — deux résumés d'une ligne, et des paragraphes
+  d'inférence en sortie (« semblent être liés à la gestion de données »).
+  Réduire du contexte est le but ; composer ce qu'on n'a pas ne l'est pas.
+* **l'étage par fichier concluait sur ce qu'il ne voyait pas** — il recevait
+  la consigne entière avec « si une information est absente, tu le dis », en
+  ne voyant qu'un fichier sur N. D'où des « absent » **faux** sur ce qui
+  existait à côté, hérités ensuite par la fusion. C'est la cause amont, et
+  elle a coûté à la session voisine trois diagnostics successifs.
+
+Le remède n'est pas de tout donner à chacun — ce serait renoncer au découpage
+qui fait tenir le contexte — mais de **dire à chacun ce qu'il ne voit pas**.
+
+### 11.4 Le compte est nécessaire, il n'est pas suffisant
+
+Le cliquet de câblage déclarait orphelin tout module Python, puisqu'un module
+s'importe **sans son extension**. Corrigé — et le correctif ouvrait aussitôt
+un piège que la session voisine a nommé à l'instant même :
+
+```
+from models.gguf_vram import estimate_gguf_vram_mb  # noqa: F401
+```
+
+Un import inutilisé ferait passer un module d'orphelin à câblé **sans que le
+produit change**. Le chiffre bouge, rien n'est joint. Un import ne compte
+donc que s'il est **employé** hors de sa propre ligne.
+
+### 11.5 Ouvert
+
+* **P3 du rapport voisin, et il est à moi** : 37 replis cloud → cloud sur un
+  **quota unique** (même compte ollama.com), contre 4 vers le local. Un 429
+  ne peut pas être rattrapé par un alias qui partage la ressource épuisée :
+  le repli triple la charge qui a causé le refus. Le validateur refuse déjà
+  qu'un modèle replie sur lui-même ; il lui manque de savoir que **tous les
+  alias d'un même compte sont un seul amont**. Mesuré côté voisin : 40
+  connexions sortantes pour 3 appels clients, 46 refus en 5 min.
+* **P2** : `nexus_index_build` expire à 180 s sur cet hôte sans GPU, donc
+  `nexus_search` est hors service — alors que `nexus_savings` le cite en tête
+  des leviers de rendement. Le modèle d'embedding n'a **aucun repli déclaré**.
+* **P4** : six familles sur neuf rendent vide à 2 200 jetons demandés ; la
+  bascule sauve le travail mais **détruit la décorrélation des familles**, et
+  seule la ligne BASCULE le dit.
+* Les 88 violations Python et 17 PowerShell restent non arbitrées.
+* Le cliquet **ne resserre toujours pas** (question posée au §10.3).
