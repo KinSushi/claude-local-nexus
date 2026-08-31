@@ -751,6 +751,41 @@ enfreinte. Un paragraphe ne ferme rien.
 > Déléguer ne suffit pas ; ce qu'on joint décide du résultat.
 
 
+### La vague bornée a trouvé un vrai défaut — 30/08, tard
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `socket` employé deux fois dans `nexus_bench.py`, importé nulle part | `FAIT` | seconde famille de `nexus_portee_import.py` ; `--only portee` passe de 6 à 13 cas |
+| Un module standard employé sans être importé | `FAIT` | même contrôle, volontairement étroit |
+
+> **Le défaut.** `scripts/nexus_bench.py` employait `socket.timeout` aux lignes
+> 127 et 195 sans jamais importer `socket`. L'effet est plus grave que ce que
+> le banc en disait : les deux usages sont dans un bloc
+> `except urllib.error.URLError`, et **une exception levée dans un `except`
+> n'est pas rattrapée par les `except` frères du même `try`**. Le `NameError`
+> ne tombait donc pas dans le `except Exception` qui suit — il s'échappait de
+> la fonction. Le banc de latence, dont §105.2 et §112.3 tirent la sélection
+> des modèles, plantait sur la condition même qu'il mesure.
+>
+> **Aucun contrôle existant ne pouvait le voir.** `controle_imports` charge
+> les modules, et celui-ci s'importe proprement : l'import n'est pas mal
+> placé, il est absent. `nexus_portee_import.py` cherchait un nom importé
+> dans une fonction et employé dans une autre ; ici le nom n'est nulle part.
+>
+> **Le premier jet du garde a été rejeté, et son chiffre mérite d'être
+> gardé** : il tentait l'analyse *générale* des noms non définis et rendait
+> **581 faux positifs** sur ce dépôt — variables de compréhension prises pour
+> non liées, `__file__` ignoré, et un code de sortie 0 affiché sous un
+> « DEFAUTS: 581 ». Un détecteur qui crie à tort est désarmé le jour même.
+> Aucun linter n'est installé, et en installer un contredirait la règle
+> « stdlib seule » des gardes : la bonne réponse était de **rétrécir la
+> question**, non d'élargir l'outil. Le contrôle ne signale donc qu'un nom
+> employé en attribut, figurant dans `sys.stdlib_module_names`, et lié nulle
+> part. Six pièges à faux positifs sont éprouvés à chaque exécution.
+>
+> **La borne, elle, se voit dans les chiffres.** Vague non bornée : 19 échecs
+> sur 34. Vague bornée à quatre : **1 échec sur 28**.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
