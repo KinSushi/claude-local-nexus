@@ -650,10 +650,20 @@ def consigner(rapport: dict) -> None:
             #
             # On ne DECIDE rien ici -- la politique de promotion appartient a
             # l'operateur. On rend seulement la stabilite lisible.
+            # AMORCER avec le score deja stocke, plutot que de le perdre.
+            #
+            # Une entree ecrite avant l'existence de `historique` porte tout
+            # de meme son `reussies` : c'est une mesure REELLE, deja faite.
+            # Repartir de zero la jetterait, et il faudrait deux passages de
+            # plus pour retrouver ce que l'on savait deja. On ne fabrique
+            # rien : on lit ce qui est ecrit, comme pour `concluante`.
             historique = list((precedent or {}).get("historique") or [])
+            if not historique and precedent and isinstance(precedent.get("reussies"), int):
+                historique = [precedent["reussies"]]
             historique.append(entree["reussies"])
             entree["historique"] = historique[-5:]
-            entree["mesures"] = (precedent or {}).get("mesures", 0) + 1
+            entree["mesures"] = max((precedent or {}).get("mesures", 0),
+                                    len(historique) - 1) + 1
             # UNE SEULE MESURE N'EST PAS UNE STABILITE.
             #
             # Ecrit d'abord `len(set(historique)) == 1`, ce champ rendait

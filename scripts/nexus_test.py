@@ -1902,6 +1902,33 @@ def test_registre_epreuves() -> None:
                  u.get("stable") is False and u.get("mesures") == 1,
                  "mesures=%s stable=%s" % (u.get("mesures"), u.get("stable")))
 
+        # UN SCORE DEJA STOCKE EST UNE MESURE REELLE : ne pas la jeter.
+        #
+        # Les entrees ecrites avant l'existence de `historique` portent tout
+        # de meme leur `reussies`. Sans amorcage, le premier passage suivant
+        # repartait de zero et jetait cette mesure : il aurait fallu deux
+        # passages de plus pour retrouver ce que l'on savait deja. Mesure du
+        # 2026-08-31 : codestral-local et llama3.2-3b-local avaient chacun un
+        # 4/4 enregistre, et se retrouvaient a « mesures=1 » apres un SECOND
+        # passage reussi.
+        ancienne = {"reussies": 4, "total": 4, "complet": True,
+                    "concluante": True, "plan": "local",
+                    "servi": "ollama_chat/amorce"}
+        reg_brut = json.load(io.open(chemin, encoding="utf-8"))
+        reg_brut["modeles"]["amorce-local"] = ancienne
+        with io.open(chemin, "w", encoding="utf-8") as fh:
+            json.dump(reg_brut, fh, ensure_ascii=False)
+        releve.consigner(dict(rapport("amorce-local", "ollama_chat/amorce", 4,
+                                      "local",
+                                      "http://host.docker.internal:11434")))
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        am = reg.get("amorce-local", {})
+        check("un score deja stocke amorce l'historique",
+                 am.get("historique") == [4, 4] and am.get("mesures") == 2,
+                 "historique=%s mesures=%s" % (am.get("historique"), am.get("mesures")))
+        check("et le verdict devient alors CONFIRME",
+                 am.get("stable") is True, "stable=%s" % am.get("stable"))
+
         releve.consigner(dict(rapport("constant-local", "ollama_chat/constant",
                                       4, "local",
                                       "http://host.docker.internal:11434")))
