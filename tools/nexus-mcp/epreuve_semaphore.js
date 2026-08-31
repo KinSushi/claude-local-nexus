@@ -1,15 +1,14 @@
-// Le semaphore du plan local borne-t-il vraiment, et rend-il toujours ses jetons ?
+// Les deux plans sont-ils bornes, chacun chez soi, et le harnais le verrait-il sinon ?
 //
 // L'epreuve porte sur le CODE REEL de server.js, extrait a la volee : tester
 // une copie prouverait seulement que la copie fonctionne.
 const fs = require("fs");
 const path = require("path");
 
-const source = fs.readFileSync(
-  path.join(__dirname, "server.js"), "utf8");
+const source = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
 
 const debut = source.indexOf("const CONCURRENCE_LOCALE");
-const fin = source.indexOf("function estPlanLocal");
+const fin = source.indexOf("// Temperature par defaut des outils du pont.");
 if (debut < 0 || fin < 0 || fin < debut) {
   console.error("RATE : semaphore introuvable dans server.js");
   process.exit(1);
@@ -22,13 +21,25 @@ function verifier(nom, condition, detail) {
   if (!condition) echecs++;
 }
 
-function charger(limite) {
-  const prelude = `process.env.NEXUS_LOCAL_CONCURRENCE = ${JSON.stringify(String(limite))};\n`;
-  const module = { exports: {} };
-  // eslint-disable-next-line no-new-func
-  new Function("module", "process", prelude + bloc + "\nmodule.exports = { avecJetonLocal, get pris() { return jetonsLocauxPris; }, get file() { return attenteLocale.length; } };")(module, process);
-  return module.exports;
+// `planOf` vit ailleurs dans le fichier : on l'injecte, ce qui permet en outre
+// de piloter l'aiguillage sans dependre de la table lue a la passerelle.
+function charger(local, cloud, planOf, texte) {
+  const prelude =
+    `process.env.NEXUS_LOCAL_CONCURRENCE = ${JSON.stringify(String(local))};\n` +
+    `process.env.NEXUS_CLOUD_CONCURRENCE = ${JSON.stringify(String(cloud))};\n`;
+  const module_ = { exports: {} };
+  new Function("module", "process", "planOf",
+    prelude + (texte || bloc) +
+    "\nmodule.exports = { creerSemaphore, avecJetonDuPlan, semaphoreLocal," +
+    " semaphoreCloud, estPlanLocal, estPlanCloud };")(module_, process, planOf);
+  return module_.exports;
 }
+
+const PLANS = (alias) =>
+  alias.endsWith("-cloud") ? "Ollama Cloud, les donnees sortent"
+  : alias.startsWith("claude-") ? "Anthropic, facture au token"
+  : alias === "mystere" ? "plan inconnu"
+  : "local, cout 0";
 
 const dors = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,103 +48,137 @@ const dors = (ms) => new Promise((r) => setTimeout(r, ms));
   // le premier jet : il incrementait le compteur apres l'await, donc tous
   // passaient ensemble.
   {
-    const s = charger(1);
+    const s = charger(1, 4, PLANS).creerSemaphore(1);
     let courant = 0, maximum = 0;
-    await Promise.all(Array.from({ length: 20 }, () =>
-      s.avecJetonLocal(async () => {
-        courant++;
-        maximum = Math.max(maximum, courant);
-        await dors(5);
-        courant--;
-      })));
-    verifier("limite 1 : jamais deux inferences ensemble", maximum === 1,
+    await Promise.all(Array.from({ length: 20 }, () => (async () => {
+      await s.prendre();
+      try { courant++; maximum = Math.max(maximum, courant); await dors(5); courant--; }
+      finally { s.rendre(); }
+    })()));
+    verifier("limite 1 : jamais deux appels ensemble", maximum === 1,
              `maximum observe = ${maximum}`);
-    verifier("limite 1 : aucun jeton retenu a la fin", s.pris === 0 && s.file === 0,
-             `pris=${s.pris} file=${s.file}`);
+    verifier("limite 1 : aucun jeton retenu a la fin", s.pris === 0 && s.attente === 0,
+             `pris=${s.pris} attente=${s.attente}`);
   }
 
-  // 2. La borne se regle, et elle est respectee a la lettre.
+  // 2. La borne se regle et elle est respectee a la lettre.
   {
-    const s = charger(3);
+    const s = charger(1, 4, PLANS).creerSemaphore(4);
     let courant = 0, maximum = 0;
-    await Promise.all(Array.from({ length: 30 }, () =>
-      s.avecJetonLocal(async () => {
-        courant++;
-        maximum = Math.max(maximum, courant);
-        await dors(3);
-        courant--;
-      })));
-    verifier("limite 3 : bornee a trois exactement", maximum === 3,
+    await Promise.all(Array.from({ length: 30 }, () => (async () => {
+      await s.prendre();
+      try { courant++; maximum = Math.max(maximum, courant); await dors(3); courant--; }
+      finally { s.rendre(); }
+    })()));
+    verifier("limite 4 : bornee a quatre exactement", maximum === 4,
              `maximum observe = ${maximum}`);
   }
 
-  // 3. Un appel qui JETTE ne doit pas emporter son jeton. C'est le defaut le
-  // plus grave possible ici : un jeton perdu bloque le pont a vie.
+  // 3. LA PROPRIETE NEUVE, et la raison d'avoir deux files : un appel cloud
+  // ne doit JAMAIS attendre derriere un appel local. Une file unique ferait
+  // payer au cloud la lenteur du local -- 600 s d'expiration mesurees -- et
+  // annulerait l'interet meme d'avoir deux plans.
   {
-    const s = charger(1);
+    const m = charger(1, 4, PLANS);
+    let cloudFini = null, localFini = null;
+    const t0 = Date.now();
+    const local = m.avecJetonDuPlan("glm-4.7-flash-local", async () => {
+      await dors(200); localFini = Date.now() - t0;
+    });
+    const local2 = m.avecJetonDuPlan("qwen3-coder-30b-local", async () => { await dors(200); });
+    const nuage = m.avecJetonDuPlan("gpt-oss-120b-cloud", async () => {
+      await dors(10); cloudFini = Date.now() - t0;
+    });
+    await Promise.all([local, local2, nuage]);
+    verifier("le cloud n'attend pas derriere le local",
+             cloudFini !== null && cloudFini < 150,
+             `cloud rendu a ${cloudFini} ms, local a ${localFini} ms`);
+  }
+
+  // 4. Anthropic et le plan inconnu ne sont bornes par personne : le premier
+  // se limite par le portefeuille, le second n'est pas assez connu pour
+  // qu'on lui impose quoi que ce soit.
+  {
+    const m = charger(1, 1, PLANS);
+    let courant = 0, maximum = 0;
+    const tache = (alias) => m.avecJetonDuPlan(alias, async () => {
+      courant++; maximum = Math.max(maximum, courant); await dors(20); courant--;
+    });
+    await Promise.all([tache("claude-haiku-4-5"), tache("claude-haiku-4-5"),
+                       tache("mystere"), tache("mystere")]);
+    verifier("Anthropic et plan inconnu ne sont pas bornes", maximum === 4,
+             `maximum observe = ${maximum} sur quatre appels`);
+  }
+
+  // 5. Un appel qui JETTE ne doit pas emporter son jeton : un jeton perdu
+  // bloquerait le pont a vie.
+  {
+    const m = charger(1, 4, PLANS);
     for (let i = 0; i < 5; i++) {
       try {
-        await s.avecJetonLocal(async () => { throw new Error("panne simulee"); });
+        await m.avecJetonDuPlan("glm-4.7-flash-local", async () => {
+          throw new Error("panne simulee");
+        });
       } catch (e) { /* attendu */ }
     }
     let passe = false;
-    await s.avecJetonLocal(async () => { passe = true; });
-    verifier("cinq echecs de suite : le pont reste passant", passe && s.pris === 0,
-             `pris=${s.pris} apres cinq exceptions`);
+    await m.avecJetonDuPlan("glm-4.7-flash-local", async () => { passe = true; });
+    verifier("cinq echecs de suite : le pont reste passant",
+             passe && m.semaphoreLocal.pris === 0,
+             `pris=${m.semaphoreLocal.pris} apres cinq exceptions`);
   }
 
-  // 4. L'ordre est FIFO : sans equite, un appel long reste indefiniment
+  // 6. L'ordre est FIFO : sans equite, un appel long reste indefiniment
   // derriere les courts qui se pressent.
   {
-    const s = charger(1);
+    const s = charger(1, 4, PLANS).creerSemaphore(1);
     const ordre = [];
-    await Promise.all(Array.from({ length: 8 }, (_, i) =>
-      s.avecJetonLocal(async () => { ordre.push(i); await dors(2); })));
-    const attendu = [0, 1, 2, 3, 4, 5, 6, 7].join(",");
-    verifier("ordre FIFO respecte", ordre.join(",") === attendu, ordre.join(","));
+    await Promise.all(Array.from({ length: 8 }, (_, i) => (async () => {
+      await s.prendre();
+      try { ordre.push(i); await dors(2); } finally { s.rendre(); }
+    })()));
+    verifier("ordre FIFO respecte", ordre.join(",") === "0,1,2,3,4,5,6,7", ordre.join(","));
   }
 
-  // 5. La sortie de secours. Sans elle, une anomalie de comptage bloquerait
-  // tout le pont -- pire que le defaut corrige.
+  // 7. Les sorties de secours, une par plan. Sans elles, une anomalie de
+  // comptage bloquerait le pont entier.
   {
-    const s = charger(0);
+    const m = charger(0, 0, PLANS);
     let courant = 0, maximum = 0;
-    await Promise.all(Array.from({ length: 6 }, () =>
-      s.avecJetonLocal(async () => {
-        courant++; maximum = Math.max(maximum, courant); await dors(3); courant--;
-      })));
-    verifier("NEXUS_LOCAL_CONCURRENCE=0 desactive la borne", maximum === 6,
+    const tache = (alias) => m.avecJetonDuPlan(alias, async () => {
+      courant++; maximum = Math.max(maximum, courant); await dors(3); courant--;
+    });
+    await Promise.all([tache("glm-4.7-flash-local"), tache("glm-4.7-flash-local"),
+                       tache("gpt-oss-120b-cloud"), tache("gpt-oss-120b-cloud")]);
+    verifier("une borne a zero desactive sa file", maximum === 4,
              `maximum observe = ${maximum}`);
   }
 
-  // 6. CONTRE-EPREUVE. Tout ce qui precede passerait aussi si le harnais ne
-  // voyait rien. On lui soumet donc la variante FAUTIVE -- celle du premier
-  // jet, qui prenait le jeton APRES l'attente -- et le harnais doit la
-  // refuser. S'il l'accepte, ce sont les cinq cas d'avant qui ne valent rien.
+  // 8. CONTRE-EPREUVE. Tout ce qui precede passerait aussi si le harnais ne
+  // voyait rien. On lui soumet la variante FAUTIVE -- jeton pris APRES
+  // l'attente -- et il doit la refuser.
   {
     const fautif = bloc.replace(
-      "  if (jetonsLocauxPris < CONCURRENCE_LOCALE) {\n    jetonsLocauxPris++;\n  } else {\n    await new Promise((resoudre) => attenteLocale.push(resoudre));",
-      "  const billet = new Promise((resoudre) => attenteLocale.push(resoudre));\n  if (jetonsLocauxPris < CONCURRENCE_LOCALE) {\n    const s = attenteLocale.shift();\n    if (s) s();\n  }\n  await billet;\n  jetonsLocauxPris++;\n  if (false) {");
+      "      if (pris < limite) { pris++; return; }\n" +
+      "      await new Promise(function (resoudre) { file.push(resoudre); });",
+      "      const billet = new Promise(function (resoudre) { file.push(resoudre); });\n" +
+      "      if (pris < limite) { const s = file.shift(); if (s) s(); }\n" +
+      "      await billet;\n      pris++;");
     if (fautif === bloc) {
       verifier("contre-epreuve : variante fautive construite", false,
                "la substitution n'a rien remplace -- le code a change de forme");
     } else {
-      const module = { exports: {} };
       let maximum = 0;
       try {
-        new Function("module", "process",
-          'process.env.NEXUS_LOCAL_CONCURRENCE = "1";\n' + fautif +
-          "\nmodule.exports = { avecJetonLocal };")(module, process);
+        const s = charger(1, 4, PLANS, fautif).creerSemaphore(1);
         let courant = 0;
-        await Promise.all(Array.from({ length: 20 }, () =>
-          module.exports.avecJetonLocal(async () => {
-            courant++; maximum = Math.max(maximum, courant); await dors(5); courant--;
-          })));
-      } catch (e) {
-        maximum = -1;
-      }
-      verifier("contre-epreuve : la variante fautive est bien VUE",
-               maximum !== 1,
+        await Promise.all(Array.from({ length: 20 }, () => (async () => {
+          await s.prendre();
+          try { courant++; maximum = Math.max(maximum, courant); await dors(5); courant--; }
+          finally { s.rendre(); }
+        })()));
+      } catch (e) { maximum = -1; }
+      verifier("contre-epreuve : la variante fautive est bien VUE", maximum !== 1,
                `la variante fautive atteint ${maximum} appels simultanes la ou la corrigee reste a 1`);
     }
   }

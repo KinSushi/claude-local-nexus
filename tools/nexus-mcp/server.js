@@ -411,155 +411,115 @@ function planOf(alias) {
   return "local, cout 0";
 }
 
-// Concurrence du plan local, bornee au niveau du SERVEUR.
+// Concurrence des plans, bornee au niveau du SERVEUR.
 //
 // `nexus_batch` est sequentiel a dessein, et sa description dit pourquoi :
 // deux inferences simultanees se disputent la meme bande passante memoire et
 // finissent plus tard que si elles s'etaient suivies. Mais cette discipline
 // ne valait qu'A L'INTERIEUR d'un appel : rien n'empechait dix appelants d'en
-// lancer dix en parallele, c'est-a-dire exactement ce que `nexus_batch`
-// refuse de faire. La regle existait en paragraphe, pas en mecanisme.
+// lancer dix en parallele. La regle existait en paragraphe, pas en mecanisme.
 //
-// Mesure du 2026-08-30, 34 appels MCP dont une dizaine simultanes :
+// LES DEUX PLANS SATURENT, mais pas pour la meme raison, et c'est pourquoi
+// ils ont deux files et deux bornes :
 //
-//     plan local   8 reussites, 14 ECHECS -- toutes des expirations a 600 s
-//     plan cloud   7 reussites,  0 echec
+//   local  une memoire partagee. Mesure du 2026-08-30, une dizaine d'appels
+//          simultanes : 8 reussites, 14 ECHECS, toutes des expirations a
+//          600 s. Ont expire un resume de README.md (15 Ko) et une
+//          extraction dite triviale -- ce n'est pas la taille qui decide.
 //
-// Ont expire : un resume de README.md (15 Ko), une extraction dite triviale
-// via nexus_route, et deux nexus_context. Ce n'est pas la taille des taches
-// qui a decide, c'est le nombre d'inferences concurrentes sur un hote a
-// memoire partagee dont le moteur ne garde que trois modeles residents.
+//   cloud  un debit partage. Le meme jour, une centaine d'appels simultanes
+//          ont fait rendre a la passerelle « Client error '429 Too Many
+//          Requests' for url https://ollama.com/api/chat ». A SEPT appels
+//          simultanes, le meme plan tenait 7 sur 7 sans un echec, et il est
+//          revenu de lui-meme en 6,8 s une fois la charge retiree.
 //
-// Le cloud n'est PAS borne : il a rendu 7 sur 7 en parallele, et le brider
-// gacherait l'abonnement qui a ete paye pour cela.
+// La borne cloud est donc plus haute que la locale, et non absente. Elle
+// l'etait, sur la foi de ces sept appels reussis : une generalisation de
+// sept a cent cinquante, exactement l'erreur que le contrat corrige en
+// §112.3.
+//
+// DEUX FILES SEPAREES, jamais une seule : un appel cloud qui attendrait
+// derriere un appel local paierait la lenteur du local, ce qui annulerait
+// l'interet meme d'avoir deux plans.
 const CONCURRENCE_LOCALE = Number(process.env.NEXUS_LOCAL_CONCURRENCE || 1);
-
-const attenteLocale = [];
-let jetonsLocauxPris = 0;
+const CONCURRENCE_CLOUD = Number(process.env.NEXUS_CLOUD_CONCURRENCE || 4);
 
 /**
- * Execute `fn` en tenant un jeton du plan local, et le rend toujours.
+ * Une mecanique, deux instances. Deux copies finiraient par diverger.
  *
  * Le jeton est PRIS dans le meme tick que le test d'admission, jamais apres
  * un `await`. Le premier jet faisait l'inverse -- il incrementait le compteur
- * apres l'attente -- si bien que deux appels partis dans le meme tick voyaient
- * tous deux zero jeton pris et passaient ensemble. Le semaphore aurait ete
- * inoperant precisement sous la charge qui le motive.
+ * apres l'attente -- si bien que deux appels partis dans le meme tick
+ * voyaient tous deux zero jeton pris et passaient ensemble. Le semaphore
+ * aurait ete inoperant precisement sous la charge qui le motive : mesure a
+ * 20 appels simultanes la ou la version corrigee en tient 1.
  *
  * A la liberation, le jeton est TRANSMIS au suivant plutot que rendu puis
  * repris : entre les deux gestes, un appel arrive entre-temps se glisserait
  * devant toute la file.
  */
-async function avecJetonLocal(fn) {
-  // Sortie de secours. Sans elle, une anomalie de comptage bloquerait le pont
-  // entier, ce qui serait un defaut bien pire que la contention corrigee.
-  if (!(CONCURRENCE_LOCALE > 0)) return fn();
-
-  if (jetonsLocauxPris < CONCURRENCE_LOCALE) {
-    jetonsLocauxPris++;
-  } else {
-    await new Promise((resoudre) => attenteLocale.push(resoudre));
-    // Le jeton nous a ete transmis : le compteur reste inchange.
-  }
-  try {
-    return await fn();
-  } finally {
-    const suivant = attenteLocale.shift();
-    if (suivant) suivant();
-    else jetonsLocauxPris = Math.max(0, jetonsLocauxPris - 1);
-  }
+function creerSemaphore(limite) {
+  const file = [];
+  let pris = 0;
+  return {
+    limite: limite,
+    get pris() { return pris; },
+    get attente() { return file.length; },
+    async prendre() {
+      // Sortie de secours. Sans elle, une anomalie de comptage bloquerait le
+      // pont entier, ce qui serait pire que la contention corrigee.
+      if (!(limite > 0)) return;
+      if (pris < limite) { pris++; return; }
+      await new Promise(function (resoudre) { file.push(resoudre); });
+      // Le jeton nous a ete transmis : le compteur reste inchange.
+    },
+    rendre() {
+      if (!(limite > 0)) return;
+      const suivant = file.shift();
+      if (suivant) suivant();
+      else pris = Math.max(0, pris - 1);
+    },
+  };
 }
+
+const semaphoreLocal = creerSemaphore(CONCURRENCE_LOCALE);
+const semaphoreCloud = creerSemaphore(CONCURRENCE_CLOUD);
 
 /**
  * Le plan local, et lui seul.
  *
  * `planOf` est la seule source : declarer une seconde table serait s'exposer
  * a ce qu'elles divergent. Un plan INCONNU rend false -- serialiser par
- * defaut ce que l'on ne connait pas ralentirait le cloud sur une simple
- * lacune de table, et le cout d'un faux negatif est une contention, jamais
- * une panne.
+ * defaut ce que l'on ne connait pas ralentirait sur une simple lacune de
+ * table, et le cout d'un faux negatif est une contention, jamais une panne.
  */
 function estPlanLocal(alias) {
   const libelle = planOf(alias);
   return typeof libelle === "string" && /^local\b/i.test(libelle.trim());
 }
 
-// Retire la chaine de pensee que certains modeles laissent dans `content`.
-//
-// Constate le 30 aout 2026 cote Python : une reponse rendue a l'utilisateur
-// contenait tout le raisonnement du modele, puis « </think>702 ». Le chemin
-// MCP recopiait content tel quel et avait le meme defaut -- or c'est lui que
-// Claude Code appelle. Le raisonnement n'est pas la reponse : le livrer donne
-// un brouillon a la place d'un resultat, et le MAP-REDUCE concatenerait ces
-// hesitations dans le texte soumis au REDUCE.
-const BALISES_PENSEE = ["think", "thinking", "reasoning"];
-
-function sansRaisonnement(texte) {
-  if (!texte) return "";
-  let s = String(texte);
-
-  // Blocs complets, une balise a la fois : une backreference  serait lue
-  // comme un echappement octal dans un template literal, ce que Node refuse.
-  for (const b of BALISES_PENSEE) {
-    s = s.replace(new RegExp("<\\s*" + b + "\\s*>[\\s\\S]*?<\\s*/\\s*" + b + "\\s*>", "gi"), "");
-  }
-
-  // Ouverture sans fermeture : la reponse n'est jamais venue. Rendre le
-  // raisonnement brut serait pire que ne rien rendre -- l'appelant croirait
-  // tenir un resultat.
-  for (const b of BALISES_PENSEE) {
-    if (new RegExp("<\\s*" + b + "\\s*>", "i").test(s)) return "";
-  }
-
-  // Fermeture sans ouverture : le raisonnement a ete tronque en amont, la
-  // reponse est ce qui suit la derniere fermeture.
-  let dernier = -1;
-  for (const b of BALISES_PENSEE) {
-    const re = new RegExp("<\\s*/\\s*" + b + "\\s*>", "gi");
-    let m;
-    while ((m = re.exec(s)) !== null) {
-      const bout = m.index + m[0].length;
-      if (bout > dernier) dernier = bout;
-    }
-  }
-  if (dernier >= 0) s = s.slice(dernier);
-  return s.trim();
+/** Le plan cloud, lu au meme endroit et pour la meme raison. */
+function estPlanCloud(alias) {
+  const libelle = planOf(alias);
+  return typeof libelle === "string" && /\bcloud\b/i.test(libelle);
 }
 
-// Ce qu'il faut DIRE d'une reponse, en un seul endroit.
-//
-// `sansRaisonnement` rend la chaine vide quand un modele ouvre une balise de
-// pensee sans la refermer, et ce choix est juste : livrer le brouillon serait
-// pire. Mais le vide etait rendu SANS explication, alors que `chat()` detient
-// de quoi la donner. Mesure du 2026-08-30 : nexus_compare a affiche
-// « ### glm-5.3-cloud » suivi de rien, a cote de « 50.4s 8234 tokens ».
-// L'appelant en a conclu « reponse tronquee » -- la conclusion normale quand
-// l'outil sait et se tait. Meme famille que le refus qui ne nommait pas
-// --racine : le code detient la raison et ne la dit pas.
-//
-// La regle vit ici et nulle part ailleurs. Elle etait recopiee dans deux
-// appelants et absente des deux autres, ce qui est precisement la facon dont
-// deux copies finissent par diverger.
-function mentionsReponse(result) {
-  const mentions = [];
-  // Le libelle est repris MOT POUR MOT. « max_tokens » y est le nom du
-  // parametre, non une valeur a substituer : un premier jet l'avait pris pour
-  // un gabarit et aurait affiche « a undefined tokens », transformant une
-  // mention juste en mention cassee.
-  if (result.tronquee) mentions.push("REPONSE TRONQUEE a max_tokens");
-
-  const vide = !result.text || !String(result.text).trim();
-  const produits = Number(result.tokens_sortie) || 0;
-  if (vide && produits > 0) {
-    mentions.push("REPONSE VIDE apres retrait du raisonnement (" +
-                  produits + " jetons produits)");
-  } else if (vide) {
-    // Cas different, et il ne faut pas accuser le retrait du raisonnement
-    // d'un vide qu'il n'a pas cause : le modele n'a rien emis du tout.
-    mentions.push("REPONSE VIDE : le modele n'a produit aucun jeton");
+/**
+ * L'entree unique. Anthropic et le plan inconnu ne sont bornes par personne :
+ * le premier est facture au jeton et se limite tout seul par le portefeuille,
+ * le second n'est pas assez connu pour qu'on lui impose quoi que ce soit.
+ */
+async function avecJetonDuPlan(alias, fn) {
+  const semaphore = estPlanLocal(alias) ? semaphoreLocal
+                  : estPlanCloud(alias) ? semaphoreCloud
+                  : null;
+  if (!semaphore) return fn();
+  await semaphore.prendre();
+  try {
+    return await fn();
+  } finally {
+    semaphore.rendre();
   }
-
-  return mentions.length ? " · " + mentions.join(" · ") : "";
 }
 
 // Temperature par defaut des outils du pont.
@@ -652,12 +612,10 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     corps,
     timeoutMs
   ));
-  const { body, headers } = estPlanLocal(model)
-    ? await avecJetonLocal(() => {
-        attenteMs = Date.now() - depart;
-        return appelReseau();
-      })
-    : await appelReseau();
+  const { body, headers } = await avecJetonDuPlan(model, () => {
+    attenteMs = Date.now() - depart;
+    return appelReseau();
+  });
   const choice = body.choices && body.choices[0];
   if (!choice) throw new Error("aucune reponse du modele " + model);
   const usage = body.usage || {};
