@@ -941,7 +941,13 @@ async function buildIndex(root, embedModel) {
     for (const chunk of chunkText(content)) {
       if (!chunk.text.trim()) continue;
       records.push({
-        file: path.relative(root, file).replace(/\\/g, "/"),
+        // LE CHEMIN S'ANCRE SUR LA RACINE DU DEPOT, PAS SUR CELLE DE
+        // L'INDEXATION. Relatif a `root`, « src/host/broker.py » indexe
+        // depuis src/host devient « broker.py » -- indiscernable d'un
+        // « broker.py » de src/compute. Fusionner deux tranches creerait
+        // alors des collisions muettes. Ancre sur le depot, chaque chemin
+        // est unique par construction, et il reste lisible a l'affichage.
+        file: path.relative(WORK_ROOT, file).replace(/\\/g, "/"),
         line: lineOf(content, chunk.start),
         text: chunk.text,
         tokens: tokenize(chunk.text),
@@ -1023,13 +1029,74 @@ async function buildIndex(root, embedModel) {
     records[i].vector = vectors[i];
   }
 
+  // L'INDEX FUSIONNE, IL N'ECRASE PLUS.
+  //
+  // CE QUI ETAIT FAUX, signale par une session voisine le 2026-08-31 :
+  // indexer `src/host` puis `src/compute` faisait DISPARAITRE src/host.
+  // L'objet index etait reconstruit de zero a chaque appel, si bien qu'un
+  // arbre trop large pour un seul passage ne pouvait pas etre couvert par
+  // tranches -- et rien ne le disait. La recherche rendait simplement zero
+  // resultat sur ce qui avait ete indexe trois minutes plus tot.
+  //
+  // DEUX GARDES, et elles ne sont pas facultatives :
+  //
+  //   * MODELE. Des vecteurs produits par deux modeles differents ne
+  //     vivent pas dans le meme espace : leurs dimensions different, et
+  //     meme a dimension egale leurs distances n'ont aucun sens commun.
+  //     Les fusionner rendrait des scores calcules sur du vide. On
+  //     REMPLACE alors, et on le DIT.
+  //   * FORMAT. Un index anterieur porte des chemins relatifs a sa racine
+  //     d'indexation, pas au depot. Les melanger produirait exactement les
+  //     collisions que le correctif ci-dessus supprime. Un index sans
+  //     `version` est donc remplace, et on le dit aussi.
+  //
+  // Reindexer la MEME racine remplace ses extraits plutot que de les
+  // dupliquer : sans cela, chaque passe doublerait le poids de l'index et
+  // la recherche rendrait le meme extrait plusieurs fois.
+  const VERSION_INDEX = 2;
+  const prefixe = path.relative(WORK_ROOT, root).replace(/\\/g, "/");
+  let anciens = [];
+  let racines = [];
+  let motifRemplacement = null;
+  try {
+    if (fs.existsSync(INDEX_PATH)) {
+      const precedent = JSON.parse(fs.readFileSync(INDEX_PATH, "utf8"));
+      if (precedent.version !== VERSION_INDEX) {
+        motifRemplacement = "format anterieur (chemins non ancres au depot)";
+      } else if (precedent.model !== embedModel) {
+        motifRemplacement = "modele different (" + precedent.model +
+          " -> " + embedModel + ") : vecteurs non comparables";
+      } else if (Array.isArray(precedent.records)) {
+        anciens = precedent.records.filter((r) =>
+          !(prefixe === "" || r.file === prefixe || r.file.startsWith(prefixe + "/")));
+        racines = Array.isArray(precedent.roots) ? precedent.roots.slice() : [];
+      }
+    }
+  } catch (err) {
+    // Un index illisible se REMPLACE, mais on ne se tait pas dessus : le
+    // silence ferait passer une perte pour une construction normale.
+    motifRemplacement = "index precedent illisible (" +
+      String(err && err.message).slice(0, 60) + ")";
+  }
+  if (motifRemplacement) {
+    log("index REMPLACE et non fusionne — " + motifRemplacement);
+  } else if (anciens.length) {
+    log("index fusionne : " + anciens.length + " extrait(s) conserve(s) hors " +
+        (prefixe || "racine du depot"));
+  }
+  if (!racines.includes(prefixe)) racines.push(prefixe);
+
+  const tous = anciens.concat(records);
   const index = {
+    version: VERSION_INDEX,
     root,
+    roots: racines,
     model: embedModel,
     built: new Date().toISOString(),
     files: files.length,
-    chunks: records.length,
-    records,
+    chunks: tous.length,
+    chunks_ajoutes: records.length,
+    records: tous,
   };
   fs.mkdirSync(INDEX_DIR, { recursive: true });
   // Ecriture atomique : une interruption pendant writeFileSync laisserait
