@@ -239,6 +239,16 @@ switch ($Commande.ToLower()) {
         exit 0
     }
 
+    'rendu-vide' {
+        # Livre par le banc, cable ici : un outil que personne n'appelle est
+        # un fichier. Il MESURE le rendu vide sur longue generation au lieu
+        # de le supposer, et fait DEUX passes par modele -- un modele froid
+        # paie le chargement de ses poids, et une lecture en une seule phase
+        # attribue ce chargement au modele (contrat 112.3).
+        & python (Join-Path $PSScriptRoot 'mesure_rendu_vide.py') @Reste
+        Exit-Avec $LASTEXITCODE
+    }
+
     { $_ -in @('help', '-h', '--help', '/?') } { Show-Aide; exit 0 }
 
     default {

@@ -584,6 +584,7 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "deepseek-ocr:latest (expose automatiquement — hors pool : non mesure)"
+      mode: vision
       nexus_generated: true
       nexus_pool: false
 
@@ -612,6 +613,7 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "gemma4:26b (promu automatiquement — epreuve reelle 4/4)"
+      mode: vision
       nexus_generated: true
       nexus_pool: true
 
@@ -626,6 +628,7 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "gemma4:latest (promu automatiquement — epreuve reelle 4/4)"
+      mode: vision
       nexus_generated: true
       nexus_pool: true
 
@@ -794,6 +797,7 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "qwen3-vl:32b (expose automatiquement — hors pool : trop lent : 76.5 s)"
+      mode: vision
       nexus_generated: true
       nexus_pool: false
 
@@ -808,6 +812,7 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "qwen3-vl:8b (promu automatiquement — 38.2 s)"
+      mode: vision
       nexus_generated: true
       nexus_pool: true
 
@@ -822,6 +827,7 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "qwen3.5:9b (promu automatiquement — epreuve reelle 4/4)"
+      mode: vision
       nexus_generated: true
       nexus_pool: true
 
@@ -836,6 +842,7 @@ model_list:
     model_info:
       max_input_tokens: 8192
       description: "qwen3.6:27b (promu automatiquement — epreuve reelle 4/4)"
+      mode: vision
       nexus_generated: true
       nexus_pool: true
 

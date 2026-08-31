@@ -542,10 +542,35 @@ def render_local_extra(installed: list[str], declared: set[str],
             # lui, et la lui envoyer serait au mieux ignore, au pire refuse.
             out += ["      num_ctx: %d" % ctx, "      num_predict: 4096",
                     "      temperature: %s" % TEMPERATURE_DEFAUT]
-        out += [
+        # CE QUI ETAIT FAUX : aucun champ `mode` n'etait emis, donc les
+        # modeles de vision ou d'embedding etaient INVISIBLES aux controles
+        # de modalite. La regle du contrat qui interdit a un modele de vision
+        # de retomber sur un modele texte ne pouvait pas s'appliquer, faute
+        # de savoir lesquels sont des modeles de vision.
+        #
+        # Mesure du 2026-08-31 : `deepseek-ocr`, dont `ollama show` declare
+        # « completion, vision », a ete ecrit sans la moindre marque. La
+        # modalite etait pourtant deja calculee ailleurs dans ce fichier --
+        # elle n'etait simplement jamais ECRITE sur ce chemin.
+        #
+        # Rien n'est ecrit quand la capacite est inconnue ou purement
+        # textuelle : un `mode` faux serait pire qu'un `mode` absent, parce
+        # que les controles s'y fieraient.
+        caps = capacites_ollama(base)
+        mode_val = None
+        if "embedding" in caps:
+            mode_val = "embedding"
+        elif "vision" in caps:
+            mode_val = "vision"
+
+        model_info = [
             "    model_info:",
             "      max_input_tokens: %d" % ctx,
             '      description: "%s (%s)"' % (base, note),
+        ]
+        if mode_val is not None:
+            model_info.append("      mode: %s" % mode_val)
+        model_info += [
             # Deux marques distinctes, et il faut les deux :
             #   nexus_generated : d'ou vient le bloc (evite de le redeclarer)
             #   nexus_pool      : s'il est eligible au routage automatique
@@ -554,6 +579,7 @@ def render_local_extra(installed: list[str], declared: set[str],
             "      nexus_generated: true",
             "      nexus_pool: %s" % ("true" if dans_pool else "false"),
         ]
+        out += model_info
         if i < len(rendered) - 1:
             out.append("")
     return out
