@@ -1870,3 +1870,56 @@ compteur mal analysé. Le rendement vient du tri, pas de l'acceptation.
   sans décision.
 - **`llava-34b` et assimilés** sortis des chaînes de fallback par le
   garde-fou : à réévaluer après la migration, la mémoire changeant.
+
+---
+
+## 9. Tour du 31/08 — le plan payé, et quatre détecteurs qui se taisaient
+
+### 9.1 Ce qui est FERMÉ — un contrôle échoue désormais si la règle est enfreinte
+
+| Ce qui était faux | Mesure | Le contrôle qui garde |
+|---|---|---|
+| Le garde des sous-agents ne surveillait que `Agent` ; `Workflow` ne l'était par rien | **460 sous-agents, 32 119 213 jetons facturés** en huit vagues, contre 475 000 déjà cités comme « l'inverse du but » | matcher `Agent\|Workflow`, `nexus_test.py --only plan`, 8 cas |
+| Le garde n'exigeait que l'EXPLICITE : ses quatre modèles connus sont tous facturés, nommer `haiku` suffisait à passer | La règle centrale du dépôt — banc gratuit d'abord — n'était mécanisée **nulle part** | refus sauf `NEXUS_AGENT_LIBRE=1` ou `NEXUS_JUSTIFIE_PAYANT <motif>` |
+| Le refus s'imprimait et **ne bloquait rien** : code 0 au lieu de 2 | 3 refus sur 3 traversaient | `epreuve_garde_plan.py`, cas « un REFUS sort en 2 » |
+| Le rempart `except BaseException` **avalait le refus** : `SystemExit` en est une | idem | code calculé hors du `try` |
+| Le cliquet de câblage comptait en RÉGRESSION la première épreuve Python du dépôt | il punissait le mécanisme que le contrat 0.2.1 exige | `nexus_test.py --only cablage`, 4 cas, dont 3 garde-fous |
+| L'outillage annonçait « 0 violation » à trois étages superposés | **108 violations réelles** invisibles : ruff 91, PSScriptAnalyzer 17 | `nexus_outillage.py --cliquet`, câblé au rituel |
+| La traque cherchait un refus écrit en MOTS ; celui du garde était écrit en DONNÉES | classes 5 et 6 à **0** pendant que le trou coûtait 32 M de jetons | motifs A et B, éprouvés par sonde |
+
+### 9.2 La leçon du tour, et elle est unique
+
+**Aucun de ces sept défauts ne se voyait à la lecture.** Tous ont été
+trouvés en EXÉCUTANT — en soumettant au détecteur le cas qu'il devait
+attraper. Deux détecteurs ont même été corrigés à faux d'abord :
+
+* le motif du rempart exigeait une constante là où le cas réel portait un
+  appel (`sys.exit(main())`) — il ratait précisément ce pour quoi il
+  existait ;
+* le motif du refus structurel, élargi à la fonction englobante, accusait
+  un chemin de SUCCÈS.
+
+Un détecteur qui crie sur du code juste finit désarmé, et emporte ses
+vraies détections avec lui. La contre-épreuve n'est donc pas un
+supplément : c'est la seule preuve qu'un silence veut dire quelque chose.
+
+### 9.3 Ce qui reste OUVERT — aucun contrôle ne le garde encore
+
+* **Les 108 violations ne sont pas arbitrées.** Un linter signale, il ne
+  juge pas. Parmi elles des classes de vrai bug : `B023` (fonction ne
+  capturant pas la variable de boucle), `B904`, `B905`. Le cliquet
+  empêche qu'elles augmentent, rien n'exige qu'elles baissent.
+* **`eslint` n'est pas provisionné** (npm hors du PATH). Il le DIT, mais
+  le JavaScript du pont n'est donc mesuré par personne — et c'est là que
+  vivent les 11 constats de la vague JS, toujours non arbitrés.
+* **Trois scripts « mieux câblés »** (`nexus_ruche`, `nexus_worktree`,
+  `nexus_test_outillage`) apparus sans que la cause soit établie. La
+  référence n'est pas rebaselinée tant qu'on ne sait pas pourquoi.
+* **Le garde ne couvre que les deux outils qui lancent aujourd'hui.** Un
+  troisième, demain, serait à nouveau aveugle. Rien ne surveille
+  l'apparition d'un lanceur.
+* **Le matcher élargi n'est pas prouvé in vivo** : les hooks se chargent
+  au démarrage de session. La preuve tenue est mécanique — l'épreuve et
+  le contrôle de conformité exercent le garde — pas encore vécue.
+* **40 sauvegardes résiduelles** dans `scripts/.nexus/`, signalées en
+  ALERTE à chaque passage de la porte. Données de l'opérateur.

@@ -212,15 +212,21 @@ def analyser(chemin):
         # recherche d'un sys.exit(X) dans le try dont X n'est pas la constante 0
         bad_exit_in_try = False
         for stmt in n.body:
-            if (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)):
-                func = stmt.value.func
-                if (isinstance(func, ast.Attribute)
-                        and getattr(func.value, "id", "") == "sys"
-                        and func.attr == "exit"):
-                    if stmt.value.args:
-                        arg = stmt.value.args[0]
-                        if not (isinstance(arg, ast.Constant) and arg.value == 0):
-                            bad_exit_in_try = True
+            if not (isinstance(stmt, ast.Expr)
+                    and isinstance(stmt.value, ast.Call)):
+                continue
+            func = stmt.value.func
+            if not (isinstance(func, ast.Attribute)
+                    and getattr(func.value, "id", "") == "sys"
+                    and func.attr == "exit"
+                    and stmt.value.args):
+                continue
+            arg = stmt.value.args[0]
+            # Tout sys.exit(X) ou X n'est pas la constante 0 est un refus
+            # POTENTIEL. Un appel -- `sys.exit(main())` -- en est un, et
+            # c'etait le cas reel ; l'exiger constant ratait tout.
+            if not (isinstance(arg, ast.Constant) and arg.value == 0):
+                bad_exit_in_try = True
         if not bad_exit_in_try:
             continue
         # UN `except SystemExit: raise` DESAMORCE LE REMPART.
