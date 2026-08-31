@@ -121,6 +121,220 @@ def refuser(chemin_affiche: str) -> None:
 # `None` le dit explicitement, pour que le controle ne l'exige pas --
 # et pour qu'un futur lecteur ne prenne pas l'absence de constante
 # pour un oubli.
+# ---------------------------------------------------------------------------
+# LE SHELL ECRIT AUSSI, ET CE GARDE NE LE VOYAIT PAS.
+#
+# MESURE du 2026-08-31 :
+#     Write sur un fichier non lu  -> REFUSE
+#     sed -i / echo > / Set-Content -> PASSE, trois fois sur trois
+# et 79,5 % des invocations de la session passent par le shell.
+#
+# CE QUI SUIT NE REFUSE RIEN. Il JOURNALISE. Une session voisine a tente le
+# refus direct le meme jour : sa greffe a refuse `ls > /dev/null` et bloque une
+# restauration depuis sauvegarde, et a du etre retiree de la production. Un
+# garde trop large se fait desarmer -- c'est pire que le trou.
+#
+# On produit donc la mesure sur laquelle decider la politique, plutot que de
+# la deviner. Le journal dit ce qui est REELLEMENT ecrit par le shell sans
+# avoir ete lu ; la decision de refuser viendra de ces chiffres, ou ne viendra
+# pas.
+#
+# L'extraction passe un banc d'acceptation de 17 cas, dont les anti-controles
+# qui ont fait tomber la greffe voisine : `ls > /dev/null` et la restauration.
+# Voir scripts/epreuve_cibles_shell.py.
+# ---------------------------------------------------------------------------
+
+
+# Cibles inoffensives : ignorees SANS rien signaler. `ls > /dev/null` refuse
+# est ce qui a fait retirer la greffe d'une session voisine, le meme jour.
+_IGNORED = {
+    '/dev/null', '/dev/stdout', '/dev/stderr',
+    'nul', 'nul:', '$null'
+}
+
+# Caracteres qui rendent une cible INDETERMINEE. On ne devine pas : une mesure
+# impossible n'est pas une mesure a zero.
+_PROHIBITED = set('$(`*?')
+
+
+def _strip_quotes(s):
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        return s[1:-1]
+    return s
+
+def _analyse_target(tok):
+    t = _strip_quotes(tok)
+    low = t.lower()
+    if low in _IGNORED:
+        return None, False
+    if any(ch in _PROHIBITED for ch in t):
+        return None, True
+    return t, False
+
+def _split_segments(cmd):
+    segs = []
+    cur = []
+    in_sgl = False
+    in_dbl = False
+    i = 0
+    while i < len(cmd):
+        c = cmd[i]
+        if c == "'" and not in_dbl:
+            in_sgl = not in_sgl
+        elif c == '"' and not in_sgl:
+            in_dbl = not in_dbl
+        if not in_sgl and not in_dbl and c in ';|&':
+            # treat &&, || as single separator
+            if i + 1 < len(cmd) and cmd[i+1] == c:
+                i += 1
+            segs.append(''.join(cur))
+            cur = []
+        else:
+            cur.append(c)
+        i += 1
+    segs.append(''.join(cur))
+    return segs
+
+def _parse_redirections(seg):
+    targets = []
+    indet = False
+    pattern = re.compile(
+        r'(?<!<)>(>?)(\s*)'                     # > or >> not preceded by <
+        r'(?:'                                 # start target
+        r'"([^"]*)"'                           # double quoted
+        r'|'                                   # or
+        r'\'([^\']*)\''                        # single quoted
+        r'|'                                   # or
+        r'([^ \t\r\n;|&]+)'                    # unquoted token
+        r')'
+    )
+    for m in pattern.finditer(seg):
+        # LES GROUPES SONT 3, 4, 5 -- il n'y en a que cinq.
+        #
+        # Le decalage ne se voyait QUE dans le cas guillemets doubles :
+        # le `or` court-circuite, donc group(6) n'etait atteint que la, et
+        # son IndexError etait avale par le except global qui rend
+        # ([], True). Un filet de securite transformait un bug en
+        # « indetermine » parfaitement plausible -- et le cas etait le seul
+        # qui compte pour une racine contenant des espaces.
+        raw = m.group(3) or m.group(4) or m.group(5)
+        if raw is None:
+            continue
+        tgt, det = _analyse_target(raw)
+        if tgt:
+            targets.append(tgt)
+        indet = indet or det
+    return targets, indet
+
+def _tokenize(seg):
+    # keep quoted strings as single tokens
+    return re.findall(r'''[^\s'"]+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*' ''', seg)
+
+def _parse_commands(seg):
+    tokens = _tokenize(seg)
+    if not tokens:
+        return [], False
+    cmd = tokens[0].lower()
+    targets = []
+    indet = False
+
+    # cp, mv, tee : last argument is destination
+    if cmd in ('cp', 'mv', 'tee'):
+        tgt, det = _analyse_target(tokens[-1])
+        if tgt:
+            targets.append(tgt)
+        indet = indet or det
+        return targets, indet
+
+    # dd : look for of=FICHIER
+    if cmd == 'dd':
+        for tok in tokens[1:]:
+            if tok.startswith('of='):
+                raw = tok[3:]
+                tgt, det = _analyse_target(raw)
+                if tgt:
+                    targets.append(tgt)
+                indet = indet or det
+                break
+        return targets, indet
+
+    # PowerShell Set-Content, Add-Content, Out-File
+    if cmd in ('set-content', 'add-content', 'out-file'):
+        for i, tok in enumerate(tokens[1:]):
+            low = tok.lower()
+            if low in ('-path', '-literalpath'):
+                if i + 2 < len(tokens):
+                    raw = tokens[i + 2]
+                    tgt, det = _analyse_target(raw)
+                    if tgt:
+                        targets.append(tgt)
+                    indet = indet or det
+                break
+        return targets, indet
+
+    # sed -i[.suffix] ... file
+    if cmd == 'sed':
+        inplace = any(re.match(r'^-i(\..*)?$', t) for t in tokens[1:])
+        if not inplace:
+            return [], False
+        # last non-option token is file
+        non_opt = [t for t in tokens[1:] if not t.startswith('-')]
+        if non_opt:
+            raw = non_opt[-1]
+            tgt, det = _analyse_target(raw)
+            if tgt:
+                targets.append(tgt)
+            indet = indet or det
+        return targets, indet
+
+    return [], False
+
+def cibles_ecrites(commande):
+    try:
+        segments = _split_segments(commande)
+        all_targets = []
+        indeterminate = False
+        for seg in segments:
+            seg = seg.strip()
+            if not seg:
+                continue
+            t1, d1 = _parse_redirections(seg)
+            t2, d2 = _parse_commands(seg)
+            all_targets.extend(t1)
+            all_targets.extend(t2)
+            indeterminate = indeterminate or d1 or d2
+        return (all_targets, indeterminate)
+    except Exception:
+        return ([], True)
+
+def journaliser_ecriture_shell(session, commande, chemins, indetermine):
+    """
+    Inscrit ce que le shell ecrit sans que le fichier ait ete lu.
+
+    N'ECHOUE JAMAIS et ne refuse rien : ce n'est pas une barriere, c'est un
+    instrument de mesure. Une panne d'ecriture du journal ne doit pas empecher
+    de travailler -- ce serait echanger une mesure contre un blocage.
+
+    « indetermine » est inscrit AUSSI, et separement : une mesure impossible
+    n'est pas une mesure a zero, et savoir combien de commandes echappent a
+    l'extraction est aussi utile que savoir lesquelles ne lui echappent pas.
+    """
+    try:
+        dossier = os.path.join(ROOT, ".nexus")
+        os.makedirs(dossier, exist_ok=True)
+        ligne = json.dumps({
+            "session": session or "",
+            "commande": commande[:300],
+            "chemins": chemins,
+            "indetermine": bool(indetermine),
+        }, ensure_ascii=False)
+        with open(os.path.join(dossier, "ecritures_shell.jsonl"),
+                  "a", encoding="utf-8") as fh:
+            fh.write(ligne + "\n")
+    except Exception:
+        pass
+
+
 OUTILS_JUGES = None
 
 
@@ -141,6 +355,28 @@ def main() -> None:
     outil = charge.get("tool_name") or ""
     entree = charge.get("tool_input")
     entree = entree if isinstance(entree, dict) else {}
+    # LA BRANCHE SHELL PASSE AVANT le test sur `file_path` : une commande n'en
+    # porte pas, et le garde sortait donc immediatement -- c'est exactement par
+    # la que 79,5 % des invocations echappaient.
+    if outil in ("Bash", "PowerShell"):
+        commande = entree.get("command")
+        if isinstance(commande, str) and commande.strip():
+            chemins, indet = cibles_ecrites(commande)
+            if chemins or indet:
+                try:
+                    fichier_memoire = memoire(charge.get("session_id"))
+                    connus = lus(fichier_memoire)
+                    inconnus = [c for c in chemins
+                                if normaliser(c) not in connus]
+                except Exception:
+                    inconnus = chemins
+                if inconnus or indet:
+                    journaliser_ecriture_shell(
+                        charge.get("session_id"), commande, inconnus, indet)
+        # On NE REFUSE PAS. Voir l'en-tete : la politique de refus se decidera
+        # sur le journal, pas sur une supposition.
+        return
+
     chemin = entree.get("file_path") or entree.get("notebook_path") or ""
     if not isinstance(chemin, str) or not chemin.strip():
         return

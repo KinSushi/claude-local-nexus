@@ -1254,7 +1254,8 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord"],
+                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
+                                 "cibles"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1321,6 +1322,8 @@ def main() -> int:
         test_garde_shell_powershell()
     if args.only in (None, "accord"):
         test_gardes_accordes()
+    if args.only in (None, "cibles"):
+        test_cibles_shell()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2285,6 +2288,42 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_cibles_shell() -> None:
+    """
+    Le garde « lire avant d ecrire » voit-il les ecritures du SHELL ?
+
+    MESURE du 2026-08-31 :
+        Write sur un fichier non lu   -> REFUSE   (le garde fonctionnait)
+        sed -i / echo > / Set-Content -> PASSE, trois fois sur trois
+    et 79,5 % des invocations de la session passent par le shell (1416 Bash
+    contre 353 Write). Le garde couvrait donc environ un cinquieme des
+    chemins.
+
+    CE QUI EST POSE NE REFUSE RIEN : il JOURNALISE dans
+    .nexus/ecritures_shell.jsonl. Une session voisine a tente le refus direct
+    le meme jour ; sa greffe a atteint son effet mais a refuse
+    `ls > /dev/null` et bloque une restauration depuis sauvegarde, et a du
+    etre retiree de la production. *Un garde trop large se fait desarmer, et
+    c est pire que le trou.* On produit donc la mesure sur laquelle decider la
+    politique, plutot que de la deviner.
+
+    Les anti-controles portent la MOITIE du banc : sans eux, une extraction
+    qui rendrait tout paraitrait parfaite. Le premier jet du banc gratuit a
+    echoue 9 fois sur 17 ; deux defauts de plus ont ete trouves en corrigeant,
+    tous deux MASQUES par un rempart qui transformait le bug en valeur
+    plausible -- un decalage de numerotation de groupes, et deux constantes de
+    module laissees dehors par l extraction.
+
+    Prouve en vrai : le hook a capte une ecriture reelle de la session, avec
+    son identifiant. Le premier essai avait echoue pour une raison instructive
+    -- sa premiere action etait d effacer le journal, apres que le hook y eut
+    ecrit : une mesure qui s efface elle-meme.
+    """
+    print("")
+    print("--- CIBLES SHELL : le garde voit-il ce que le shell ecrit ? ---")
+    jouer_epreuve_python("epreuve_cibles_shell.py", "cibles shell")
 
 
 def test_gardes_accordes() -> None:
