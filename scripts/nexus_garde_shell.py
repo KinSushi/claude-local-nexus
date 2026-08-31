@@ -93,6 +93,9 @@ def detecter_cas_a(commande):
     """
     Heredoc Python portant un antislash dans son corps.
 
+    Le quoting du délimiteur (<<'EOF' ou <<"EOF") protège le corps du
+    heredoc des expansions du shell, y compris des antislashs. Ce garde ne
+    refuse donc que les heredocs non‑quotés contenant un antislash.
     Le heredoc est reconnu Python par son delimiteur (« PYEOF », « PY »...)
     ou par la presence de « python » avant le « << ». On n'examine QUE le
     corps : un antislash dans la ligne d'ouverture ne sera pas mange.
@@ -101,6 +104,10 @@ def detecter_cas_a(commande):
     for i, ligne in enumerate(lignes):
         m = re.search(r'<<\s*([\'"]?)(\S+)\1', ligne)
         if not m:
+            continue
+        # Si le délimiteur est quoted (groupe 1 non‑vide), le quoting protège
+        # le heredoc des expansions du shell, donc on ignore ce cas.
+        if m.group(1):
             continue
         delimiteur = m.group(2)
         avant = ligne[:m.start()]

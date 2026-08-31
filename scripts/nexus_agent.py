@@ -1119,11 +1119,17 @@ def main() -> int:
             if not t.get("systeme"):
                 t["systeme"] = args.systeme
 
-    # Le parallélisme est plafonné : au-delà, plusieurs gros modèles sont
-    # chargés en même temps sur une machine qui n'a qu'une réserve de RAM,
-    # et l'ensemble ralentit au lieu d'accélérer.
-    # On limite le nombre de threads à 8 pour éviter une consommation excessive.
-    largeur = max(1, min(args.parallele, 8, len(taches)))
+    # Le parallélisme est limité par la RAM locale uniquement pour les modèles
+    # locaux (alias ne se terminant pas par « -cloud »).  Ces modèles partagent
+    # la même machine et sont donc plafonnés à 8 tâches concurrentes.  Les
+    # modèles cloud n'utilisent aucune RAM locale et ne sont donc soumis qu'à la
+    # limite demandée par l'utilisateur via ``--parallele``.
+    # Si aucune tâche locale n'est présente, on retire le plafond de 8.
+    local_tasks = sum(1 for t in taches if not str(t.get('modele', '')).endswith('-cloud'))
+    if local_tasks == 0:
+        largeur = max(1, min(args.parallele, len(taches)))
+    else:
+        largeur = max(1, min(args.parallele, 8, len(taches)))
     depart = time.time()
     resultats: List[dict] = []
     # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
