@@ -481,6 +481,31 @@ def render_local_extra(installed: list[str], declared: set[str],
             note = "expose automatiquement — hors pool : " + reason
         elif dans_pool:
             note = "promu automatiquement — %s" % motif_latence
+            # LA CAPACITE MESUREE EST DITE, meme quand elle ne decide pas.
+            #
+            # `eligible_au_pool` promeut sur l'epreuve OU sur la latence : une
+            # epreuve REUSSIE ouvre la porte, une epreuve ECHOUEE ne la ferme
+            # pas -- le modele repasse simplement par la vitesse. Les epreuves
+            # promeuvent donc, et ne retrogradent jamais.
+            #
+            # Ce n'est pas forcement un defaut : un modele incapable d'appeler
+            # un outil peut parfaitement resumer, et l'exclure perdrait cette
+            # capacite-la. Mais l'asymetrie n'etait ecrite nulle part, et le
+            # pool ne disait rien de ce que la mesure savait.
+            #
+            # Mesure du 2026-08-31 : le pool du routeur local comptait quatre
+            # membres, dont deux PROUVES incapables d'orchestrer --
+            # deepseek-coder-33b a 3/4 et phi3-mini a 1/4 -- pendant que onze
+            # modeles prouves 4/4 restaient dehors. Personne ne pouvait le
+            # voir sans ouvrir le registre a la main.
+            #
+            # La decision reste au generateur ; le CONSTAT revient a
+            # l'operateur.
+            verdict = epreuves_relevees().get(alias)
+            if isinstance(verdict, dict) and not verdict.get("complet"):
+                manque = ", ".join(verdict.get("epreuves_echouees") or []) or "detail non releve"
+                note += " — mais epreuve %s/%s : %s" % (
+                    verdict.get("reussies"), verdict.get("total"), manque)
         else:
             note = "expose automatiquement — hors pool : " + motif_latence
         out += [
