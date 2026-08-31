@@ -1519,9 +1519,13 @@ router_settings:
 
     - qwen2.5-1.5b-local:
         - qwen3-14b-local
-        - qwen3-8b-local
+        - qwen3-32b-local
 
     - qwen3-14b-local:
+        - qwen3-32b-local
+        - qwen3-8b-local
+
+    - qwen3-32b-local:
         - qwen3-8b-local
 
     - qwen3-embedding-8b-local:
@@ -1545,9 +1549,17 @@ router_settings:
 
     - ultime-recourse-local:
         - granite3.3-8b-local
-        - granite3.1-moe-1b-local
+        - gemma3-1b-local
 
     - granite3.3-8b-local:
+        - gemma3-1b-local
+        - gpt-oss-20b-local
+
+    - gemma3-1b-local:
+        - gpt-oss-20b-local
+        - granite3.1-moe-1b-local
+
+    - gpt-oss-20b-local:
         - granite3.1-moe-1b-local
         - llama3.1-8b-local
 
@@ -1592,13 +1604,25 @@ router_settings:
 
     - llava-13b-local:
         - llava-7b-local
-        - qwen3-vl-8b-local
+        - gemma4-26b-local
 
     - llava-7b-local:
+        - gemma4-26b-local
+        - gemma4-local
+
+    - gemma4-26b-local:
+        - gemma4-local
         - qwen3-vl-8b-local
-        - qwen3.6-27b-local
+
+    - gemma4-local:
+        - qwen3-vl-8b-local
+        - qwen3.5-9b-local
 
     - qwen3-vl-8b-local:
+        - qwen3.5-9b-local
+        - qwen3.6-27b-local
+
+    - qwen3.5-9b-local:
         - qwen3.6-27b-local
 
     # <<< AUTOGEN:LOCAL_FALLBACKS
@@ -1702,40 +1726,48 @@ context_window_fallbacks:
 
   # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
   - qwen3-coder-30b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - qwen2.5-coder-32b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - deepseek-coder-33b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - codestral-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - qwen2.5-32b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - qwen2.5-coder-14b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - llama3.2-3b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - phi3-mini-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - ultime-recourse-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
+
+  - gemma3-1b-local:
+      - glm-4.7-flash-local
+      - granite3.3-8b-local
+
+  - gpt-oss-20b-local:
+      - gemma3-1b-local
+      - granite3.1-moe-1b-local
 
   - granite3.1-moe-1b-local:
       - glm-4.7-flash-local
@@ -1758,12 +1790,12 @@ context_window_fallbacks:
       - granite3.3-8b-local
 
   - phi3.5-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - phi3-medium-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
 
   - qwen2.5-coder-7b-local:
       - glm-4.7-flash-local
@@ -1778,8 +1810,12 @@ context_window_fallbacks:
       - granite3.3-8b-local
 
   - qwen3-14b-local:
+      - gemma3-1b-local
       - granite3.1-moe-1b-local
-      - llama3.1-8b-local
+
+  - qwen3-32b-local:
+      - gemma3-1b-local
+      - granite3.1-moe-1b-local
 
   - qwen3-8b-local:
       - glm-4.7-flash-local
@@ -1787,24 +1823,39 @@ context_window_fallbacks:
 
   - gemma4-31b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - llama3.2-vision-11b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - llava-34b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - gemma4-12b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - llava-13b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - llava-7b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
+
+  - gemma4-26b-local:
+      - qwen3-vl-8b-local
+      - qwen3.5-9b-local
+
+  - gemma4-local:
+      - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   - qwen3.6-27b-local:
       - qwen3-vl-8b-local
+      - qwen3.5-9b-local
 
   # <<< AUTOGEN:LOCAL_CTX_FALLBACKS
 
