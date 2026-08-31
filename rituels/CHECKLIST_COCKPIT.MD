@@ -1234,6 +1234,58 @@ enfreinte. Un paragraphe ne ferme rien.
 > modèles restent un signal, pas une loi — la conclusion attendra que huit à
 > dix portent le détail, comme §112.3 l'exige.
 
+### La moitié du pool d'orchestration ne sait pas orchestrer — 31/08
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Le verdict de capacité invisible à la promotion | `FAIT` | le générateur l'annonce désormais |
+| Les épreuves promeuvent mais ne rétrogradent jamais | `OUVERT` | **décision de politique, réservée à l'opérateur** |
+| La lacune dominante du parc | `MESURÉE` | 10 modèles détaillés : l'appel d'outil |
+
+> **Sur dix modèles détaillés :**
+>
+> | épreuve | échecs | non mesurées |
+> |---|---|---|
+> | parle le protocole `/v1/messages` | 2 | 0 |
+> | **demande un outil** | **7** | 0 |
+> | exploite le résultat d'outil | 3 | **4** |
+> | **enchaîne deux outils** | **7** | 0 |
+>
+> Le goulot n'est pas le protocole — huit sur dix savent parler — c'est
+> **l'appel d'outil**. Et l'échec cascade : « exploite le résultat » est *non
+> mesurable* quand aucun outil n'a été demandé.
+>
+> **Le pool du routeur local, confronté à ces verdicts :**
+>
+> | membre | verdict |
+> |---|---|
+> | `codestral-local` | **4/4** |
+> | `llama3.2-3b-local` | **4/4** |
+> | `deepseek-coder-33b-local` | 3/4 — échoue |
+> | `phi3-mini-local` | **1/4** — jamais éprouvé jusqu'ici |
+>
+> **La moitié du pool qui sert l'orchestration est prouvée incapable
+> d'orchestrer**, pendant que onze modèles prouvés 4/4 restent dehors.
+>
+> **La cause, vérifiée ligne 648 de `nexus_generate.py`** :
+> `eligible_au_pool` rend vrai si l'épreuve est *complète*, sinon il retombe
+> sur la latence. Une épreuve réussie ouvre la porte ; une épreuve **échouée
+> ne la ferme pas**. Les épreuves promeuvent et ne rétrogradent jamais — et
+> cette asymétrie n'était écrite nulle part.
+>
+> **Ce que je n'ai pas fait, et pourquoi.** Je n'ai pas changé la règle.
+> Exclure un modèle parce qu'il échoue supposerait qu'un modèle incapable
+> d'appeler un outil est inutile au pool — or il peut parfaitement résumer.
+> Ce qui manque pour trancher n'est pas une décision mais une **mesure** :
+> personne ne sait ce que coûterait cette exclusion. Changer la politique de
+> routage sur une intuition serait exactement ce que cette nuit a passé son
+> temps à corriger ailleurs.
+>
+> Le générateur **annonce** désormais le verdict quand il promeut sur la
+> latence un modèle dont l'épreuve a échoué. La décision lui reste ; le
+> constat revient à l'opérateur, qui ne pouvait le voir qu'en ouvrant le
+> registre à la main.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
