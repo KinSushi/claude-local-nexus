@@ -2313,7 +2313,40 @@ async function callTool(name, args) {
               role: "system",
               content:
                 "Tu es un analyste technique. Tu resumes fidelement, sans inventer. " +
-                "Si une information est absente, tu le dis.",
+                (paths.length > 1
+                  ? // TU NE VOIS QU'UN FICHIER SUR PLUSIEURS, ET TU DOIS LE SAVOIR.
+                    //
+                    // CE QUI ETAIT FAUX, et c'est la cause AMONT de tout le reste.
+                    // Chaque fichier est resume separement, mais recevait la consigne
+                    // ENTIERE avec l'ordre « si une information est absente, tu le
+                    // dis ». Un modele qui ne voit que le fichier B declarait donc
+                    // ABSENT tout ce que demandait la consigne au sujet de A -- une
+                    // affirmation fausse, produite avec assurance.
+                    //
+                    // Mesure d'une session voisine, 2026-08-31, deux fichiers et
+                    // quatre points demandes : le resume de A citait parfaitement
+                    // les trois points de A et declarait le quatrieme « absent » ;
+                    // le resume de B faisait l'inverse. La fusion, batie sur ces
+                    // resumes, heritait des faux « absent » -- d'ou une synthese
+                    // qui declarait un fichier « not provided » alors qu'il avait
+                    // ete lu et correctement resume juste a cote.
+                    //
+                    // Consequence reelle et couteuse : le modele composait une
+                    // integration a partir d'une moitie et INVENTAIT l'autre. Un
+                    // rendu appelait ainsi estimate_gguf_vram_mb(params_billions,
+                    // bits_per_weight), deux parametres qui n'existent pas.
+                    //
+                    // Le remede n'est pas de tout donner a chacun -- ce serait
+                    // renoncer au decoupage qui fait tenir le contexte -- mais de
+                    // DIRE a chacun ce qu'il ne voit pas, et de lui interdire de
+                    // conclure sur ce qu'il n'a pas.
+                    "TU NE VOIS QU'UN SEUL FICHIER, parmi " + paths.length +
+                    " qui sont traites separement. Reponds UNIQUEMENT sur le " +
+                    "fichier ci-dessous. Ne declare RIEN absent ou manquant : ce " +
+                    "que la consigne demande et que tu ne trouves pas ici se " +
+                    "trouve tres probablement dans un autre fichier que tu n'as " +
+                    "pas. Sur ces points-la, tais-toi plutot que de conclure."
+                  : "Si une information est absente, tu le dis."),
             },
             { role: "user", content: `${instruction}\n\n--- ${raw} ---\n${content}` },
           ],

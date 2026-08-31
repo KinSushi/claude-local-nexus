@@ -89,6 +89,42 @@ def jouer() -> int:
     )
 
     print("-" * 66)
+
+    # ------------------------------------------------------------------
+    # CAS 5 a 8 — UN IMPORT CREUX N'EST PAS UN CABLAGE.
+    #
+    # Un module Python s'importe SANS son extension, si bien que le cliquet,
+    # qui compare le nom AVEC extension, declarait ORPHELIN tout module
+    # pourtant importe -- mesure : console_tools.py, importe par nexus_doc.py
+    # dans le commit qui le cree.
+    #
+    # Mais reconnaitre l'import ouvre aussitot un piege, nomme par une session
+    # voisine a l'instant ou il etait ouvert :
+    #     from models.gguf_vram import estimate_gguf_vram_mb  # noqa: F401
+    # `noqa: F401` dit « import inutilise », et le corps ne l'appelle jamais.
+    # Un tel import ferait passer le module d'orphelin a cable SANS que le
+    # produit change. Le chiffre bouge, rien n'est joint. Le compte est
+    # necessaire, il n'est pas suffisant.
+    creux = "from machin import truc  # noqa: F401\n\ndef rien():\n    return 0\n"
+    verifier("Cas 5 - import creux (noqa F401) ne cable pas",
+             nexus_cablage._import_reellement_employe("machin", creux) is False,
+             "refuse")
+
+    employe = "from machin import truc\n\ndef ok():\n    return truc(1)\n"
+    verifier("Cas 6 - import employe cable",
+             nexus_cablage._import_reellement_employe("machin", employe) is True,
+             "accepte")
+
+    prefixe = "import machin\n\ndef ok():\n    return machin.faire()\n"
+    verifier("Cas 7 - module employe par prefixe cable",
+             nexus_cablage._import_reellement_employe("machin", prefixe) is True,
+             "accepte")
+
+    nu = "import machin\n\ndef rien():\n    return 0\n"
+    verifier("Cas 8 - import jamais employe ne cable pas",
+             nexus_cablage._import_reellement_employe("machin", nu) is False,
+             "refuse")
+
     print("VERDICT : {}"
           .format("épreuve tenue" if echecs == 0 else "{} échec(s)".format(echecs)))
     return 1 if echecs else 0

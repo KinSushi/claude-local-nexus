@@ -59,6 +59,7 @@ import fnmatch
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -156,6 +157,57 @@ def invoque(nom: str, texte: str) -> bool:
     return False
 
 
+def _import_reellement_employe(module: str, texte: str) -> bool:
+    """Le module importe est-il EMPLOYE, ou seulement importe ?
+
+    LE PIEGE, nomme par une session voisine a l'instant meme ou j'ouvrais la
+    porte. Reconnaitre `import machin` comme un cablage rend le compteur
+    sensible a une ligne qui ne fait RIEN :
+
+        from models.gguf_vram import estimate_gguf_vram_mb  # noqa: F401
+
+    `noqa: F401` signifie « import inutilise », et le corps ne l'appelle
+    jamais. Un tel import ferait passer le module d'orphelin a cable sans que
+    le produit change d'un iota. C'est un cablage CREUX : le chiffre bouge,
+    rien n'est joint. Le compte est necessaire, il n'est pas suffisant.
+
+    On exige donc un emploi HORS de la ligne d'import : soit `module.`, soit
+    l'un des noms importes. Et un `noqa: F401` disqualifie la ligne d'office
+    -- son auteur declare lui-meme qu'elle ne sert pas.
+    """
+    utile = False
+    noms_importes: list[str] = []
+    lignes_import = set()
+    for i, ligne in enumerate(texte.splitlines()):
+        nue = ligne.strip()
+        if not (nue.startswith("import " + module)
+                or nue.startswith("from " + module + " ")):
+            continue
+        lignes_import.add(i)
+        if "noqa" in ligne.lower() and "f401" in ligne.lower():
+            continue
+        if nue.startswith("from "):
+            _, _, apres = nue.partition(" import ")
+            for morceau in apres.split(","):
+                nom = morceau.strip().split(" as ")[-1].strip()
+                if nom and nom != "*":
+                    noms_importes.append(nom)
+        else:
+            noms_importes.append(module)
+    if not noms_importes:
+        return False
+    for i, ligne in enumerate(texte.splitlines()):
+        if i in lignes_import:
+            continue
+        for nom in noms_importes:
+            if re.search(r"\b" + re.escape(nom) + r"\b", ligne):
+                utile = True
+                break
+        if utile:
+            break
+    return utile
+
+
 def classer(cible: str, textes: dict) -> tuple:
     """
     Catégorie d'un script, et les deux premiers fichiers qui le nomment.
@@ -166,6 +218,34 @@ def classer(cible: str, textes: dict) -> tuple:
     """
     nom = os.path.basename(cible)
     citants = [rel for rel, t in textes.items() if rel != cible and nom in t]
+    # UN MODULE PYTHON S'IMPORTE SANS SON EXTENSION.
+    #
+    # CE QUI ETAIT FAUX. Le nom est compare AVEC son extension -- regle juste,
+    # posee pour qu'un « nexus_test » ne reconnaisse pas
+    # « nexus_test_outillage.py » et ne le declare cable a tort. Mais elle
+    # rend AVEUGLE a la seule facon dont un module est reellement employe :
+    # `import console_tools` ou `from console_tools import forcer_utf8`, sans
+    # jamais les trois lettres de l'extension.
+    #
+    # Mesure du 2026-08-31 : `console_tools.py`, importe par `nexus_doc.py`
+    # dans le commit meme qui le cree, a ete declare ORPHELIN. Le cliquet
+    # reclamait de cabler ce qui l'etait deja, ou de retirer ce qui servait.
+    # Une regle posee contre un faux CABLE produisait un faux ORPHELIN.
+    #
+    # La derogation reste etroite : on n'accepte pas une mention du nom nu --
+    # trop commun -- mais UNIQUEMENT une instruction d'import qui le nomme.
+    importeurs = []
+    if nom.endswith(".py"):
+        module = nom[:-3]
+        motif = re.compile(r"(?:^|\n)\s*(?:from\s+" + re.escape(module) +
+                           r"\s+import|import\s+" + re.escape(module) +
+                           r"(?:\s|,|$))")
+        importeurs = [rel for rel, t in textes.items()
+                      if rel != cible and motif.search(t)
+                      and _import_reellement_employe(module, t)]
+        for rel in importeurs:
+            if rel not in citants:
+                citants.append(rel)
     if not citants:
         return "orphelin", []
     cables = [r for r in citants if est_cableur(r)]
@@ -204,6 +284,22 @@ def classer(cible: str, textes: dict) -> tuple:
                and invoque(nom, textes[r])]
     if scripts:
         return "appele", scripts[:2]
+    # UN IMPORTEUR EST UN APPELANT, et `invoque()` ne pouvait pas le voir.
+    #
+    # `invoque()` cherche le NOM DE FICHIER dans le texte -- « machin.py ».
+    # Or on n'ecrit jamais cela pour employer un module : on ecrit
+    # `import machin`. Reconnaitre la forme d'import plus haut, puis la
+    # soumettre a `invoque()`, revenait a la reconnaitre pour rien.
+    #
+    # Mesure : `console_tools.py`, importe par `nexus_doc.py` dans le commit
+    # qui le cree, restait « prouve seul » -- et l'unique autre citant etait
+    # le COMMENTAIRE de cette fonction, qui le nomme. Le cliquet reclamait de
+    # cabler ce qui l'etait, sur la foi de sa propre documentation.
+    imports_prod = [r for r in importeurs
+                    if r.lower().endswith(".py") and "test" not in r.lower()
+                    and "epreuve" not in os.path.basename(r).lower()]
+    if imports_prod:
+        return "appele", imports_prod[:2]
     return "preuve_seule", citants[:2]
 
 
