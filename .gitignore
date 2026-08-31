@@ -28,3 +28,8 @@ __pycache__/
 # `git status` au moment ou l'on diagnostique.
 temp_diff_*.txt
 releve_tous.txt
+claims.json
+audit_ps.json
+audit_ps_err.txt
+lot_ps.json
+batir_lot_ps.py
