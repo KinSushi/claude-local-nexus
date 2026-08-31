@@ -2730,3 +2730,33 @@ eu sa place.
 commande** dans la spécification. C'est elle qui a fait proposer la
 comparaison d'empreintes plutôt qu'une énième tentative de lecture du texte.
 Mesurer avant de spécifier vaut mieux que corriger après avoir supposé.
+
+### 21.4 L'ancienne exécution a confirmé les deux diagnostics, d'elle-même
+
+L'exécution lancée deux ticks plus tôt — avec le code **d'avant** correction —
+a fini par rendre, et sa sortie est une confirmation empirique :
+
+```
+Traitement de : deepseek-ocr:latest
+Attente de 1800 secondes...
+
+Rapport final :
+  Deja a jour : 0
+  Mises a jour : 0
+  Echecs       : 1
+```
+
+Les deux défauts s'y lisent directement : la **pause de 1 800 secondes**, et
+**`deepseek-ocr` classé en échec** alors que je l'avais tiré moi-même deux
+heures plus tôt et qu'il fonctionnait. Le diagnostic n'était pas une
+déduction : la trace le montre.
+
+**Une réserve d'honnêteté sur le code de sortie.** Ma commande d'alors
+enchaînait deux invocations, et le `code = 0` affiché venait de la seconde,
+pas de celle dont on lit le rapport. Je ne peux donc pas attribuer proprement
+ce zéro à l'ancien code, et je ne le fais pas.
+
+En revanche le contrat **actuel** est mesuré, pas lu : en forçant un échec
+sans rien télécharger, le script rend **1**. C'est la même classe que le
+`exit 0` de la sonde MCP corrigé le matin même — un vert sur un échec
+rapporté — et elle ne se vérifie qu'en la provoquant.
