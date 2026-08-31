@@ -299,7 +299,25 @@ def charger_index_annexe(racine: Path) -> list[tuple[str, str, int, int]]:
     base = racine / "references"
     result: list[tuple[str, str, int, int]] = []
 
-    for sous in ("shell_docs", "lecons"):
+    # LES CORPUS SE DECOUVRENT, ILS NE SE NOMMENT PAS.
+    #
+    # CE QUI ETAIT FAUX : cette ligne portait `("shell_docs", "lecons")`,
+    # deux noms graves. Un corpus neuf depose sous `references/` etait donc
+    # indexe et VERIFIE -- 201 offsets relus par seek, tous concordants --
+    # et pourtant INTROUVABLE a la consultation. Produit, verifie,
+    # invisible.
+    #
+    # Mesure du 2026-08-31, en ingerant un premier corpus : nexus_doc
+    # annoncait « 201 verifies » et repondait « aucun symbole ne
+    # correspond ». Deux verites contradictoires, dont aucune ne mentait --
+    # elles portaient sur deux chemins de code differents.
+    #
+    # C'est la regle empruntee au depot voisin, cessee d'etre appliquee a
+    # soi-meme : tout deriver, ne rien graver.
+    # Les parentheses sont obligatoires : `for x in a if c else b:` est
+    # une erreur de syntaxe, l'expression conditionnelle devant etre close.
+    for sous in (sorted(d.name for d in base.iterdir() if d.is_dir())
+                 if base.is_dir() else []):
         # FAUX : on ignore silencieusement les dossiers manquants.
         dossier = base / sous
         if not dossier.is_dir():
@@ -377,6 +395,31 @@ def verifier_offsets_annexe(racine: Path, entrees: list[tuple[str, str, int, int
         else:
             discordances += 1
     return verifies, discordances
+
+
+def _rendre_doc(objet: dict) -> str:
+    """
+    Rendu d'une entree de documentation ingeree par `nexus_ingerer.py`.
+
+    Meme forme qu'une lecon -- titre, provenance, texte -- mais le type est
+    « doc », et le DIRE vaut mieux que reutiliser « lecon », qui serait faux.
+    Un corpus dont chaque entree s'annonce « type non reconnu » se lit comme
+    casse alors qu'il fonctionne.
+    """
+    bouts = []
+    if objet.get("titre"):
+        bouts.append(str(objet["titre"]))
+    prov = objet.get("chemin")
+    if prov:
+        ligne = objet.get("ligne")
+        bouts.append("source : %s%s" % (prov, (" ligne %s" % ligne) if ligne else ""))
+    texte = str(objet.get("texte") or "")
+    if texte.strip():
+        lignes_txt = texte.splitlines()
+        bouts.append("\n".join(lignes_txt[:30]))
+        if len(lignes_txt) > 30:
+            bouts.append("... (%d lignes de plus)" % (len(lignes_txt) - 30))
+    return "\n".join(bouts)
 
 
 def rendre_symbole_annexe(objet: dict) -> str:
@@ -493,6 +536,11 @@ def rendre_symbole_annexe(objet: dict) -> str:
     # Un corpus futur, ou un champ renomme en amont, ne doit pas produire le
     # silence. Mieux vaut un rendu grossier et signale qu'une reponse vide qui
     # se lit comme une absence de contenu.
+    if typ == "doc":
+        # Corpus ingere par nexus_ingerer.py. Sans cette branche, chaque
+        # entree d'un corpus sain s'annoncait « type non reconnu ».
+        lignes.append(_rendre_doc(objet))
+
     if not lignes:
         lignes.append("[type de corpus non reconnu : %r]" % typ)
         for cle in ("titre", "nom_court", "resume", "signature", "texte",

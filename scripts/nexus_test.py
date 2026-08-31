@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles"],
+                                 "cibles", "ingerer"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1324,6 +1324,8 @@ def main() -> int:
         test_gardes_accordes()
     if args.only in (None, "cibles"):
         test_cibles_shell()
+    if args.only in (None, "ingerer"):
+        test_ingerer()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2288,6 +2290,40 @@ def test_sonde_mcp() -> None:
         vus += 1
     if not vus:
         check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_ingerer() -> None:
+    """
+    Un corpus ingere est-il PRODUIT, DECOUVERT, et LU a son offset ?
+
+    Une instance voisine chargee de la securite a demande « une documentation
+    complete, parsee, prete a l ingestion par des agents, digeste meme pour un
+    modele de 1 a 3 milliards de parametres ». Ce depot possedait la moitie de
+    la reponse -- `nexus_doc.py` sert 166 507 symboles par `seek`, a ~280
+    jetons la consultation -- mais la voie d INGESTION n existait pas : les
+    trois corpus annexes etaient arrives DEJA indexes. Le format etait
+    consomme, jamais produit.
+
+    TROIS DEFAUTS TROUVES EN S EN SERVANT, aucun par relecture :
+
+      1. les identifiants finissaient par un COMPTEUR, alors que le chercheur
+         matche le DERNIER SEGMENT -- un corpus correct et introuvable ;
+      2. le chargeur portait deux noms de corpus GRAVES, si bien qu un corpus
+         neuf etait indexe et VERIFIE (201 offsets relus par seek, tous
+         concordants) et pourtant invisible a la consultation ;
+      3. le champ `type` n etait ecrit que dans l index, jamais dans l objet,
+         et le rendu s aiguille dessus : chaque entree d un corpus sain
+         s annoncait « type de corpus non reconnu ».
+
+    Le piege PRINCIPAL, lui, a ete tenu du premier jet parce qu il etait DIT
+    dans la consigne : les offsets sont en OCTETS. Le corpus vise est en
+    francais ; sur un corpus sans accent, octets et caracteres coincident et
+    l epreuve serait verte a tort. C est pourquoi son document d essai porte
+    des accents.
+    """
+    print("")
+    print("--- INGESTION : produit, decouvert, lu a son offset ? ---")
+    jouer_epreuve_python("epreuve_ingerer.py", "ingestion de documentation")
 
 
 def test_cibles_shell() -> None:
