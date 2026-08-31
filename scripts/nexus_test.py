@@ -1834,6 +1834,33 @@ def test_registre_epreuves() -> None:
                  all(k in garde for k in ("echouees", "ignorees", "concluante")),
                  "champs presents : %s" % ", ".join(sorted(garde)))
 
+        # 4 bis. LAQUELLE a echoue, et pas seulement combien.
+        #
+        # Mesure du 2026-08-30 : sept modeles partiels, dont TROIS a 3/4 --
+        # a une seule epreuve d'etre promouvables -- et rien ne disait
+        # laquelle leur manquait. Or les quatre epreuves mesurent des
+        # capacites differentes : echouer sur le protocole rend inutilisable,
+        # echouer sur le chainage laisse un repondeur utile. Sans ce detail,
+        # on ne peut ni choisir quel modele ajouter pour combler une lacune,
+        # ni savoir laquelle domine.
+        detaille = dict(rapport("detail-local", "ollama_chat/detail", 2,
+                                "local", "http://host.docker.internal:11434"))
+        detaille["epreuves"] = [
+            {"epreuve": "protocole", "ok": True},
+            {"epreuve": "demande d outil", "ok": True},
+            {"epreuve": "usage du resultat", "ok": False},
+            {"epreuve": "chainage", "ok": None},
+        ]
+        releve.consigner(detaille)
+        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        d = reg.get("detail-local", {})
+        check("l'epreuve ECHOUEE est nommee, pas seulement comptee",
+                 d.get("epreuves_echouees") == ["usage du resultat"],
+                 str(d.get("epreuves_echouees")))
+        check("l'epreuve NON MESUREE est distinguee de l'echouee",
+                 d.get("epreuves_non_mesurees") == ["chainage"],
+                 str(d.get("epreuves_non_mesurees")))
+
         # 5. CONTRE-EPREUVE : l'ancienne regle, qui ecrasait sans condition, doit
         # etre VUE par cette epreuve. Sans elle, les cas d'avant ne prouvent rien.
         reg2 = {"modeles": {"x": {"reussies": 4, "complet": True, "concluante": True}}}

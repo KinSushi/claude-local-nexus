@@ -569,6 +569,21 @@ def consigner(rapport: dict) -> None:
         # Le total est lu depuis EPREUVES et non fige a 4 : le jour ou une
         # cinquieme epreuve est ajoutee, un « 4/5 » ne doit pas continuer de
         # passer pour un sans-faute.
+        # LAQUELLE a echoue, et pas seulement combien.
+        #
+        # Le registre gardait le score et rien d'autre. Mesure du
+        # 2026-08-30 : sept modeles partiels, dont TROIS a 3/4 -- a une seule
+        # epreuve d'etre promouvables -- et rien ne disait laquelle leur
+        # manquait. Or les quatre epreuves mesurent des capacites
+        # differentes : parler le protocole, demander un outil, exploiter le
+        # resultat, enchainer. Un modele qui echoue sur la premiere est
+        # inutilisable ; un modele qui echoue sur la quatrieme sert deja de
+        # repondeur.
+        #
+        # Sans ce detail, on ne peut ni choisir quel modele ajouter pour
+        # combler une lacune, ni savoir laquelle est la plus repandue. Le
+        # rapport le portait deja ; seule l'ecriture le perdait.
+        detail = rapport.get("epreuves") or []
         entree = {
             "reussies": rapport["reussies"],
             "total": len(EPREUVES),
@@ -576,6 +591,10 @@ def consigner(rapport: dict) -> None:
             "echouees": rapport.get("echouees"),
             "ignorees": rapport.get("ignorees"),
             "concluante": rapport.get("concluante", True),
+            "epreuves_echouees": [r.get("epreuve") for r in detail
+                                  if r.get("ok") is False],
+            "epreuves_non_mesurees": [r.get("epreuve") for r in detail
+                                      if r.get("ok") is None],
             "plan": rapport["plan"],
             "servi": rapport.get("servi"),
             "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
