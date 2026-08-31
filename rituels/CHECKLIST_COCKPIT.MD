@@ -2989,3 +2989,100 @@ messages de commit et ce fichier.
    dégradent. *Relancer à neuf plutôt que reprendre.*
 4. **Un vert qui ne peut pas rougir ne mesure rien** — construit deux fois
    sans le voir avant de l'exécuter. *La contre-épreuve est le livrable.*
+
+---
+
+## 26. FAIL-OPEN PAR CONSTRUCTION — la classe, nommee par la session voisine
+
+Un etat pose AVANT la tentative qu'il est cense enregistrer. La branche non
+prevue — l'echec — prend alors la valeur « autoriser », et le second passage
+ne peut plus rien corriger puisque l'etat dit que tout va bien.
+
+Trois occurrences mesurees dans ce depot, toutes trouvees par l'USAGE :
+
+| Ou | Ce qui etait pose trop tot | Ce que cela cachait |
+| --- | --- | --- |
+| `nexus_garde_agent.py` | `return 0` sur un refus | « deny » imprime, sous-agent lance quand meme |
+| `tools/nexus-mcp/server.js` | `_modelesReveilles.add()` avant le reveil | un reveil expire enregistre comme reussi |
+| ma contre-epreuve, le meme jour | filtre lisant `ECHEC` apres passage au format `[RATE]` | trois defauts declares non detectes |
+
+Le troisieme est le plus instructif : c'est le VERIFICATEUR du verificateur
+qui s'est casse, sur le meme motif, dans l'heure. Un controle dont le lecteur
+est casse rend exactement le meme silence qu'un depot sain.
+
+**Le remede n'est pas une regle, c'est la contre-epreuve.** On remet le defaut
+UN PAR UN dans le fichier sain et on exige un rouge QUI NOMME LE CAS. Un rouge
+sur la garde de structure, ou un rouge par ecrasement du harnais, ne prouvent
+rien : le premier tombe avant les cas, le second ne dit pas ce qui a lache.
+Les deux sont arrives ici, dans cet ordre.
+
+### 26.1 Le budget de reveil, mesure sur le PARC — et le chiffre corrige
+
+Premier chiffre annonce : « 9 sur 48, soit 18,8 % ». **Faux par construction** :
+48 est un nombre d'ALIAS MESURES, pas de modeles installes. L'operateur l'a
+conteste — « a voir reellement avec ollama list » — et il avait raison.
+
+Confrontation faite, et elle a demande DEUX passes :
+
+| | |
+| --- | --- |
+| modeles locaux installes (`ollama list`) | **52** |
+| alias mesures portant `local` | 48 |
+| alias visant un modele installe | **47** |
+| installes sans mesure de demarrage | 5 |
+
+La premiere passe annoncait 8 alias orphelins et 12 modeles jamais mesures.
+**Egalement faux, et de mon fait** : ma normalisation ne retirait pas le
+suffixe `:latest`, si bien que `codestral:latest` et `codestral-local` ne
+s'appariaient pas. Exactement l'artefact de nommage que la session voisine
+avait rencontre le matin meme, francais contre anglais. Un inventaire produit
+par un apparieur naif dit l'etat de l'apparieur, pas celui du parc.
+
+Les cinq sans mesure ne sont pas un trou : `ollama show` les donne
+**embedding** (all-minilm, bge-m3, nomic-embed-text, qwen3-embedding:8b) et
+**vision/OCR** (deepseek-ocr). Un banc de demarrage *chat* ne les mesure pas,
+et ne le devrait pas.
+
+Le seul veritable orphelin, `ultime-recourse-local`, vise `llama3.2:1b` — ce
+qui **corrige le contrat** : §18 affirmait `ollama_chat/phi3:mini`. Le depot
+fait foi (§5).
+
+**Les chiffres tenus, sur les 47 modeles chat mesures ET installes :**
+
+| Seuil | Modeles au-dessus | Part |
+| --- | --- | --- |
+| 15 s — l'ancien budget grave | **9** | **19,1 %** |
+| 31 s | 6 | 12,8 % |
+| 60 s | 3 | 6,4 % |
+
+Le pire, `qwen3-32b-local`, demarre en **102,9 s** — pres de sept fois le
+budget. Un nombre grave ne pouvait pas couvrir cette dispersion ; le budget
+vient desormais de l'appelant, qui s'y adapte seul.
+
+Mesure directe contre le moteur, `qwen3.6:27b` : **31 s a froid, 2 s a chaud**.
+Un facteur 15 entre deux etats du MEME modele — ce que la session voisine
+avait d'abord attribue a sa taille.
+
+### 26.2 Ferme par un controle qui echoue
+
+`tools/nexus-mcp/epreuve_reveil.js`, cablee a `nexus_test.py --only reveil`,
+11 cas remontes au harnais commun. Contre-epreuve jouee sur les trois defauts
+remis separement : chacun rougit en nommant son cas.
+
+### 26.3 Reste OUVERT
+
+* La classe fail-open n'a **pas** de motif dans `nexus_traque.py` : les trois
+  occurrences ont ete trouvees a la main. Un crible AST la verrait-il ? La
+  session voisine construit exactement cela de son cote.
+* Un apparieur de noms n'a **aucune epreuve** ici, alors qu'il vient de rendre
+  deux inventaires faux en un jour, dans deux depots. Le motif est le meme :
+  suffixe implicite, langue differente.
+* La garde « lire avant d'ecrire » ne reconnait que l'outil Read. Le harnais
+  oriente desormais les lectures vers `cat` : un fichier reellement lu est
+  donc refuse a l'ecriture. Ce n'est PAS un defaut de la garde — elle ne peut
+  pas verifier un `cat` — mais la friction va croitre, et l'affaiblir serait
+  echanger une vraie protection contre du confort.
+* `nexus_context` hors depot : rendre fichier + ligne + score sans contenu.
+  Tranche par la session voisine — **non par defaut, oui sur opt-in explicite
+  et trace**, registre vide garde par un test qui rougit a la premiere
+  addition. Non implemente ici.

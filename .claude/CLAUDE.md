@@ -1174,7 +1174,10 @@ variable. `Update-NexusModels.ps1` refuses to restart LiteLLM when it fails.
 
 Historical note, corrected: earlier revisions of this document stated that
 `ultime-recourse-local` was referenced without being declared. It **is**
-declared (`ollama_chat/phi3:mini`). The real defects were elsewhere and are
+declared — as `ollama_chat/llama3.2:1b`, verified in `litellm_config.yaml`
+on 2026-08-31. This document said `phi3:mini` until then, which the
+configuration had ceased to support: the repository is the source of truth
+for what is deployed (§5), and a frozen fact lies the next day. The real defects were elsewhere and are
 now fixed:
 
 * eleven Ollama Cloud aliases referenced by the routers and never declared;
