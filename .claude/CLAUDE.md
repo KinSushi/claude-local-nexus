@@ -157,6 +157,91 @@ impossible to get wrong.
 
 ---
 
+## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
+
+Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même
+temps celui qui est en charge des améliorations constantes du projet »*.
+
+| As **witness user** | As **maintainer** |
+| --- | --- |
+| drive the tools for real work | fix what that driving reveals |
+| suffer the defect at the moment it bites | make the fix a check, not a paragraph |
+| notice what is awkward, slow, or silently wrong | decide the remedy and weigh its side effects |
+
+**Why neither role alone.** A maintainer who never uses the platform audits
+code, and finds what reading finds — which is little. A user who never
+maintains works around defects, and a defect worked around survives. The value
+sits at the junction: *the defect found by using is the one an audit never
+sees, and it is found by the one person able to fix it that same turn.*
+
+Measured across a single day — every serious defect came from USE, none from
+review:
+
+* a probe reported SUCCESS on its own failures — found by running it,
+  invisible on reading;
+* a "0 violation" report hid **108 real defects** at three stacked levels —
+  found by executing it;
+* the bridge's 600 s ceiling killed three tools in a neighbouring session —
+  found because someone was working;
+* a control counted 259 commits where 178 exist — found by comparing it to
+  git, not by rereading it.
+
+**Working around a defect is how it survives.** That is the one failure this
+pair of roles exists to prevent.
+
+The witness half carries a duty the maintainer half does not: to report what
+the tools do *to their user*. A green that means nothing, a number that cannot
+go red, a diagnosis that sends you to the wrong place — these are visible only
+from the seat of someone actually using the thing.
+
+---
+
+## 0.1.4.1 THREE TRIALS, ALL MANDATORY — forward, reverse, and leak
+
+Stated by the operator the same day: *« tests, reverse tests (vérification que
+les chemins interdits échouent proprement et n'empruntent pas de chemins
+interdits, fuite), forward tests — tout est OBLIGATOIRE »*.
+
+| Trial | Question it answers | Without it |
+| --- | --- | --- |
+| **forward** | does the nominal path work? | the fix may never have worked at all |
+| **reverse** | does the forbidden path FAIL, and fail *cleanly*? | a guard that refuses nothing reads as protection |
+| **leak** | does the refused path avoid taking a forbidden route? | the refusal is announced and the data leaves anyway |
+
+**A silence proves nothing on its own.** A clean repository and a broken
+pattern produce exactly the same output. Only the reverse trial separates
+them — which is why it is not optional.
+
+Each of the three is a distinct question, and passing one says nothing about
+the others. Measured, all on the same day:
+
+* **forward alone was not enough.** A refusal printed `deny` and exited 0: it
+  displayed a refusal that blocked nothing. The forward path worked; the
+  reverse one did not exist. 460 subagents and 32 million billed tokens went
+  through.
+* **reverse alone was not enough.** A rule tightened against fabrication
+  removed the very purpose of the stage: the synthesis stopped synthesising
+  and returned a re-concatenation. The forbidden path was closed, the nominal
+  one broken.
+* **leak is its own question.** `local → cloud` fallbacks are forbidden not
+  because they fail, but because they *succeed* — while sending the data out.
+  A trial that only checks "does it error" would pass a leak.
+
+**Fail cleanly** means three things at once, and each was paid for here: a
+non-zero exit code (a refusal returned 0 and blocked nothing); a message
+naming the way through (a guard that refuses without saying where to go gets
+disarmed); and no side effect left behind (a half-applied patch is more
+dangerous than one that fails outright).
+
+**The counter-trial is the deliverable, not a supplement.** When a check is
+written, the proof that it *detects* is written with it — run against the
+defective version, not only against the healthy one. Every check added this
+day carries its own: the guard's trial fails on the pre-fix code, the wiring
+trial fails on case 2 alone, the tooling ratchet fires on a probe file
+carrying two unused imports.
+
+---
+
 ## 0.1.5 ORCHESTRATOR ONLY — the fix is written by the bench, never here
 
 Stated by the operator on 2026-08-31, after watching the rule broken all

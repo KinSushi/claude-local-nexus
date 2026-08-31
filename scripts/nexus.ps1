@@ -239,6 +239,15 @@ switch ($Commande.ToLower()) {
         exit 0
     }
 
+    'sujets' {
+        # Recupere les sujets restes ouverts au fil de la session, depuis la
+        # transcription, les messages de commit et le cockpit. Une session
+        # longue perd ses sujets ouverts, et les deviner de memoire produit
+        # des oublis silencieux ; ce qui est sur disque ne se perd pas.
+        & python (Join-Path $PSScriptRoot 'nexus_sujets.py') @Reste
+        Exit-Avec $LASTEXITCODE
+    }
+
     'maj-modeles' {
         # Rafraichit les modeles Ollama DEJA INSTALLES. Le depot savait
         # rapatrier un modele ABSENT (-SyncLocal) ; il ne savait pas mettre a
