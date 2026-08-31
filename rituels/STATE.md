@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 07:02 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 07:29 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `ec720a0` |
+| Commit | `65a0a3b` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 41 hours (healthy)
-litellm-proxy	litellm	Up 7 hours
+litellm-proxy	litellm	Up 8 hours
 litellm-redis	redis	Up 41 hours (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 41 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 340.5 Go |
+| Disque libre | 333.6 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -57,13 +57,13 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a675092a96fc184c8dc51777362ea383dca2ef` |
-| `litellm_config.yaml` | `5c96414b214c94ad9e0b7e5f59cc78549b1d48e5d89c61304e9d09232f9e29b8` |
+| `litellm_config.yaml` | `6cc7299651142b63f6d04ff818339a4859574d50ba347712482e8973e52a8f77` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e199854f44f0c1ff6571c5ac7fdb0e7a6ceace` |
-| `cloud_models.txt` | `4cacc5ffa16f30eb984272ea6425abec8dc449d4c93eab567da61969ea083155` |
+| `cloud_models.txt` | `9abb98ab2065b10c8ca8979c6d2e4675a78c5cc7cead35b4b03d70f3261a5d05` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e30152239b48128cbd68a4ef887acec3c21bd79f` |
 | `tools/nexus-mcp/server.js` | `df49e25d80ec8e5120cc9ba5a9086b8ac293db25a8aca9ae9e7ef1b4a7a7d404` |
-| `scripts/nexus_generate.py` | `d9aef51096bd1ec4741f635069353377840dc60d0abe2dcba8f6ef452d0be6a9` |
+| `scripts/nexus_generate.py` | `870c0fd40578659178f8731f6aef47af399208e703d5c3160a425773edc21372` |
 | `scripts/nexus_validate.py` | `aa4e3fa47246de807f29be46ba12b895d06f99811fca0fba489f8b375d2d72dd` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966eb6b3dacbb4a7e63d7fd3cf0fb7da643` |
 | `scripts/nexus_test.py` | `4cec77acd5b6f22fc60461ad582ddfd9d718caaf9f049dd749544366db0b8bfd` |
@@ -72,7 +72,7 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-46 fichier(s) analyse(s)
+47 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       29
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
