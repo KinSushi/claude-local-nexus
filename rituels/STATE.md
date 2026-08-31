@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 07:45 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 07:49 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `1882f85` |
-| Arbre de travail | modifie |
+| Commit | `1855f45` |
+| Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
 ## Services
