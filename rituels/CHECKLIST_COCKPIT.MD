@@ -881,6 +881,52 @@ enfreinte. Un paragraphe ne ferme rien.
 > s'exécute pas ne protège de rien. Le commit qui corrige cela a été validé
 > par `qwen3-coder-30b-local`, cloud indisponible : c'est sa propre preuve.
 
+### La sélection naturelle tournait sur une jambe — 30/08, nuit
+
+| Sujet | Statut | Ce qui le ferme |
+|---|---|---|
+| J'ai supprimé deux fonctions encore appelées | `FAIT` | `--only noms`, avec contre-épreuve rejouant la suppression réelle |
+| Les replis cloud→cloud, dans la config **active** | `FAIT` | régénéré : 37 → 2, et LiteLLM redémarré |
+| Un amont qui **pend** attend 3 × 180 s avant tout repli | `OUVERT` | distinct de l'amplification ; le repli existe, il arrive trop tard |
+| `epreuves.json` ne juge qu'**un** modèle sur 71 | `EN COURS` | `nexus_releve.py --tous` lancé |
+
+> **La panne que j'ai causée, et les quatre contrôles qui ne l'ont pas vue.**
+> Le correctif du sémaphore remplaçait une *région* de `server.js` délimitée
+> par deux commentaires ; cette région contenait aussi `sansRaisonnement()`
+> et `mentionsReponse()`, restées appelées en six endroits. Le serveur a
+> planté au redémarrage suivant, chez une session voisine.
+>
+> Aucun garde ne pouvait le voir : `node --check` valide la syntaxe et non la
+> résolution des noms ; les trois épreuves JS extraient chacune un **bloc
+> isolé** ; le cliquet de câblage ne juge que le Python ; la porte de
+> conformité ne charge pas le pont. Quatre contrôles, **un angle mort
+> commun**. Le garde `--only noms` le ferme.
+>
+> **La configuration active, enfin.** Le correctif des replis vivait dans le
+> générateur et n'avait aucun effet. Mesuré sur le fichier réel, avant/après :
+> cloud→cloud **37 → 2**, cloud→local **3 → 19**. Les deux restants sont
+> légitimes : chaînes de vision ou d'embedding, où greffer un terminal
+> *textuel* enverrait une image à un modèle aveugle — qui ne rend pas une
+> erreur, mais une réponse fausse.
+>
+> **CE QUI RESTE, et que le correctif ne traite pas.** `gpt-oss-120b-cloud`
+> pend toujours au-delà de 120 s. L'amplification est corrigée ; l'**attente**
+> ne l'est pas. Avec `request_timeout: 180` et `num_retries: 2`, un amont qui
+> pend sans jamais répondre fait attendre trois fois 180 s **avant** que le
+> repli local ne soit tenté. Le repli existe désormais ; il arrive trop tard.
+>
+> **L'INCOHÉRENCE LA PLUS LOURDE, trouvée en cherchant où enrichir le local.**
+> `latences.json` porte **71 entrées** : tout le parc est mesuré en vitesse.
+> `epreuves.json` en porte **2** — et ce sont le même modèle et son alias.
+> Donc **un seul modèle sur 71** a jamais prouvé qu'il sait orchestrer :
+> parler le protocole, demander un outil, exploiter le retour, enchaîner.
+>
+> Or §105.2 fait reposer la promotion sur deux jambes, latence **ou**
+> capacité. La seconde n'a jamais servi. Et c'est sur elle que repose la
+> promesse centrale de la plateforme — *le jour où l'abonnement expire, le
+> travail continue*. Ajouter des modèles avant de faire tourner cette
+> jambe-là reviendrait à grossir un tas que le mécanisme ne sait pas juger.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |

@@ -27,3 +27,4 @@ __pycache__/
 # fenetrage MAP-REDUCE s'applique. Un residu ne doit jamais encombrer
 # `git status` au moment ou l'on diagnostique.
 temp_diff_*.txt
+releve_tous.txt
