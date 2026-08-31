@@ -615,6 +615,25 @@ def candidats_locaux(cle: str) -> list[str]:
             continue
         if "ollama.com" in str(params.get("api_base", "")):
             continue
+        # La modalite DECLAREE prime sur le nom.
+        #
+        # Le filtre ne jugeait que le nom : « embed|minilm|llava|-vl-|vision ».
+        # `bge-m3-local` n'en contient aucun, et un modele d'embedding s'est
+        # donc retrouve soumis a une epreuve d'ORCHESTRATION, ou il a
+        # enregistre 0/4 -- un score qu'il ne pouvait pas obtenir autrement,
+        # par construction. C'est le meme angle mort que le contrat dit avoir
+        # deja ete corrige DEUX FOIS ailleurs qu'a sa source.
+        #
+        # La source etait la declaration : `mode` n'y figurait pas, et LiteLLM
+        # retombe alors sur « chat ». Elle est corrigee ; ce filtre lit
+        # desormais ce qu'elle dit, et ne garde le nom que comme filet pour
+        # un modele encore non declare.
+        infos = entree.get("model_info") or {}
+        mode = str(infos.get("mode") or "").lower()
+        if mode and mode != "chat":
+            continue
+        if infos.get("supports_vision"):
+            continue
         if any(m in nom for m in ("embed", "minilm", "llava", "-vl-", "vision")):
             continue
         noms.append(nom)

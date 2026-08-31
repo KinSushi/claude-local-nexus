@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-30 22:19 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-30 22:39 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `fe98954` |
-| Arbre de travail | propre |
+| Commit | `47da776` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
@@ -57,7 +57,7 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a67509` |
-| `litellm_config.yaml` | `562c1fbd32e8ffdb87c4d888d2df42b1` |
+| `litellm_config.yaml` | `8eeca6c62c30380dce421440542edbaf` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e19985` |
 | `cloud_models.txt` | `81981ee156670d3d08686ec569fe194e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839` |

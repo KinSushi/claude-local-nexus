@@ -451,6 +451,7 @@ model_list:
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
     model_info:
+      mode: embedding
       max_input_tokens: 8192
       description: "nomic-embed-text — embedding léger"
 
@@ -460,6 +461,27 @@ model_list:
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
     model_info:
+      # mode DECLARE, jamais devine.
+      #
+      # La documentation LiteLLM est explicite : mode non defini,
+      # le proxy le deduit et RETOMBE SUR UNE COMPLETION DE
+      # CONVERSATION. Ces trois modeles etaient donc annonces
+      # `mode: chat` par /v1/model/info -- un embedding presente
+      # comme un modele de conversation, et aucun consommateur en
+      # aval ne pouvait les distinguer.
+      #
+      # Deux consequences mesurees le 2026-08-30 :
+      #   - nexus_releve.py a soumis bge-m3 a une epreuve
+      #     d'orchestration et enregistre 0/4, alors qu'un
+      #     embedding ne peut pas la passer par construction ;
+      #   - litellm_health_check: true les sondait en CONVERSATION,
+      #     endpoint qu'ils ne servent pas.
+      #
+      # Le filtre de nexus_releve.py excluait sur le NOM
+      # (« embed|minilm|llava »), et bge-m3 n'en contient aucun :
+      # un angle mort deja corrige deux fois ailleurs qu'a sa
+      # source. La source, c'est cette ligne.
+      mode: embedding
       max_input_tokens: 8192
       description: "bge-m3 — embedding multilingue, 1024 dimensions (nomic en rend 768, all-minilm 384, tous deux anglocentres)"
 
@@ -480,6 +502,7 @@ model_list:
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
     model_info:
+      mode: embedding
       max_input_tokens: 8192
       description: "all-MiniLM — embedding léger"
 
