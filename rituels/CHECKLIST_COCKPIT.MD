@@ -927,6 +927,51 @@ enfreinte. Un paragraphe ne ferme rien.
 > travail continue*. Ajouter des modèles avant de faire tourner cette
 > jambe-là reviendrait à grossir un tas que le mécanisme ne sait pas juger.
 
+### La jambe manquante, et ce qu'elle a révélé — 30/08, nuit
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| `retry_policy` : ne pas rejouer un 429 ni une expiration | `FAIT` | clés vérifiées dans la doc LiteLLM avant écriture |
+| Un embedding déclaré `mode: chat` | `FAIT` | `mode: embedding` déclaré ; le filtre lit la déclaration |
+| Un **échec d'appel** enregistré comme un **échec de capacité** | `OUVERT` | il faut les distinguer dans `epreuves.json` |
+| Les épreuves sur les 71 modèles | `EN COURS` | 14 rendus |
+
+> **Le plan cloud est rétabli, et mesuré :** `gpt-oss-120b-cloud` **10,6 s**
+> — il pendait au-delà de 120 s ; `glm-5.3-cloud` 2,1 s ; le local 2,0 s.
+> Réserve d'honnêteté : la fenêtre de refroidissement du 429 a pu expirer en
+> parallèle. Mécanisme et mesure concordent, ce n'est pas une preuve.
+>
+> **L'angle mort corrigé à sa source, enfin.** `bge-m3-local`, modèle
+> d'embedding, a été soumis à une épreuve d'**orchestration** et a enregistré
+> 0/4 — un score qu'il ne peut pas obtenir autrement, par construction. Le
+> filtre excluait sur le *nom* (`embed|minilm|llava`), que `bge-m3` ne porte
+> pas. Mais le nom n'aurait jamais dû servir : la modalité est *déclarée* —
+> sauf qu'elle ne l'était pas. La documentation LiteLLM le dit : `mode` non
+> défini, le proxy **retombe sur une complétion de conversation**. C'est
+> l'angle mort que §106.1 dit avoir déjà été corrigé **deux fois ailleurs
+> qu'à sa source**.
+>
+> **Un second effet, non cherché et plus sérieux :** les trois embeddings
+> portent `litellm_health_check: true` sans `mode`. Leur sonde de santé les
+> interrogeait donc **en conversation**, endpoint qu'ils ne servent pas. Le
+> contrôle de santé se trompait sur eux depuis le début.
+>
+> **CE QUI RESTE OUVERT, du même genre.** Un **échec d'appel** est enregistré
+> comme un **échec de capacité** : les 0/4 portant `plan: inconnu` et
+> `servi: ?` signifient que l'appel n'a jamais abouti. Rien ne les distingue
+> d'un vrai échec, alors que §105.2 dit exactement l'inverse — l'absence de
+> preuve n'est pas une preuve d'absence. La contradiction est flagrante :
+> `glm-4.7-flash-local` rend 0/4 quand `releve-locale`, **servi par le même
+> modèle**, rend 4/4.
+>
+> **Deux erreurs de méthode, les miennes.** J'ai conclu que la passerelle ne
+> remontait pas alors que ma boucle d'attente était fautive : sur connexion
+> refusée, `curl` rend la main instantanément, donc quarante essais
+> s'épuisaient en une seconde. Et j'ai lancé les épreuves **puis redémarré la
+> passerelle deux fois sous elles** — les « Remote end closed connection »
+> n'étaient pas un défaut du parc, c'était moi. Le manuel interdit de mesurer
+> sous charge.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
