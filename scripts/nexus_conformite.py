@@ -1322,14 +1322,27 @@ def controle_garde_agent() -> None:
     cable = False
     if isinstance(entrees, list):
         for entree in entrees:
-            if not isinstance(entree, dict) or entree.get("matcher") != "Agent":
+            # LE MATCHER CONTIENT « Agent », il ne lui est plus egal.
+            #
+            # Mesure du 2026-08-31 : le garde n'etait cable que sur l'outil
+            # `Agent`, alors qu'un SECOND outil lance des sous-agents --
+            # `Workflow` -- et que rien ne le surveillait. 460 sous-agents,
+            # 32,1 millions de jetons factures en une nuit, quand le contrat
+            # cite deja 475 000 comme « l'inverse du but ».
+            #
+            # Le matcher est donc devenu « Agent|Workflow », et ce controle,
+            # qui comparait a la lettre, a BLOQUE le demarrage sur sa propre
+            # correction. Il verifie desormais la PRESENCE des deux portes,
+            # non l'egalite d'une chaine.
+            matcher = (entree.get("matcher") or "") if isinstance(entree, dict) else ""
+            if "Agent" not in matcher:
                 continue
             for h in entree.get("hooks") or []:
                 if isinstance(h, dict) and "nexus_garde_agent" in (h.get("command") or ""):
                     cable = True
     if not cable:
         noter("garde agent", False, BLOQUANT,
-              "aucun hook PreToolUse matcher=Agent n'invoque nexus_garde_agent")
+              "aucun hook PreToolUse couvrant Agent n'invoque nexus_garde_agent")
         return
 
     # ------------------------------------------------------------------

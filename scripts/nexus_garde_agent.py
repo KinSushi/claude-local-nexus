@@ -1,145 +1,257 @@
-# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 """
-Garde economique sur la creation de sous-agents.
+Garde economique sur la creation de sous-agents et workflows.
 
 Pourquoi ce script existe
 -------------------------
-Un sous-agent Claude coute deux fois : son propre raisonnement, facture au
-token, et ce qu'il delegue, gratuit. Seule la seconde moitie sert le but du
-depot. Mesure faite le 29 aout 2026 : 475 000 tokens payants avaient servi a
-piloter 126 000 tokens gratuits -- exactement l'inverse de ce que la
-plateforme existe pour demontrer.
+Le depot a mesure le 31/08/2026 : 460 sous-agents lances par Workflow en une nuit,
+32,1 millions de tokens factures. Le contrat cite 475 000 tokens comme "inverse
+du but". Le garde doit donc bloquer toute utilisation non justifiee de modeles
+factures, que ce soit via l'outil Agent ou via Workflow.
 
-Ce que la garde protege, et ce qu'elle ne protege pas
------------------------------------------------------
-Elle ne refuse pas la puissance. Une premiere version n'autorisait que le
-modele le moins cher, et cette rigidite a coute plus qu'elle n'economisait :
-des validations bacles ont produit deux faux negatifs et un rapport aux
-mesures inventees, donc du travail a refaire. Econome ne veut pas dire bas de
-gamme.
+Ce que la garde protege
+-----------------------
+* Refus des modeles factures (haiku, sonnet, opus, fable) lorsqu'aucune
+  justification n'est fournie.
+* Refus du subagent_type='fork' qui herite du modele du parent.
+* Analyse des scripts JavaScript de Workflow pour detecter les modeles
+  factures.
 
-Ce qu'elle refuse, c'est la depense NON DECIDEE. Le defaut constate n'a jamais
-ete « quelqu'un a choisi un modele puissant » ; il etait « personne n'a
-choisi », et le sous-agent heritait alors du modele du parent -- le plus cher
--- sans que rien ne le signale.
+Ce que la garde ne protege pas
+------------------------------
+* Les outils autres que Agent ou Workflow.
+* Les scripts ne contenant aucune reference a un modele.
+* Les cas ou la justification est presente.
 
-L'ordre des ressorts, que le message de refus rappelle
-------------------------------------------------------
-Le plan payant est l'ULTIME ressort. Avant de lancer un sous-agent Claude, la
-question est d'abord : le banc gratuit peut-il faire ce travail directement,
-par `scripts/nexus_agent.py` ? Un sous-agent ne se justifie que lorsqu'il faut
-une boucle d'outils, du jugement, ou une validation independante -- et il
-choisit alors son modele selon la tache, explicitement.
+Justification acceptee
+----------------------
+1. Variable d'environnement NEXUS_AGENT_LIBRE=1
+2. Presence du texte litteral NEXUS_JUSTIFIE_PAYANT suivi d'un motif sur la
+   meme ligne (dans le prompt ou le script).
 
-Contrat du hook
----------------
-Entree : un objet JSON sur stdin.
-Sortie : code 2 et un message sur stderr pour bloquer, code 0 sinon.
-
-Toute anomalie de forme -- JSON illisible, charge qui n'est pas un objet,
-autre outil que Agent -- rend 0. Une garde qui plante ne doit jamais empecher
-de travailler : elle cesse alors de garantir quoi que ce soit, ce qui est
-moins grave que de bloquer le depot.
-
-L'absence de `model`, elle, n'est pas une anomalie de forme : c'est
-exactement la depense non decidee. Elle bloque.
+Le refus est rendu via le protocole des hooks : un JSON sur stdout contenant
+hookSpecificOutput.permissionDecision = "deny" et
+hookSpecificOutput.permissionDecisionReason = "<message>".
 """
+
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from typing import Any, Dict, List, Tuple
 
-# Modeles connus. Y figurer ne vaut pas recommandation : c'est la preuve
-# qu'un choix a ete pose. Une faute de frappe ne doit pas passer pour une
-# decision, d'ou le refus de tout nom absent de cet ensemble.
-MODELES_CONNUS = {"haiku", "sonnet", "opus", "fable"}
+# Modeles factures connus. Leur presence doit etre justifiee.
+MODELES_FACTURES = {"haiku", "sonnet", "opus", "fable"}
 
-# Un fork herite du contexte ET du modele du parent : l'argument `model` y est
-# ignore par la plateforme. Le laisser passer en le croyant bride serait une
-# garantie fausse, plus nuisible qu'une absence de garantie.
+# Types interdits pour Agent.
 TYPES_INTERDITS = {"fork"}
 
-# Rappele a chaque refus. Le reflexe a installer n'est pas « prendre le moins
-# cher » mais « le payant est l'ultime ressort ».
-RAPPEL = (
-    "",
-    "Avant tout sous-agent : le banc gratuit peut-il faire ce travail seul ?",
-    "",
-    "  VALIDER un correctif ne demande AUCUN agent :",
-    "      python scripts/nexus_valide.py --base main",
-    "  batterie mecanique, recherche de regressions, jugement par le banc",
-    "  gratuit, verdict et code de sortie. Cout facture : zero.",
-    "",
-    "    python scripts/nexus_agent.py --tache \"...\" --fichiers f1 f2 \\",
-    "        --modele gpt-oss-120b-cloud --max-tokens 2000",
-    "Un sous-agent ne se justifie que s'il faut une boucle d'outils, du",
-    "jugement, ou une validation independante. Le payant est l'ultime ressort.",
-    "",
-    "Choisir alors selon la tache, explicitement :",
-    "    haiku   coquille d'orchestration, taches mecaniques, verification",
-    "    sonnet  jugement, arbitrage, audit exigeant",
-    "    opus    seulement la ou sonnet a reellement echoue",
-    "",
-    "Derogation : poser NEXUS_AGENT_LIBRE=1 dans l'environnement.",
+# Message d'aide rappelant le banc gratuit.
+MESSAGE_BANC_GRATUIT = (
+    "Le banc gratuit est disponible via scripts/nexus_agent.py ou les outils "
+    "MCP nexus_ask et nexus_summarize, sans cout."
 )
 
+def _justification_present(charge: Dict[str, Any], script: str | None = None) -> Tuple[bool, str]:
+    """
+    Retourne (True, motif) si une justification est detectee.
+    La justification peut provenir de :
+    * la variable d'environnement NEXUS_AGENT_LIBRE=1
+    * la presence du texte NEXUS_JUSTIFIE_PAYANT suivi d'un motif sur la meme ligne
+      (dans le script ou dans n'importe quelle chaine du charge).
+    """
+    if os.environ.get("NEXUS_AGENT_LIBRE") == "1":
+        return True, ""
 
-def bloquer(*lignes: str) -> int:
-    for ligne in tuple(lignes) + RAPPEL:
-        print(ligne, file=sys.stderr)
+    pattern = re.compile(r"NEXUS_JUSTIFIE_PAYANT\s+(.+)")
+    # Recherche dans le script, le cas de Workflow
+    if script:
+        for line in script.splitlines():
+            m = pattern.search(line)
+            if m:
+                return True, m.group(1).strip()
+    # Recherche dans toutes les chaines du charge (prompt, etc.)
+    def _search_in_obj(obj: Any) -> Tuple[bool, str]:
+        if isinstance(obj, str):
+            m = pattern.search(obj)
+            if m:
+                return True, m.group(1).strip()
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                found, motif = _search_in_obj(v)
+                if found:
+                    return True, motif
+        elif isinstance(obj, list):
+            for v in obj:
+                found, motif = _search_in_obj(v)
+                if found:
+                    return True, motif
+        return False, ""
+    return _search_in_obj(charge)
+
+def _refuse(reason: str) -> int:
+    """
+    Emet le JSON de refus sur stdout et retourne le code de sortie.
+    Aucun accent n'est utilise.
+    """
+    payload = {
+        "hookSpecificOutput": {
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
+    print(json.dumps(payload, ensure_ascii=False))
+    # UN REFUS SORT EN 2, JAMAIS EN 0.
+    #
+    # Le protocole des hooks de ce depot fait du code 2 le refus ; le JSON
+    # porte le MOTIF, pas la decision. Le premier jet de ce garde rendait 0
+    # apres avoir imprime « deny » : il affichait un refus qui ne bloquait
+    # rien -- une fausse garantie, pire que pas de garde du tout.
+    #
+    # L'erreur venait de mon epreuve, qui avait encode « un garde ne doit
+    # jamais planter » en « un garde sort toujours 0 ». PLANTER et REFUSER
+    # sont deux choses distinctes : la premiere se rattrape en 0 (le rempart
+    # BaseException plus bas), la seconde DOIT etre non nulle. La porte de
+    # conformite l'a vu en EXERCANT le garde, la ou une relecture du code ne
+    # l'aurait pas vu.
     return 2
 
-
-def main() -> int:
-    try:
-        charge = json.load(sys.stdin)
-    except Exception:
-        # JSON illisible → aucune décision, on rend 0
-        return 0
-
-    # La charge doit être un dictionnaire ; sinon on ne peut pas interpréter les champs.
-    if not isinstance(charge, dict):
-        return 0
-
-    if os.environ.get("NEXUS_AGENT_LIBRE") == "1":
-        return 0
-    if charge.get("tool_name") != "Agent":
-        return 0
-
+def _handle_agent(charge: Dict[str, Any]) -> int:
+    """
+    Controle specifique a l'outil Agent.
+    """
     entree = charge.get("tool_input")
     if not isinstance(entree, dict):
         return 0
 
-    # subagent_type est FACULTATIF : l'omettre lance un agent generaliste, et
-    # c'est le cas le plus courant. Sortir ici quand il manquait annulait le
-    # controle du modele juste en dessous -- la garde laissait donc passer
-    # precisement la depense non decidee qu'elle existe pour refuser.
-    genre = entree.get("subagent_type")
-    if isinstance(genre, str) and genre in TYPES_INTERDITS:
-        return bloquer(
-            "Sous-agent refuse : subagent_type='%s' herite du modele du parent," % genre,
-            "et l'argument model y est ignore. L'annoncer bride serait une",
-            "garantie fausse, plus nuisible qu'aucune garantie.")
+    # Refus du type interdits (fork)
+    sub_type = entree.get("subagent_type")
+    if isinstance(sub_type, str) and sub_type in TYPES_INTERDITS:
+        reason = (
+            f"Sous-agent refuse : subagent_type='{sub_type}' herite du modele du parent, "
+            f"et l'argument model y est ignore. {MESSAGE_BANC_GRATUIT} "
+            "Pour autoriser, fournir justification."
+        )
+        return _refuse(reason)
 
+    # Presence du champ model
     modele = entree.get("model")
-    # Le champ model doit être présent ; son absence indique une dépense non décidée.
     if modele is None:
-        return bloquer(
-            "Sous-agent refuse : aucun modele choisi.",
-            "Un model absent fait HERITER celui du parent, donc le plus cher,",
-            "et rien ne le signale. C'est la depense non decidee, pas la",
-            "depense elevee, que cette garde refuse.")
-    # Un model non textuel n'est pas davantage un choix qu'une faute de
-    # frappe : il est traite comme un nom inconnu, pas comme une anomalie.
-    if not isinstance(modele, str) or modele not in MODELES_CONNUS:
-        return bloquer(
-            "Sous-agent refuse : model=%r inconnu." % modele,
-            "Valeurs connues : %s." % ", ".join(sorted(MODELES_CONNUS)),
-            "Une faute de frappe ne doit pas passer pour un choix.")
+        reason = (
+            "Sous-agent refuse : aucun modele choisi. "
+            f"{MESSAGE_BANC_GRATUIT} "
+            "Pour autoriser, fournir justification."
+        )
+        return _refuse(reason)
 
+    # Le modele doit etre une chaine
+    if not isinstance(modele, str):
+        reason = (
+            f"Sous-agent refuse : modele de type {type(modele).__name__} invalide. "
+            f"{MESSAGE_BANC_GRATUIT} "
+            "Pour autoriser, fournir justification."
+        )
+        return _refuse(reason)
+
+    # Controle du modele facture
+    if modele in MODELES_FACTURES:
+        justified, motif = _justification_present(charge)
+        if not justified:
+            reason = (
+                f"Sous-agent refuse : modele facture '{modele}'. "
+                f"{MESSAGE_BANC_GRATUIT} "
+                "Pour autoriser, definir NEXUS_AGENT_LIBRE=1 ou ajouter "
+                "NEXUS_JUSTIFIE_PAYANT <motif> dans le prompt."
+            )
+            return _refuse(reason)
+        # Si justification presente, on peut inclure le motif dans le log (pas obligatoire)
     return 0
 
+def _handle_workflow(charge: Dict[str, Any]) -> int:
+    """
+    Controle specifique a l'outil Workflow.
+    Analyse le champ script du tool_input.
+    """
+    entree = charge.get("tool_input")
+    if not isinstance(entree, dict):
+        return 0
+
+    script = entree.get("script")
+    if not isinstance(script, str):
+        return 0  # Aucun script a analyser -> laisser passer
+
+    # Recherche des model: <nom> dans le script
+    pattern = re.compile(r"model\s*:\s*['\"]?(\w+)['\"]?")
+    matches = pattern.findall(script)
+
+    # Filtrer les modeles factures
+    factures = [m for m in matches if m in MODELES_FACTURES]
+
+    if not factures:
+        return 0  # Aucun modele facture trouve -> laisser passer
+
+    justified, motif = _justification_present(charge, script)
+    if justified:
+        return 0  # Justification presente, on autorise
+
+    # Refus : construire le message avec le nombre d'occurrences et les noms
+    nb = len(factures)
+    uniques = sorted(set(factures))
+    modele_liste = ", ".join(uniques)
+    reason = (
+        f"Workflow refuse : {nb} occurrence(s) de modele(s) facture(s) [{modele_liste}] detectees. "
+        f"{MESSAGE_BANC_GRATUIT} "
+        "Pour autoriser, definir NEXUS_AGENT_LIBRE=1 ou ajouter "
+        "NEXUS_JUSTIFIE_PAYANT <motif> dans le script."
+    )
+    return _refuse(reason)
+
+def main() -> int:
+    """
+    Point d'entree du garde.
+    Toute anomalie de forme (JSON illisible, champs manquants, etc.) rend 0.
+    Le garde ne doit jamais planter.
+    """
+    try:
+        charge = json.load(sys.stdin)
+    except Exception:
+        return 0
+
+    if not isinstance(charge, dict):
+        return 0
+
+    # Si la justification globale est fournie via l'environnement, on laisse passer.
+    if os.environ.get("NEXUS_AGENT_LIBRE") == "1":
+        return 0
+
+    tool_name = charge.get("tool_name")
+    if tool_name == "Agent":
+        return _handle_agent(charge)
+    if tool_name == "Workflow":
+        return _handle_workflow(charge)
+
+    # Tout autre outil : aucune decision, on rend 0.
+    return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # LE REMPART NE DOIT PAS AVALER LE REFUS.
+    #
+    # `sys.exit(2)` leve SystemExit, qui EST une BaseException. Un
+    # `except BaseException` place autour rattrapait donc le refus lui-meme
+    # et le rendait en 0 : le garde imprimait « deny », sortait 0, et
+    # n'empechait rien. Mesure : trois refus sur trois traversaient.
+    #
+    # C'est le meme defaut qu'un cran plus bas -- « ne jamais planter »
+    # ecrasant « refuser » -- et il ne se voit qu'en EXERCANT le garde, car
+    # les deux lignes sont justes prises separement.
+    #
+    # On calcule donc le code AVANT de sortir, et on ne rattrape que ce qui
+    # arrive pendant le calcul. La sortie elle-meme est hors du try.
+    try:
+        code = main()
+    except BaseException:
+        # Un garde qui plante ne doit jamais arreter le travail qu'il protege.
+        code = 0
+    sys.exit(code)

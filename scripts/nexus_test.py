@@ -1247,7 +1247,7 @@ def main() -> int:
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
-                                 "terminal", "noms", "registre", "atomique"],
+                                 "terminal", "noms", "registre", "atomique", "plan"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1294,6 +1294,8 @@ def main() -> int:
         test_registre_epreuves()
     if args.only in (None, "atomique"):
         test_ecriture_atomique()
+    if args.only in (None, "plan"):
+        test_garde_plan_paye()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2117,6 +2119,57 @@ def test_ecriture_atomique() -> None:
               "contenu=%r restes=%s" % (contenu, autres or "aucun"))
     finally:
         _shutil.rmtree(dossier, ignore_errors=True)
+
+
+def test_garde_plan_paye() -> None:
+    """
+    Le plan PAYE est-il refuse par defaut, comme le contrat l'exige ?
+
+    LE TROU, mesure le 2026-08-31 et trouve par l'operateur, pas par moi.
+    Le garde des sous-agents n'etait cable que sur l'outil `Agent`. Un SECOND
+    outil lance des sous-agents -- `Workflow` -- et RIEN ne le surveillait :
+    460 sous-agents et 32,1 MILLIONS de jetons factures en une nuit, quand le
+    contrat cite deja 475 000 comme « l'inverse du but ».
+
+    Et la seconde moitie est plus profonde : meme sur `Agent`, le garde ne
+    verifiait que ceci -- le modele est-il NOMME et connu. Or ses quatre
+    valeurs connues, haiku sonnet opus fable, sont TOUTES facturees. Il
+    imposait d'etre explicite, jamais de preferer le gratuit. La regle
+    centrale du depot -- banc gratuit d'abord, Claude en dernier ressort --
+    n'etait mecanisee NULLE PART. Elle vivait dans le texte, et rien ne la
+    faisait echouer.
+
+    C'est §0.2.1 dans sa forme la plus couteuse : une regle ecrite partout,
+    et qu'aucun controle ne gardait.
+    """
+    print("\n--- PLAN PAYE : le garde refuse-t-il par defaut ? ---")
+
+    epreuve = os.path.join(ROOT, "scripts", "epreuve_garde_plan.py")
+    if not os.path.isfile(epreuve):
+        skip("garde de plan", "epreuve_garde_plan.py introuvable")
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=300)
+    except subprocess.TimeoutExpired:
+        check("garde de plan", False, "pas de reponse en 300 s")
+        return
+
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    if not vus:
+        check("garde de plan", False,
+              "aucun cas rendu (code %s)" % r.returncode)
 
 
 def test_ruche() -> None:
