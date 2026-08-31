@@ -442,7 +442,7 @@ enfreinte. Un paragraphe ne ferme rien.
 | 40 sauvegardes résiduelles dans `scripts/.nexus/` | ce sont des **données** | la suppression appartient à l'opérateur, pas à l'agent |
 | `import subprocess` en portée locale (`nexus_ruche.py:205`) | même famille qu'un défaut déjà payé | à corriger seul, sans le mêler à un autre sujet |
 | ~~`--modele` ne filtre pas~~ — **inscription FAUSSE, corrigée** | le filtre marchait ; c'est l'AFFICHAGE qui trompait. Le banc mesurait bien le seul modèle demandé puis imprimait les 71 lignes du relevé stocké. Prouvé en comparant : « phi3-mini-local 2.518 » était exactement le `latence_ms=2518` déjà enregistré, pas une mesure du jour | **corrigé** : la restriction d'affichage portait sur `--manquants` seul, elle porte désormais sur tout sous-ensemble demandé |
-| Les modèles **cloud** échouent en série (« Remote end closed connection », 2,0 s) | `--plan local` rend zéro échec : le défaut est côté cloud, pas côté banc | diagnostiquer quota ou réseau, machine au repos |
+| Les modèles **cloud** échouent en série | **DIAGNOSTIQUÉ le 30/08 au soir : `429 Too Many Requests` sur `https://ollama.com/api/chat`, lu dans les journaux de la passerelle.** Ni réseau ni configuration : une limite de débit | reste à borner la concurrence cloud, comme le local l'est déjà |
 | 9 appels Anthropic sur 9 échouent | **le repli masque la cause** : la lire exige de le désactiver temporairement | à faire hors de toute exécution de suite |
 | `Start-Claude.ps1` jamais joué de bout en bout | le lancer démarre une session Claude | ne se teste pas à la légère |
 | Débit mesuré sur 7 modèles sur 71 | le banc n'a jamais tourné en entier | `nexus_bench.py --debit`, machine au repos |
@@ -681,6 +681,55 @@ enfreinte. Un paragraphe ne ferme rien.
 > le pont ; une troisième, classée *bloquante*, disait « impossible d'invoquer
 > l'outil MCP sans outils shell » — c'est une limite du sous-agent, jamais du
 > serveur.
+
+### Le plan cloud est tombé sous mes propres vagues — diagnostic, 30/08 au soir
+
+| Sujet | Statut | Ce qui le fermera |
+|---|---|---|
+| Concurrence **cloud** non bornée | `OUVERT` | une borne cloud, distincte et plus haute que la borne locale |
+| `This model isn't mapped yet` sur les alias `ollama_chat/*` | `OUVERT` | la passerelle ignore tarif et fenêtre de ces modèles ; effet réel à établir |
+| Refus qui ne nomment pas l'issue | `FAIT` | `--only protocole`, 9 cas dont un contrôle structurel |
+
+> **Ce qui a été mesuré, machine au repos et vagues arrêtées :**
+>
+> | appel | résultat |
+> |---|---|
+> | `llama3.2-3b-local` | **OK en 18,3 s** |
+> | `glm-5.3-cloud` | expire à 102 s |
+> | `kimi-k2.7-code-cloud` | expire à 102 s |
+> | `https://ollama.com/api/tags` | **200 en 0,23 s** |
+> | `/health/liveliness` de la passerelle | **200 en 0,22 s** |
+>
+> Ni le réseau, ni l'hôte amont, ni la passerelle. Le journal de LiteLLM donne
+> le mot : **`Client error '429 Too Many Requests' for url
+> 'https://ollama.com/api/chat'`**. Le sujet « les modèles cloud échouent en
+> série », ouvert depuis la veille avec pour seul indice « Remote end closed
+> connection, 2,0 s », est donc diagnostiqué — et son symptôme a changé : il
+> pend désormais au lieu de fermer.
+>
+> **DEUX ERREURS DE MA PART, et elles s'annulent presque.**
+>
+> La première : j'ai écrit dans ce cockpit, il y a une heure, que « le cloud
+> n'est PAS borné : il a rendu 7 sur 7 en parallèle ». C'était vrai **à sept
+> appels simultanés**. Je l'ai généralisé à cent cinquante en lançant deux
+> vagues qui appelaient toutes `gpt-oss-120b-cloud`. C'est très exactement
+> l'erreur que §112.3 corrige — deux relevés érigés en propriété d'une classe
+> — commise deux heures après l'avoir citée.
+>
+> La seconde, en sens inverse : constatant que le service ne revenait pas
+> aussitôt les vagues arrêtées, j'ai conclu « ce n'est donc pas une saturation
+> que j'aurais causée ». Faux : un 429 s'accompagne d'une fenêtre de
+> refroidissement, et l'absence de retour immédiat ne prouve rien. Le journal
+> a dit ce que l'inférence ne pouvait pas dire. **La leçon n'est pas d'avoir
+> eu tort deux fois, c'est que les deux fois j'ai conclu sans regarder les
+> journaux, qui étaient à une commande de distance.**
+>
+> **Conséquence mécanique, et elle est symétrique du sémaphore local.** La
+> borne locale existe parce que le moteur partage sa mémoire ; il en faut une
+> pour le cloud parce que l'abonnement partage un débit. Elle doit être plus
+> haute — sept appels simultanés ont tenu — mais elle ne peut pas être absente.
+> Le sémaphore est déjà écrit et éprouvé : seule manque une seconde borne,
+> distincte, et le prédicat qui l'aiguille.
 
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
