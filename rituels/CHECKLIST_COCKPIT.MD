@@ -2120,3 +2120,71 @@ modèle prenait la porte offerte.
 
 Ce qui restait après tri était réel, et de mon côté : un vert qui ne signifie
 rien, et deux étages qui concluaient au-delà de ce qu'ils voyaient.
+
+---
+
+## 13. P3 vérifié plutôt que repris — et le chiffre ne tenait pas
+
+### 13.1 La vérification change la conclusion
+
+Le rapport voisin annonçait **37 replis cloud → cloud** contre 4 vers le local.
+Compté dans la configuration réelle, sur 108 arcs :
+
+| Direction | Arcs |
+|---|---|
+| `local → local` | 72 |
+| `cloud → local` | **20** — la bonne direction |
+| `anthropic → local` | 4 |
+| `anthropic → anthropic` | 3 |
+| `cloud → cloud` | **2** — et tous deux sur `adaptive-router-cloud` |
+
+Deux, non trente-sept, et les deux appartiennent au **routeur**, dont c'est la
+définition d'avoir des candidats cloud. Le chiffre décrivait très probablement
+l'état d'avant le correctif d'amplification posé plus tôt dans cette session.
+
+L'analyse est un signal, jamais une preuve (§112.4). Ici elle ne tenait pas —
+et le dire vaut mieux que corriger un défaut qui n'existe plus.
+
+### 13.2 La préoccupation, elle, tenait — et rien ne la gardait
+
+Le validateur contrôle la **direction** des replis en comparant des
+**domaines**. Or `cloud → cloud` a le même domaine des deux côtés : la
+comparaison `src != dst` est fausse et la règle ne se déclenche **jamais**.
+
+Tous les modèles Ollama Cloud partagent un compte, donc un plafond. Un 429 ne
+peut pas être rattrapé par un alias qui partage la ressource épuisée : le repli
+**triple** la charge qui a causé le refus. Le validateur refusait déjà qu'un
+modèle se replie sur lui-même ; il lui manquait de savoir que deux alias d'un
+même compte tombent ensemble tout autant.
+
+**Cliquet, non réparation** : zéro cas hors routeur aujourd'hui. Le contrôle ne
+corrige rien, il empêche le retour d'un état qui a réellement existé.
+
+**Non touché, et signalé** : les 3 arcs `anthropic → anthropic` relèvent du même
+raisonnement, mais §17 prescrit explicitement le repli dans la famille
+Anthropic. Changer cela serait une décision de doctrine, pas une correction.
+
+### 13.3 Deux défauts nés d'une vérification, pas d'un audit
+
+En vérifiant en vivo le correctif de fusion :
+
+* **la synthèse ne synthétisait plus.** En serrant contre l'invention, j'avais
+  supprimé sa raison d'être — « dégage ce qui relie les fichiers ». Elle rendait
+  une reconcaténation quasi mot pour mot, ~7 000 jetons pour redire ce qui
+  figurait juste au-dessus. La distinction juste n'est pas « ne rien ajouter »
+  mais « n'ajouter aucun **fait** ».
+* **la sonde n'exerçait que le plan le plus lent.** Elle ne pouvait pas choisir
+  son modèle et prenait toujours `glm-4.7-flash-local` : résumer deux fichiers
+  ordinaires a dépassé **dix minutes** sans GPU, quand le cloud rend en quinze
+  secondes. La seule sonde du dépôt expirait donc avant d'avoir rien exercé —
+  cause plausible des « pannes du pont » rapportées alors que le pont
+  travaillait. `NEXUS_PROBE_MODEL` ouvre le choix ; le défaut reste **local**.
+
+### 13.4 Reste du rapport voisin
+
+* **P2** — `nexus_index_build` expire à 180 s sur cet hôte sans GPU, donc
+  `nexus_search` est hors service. Une part est mécanisable tout de suite : le
+  modèle d'embedding **n'a aucun repli déclaré**, et cela se vérifie.
+* **P4** — six familles sur neuf rendent vide à 2 200 jetons ; la bascule sauve
+  le travail mais détruit la décorrélation des familles, et seule la ligne
+  BASCULE le dit.

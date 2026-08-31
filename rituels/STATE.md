@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 05:38 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 06:24 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,16 +9,16 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `09d6f99` |
+| Commit | `1114a7f` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
-litellm-db	db	Up 39 hours (healthy)
-litellm-proxy	litellm	Up 6 hours
-litellm-redis	redis	Up 39 hours (healthy)
+litellm-db	db	Up 40 hours (healthy)
+litellm-proxy	litellm	Up 7 hours
+litellm-redis	redis	Up 40 hours (healthy)
 ```
 
 ## Moteur d'inférence
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 39 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 338.2 Go |
+| Disque libre | 340.6 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -62,18 +62,18 @@ Verdict : **valide**
 | `cloud_models.txt` | `4cacc5ffa16f30eb984272ea6425abec8dc449d4c93eab567da61969ea083155` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `9e2a59fe81edff69aa860e95e30152239b48128cbd68a4ef887acec3c21bd79f` |
-| `tools/nexus-mcp/server.js` | `69a54223e413ab7d4669c35c64d57dae7f359fe4b640e0c06da6c32c0c739950` |
+| `tools/nexus-mcp/server.js` | `6fc16362f9a82c2d0641d6f3898958c5e515dfed8e7c1c6040b1629a128d8dea` |
 | `scripts/nexus_generate.py` | `d9aef51096bd1ec4741f635069353377840dc60d0abe2dcba8f6ef452d0be6a9` |
-| `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f79d24bd59c14a067c86087b28961ab4d1` |
+| `scripts/nexus_validate.py` | `aa4e3fa47246de807f29be46ba12b895d06f99811fca0fba489f8b375d2d72dd` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966eb6b3dacbb4a7e63d7fd3cf0fb7da643` |
-| `scripts/nexus_test.py` | `d6c882769eb93afe2719b8437084d7fb1f6b705c2970eb5b461d265467d7a8d6` |
+| `scripts/nexus_test.py` | `4cec77acd5b6f22fc60461ad582ddfd9d718caaf9f049dd749544366db0b8bfd` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d08ce1f7f38a711e29b4cc6b2fba58043b` |
 
 ## Traque mecanique
 
 ```
-45 fichier(s) analyse(s)
-  classe 1  handler muet sur un try qui agit       29
+46 fichier(s) analyse(s)
+  classe 1  handler muet sur un try qui agit       30
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
   classe 4  valeur neutre rendue par un except     5
