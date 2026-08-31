@@ -180,7 +180,9 @@ try {
                 try {
                     $r = Invoke-WebRequest -Uri $HealthCheckUrl -TimeoutSec 5 -ErrorAction Stop
                     if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
-                } catch { }
+                } catch {
+                    Write-Error -ErrorAction SilentlyContinue $_
+                }
             }
         }
     }

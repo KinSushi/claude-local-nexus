@@ -45,3 +45,7 @@ claims_ps.json
 # Reference locale, jamais du code de ce depot : elle ne part pas a la vitrine.
 references/python_libs_docs/
 .nexus/index_doc_libs.tsv
+lint_ps.json
+outils_voisins.json
+candidats_voisins.json
+appliquer_ps.py

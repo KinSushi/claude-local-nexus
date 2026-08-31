@@ -184,7 +184,7 @@ if ($CheckOnly) {
 } else {
     Push-Location $RepoRoot
     try {
-        $upResult = Invoke-DockerCompose -Args @("up","-d")
+        Invoke-DockerCompose -Args @("up","-d")
         if ($LASTEXITCODE -ne 0) {
             Write-Stop "docker compose up a echoue"
             exit 1

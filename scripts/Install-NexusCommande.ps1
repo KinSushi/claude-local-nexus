@@ -37,7 +37,7 @@ param(
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$racine = Split-Path -Parent $PSScriptRoot
+
 $cible  = (Join-Path $PSScriptRoot 'nexus.ps1') -replace '\\', '/'
 
 $debut = '# >>> CLAUDE-LOCAL-NEXUS'

@@ -171,8 +171,8 @@ switch ($Commande.ToLower()) {
         function Test-EntreeConforme($entree, $serveurAttendu) {
             if ($null -eq $entree) { return $false }
             if ($entree.command -ne 'node') { return $false }
-            $args = @($entree.args)
-            if ($args.Count -ne 1 -or $args[0] -ne $serveurAttendu) { return $false }
+            $entryArgs = @($entree.args)
+            if ($entryArgs.Count -ne 1 -or $entryArgs[0] -ne $serveurAttendu) { return $false }
             if ($null -eq $entree.env) { return $false }
             return $entree.env.NEXUS_LITELLM_URL -eq 'http://127.0.0.1:4000'
         }
