@@ -3161,3 +3161,28 @@ Mesure faite : une fois commite, le cliquet voit le fichier. **La cecite dure
 un tour, elle n'est pas permanente** — et c'est pourquoi ce point est inscrit
 ici plutot que corrige dans l'urgence : elargir a l'arbre de travail ferait
 juger des brouillons, ce qui produirait du bruit a chaque tour.
+
+### 27.6 Le cliquet d'outillage a rougi sur MON code, dans le meme tour
+
+Le rituel a refuse de clore :
+
+```
+[MANQUE] outillage tenu   Outillage : 2 REGRESSION(S).
+                          | ruff : B007 12 -> 13 | ruff : F401 2 -> 3
+```
+
+Sur du code applique quelques minutes plus tot. C'est precisement son office,
+et il faut le dire : **la seule autre issue etait de relever la reference**,
+c'est-a-dire d'acheter le silence en figeant la dette. Un cliquet qui ne
+rougit jamais sur le code de son auteur ne mesure rien.
+
+* `F401` — la consigne donnee au banc reclamait `io` parmi les imports de
+  l'epreuve ; le rendu ne l'emploie pas. Mon erreur de specification, pas la
+  sienne.
+* `B007` — depuis que le drapeau d'invalidation est **par fichier** et non
+  partage, la boucle n'emploie plus son nom de modele. Renomme `_nom` : dire
+  l'intention vaut mieux que laisser croire a un oubli.
+
+Les 23 cas restent verts et la contre-epreuve reste rouge sur les trois
+defauts. La correction n'a rien desarme.
+
