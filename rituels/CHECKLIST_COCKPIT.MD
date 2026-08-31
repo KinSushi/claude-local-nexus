@@ -1033,6 +1033,44 @@ enfreinte. Un paragraphe ne ferme rien.
 > **dit** : une reprise muette se lirait comme « tout a été mesuré », ce qui
 > est exactement le contraire.
 
+### Le plafond mesuré, et l'audit qui m'a retourné ma propre phrase
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Mes épreuves pouvaient passer **à vide** | `FAIT` | seuil de taille + nom de fonction exigés sur les trois extractions |
+| Une contre-épreuve qui acceptait une régression | `FAIT` | `maximum > 1` au lieu de `!== 1` |
+| Le pont MCP est **beaucoup plus lent** que LiteLLM en direct | `OUVERT` | mesuré, non expliqué |
+
+> **LE PLAFOND, enfin mesuré.** Sous **deux charges simultanées** — vague MCP
+> sur le plan cloud, épreuves de capacité sur le plan local — la passerelle a
+> servi **27 requêtes avec ZÉRO 429 en dix minutes**. Avant correction, six
+> tâches produisaient 36 refus et zéro succès. L'amplification est supprimée,
+> et les deux files du sémaphore séparent bien les plans.
+>
+> **L'audit délégué m'a retourné la phrase que j'avais mise dans sa
+> consigne** : une épreuve fausse rassure au lieu de protéger. Trois
+> faiblesses, toutes dans du code écrit ce soir. `fin < debut` laissait
+> passer une tranche **vide** — les huit cas suivants auraient rendu
+> « épreuve tenue » sans tester une ligne. Et ma contre-épreuve exigeait
+> `maximum !== 1`, or `maximum` vaut **zéro** quand la variante fautive ne
+> laisse passer aucun appel : elle acceptait donc une régression au lieu de
+> la voir. Il fallait exiger qu'elle **dépasse** la borne, pas qu'elle en
+> diffère.
+>
+> **Ce que j'ai rejeté de la même vague, et le motif vaut autant.** Elle
+> signalait `</#>` avec pour conséquence « le script ne démarre jamais ». Le
+> token existe ; la conséquence est **fausse** — mesuré, le fichier se parse,
+> et un fichier ne contenant que ce token aussi. J'ai moi-même cru ensuite
+> que le code était enfermé dans un commentaire ouvert ligne 1 : **faux
+> également**, la documentation se ferme ligne 35. Deux conclusions hâtives,
+> la sienne et la mienne, arrêtées par la même vérification.
+>
+> **Sujet ouvert, mesuré et non expliqué.** Un `nexus_ask` **via le pont** a
+> mis plus de 120 s pour rendre « PRET », quand le même modèle en **direct
+> sur LiteLLM** répond en 10,6 s. La vague a subi 16 expirations à 600 s sans
+> un seul 429. Le pont ajoute un coût que je n'attribue à rien tant que je ne
+> l'ai pas mesuré.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
