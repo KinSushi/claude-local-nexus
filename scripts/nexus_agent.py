@@ -1054,6 +1054,11 @@ def main() -> int:
                               "pour une redaction libre." % TEMPERATURE_DEFAUT)
     parseur.add_argument("--racine", help="Racine de travail explicite (remplace le calcul par défaut).")
     parseur.add_argument("--lot", help="Fichier JSON decrivant plusieurs taches.")
+    parseur.add_argument(
+        "--sortie", default=None, metavar="FICHIER",
+        help="Ecrire une ligne JSON par tache DES QU'ELLE ABOUTIT. Sans "
+             "cela, rien ne sort avant la fin du lot et une interruption "
+             "perd tout le travail deja paye.")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
     parseur.add_argument("--modeles", action="store_true",
@@ -1117,10 +1122,44 @@ def main() -> int:
     largeur = max(1, min(args.parallele, 8, len(taches)))
     depart = time.time()
     resultats: List[dict] = []
+    # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
+    #
+    # Le lot accumulait tout en memoire et ne rendait rien avant la fin :
+    # une interruption perdait l'integralite du travail deja paye, et un
+    # fichier de sortie vide se lisait comme « rien ne se passe » alors que
+    # les reponses arrivaient. Mesure du 2026-08-31 : un lot de dix-sept
+    # taches a laisse un fichier a ZERO octet pendant six minutes, huit
+    # processus vivants et douze reponses 200 deja servies.
+    #
+    # `--sortie` ecrit une ligne JSON par tache achevee, et vide le tampon a
+    # chaque ligne : ce qui est tombe est acquis, meme si la suite ne vient
+    # jamais.
+    flux = None
+    if getattr(args, "sortie", None):
+        try:
+            flux = io.open(args.sortie, "w", encoding="utf-8", newline="\n")
+        except Exception as exc:
+            print("[!] sortie incrementale impossible : %s" % exc,
+                  file=sys.stderr)
+            flux = None
+    faits = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
         futurs = {pool.submit(executer, t, cle): t for t in taches}
         for futur in concurrent.futures.as_completed(futurs):
-            resultats.append(futur.result())
+            r = futur.result()
+            resultats.append(r)
+            faits += 1
+            if flux is not None:
+                flux.write(json.dumps(r, ensure_ascii=False) + "\n")
+                flux.flush()
+            # L'AVANCEMENT VA SUR STDERR, jamais sur stdout : celui-ci porte
+            # le rapport, et le polluer le rendrait illisible a un appelant
+            # qui le parse.
+            print("  [%d/%d] %s" % (faits, len(taches),
+                                    r.get("nom") or r.get("modele") or "?"),
+                  file=sys.stderr)
+    if flux is not None:
+        flux.close()
 
     if args.json:
         print(json.dumps(resultats, ensure_ascii=False, indent=2))

@@ -36,3 +36,7 @@ batir_lot_ps.py
 backlog.json
 correctifs.json
 appliquer.py
+lot_essai.json
+sortie_incr.jsonl
+essai_err.txt
+claims_ps.json
