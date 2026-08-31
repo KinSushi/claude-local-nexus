@@ -239,10 +239,7 @@ def controle_modalites(model_list, erreurs):
         ollama_model = cible
         
         # Extraire le nom:tag
-        if '/' in ollama_model:
-            tag = ollama_model.split('/', 1)[1]
-        else:
-            tag = ollama_model
+        tag = ollama_model.split('/', 1)[1] if '/' in ollama_model else ollama_model
             
         # Verifier si deja dans le cache
         if tag in cache:
@@ -263,10 +260,10 @@ def controle_modalites(model_list, erreurs):
                     if line.strip().rstrip(':') == 'Capabilities':
                         in_capabilities = True
                         continue
-                    elif in_capabilities:
+                    if in_capabilities:
                         if line.strip() == '':
                             break
-                        elif line.startswith(' '):
+                        if line.startswith(' '):
                             capabilities.append(line.strip())
                         else:
                             in_capabilities = False
