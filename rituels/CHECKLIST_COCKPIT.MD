@@ -1286,6 +1286,46 @@ enfreinte. Un paragraphe ne ferme rien.
 > constat revient à l'opérateur, qui ne pouvait le voir qu'en ouvrant le
 > registre à la main.
 
+### Un 4/4 obtenu une fois n'est pas un 4/4 confirmé — 31/08
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Une promotion sur une seule passe | `FAIT` (rendu lisible) | `mesures`, `historique`, `stable` ; `--only registre`, 21 cas |
+| La politique de promotion elle-même | `OUVERT` | **décision réservée à l'opérateur** |
+
+> **`qwen3-0.6b-local` a rendu 4/4 puis 3/4** sur deux passages, échouant la
+> seconde fois sur « exploite le résultat d'outil ». Même modèle, mêmes
+> épreuves, deux verdicts.
+>
+> Or `eligible_au_pool` promeut sur un `complet` obtenu en **une seule
+> passe** : un modèle peut entrer dans le pool d'orchestration sur un coup de
+> chance. §97 l'écrit déjà pour les modèles — ne pas surinterpréter une
+> exécution — mais la mesure de capacité ne suivait pas sa propre règle.
+>
+> Chaque entrée porte désormais `mesures`, `historique` et `stable`. **On ne
+> décide rien** : comme pour l'asymétrie promotion/rétrogradation, la
+> politique appartient à l'opérateur. On rend lisible ce qui ne l'était pas.
+>
+> **Une suspicion vérifiée puis rejetée, et le motif compte.** J'ai soupçonné
+> une incohérence : « exploite le résultat » est comptée *non mesurable* quand
+> aucun outil n'a été demandé, tandis qu'« enchaîne deux outils » est comptée
+> *en échec* dans la même situation. Vérifié dans le code :
+> `epreuve_exploite_retour` **reçoit le résultat précédent en paramètre** —
+> sans appel, il n'y a littéralement rien à exploiter ;
+> `epreuve_enchainement`, lui, **refait ses propres appels**, donc le modèle y
+> a une chance neuve et son échec en est un vrai. L'asymétrie est délibérée.
+>
+> Et elle **renforce** la conclusion : deux mesures *indépendantes* de la
+> capacité d'outil tombent toutes deux sur **10 échecs sur 14**. Ce n'est pas
+> un test qui se fait écho.
+>
+> | épreuve | échecs / 14 | non mesurées |
+> |---|---|---|
+> | parle le protocole | 2 | 0 |
+> | **demande un outil** | **10** | 0 |
+> | exploite le résultat | 4 | 7 |
+> | **enchaîne deux outils** | **10** | 0 |
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
