@@ -3362,3 +3362,121 @@ moment ou celui-ci le repare est un garde qui fonctionne.
 * **La classe fail-open n'a toujours pas de motif dans `nexus_traque.py`.**
   Quatre occurrences connues maintenant, toutes trouvees a la main.
 
+---
+
+## 30. REVUE DES SUJETS OUVERTS — demandee, et elle a rapporte plus que prevu
+
+L'operateur : « recupere tous les sujets ouverts de la conversation, ils
+doivent etre traites avant de partir sur d'autres sujets ».
+
+### 30.1 D'abord verifier lesquels sont PERIMES
+
+Un tableau de bord qui ment sur son propre etat est pire qu'un tableau absent
+— sa propre regle. Quatre entrees etaient perimees :
+
+| Entree | Etat reel |
+| --- | --- |
+| `B023` dans `nexus_validate.py` | **ferme** — `All checks passed`, 5 → 0 |
+| Le matcher elargi non prouve in vivo | **ferme** — prouve ce jour, hook vivant, sans redemarrage (§29.5) |
+| Contrat §3 perime | **ferme** le 31/08 |
+| « eslint n'est pas provisionne » | **faux** — il l'est... et c'est la que tout a bascule |
+
+### 30.2 « eslint : 0 violation » etait un vert qui ne pouvait pas rougir
+
+La quatrieme entree paraissait perimee : eslint EST provisionne et rapporte
+`JOUE (0 violations)`. **Zero violation sur 2 600 lignes de JavaScript** — ce
+dépot a paye assez cher pour ne plus croire un zero sans l'eprouver. eslint
+lance directement, memes arguments : **neuf problemes**.
+
+**La cause, trouvee en instrumentant `_run_cmd`** :
+
+```
+returncode   : 1
+stdout (len) : 0
+stderr (len) : 0
+```
+
+`text=True` sans `encoding` fait decoder avec la page de code de la console —
+cp1252 ici. Le JSON d'eslint porte un octet `0x81`, venant des commentaires
+accentues **UTF-8** de `server.js`. Le decodage leve `UnicodeDecodeError`
+**dans le thread lecteur** de `subprocess`, exception que `subprocess` avale :
+`communicate()` rend des chaines **vides**. Puis `json.loads(stdout or "[]")`
+rend zero violation, etat « joue ».
+
+**Un outil incapable de lire sa propre sortie rapportait un depot propre.**
+
+Le signe qui aurait du trahir etait la : eslint sort **1 quand il a trouve**
+des problemes. Un code 1 avec un flux vide est une contradiction — et c'est
+desormais la garde, celle qui aurait rougi **meme sans** la correction
+d'encodage.
+
+### 30.3 Ce que la mesure a revele, et c'est le plus lourd
+
+```
+server.js:1429  'modelesResidents' is defined but never used
+```
+
+C'est la fonction posee le matin meme pour le **P2** de la session voisine —
+exposer les modeles residents, pour qu'un appelant choisisse ce qui est deja
+chaud plutot que de payer 31 s de chargement. Le point lui avait ete annonce
+**« retenu et applique »**.
+
+**Elle etait ecrite et jamais appelee.** La capacite n'existait pas. Aucun
+humain ne l'a vu, et le seul outil qui l'aurait vu rendait « 0 violation ».
+
+Branchee a `nexus_models`, verifiee en vrai :
+
+```
+MODELES CHAUDS — deja en memoire, repondent sans payer le chargement (2)
+  qwen3:1.7b
+  llava:34b
+```
+
+« Moteur injoignable » et « aucun modele chaud » sont dits **separement**.
+
+La session voisine a mesure de son cote qu'elle ne voit **pas** la capacite :
+son pont est l'ancien. La reconnexion reste due — et sans cette verification
+elle aurait cru P2 actif et choisi ses modeles a l'aveugle.
+
+### 30.4 Arbitrage des neuf, dans le code reel
+
+| Classe | Verdict |
+| --- | --- |
+| 3 `no-unused-vars` | **corriges** — dont un ecrit par moi dix minutes plus tot, dans le branchement ci-dessus : preuve que la mesure marche |
+| 6 `require-atomic-updates` | **conserves** — caches memo : deux appelants concurrents ecrivent la MEME valeur. Un appel duplique, pas une corruption |
+
+Et il n'est **pas** affirme qu'ils expliquent la lenteur du pont : cette
+hypothese a ete refutee par l'arithmetique le 30/08, et un linter ne la
+ressuscite pas.
+
+### 30.5 Le verdict LOI 1, verifie plutot qu'ecarte
+
+« REGRESSION : le nouveau garde peut renvoyer `casse` alors que l'appelant
+attendait `joue` ». Eprouve en cassant eslint pour de vrai :
+
+```
+eslint : NON JOUE (absent)
+eslint : NON COMPARE (absent) -- reference conservee
+code de sortie = 0
+```
+
+Ni blocage, ni fausse amelioration, ni reference corrompue. **Verdict
+plausible, infonde** — mais il fallait le mesurer pour le dire.
+
+### 30.6 Ce qui RESTE ouvert apres cette revue
+
+| Sujet | Pourquoi il reste ouvert |
+| --- | --- |
+| **`nexus_garde_lecture` ne couvre pas `Bash`** | le harnais oriente les lectures vers `cat`. La session voisine a chiffre le meme angle mort chez elle : **30,4 % des ecritures d'une session reelle passent par le shell**, mesure le 21/08 — et laisse ouvert. « Declarer n'est pas proteger », deja joue une fois ici |
+| **Le cliquet ne RESSERRE pas** | ecrire la reference pendant le rituel salit l'arbre au moment ou il le verifie. Question posee, non tranchee |
+| **~75 violations Python non arbitrees** | `SIM115` ×17, `B007` ×12, `RET503` ×9 |
+| **6 `require-atomic-updates`** | arbitres non-defauts ; la voie propre serait une promesse en vol partagee. Nomme, non fait |
+| **Lenteur du pont MCP** | mesuree, inexpliquee, hypothese principale refutee |
+| **P4 : six familles rendent vide** | `mesure_rendu_vide.py` livre et cable, jamais joue sur les neuf familles |
+| **`--fusionner` : cause non etablie** | reproduire sans clause d'echappement |
+| **40 `.bak` dans `scripts/.nexus/`** | donnees de l'operateur |
+| **`insert` et `audio` exposes par rien** | decision d'architecture — **pas prise seul** |
+| **Promotion sans demotion** | reservee a l'operateur |
+| **Worker dans un worktree git** | `nexus_essaim.py` ecrit hors du depot, mais dans un repertoire, **pas un worktree** |
+| **Un troisieme lanceur, demain** | rien ne surveille l'apparition d'un outil shell non garde |
+
