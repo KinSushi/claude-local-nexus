@@ -1093,6 +1093,41 @@ enfreinte. Un paragraphe ne ferme rien.
 > Établir la cause demanderait d'instrumenter le serveur en cours, que je ne
 > peux pas redémarrer moi-même. La spéculation s'arrête là.
 
+### Combien ont échoué ne dit pas laquelle — 30/08, nuit
+
+| Sujet | Statut | Ce qui le garde |
+|---|---|---|
+| Le registre gardait le score, pas la lacune | `FAIT` | `--only registre`, 12 cas |
+| Le détail des sept modèles déjà partiels | `OUVERT` | perdu ; il reviendra à leur prochaine mesure |
+
+> **Trouvé en essayant de faire ce que l'objectif demande** — enrichir le parc
+> d'après les lacunes révélées. **La donnée n'existait pas.** Sept modèles
+> partiels, dont **trois à 3/4** — à une seule épreuve d'être promouvables —
+> et rien ne disait laquelle leur manquait.
+>
+> Or les quatre épreuves mesurent des capacités **différentes** : parler le
+> protocole, demander un outil, exploiter le résultat, enchaîner. Échouer sur
+> la première rend un modèle inutilisable ; échouer sur la quatrième laisse un
+> répondeur parfaitement utile. Un « 3/4 » ne distingue pas ces deux mondes.
+>
+> **C'est la troisième fois ce soir que ce script sait quelque chose à
+> l'écran et l'oublie au disque** — après la distinction échec/non-mesuré, et
+> après le non-écrasement. Le rapport portait l'information ; seule l'écriture
+> la perdait.
+>
+> `epreuves_echouees` et `epreuves_non_mesurees` restent **distinctes** : une
+> épreuve non tentée n'est pas une épreuve ratée. C'est la même règle que le
+> non-écrasement, appliquée au détail.
+>
+> **Ce que cela ne donne pas encore, et il faut le dire** : les sept modèles
+> partiels ont été mesurés *avant* ce changement. Leur détail est perdu et ne
+> reviendra qu'à leur prochaine mesure.
+>
+> **Une confirmation au passage** : `derniere_tentative_vaine` apparaît sur
+> les entrées anciennes. Le non-écrasement travaille pour de bon — ces
+> modèles ont subi une tentative sans lendemain après leur vrai verdict, et
+> l'ont gardée.
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
