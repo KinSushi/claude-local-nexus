@@ -3086,3 +3086,78 @@ remis separement : chacun rougit en nommant son cas.
   Tranche par la session voisine — **non par defaut, oui sur opt-in explicite
   et trace**, registre vide garde par un test qui rougit a la premiere
   addition. Non implemente ici.
+
+---
+
+## 27. LA MISE A JOUR DU PARC — deux questions, deux defauts
+
+L'operateur a demande de *verifier* que la mise a jour est cablee **et**
+qu'elle se deroule. Les deux moities ont rendu deux defauts distincts, et
+seule la seconde etait le vrai trou.
+
+### 27.1 « Se deroule-t-elle ? » — non, et la cause est datee
+
+`Claude-Local-Nexus - Mise a jour` : **LastTaskResult = 1**. Le journal du
+2026-08-31 04:02 nomme la cause :
+
+```
+[BLOQUE] garde agent   sous-agent sans modele accepte (code 0 au lieu de 2)
+=> NON CONFORME : LiteLLM n'a PAS ete redemarre
+```
+
+C'est le fail-open du garde d'agent (§26), corrige plus tot le meme jour. Le
+garde rend maintenant 2, la conformite est verte, et la chaine rejouee en
+simulation sort 0. **La tache repassera d'elle-meme le 01/09 a 04:00.**
+
+Note au passage : `Claude-Local-Nexus - Demarrage` porte 267011, soit
+`SCHED_S_TASK_HAS_NOT_RUN`. Ce n'est pas un echec — elle se declenche au
+logon et n'a pas encore eu l'occasion.
+
+### 27.2 « Est-elle cablee ? » — non, et c'etait le vrai trou
+
+La tache ne lance **pas** `nexus_maj_modeles.py`. Elle lance
+`Update-NexusModels.ps1 -SyncLocal`, et `-SyncLocal` appelle
+`nexus_pull_host.py --manquants` : cela tire les modeles **declares et
+absents**. Rien ne rafraichissait un modele **deja installe**.
+
+Le script qui le fait n'avait qu'un appelant : `nexus.ps1`, a la main. Un
+script sans appelant automatique est un fichier, pas un mecanisme — et c'est
+le maillon que §0.2.1 designe comme le plus souvent manquant.
+
+Ferme par `-SyncWeights`, place AVANT la generation, ajoute a la tache **et**
+au script qui l'enregistre. Ne corriger que la tache vivante aurait ete un
+cablage a moitie : le prochain enregistrement l'aurait effacee.
+
+### 27.3 La consequence qu'un cablage a moitie aurait manquee
+
+Un modele dont les poids changent rend **perimees ses propres mesures**. Sans
+invalidation, le parc aurait ete rafraichi et le routage aurait continue sur
+la preuve des anciens poids. `invalider_mesures()` retire donc les entrees
+des seuls modeles reellement changes — compares par **empreinte**, jamais par
+le texte de la sortie.
+
+Deux defauts rejetes dans ce que le banc a rendu :
+
+| Defaut | Ce qu'il aurait cause |
+| --- | --- |
+| drapeau `found` partage entre les deux relevés | preuve de CAPACITE survivant au changement de poids |
+| cle `illisibles` presente seulement parfois | `KeyError` chez le premier appelant en acces direct, le jour ou tout va bien |
+
+Le second a ete impose par **l'epreuve, contre mon code** — elle avait raison.
+
+### 27.4 Ferme par un controle qui echoue
+
+`scripts/epreuve_maj_modeles.py`, **23 cas**, cablee par un lanceur commun
+`jouer_epreuve_python()` ou une epreuve MUETTE compte comme un echec. Trois
+defauts remis un par un : chacun rougit en nommant son cas.
+
+### 27.5 Reste OUVERT — la cecite d'un tour du cliquet de cablage
+
+`nexus_cablage.py` enumere par `git ls-files` : **un script neuf et non
+commite lui est invisible**. Or le rituel tourne AVANT le commit, donc une
+orpheline creee dans le tour n'est jamais vue dans ce tour.
+
+Mesure faite : une fois commite, le cliquet voit le fichier. **La cecite dure
+un tour, elle n'est pas permanente** — et c'est pourquoi ce point est inscrit
+ici plutot que corrige dans l'urgence : elargir a l'arbre de travail ferait
+juger des brouillons, ce qui produirait du bruit a chaque tour.
