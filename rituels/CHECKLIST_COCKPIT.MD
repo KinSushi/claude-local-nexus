@@ -1402,6 +1402,29 @@ qwen3.6-27b · relais déclaré.
 > a déjà rendu 4/4 puis 3/4 — la capacité varie. Dix-huit « capables » sont
 > donc dix-huit résultats uniques, pas dix-huit certitudes.
 
+### Les trois premiers verdicts confirmés — 31/08
+
+> **Le second passage a commencé par ce qui décide** : les membres capables du
+> pool. `codestral-local`, `llama3.2-3b-local` et `glm-4.7-flash-local` — le
+> modèle par défaut du pont — rendent 4/4 **une seconde fois**. Ce sont les
+> trois premiers verdicts *confirmés* de la plateforme, là où dix-huit
+> « capables » n'étaient que dix-huit résultats uniques.
+>
+> **Une mesure sauvée du rebut au passage.** Le compteur affichait
+> « mesures=1 » *après* un second passage : les entrées écrites avant
+> l'existence du champ n'avaient pas d'historique, et la nouvelle écriture
+> repartait de zéro — jetant le `reussies` qu'elles portaient pourtant,
+> c'est-à-dire une mesure réelle déjà faite. Il aurait fallu deux passages de
+> plus pour retrouver ce que l'on savait déjà.
+>
+> L'historique s'amorce désormais sur ce score stocké. **On ne fabrique
+> rien** : on lit ce qui est écrit, exactement comme pour `concluante`.
+>
+> C'est le quatrième champ dérivé de cette nuit à se révéler faux avant d'être
+> juste — après le détail perdu à l'écriture, `concluante` jugé sur l'adresse,
+> et `stable` vrai dès la première passe. Le motif est constant : **le calcul
+> était juste, la donnée qu'il lisait ne l'était pas.**
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
