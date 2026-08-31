@@ -1248,7 +1248,7 @@ def main() -> int:
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc"],
+                                 "cablage", "doc", "sonde"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1301,6 +1301,8 @@ def main() -> int:
         test_cablage_epreuves()
     if args.only in (None, "doc"):
         test_doc_annexe()
+    if args.only in (None, "sonde"):
+        test_sonde_mcp()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2185,6 +2187,58 @@ def test_doc_annexe() -> None:
     # absent -- se lirait sinon comme une epreuve tenue.
     if not vus:
         check("doc annexe", False, "aucun cas rendu (code %s)" % r.returncode)
+
+
+def test_sonde_mcp() -> None:
+    """
+    Le vert de la sonde du pont signifie-t-il quelque chose ?
+
+    CE QUI ETAIT FAUX, signale par une session voisine le 2026-08-31 et
+    reproduit ici. `nexus_mcp_probe.py` rendait EXIT 0 sur ses propres
+    echecs -- fichier hors depot, fichier inexistant, expiration -- alors que
+    sa docstring promet « un code de sortie explicite afin que les scripts
+    d'automatisation puissent distinguer ». Toute automatisation lisait donc
+    un vert.
+
+    `_probe_success` ne testait que des PREFIXES ; or le pont ecrit son
+    en-tete, puis la section, puis le corps : le marqueur d'echec est
+    TOUJOURS au corps.
+
+    Et un second budget, decouvert en verifiant le cas du SUCCES : la sonde
+    attendait 900 s pendant que le serveur se fermait seul a 120 s
+    (NEXUS_GRACE_MS). Porter un seul des deux ne servait a rien -- le succes
+    se rapportait « ERROR: aucune reponse », une panne inventee par le
+    reglage. La sonde transmet desormais son delai au serveur.
+
+    L'epreuve garde les DEUX pieges : un echec doit etre vu, et un succes
+    doit passer -- y compris le resume d'un fichier qui PARLE de timeouts.
+    """
+    print("\n--- SONDE MCP : un echec du pont rend-il non nul ? ---")
+    epreuve = os.path.join(ROOT, "scripts", "epreuve_sonde_mcp.py")
+    if not os.path.isfile(epreuve):
+        skip("sonde mcp", "epreuve_sonde_mcp.py introuvable")
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=300)
+    except subprocess.TimeoutExpired:
+        check("sonde mcp", False, "pas de reponse en 300 s")
+        return
+
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    if not vus:
+        check("sonde mcp", False, "aucun cas rendu (code %s)" % r.returncode)
 
 
 def test_cablage_epreuves() -> None:

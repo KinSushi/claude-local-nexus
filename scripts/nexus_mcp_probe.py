@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import re
 import sys
 from json import JSONDecodeError
 
@@ -42,7 +43,33 @@ except Exception as e:  # pragma: no cover
     )
 
 
-def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
+# SOIXANTE SECONDES EXPIRAIENT SUR UN FICHIER ORDINAIRE DU DEPOT.
+#
+# L'hote n'a pas de GPU et le resume local passe par la RAM systeme ;
+# nexus_agent.py travaille a 900 s pour la meme raison. Un delai trop court
+# transforme un travail lent en panne rapportee -- et, avant le correctif de
+# _probe_success, en panne rapportee AVEC un code de succes.
+DELAI_SONDE_DEFAUT = 900
+
+
+def _delai_sonde(defaut: int = DELAI_SONDE_DEFAUT) -> int:
+    """Delai en secondes, reglable par NEXUS_PROBE_TIMEOUT.
+
+    Une valeur illisible ou nulle retombe sur le defaut sans rien casser :
+    une sonde qui refuse de partir a cause de son propre reglage ne mesure
+    plus rien du tout.
+    """
+    brut = os.environ.get("NEXUS_PROBE_TIMEOUT")
+    if not brut:
+        return defaut
+    try:
+        valeur = int(brut)
+    except (TypeError, ValueError):
+        return defaut
+    return valeur if valeur > 0 else defaut
+
+
+def call_tool(name: str, arguments: dict, timeout: int = 0) -> str:
     """
     Appelle le serveur Node via le protocole JSON‑RPC.
 
@@ -87,6 +114,29 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
         ]
     ) + "\n"
 
+    # LES DEUX BUDGETS DOIVENT S'ACCORDER, ET RIEN NE LES Y OBLIGEAIT.
+    #
+    # Le serveur, une fois stdin ferme, attend ses appels en vol pendant
+    # NEXUS_GRACE_MS -- 120 s par defaut -- puis FORCE la fermeture. Porter le
+    # delai de la sonde a 900 s ne servait donc a rien : le serveur coupait a
+    # 120 s et la sonde recevait « ERROR: aucune reponse », c'est-a-dire une
+    # panne inventee par son propre reglage.
+    #
+    # Mesure du 2026-08-31, sur un fichier parfaitement valide du depot :
+    #     [nexus-local] 1 appel(s) en vol — sortie dans au plus 120s
+    #     [nexus-local] fermeture forcee : 1 appel(s) toujours en vol
+    # Un resume local sur cet hote sans GPU depasse largement 120 s : le
+    # modele par defaut du pont demande a lui seul une soixantaine de
+    # secondes avant de commencer a repondre.
+    #
+    # La sonde transmet donc SON delai au serveur. Un seul budget, derive, au
+    # lieu de deux qui se contredisent en silence. La grace est prise un peu
+    # sous le delai de la sonde pour que le serveur rende la main AVANT
+    # d'etre tue -- ainsi son message explique la coupure au lieu de la subir.
+    delai = timeout or _delai_sonde()
+    environnement = dict(os.environ)
+    environnement.setdefault("NEXUS_GRACE_MS", str(max(30, delai - 15) * 1000))
+
     try:
         result = subprocess.run(
             ["node", SERVER],
@@ -95,14 +145,15 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=timeout,
+            timeout=delai,
+            env=environnement,
         )
     except FileNotFoundError:
         # node n'est pas dans le PATH
         return f"ERROR: node executable not found (SERVER={SERVER})"
     except subprocess.TimeoutExpired:
         # le serveur n'a pas répondu à temps
-        return f"ERROR: timeout expired after {timeout}s (SERVER={SERVER})"
+        return f"ERROR: timeout expired after {delai}s (SERVER={SERVER})"
     except Exception as e:  # pragma: no cover
         # toute autre erreur inattendue
         return f"ERROR: unexpected error {type(e).__name__}: {e} (SERVER={SERVER})"
@@ -154,26 +205,85 @@ def call_tool(name: str, arguments: dict, timeout: int = 60) -> str:
     return f"ERROR: aucune reponse{trunc_info}\n{stderr_tail}"
 
 
-def _probe_success(output: str) -> bool:
+# Marqueurs d'echec emis par le PONT lui-meme, jamais par le contenu resume.
+#
+# Ils sont cherches en debut de LIGNE, non en debut de sortie et non n'importe
+# ou : « (refuse : hors du depot) », « (introuvable) » et « (illisible : ...) »
+# sont ecrits par le serveur sur une ligne a eux. Chercher le mot nu
+# « timeout » n'importe ou ferait echouer le resume de tout fichier qui PARLE
+# de delais -- et il y en a plusieurs ici. On vise donc la phrase entiere que
+# la sonde emet elle-meme.
+MARQUEURS_ECHEC = (
+    "error:",
+    "no content:",
+    "[erreur]",
+    "(refuse",
+    "(introuvable)",
+    "(illisible",
+    "aucune reponse",
+    "timeout expired after",
+)
+
+# L'en-tete que le pont place en tete de chaque reponse :
+#     [gpt-oss-120b-cloud · Ollama Cloud, les donnees sortent · 9818 tokens]
+#
+# LE SEPARATEUR EST UN POINT MEDIAN, PAS UN TIRET, et l'alias lui-meme en
+# contient plusieurs (« gpt-oss-120b-cloud »). Une expression qui exigerait
+# des tirets comme separateurs ne reconnaitrait donc jamais rien -- et un
+# controle qui ne reconnait jamais rien se comporte exactement comme le
+# defaut qu'il devait corriger. On ne decrit que ce qui est stable : des
+# crochets, un nombre, le mot « tokens ».
+ENTETE_JETONS = re.compile(r"\[[^\]]*?(\d+)\s+tokens\s*\]", re.IGNORECASE)
+
+
+def _probe_success(output: str, exige_modele: bool = False) -> bool:
     """
-    Détermine si la sonde a réussi.
+    La sonde a-t-elle reussi, ou seulement termine ?
 
-    - Un préfixe ``ERROR:`` indique un problème d'environnement.
-    - Le texte ``aucune reponse`` indique que le serveur n'a pas renvoyé de
-      réponse exploitable.
-    - La présence du flag `` [ERREUR]`` indique que le serveur a renvoyé une
-      erreur de logique.
+    CE QUI ETAIT FAUX, et mesure trois fois le 2026-08-31. La fonction ne
+    testait que des PREFIXES : `output.startswith("ERROR:")`,
+    `startswith(" [ERREUR]")`. Or la sortie du pont commence par son en-tete,
+    puis « ## Par fichier », puis le corps :
 
-    Dans tous les cas ci‑dessus, la fonction renvoie ``False``.
+        [modele · plan · 1234 tokens]
+
+        ## Par fichier
+
+        ### chemin/du/fichier
+        (refuse : hors du depot)
+
+    Le marqueur d'echec est donc TOUJOURS au corps, et `startswith` ne voyait
+    rien. Le `startswith(" [ERREUR]")`, avec son espace initial, n'a
+    probablement jamais ete vrai une seule fois.
+
+    Mesure : un fichier hors depot et un fichier inexistant rendaient tous
+    deux EXIT 0. La docstring de ce module promet pourtant l'inverse -- « un
+    code de sortie explicite afin que les scripts d'automatisation puissent
+    distinguer : le pont a repondu une erreur / le pont n'a pas repondu ».
+
+    Toute automatisation appelant cette sonde lisait donc un vert. Un garde
+    dont le vert ne signifie rien est PIRE que pas de garde : il consomme de
+    l'attention et confere une fausse assurance.
+
+    `exige_modele` ajoute la preuve qu'un modele a REELLEMENT ete appele :
+    « 0 tokens » sur un appel cense en invoquer un est un echec, pas un
+    resume vide reussi.
     """
     if not output or not output.strip():
         return False
-    if output.startswith("NO CONTENT:"):
-        return False
-    if output.startswith("ERROR:"):
-        return False
-    if output.startswith(" [ERREUR]"):
-        return False
+
+    for ligne in output.splitlines():
+        nue = ligne.strip().lower()
+        if any(nue.startswith(m) for m in MARQUEURS_ECHEC):
+            return False
+
+    if exige_modele:
+        trouve = ENTETE_JETONS.search(output)
+        if trouve is None:
+            return False
+        if int(trouve.group(1)) <= 0:
+            return False
+
     return True
 
 
@@ -216,7 +326,7 @@ def main() -> int:
             return 1
         out = call_tool("nexus_summarize", {"paths": sys.argv[2:]})
         print(out)
-        exit_code = 0 if _probe_success(out) else 1
+        exit_code = 0 if _probe_success(out, exige_modele=True) else 1
 
     elif action == "context":
         # context <instruction> <modele> <fenetre> <fichier...>
@@ -236,7 +346,7 @@ def main() -> int:
         }
         out = call_tool("nexus_context", args)
         print(out)
-        exit_code = 0 if _probe_success(out) else 1
+        exit_code = 0 if _probe_success(out, exige_modele=True) else 1
 
     elif action == "vision":
         if len(sys.argv) < 3:
@@ -249,7 +359,7 @@ def main() -> int:
             args["model"] = sys.argv[4]
         out = call_tool("nexus_vision", args)
         print(out)
-        exit_code = 0 if _probe_success(out) else 1
+        exit_code = 0 if _probe_success(out, exige_modele=True) else 1
 
     elif action == "models":
         out = call_tool("nexus_models", {})
@@ -265,7 +375,7 @@ def main() -> int:
             args["model"] = sys.argv[3]
         out = call_tool("nexus_ask", args)
         print(out)
-        exit_code = 0 if _probe_success(out) else 1
+        exit_code = 0 if _probe_success(out, exige_modele=True) else 1
 
     elif action == "route":
         if len(sys.argv) < 3:
