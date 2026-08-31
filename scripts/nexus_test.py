@@ -1247,7 +1247,8 @@ def main() -> int:
                         help="ajoute les tests lents (vision sur CPU)")
     parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
                                  "shell", "portee", "semaphore", "mentions", "protocole",
-                                 "terminal", "noms", "registre", "atomique", "plan"],
+                                 "terminal", "noms", "registre", "atomique", "plan",
+                                 "cablage"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1296,6 +1297,8 @@ def main() -> int:
         test_ecriture_atomique()
     if args.only in (None, "plan"):
         test_garde_plan_paye()
+    if args.only in (None, "cablage"):
+        test_cablage_epreuves()
     if args.only in (None, "releve"):
         test_releve()
 
@@ -2119,6 +2122,62 @@ def test_ecriture_atomique() -> None:
               "contenu=%r restes=%s" % (contenu, autres or "aucun"))
     finally:
         _shutil.rmtree(dossier, ignore_errors=True)
+
+
+def test_cablage_epreuves() -> None:
+    """
+    Le cliquet de cablage sait-il reconnaitre une epreuve qu'il joue lui-meme ?
+
+    CE QUI ETAIT FAUX. Le cliquet classait une epreuve reellement jouee par
+    `nexus_test.py` en `preuve_seule` -- « prouvee, connectee a rien » -- et la
+    comptait en REGRESSION. Il punissait donc exactement le mecanisme que le
+    contrat 0.2.1 exige (« son epreuve propre »), et la seule facon de le
+    contenter aurait ete de cesser d'ecrire des epreuves.
+
+    La cause : le filtre des citants ecarte tout fichier dont le nom contient
+    « test ». Pour un script de PRODUCTION la regle est juste ; pour une
+    EPREUVE, dont le role entier est d'etre jouee par le lanceur, elle
+    s'inverse.
+
+    La derogation posee est ETROITE, et trois des quatre cas existent pour
+    qu'elle le reste : un script de production cite seulement par un test
+    demeure `preuve_seule`, une epreuve seulement MENTIONNEE demeure
+    `preuve_seule`, une epreuve que personne ne nomme demeure `orphelin`.
+
+    PREUVE POSITIVE, et non silence : jouee contre la version d'AVANT
+    correction, l'epreuve echoue sur le cas 2 SEUL. Elle detecte donc le
+    defaut, au lieu de se taire sur un depot sain.
+    """
+    print("\n--- CABLAGE : une epreuve jouee est-elle vue comme cablee ? ---")
+    epreuve = os.path.join(ROOT, "scripts", "epreuve_cablage.py")
+    if not os.path.isfile(epreuve):
+        skip("cablage des epreuves", "epreuve_cablage.py introuvable")
+        return
+    try:
+        r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=300)
+    except subprocess.TimeoutExpired:
+        check("cablage des epreuves", False, "pas de reponse en 300 s")
+        return
+
+    vus = 0
+    for ligne in (r.stdout or "").splitlines():
+        ligne = ligne.strip()
+        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+            continue
+        corps = ligne[6:].strip()
+        nom, _, detail = corps.rpartition(" : ")
+        if not nom:
+            nom, detail = corps, ""
+        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        vus += 1
+    # AUCUN CAS RENDU N'EST UN ECHEC, pas un succes. Une epreuve qui ne
+    # produit rien -- import casse, sortie changee de forme -- se lirait
+    # sinon comme une epreuve tenue.
+    if not vus:
+        check("cablage des epreuves", False,
+              "aucun cas rendu (code %s)" % r.returncode)
 
 
 def test_garde_plan_paye() -> None:

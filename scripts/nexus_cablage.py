@@ -171,6 +171,33 @@ def classer(cible: str, textes: dict) -> tuple:
     cables = [r for r in citants if est_cableur(r)]
     if cables:
         return "cable", cables[:2]
+    # POUR UNE ÉPREUVE, LE LANCEUR DE TESTS EST LE CÂBLEUR.
+    #
+    # Le filtre ci-dessous écarte tout citant dont le nom contient « test ».
+    # Pour un script de PRODUCTION c'est exact : n'être appelé que par des
+    # tests, c'est n'être appelé par personne. Pour une ÉPREUVE, dont le rôle
+    # entier est d'être jouée par `nexus_test.py`, la règle s'inverse et le
+    # verdict devient faux.
+    #
+    # Mesuré le 2026-08-31 sur la première épreuve Python du dépôt :
+    # `epreuve_garde_plan.py`, appelée par `nexus_test.py --only plan`, a été
+    # déclarée « prouvée, connectée à rien » et comptée comme RÉGRESSION. Le
+    # cliquet punissait donc exactement le mécanisme que le contrat 0.2.1
+    # exige — « son épreuve propre » — et la seule façon de le contenter
+    # aurait été de ne plus écrire d'épreuves.
+    #
+    # La dérogation reste étroite, et deux propriétés sont préservées : une
+    # épreuve que PERSONNE ne nomme reste `orphelin` (le cas est traité plus
+    # haut), et un script de production cité seulement par un test reste
+    # `preuve_seule`. `invoque()` est exigé ici comme ailleurs : une mention
+    # en commentaire ne câble rien.
+    if os.path.basename(cible).startswith("epreuve_"):
+        par_le_lanceur = [r for r in citants
+                          if r.lower().endswith((".py", ".ps1"))
+                          and "test" in r.lower()
+                          and invoque(nom, textes[r])]
+        if par_le_lanceur:
+            return "cable", par_le_lanceur[:2]
     scripts = [r for r in citants
                if r.lower().endswith((".py", ".ps1"))
                and "test" not in r.lower()
