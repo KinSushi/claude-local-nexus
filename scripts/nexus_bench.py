@@ -36,6 +36,7 @@ import time
 import argparse
 import urllib.request
 import urllib.error
+from statistics import median
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -357,56 +358,141 @@ def mesurer_binaire(gateway: str, alias: str, timeout: float,
     return resultat
 
 
-def latences_existantes(racine) -> dict:
-    """
-    Releve deja sur disque, ou dictionnaire vide.
+# ---------------------------------------------------------------------------
+# LE RELEVE ACCUMULE, IL N'ECRASE PLUS.
+#
+# CE QUI ETAIT FAUX. `.nexus/latences.json` ne gardait qu'UNE lecture par
+# modele et un unique horodatage global : chaque passage effacait le
+# precedent. Or une mesure de latence isolee ne dit pas laquelle de deux
+# realites tres differentes elle a attrapee -- mesure le 2026-08-31, le meme
+# appel a rendu 180 300 ms a froid et 2 900 ms a chaud.
+#
+# CE QUE CELA EMPECHAIT. Sans repetitions accumulees, aucune dispersion n'est
+# calculable, donc aucun intervalle de confiance : toute methode qui
+# apprendrait sur ces mesures optimiserait du BRUIT (contrat 106.2). C'est le
+# prerequis de toute piste d'apprentissage, et il manquait -- alors que
+# `.nexus/epreuves.json` accumulait deja, patron applique a un releve et pas
+# a l'autre.
+#
+# `stable` se calcule sur la DISPERSION, jamais sur l'egalite : une latence
+# est continue, et exiger deux valeurs egales au millieme rendrait
+# l'indicateur toujours faux -- miroir exact d'un defaut deja corrige
+# ailleurs ou un ensemble a un element etait trivialement uniforme et le
+# rendait toujours vrai.
+#
+# Ecrit par le banc gratuit (qwen3-coder-30b-local) en un jet complet apres
+# une relance a neuf ; le premier jet confondait « fichier absent » et
+# « fichier illisible » -- il n'ecrivait donc JAMAIS sur une machine neuve --
+# et supprimait du fichier tout modele absent du lot courant, detruisant
+# l'historique qu'il devait accumuler. Deux corrections d'application ici :
+# la signature, et l'ecriture des champs de la mesure courante.
+# ---------------------------------------------------------------------------
 
-    Permet de reprendre une mesure interrompue sans refaire ce qui a ete
-    mesure. Ne leve jamais : un fichier absent ou abime doit conduire a
-    tout remesurer, pas a s'arreter.
-    """
-    chemin = racine / ".nexus" / "latences.json"
+# Pose a True quand le fichier existe mais n'est pas lisible. Une liste plutot
+# qu'un booleen : le module est importe, et une reaffectation de nom nu ne
+# traverserait pas les fonctions.
+_ILLISIBLE = [False]
+
+
+SEUIL_DISPERSION = 0.15  # Mesure reelle : ecart entre 180300 ms (froid) et 2900 ms (chaud) est de plus de 500 %, donc instable. Deux lectures chaudes a quelques pourcents sont stables.
+
+def latences_existantes(racine):
+    """Lit le fichier de latences ou en cree un vide si absent."""
+    fichier = racine / '.nexus' / 'latences.json'
     try:
-        with chemin.open(encoding="utf-8") as fh:
-            donnees = json.load(fh)
-        modeles = donnees.get("modeles")
-        if isinstance(modeles, dict):
-            return modeles
+        with open(fichier, 'r', encoding='utf-8') as f:
+            donnees = json.load(f)
+    except FileNotFoundError:
+        # PIEGE A : fichier absent est normal, pas une erreur
+        _ILLISIBLE[0] = False
+        return {}
+    except json.JSONDecodeError:
+        # PIEGE A : fichier present mais illisible est une erreur
+        _ILLISIBLE[0] = True
+        return {}
+    _ILLISIBLE[0] = False
+    return donnees.get('modeles', {})
+
+def ecrire_json(racine, mesures):
+    """Ecrit les mesures en accumulant l'historique."""
+    fichier = racine / '.nexus' / 'latences.json'
+    try:
+        with open(fichier, 'r', encoding='utf-8') as f:
+            donnees_existantes = json.load(f)
+    except FileNotFoundError:
+        # PIEGE A : fichier absent est normal
+        donnees_existantes = {'modeles': {}}
+    except json.JSONDecodeError:
+        # PIEGE A : illisible, refuse d'ecrire pour ne pas detruire l'historique
+        return False
+
+    # PIEGE B : ne pas perdre les anciens modeles
+    tous_les_modeles = donnees_existantes.get('modeles', {})
+    nouveaux_modeles = mesures.get('modeles', mesures)
+    
+    maintenant = datetime.now(timezone.utc).isoformat()
+    
+    for alias, info in nouveaux_modeles.items():
+        if alias not in tous_les_modeles:
+            tous_les_modeles[alias] = {'historique': [], 'mesures': 0, 'stable': False}
+        
+        modele = tous_les_modeles[alias]
+        # MIGRATION DEPUIS L'ANCIEN FORMAT.
+        #
+        # Les 71 alias deja presents ont ete ecrits avant l'accumulation : ils
+        # n'ont ni historique, ni compteur, ni indicateur. Le livrable ne les
+        # initialisait que pour les alias NEUFS, ce qui faisait tomber le code
+        # sur un KeyError des le premier passage reel -- un format nouveau qui
+        # refuse le format qu'il doit remplacer.
+        modele.setdefault('historique', [])
+        modele.setdefault('mesures', 0)
+        modele.setdefault('stable', False)
+        # LES CHAMPS DE LA MESURE COURANTE SONT ECRITS, ET NON SEULEMENT
+        # COMPTES. Sans cette fusion, le releve accumulait un historique tout
+        # en cessant de rapporter `latence_ms`, `ok` et `motif` -- que
+        # nexus_generate lit pour decider de l'appartenance aux pools. Un
+        # fichier qui grossit en perdant ce qu'on vient d'y mesurer.
+        for cle, valeur in info.items():
+            if cle not in ('historique', 'mesures', 'stable'):
+                modele[cle] = valeur
+        historique = modele['historique']
+        latence_ms = info.get('latence_ms')
+        
+        if latence_ms is not None and latence_ms > 0:
+            historique.append(latence_ms)
+            modele['mesures'] += 1
+            # Garde les 8 derniers
+            if len(historique) > 8:
+                historique.pop(0)
+            
+            if len(historique) >= 2:
+                min_lat = min(historique)
+                max_lat = max(historique)
+                med = median(historique)
+                if med != 0 and (max_lat - min_lat) / med <= SEUIL_DISPERSION:
+                    modele['stable'] = True
+                else:
+                    modele['stable'] = False
+        else:
+            # Ne pas ajouter None a l'historique pour ne pas fausser les calculs
+            pass
+
+    donnees_finale = {'mesure_le': maintenant, 'modeles': tous_les_modeles}
+    
+    # Ecriture atomique
+    temp_file = fichier.with_suffix('.tmp')
+    try:
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(donnees_finale, f, ensure_ascii=False, indent=2)
+        os.replace(temp_file, fichier)
     except Exception:
-        pass
-    return {}
+        # Nettoyage en cas d'erreur
+        if temp_file.exists():
+            temp_file.unlink()
+        raise
+    
+    return True
 
-
-def ecrire_json(racine: Path, mesures: dict):
-    """
-    Ecrire latences.json SOUS SON ENVELOPPE, celle que la lecture attend.
-
-    Defaut critique corrige le 2026-08-30. Cette fonction ecrivait les
-    mesures a la racine du document, alors que latences_existantes() et
-    nexus_generate.latences_relevees() lisent toutes deux
-    donnees.get("modeles"). Chaque ecriture detruisait donc le format que
-    la lecture exige.
-
-    La consequence n'etait pas une erreur mais un SILENCE : la lecture
-    rendait un dictionnaire vide, tous les modeles devenaient « non
-    mesure », et la regeneration suivante les aurait tous sortis des pools
-    -- effacant sans un mot des heures de mesure et le travail de routage
-    qui en depend.
-
-    Decouvert en lisant le fichier a la main apres une mesure de debit ;
-    rien dans les sorties du banc ne le signalait.
-    """
-    sortie_dir = racine / ".nexus"
-    sortie_dir.mkdir(parents=True, exist_ok=True)
-    sortie_path = sortie_dir / "latences.json"
-    # Une enveloppe deja presente n'est pas redoublee : mesures peut
-    # arriver sous les deux formes selon l'appelant.
-    document = mesures if "modeles" in mesures else {
-        "mesure_le": datetime.now(timezone.utc).isoformat(),
-        "modeles": mesures,
-    }
-    with sortie_path.open("w", encoding="utf-8") as f:
-        json.dump(document, f, ensure_ascii=False, indent=2)
 
 def afficher_tableau(resultats: dict):
     """Afficher un tableau simple alias, secondes, verdict."""
