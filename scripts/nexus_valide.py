@@ -500,7 +500,13 @@ def free_plan_judgment(diff_text, callers, modele=None):
         try:
             reponse = agent.executer(tache, cle)
         except Exception as e:
-            raise RuntimeError(f"Erreur lors de l'appel à l'agent gratuit : {e}")
+            # `from e` et non `from None` : ici la trace d'origine est
+            # precisement ce qui manque. Le message dit QUE l'appel a echoue ;
+            # seule la trace dit OU -- reseau, passerelle, decodage. Sans
+            # elle, Python affiche « During handling of the above exception »
+            # et rien ne signale que la premiere EST la cause.
+            raise RuntimeError(
+                f"Erreur lors de l'appel à l'agent gratuit : {e}") from e
 
         # `erreur` n'est presente QUE sur les chemins d'echec de
         # nexus_agent.executer ; une reponse reussie ne la porte pas.

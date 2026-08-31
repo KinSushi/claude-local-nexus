@@ -356,7 +356,11 @@ def test_forward(models: list[str], include_slow: bool) -> None:
         vectors = [d["embedding"] for d in body["data"]]
 
         def cosine(a, b):
-            dot = sum(x * y for x, y in zip(a, b))
+            # `strict=True` : les vecteurs viennent du meme appel, donc de
+            # la meme dimension par construction -- mais l'invariant n'est
+            # ecrit nulle part. Une similarite calculee sur des vecteurs
+            # tronques rend un nombre credible et faux.
+            dot = sum(x * y for x, y in zip(a, b, strict=True))
             na = sum(x * x for x in a) ** 0.5
             nb = sum(y * y for y in b) ** 0.5
             return dot / (na * nb) if na and nb else 0

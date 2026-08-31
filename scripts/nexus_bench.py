@@ -274,7 +274,13 @@ def mesurer_embedding(gateway: str, alias: str, timeout: float) -> dict:
             nb = sum(y * y for y in b) ** 0.5
             if not na or not nb:
                 return 0.0
-            return sum(x * y for x, y in zip(a, b)) / (na * nb)
+            # `strict=True` : l'invariant devient LOCAL. Les dimensions
+            # sont bien verifiees quatre lignes plus haut, mais un lecteur du
+            # `zip` ne le sait pas -- et une suppression de cette garde
+            # passerait inapercue. Tronquer sur la plus courte rendrait un
+            # score PLAUSIBLE ET FAUX, ce que le pont refuse deja
+            # explicitement de son cote.
+            return sum(x * y for x, y in zip(a, b, strict=True)) / (na * nb)
 
         marge = round(_cos(ancre, proche) - _cos(ancre, loin), 3)
         return {"latence_ms": latence_ms, "marge": marge, "ok": True, "motif": ""}

@@ -94,7 +94,10 @@ def suivis() -> list:
                            errors="replace")
     except Exception as exc:
         sys.stderr.write("git ls-files injoignable : %s\n" % exc)
-        raise SystemExit(2)
+        # `from None` et non `from exc` : la cause est DEJA dans le message
+        # ci-dessus, et SystemExit est une sortie de controle -- lui accrocher
+        # une trace d'origine n'ajoute que du bruit a un arret volontaire.
+        raise SystemExit(2) from None
     if r.returncode != 0:
         sys.stderr.write("git ls-files a rendu %d\n" % r.returncode)
         raise SystemExit(2)
@@ -327,7 +330,9 @@ def lire_reference() -> dict:
         # Une référence illisible n'est pas une référence vide : la traiter
         # comme telle ferait passer toute regression pour un progres.
         sys.stderr.write("reference illisible : %s\n" % REFERENCE)
-        raise SystemExit(2)
+        # `from None` : meme raison. Le `except` ne nomme meme pas son
+        # exception -- il n'y a donc rien a chainer, et l'arret est voulu.
+        raise SystemExit(2) from None
 
 
 def ecrire_reference(categories: dict) -> None:

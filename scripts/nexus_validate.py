@@ -543,7 +543,25 @@ def main() -> int:
     for label, graph in graphes.items():
         color: dict[str, int] = {}
 
-        def visit(node: str, path: list[str]) -> None:
+        # LIAISON EXPLICITE, ET CE N'EST PAS UN CAPRICE DE LINTER.
+        #
+        # `visit` est definie DANS la boucle et capture `graph`, `color` et
+        # `label` par leur NOM. Aujourd'hui c'est sans consequence : elle est
+        # appelee dans la meme iteration, la fermeture ne survit jamais a son
+        # tour de boucle.
+        #
+        # Mais `graph` est REAFFECTEE huit lignes plus bas, dans la MEME
+        # portee de fonction (`graph = graphes.get("fallbacks", {})`). Le jour
+        # ou un appel a `visit` se retrouverait apres cette ligne -- un
+        # deplacement, un report d'appel, une refonte -- elle parcourrait
+        # silencieusement le mauvais graphe et rendrait un verdict de cycle
+        # portant sur autre chose que ce qu'on croit.
+        #
+        # La liaison par argument par defaut capture les VALEURS a la
+        # definition. L'appel recursif plus bas herite des memes defauts, donc
+        # le comportement est inchange -- seule la fragilite disparait.
+        def visit(node: str, path: list[str],
+                  graph=graph, color=color, label=label) -> None:
             color[node] = GREY
             for nxt in graph.get(node, []):
                 state = color.get(nxt, WHITE)
