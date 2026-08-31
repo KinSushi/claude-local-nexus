@@ -36,8 +36,7 @@ def get_disk_space():
     """Retourne l'espace libre en Go ou None si impossible."""
     try:
         total, used, free = shutil.disk_usage(os.path.abspath('.'))
-        free_go = free // (1024**3)
-        return free_go
+        return free // (1024**3)
     except Exception:
         # PIEGE A : os.statvfs n'existe pas sous Windows
         return None
@@ -47,11 +46,10 @@ def parse_size(size_str):
     size_str = size_str.strip()
     if size_str.endswith('GB'):
         return float(size_str[:-2])  # Extrait le nombre avant 'GB'
-    elif size_str.endswith('MB'):
+    if size_str.endswith('MB'):
         return float(size_str[:-2]) / 1024.0  # Convertit MB en Go
-    else:
-        # PIEGE B : Ne pas confondre colonne taille avec ID
-        return 0.0
+    # PIEGE B : Ne pas confondre colonne taille avec ID
+    return 0.0
 
 def main():
     import argparse
@@ -146,7 +144,7 @@ def main():
     up_to_date = 0
     failed = 0
 
-    for name, size in models_to_update:
+    for name, _taille in models_to_update:
 
         print(f"Traitement de : {name}")
         stdout, stderr, code = execute_command(f'ollama pull {name}')
