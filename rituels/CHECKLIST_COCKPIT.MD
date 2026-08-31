@@ -1464,6 +1464,60 @@ qwen3.6-27b · relais déclaré.
 > ou compléter du code. Ce qui a changé, c'est que le constat repose désormais
 > sur **deux mesures par modèle**, corroborées par les commentaires du code.
 
+### La vague qui produit — 41 défauts, 4 correctifs appliqués — 31/08
+
+| état du reste-à-faire | nombre |
+|---|---|
+| **déjà corrigé** | **18** |
+| corrigeable | 14 |
+| pas un défaut | 5 |
+| introuvable | 3 |
+| trop risqué | 1 |
+
+> **55 agents, 41 défauts rouverts dans le code actuel, 6 min 30.** Près de la
+> moitié du reste-à-faire était **périmée**, et cinq entrées n'étaient pas des
+> défauts : ce fichier décrivait un dépôt qui n'existe plus.
+>
+> **L'étape de vérification a payé son écot.** Le patch M5 était marqué
+> applicable — occurrence unique, syntaxe valide — et son vérificateur
+> écrivait « BREAKAGE CRITIQUE » : il déplace les vecteurs dans un fichier
+> séparé sans toucher `loadIndex`, donc `nexus_search` cesserait de
+> fonctionner.
+>
+> **Mais mon propre filtre était faux, deux fois.** D'abord il ne regardait
+> que l'applicabilité et **ignorait le champ `effet_de_bord` que j'avais
+> pourtant demandé** — appliquer les « prêts » tels quels aurait cassé la
+> recherche. Puis, corrigé, il cherchait le mot d'alarme n'importe où et
+> écartait « Aucun identifié. Le patch supprime un cas spécial **sans
+> casser** aucun appelant » — une absence d'effet de bord prise pour une
+> alarme, parce que le mot figurait dans une négation. Le verdict se lit en
+> **tête** de phrase.
+>
+> **Appliqués** : `M2` le MAP-REDUCE qui dégénérait en concaténation, `K2`
+> une fonction jamais appelée, `P6` une empreinte mal titrée, `K1` un dernier
+> recours périmé. Un cinquième refusé à l'écriture — doublon dont le texte
+> avait déjà été remplacé, occurrences réelles = 0. **Le recomptage final
+> appartient à qui écrit**, jamais au contrôle qui l'a précédé.
+>
+> Vérifications : 75 cas de test, zéro échec ; `Test-NexusConfig` valide ;
+> LOI 1 sans régression.
+
+### Le lot ne rendait rien avant la fin — et un fichier vide mentait
+
+> Signalé par une session voisine, et le défaut était ici. `nexus_agent --lot`
+> accumulait tout en mémoire : une interruption perdait **tout le travail déjà
+> payé**, et un fichier de sortie vide se lisait comme « rien ne se passe »
+> alors que douze réponses avaient été servies. J'ai moi-même conclu trop vite.
+>
+> `--sortie` écrit une ligne JSON **dès qu'une tâche aboutit**, et l'avancement
+> va sur stderr — jamais sur stdout, qui porte le rapport.
+>
+> **Un défaut de ma manœuvre, noté parce qu'il a failli passer** : mon premier
+> correctif portait deux modifications, et son assertion sur la seconde a
+> échoué **avant l'écriture**. Seule l'option a été posée, pas le comportement
+> — une option documentée qui ne faisait rien. **Un patch qui échoue à
+> mi-chemin est plus dangereux qu'un patch qui échoue tout net.**
+
 ### Point d'étape du 30/08 au soir — ce qui a été tranché
 
 | Sujet ouvert | État |
