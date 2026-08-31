@@ -280,7 +280,12 @@ function requestJson(pathname, payload, timeoutMs = DEFAULT_TIMEOUT_MS) {
             // le nom du routeur. On remonte donc les deux.
             resolve({ body: JSON.parse(text), headers: res.headers });
           } catch (err) {
-            reject(new Error("reponse LiteLLM illisible : " + text.slice(0, 200)));
+            // Le texte etait deja reporte ; la raison de l'echec d'analyse
+            // ne l'etait pas, et c'est elle qui distingue un corps tronque
+            // d'un corps qui n'a jamais ete du JSON.
+            reject(new Error("reponse LiteLLM illisible (" +
+                             err.message.slice(0, 80) + ") : " +
+                             text.slice(0, 200)));
           }
         });
       }
@@ -318,7 +323,16 @@ function getJson(pathname, timeoutMs = 30000) {
           try {
             resolve(JSON.parse(text));
           } catch (err) {
-            reject(new Error("reponse illisible"));
+            // LA CAUSE VOYAGE AVEC LE REFUS.
+            //
+            // Ce refus disait « reponse illisible » et rien d'autre : ni
+            // ce qui a ete recu, ni pourquoi l'analyse a echoue. Une page
+            // d'erreur HTML, un corps vide et un JSON tronque rendaient le
+            // meme message, et l'on cherchait au mauvais endroit les trois
+            // fois. C'est la classe 1 de nexus_traque -- « la cause de
+            // l'echec est perdue » -- ecrite ici en JavaScript.
+            reject(new Error("reponse illisible (" + err.message.slice(0, 80) +
+                             ") : " + text.slice(0, 200)));
           }
         });
       }
@@ -2172,7 +2186,10 @@ async function callTool(name, args) {
         corpus += `\n\n===== ${raw} =====\n${content}`;
         sources.push(`${raw} (${Math.round(content.length / 1024)} Ko)`);
       } catch (err) {
-        sources.push(`${raw} (illisible)`);
+        // « illisible » ne distinguait pas un droit refuse, un encodage
+        // fautif et un fichier disparu. Trois remedes differents, un seul
+        // mot, et rien dans le rapport pour choisir.
+        sources.push(`${raw} (illisible : ${String(err.message).slice(0, 60)})`);
       }
     }
     if (!corpus.trim()) throw new Error("aucun contenu a traiter");
