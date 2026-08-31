@@ -2329,35 +2329,91 @@ async function callTool(name, args) {
     // La fusion annoncée par la description doit exister. Elle ne
     // remplace pas les sections par fichier — les deux servent : la
     // synthèse pour décider, le détail pour vérifier.
+    // L'ETAGE DE FUSION NE VOIT PAS LES FICHIERS, ET DOIT LE SAVOIR.
+    //
+    // CE QUI EST MESURE ICI, le 2026-08-31, sur deux fichiers de ce depot.
+    // Consigne : recopier litteralement la ligne 60 de chaque fichier. Les
+    // rendus PAR FICHIER etaient exacts. La fusion, qui ne recoit que ces
+    // deux resumes d'une ligne, a rendu des paragraphes d'INFERENCE absents
+    // de ses entrees : « indiquant qu'il utilise le module JSON pour
+    // manipuler des donnees structurees », « semblent etre lies a la gestion
+    // ou au suivi de donnees ». De la fabrication, sous le titre
+    // « Synthese », et placee AU-DESSUS du detail exact.
+    //
+    // La cause est structurelle : on passait « Consigne d'origine :
+    // <instruction> » a un modele qui n'a pas les fichiers. Somme de repondre
+    // a une question dont il n'a pas la matiere, il compose.
+    //
+    // CE QUI N'EST PAS ETABLI, et qu'il ne faut pas ecrire ici comme s'il
+    // l'etait. Une session voisine a d'abord rapporte que la fusion livrait
+    // du contenu VIDE, puis a RETRACTE la cause : sa consigne portait une
+    // clause d'echappement (« si le fichier arrive vide, ecris VIDE et
+    // arrete-toi »), et une clause d'echappement est plus facile a satisfaire
+    // qu'une tache -- d'autant plus que la consigne s'allonge. Reste un fait
+    // sans explication : sous fusionner:true, deux familles ont declare les
+    // fichiers vides la ou fusionner:false rendait leur contenu.
+    //
+    // Les trois correctifs ci-dessous se justifient par la mesure de CE
+    // depot, pas par le rapport retracte. Ils reduisent aussi, sans le
+    // prouver, la surface du fait inexplique : un modele a qui l'on dit
+    // explicitement qu'il n'a pas les fichiers n'a plus de raison de
+    // declarer qu'ils sont vides.
+    //   1. la consigne d'origine devient du CONTEXTE, jamais une tache a
+    //      refaire, et le systeme dit qu'il ne recoit que des resumes ;
+    //   2. le detail par fichier passe AVANT la synthese : une synthese
+    //      fausse placee en tete prime sur un detail juste, et c'est la
+    //      premiere ligne qu'un lecteur retient ;
+    //   3. sous un seuil de matiere, on ne fusionne PAS. Deux resumes d'une
+    //      ligne n'ont rien a synthetiser ; les fusionner ne produit que de
+    //      la surface d'invention.
     let entete = "";
-    if (fusionner && resumes.length > 1) {
+    const matiere = resumes.map((r) => r.texte || "").join("\n").trim();
+    const ASSEZ_DE_MATIERE = 400;
+    if (fusionner && resumes.length > 1 && matiere.length >= ASSEZ_DE_MATIERE) {
       const fusion = await chat(
         model,
         [
           {
             role: "system",
             content:
-              "Tu fusionnes des resumes de fichiers d'un meme depot en une synthese " +
-              "unique. Degage ce qui relie les fichiers entre eux. N'ajoute aucune " +
-              "information absente des resumes fournis.",
+              "Tu recois des RESUMES de fichiers, jamais les fichiers eux-memes. " +
+              "Tu produis une synthese de ces resumes et RIEN d'autre. " +
+              "N'ajoute aucune information qui ne soit pas litteralement dans les " +
+              "resumes fournis : n'infere pas, ne devine pas, ne complete pas. " +
+              "Si les resumes ne suffisent pas, dis-le en une phrase et arrete-toi. " +
+              "Ne declare jamais qu'un fichier est vide : tu n'as pas les fichiers.",
           },
           {
             role: "user",
             content:
-              `Consigne d'origine : ${instruction}\n\n` +
+              `Les resumes ci-dessous ont ete produits pour la consigne suivante, ` +
+              `donnee pour CONTEXTE seulement. N'essaie pas d'y repondre toi-meme : ` +
+              `tu n'as pas les fichiers, seulement ces resumes.\n${instruction}\n\n` +
               resumes.map((r) => `--- ${r.chemin} ---\n${r.texte}`).join("\n\n"),
           },
         ],
         1024
       );
       totalTokens += fusion.tokens;
-      entete = `## Synthese fusionnee\n${fusion.text.trim()}\n\n## Par fichier\n\n`;
+      entete =
+        `\n\n## Synthese des resumes ci-dessus\n` +
+        `(produite a partir des RESUMES, jamais des fichiers)\n` +
+        fusion.text.trim();
+    } else if (fusionner && resumes.length > 1) {
+      // Le silence se lirait comme une fusion reussie. On dit pourquoi il
+      // n'y en a pas, et avec quel chiffre.
+      entete =
+        `\n\n## Pas de synthese\n` +
+        `Les resumes tiennent en ${matiere.length} caracteres, sous le seuil de ` +
+        `${ASSEZ_DE_MATIERE} : il n'y a rien a synthetiser, et fusionner si peu ` +
+        `ne produirait que de l'invention.`;
     }
 
     return (
       `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n` +
-      entete +
-      parts.join("\n\n")
+      `## Par fichier\n\n` +
+      parts.join("\n\n") +
+      entete
     );
   }
 
