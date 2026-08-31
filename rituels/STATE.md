@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 02:19 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 02:39 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `b65936c` |
+| Commit | `bfc2cc2` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 36 hours (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 345.2 Go |
+| Disque libre | 340.7 Go |
 
 ## Inventaire exposé — 80 modèles
 
@@ -66,7 +66,7 @@ Verdict : **valide**
 | `scripts/nexus_generate.py` | `1beed176ed26550f0decf5b644ad6e0b` |
 | `scripts/nexus_validate.py` | `13d985178ff1a6e02c61c76c37c1b9f7` |
 | `scripts/nexus_capability.py` | `d12b9c73d1ed8a18a4352c73efb11966` |
-| `scripts/nexus_test.py` | `eeabb698bd7a3dc70fdbc7c0e0524eb4` |
+| `scripts/nexus_test.py` | `337e700765d3d9f513a341850053181d` |
 | `scripts/Update-NexusModels.ps1` | `dc4dc63208ecbb38d62936d2d7a2a2d0` |
 
 ## Traque mecanique
