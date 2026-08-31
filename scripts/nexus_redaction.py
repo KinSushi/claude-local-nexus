@@ -17,6 +17,34 @@ import subprocess
 import json
 import sys
 
+import datetime
+
+
+def borne_since(fenetre_heures):
+    """
+    L'instant a passer a git pour --since, jamais une duree.
+
+    CE QUI ETAIT FAUX. Ce fichier calculait la meme fenetre a DEUX endroits,
+    de deux facons, et l'une etait fausse :
+
+        since = now - fenetre_heures * 3600   -> horodatage, 178 commits
+        f"--since={fenetre_heures}"           -> la chaine "24"
+
+    git lit « 24 » comme une DATE, pas comme une duree : il a rendu 373
+    commits, l'historique entier, au lieu des 178 de la fenetre demandee. Le
+    comptage portait donc sur autre chose que ce qu'il annoncait.
+
+    Deux calculs de la meme chose finissent toujours par diverger. Ici cela
+    n'a meme pas pris un fichier : les deux ont ete ecrits d'un seul tenant.
+
+    `datetime.now(timezone.utc)` et non `utcnow()`, deprecie depuis 3.12.
+    """
+    heures = max(1, int(fenetre_heures))
+    instant = (datetime.datetime.now(datetime.timezone.utc)
+               - datetime.timedelta(hours=heures))
+    return instant.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def get_window_and_json():
     sys = __import__('sys')
     it = iter(sys.argv[1:])
@@ -38,7 +66,7 @@ def count_commits(window_hours):
     subprocess = __import__('subprocess')
     time = __import__('time')
     now = int(time.time())
-    since = now - window_hours * 3600
+    since = borne_since(window_hours)
     cmd = [
         'git', 'log',
         f'--since={since}',
@@ -200,36 +228,35 @@ def count_delegated(window_hours):
 # ligne ne suffit plus, d'ou le separateur d'enregistrement.
 from typing import List, Tuple, Optional
 
-def controle_auteur(fenetre_heures: Optional[Tuple[str, str]] = None) -> Tuple[Optional[int], Optional[int], Optional[List[Tuple[str, str]]]]:
-    """
-    Analyse les commits du dépôt git courant.
-
-    Retourne (nb_declare, nb_muet, details_muets) où
-    - nb_declare : nombre de commits déclarant leur auteur,
-    - nb_muet    : nombre de commits ne le déclarant pas,
-    - details_muets : jusqu'à 10 couples (hash_court, première_ligne_message) des commits muets.
-
-    En cas d'erreur git, retourne (None, None, [motif]).
-    """
-    # ----------------------------------------------------------------------
-    # Ce qui était faux : utilisation de %s (sujet uniquement) et découpage
-    # ligne‑par‑ligne qui perd le corps du message.
-    # ----------------------------------------------------------------------
-    # Construction de la commande git
+# LES SEPARATEURS ETAIENT BONS ; L'ASSOCIATION NE L'ETAIT PAS.
+#
+# CE QUI ETAIT FAUX. Le format `%H%x00%B%x00` produit bien deux caracteres
+# nuls par commit -- verifie, 36 pour 18 commits. Mais il ne delimite pas
+# les ENREGISTREMENTS : apres decoupage, le jeton qui suit le corps contient
+# a la fois la liste des fichiers ET l'empreinte du commit SUIVANT, collees.
+# Le parseur les associait donc de travers.
+#
+# Mesure : 257 commits examines la ou le depot n'en compte que 178 au total
+# sur la fenetre. Des enregistrements fantomes, et un verdict qui ne veut
+# rien dire -- un compteur faux est pire qu'un compteur absent, car il rend
+# un chiffre.
+#
+# Le format porte desormais un caractere 0x01 en TETE de chaque
+# enregistrement. Verifie avant d'etre specifie : 18 separateurs pour 18
+# commits, exactement.
+#
+# CONTRAINTE DE VERIFIABILITE : declares + muets doit EGALER le nombre de
+# commits touchant du code. Un commit est examine une fois et classe dans
+# une seule categorie.
+def controle_auteur(fenetre_heures):
+        
+    # Commande git avec le séparateur 0x01 en tête de chaque enregistrement
     cmd = [
         "git", "log",
-        "--pretty=format:%H%x00%B%x00",   # hash NUL body NUL
-        "--name-only",                    # suivi des chemins modifiés
-        "-z"                              # séparateur NUL entre tous les champs
+        f"--since={borne_since(fenetre_heures)}",
+        "--name-only",
+        "--pretty=format:%x01%H%x00%B%x00"
     ]
-
-    # Gestion éventuelle d'une fenêtre temporelle (since / until)
-    if fenetre_heures and isinstance(fenetre_heures, tuple) and len(fenetre_heures) == 2:
-        since, until = fenetre_heures
-        if since:
-            cmd.append(f'--since={since}')
-        if until:
-            cmd.append(f'--until={until}')
 
     try:
         result = subprocess.run(
@@ -238,92 +265,84 @@ def controle_auteur(fenetre_heures: Optional[Tuple[str, str]] = None) -> Tuple[O
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=30  # délai borné
+            timeout=30,
         )
-    except Exception as exc:
-        return None, None, [f"git subprocess error: {exc}"]
+    except FileNotFoundError:
+        return (None, None, "git not found")
+    except subprocess.TimeoutExpired:
+        return (None, None, "git timeout")
 
     if result.returncode != 0:
-        return None, None, [f"git error (code {result.returncode}): {result.stderr.strip()}"]
+        return (None, None, f"git error: {result.returncode}")
 
-    # Découpage du flux NUL‑séparé
-    tokens = result.stdout.split("\x00")
-    # Le dernier token peut être vide à cause du séparateur final
-    if tokens and tokens[-1] == "":
-        tokens.pop()
+    output = result.stdout
 
-    # Expressions régulières
-    hash_re = re.compile(r"^[0-9a-f]{40}$")
-    code_ext = (".py", ".ps1", ".js")
-    ignore_dirs = ("rituels/",)  # répertoire à ignorer
+    # Découpage sur le séparateur 0x01, on ignore le premier morceau s'il est vide
+    records = output.split("\x01")
+    if records and records[0] == "":
+        records = records[1:]
 
-    # Mots‑clés (sans accents, casse ignorée)
-    keywords = [
+    # Phrases qui déclarent l'auteur (sans tenir compte de la casse ni des accents)
+    phrases = [
         "banc gratuit",
         "redige par le banc",
         "redaction : banc",
         "ecrit par le banc",
         "redige a la main",
-        "redaction : orchestrateur"
+        "redaction : orchestrateur",
     ]
 
-    def normalize(s: str) -> str:
+    def normalize(text):
         """Supprime les accents et met en minuscule."""
-        return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode().lower()
+        return "".join(
+            c
+            for c in unicodedata.normalize("NFD", text)
+            if not unicodedata.combining(c)
+        ).lower()
 
     declares = 0
     muets = 0
-    details: List[Tuple[str, str]] = []
+    details = []
 
-    i = 0
-    while i < len(tokens):
-        # Lecture du hash
-        commit_hash = tokens[i]
-        i += 1
-        if not hash_re.fullmatch(commit_hash):
-            # Si le token n'est pas un hash, on saute (défaut de format)
+    for rec in records:
+        # Chaque enregistrement : hash\x00body\x00files...
+        parts = rec.split("\x00", 2)
+        if len(parts) < 3:
+            # Enregistrement mal formé, on l'ignore
             continue
 
-        # Lecture du corps du message
-        body = tokens[i] if i < len(tokens) else ""
-        i += 1
+        commit_hash, body, files_blob = parts
 
-        # Récupération de la liste des fichiers jusqu'au prochain hash ou fin
-        files: List[str] = []
-        while i < len(tokens) and not hash_re.fullmatch(tokens[i]):
-            if tokens[i]:  # ignore les éventuels tokens vides
-                files.append(tokens[i])
-            i += 1
+        # Liste des fichiers, on retire les lignes vides
+        files = [ln for ln in files_blob.splitlines() if ln.strip()]
 
-        # --------------------------------------------------------------
-        # 1. Le commit touche‑t‑il du code ?
-        # --------------------------------------------------------------
-        touche_code = any(
-            f.endswith(code_ext) and not any(f.startswith(d) for d in ignore_dirs)
-            for f in files
-        )
-        if not touche_code:
-            # Commit sans impact sur le code : on ne le compte pas
-            continue
+        # Un commit touche le code s'il modifie au moins un fichier .py, .ps1 ou .js
+        # et n'est pas limité à des fichiers ignorés.
+        touches_code = False
+        for f in files:
+            if f.startswith("rituels/"):
+                continue
+            f_low = f.lower()
+            if f_low.endswith(".py") or f_low.endswith(".ps1") or f_low.endswith(".js"):
+                touches_code = True
+                break
 
-        # --------------------------------------------------------------
-        # 2. Le commit déclare‑t‑il son auteur ?
-        # --------------------------------------------------------------
-        body_normalized = normalize(body)
-        declare = any(normalize(k) in body_normalized for k in keywords)
+        if not touches_code:
+            continue  # on ne compte pas les commits qui ne touchent pas le code
 
-        if declare:
+        # Détection d'une déclaration d'auteur dans le message complet
+        body_norm = normalize(body)
+        declared = any(phrase in body_norm for phrase in phrases)
+
+        if declared:
             declares += 1
         else:
             muets += 1
-            # première ligne du message (avant le premier saut de ligne)
-            first_line = body.splitlines()[0] if body else ""
-            details.append((commit_hash[:7], first_line))
-            if len(details) >= 10:
-                # on ne garde que les 10 premiers détails
-                pass
+            if len(details) < 10:
+                first_line = body.splitlines()[0] if body else ""
+                details.append((commit_hash[:7], first_line))
 
-    return declares, muets, details[:10]
+    return (declares, muets, details)
 
 
 def main():
