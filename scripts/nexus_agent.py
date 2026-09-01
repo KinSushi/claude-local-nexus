@@ -923,10 +923,24 @@ def executer(tache: dict, cle: str) -> dict:
     # auparavant la protection dependait d'une option de l'appelant, ce qui la rendait facultative
     # incident du 2026-09-01 avec les six modules de securite
     # un repli est subi et ne doit jamais elargir l'exposition
-    if modele.endswith("-local"):
-        candidats = [m for m in candidats if m.endswith("-local")]
-    if modele not in candidats:
-        candidats.append(modele)
+    # Populate cache of plans if absent
+    try:
+        if not hasattr(appeler, "_cache_plans"):
+            appeler._cache_plans = plans_par_alias(cle)
+    except Exception:
+        appeler._cache_plans = {}
+    plan_modele = appeler._cache_plans.get(modele, "inconnu")
+    if plan_modele == "inconnu":
+        # Keep only the requested model, no fallback
+        candidats = [modele]
+    else:
+        # Order of exposure: local(0) < cloud(1) < anthropic(2); unknown(3) excluded
+        ordre = {"local": 0, "cloud": 1, "anthropic": 2}
+        rank_requested = ordre.get(plan_modele, 3)
+        candidats = [
+            c for c in candidats
+            if ordre.get(appeler._cache_plans.get(c, "inconnu"), 3) <= rank_requested
+        ]
 
     if local_seul:
         candidats = [c for c in candidats if c.endswith("-local")]

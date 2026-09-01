@@ -38,6 +38,7 @@ def _run_test(requested_model):
 
     # Replace the function
     module.appeler = fake_appeler
+    fake_appeler._cache_plans = {'releve-locale': 'local', 'deepseek-coder-33b-local': 'local', 'gpt-oss-120b-cloud': 'cloud', 'glm-4.7-flash-local': 'local'}
 
     try:
         task = {
@@ -94,6 +95,17 @@ def main():
             exit_code = 1
     except Exception as e:
         _print_result(False, "cloud_test_error", f"{type(e).__name__}: {e}")
+        exit_code = 1
+
+    # ---------- Test 3 : alias local sans suffixe -local ----------
+    try:
+        attempts_no_suffix = _run_test('releve-locale')
+        case5_ok = not any(m.endswith('-cloud') for m in attempts_no_suffix)
+        _print_result(case5_ok, 'no_cloud_for_local_alias_without_suffix', ', '.join(attempts_no_suffix) or 'none')
+        if not case5_ok:
+            exit_code = 1
+    except Exception as e:
+        _print_result(False, 'no_suffix_test_error', f'{type(e).__name__}: {e}')
         exit_code = 1
 
     sys.exit(exit_code)
