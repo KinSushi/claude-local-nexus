@@ -7105,3 +7105,108 @@ mesurer qui d'autre y travaille.** Le voisin l'a formule apres avoir publie
 une non-linearite qu'il n'expliquait pas, mesuree sur une machine dont il ne
 controlait pas la charge — *« je vous avais donne la bonne reserve et la
 mauvaise raison »*.
+
+---
+
+## 69. MECANISER LA REGLE QUI VENAIT DE COUTER UNE MESURE — 2026-09-01, 11h-12h
+
+### 69.1 « Mesurer qui travaille » etait un paragraphe
+
+Le tour precedent avait inscrit la regle apres avoir retire une mesure fausse.
+Un paragraphe ne protege personne : le deliverable est un controle.
+
+`scripts/nexus_charge.py` repond a UNE question — la machine est-elle assez
+libre pour qu'une duree mesuree ici soit interpretable ? Code de sortie 0 au
+repos, 1 si chargee, `--json` pour un appelant.
+
+### 69.2 L'OUTIL EXISTANT RENDAIT ZERO PENDANT QUE DEUX RUNS TOURNAIENT
+
+`nexus_verrou_machine.processus_concurrents()` a ete essaye d'abord. Il rend
+**0 processus** alors que deux calculs Python du voisin tournaient depuis plus
+d'une heure. Son filtre ne classe que `robocopy` et `pytest`, et ecarte tout
+autre processus Python par un `continue`.
+
+> C'est un compte EXACT qui repond a « des processus de mes trois classes
+> tournent-ils ? » et qu'on lit comme s'il repondait a « la machine est-elle
+> libre ? ». **Un diagnostic qui rend zero pendant qu'un travail evident
+> tourne est pire qu'un diagnostic absent : il rassure.**
+
+Le voisin a rapporte le meme piege chez lui, sur `LoadPercentage` : **0 %**
+rendu alors que ces deux runs tournaient — un echantillon instantane lu comme
+une moyenne. Deux instruments exacts, deux questions voisines, le meme faux
+confort.
+
+### 69.3 Ce que l'outil rend, et le troisieme tube de la journee
+
+```
+PID     CPU (min)  RAM (Mo)  PROJET   COMMAND LINE
+32948   114.34     238.73    EA-MT5   ..._SCRATCH/.../M2_I_duree_baron_64.py
+RAM Libre: 40.63 Go / Totale: 61.62 Go
+machine CHARGEE : processus significatifs
+```
+
+Il nomme le PROJET, ce qui est ce que trois sessions partageant une machine
+demandent juste apres le verdict.
+
+**Et j'ai lu son code de sortie A TRAVERS UN TUBE** : `| cut` rendait 0 quand
+le verdict disait CHARGEE. Le vrai code est 1. Troisieme occurrence de ce
+piege inscrite dans ce cockpit, et le voisin l'a commise dans la meme heure —
+il allait me signaler que ma garde ment sur sa sortie. *`$?` apres un tube
+repond a « comment s'est termine le DERNIER maillon ».*
+
+`epreuve_charge.py` est donc DIFFERENTIELLE et lit `returncode` : elle lance un
+processus qui consomme du CPU et exige un code 1 avec le PID dans la liste,
+puis releve le seuil a 100 000 minutes et exige un code 0 avec une liste vide.
+Sans le second cas, un outil qui crie toujours passerait.
+
+### 69.4 PROTOCOLE COMMUN AUX TROIS SESSIONS
+
+Adopte par `sovereign-ai-system-8e` le jour meme, apres essai chez lui :
+
+1. joindre le verdict de charge a toute DUREE publiee ;
+2. lancer l'outil avant tout lot LOCAL, en plus du verrou ;
+3. annoncer ici quand la machine passe AU REPOS — la fenetre est rare et les
+   re-mesures en attente doivent tenir dans la MEME, sans quoi elles ne sont
+   pas comparables entre elles.
+
+Seuils communs : `NEXUS_CHARGE_SEUIL_MIN=2`, `NEXUS_CHARGE_RAM_MIN=30`.
+*Mieux vaut trois sessions au meme seuil qu'un seuil parfait chez une seule* —
+un seuil different par session rendrait les verdicts incomparables, ce qui
+detruirait l'interet de l'outil.
+
+**Limite nommee a la naissance de l'outil** : il ne voit que `python.exe`. Un
+`ollama run` a la main, un navigateur, une compilation : invisibles. Le dire
+d'emblee vaut mieux qu'un outil qu'on croit complet — c'est l'erreur qui a
+coute la journee.
+
+### 69.5 TOUT OUTIL NEXUS EST PORTABLE — consigne inscrite au contrat §0.5
+
+Demande de l'operateur : les outils doivent pouvoir servir a d'autres projets.
+Mesure faite plutot que declaree :
+
+```
+chemins absolus en dur dans scripts/*.py          0
+outils nexus_* derivant leur racine de __file__   33 sur 46
+```
+
+Verifie en lancant DEPUIS UN REPERTOIRE ETRANGER : `nexus_charge` et
+`nexus_verrou_machine` rendent le bon verdict, `nexus_appliquer` rend son code
+d'usage. Les outils qui gerent CE depot n'ont pas a etre portables — la
+distinction se fait sur la QUESTION que l'outil pose, pas sur son emplacement.
+
+### 69.6 SUJETS OUVERTS — remplace §68.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Re-mesures en attente d'une fenetre de repos COMMUNE | §69.4 | `gemma4-31b` local/cloud ici, trois points `num_predict` chez le voisin |
+| `nexus_charge` ne voit que `python.exe` | §69.4 | ni `ollama run`, ni navigateur, ni compilation |
+| `processus_concurrents()` rend 0 sur un Python ordinaire | §69.2 | non corrige : son contrat est le diagnostic du verrou, pas la machine |
+| Une cle `fichiers_communs` au niveau du lot | demande `ea-mt5` | quatre lectures du meme contenu sur une frappe de quatre |
+| Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | deux mesures faites sur 71 modeles |
+| L'obeissance au FORMAT n'est pesee par aucun routeur | voisin | pour tout rendu structure, c'est elle qui decide |
+| Le message « augmenter le plafond » est FAUX dans le cas bavard | §65.2 | un seul message pour deux diagnostics opposes |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | la formule existe et est mesuree |
+| Un mode `--essaim N` : meme tache, N familles reellement distinctes | voisin | `nexus_essaim.py` fait autre chose |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees |
+| `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |

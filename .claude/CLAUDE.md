@@ -157,6 +157,60 @@ impossible to get wrong.
 
 ---
 
+
+---
+
+## 0.5 TOUT OUTIL NEXUS EST PORTABLE — consigne permanente de l'operateur
+
+Enonce le 2026-09-01 : *« si tu peux le rendre portable tous les outils avec
+nexus notre projet pour d'autres projet futurs fais le, cela fait partie des
+ameliorations »*, puis *« note le partout »*.
+
+Ce depot n'est pas seulement une plateforme : c'est une **reserve d'outils
+destines a servir ailleurs**. Un outil qui ne fonctionne que dans son propre
+depot a la moitie de la valeur qu'il pourrait avoir, et la portabilite fait
+partie de l'objectif permanent du §0 au meme titre que la traque des defauts.
+
+### Ce que portable veut dire, mesurable et non declaratif
+
+| regle | pourquoi |
+| --- | --- |
+| **aucun chemin absolu**, jamais | il casse le jour ou le depot bouge, et il ne dit pas pourquoi |
+| la racine se **derive de `__file__`** | l'outil se trouve lui-meme, quel que soit le repertoire courant |
+| une racine de travail **explicite** (`--racine`) l'emporte | l'appelant decide ou il travaille, pas l'outil |
+| **degrader**, jamais planter, quand le depot est absent | un outil de diagnostic qui echoue ne doit jamais bloquer le travail |
+| pas d'effet de bord **a l'import** | un import ne doit rien lancer, rien sonder, rien ecrire |
+| dependances **standard** de preference | un outil qui exige un venv du depot n'est pas portable |
+
+### Etat mesure le 2026-09-01
+
+```
+chemins absolus en dur dans scripts/*.py          0
+outils nexus_* derivant leur racine de __file__   33 sur 46
+```
+
+Verifie en lancant depuis un repertoire etranger : `nexus_charge.py` et
+`nexus_verrou_machine.py` fonctionnent et rendent le bon verdict ;
+`nexus_appliquer.py` rend son code d'usage, ce qui est le comportement voulu.
+
+Les outils qui exigent legitimement le depot — `nexus_conformite`,
+`nexus_generate`, `nexus_preserve` et leurs semblables — gerent CE depot ; leur
+portabilite n'a pas de sens et n'est pas exigee. La distinction se fait sur la
+QUESTION que l'outil pose, pas sur son emplacement.
+
+### Deja portables, et deja utiles ailleurs
+
+| outil | ce qu'il rend a n'importe quel projet |
+| --- | --- |
+| `nexus_agent.py` | le banc gratuit, avec `--racine` sur le projet appelant |
+| `nexus_charge.py` | la machine est-elle libre pour une mesure de duree ? |
+| `nexus_verrou_machine.py` | exclusion mutuelle entre projets, par mutex nomme |
+| `nexus_appliquer.py` | poser un patch rendu par un modele, apres verification |
+| `nexus_doc.py` | 166 507 symboles, ancres sur les versions installees |
+
+> Quand un outil neuf est ecrit ici, la question a poser est : **un autre
+> projet pourrait-il l'appeler tel quel ?** Si oui, il ne doit rien supposer de
+> ce depot. Si non, dire pourquoi.
 ## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
 
 Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même
