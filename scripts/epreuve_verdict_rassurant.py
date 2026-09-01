@@ -69,9 +69,9 @@ def _run_test():
         sys.argv = [original_argv[0], "--base", "HEAD"]
         with contextlib.redirect_stdout(captured):
             try:
-                ret_code = mod.main()
+                mod.main()
             except SystemExit as se:
-                ret_code = se.code
+                _ = se.code
             except Exception as e:
                 raise RuntimeError(f"Erreur lors de l'exécution de main : {e}") from e
         output = captured.getvalue()
