@@ -1613,6 +1613,73 @@ async function exposedModels() {
   return ensemble;
 }
 
+async function exigerAliasConnu(model) {
+  // un refus en zero seconde qui nomme la voie vaut mieux qu'un aller-retour qui ne propose rien
+
+  // 1. absence ou vide : on ne bloque pas
+  if (!model) {
+    return;
+  }
+
+  // 2. inventaire des alias exposes
+  const ensemble = await exposedModels();
+
+  // 3. inventaire vide : symptome reseau, pas preuve d'invalidite
+  if (ensemble.size === 0) {
+    return;
+  }
+
+  // 4. alias connu : on laisse passer
+  if (ensemble.has(model)) {
+    return;
+  }
+
+  // 5. calcul local de la distance de Levenshtein, insensible a la casse
+  function distanceLevenshtein(a, b) {
+    const aa = a.toLowerCase();
+    const bb = b.toLowerCase();
+    if (aa === bb) {
+      return 0;
+    }
+    const m = aa.length;
+    const n = bb.length;
+    if (m === 0) {
+      return n;
+    }
+    if (n === 0) {
+      return m;
+    }
+    let lignePrecedente = new Array(n + 1);
+    for (let j = 0; j <= n; j++) {
+      lignePrecedente[j] = j;
+    }
+    let ligneCourante = new Array(n + 1);
+    for (let i = 1; i <= m; i++) {
+      ligneCourante[0] = i;
+      const ca = aa.charCodeAt(i - 1);
+      for (let j = 1; j <= n; j++) {
+        const cout = ca === bb.charCodeAt(j - 1) ? 0 : 1;
+        ligneCourante[j] = Math.min(
+          ligneCourante[j - 1] + 1,
+          lignePrecedente[j] + 1,
+          lignePrecedente[j - 1] + cout
+        );
+      }
+      [lignePrecedente, ligneCourante] = [ligneCourante, lignePrecedente];
+    }
+    return lignePrecedente[n];
+  }
+
+  const proches = [...ensemble]
+    .map(alias => ({ alias, distance: distanceLevenshtein(model, alias) }))
+    .sort((a, b) => a.distance - b.distance || a.alias.localeCompare(b.alias))
+    .slice(0, 5)
+    .map(p => p.alias)
+    .join(', ');
+
+  throw new Error(`alias refuse : ${model} ; proches : ${proches}`);
+}
+
 /**
  * Plan d'execution de chaque alias, lu a la source.
  *
