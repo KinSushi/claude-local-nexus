@@ -9852,3 +9852,140 @@ echange consigne, chercher trois de ses formules exactes sur le disque.* Un
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 89. PASSATION AVANT L'ARRET COMPLET — a lire en premier au retour
+
+> **Ceci est la derniere ecriture avant l'extinction de la machine.** La
+> session qui lira ces lignes n'est pas celle qui les a ecrites. Tout ce qui
+> suit est mesure, jamais suppose.
+
+### 89.1 LE GESTE EN COURS
+
+**Arret complet, trente secondes, rallumage. PAS un redemarrage.**
+
+La distinction est mesuree, pas stylistique : un redemarrage reinitialise
+Windows mais laisse le dock alimente ; un arret coupe le courant et force le
+dock **et le disque** a se reinitialiser physiquement.
+`HiberbootEnabled = 0`, donc l'arret est un vrai arret complet.
+
+**Etat fige juste avant :**
+
+```
+disques enumeres        0, 3, 4, 2
+lettres                 C E F G
+duree de marche         118,2 heures
+suspension selective    DESACTIVEE, secteur et batterie, verifiee deux fois
+demarrage rapide        0  ->  arret complet reel
+```
+
+### 89.2 LA PREMIERE COMMANDE AU RETOUR, AVANT TOUT
+
+```powershell
+Get-Disk | Select-Object Number, FriendlyName,
+    @{n='Go';e={[math]::Round($_.Size/1GB,1)}}, OperationalStatus
+```
+
+| ce qu'on voit | ce que cela veut dire |
+| --- | --- |
+| **cinq** disques, le nouveau a ~4657 Go | gagne — et **NE PAS L'OUVRIR** |
+| **quatre** disques, comme avant | brancher hors du dock, sur la carte mere |
+
+> ⚠️ **Si le disque est la : ne pas l'ouvrir dans l'explorateur, ne pas cliquer
+> dessus.** NTFS rejoue son journal au MONTAGE, et rejouer est une ECRITURE.
+>
+> ```
+> diskpart -> select disk N -> attributes disk set readonly
+> ```
+>
+> **AVANT** que Windows ne monte le volume. C'est la seule fenetre ou cette
+> decision se prend, et elle dure quelques secondes.
+
+Puis, dans cet ordre — **le plus precieux et le plus petit d'abord**, parce que
+le lien peut retomber a la minute trois :
+
+```
+1  REPRISE_2026-09-01.md · STATE.md · les dix SORTIE_*.txt · les instruments
+2  _QUARANTINE de sovereign, 1 790 fichiers
+3  ce que l'operateur seul sait y avoir mis
+4  le volumineux, et seulement s'il n'existe pas ailleurs
+```
+
+Le support de secours de 16 To **ne doit PAS etre sur le dock** : sinon la
+source et la destination passent par le lien qui a lache deux fois.
+
+### 89.3 LE RETOUR ARRIERE DE LA MISE A JOUR — arbitre, et REJETE POUR MAINTENANT
+
+Question de l'operateur : *« revenir avant la mise a jour, peut-etre aussi ? »*
+La correlation du §86.1 est forte — 45 jours propres, cinq pilotes remplaces le
+26/08 a 17:31, erreurs le jour meme. **Et pourtant non, pas avant le
+redemarrage.**
+
+| raison | fondement |
+| --- | --- |
+| **il n'y a aucun filet** | mesure : **aucun point de restauration systeme**, la restauration est desactivee |
+| ce n'est pas « a la place », c'est « en plus » | desinstaller une mise a jour cumulative exige un redemarrage de toute facon |
+| les faire ensemble n'apprend RIEN | le redemarrage n'a jamais ete essaye en 118 h ; si le disque revient apres les deux, on ne saura pas lequel a agi |
+| la correlation n'est pas une preuve | cinq fichiers remplaces a la meme seconde, on ne sait pas lequel |
+
+⇒ **Le retour arriere est un bon DEUXIEME ou TROISIEME geste**, quand les
+causes simples auront ete eliminees. Il sera alors justifie par elimination et
+non par correlation.
+
+⚠️ **Et sa faisabilite n'est PAS etablie** : `Get-WindowsPackage -Online` exige
+l'elevation, que cette session n'avait pas. **A mesurer avant de tenter quoi
+que ce soit** — une desinstallation refusee a mi-parcours est le pire des cas.
+
+### 89.4 CE QUI EST SAUVE, ET COMMENT ON L'A SU
+
+```
+rituels/SAUVETAGE_2026-09-01/
+  README.md                          l'index et la regle de provenance
+  ea-mt5_lot1_mesures.md             les neuf figures, le stop, la concentration, le drawdown
+  ea-mt5_lot2_source_et_outils.md    la source Baron, les deux outils, le correctif qui a AGGRAVE
+  ea-mt5_lot3_diagnostic_panne.md    sa chronologie, ses trois diagnostics faux, le remede classe 9
+  ea-mt5_REPRISE_gouvernance.md      les ordres de l'operateur en VERBATIM et la LOI 1 durcie
+  sovereign_vidage_complet.md        ses dix blocs, sa legende de provenance
+  sovereign_garde_aveugle_au_MCP.md  un garde arme sur le chemin qu'on n'emprunte plus
+  inventaire_des_pertes.md           ce qui n'est ni sur origin ni sur le miroir
+```
+
+**Les deux dernieres pieces n'existaient dans aucun vidage.** Elles sont
+sorties parce que la question a change :
+
+> **La question generale ne suffit pas. La question PRECISE, si.** Les deux
+> sessions avaient repondu « rien d'autre » de bonne foi. `ea-mt5` a rendu
+> `REPRISE_2026-09-01.md` quand on lui a demande *« un fichier de gouvernance
+> non commite ? »* ; `sovereign` a rendu le sien a la meme question, apres deux
+> confirmations qu'il n'avait rien.
+
+Et avant cela, **quatre de ses cinq derniers points n'etaient nulle part** :
+cherches sur le disque au lieu d'etre crus, ils manquaient tous. D'ou la
+onzieme classe (§88.4) et son remede : *chercher trois formules exactes sur le
+disque avant de declarer un echange consigne.*
+
+### 89.5 SUJETS OUVERTS — remplace §88.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **L'arret complet est EN COURS** | §89.1 | premiere chose a verifier : `Get-Disk` |
+| **Le retour arriere : deuxieme geste, pas le premier** | §89.3 | faisabilite NON etablie, aucun point de restauration |
+| **La mise a jour du 26/08 reste le suspect principal** | §86.1 | 45 jours propres avant |
+| Charge et suspension : NON SEPARABLES | §88.1 | le journal n'enregistre que les echecs |
+| 3 To dont aucun agent ne sait rien | §85.1 | decide entre image bloc et copie fichier |
+| Le disque de 16 To doit etre hors du dock | §85.4 | condition absolue |
+| Un garde arme sur un chemin abandonne | sauvetage | trois depots, trois gardes, meme cecite |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| Classe 10 : posseder la mesure, la ranger ailleurs | §84.4 | non mecanisable a ce jour |
+| Classe 11 : croire consigne ce qui a ete DIT | §88.4 | **remede trouve : la question precise** |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | **il s'armera a ce redemarrage** |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
