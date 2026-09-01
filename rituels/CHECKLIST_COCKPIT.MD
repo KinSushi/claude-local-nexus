@@ -6103,6 +6103,22 @@ tableau situees sous un titre portant le mot « ouvert ». Une liste numerotee
 sous un autre titre serait invisible au demarrage — c'est-a-dire au moment
 precis ou elle sert.
 
+**Et cela n'a pas suffi.** Le resume plafonne a **18 sujets** ; cette section
+etant la DERNIERE du cockpit, ses lignes etaient mangees et seul son titre
+paraissait — un intitule sans contenu, qui se lit comme une section vide et
+non comme une troncature.
+
+Deux corrections, dans l'outil de reprise lui-meme :
+
+* il **compte et dit** les sujets ecartes — *« 145 sujet(s) non affiche(s) »*.
+  Une borne qui n'est pas dite se lit comme une couverture complete ;
+* il **nomme cette section 62** comme point d'entree, au lieu de renvoyer a un
+  fichier de 145 sujets a trier.
+
+> **145 sujets ouverts extraits contre 18 montres.** Le cockpit accumule sans
+> retirer — deja constate en §52.1, ou trois entrees etaient fermees depuis
+> des jours sans que rien ne le dise. **Inscrit, non traite.**
+
 | sujet ouvert | ou | etat |
 | --- | --- | --- |
 | Poursuivre la recolte des 34 sujets — 8 examinees sur 34 | §52 | une entree sur trois designe un defaut reel a l'endroit qu'elle nomme |
