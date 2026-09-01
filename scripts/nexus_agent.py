@@ -429,7 +429,16 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
     choix = (corps.get("choices") or [{}])[0]
-    texte = _sans_raisonnement(choix.get("message", {}).get("content", ""))
+
+    # Capture du texte brut avant le nettoyage.
+    # La mesure de la part retiree est exacte car elle se base sur la longueur
+    # du texte brut et du texte nettoye, sans aucune conversion intermediaire.
+    texte_brut = choix.get("message", {}).get("content", "")
+    texte = _sans_raisonnement(texte_brut)
+
+    # Calcul de la proportion de texte retiree (raisonnement).
+    # Si le texte brut est vide, on renvoie 0.0 pour eviter une division par zero.
+    part_raisonnement = (len(texte_brut) - len(texte)) / len(texte_brut) if texte_brut else 0.0
 
     # LA TRACE VERBATIM, deposee ici et nulle part ailleurs : c'est le seul
     # point ou la reponse brute existe avant d'etre consommee, decoupee ou
@@ -460,6 +469,10 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "adresse": entetes.get("x-litellm-model-api-base", "?"),
         "cout": entetes.get("x-litellm-response-cost", "0"),
         "duree": duree,
+        # Part du texte retiree lors du nettoyage, arrondie a trois decimales.
+        "part_raisonnement": round(part_raisonnement, 3),
+        # Nombre de tokens de sortie (completion) ; 0 par defaut si absent.
+        "tokens_sortie": (corps.get("usage") or {}).get("completion_tokens", 0),
     }
 
 
@@ -1166,10 +1179,11 @@ def main() -> int:
     # ignorait max_tokens et appliquait 4096 (ou 8192 en cloud). Depuis que
     # le script envoie num_predict, la borne est réelle. Baisser ce défaut
     # régressait le comportement de tous les appelants qui ne le précisent pas.
-    parseur.add_argument("--max-tokens", type=int, default=4096,
+    parseur.add_argument("--max-tokens", type=int, default=None,
                          help="Nombre maximum de jetons (défaut 4096). "
                               "Depuis la correction, la borne est réelle ; "
-                              "un budget trop court rend une réponse vide.")
+                              "un budget trop court rend une réponse vide. "
+                              "Sans valeur explicite, le JSON du lot décide, et à défaut le budget vaut 4096.")
     parseur.add_argument("--temperature", type=float, default=None,
                          help="Defaut %.1f. Ne monter au-dessus de 0.5 que "
                               "pour une redaction libre." % TEMPERATURE_DEFAUT)
@@ -1206,10 +1220,14 @@ def main() -> int:
         if args.temperature is not None:
             for t in taches:
                 t["temperature"] = args.temperature
+        # la symetrie avec la temperature est le but, une option voisine active et l'autre inerte etant un piege silencieux
+        if args.max_tokens is not None:
+            for t in taches:
+                t['max_tokens'] = args.max_tokens
     elif args.tache:
         taches = [{"nom": args.modele, "modele": args.modele, "tache": args.tache,
                    "fichiers": args.fichiers, "systeme": args.systeme,
-                   "max_tokens": args.max_tokens,
+                   "max_tokens": (args.max_tokens or 4096),
                    "temperature": (args.temperature if args.temperature is not None
                                    else TEMPERATURE_DEFAUT),
                    "racine": args.racine}]
