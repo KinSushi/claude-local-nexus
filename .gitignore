@@ -69,3 +69,8 @@ capacites.jsonl
 modalite.jsonl
 lot_capacites.json
 lot_modalite.json
+
+# Etats DERIVES, regeneres a chaque rituel : les versionner salit l arbre
+# a chaque tour et bloque la vitrine, qui exige un arbre propre. Mesure :
+# trois publications refusees le 2026-09-01 a cause de STATE.md.
+PROGRESS.MD
