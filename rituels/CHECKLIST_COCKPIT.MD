@@ -5754,3 +5754,95 @@ l'ancien : **dixieme occurrence du motif du jour.**
 Six entrees examinees : trois perimees, une mal ciblee, deux justes. La
 recolte reste un signal utile, jamais un constat.
 
+---
+
+## 59. LA QUATRIEME ENTREE ETAIT UNE FRONTIERE, PAS UN DEFAUT
+
+*« Les epreuves promeuvent mais ne retrogradent jamais »* — verifiee dans le
+code reel, comme les trois precedentes.
+
+### 59.1 Ce n'est pas un oubli, c'est une decision ecrite et datee
+
+`nexus_releve.py` porte, en toutes lettres :
+
+> **UNE MESURE RATEE N'EFFACE PAS UNE PREUVE ACQUISE**
+
+et, plus bas :
+
+> *On ne DECIDE rien ici — la politique de promotion appartient a
+> l'operateur. On rend seulement la stabilite lisible.*
+
+Le motif est date : le 2026-08-30, un **0/4 avait ECRASE un 4/4** pour le meme
+modele sous deux alias, et le registre affirmait simultanement que le modele
+orchestre et n'orchestre pas. Une tentative qui n'atteint pas le modele est
+donc consignee **a part**, sans toucher au verdict.
+
+**Je ne franchis pas cette frontiere.** La retrogradation reste a l'operateur.
+
+### 59.2 Mais une trouvaille reelle a cote : *produit, non consomme*
+
+Le champ `stable` est calcule precisement pour eclairer la promotion —
+`len(historique) >= 2` et toutes les valeurs egales. Or `nexus_generate.py`
+**ne mentionne jamais ce champ** : `eligible_au_pool` ne lit que `complet`.
+
+### 59.3 LE CHIFFRE QUI REND LA DECISION DECIDABLE
+
+| | |
+| --- | --- |
+| modeles juges | 44 |
+| **promus** (`complet` vrai) | **18** |
+| dont **confirmes** (`stable` vrai) | **5** |
+| dont **une seule mesure** | **5** |
+| dont **champ `mesures` absent** | **8** |
+
+5 + 5 + 8 = 18. Autrement dit : **treize des dix-huit modeles du pool y sont
+entres sans confirmation.**
+
+Le code source le disait deja en creux — *« un modele peut donc entrer dans le
+pool sur un coup de chance »* — sans jamais donner le nombre. **C'est ce
+nombre qui manquait pour que l'operateur puisse trancher.**
+
+### 59.4 Le controle, qui ne touche pas a la politique
+
+`scripts/epreuve_registre_epreuves.py` refuse une **incoherence interne**,
+jamais une politique :
+
+* `complet` vrai alors que la derniere mesure est inferieure au total ;
+* `complet` faux alors que la derniere mesure egale le total.
+
+C'est exactement la classe de l'incident du 30 aout. Elle **rapporte** en
+outre le partage ci-dessus, comme information rendue a l'operateur.
+
+| maillon | etat |
+| --- | --- |
+| aujourd'hui | **0 incoherence sur 44 entrees** |
+| **sa preuve** | entree `complet=True` avec `historique=[4, 2]` injectee -> `[RATE]`, **code 1** ; registre restaure, 44 modeles intacts -> code 0 |
+| l'appelant | `nexus_test.py --only registre` |
+
+### 59.5 ET LE PARTAGE NE TOTALISAIT PAS — deux fois
+
+* **Premier jet** : *juges=44, promus=18, confirmes=7, passe_unique=0* — onze
+  modeles nulle part, et les confirmes comptes sur les 44 au lieu des 18
+  promus.
+* **Deuxieme jet** : le compteur de passes uniques testait `total == 1`,
+  c'est-a-dire le **nombre d'epreuves**, qui vaut toujours quatre. Il rendait
+  donc toujours zero, et le troisieme groupe absorbait les deux autres.
+
+> *Un partage dont les nombres ne totalisent pas est pire qu'aucun partage.*
+
+Corrige en trois branches **exclusives**. Les nombres totalisent, et ils
+concordent avec la mesure faite a la main — laquelle a servi d'arbitre, comme
+il se doit.
+
+### 59.6 Etat de la recolte apres sept entrees
+
+| | |
+| --- | --- |
+| perimees | 3 |
+| fausse mais utile | 1 |
+| **justes, corrigees** | **2** |
+| **frontiere, non un defaut** | **1** |
+
+La recolte reste un signal. Sur sept entrees, **une seule sur trois** a designe
+un defaut reel a l'endroit qu'elle nommait.
+
