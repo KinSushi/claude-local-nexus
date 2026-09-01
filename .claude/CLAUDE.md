@@ -268,6 +268,69 @@ reporter, si la source n'est pas chez soi.
 Voir §0.5 sur la portabilite : les deux regles disent la meme chose depuis
 deux angles. Un outil portable sert a tous ; un bricolage local ne sert qu'a
 son auteur, et masque le defaut pour tous les autres.
+
+---
+
+## 0.7 LOI 1 — ORCHESTRER, DELEGUER, AUDITER. NE JAMAIS CORRIGER SOI-MEME.
+
+Rappelee par l'operateur le 2026-09-01, au moment precis ou elle allait etre
+enfreinte : *« attention tu ne peux pas valider ton propre travail, le
+meilleur atout c'est que tu orchestres, tu delegues et tu audites. MAIS tu ne
+corriges pas, sinon tu tombes dans le piege d'auto-validation. »* Puis :
+*« rajoute cela en dur partout la LOI 1 — c'est fondamental et cela evite les
+erreurs a repetition. »*
+
+### La regle, en trois verbes et une interdiction
+
+| l'orchestrateur | ce qu'il ne fait JAMAIS |
+| --- | --- |
+| **ORCHESTRE** — decide ce qui est voulu | ecrire le correctif |
+| **DELEGUE** — le diagnostic ET le patch | diagnostiquer a sa place |
+| **AUDITE** — verifie contre le code reel | valider ce qu'il a produit |
+
+**Le piege n'est pas de mal corriger, c'est de corriger PUIS de juger.** Celui
+qui ecrit un correctif ne peut plus l'auditer : il verifiera son intention, pas
+son effet. C'est pourquoi la regle porte sur la CORRECTION et non seulement sur
+la validation — interdire la seconde sans interdire la premiere ne protege de
+rien.
+
+### Ce que « ne pas corriger » recouvre exactement
+
+Deleguer l'ANALYSE et garder le PATCH est la facon dont la regle se viole le
+plus souvent, parce qu'elle se sent rigoureuse. Sont a deleguer :
+
+* le diagnostic — **y compris quand la cause parait evidente** ;
+* le correctif, sous forme de patch a ancres verifiables ;
+* l'epreuve qui prouve le correctif ;
+* la reecriture d'un fichier, meme courte, meme « trop delicate pour etre
+  confiee » — cette phrase est presque toujours fausse et elle est testable.
+
+Restent ici, et rien d'autre : **arbitrer** entre les rendus, **verifier**
+chaque trouvaille dans le code reel, **executer** les verifications que le banc
+prescrit — lancer une commande n'est pas corriger —, et **decider** du remede
+quand les effets de bord sont en jeu.
+
+### Ce qu'elle a deja paye
+
+* Premiere application : une regression reelle trouvee en une passe.
+* Un audit croise a trois familles a pris un modele en flagrant delit de
+  **fabrication** — noms de fichiers inventes, numeros de ligne, tableau de
+  synthese, sur des fichiers jamais recus. Une autre famille repondait
+  honnetement qu'elle n'avait rien sous les yeux. Sans le croisement, l'audit
+  invente passait pour un audit.
+* Un FAUX VERT trouve dans une epreuve ecrite ici : deux cas verifiaient
+  seulement l'ABSENCE d'une chaine, donc une fonction devenue muette les aurait
+  fait passer au vert.
+
+### Pourquoi elle evite les erreurs a repetition
+
+Une correction ecrite par qui l'a diagnostiquee reproduit le raisonnement qui a
+manque le defaut. Mesure du 2026-09-01, **cinq fois dans la journee** :
+l'instrument etait exact et la conclusion fausse — et chaque fois, c'est un
+tiers qui l'a vu.
+
+> La question n'est jamais « ai-je bien corrige ? » mais **« qui, n'ayant pas
+> ecrit ce correctif, a verifie qu'il fait ce qu'il annonce ? »**
 ## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
 
 Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même

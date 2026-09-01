@@ -437,9 +437,9 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     texte_brut = choix.get("message", {}).get("content", "")
     texte = _sans_raisonnement(texte_brut)
 
-    # Calcul de la proportion de texte retiree (raisonnement).
-    # Si le texte brut est vide, on renvoie 0.0 pour eviter une division par zero.
-    part_raisonnement = (len(texte_brut) - len(texte)) / len(texte_brut) if texte_brut else 0.0
+    # Mesure voisin: 1.0 en direct vs 0.0 passerelle, meme modele/question.
+    # car_par_jeton reste la grandeur valable dans le cas hors bande.
+    part_raisonnement = (len(texte_brut) - len(texte)) / len(texte_brut) if texte_brut and len(texte) != len(texte_brut) else None
 
     # LA TRACE VERBATIM, deposee ici et nulle part ailleurs : c'est le seul
     # point ou la reponse brute existe avant d'etre consommee, decoupee ou
@@ -470,8 +470,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "adresse": entetes.get("x-litellm-model-api-base", "?"),
         "cout": entetes.get("x-litellm-response-cost", "0"),
         "duree": duree,
-        # Part du texte retiree lors du nettoyage, arrondie a trois decimales.
-        "part_raisonnement": round(part_raisonnement, 3),
+        # 'inconnu' si mesure impossible (None), sinon proportion arrondie a trois decimales.
+        "part_raisonnement": 'inconnu' if part_raisonnement is None else round(part_raisonnement, 3),
         # Nombre de tokens de sortie (completion) ; 0 par defaut si absent.
         "tokens_sortie": (corps.get("usage") or {}).get("completion_tokens", 0),
         # part_raisonnement voit le raisonnement INLINE et cette grandeur voit le raisonnement HORS BANDE, mesures 0,02 contre 3,15

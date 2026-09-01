@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte", "plafond", "quote", "orphelines", "couverture", "troncature", "verdicts", "rassurant", "fuite", "appliquer", "reprise", "budget", "avertir", "options", "verrou", "charge", "manuel", "lanceur"],
+                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte", "plafond", "quote", "orphelines", "couverture", "troncature", "verdicts", "rassurant", "fuite", "appliquer", "reprise", "budget", "avertir", "options", "verrou", "charge", "manuel", "lanceur", "raisonnement"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1374,6 +1374,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_manuel_vivant.py", "manuel vivant")
     if args.only in (None, "lanceur"):
         jouer_epreuve_python("epreuve_avec_verrou.py", "lanceur sous verrou")
+    if args.only in (None, "raisonnement"):
+        jouer_epreuve_python("epreuve_part_raisonnement.py", "part de raisonnement")
     if args.only in (None, "releve"):
         test_releve()
 

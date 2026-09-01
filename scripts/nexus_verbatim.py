@@ -90,6 +90,12 @@ def deposer(reponse: str, modele: str, tache: str = "",
         with io.open(os.path.join(MAGASIN, ident + ".txt"), "w",
                      encoding="utf-8", errors="replace") as fh:
             fh.write(reponse if isinstance(reponse, str) else str(reponse))
+        
+        # Une preuve placee hors de l'arbre echappe a l'isolement par worktree, 
+        # donc l'origine de chaque entree doit etre lisible, et la menace 
+        # pensee etait l'effacement quand la menace reelle est l'AJOUT.
+        origine = os.getcwd()[-120:]
+
         entree = {
             "id": ident,
             "le": maintenant.isoformat(),
@@ -97,6 +103,7 @@ def deposer(reponse: str, modele: str, tache: str = "",
             "tache": str(tache or "")[:120],
             "octets": len((reponse or "").encode("utf-8", "replace")),
             "plan": plan,
+            "origine": origine,
         }
         with io.open(INDEX, "a", encoding="utf-8", errors="replace") as fh:
             fh.write(json.dumps(entree, ensure_ascii=False) + "\n")
