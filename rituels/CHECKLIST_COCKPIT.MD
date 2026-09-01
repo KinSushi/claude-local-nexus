@@ -10245,3 +10245,209 @@ redecouvert au moment ou il mordait.
 > **Zero ferme sur huit a cette minute.** Un sujet ne se clot que lorsqu'un CONTROLE echoue
 > si la regle est enfreinte (§0.2.1). Les six autres portent ici leur mesure,
 > pas leur garde.
+
+---
+
+## 97. LA REGRESSION DE QUESTION — elargir un perimetre RESSEMBLE toujours a un progres
+
+Trouve le 2026-09-01 par echange avec la session `sovereign-ai-system-6c`, et
+c'est la classe la plus insidieuse rencontree a ce jour : **elle ne produit
+aucun nombre faux.**
+
+### 97.1 Le cas, chez le voisin
+
+Deux recherches successives du meme inventaire, chez lui :
+
+```
+1re  perimetre = gate.sh + settings.json + Makefile      -> 2 orphelins
+2e   perimetre elargi a scripts/ src/ tests/             -> 1 orphelin
+```
+
+Il s'est range a la seconde, la croyant meilleure — un perimetre plus large
+*doit* etre plus juste. Or les deux nombres etaient **exacts**, et ils
+repondaient a deux questions differentes :
+
+| question | reponse |
+| --- | --- |
+| quel garde n'est nomme NULLE PART ? | 1 |
+| quel garde ne TOURNE dans aucun rituel ? | **2** |
+
+Seule la seconde repond a « qu'est-ce qui ne me protege pas ». L'elargissement
+avait dilue l'enumeration des POINTS D'ARMEMENT dans du code qui *mentionne* :
+deux commentaires citant `garde_or.py` a titre de precedent ont suffi a le
+faire sortir de la liste.
+
+> **Il n'existe aucun signal interne qui distingue « je mesure mieux » de « je
+> mesure autre chose ».** Un perimetre elargi rend un nombre plus petit, ce qui
+> se lit spontanement comme une amelioration. Sa formule, gardee telle quelle :
+> *« un cliquet pose sur la mauvaise question ne derive pas — il scelle. »*
+
+Ce qui l'a rattrape n'est pas l'ecart entre les deux comptes : c'est d'etre
+alle **ouvrir** `cockpit.py:692` pour voir ce que « l'appelant » contenait.
+
+### 97.2 Le meme defaut, ici, ECRIT dans le code depuis toujours
+
+`scripts/nexus_cablage.py:129-161`, docstring de `invoque()` :
+
+> *« LIMITE ASSUMEE, ecrite plutot que tue : une mention en docstring compte
+> encore comme un appel. Constate sur ce mecanisme lui-meme — en ecrivant
+> "dont nexus_posterior.py" dans un commentaire de la conformite, j'ai fait
+> passer ce script d'orphelin a appele alors que rien n'avait change pour lui.
+> Le controle mesure donc "nomme dans du code", pas "execute". »*
+
+Le filtre n'ecarte que les lignes **entierement** commentees (`#`, `//`, `*`).
+Une mention en docstring, ou en commentaire de fin de ligne, compte comme un
+appel. **Donc « Cablage : aucune regression » repond a la question textuelle,
+jamais a la question d'armement.**
+
+### 97.3 POURQUOI LE REMEDE EVIDENT EST FAUX — 18 faux negatifs, mesures
+
+Le remede spontane — exiger une marque d'invocation explicite (`subprocess`,
+`sys.executable`, `Start-Process`) — a ete essaye ici et **rejete sur mesure** :
+
+```
+appels          29 -> 11
+prouves-seuls    4 -> 22
+                       DIX-HUIT faux negatifs
+```
+
+Cause, gardee dans le code : un appel reel s'ecrit souvent sans aucune de ces
+marques sur la meme ligne.
+
+```python
+str(dossier_scripts() / "nexus_patch.py"),
+```
+
+Le nom est sur une ligne, l'invocation sur une autre ; une regle par ligne ne
+peut pas les relier. Et *« un garde-fou qui crie toujours n'avertit jamais »*.
+
+### 97.4 LA FORME CORRECTE — un index d'armement, qui n'infere rien
+
+La sortie n'est pas de durcir la recherche, c'est de **changer de bout**.
+
+| approche | ce qu'elle fait | faux negatifs |
+| --- | --- | --- |
+| recherche textuelle large | infere un appel depuis une ligne de code | 0, mais compte les mentions |
+| recherche textuelle stricte | infere un appel depuis une marque | **18** |
+| **index d'armement** | **enumere des armements DECLARES** | **0 par construction** |
+
+Les points d'armement forment un ensemble **fini et ecrit** : `gate.sh`,
+`.claude/settings.json`, les taches planifiees, `nexus_rituel.py`,
+`nexus_vitrine.py`. On n'infere plus rien — on lit ce qui est declare a
+l'autre bout.
+
+> **La nuance sans laquelle le remede reintroduit le defaut :** etre NOMME
+> dans un point d'armement ne suffit pas, il faut y etre **execute**. Chez le
+> voisin, `gate.sh:62` explique en commentaire pourquoi `citation_audit.py`
+> n'y est PAS appele — en le nommant. Un index qui grep le nom du fichier
+> compterait cette ligne comme un armement. **Le point d'armement se lit comme
+> une COMMANDE — une ligne executable de la porte, une entree `command` du
+> JSON des hooks — jamais comme une occurrence.**
+
+### 97.5 « QUI ARME L'ARMEUR ? » — mesure ici, et la reponse est bonne
+
+Question posee par le voisin, dont le `cockpit.py` n'a aucun appelant. Chez
+lui elle mord ; ici elle a une reponse, **verifiee maillon par maillon en
+appliquant la nuance ci-dessus** :
+
+```
+NexusVitrine (tache planifiee, PT6H, tourne SANS session)
+  -> python scripts/nexus_vitrine.py                    [lu dans Get-ScheduledTask]
+     -> nexus_vitrine.py:262
+        ("rituel de fin de tour", lambda: sous_controle(racine, "nexus_rituel.py", ...))
+        invoquee par  for nom, fn in controles: statut, detail = fn()
+        -> nexus_rituel.py  ->  nexus_cablage.py
+
+hook Stop, .claude/settings.json:103
+  -> python "$CLAUDE_PROJECT_DIR/scripts/nexus_rituel.py" --json
+```
+
+Deux armements independants, dont **un qui ne depend d'aucune session** — ce
+qui compte, puisque la journee a montre qu'une session peut disparaitre avec
+la machine.
+
+**Le grep naif se serait trompe ici aussi** : `.claude/CLAUDE.md:544` contient
+la phrase « `nexus_rituel.py` now runs `nexus_cablage.py` ». Doctrine, zero
+execution. Le piege du voisin existait tel quel dans ce depot.
+
+**Mais RIEN NE GARDE CETTE CHAINE.** Aucun controle n'echoue si le hook `Stop`
+est retire de `settings.json`, ou si la tache planifiee est supprimee. La
+verification a ete faite A LA MAIN — ce qui protege une fois, jamais toujours.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 9 | Le cliquet de cablage repond a la question voisine | `OUVERT` | un INDEX D'ARMEMENT, lisant des commandes et non des occurrences, rendu a cote du compte textuel — les deux comptes, pas un seul |
+| 10 | Rien ne garde la chaine d'armement elle-meme | `OUVERT` | un controle qui echoue si le hook `Stop` ou la tache `NexusVitrine` disparaissent |
+
+---
+
+## 98. LE REPLI LOCAL UNIQUE EST UN MODELE A RAISONNEMENT — et c'est le mauvais outil
+
+Mesure du 2026-09-01, obtenue en essayant de faire ecrire une epreuve par le
+banc local.
+
+```
+tache      un script Python d'environ 150 lignes
+demande    qwen2.5-coder-32b-local / qwen3-coder-30b-local  (specialistes code)
+servi      glm-4.7-flash-local   (modele a RAISONNEMENT)
+resultat   8799 jetons produits, script JAMAIS termine
+duree      1080 s -- DIX-HUIT MINUTES
+verdict    ECHEC : plafond insuffisant : demande 8000 jetons
+```
+
+**La cause est le §90.2, vue sous un autre angle.** `REPLIS_GRATUITS` ne
+contient qu'un seul modele local : `glm-4.7-flash-local`. Toute tache qui
+bascule y atterrit donc — **y compris la generation de code longue, pour
+laquelle un modele a raisonnement est le mauvais outil** : il depense son
+budget de sortie en reflexion avant d'ecrire la premiere ligne.
+
+Le depot possede pourtant `codestral-local`, `qwen3-coder-30b-local` et
+`qwen2.5-32b-local`, tous **4/4** aux epreuves d'orchestration (§91.2). Aucun
+n'est atteignable par le repli.
+
+**Ce que cela nuance, et il faut le dire :** le meme travail rendu par
+`gpt-oss-120b-cloud` prend 11 a 30 s. Ce n'est PAS un argument pour le cloud —
+c'est la mesure du prix reel de l'independance sur ce materiel, et elle doit
+etre connue avant d'etre choisie. Le contrat dit « choisir selon la tache » :
+encore faut-il que le repli offre un choix.
+
+L'echec est PROPRE : le script nomme le nombre exact de jetons a demander et
+refuse de basculer ailleurs en expliquant pourquoi — *« un autre modele ne
+changerait rien »*. C'est le comportement voulu (§0.1.4.1). Le defaut n'est pas
+la, il est dans le fait qu'un seul repli local existe.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 11 | Un seul repli local, et c'est un modele a raisonnement | `OUVERT` | un repli local par CLASSE de tache — code, raisonnement, rapide — et un controle qui echoue si une classe n'a aucun repli |
+
+---
+
+## 99. LE CONTRAT DIT CPU, LA MACHINE DIT GPU
+
+Releve incident, `ollama ps`, pendant le travail ci-dessus :
+
+```
+glm-4.7-flash:latest    20 GB    100% GPU    contexte 32768
+```
+
+Le §3 du contrat affirme : *« The repository currently explicitly forces
+Ollama toward CPU execution and disables Vulkan in the Docker
+configuration. »* La mesure dit **100 % GPU**.
+
+Les deux sont compatibles, et c'est cela qu'il faut ecrire : la contrainte CPU
+vit dans `docker-compose.yml`, or le §22 etablit que le moteur tourne **sur
+l'hote**, derriere le profil `embedded` qui n'est pas demarre. **La contrainte
+ne l'atteint donc jamais.** Le contrat decrit la configuration d'un moteur que
+personne ne lance.
+
+C'est la meme classe que le §3.1 — le port 11435 decrivait lui aussi le moteur
+containerise, pas celui qui tourne. *Une mesure figee ment le lendemain*, et
+ici elle ment sur le processeur employe par toute la plateforme.
+
+**Un seul releve.** Le §97.1 vient de rappeler ce que vaut un nombre isole :
+ceci etablit que le GPU est employe au moins une fois, rien de plus sur la
+regle generale.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 12 | Le contrat decrit un moteur que personne ne lance | `OUVERT` | un controle qui lit `ollama ps` et echoue si le processeur employe contredit ce que le contrat affirme |
