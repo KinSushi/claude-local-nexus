@@ -71,18 +71,16 @@ def main():
         last_val = historique[-1]
 
         # incoherence 1
-        if complet is True and isinstance(total, int) and isinstance(last_val, int):
-            if last_val < total:
-                incoherent = True
-                detail = f"complet={complet}, total={total}, historique={historique}"
-                print_case("[RATE]", alias, detail)
-                continue
+        if complet is True and isinstance(total, int) and isinstance(last_val, int) and last_val < total:
+            incoherent = True
+            detail = f"complet={complet}, total={total}, historique={historique}"
+            print_case("[RATE]", alias, detail)
+            continue
         # incoherence 2
-        if complet is False and isinstance(total, int) and isinstance(last_val, int):
-            if last_val == total:
-                incoherent = True
-                detail = f"complet={complet}, total={total}, historique={historique}"
-                print_case("[RATE]", alias, detail)
+        if complet is False and isinstance(total, int) and isinstance(last_val, int) and last_val == total:
+            incoherent = True
+            detail = f"complet={complet}, total={total}, historique={historique}"
+            print_case("[RATE]", alias, detail)
 
     # 5. always print summary
     summary_detail = (f"juges={total_models}, promus={promoted}, "
