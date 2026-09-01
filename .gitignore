@@ -74,3 +74,9 @@ lot_modalite.json
 # a chaque tour et bloque la vitrine, qui exige un arbre propre. Mesure :
 # trois publications refusees le 2026-09-01 a cause de STATE.md.
 PROGRESS.MD
+
+# Etat DERIVE, regenere par nexus_state.py toutes les 10 min par NexusTraque.
+# Versionne, il salissait l arbre en permanence et BLOQUAIT la vitrine —
+# constate trois fois le 2026-09-01. Or la vitrine est la seule sauvegarde.
+# Meme arbitrage que PROGRESS.MD : un etat derive ne se versionne pas.
+rituels/STATE.md
