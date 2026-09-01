@@ -6624,3 +6624,164 @@ depot ne fait. Les deux cas ci-dessus ont ete joues a la main.
 > l'instrument NE PEUT PAS voir. Le geste qui manquait, a chaque fois, tenait
 > en un essai supplementaire — un dix-septieme rendu provoque, une collision
 > forcee a la main.
+
+---
+
+## 66. LA MONOCULTURE DU BANC, ET LES BORNES GRAVEES — 2026-09-01, 07h-09h
+
+Tour ouvert par une critique de l'operateur, et elle portait juste.
+
+### 66.1 VINGT-QUATRE DELEGATIONS SUR UN SEUL MODELE
+
+Le banc expose **54 modeles locaux gratuits et 17 cloud gratuits**. Toutes les
+delegations du tour precedent sont parties sur `gpt-oss-120b-cloud` — du tri
+d'imports a la logique d'une garde de confidentialite.
+
+Le contrat le dit pourtant : *choisir le modele selon la tache, mais
+EXPLICITEMENT* (§0). Par habitude n'est pas explicitement.
+
+Mesure faite ensuite, meme tache triviale — trier six imports — cinq familles :
+
+| modele | jetons | duree | verdict |
+| --- | --- | --- | --- |
+| `gemma4-31b-cloud` | **217** | **3 s** | rendu correct |
+| `mistral-large-3-675b-cloud` | 226 | 7 s | rendu correct |
+| `gpt-oss-120b-cloud` | 516 | 7 s | rendu correct |
+| `gpt-oss-20b-cloud` | 802 | 9 s | rendu correct |
+| `qwen3.5-397b-cloud` | — | — | **ECHEC**, plafond insuffisant a 5000 |
+
+Le plus petit est le meilleur, et le plus gros echoue sur une tache triviale
+en consommant 5000 jetons. `gemma4-31b` a ensuite servi huit patchs du tour en
+3 a 11 s chacun.
+
+> **Convergence independante** : la session voisine a mesure la meme chose
+> sans concertation — `gemma4-31b` tient un format que `qwen3.5-397b`, douze
+> fois plus gros, viole. « Plus gros donc meilleur » ne survit pas a
+> l'epreuve.
+
+**Le worker LOCAL a rendu un patch correct en 664 s**, contre 8 s au cloud
+pour la meme tache. Gratuit et prive, mais quatre-vingts fois plus lent : le
+choix du plan est un arbitrage, jamais un defaut.
+
+### 66.2 LES OPTIONS NE DESCENDENT PAS AUX TACHES D'UN LOT — troisieme cas
+
+`--max-tokens` avait ete trouve par le voisin. `--racine` a ete trouve **en
+m'en servant** : un audit croise a vu ses trois pieces jointes REFUSEES avec
+le message « hors de la racine de travail ; --racine pour en designer une
+autre » — un message qui conseille l'option meme qui ne fonctionne pas dans
+ce mode.
+
+| option | propagee au lot ? |
+| --- | --- |
+| `--temperature` | oui, depuis toujours |
+| `--max-tokens` | corrigee ce jour |
+| `--racine` | **corrigee ce tour** |
+
+Apres correction, le meme audit a lu 4659 et 4795 jetons de pieces jointes
+contre 666 avant.
+
+### 66.3 L'AUDIT CROISE A PRIS UN MODELE EN FLAGRANT DELIT DE FABRICATION
+
+LOI 1 : on ne valide jamais son propre travail. Trois epreuves avaient
+pourtant ete ECRITES ici meme — violation de §0.1.5, relevee par l'operateur.
+Elles ont donc ete soumises a trois familles.
+
+Le premier essai a echoue (§66.2), et **un modele a rendu un audit complet de
+fichiers qu'il n'avait jamais recus** : noms inventes, numeros de ligne,
+tableau de synthese. Fabrication totale.
+
+`kimi-k2.7-code-cloud`, lui, a repondu qu'il n'avait pas les fichiers sous les
+yeux et ne pouvait donc pas auditer.
+
+> **Le croisement a paye des sa premiere passe** : une famille honnete, une
+> fabricante. Sans lui, l'audit invente passait pour un audit.
+
+Second essai, fichiers reellement transmis : deux audits reels et convergents.
+Arbitrage — **un defaut retenu, deux rejetes** :
+
+* RETENU, un FAUX VERT : deux cas de `epreuve_avertir_rendu.py` verifiaient
+  seulement l'ABSENCE d'une chaine. Une fonction `rendre()` muette les aurait
+  fait passer au vert. Contre-epreuve apres correction, `rendre()` rendu
+  muet : les quatre cas echouent.
+* REJETE : « l'epreuve de reprise reimplemente sa logique » — non, elle
+  remplace `appeler` par un faux et observe les appels reels.
+* REJETE : « dependance a l'ordre » — le test verifie qu'aucun local n'est
+  appele, une inversion serait vue.
+
+Et le defaut de fragilite diagnostique par l'audit **s'est manifeste deux
+heures plus tard** : l'ajout de `--racine` a la propagation a casse
+`epreuve_budget_lot.py`. Elle a echoue BRUYAMMENT, non en faux vert.
+
+### 66.4 LES BORNES GRAVEES, ET LE GPU QUI ARRIVE
+
+L'operateur annonce un GPU DEDIE a venir. Audit des bornes :
+
+| borne | valeur | nature |
+| --- | --- | --- |
+| `pool_budget_gb` | 39,7 Go | **derive** de la memoire moteur |
+| `runnable_budget_gb` | 56,2 Go | **derive** |
+| `PLAFOND_FILS["local"]` | 2 | **litteral** |
+| `FENETRE_CARACTERES` | 96000 | **litteral** |
+
+`nexus_capability` exposait deja `gpu_usable_for_offload` et `gpu.vram_gb` :
+la donnee pour deriver existait, elle n'etait pas branchee.
+
+**Quatre rendus du banc refuses**, chacun sur un defaut different : appel de
+`build_profile()` a l'import ; `os.getenv(cle, str(f()))` dont le second
+argument est TOUJOURS evalue, donc l'effet de bord survivait sous une autre
+forme ; lecture de `vram_gb` a la racine alors qu'il est sous `gpu` ; et un
+rendu qui a FABRIQUE son ancre avec un appel a `torch.cuda`, torch n'etant pas
+une dependance de ce depot.
+
+> **La contre-epreuve a condamne cette derivation avant de la sauver.** Avec
+> `// 20`, une VRAM de 24 Go rendait 2 et 48 Go rendait 2 : la branche etait
+> QUASI MORTE, et personne ne l'aurait vu puisque le comportement d'aujourd'hui
+> restait correct.
+
+Le diviseur 20 est une HYPOTHESE sur la taille des modeles, et le profil
+n'expose aucune taille. Plutot qu'inventer une formule, l'hypothese est
+**nommee et rendue corrigible sans toucher au code** — `TAILLE_MODELE_GB`,
+via `NEXUS_TAILLE_MODELE_GB`.
+
+```
+VRAM  2,1 Go partagee          -> 2 fils   (mesure)
+VRAM   24 Go, modeles de 20 Go -> 2 fils
+VRAM   24 Go, modeles de  6 Go -> 4 fils
+VRAM   48 Go, modeles de  6 Go -> 8 fils
+```
+
+Import mesure a 0,07 s, aucune sortie, plafond reel toujours 2 : rien ne
+change aujourd'hui, tout changera le jour du GPU.
+
+### 66.5 UNE LECON DE METHODE QUI VAUT PLUS QUE LE CORRECTIF
+
+Quatre passes perdues a faire ecrire le banc sur un texte qu'il devait
+IMAGINER — dont une fabrication complete. Cinquieme passe, en lui donnant
+l'ancre REELLE extraite du fichier : **449 jetons, 3 secondes, juste du
+premier coup.**
+
+> Le banc travaille bien sur du texte reel et fabrique sur du texte absent.
+> Extraire l'ancre coute une commande ; ne pas l'extraire coute quatre rendus
+> et un patch invente.
+
+Et le durcissement du matin a REFUSE un rendu par ailleurs correct, parce que
+ses marqueurs n'etaient pas seuls sur leur ligne. **Le refus etait juste** —
+tolerer du contenu apres le marqueur rouvrirait le trou qui mutilait les
+fichiers. Le remede est dans la CONSIGNE, pas dans l'outil : la forme exigee
+doit etre enoncee, sinon le banc la devine.
+
+### 66.6 SUJETS OUVERTS — remplace §65.8
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Une matrice de routage par CLASSE DE TACHE, mesuree et non supposee | §66.1 | 71 modeles, une seule mesure comparative faite |
+| L'obeissance au FORMAT n'est pesee par aucun routeur | voisin | pour tout rendu structure, c'est elle qui decide, pas la puissance |
+| `tokens_sortie / max_tokens` proche de 1,00 avec `part_raisonnement` a 0 | voisin | signature du bavardage ; 3 points, non eprouvee |
+| Le message « augmenter le plafond » est FAUX dans le cas bavard | §65.2 | un seul message pour deux diagnostics opposes |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | la formule existe et est mesuree |
+| Un mode `--essaim N` : meme tache, N familles reellement distinctes | voisin | `nexus_essaim.py` fait autre chose |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees |
+| `FENETRE_CARACTERES` reste un litteral | §66.4 | la seule borne materielle encore gravee |
+| Aucun controle ne refuse une option ajoutee sans etre propagee au lot | §66.2 | trois occurrences, aucun garde |
+| Smart App Control bloque `uv` ; le venv `ruff` survit, la reinstallation non | voisin | `uv 0.12.6` repond encore ici |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
