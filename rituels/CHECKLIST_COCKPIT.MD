@@ -6785,3 +6785,117 @@ doit etre enoncee, sinon le banc la devine.
 | Aucun controle ne refuse une option ajoutee sans etre propagee au lot | §66.2 | trois occurrences, aucun garde |
 | Smart App Control bloque `uv` ; le venv `ruff` survit, la reinstallation non | voisin | `uv 0.12.6` repond encore ici |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+
+---
+
+## 67. FERMER UNE CLASSE, PAS SES INSTANCES — 2026-09-01, 09h-10h
+
+### 67.1 CINQ OCCURRENCES, ET LE CROISEMENT QUI LES A TOUTES TROUVEES
+
+Le cockpit portait « aucun controle ne refuse une option ajoutee sans etre
+propagee au lot — TROIS occurrences ». Le croisement mecanique des cles lues
+par `executer()` avec les options de l'analyseur en a montre **CINQ** :
+
+| option | etat avant ce tour |
+| --- | --- |
+| `--temperature` | propagee depuis toujours |
+| `--max-tokens` | corrigee ce matin, sur signalement du voisin |
+| `--racine` | corrigee au tour precedent, trouvee a l'usage |
+| `--fichiers` | **INERTE, jamais signalee** |
+| `--systeme` | **INERTE, jamais signalee** |
+
+Deux defauts vivaient donc sans que personne les ait vus, y compris apres
+trois corrections successives de leurs voisins.
+
+> **Corriger la sixieme une par une n'aurait rien ferme.** Le deliverable
+> n'etait pas un correctif de plus, c'etait un controle qui refuse la
+> prochaine.
+
+`epreuve_options_lot.py` DERIVE la liste au lieu de la figer : elle lit le
+source, extrait les cles `tache.get("...")`, les options
+`add_argument("--...")`, la zone de la branche lot, et exige que toute option
+homonyme d'une cle de tache y apparaisse.
+
+### 67.2 LE GARDE PORTAIT LE DEFAUT QU'IL TRAQUE
+
+Sa premiere version voulait ignorer les cles COMMENCANT par un souligne. Sa
+classe de caracteres `[^'_" ]` excluait toute cle en CONTENANT une :
+
+```
+4 noms examines au lieu de 5 — et le manquant etait max_tokens,
+c'est-a-dire le cas d'ecole corrige le matin meme.
+```
+
+Un garde ecrit pour fermer une classe de defaut, aveugle a l'instance la plus
+documentee de cette classe. **L'instrument repondait a la question voisine**
+(§62.5), dans l'outil meme cense l'empecher.
+
+### 67.3 LA PREUVE QUE LA CLASSE EST FERMEE
+
+Une SIXIEME option a ete SIMULEE — declaree au parseur, lue par `executer`,
+jamais propagee, exactement comme un developpeur presse le ferait :
+
+```
+[RATE] etiquette : est INERTE        6 noms examines, exit 1
+```
+
+Le garde l'attrape sans l'avoir jamais vue. C'est la difference entre un
+controle qui connait cinq cas et un controle qui connait la REGLE.
+
+### 67.4 LE VERROU DU BANC — declare, PAS ENCORE PRIS
+
+Demande de `sovereign-ai-system-8e` apres une contention MESUREE : deux
+sessions s'etaient annoncees mutuellement le tour local **et se sont genees
+quand meme** — `llava:13b` et `glm-4.7-flash` occupant 31,6 Go, 8,0 Go libres
+sur 61,6, un essaim en demandant 15.
+
+> **Deux sessions de bonne foi peuvent respecter la convention chacune de son
+> cote et se gener quand meme.** Rien ne fait echouer une convention quand
+> elle est violee, donc rien ne signale qu'elle l'est.
+
+Ce depot possede sa PROPRE copie de `nexus_verrou_machine.py` — emprunt par
+COPIE, conformement au contrat. Rien n'est ecrit chez le voisin, dont la
+regle interdit qu'on touche a son fichier.
+
+```
+AURUM_MACHINE_BANC   une inference locale sur le banc de modeles
+```
+
+Meme prefixe, pas de `Global\` : l'exclusion porte contre les rituels des
+depots voisins. Le voisin a fourni ce contrat de nommage, et il a evite une
+erreur reelle — un nom qualifie aurait donne un verrou qui ne mord contre
+rien tout en ayant l'air de proteger.
+
+**ETAT HONNETE : la classe est DECLAREE, le lanceur ne la PREND PAS.** Le
+voisin l'a verifie plutot que de me croire, et c'est le bon geste :
+
+> *une brique declaree n'est pas une brique en service* — et un verrou
+> declare sans etre pris est plus dangereux que quatre fonctions orphelines,
+> parce qu'un verrou suppose protege : on cesse de verifier.
+
+Trois rendus du banc refuses sur cette integration, tous sur des symboles
+inventes — `t['cle']`, `push()` au lieu de `enter_context()`, un import
+`banc` qui n'est pas un symbole. Le travail est arrete la plutot que de
+bruler des passes, et inscrit comme non fait.
+
+**La forme retenue quand elle sera posee** : un `contextlib.ExitStack` ouvert
+avant la boucle et ferme dans le `finally` deja present. Envelopper d'un
+`with` demanderait de REINDENTER cinquante lignes — *la FORME du remede est
+un parametre de surete*, et un diff ou l'indentation noie la modification
+reelle est un diff que personne ne relit.
+
+### 67.5 SUJETS OUVERTS — remplace §66.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Le verrou `banc` n'est pas PRIS par le lanceur** | §67.4 | classe declaree, integration arretee apres trois rendus refuses |
+| Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | une seule mesure comparative faite, sur 71 modeles |
+| L'obeissance au FORMAT n'est pesee par aucun routeur | voisin | pour tout rendu structure, c'est elle qui decide |
+| `tokens_sortie / max_tokens` proche de 1,00 avec `part_raisonnement` a 0 | voisin | signature du bavardage ; 3 points, non eprouvee |
+| Le message « augmenter le plafond » est FAUX dans le cas bavard | §65.2 | un seul message pour deux diagnostics opposes |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | la formule existe et est mesuree |
+| Un mode `--essaim N` : meme tache, N familles reellement distinctes | voisin | `nexus_essaim.py` fait autre chose |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees |
+| `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
+| Smart App Control bloque `uv` ; la reinstallation de `ruff` mordrait | voisin | `uv 0.12.6` repond encore ici |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
