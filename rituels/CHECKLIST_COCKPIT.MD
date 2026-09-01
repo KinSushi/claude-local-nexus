@@ -8847,3 +8847,131 @@ Remede pour la reprise : cloner sur un chemin COURT, ou poser
 | Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
 | `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 81. LE SAUVETAGE, ET LA PANNE INSTRUITE PAR TROIS PLANS
+
+### 81.1 CE QUI A ETE SAUVE, ET POURQUOI C'ETAIT URGENT
+
+Ordre de l'operateur : relancer les deux sessions a terre **sans rien perdre**.
+Le fait qui commandait : ce qu'elles portaient encore n'etait **sur aucun
+disque**. Volume mort, ecriture interdite ailleurs, et un contexte de session
+ne survit pas a un redemarrage.
+
+`rituels/SAUVETAGE_2026-09-01/` porte leurs deux vidages, recopies **verbatim**
+— resumer aurait ete perdre, car une mesure ne se reconstruit pas comme un
+fichier.
+
+Ce qui n'existait nulle part ailleurs : le test d'acceptation des neuf figures
+de `ea-mt5`, sa mesure appariee du stop, sa concentration — *retirer 55 trades
+sur 1093 annule l'edge* —, son drawdown de sept mois dont le creux est le
+dernier point ; et pour `sovereign`, son plan courant que son propre contrat ne
+designe plus, ses onze echecs de suite et leur fermeture, son inventaire de 23
+gardes dont **un orphelin qui ferme le P0 de sa plateforme**, et sa
+decomposition Merkle montrant que **99,7 % de la croissance apparente de son
+depot est un seul worktree d'agent**.
+
+> **La regle de provenance est ce qui rend ces fichiers utilisables.** Les deux
+> ont marque chaque bloc : mesure et commite, mesure et jamais ecrit, ou lu
+> dans le contexte et non re-verifiable. *La classe 1 commise en la NOMMANT
+> reste exploitable ; commise en silence, elle ne l'est pas.* `ea-mt5` avait
+> donne ses quatre coordonnees de depot ainsi — la verification les a **toutes**
+> confirmees.
+
+**Le shell a mutile deux tentatives d'ecriture par heredoc** avant que les
+fichiers passent par un chemin qui ne traverse aucun interpreteur. C'est le
+defaut nomme au contrat, rencontre au pire moment possible.
+
+### 81.2 LE HUB : LES ECRANS NE PROUVENT RIEN
+
+L'operateur signale que les deux volumes perdus etaient sur un hub qui porte
+aussi **trois ecrans, et les ecrans fonctionnent**. Mesure du materiel :
+
+```
+Routeur USB4 (1.0), Plugable - TBT4-UD5     le dock, present et OK
+Routeur racine USB4 (1.0)                   x2
+Anker USB-C Hub Device                      un second concentrateur
+Generic Monitor                             x3, tous OK
+ASIX USB to Gigabit Ethernet                le reseau passe par le dock, OK
+MSPower_DeviceEnable, instances USB         30 avec Enable = True, aucune a False
+```
+
+C'est un dock **Thunderbolt 4 / USB4**. La video y voyage par un tunnel
+DisplayPort distinct du tunnel USB 3.x qui porte le stockage.
+
+> **Un ecran qui fonctionne prouve que le dock est alimente et que SON tunnel
+> tient. Il ne prouve rien du tunnel de donnees.** C'est exactement la classe
+> que `sovereign` avait commise le matin meme — *« le volume repond en LECTURE
+> donc on peut y ECRIRE »* — et elle se represente sous une forme materielle.
+
+Documentation relevee : l'evenement `129` est emis par `STORPORT.SYS quand une
+requete de stockage **a expire** ; les causes documentees sont le pilote et la
+configuration du plan d'alimentation. L'editeur du dock rapporte des
+deconnexions resolues en repartissant les peripheriques a haut debit sur des
+**segments de hub differents**.
+
+### 81.3 TROIS PLANS, TROIS REPONSES, ET L'ARBITRAGE TRANCHE PAR UNE MESURE
+
+Question de l'operateur : *debrancher risque-t-il de corrompre les disques ?*
+
+| plan | reponse | fondement |
+| --- | --- | --- |
+| `gpt-oss-120b-cloud` | **OUI, risque** | « le controleur peut encore retenir des transactions ou des tampons » |
+| `mistral-large-3-675b-cloud` | **NON** | plus aucune enumeration, aucun evenement depuis 11:36, aucun NTFS 137 |
+| `glm-4.7-flash-local` | ne tranche pas | analyse les hypotheses sans repondre |
+
+**Le premier raisonne depuis une possibilite generale, le second depuis l'etat
+mesure.** Et il a commis au passage une erreur de fait : il place les volumes
+perdus en `No Media`, alors que `No Media` designe les deux lecteurs de cartes
+VIDES — les volumes perdus ne figurent nulle part.
+
+**`mistral-large` a en outre nomme la mesure qui manquait** : consulter
+`Microsoft-Windows-Ntfs/Operational`. Elle a ete faite, et elle tranche :
+
+```
+11:35:21   300   Le demontage du volume NTFS a demarre    (volume 1)
+11:35:21   303   Le volume NTFS a ete DEMONTE             (volume 1)
+11:35:21   300   Le demontage du volume NTFS a demarre    (volume 2)
+11:35:22   303   Le volume NTFS a ete DEMONTE             (volume 2)
+```
+
+> **Les deux volumes ont ete PROPREMENT DEMONTES par NTFS a 11:35:21 et
+> 11:35:22.** L'evenement 303 dit le demontage ACHEVE, pas interrompu. Il n'y a
+> donc plus rien en vol, et **debrancher ne peut plus rien corrompre** : la
+> corruption a eu lieu a 11:35:17, dans les 55 ecritures differees perdues, et
+> elle est derriere nous.
+
+C'est la reponse forte, et elle ne vient pas d'un raisonnement : elle vient
+d'un journal que deux plans sur trois n'avaient pas pense a ouvrir.
+
+### 81.4 CE QUE CET ARBITRAGE ETABLIT SUR LA METHODE
+
+Trois familles, trois reponses dont deux incompatibles. **Le desaccord est le
+produit utile** : il a designe l'endroit exact ou une mesure manquait. Un plan
+unique aurait rendu une reponse plausible et on l'aurait crue.
+
+> Et le classement n'est pas celui qu'on attendrait : le plan le plus rapide a
+> repondu le moins bien, le plan local a mis **199 s** pour ne pas trancher, et
+> c'est le second cloud — ni le plus rapide ni le defaut — qui a porte la
+> reponse ET nomme la mesure manquante.
+
+### 81.5 SUJETS OUVERTS — remplace §80.4
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Suspension selective active sur 30 peripheriques USB** | §81.2 | levier documente, non essaye |
+| **Stockage et video sur le meme segment de dock** | §81.2 | l'editeur recommande de les separer |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| Un clone sur chemin long rend un arbre incomplet | §80.3 | `core.longpaths=true` obligatoire |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Recensement gardes non appeles / gardes inexistants | §78.4 | `sovereign` en a UN qui ferme son P0 |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
