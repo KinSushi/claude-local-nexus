@@ -919,6 +919,14 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs = [], []
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+    # la direction local vers cloud est interdite par le contrat et non pas deconseillee
+    # auparavant la protection dependait d'une option de l'appelant, ce qui la rendait facultative
+    # incident du 2026-09-01 avec les six modules de securite
+    # un repli est subi et ne doit jamais elargir l'exposition
+    if modele.endswith("-local"):
+        candidats = [m for m in candidats if m.endswith("-local")]
+    if modele not in candidats:
+        candidats.append(modele)
 
     if local_seul:
         candidats = [c for c in candidats if c.endswith("-local")]
