@@ -1,3 +1,4 @@
+import contextlib
 import importlib.util
 import os
 import sys
@@ -45,11 +46,9 @@ def _run_test(requested_model):
             "tache": "do something"
         }
         # The executer may raise; we swallow it after fallback chain finishes
-        try:
+        # Expected due to fake_appeler; ignore but keep attempted list
+        with contextlib.suppress(Exception):
             module.executer(task, "dummy")
-        except Exception:
-            # Expected due to fake_appeler; ignore but keep attempted list
-            pass
         if not attempted:
             raise AssertionError("no models attempted")
     finally:
