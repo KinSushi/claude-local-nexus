@@ -1,57 +1,79 @@
 Role;Fichier;Objet;Taille (o);Modifie;SHA-256 (16)
-Contrat;.claude/CLAUDE.md;Contrat d'exploitation de la plateforme;106021;2026-08-30;838afda900b3e9e0
+Contrat;.claude/CLAUDE.md;Contrat d'exploitation de la plateforme;109519;2026-08-31;b35532bf0e2f4311
 Contrat;AGENTS.md;Contrat d'agent universel;3540;2026-08-28;e258b3cc90de2a14
 Infrastructure;docker-compose.yml;Définition des services et volumes;4166;2026-08-29;d60af63eaaa60b59
 Configuration;.env.example;Modèle de fichier d'environnement;3051;2026-08-29;f70ad0c51a6d67ab
-Configuration;litellm_config.yaml;Modèles, routeurs, fallbacks — mi-généré, mi-manuel;59974;2026-08-31;5c96414b214c94ad
-Inventaire;cloud_models.txt;Catalogue Ollama Cloud, généré, droits annotés;551;2026-08-31;4cacc5ffa16f30eb
+Configuration;litellm_config.yaml;Modèles, routeurs, fallbacks — mi-généré, mi-manuel;60703;2026-08-31;2b6a678affb8611b
+Inventaire;cloud_models.txt;Catalogue Ollama Cloud, généré, droits annotés;551;2026-08-31;17684bcb15b3a210
 Inventaire;model_list.txt;Modèles locaux à télécharger;574;2026-08-30;310b5f8a5f8367a0
 Pont;.mcp.json;Déclaration du serveur MCP pour Claude Code;246;2026-08-29;2622bc6acf81e922
-Pont;Set-ClaudeModel.ps1;Choix explicite du mode d'exécution de Claude Code;12008;2026-08-29;9e2a59fe81edff69
-Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;108712;2026-08-31;2df945e54f8470df
-Génération;scripts/Update-NexusModels.ps1;Orchestrateur de mise à jour;11902;2026-08-30;dc4dc63208ecbb38
-Génération;scripts/nexus_generate.py;Régénère les zones AUTOGEN;74319;2026-08-31;d9aef51096bd1ec4
+Pont;Set-ClaudeModel.ps1;Choix explicite du mode d'exécution de Claude Code;12731;2026-08-31;c9e49eec98c0e482
+Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;139499;2026-08-31;616a6b42c9d80739
+Génération;scripts/Update-NexusModels.ps1;Orchestrateur de mise à jour;13469;2026-08-31;1fedad75868f29c9
+Génération;scripts/nexus_generate.py;Régénère les zones AUTOGEN;76035;2026-08-31;7bdb7c9b0626e339
 Vérification;scripts/Test-NexusConfig.ps1;Enveloppe du validateur;5048;2026-08-30;c875db163924a585
 Vérification;scripts/Test-NexusSmoke.ps1;Smoke test runtime;8655;2026-08-29;6d85e76be2f337a9
-Vérification;scripts/nexus_capability.py;Profil matériel et verdict par modèle;27940;2026-08-30;d12b9c73d1ed8a18
-Vérification;scripts/nexus_mcp_probe.py;Sonde les outils du pont MCP;10499;2026-08-29;30065350e667d322
-Vérification;scripts/nexus_test.py;Suite forward / reverse / policy / code;133054;2026-08-31;5b11d627d0f028be
-Vérification;scripts/nexus_validate.py;Intégrité — bloque tout redémarrage douteux;25177;2026-08-30;13d985178ff1a6e0
+Vérification;scripts/nexus_capability.py;Profil matériel et verdict par modèle;27962;2026-08-31;2dd9e691834d26ff
+Vérification;scripts/nexus_mcp_probe.py;Sonde les outils du pont MCP;16290;2026-08-31;413c9545c06d6797
+Vérification;scripts/nexus_test.py;Suite forward / reverse / policy / code;166197;2026-08-31;fbfc4df9a00e2633
+Vérification;scripts/nexus_validate.py;Intégrité — bloque tout redémarrage douteux;33884;2026-08-31;f861fb7f5d50240b
 Migration;scripts/nexus_migration_plan.py;Plan de sortie des modèles hors de Docker;14026;2026-08-31;da63efcaff9face2
 Migration;scripts/nexus_switch_engine.py;Bascule le moteur Docker ↔ hôte;14792;2026-08-31;20eb1ab7c7de95ba
-Automatisation;scripts/Register-NexusAutoUpdate.ps1;Tâche planifiée quotidienne;10051;2026-08-30;3784e5f8e5c6921d
-Exploitation;scripts/backup.ps1;Sauvegarde configuration et volumes;9546;2026-08-30;61f3cc6e51940721
+Automatisation;scripts/Register-NexusAutoUpdate.ps1;Tâche planifiée quotidienne;9837;2026-08-31;5e53c6c931772afd
+Exploitation;scripts/backup.ps1;Sauvegarde configuration et volumes;9763;2026-08-31;682a8cec1359fe76
 Exploitation;scripts/restore.ps1;Restauration;8153;2026-08-30;df70e850cb65feaf
 Exploitation;scripts/start.ps1;Démarrage de la pile;13048;2026-08-29;fb1e3d96f893b748
 Exploitation;scripts/stop.ps1;Arrêt de la pile;3739;2026-08-29;abd966bd7f288b94
-Rituel;rituels/BOUSSOLE.md;Cet index;25100;2026-08-29;81a91f7d0ac85614
-Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;116514;2026-08-31;237d3659f6108cc2
+Rituel;rituels/BOUSSOLE.md;Cet index;340211;2026-08-31;cdb9aa95191cc9cb
+Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;272794;2026-08-31;d18cb4ac0d16cdc4
 Rituel;rituels/PROGRESS.md;Historique des décisions et des erreurs;9645;2026-08-29;12e90e1e05c99d5c
 Rituel;rituels/RESUME.ps1;Reprise de session;2848;2026-08-29;7714dfe8b4c7c548
-Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;3149;2026-08-31;2311a9692f7783e6
+Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;3144;2026-08-31;ad567149061a71e9
 Rituel;scripts/nexus_boussole.py;Régénère cette boussole;11946;2026-08-31;dc6124843a78eb21
-Rituel;scripts/nexus_state.py;Régénère STATE.md par mesure;18631;2026-08-31;0571d9b2693cbdbc
-Documentation;README.md;Vue d'ensemble et installation;15567;2026-08-30;1a4065e08babf359
+Rituel;scripts/nexus_state.py;Régénère STATE.md par mesure;23630;2026-08-31;03b74fbf4a5704f0
+Documentation;README.md;Vue d'ensemble et installation;15216;2026-08-31;0e7fe343f0cf4c37
 Documentation;docs/pont-local-abonnement.md;Associer modèles locaux et abonnement;15487;2026-08-29;c99bdaf7c7ad0b78
 Architecture;.claude/agents/nexus-delegue.md;;4131;2026-08-29;103b5dbd0d19550c
-Architecture;.claude/scheduled_tasks.lock;;124;2026-08-30;36165fc157b7a2bc
-Architecture;.claude/settings.json;;3128;2026-08-31;af9a1014404b05d5
-Architecture;.claude/settings.local.json;;93;2026-08-29;d3810c5c023925e8
+Architecture;.claude/scheduled_tasks.lock;;124;2026-08-31;cb680f7fc89ee85c
+Architecture;.claude/settings.json;;3155;2026-08-31;01468f3b0feb7274
+Architecture;.claude/settings.local.json;;387;2026-08-31;67a9949969b66ddc
 Architecture;.gitattributes;;1452;2026-08-30;02fcafd9058aefde
 Architecture;.github/workflows/verification.yml;;3700;2026-08-29;db4a9bf85a4f0b60
-Architecture;.gitignore;;1260;2026-08-31;814b27b7cedcf61a
+Architecture;.gitignore;;1696;2026-08-31;9ba5d3a001347634
 Architecture;.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
-Architecture;.ruff_cache/0.16.5/10108054744112579873;;2444;2026-08-31;f9faea65c84a955a
+Architecture;.ruff_cache/0.16.5/10030628807976243294;;3060;2026-08-31;bec31f4cbb093d03
+Architecture;.ruff_cache/0.16.5/10108054744112579873;;3684;2026-08-31;d6572fc3dde8e0fc
+Architecture;.ruff_cache/0.16.5/10550273669060046575;;2380;2026-08-31;bc8db856083379bb
+Architecture;.ruff_cache/0.16.5/11870650972443376488;;268;2026-08-31;7e65f846593f3f85
+Architecture;.ruff_cache/0.16.5/12188456645946320487;;2708;2026-08-31;8fd7818e20039310
+Architecture;.ruff_cache/0.16.5/12906327004623957228;;172;2026-08-31;022c18f6490ed378
 Architecture;.ruff_cache/0.16.5/13289934018927647403;;2196;2026-08-31;0eba88d1b07379f6
+Architecture;.ruff_cache/0.16.5/13454085944863612442;;2380;2026-08-31;f702be4df2bddcc9
+Architecture;.ruff_cache/0.16.5/13577033435700752088;;164;2026-08-31;90b3a9eaab976eae
 Architecture;.ruff_cache/0.16.5/14194984766851969492;;2196;2026-08-31;759366fc70225fa5
-Architecture;.ruff_cache/0.16.5/17644524646699821479;;2196;2026-08-31;062124de3de7151f
+Architecture;.ruff_cache/0.16.5/14815868161967086741;;2380;2026-08-31;4e44790549d7c7aa
+Architecture;.ruff_cache/0.16.5/15439179792969532340;;252;2026-08-31;9cfdab5c83c38a08
+Architecture;.ruff_cache/0.16.5/17644524646699821479;;2308;2026-08-31;bc39e5ec3343cb65
+Architecture;.ruff_cache/0.16.5/1948825395730465212;;2788;2026-08-31;68925897b19fe0a6
 Architecture;.ruff_cache/0.16.5/2069055596582012559;;2196;2026-08-31;fe0a1dd9b4cb3a86
+Architecture;.ruff_cache/0.16.5/2555769582492602664;;3316;2026-08-31;9fa6dc66e9ece1dc
 Architecture;.ruff_cache/0.16.5/3611732672678976494;;2196;2026-08-31;a48b186dfbe7c798
+Architecture;.ruff_cache/0.16.5/3919405602604285951;;172;2026-08-31;7eb576b2c3027ed6
 Architecture;.ruff_cache/0.16.5/4025237265467664353;;2196;2026-08-31;e4ebc107a60c2a92
+Architecture;.ruff_cache/0.16.5/4130897460249937328;;164;2026-08-31;eb1eec6c13c66579
 Architecture;.ruff_cache/0.16.5/4228267026108389762;;2196;2026-08-31;9a0055cf218392ea
+Architecture;.ruff_cache/0.16.5/5785493642906717947;;212;2026-08-31;d44cfba2aed4f7a2
 Architecture;.ruff_cache/0.16.5/5839449063045416517;;2196;2026-08-31;a8fc7443b46a17cd
 Architecture;.ruff_cache/0.16.5/6793250133493396513;;2196;2026-08-31;daab692e3176c8e8
+Architecture;.ruff_cache/0.16.5/6801675940008014417;;3268;2026-08-31;03fd62c9b66bf823
+Architecture;.ruff_cache/0.16.5/713092962779550954;;2708;2026-08-31;ab6ef33a7ca91787
+Architecture;.ruff_cache/0.16.5/7436670238545905122;;3004;2026-08-31;c4bf0d367e35337b
+Architecture;.ruff_cache/0.16.5/7560987962123106106;;164;2026-08-31;5f35fb3ebfccf27b
+Architecture;.ruff_cache/0.16.5/8312566181075956486;;164;2026-08-31;886dab384e91bfee
+Architecture;.ruff_cache/0.16.5/8454446969772004509;;3436;2026-08-31;0fdc1b9f0aba6fee
+Architecture;.ruff_cache/0.16.5/8768928107327455551;;380;2026-08-31;2243344eb325bb26
 Architecture;.ruff_cache/0.16.5/9014249530989735555;;2196;2026-08-31;595ec49c6702dd35
+Architecture;.ruff_cache/0.16.5/9413750576472324194;;164;2026-08-31;0bd32f5301ab205a
 Architecture;.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;LICENSE;;34523;2026-08-29;0d96a4ff68ad6d4b
 Architecture;Set-ClaudeModel.ps1.candidat;;11378;2026-08-29;67a86f7cc9147d54
@@ -118,6 +140,121 @@ Architecture;lot_ps.json;;21238;2026-08-31;9e3b9c992aee0f25
 Architecture;model_list.host.txt;Note d'architecture;246;2026-08-29;7027cc533c390fa7
 Architecture;outils_voisins.json;;696;2026-08-31;627f572ab9e65cdd
 Architecture;patch_lot.py;;3131;2026-08-31;ea789631c299b4f0
+Architecture;references/lecons/flat.txt;Note d'architecture;532687;2026-08-31;4df3de3959f1b159
+Architecture;references/lecons/fragments/frag_0001.txt;Note d'architecture;5847;2026-08-31;d0bcccbec15b5620
+Architecture;references/lecons/fragments/frag_0002.txt;Note d'architecture;5832;2026-08-31;6ff33df3732e19f9
+Architecture;references/lecons/fragments/frag_0003.txt;Note d'architecture;5991;2026-08-31;c9916c2cf679d062
+Architecture;references/lecons/fragments/frag_0004.txt;Note d'architecture;5518;2026-08-31;82e79cf166f9c21c
+Architecture;references/lecons/fragments/frag_0005.txt;Note d'architecture;5556;2026-08-31;d5456298f9e8209b
+Architecture;references/lecons/fragments/frag_0006.txt;Note d'architecture;6067;2026-08-31;a2ce2425d2215ae0
+Architecture;references/lecons/fragments/frag_0007.txt;Note d'architecture;5944;2026-08-31;327ea5bcf3107767
+Architecture;references/lecons/fragments/frag_0008.txt;Note d'architecture;5355;2026-08-31;0c139f3607e92e1f
+Architecture;references/lecons/fragments/frag_0009.txt;Note d'architecture;5731;2026-08-31;2753ac7ad8cb2c4a
+Architecture;references/lecons/fragments/frag_0010.txt;Note d'architecture;6002;2026-08-31;2c7afbcc26a916b5
+Architecture;references/lecons/fragments/frag_0011.txt;Note d'architecture;5676;2026-08-31;28186d1a68fdd0b6
+Architecture;references/lecons/fragments/frag_0012.txt;Note d'architecture;5487;2026-08-31;76407f9738dcf170
+Architecture;references/lecons/fragments/frag_0013.txt;Note d'architecture;5743;2026-08-31;15e0a551067c9e83
+Architecture;references/lecons/fragments/frag_0014.txt;Note d'architecture;5257;2026-08-31;5ee390acee0c2629
+Architecture;references/lecons/fragments/frag_0015.txt;Note d'architecture;5609;2026-08-31;8cb1a60c932fb41f
+Architecture;references/lecons/fragments/frag_0016.txt;Note d'architecture;5571;2026-08-31;c4e4efbf4117674f
+Architecture;references/lecons/fragments/frag_0017.txt;Note d'architecture;5964;2026-08-31;ba5ddd189a3c7a1d
+Architecture;references/lecons/fragments/frag_0018.txt;Note d'architecture;5327;2026-08-31;0bb3c375a211ff27
+Architecture;references/lecons/fragments/frag_0019.txt;Note d'architecture;5699;2026-08-31;501c957a919dec7b
+Architecture;references/lecons/fragments/frag_0020.txt;Note d'architecture;3296;2026-08-31;af7970a543922d38
+Architecture;references/lecons/fragments/frag_0021.txt;Note d'architecture;4430;2026-08-31;bc62f0492031fd73
+Architecture;references/lecons/fragments/frag_0022.txt;Note d'architecture;5421;2026-08-31;d2cbf19cde519de0
+Architecture;references/lecons/fragments/frag_0023.txt;Note d'architecture;5473;2026-08-31;876e981ee6f7a30b
+Architecture;references/lecons/fragments/frag_0024.txt;Note d'architecture;5969;2026-08-31;6d2b92a86894d49b
+Architecture;references/lecons/fragments/frag_0025.txt;Note d'architecture;5666;2026-08-31;529c85684ff52519
+Architecture;references/lecons/fragments/frag_0026.txt;Note d'architecture;5650;2026-08-31;e00f765f0fe804e7
+Architecture;references/lecons/fragments/frag_0027.txt;Note d'architecture;5076;2026-08-31;b9d3ebfd8a2e1dae
+Architecture;references/lecons/fragments/frag_0028.txt;Note d'architecture;4030;2026-08-31;7e0f090cc6cda996
+Architecture;references/lecons/fragments/frag_0029.txt;Note d'architecture;5945;2026-08-31;0011f3a500c9606e
+Architecture;references/lecons/fragments/frag_0030.txt;Note d'architecture;5814;2026-08-31;a60199328ba54fc9
+Architecture;references/lecons/fragments/frag_0031.txt;Note d'architecture;5142;2026-08-31;f6f51b32388261b5
+Architecture;references/lecons/fragments/frag_0032.txt;Note d'architecture;5400;2026-08-31;57a9a44fea15b60e
+Architecture;references/lecons/fragments/frag_0033.txt;Note d'architecture;2942;2026-08-31;1a80ad44d97e8f91
+Architecture;references/lecons/fragments/frag_0034.txt;Note d'architecture;5734;2026-08-31;807bfdaf538316a2
+Architecture;references/lecons/fragments/frag_0035.txt;Note d'architecture;3952;2026-08-31;203b38ccb04dbcfe
+Architecture;references/lecons/fragments/frag_0036.txt;Note d'architecture;5771;2026-08-31;c110277797221724
+Architecture;references/lecons/fragments/frag_0037.txt;Note d'architecture;6138;2026-08-31;33b18e9eeb5b4b5d
+Architecture;references/lecons/fragments/frag_0038.txt;Note d'architecture;4844;2026-08-31;f8593d3c0abfc948
+Architecture;references/lecons/fragments/frag_0039.txt;Note d'architecture;4482;2026-08-31;2a5b97242863ac17
+Architecture;references/lecons/fragments/frag_0040.txt;Note d'architecture;4727;2026-08-31;9ea38f34a81b438d
+Architecture;references/lecons/fragments/frag_0041.txt;Note d'architecture;5691;2026-08-31;c83578ff9327175c
+Architecture;references/lecons/fragments/frag_0042.txt;Note d'architecture;4697;2026-08-31;e5a580af44cecc49
+Architecture;references/lecons/fragments/frag_0043.txt;Note d'architecture;4331;2026-08-31;e90c4e50b04a6fcc
+Architecture;references/lecons/fragments/frag_0044.txt;Note d'architecture;5480;2026-08-31;7ebabad456c62912
+Architecture;references/lecons/fragments/frag_0045.txt;Note d'architecture;4235;2026-08-31;792c00929a5dae21
+Architecture;references/lecons/fragments/frag_0046.txt;Note d'architecture;5954;2026-08-31;848425e390492167
+Architecture;references/lecons/fragments/frag_0047.txt;Note d'architecture;5589;2026-08-31;d07548996011d1ce
+Architecture;references/lecons/fragments/frag_0048.txt;Note d'architecture;6017;2026-08-31;52a418b5228c91fb
+Architecture;references/lecons/fragments/frag_0049.txt;Note d'architecture;5937;2026-08-31;bc67d21c2cda8985
+Architecture;references/lecons/fragments/frag_0050.txt;Note d'architecture;4535;2026-08-31;42407f478d929cc9
+Architecture;references/lecons/fragments/frag_0051.txt;Note d'architecture;5605;2026-08-31;e0fc3b36f8d8eb58
+Architecture;references/lecons/fragments/frag_0052.txt;Note d'architecture;4484;2026-08-31;6feadedae7f257fe
+Architecture;references/lecons/fragments/frag_0053.txt;Note d'architecture;5802;2026-08-31;87690f0a6b652354
+Architecture;references/lecons/fragments/frag_0054.txt;Note d'architecture;5496;2026-08-31;d12464118c82c74d
+Architecture;references/lecons/fragments/frag_0055.txt;Note d'architecture;4611;2026-08-31;363a7f86fedbc0a0
+Architecture;references/lecons/fragments/frag_0056.txt;Note d'architecture;2964;2026-08-31;6d6a7d909275d6b6
+Architecture;references/lecons/fragments/frag_0057.txt;Note d'architecture;5196;2026-08-31;585fa0fff451c7cf
+Architecture;references/lecons/fragments/frag_0058.txt;Note d'architecture;6042;2026-08-31;ad82ef4f6906ecb6
+Architecture;references/lecons/fragments/frag_0059.txt;Note d'architecture;3993;2026-08-31;50742e9d82f3437f
+Architecture;references/lecons/fragments/frag_0060.txt;Note d'architecture;4822;2026-08-31;9e795ae95f85d4ed
+Architecture;references/lecons/fragments/frag_0061.txt;Note d'architecture;5825;2026-08-31;8dd93c7c6f2f0e7f
+Architecture;references/lecons/fragments/frag_0062.txt;Note d'architecture;5245;2026-08-31;d36998c89627f95d
+Architecture;references/lecons/fragments/frag_0063.txt;Note d'architecture;5053;2026-08-31;2158c1dbf6ff951a
+Architecture;references/lecons/fragments/frag_0064.txt;Note d'architecture;4783;2026-08-31;0ee9fd2e7b5a982c
+Architecture;references/lecons/fragments/frag_0065.txt;Note d'architecture;6022;2026-08-31;961e7bb2cd394976
+Architecture;references/lecons/fragments/frag_0066.txt;Note d'architecture;5476;2026-08-31;7f2b70c51f8168dc
+Architecture;references/lecons/fragments/frag_0067.txt;Note d'architecture;5387;2026-08-31;3d1d2c9f6604c1f7
+Architecture;references/lecons/fragments/frag_0068.txt;Note d'architecture;5075;2026-08-31;7101e52b9aab3a44
+Architecture;references/lecons/fragments/frag_0069.txt;Note d'architecture;5799;2026-08-31;8e7da9fa3d55f361
+Architecture;references/lecons/fragments/frag_0070.txt;Note d'architecture;5067;2026-08-31;c0b13734bcca6c7a
+Architecture;references/lecons/fragments/frag_0071.txt;Note d'architecture;4904;2026-08-31;5a402b5424b32683
+Architecture;references/lecons/fragments/frag_0072.txt;Note d'architecture;6027;2026-08-31;d76b75dd3e8bab50
+Architecture;references/lecons/fragments/frag_0073.txt;Note d'architecture;5304;2026-08-31;02ef0899c209d553
+Architecture;references/lecons/fragments/frag_0074.txt;Note d'architecture;5904;2026-08-31;1833bb175502061e
+Architecture;references/lecons/fragments/frag_0075.txt;Note d'architecture;5066;2026-08-31;c511fb080b5f6176
+Architecture;references/lecons/fragments/frag_0076.txt;Note d'architecture;3836;2026-08-31;9de1ef9d88e7845e
+Architecture;references/lecons/fragments/frag_0077.txt;Note d'architecture;3488;2026-08-31;7e3171ff6cd7cabc
+Architecture;references/lecons/fragments/frag_0078.txt;Note d'architecture;5077;2026-08-31;a66c1cf425f1bf6c
+Architecture;references/lecons/fragments/frag_0079.txt;Note d'architecture;3772;2026-08-31;7c501ab7c7a67541
+Architecture;references/lecons/fragments/frag_0080.txt;Note d'architecture;2623;2026-08-31;f3488abc8f30176d
+Architecture;references/lecons/fragments/frag_0081.txt;Note d'architecture;3774;2026-08-31;45511eb1ad07821a
+Architecture;references/lecons/fragments/frag_0082.txt;Note d'architecture;6115;2026-08-31;05ee73be416689e6
+Architecture;references/lecons/fragments/frag_0083.txt;Note d'architecture;5048;2026-08-31;39aff7ed19aa1cf6
+Architecture;references/lecons/fragments/frag_0084.txt;Note d'architecture;3778;2026-08-31;c98d00592369f5fb
+Architecture;references/lecons/fragments/frag_0085.txt;Note d'architecture;2875;2026-08-31;0b27213cdb82d34e
+Architecture;references/lecons/fragments/frag_0086.txt;Note d'architecture;3727;2026-08-31;d6e5bd72bf1d30bf
+Architecture;references/lecons/fragments/frag_0087.txt;Note d'architecture;2892;2026-08-31;52081e7d1010d050
+Architecture;references/lecons/fragments/frag_0088.txt;Note d'architecture;3579;2026-08-31;6f8d0b0fadf0b54e
+Architecture;references/lecons/fragments/frag_0089.txt;Note d'architecture;2988;2026-08-31;2b649151509d83fb
+Architecture;references/lecons/fragments/frag_0090.txt;Note d'architecture;3748;2026-08-31;aac3ffcae62905fc
+Architecture;references/lecons/fragments/frag_0091.txt;Note d'architecture;4262;2026-08-31;bf3856a39130f9c0
+Architecture;references/lecons/fragments/frag_0092.txt;Note d'architecture;5812;2026-08-31;fe772e58d70fd2b9
+Architecture;references/lecons/fragments/frag_0093.txt;Note d'architecture;4675;2026-08-31;645ac77c7c8a9a2c
+Architecture;references/lecons/fragments/frag_0094.txt;Note d'architecture;4675;2026-08-31;fc758634525a6908
+Architecture;references/lecons/fragments/frag_0095.txt;Note d'architecture;6049;2026-08-31;bcb8f67e4e83685e
+Architecture;references/lecons/fragments/frag_0096.txt;Note d'architecture;4682;2026-08-31;96624b45232f174d
+Architecture;references/lecons/fragments/frag_0097.txt;Note d'architecture;5263;2026-08-31;62d592570ee8abf9
+Architecture;references/lecons/fragments/frag_0098.txt;Note d'architecture;5688;2026-08-31;9e606f50ed0c173c
+Architecture;references/lecons/fragments/frag_0099.txt;Note d'architecture;4421;2026-08-31;f779fea9c96c132b
+Architecture;references/lecons/fragments/frag_0100.txt;Note d'architecture;4257;2026-08-31;10739697467dc1f3
+Architecture;references/lecons/fragments/frag_0101.txt;Note d'architecture;5205;2026-08-31;4ad707a5a045afa3
+Architecture;references/lecons/fragments/frag_0102.txt;Note d'architecture;5319;2026-08-31;a1c31d408a08f22d
+Architecture;references/lecons/fragments/frag_0103.txt;Note d'architecture;6107;2026-08-31;950051c46f7521fa
+Architecture;references/lecons/fragments/frag_0104.txt;Note d'architecture;5238;2026-08-31;845573f1f64f27f3
+Architecture;references/lecons/fragments/frag_0105.txt;Note d'architecture;3423;2026-08-31;0cc3d48d2f56770c
+Architecture;references/lecons/fragments/frag_0106.txt;Note d'architecture;3795;2026-08-31;b714636b6cbf51b3
+Architecture;references/lecons/index.tsv;;49283;2026-08-31;10436ce2b1c57205
+Architecture;references/lecons/symbols.jsonl;;657341;2026-08-31;4da90a40ce2c5e41
+Architecture;references/livres/code/index.tsv;;596421;2026-08-31;0a6146dc5280dac2
+Architecture;references/livres/code/symbols.jsonl;;6338154;2026-08-31;fa04474e1882e3d4
+Architecture;references/livres/epub/index.tsv;;1698681;2026-08-31;ae23151226474cbf
+Architecture;references/livres/epub/symbols.jsonl;;26161265;2026-08-31;b3bbe539e6126dea
+Architecture;references/livres/packt/index.tsv;;661991;2026-08-31;25c5482afb3f4e59
+Architecture;references/livres/packt/symbols.jsonl;;26253956;2026-08-31;beb4ff47514e6f92
 Architecture;references/python_libs_docs/MetaTrader5/MetaTrader5_api.md;;7085;2026-08-31;e073e835fbcc87b9
 Architecture;references/python_libs_docs/PyEMD/PyEMD_api.md;;64944;2026-08-31;bd6073454cae8aba
 Architecture;references/python_libs_docs/_COVERAGE_MATRIX.md;;19615;2026-08-31;37937ca9db7ff38f
@@ -2299,14 +2436,645 @@ Architecture;references/python_libs_docs/yfinance/yfinance_api_search.md;;2225;2
 Architecture;references/python_libs_docs/yfinance/yfinance_api_ticker.md;;9870;2026-08-31;e8afd7634afda562
 Architecture;references/python_libs_docs/yfinance/yfinance_api_tickers.md;;1624;2026-08-31;08cce1307b1b6598
 Architecture;references/python_libs_docs/yfinance/yfinance_api_utils.md;;14463;2026-08-31;35ec7e3dbb9a58f0
+Architecture;references/securite_confinement/_INDEX.md;;1386;2026-08-31;4fd6927dd384018d
+Architecture;references/securite_confinement/cibles_shell.py;;5814;2026-08-31;7a97c43d990a07ef
+Architecture;references/securite_confinement/flat.txt;Note d'architecture;3600;2026-08-31;caa83c0288040459
+Architecture;references/securite_confinement/fragments/securite_0001.md;;3948;2026-08-31;1ac9b4e12bed03c1
+Architecture;references/securite_confinement/fragments/securite_0002.md;;337;2026-08-31;5c54a7bf9dd792f5
+Architecture;references/securite_confinement/index.tsv;;2382;2026-08-31;f610cfc818a2515b
+Architecture;references/securite_confinement/symbols.jsonl;;18325;2026-08-31;169531e65d3c78cc
+Architecture;references/shell_docs/bash/5.3/VERSION.txt;Note d'architecture;132;2026-08-31;da38db6f0d504230
+Architecture;references/shell_docs/bash/5.3/flat.txt;Note d'architecture;27606;2026-08-31;83d60697bb25d166
+Architecture;references/shell_docs/bash/5.3/fragments/frag_0001.txt;Note d'architecture;6114;2026-08-31;9966cb4ee4202e2a
+Architecture;references/shell_docs/bash/5.3/fragments/frag_0002.txt;Note d'architecture;5539;2026-08-31;363200d3a99b638b
+Architecture;references/shell_docs/bash/5.3/fragments/frag_0003.txt;Note d'architecture;6032;2026-08-31;b0d9dc8400f7ad61
+Architecture;references/shell_docs/bash/5.3/fragments/frag_0004.txt;Note d'architecture;5990;2026-08-31;d0af3b6ed31985e8
+Architecture;references/shell_docs/bash/5.3/fragments/frag_0005.txt;Note d'architecture;3931;2026-08-31;00ff827af0e7642c
+Architecture;references/shell_docs/bash/5.3/index.tsv;;4162;2026-08-31;a282d3338253d002
+Architecture;references/shell_docs/bash/5.3/pages/..txt;Note d'architecture;905;2026-08-31;cbd7b57e355092d2
+Architecture;references/shell_docs/bash/5.3/pages/[.txt;Note d'architecture;481;2026-08-31;bb16bbb1a54e9e98
+Architecture;references/shell_docs/bash/5.3/pages/alias.txt;Note d'architecture;876;2026-08-31;c6c6d2aac33e1ddd
+Architecture;references/shell_docs/bash/5.3/pages/bg.txt;Note d'architecture;644;2026-08-31;f4a620ba7fd093e0
+Architecture;references/shell_docs/bash/5.3/pages/bind.txt;Note d'architecture;2460;2026-08-31;20510eef6cd1b01e
+Architecture;references/shell_docs/bash/5.3/pages/break.txt;Note d'architecture;540;2026-08-31;07bde416c7d8f22b
+Architecture;references/shell_docs/bash/5.3/pages/builtin.txt;Note d'architecture;717;2026-08-31;eac0fcee3ef24acf
+Architecture;references/shell_docs/bash/5.3/pages/caller.txt;Note d'architecture;803;2026-08-31;59390503d64d510d
+Architecture;references/shell_docs/bash/5.3/pages/cd.txt;Note d'architecture;1918;2026-08-31;44b2e8bc7ae9a090
+Architecture;references/shell_docs/bash/5.3/pages/command.txt;Note d'architecture;1040;2026-08-31;6590f5147dc46035
+Architecture;references/shell_docs/bash/5.3/pages/compgen.txt;Note d'architecture;979;2026-08-31;f38fa7058edfa8fc
+Architecture;references/shell_docs/bash/5.3/pages/complete.txt;Note d'architecture;1634;2026-08-31;6883bc0419fc3f19
+Architecture;references/shell_docs/bash/5.3/pages/compopt.txt;Note d'architecture;1462;2026-08-31;8e04b4322f901a38
+Architecture;references/shell_docs/bash/5.3/pages/continue.txt;Note d'architecture;593;2026-08-31;8cf15baf5992fa70
+Architecture;references/shell_docs/bash/5.3/pages/declare.txt;Note d'architecture;2065;2026-08-31;192a2fcc8f37d80d
+Architecture;references/shell_docs/bash/5.3/pages/dirs.txt;Note d'architecture;1314;2026-08-31;9ec0786621079b51
+Architecture;references/shell_docs/bash/5.3/pages/disown.txt;Note d'architecture;826;2026-08-31;ef2874d57ddde693
+Architecture;references/shell_docs/bash/5.3/pages/echo.txt;Note d'architecture;1537;2026-08-31;090d175fd66b2eb3
+Architecture;references/shell_docs/bash/5.3/pages/enable.txt;Note d'architecture;1494;2026-08-31;2704465bf619f479
+Architecture;references/shell_docs/bash/5.3/pages/eval.txt;Note d'architecture;582;2026-08-31;ee8bfd5e79023331
+Architecture;references/shell_docs/bash/5.3/pages/exec.txt;Note d'architecture;1042;2026-08-31;876eafe28d24ff30
+Architecture;references/shell_docs/bash/5.3/pages/exit.txt;Note d'architecture;443;2026-08-31;c136ce3ea928d318
+Architecture;references/shell_docs/bash/5.3/pages/export.txt;Note d'architecture;902;2026-08-31;b507558566609b0e
+Architecture;references/shell_docs/bash/5.3/pages/false.txt;Note d'architecture;390;2026-08-31;6be3f571268a7251
+Architecture;references/shell_docs/bash/5.3/pages/fc.txt;Note d'architecture;1401;2026-08-31;4b662342e176f47c
+Architecture;references/shell_docs/bash/5.3/pages/fg.txt;Note d'architecture;622;2026-08-31;ae95bf7c42f07143
+Architecture;references/shell_docs/bash/5.3/pages/getopts.txt;Note d'architecture;2202;2026-08-31;249dfb22d05b23a6
+Architecture;references/shell_docs/bash/5.3/pages/hash.txt;Note d'architecture;1142;2026-08-31;0f76ae2b0d3c79d6
+Architecture;references/shell_docs/bash/5.3/pages/help.txt;Note d'architecture;948;2026-08-31;05240e895de4f9d7
+Architecture;references/shell_docs/bash/5.3/pages/history.txt;Note d'architecture;2050;2026-08-31;4d6514883c28d21b
+Architecture;references/shell_docs/bash/5.3/pages/jobs.txt;Note d'architecture;1131;2026-08-31;ab48963ce4c224ac
+Architecture;references/shell_docs/bash/5.3/pages/kill.txt;Note d'architecture;1126;2026-08-31;b4a36aa0b813ee1e
+Architecture;references/shell_docs/bash/5.3/pages/let.txt;Note d'architecture;1848;2026-08-31;6378ca219f25b80c
+Architecture;references/shell_docs/bash/5.3/pages/local.txt;Note d'architecture;901;2026-08-31;fceeb97c1c302d93
+Architecture;references/shell_docs/bash/5.3/pages/logout.txt;Note d'architecture;439;2026-08-31;c1a520bfc76c4e38
+Architecture;references/shell_docs/bash/5.3/pages/mapfile.txt;Note d'architecture;1853;2026-08-31;b7ec6a40880786e2
+Architecture;references/shell_docs/bash/5.3/pages/popd.txt;Note d'architecture;1254;2026-08-31;ff28ae32fbffe69c
+Architecture;references/shell_docs/bash/5.3/pages/printf.txt;Note d'architecture;1727;2026-08-31;37833d7d2e5ee802
+Architecture;references/shell_docs/bash/5.3/pages/pushd.txt;Note d'architecture;1333;2026-08-31;021c47206eeda703
+Architecture;references/shell_docs/bash/5.3/pages/pwd.txt;Note d'architecture;788;2026-08-31;3d82149ee0e02f4c
+Architecture;references/shell_docs/bash/5.3/pages/read.txt;Note d'architecture;2859;2026-08-31;473d2c3b9184abbd
+Architecture;references/shell_docs/bash/5.3/pages/readarray.txt;Note d'architecture;517;2026-08-31;29cd5280d3f6c6e1
+Architecture;references/shell_docs/bash/5.3/pages/readonly.txt;Note d'architecture;1015;2026-08-31;ae0f8f2d90cbd96a
+Architecture;references/shell_docs/bash/5.3/pages/return.txt;Note d'architecture;657;2026-08-31;3fabcd15232d9c81
+Architecture;references/shell_docs/bash/5.3/pages/set.txt;Note d'architecture;4812;2026-08-31;ef56419051d3d010
+Architecture;references/shell_docs/bash/5.3/pages/shift.txt;Note d'architecture;549;2026-08-31;12b1c47ddc0f69da
+Architecture;references/shell_docs/bash/5.3/pages/shopt.txt;Note d'architecture;972;2026-08-31;abdf35e3d21d0bbd
+Architecture;references/shell_docs/bash/5.3/pages/source.txt;Note d'architecture;915;2026-08-31;ff8f09c5b8f33d33
+Architecture;references/shell_docs/bash/5.3/pages/suspend.txt;Note d'architecture;730;2026-08-31;8b5f546c59bcbe26
+Architecture;references/shell_docs/bash/5.3/pages/test.txt;Note d'architecture;3585;2026-08-31;a04f3134269294af
+Architecture;references/shell_docs/bash/5.3/pages/times.txt;Note d'architecture;481;2026-08-31;828a371d007c083a
+Architecture;references/shell_docs/bash/5.3/pages/trap.txt;Note d'architecture;2264;2026-08-31;b63c87dea71924ce
+Architecture;references/shell_docs/bash/5.3/pages/true.txt;Note d'architecture;385;2026-08-31;31229dda04c4084b
+Architecture;references/shell_docs/bash/5.3/pages/type.txt;Note d'architecture;1404;2026-08-31;b3adfe8283e7d37f
+Architecture;references/shell_docs/bash/5.3/pages/typeset.txt;Note d'architecture;493;2026-08-31;672f06ee6d7fc206
+Architecture;references/shell_docs/bash/5.3/pages/ulimit.txt;Note d'architecture;2535;2026-08-31;b6f40248b1a7f9f3
+Architecture;references/shell_docs/bash/5.3/pages/umask.txt;Note d'architecture;892;2026-08-31;cd32b9d2acab3a42
+Architecture;references/shell_docs/bash/5.3/pages/unalias.txt;Note d'architecture;535;2026-08-31;cb656641b0984d96
+Architecture;references/shell_docs/bash/5.3/pages/unset.txt;Note d'architecture;1014;2026-08-31;de26c40977cfda57
+Architecture;references/shell_docs/bash/5.3/pages/wait.txt;Note d'architecture;1567;2026-08-31;e0026d577d541488
+Architecture;references/shell_docs/bash/5.3/pages/.txt;Note d'architecture;397;2026-08-31;0f148496e6c1860d
+Architecture;references/shell_docs/bash/5.3/symbols.jsonl;;131108;2026-08-31;0174dfb806275c90
+Architecture;references/shell_docs/powershell/7.5/VERSION.txt;Note d'architecture;2053;2026-08-31;8b203dfba9929d19
+Architecture;references/shell_docs/powershell/7.5/flat.txt;Note d'architecture;1508956;2026-08-31;0d00e9388510eb85
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0001.txt;Note d'architecture;5574;2026-08-31;3d28428bc1f0d314
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0002.txt;Note d'architecture;5013;2026-08-31;4cf396b4475ab453
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0003.txt;Note d'architecture;9770;2026-08-31;7044a377bb43294f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0004.txt;Note d'architecture;2515;2026-08-31;ef142b904c8f4cf8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0005.txt;Note d'architecture;9081;2026-08-31;35dde607cf801347
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0006.txt;Note d'architecture;7593;2026-08-31;391a6c23cefbe4ed
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0007.txt;Note d'architecture;6331;2026-08-31;7f3caf9547f0a120
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0008.txt;Note d'architecture;8931;2026-08-31;3ef0921c3992bc33
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0009.txt;Note d'architecture;8361;2026-08-31;e7ede270f8c507dc
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0010.txt;Note d'architecture;5481;2026-08-31;9e88a457c09f9867
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0011.txt;Note d'architecture;3376;2026-08-31;d4c8d18650a39e58
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0012.txt;Note d'architecture;7641;2026-08-31;81991f09aadd13fd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0013.txt;Note d'architecture;6548;2026-08-31;f798b8b1fef4df77
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0014.txt;Note d'architecture;4349;2026-08-31;3ec67ac3ba35a8e0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0015.txt;Note d'architecture;4237;2026-08-31;02d908fe102715f9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0016.txt;Note d'architecture;11197;2026-08-31;191fc0a329558a52
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0017.txt;Note d'architecture;3633;2026-08-31;ad2e519d7042e654
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0018.txt;Note d'architecture;3119;2026-08-31;4b7e43e650ee21f4
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0019.txt;Note d'architecture;3599;2026-08-31;d8e5641ab554fc6a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0020.txt;Note d'architecture;12192;2026-08-31;1af3117da3c7a058
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0021.txt;Note d'architecture;3552;2026-08-31;dfe883cdac87c757
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0022.txt;Note d'architecture;3499;2026-08-31;ac8af162d17a59ce
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0023.txt;Note d'architecture;4628;2026-08-31;800b37a49c7fbb99
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0024.txt;Note d'architecture;15665;2026-08-31;991477a6cf434fae
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0025.txt;Note d'architecture;4073;2026-08-31;0be81c4ec457770c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0026.txt;Note d'architecture;11993;2026-08-31;a4b177d5d2752387
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0027.txt;Note d'architecture;10574;2026-08-31;9a31f36158a6fb34
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0028.txt;Note d'architecture;462;2026-08-31;813f55587d77ca50
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0029.txt;Note d'architecture;8205;2026-08-31;dc72c85bc1b071e3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0030.txt;Note d'architecture;1654;2026-08-31;d30824c345088378
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0031.txt;Note d'architecture;13859;2026-08-31;602b11dce3a583fd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0032.txt;Note d'architecture;7856;2026-08-31;2300c31379c5416e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0033.txt;Note d'architecture;1252;2026-08-31;c2c65b4f1c3a90b8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0034.txt;Note d'architecture;13329;2026-08-31;dc6e4325955d5c14
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0035.txt;Note d'architecture;4316;2026-08-31;fbdf814a6e6b4941
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0036.txt;Note d'architecture;20141;2026-08-31;cccd859219077057
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0037.txt;Note d'architecture;29994;2026-08-31;a76b9413091d201e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0038.txt;Note d'architecture;6140;2026-08-31;189e975c4f6cc226
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0039.txt;Note d'architecture;17114;2026-08-31;f29a1bbccea10880
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0040.txt;Note d'architecture;9471;2026-08-31;5c458f56860980ce
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0041.txt;Note d'architecture;18354;2026-08-31;b9b53952a097b468
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0042.txt;Note d'architecture;19454;2026-08-31;4dc8326cac95c209
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0043.txt;Note d'architecture;13029;2026-08-31;ff36b55d25dc5ff0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0044.txt;Note d'architecture;5932;2026-08-31;b272bcc31dd14c76
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0045.txt;Note d'architecture;2563;2026-08-31;88f4e19de64e833a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0046.txt;Note d'architecture;10287;2026-08-31;d1df44c7380fd0be
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0047.txt;Note d'architecture;16365;2026-08-31;42571f26beefdd81
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0048.txt;Note d'architecture;4400;2026-08-31;5929b6453257d902
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0049.txt;Note d'architecture;14215;2026-08-31;4d14b2204efe4eda
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0050.txt;Note d'architecture;5343;2026-08-31;35b3b5a0bc097430
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0051.txt;Note d'architecture;3171;2026-08-31;7adede1622ec8ac8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0052.txt;Note d'architecture;5770;2026-08-31;8ef7139343636f12
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0053.txt;Note d'architecture;8223;2026-08-31;a8a80aade5c5d83f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0054.txt;Note d'architecture;1941;2026-08-31;236f308be4e2b0c0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0055.txt;Note d'architecture;13361;2026-08-31;74f5584d1b6f2430
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0056.txt;Note d'architecture;2066;2026-08-31;7531f2479bbcb908
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0057.txt;Note d'architecture;10425;2026-08-31;31613cd1a376b9e5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0058.txt;Note d'architecture;5448;2026-08-31;6d0c94c77c51d432
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0059.txt;Note d'architecture;5012;2026-08-31;9b422f796eefcffe
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0060.txt;Note d'architecture;5524;2026-08-31;bae0c82a64fdc0b8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0061.txt;Note d'architecture;8303;2026-08-31;649d13519da4bf1a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0062.txt;Note d'architecture;6788;2026-08-31;c5808ed733d90d80
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0063.txt;Note d'architecture;21682;2026-08-31;0c26c1e35578776e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0064.txt;Note d'architecture;5902;2026-08-31;5e2928acdc625939
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0065.txt;Note d'architecture;12326;2026-08-31;d6370f2309fef9f0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0066.txt;Note d'architecture;2199;2026-08-31;c660deca11444dcd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0067.txt;Note d'architecture;5626;2026-08-31;f92175461c6fdb38
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0068.txt;Note d'architecture;8623;2026-08-31;f9693bdb4a09a254
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0069.txt;Note d'architecture;5089;2026-08-31;58d3a5b53816b112
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0070.txt;Note d'architecture;4429;2026-08-31;034ce0aadd5574e4
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0071.txt;Note d'architecture;5825;2026-08-31;3c9c60b5016da35b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0072.txt;Note d'architecture;2677;2026-08-31;70f3ed1312f8a763
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0073.txt;Note d'architecture;11864;2026-08-31;dd74c06644fd7b29
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0074.txt;Note d'architecture;4988;2026-08-31;c25aa76e3cf58edd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0075.txt;Note d'architecture;2684;2026-08-31;fca3b00daf7bcc1a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0076.txt;Note d'architecture;13365;2026-08-31;bdeecb12c5a80236
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0077.txt;Note d'architecture;1252;2026-08-31;80e5691013f918d8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0078.txt;Note d'architecture;10890;2026-08-31;a2d586f3e295ee3b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0079.txt;Note d'architecture;2680;2026-08-31;834dbd4c161f8c50
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0080.txt;Note d'architecture;9567;2026-08-31;4c5d5a4d8608938e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0081.txt;Note d'architecture;3983;2026-08-31;ade0541bd8fb6cd1
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0082.txt;Note d'architecture;3901;2026-08-31;c34ce7ba6c93ce11
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0083.txt;Note d'architecture;3492;2026-08-31;041c01b48c52802f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0084.txt;Note d'architecture;6409;2026-08-31;2bb820e9b2bb8837
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0085.txt;Note d'architecture;1129;2026-08-31;a249e778e7aad587
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0086.txt;Note d'architecture;5181;2026-08-31;cb036dc9709a274e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0087.txt;Note d'architecture;5126;2026-08-31;0ed5fae2aa138ba3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0088.txt;Note d'architecture;4014;2026-08-31;9f093c0f77b185cf
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0089.txt;Note d'architecture;3079;2026-08-31;acbfad3390e62d8f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0090.txt;Note d'architecture;5572;2026-08-31;95ae494d2db895d8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0091.txt;Note d'architecture;4850;2026-08-31;44369cbbf5d777b7
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0092.txt;Note d'architecture;11181;2026-08-31;742787a0c721a4df
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0093.txt;Note d'architecture;6241;2026-08-31;61d66e79b7bd2a4c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0094.txt;Note d'architecture;6247;2026-08-31;eee64d66dfa13806
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0095.txt;Note d'architecture;4735;2026-08-31;9031ba522e9c073d
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0096.txt;Note d'architecture;3967;2026-08-31;0083681d6f1a5ee2
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0097.txt;Note d'architecture;8062;2026-08-31;bd2b9c9a9989e1c0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0098.txt;Note d'architecture;4906;2026-08-31;a98c730a5cc0de3e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0099.txt;Note d'architecture;4179;2026-08-31;04c66e36cb6705e3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0100.txt;Note d'architecture;4518;2026-08-31;384758f2e76b4ba5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0101.txt;Note d'architecture;3814;2026-08-31;1777c65ebec1fb5e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0102.txt;Note d'architecture;4741;2026-08-31;e10f5120cf801a8a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0103.txt;Note d'architecture;4604;2026-08-31;b9dba50cb1fec5d8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0104.txt;Note d'architecture;5761;2026-08-31;4355ac36613c76d0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0105.txt;Note d'architecture;5997;2026-08-31;b0fa4f2e1977d6d6
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0106.txt;Note d'architecture;2652;2026-08-31;e486aa8f0a47e316
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0107.txt;Note d'architecture;8146;2026-08-31;8c2f1b4d703323f5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0108.txt;Note d'architecture;7273;2026-08-31;b6238716ac5a4d89
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0109.txt;Note d'architecture;8090;2026-08-31;6af292257bebe2d6
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0110.txt;Note d'architecture;3433;2026-08-31;df3db650bba9dbdd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0111.txt;Note d'architecture;7391;2026-08-31;7f325acad8cedede
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0112.txt;Note d'architecture;2009;2026-08-31;69d5f299548d79a4
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0113.txt;Note d'architecture;5966;2026-08-31;af57addbb53ddd58
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0114.txt;Note d'architecture;9975;2026-08-31;4f5d2b48cd22271e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0115.txt;Note d'architecture;3728;2026-08-31;7abec8613197773c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0116.txt;Note d'architecture;3272;2026-08-31;01ac317ff9407a3f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0117.txt;Note d'architecture;3043;2026-08-31;b64391ae3306caba
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0118.txt;Note d'architecture;3452;2026-08-31;94e0a0c635004d1c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0119.txt;Note d'architecture;3265;2026-08-31;46542bf38aeec569
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0120.txt;Note d'architecture;7774;2026-08-31;b93850583a493261
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0121.txt;Note d'architecture;6907;2026-08-31;f33bd16eddef969d
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0122.txt;Note d'architecture;5603;2026-08-31;71c48c4a53df4d26
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0123.txt;Note d'architecture;3711;2026-08-31;534cb2695058cc1f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0124.txt;Note d'architecture;3829;2026-08-31;8c37e26147c84c90
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0125.txt;Note d'architecture;4446;2026-08-31;522041e39bc6bc90
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0126.txt;Note d'architecture;5612;2026-08-31;211300f6dd77bfa9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0127.txt;Note d'architecture;4506;2026-08-31;809e55c271862678
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0128.txt;Note d'architecture;4017;2026-08-31;6a8a6fcb7580f910
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0129.txt;Note d'architecture;6676;2026-08-31;e15c8b40c2a7f082
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0130.txt;Note d'architecture;5974;2026-08-31;6ff6eabc1983f10e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0131.txt;Note d'architecture;5021;2026-08-31;5e9ddb44c8bf4ce0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0132.txt;Note d'architecture;6115;2026-08-31;7a3944fd58055ad2
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0133.txt;Note d'architecture;8090;2026-08-31;14960eaba120c4cf
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0134.txt;Note d'architecture;9579;2026-08-31;c47bc25f27ca3f1f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0135.txt;Note d'architecture;2964;2026-08-31;995d705afc4f2f20
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0136.txt;Note d'architecture;5822;2026-08-31;843f1465c4015513
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0137.txt;Note d'architecture;4681;2026-08-31;b90c9de7b2a3786a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0138.txt;Note d'architecture;5788;2026-08-31;9f57c537e93c87f1
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0139.txt;Note d'architecture;5308;2026-08-31;51e9ed6f203cdcb5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0140.txt;Note d'architecture;5820;2026-08-31;558a5ddff7a53431
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0141.txt;Note d'architecture;6684;2026-08-31;09352bfe3064a7d5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0142.txt;Note d'architecture;4836;2026-08-31;d0b70af7114a939a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0143.txt;Note d'architecture;3462;2026-08-31;7964db411d1659e1
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0144.txt;Note d'architecture;4623;2026-08-31;b8db1456fdc11db7
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0145.txt;Note d'architecture;5137;2026-08-31;b9c1620e1e32a713
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0146.txt;Note d'architecture;5393;2026-08-31;2ff56f63eee3eca4
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0147.txt;Note d'architecture;5298;2026-08-31;be7116f89944e77b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0148.txt;Note d'architecture;10560;2026-08-31;ba061cc82b086863
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0149.txt;Note d'architecture;3498;2026-08-31;305f909fd346452d
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0150.txt;Note d'architecture;8015;2026-08-31;2bb159cf2b4b68cd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0151.txt;Note d'architecture;4620;2026-08-31;192fbebc452123c3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0152.txt;Note d'architecture;3555;2026-08-31;11d6a9b103863792
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0153.txt;Note d'architecture;4719;2026-08-31;d24786886a45fb15
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0154.txt;Note d'architecture;6138;2026-08-31;6f7a554c07cd5a00
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0155.txt;Note d'architecture;4885;2026-08-31;14fa0f456bbd8104
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0156.txt;Note d'architecture;2355;2026-08-31;0434c992cf2f8640
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0157.txt;Note d'architecture;4729;2026-08-31;e26b2eb298d92d7e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0158.txt;Note d'architecture;7128;2026-08-31;aa4854c37070c130
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0159.txt;Note d'architecture;5827;2026-08-31;2073de40aed0af46
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0160.txt;Note d'architecture;5737;2026-08-31;8b949e5ab53b85b9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0161.txt;Note d'architecture;3421;2026-08-31;1e48c24f165b9e93
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0162.txt;Note d'architecture;5233;2026-08-31;7db6dee644c6628a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0163.txt;Note d'architecture;5469;2026-08-31;0ed2697ccf960eb3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0164.txt;Note d'architecture;5274;2026-08-31;727d9ef610c689a6
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0165.txt;Note d'architecture;3024;2026-08-31;5fc630bff2eaf716
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0166.txt;Note d'architecture;4786;2026-08-31;04662166e4032dbf
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0167.txt;Note d'architecture;5685;2026-08-31;7fb7a97b1d413a5d
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0168.txt;Note d'architecture;3228;2026-08-31;64832dbb1a9989d8
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0169.txt;Note d'architecture;4462;2026-08-31;53138872d70a086e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0170.txt;Note d'architecture;5772;2026-08-31;5eef6fa8b65ff510
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0171.txt;Note d'architecture;5251;2026-08-31;1680bb79c4770350
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0172.txt;Note d'architecture;4994;2026-08-31;4422affcfd24e590
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0173.txt;Note d'architecture;10325;2026-08-31;5430ba68fa367708
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0174.txt;Note d'architecture;2859;2026-08-31;3186798b06800bd0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0175.txt;Note d'architecture;30042;2026-08-31;da605943eb624448
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0176.txt;Note d'architecture;29929;2026-08-31;66bda7b44c734140
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0177.txt;Note d'architecture;4729;2026-08-31;dfd22143fa42d1bd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0178.txt;Note d'architecture;2057;2026-08-31;e629f54117bbf6c4
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0179.txt;Note d'architecture;6479;2026-08-31;62557eae1814bd7c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0180.txt;Note d'architecture;5596;2026-08-31;5aea672b2f359829
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0181.txt;Note d'architecture;5895;2026-08-31;d15b5f942bef82cd
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0182.txt;Note d'architecture;2387;2026-08-31;f034dab602bb61a6
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0183.txt;Note d'architecture;5848;2026-08-31;8f60fd5e086b15a9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0184.txt;Note d'architecture;5925;2026-08-31;53cd77c7a0b391c0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0185.txt;Note d'architecture;5241;2026-08-31;830435e3ed8f0fa1
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0186.txt;Note d'architecture;5472;2026-08-31;2b3c8526c5125e52
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0187.txt;Note d'architecture;5317;2026-08-31;de609072b358ce6b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0188.txt;Note d'architecture;6260;2026-08-31;c89cdfb293057e10
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0189.txt;Note d'architecture;5469;2026-08-31;5e1ae3aba9af299b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0190.txt;Note d'architecture;5383;2026-08-31;4a01b8f419c21135
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0191.txt;Note d'architecture;12218;2026-08-31;2660a83e21c9fe91
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0192.txt;Note d'architecture;12454;2026-08-31;2d5b9d3edcbcd67f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0193.txt;Note d'architecture;4735;2026-08-31;dc48755a3a65b9b2
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0194.txt;Note d'architecture;6798;2026-08-31;63f39c381ab51714
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0195.txt;Note d'architecture;4964;2026-08-31;f286c90c79bca600
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0196.txt;Note d'architecture;2803;2026-08-31;26322b73ecccf109
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0197.txt;Note d'architecture;4078;2026-08-31;72bcbf9b3d26939a
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0198.txt;Note d'architecture;6031;2026-08-31;8dd6d2db679e6d59
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0199.txt;Note d'architecture;4617;2026-08-31;259726710932824d
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0200.txt;Note d'architecture;5039;2026-08-31;cbb66725833df936
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0201.txt;Note d'architecture;6035;2026-08-31;6321fbe723484dd0
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0202.txt;Note d'architecture;6095;2026-08-31;b0ff4e8b7dff603b
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0203.txt;Note d'architecture;1711;2026-08-31;519b59f7e78181c6
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0204.txt;Note d'architecture;4881;2026-08-31;4848669eebf424f3
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0205.txt;Note d'architecture;5348;2026-08-31;e445772979fa69b9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0206.txt;Note d'architecture;5533;2026-08-31;5be98d1c62720be5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0207.txt;Note d'architecture;4683;2026-08-31;74c57f65a9e0dd9c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0208.txt;Note d'architecture;2191;2026-08-31;a74f16639dd34a10
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0209.txt;Note d'architecture;4471;2026-08-31;161886d1201bf705
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0210.txt;Note d'architecture;12895;2026-08-31;4c9853cedd1073a5
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0211.txt;Note d'architecture;5623;2026-08-31;faa170af9f6b350c
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0212.txt;Note d'architecture;1330;2026-08-31;689fadc6f1f0ef01
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0213.txt;Note d'architecture;5494;2026-08-31;6e154caad753c664
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0214.txt;Note d'architecture;5135;2026-08-31;1df0a952868f1f8e
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0215.txt;Note d'architecture;1481;2026-08-31;f5506cb7d5104829
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0216.txt;Note d'architecture;6177;2026-08-31;86f69c23a0b26b22
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0217.txt;Note d'architecture;2427;2026-08-31;470ef21d00248dae
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0218.txt;Note d'architecture;6735;2026-08-31;32cf7fec751bb588
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0219.txt;Note d'architecture;4550;2026-08-31;338fea1e2529c1d9
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0220.txt;Note d'architecture;11865;2026-08-31;76987f59585aaa5f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0221.txt;Note d'architecture;9239;2026-08-31;0cf02e043cc3c888
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0222.txt;Note d'architecture;8055;2026-08-31;ba0f3a389334cd28
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0223.txt;Note d'architecture;4597;2026-08-31;e2cfeb4f97c72737
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0224.txt;Note d'architecture;7077;2026-08-31;6e9cdcb4f20ef5b2
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0225.txt;Note d'architecture;9701;2026-08-31;7044c4674bf7f130
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0226.txt;Note d'architecture;1705;2026-08-31;17619c947724c4aa
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0227.txt;Note d'architecture;5992;2026-08-31;365e5ff76469d864
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0228.txt;Note d'architecture;3322;2026-08-31;76c4217411dd6d27
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0229.txt;Note d'architecture;5387;2026-08-31;e166b4dc5f08cecf
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0230.txt;Note d'architecture;3900;2026-08-31;426458da7a39a495
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0231.txt;Note d'architecture;16427;2026-08-31;a0d398c1181daa8f
+Architecture;references/shell_docs/powershell/7.5/fragments/frag_0232.txt;Note d'architecture;6559;2026-08-31;4bc4e503056db5a5
+Architecture;references/shell_docs/powershell/7.5/index.tsv;;37340;2026-08-31;634fc8e4cb9aa5e4
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/CimCmdlets.md;;1699;2026-08-31;973fb4e6a53c66cd
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Get-CimAssociatedInstance.md;;10921;2026-08-31;83ec4f0dfb255749
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Get-CimClass.md;;8523;2026-08-31;2965eb44c1f68e07
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Get-CimInstance.md;;18465;2026-08-31;9ccf7a000443f02a
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Get-CimSession.md;;6333;2026-08-31;b0b2d36afe4892dd
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Invoke-CimMethod.md;;15014;2026-08-31;036d3c18ee0ef42c
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/New-CimInstance.md;;13210;2026-08-31;8529bbe86721cd2e
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/New-CimSession.md;;11973;2026-08-31;2fef9486224bb68f
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/New-CimSessionOption.md;;14392;2026-08-31;d2077f5453cd85f7
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Register-CimIndicationEvent.md;;12671;2026-08-31;3edc48b2d3ab633c
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Remove-CimInstance.md;;10050;2026-08-31;8025be637ed32ad3
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Remove-CimSession.md;;5831;2026-08-31;45d3f8fc1ad40ff3
+Architecture;references/shell_docs/powershell/7.5/pages/CimCmdlets/Set-CimInstance.md;;14341;2026-08-31;615463f8071b8569
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Archive/Compress-Archive.md;;16706;2026-08-31;2b1ab1be9a931357
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Archive/Expand-Archive.md;;5731;2026-08-31;da65e0627eca1f01
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Archive/Microsoft.PowerShell.Archive.md;;803;2026-08-31;1b9110c8ccc0d80e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Add-History.md;;8888;2026-08-31;bf0b5aeb58cae305
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Clear-History.md;;11989;2026-08-31;c7ddb827821f82f7
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Clear-Host.md;;2170;2026-08-31;08aecb6f5b9331e3
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Connect-PSSession.md;;29234;2026-08-31;c2ecc455c39f9558
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Debug-Job.md;;5714;2026-08-31;9928fc5f68bda09b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Disable-ExperimentalFeature.md;;3667;2026-08-31;01f98f0b77ecec2d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Disable-PSRemoting.md;;25188;2026-08-31;126c0acf4398cffa
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Disable-PSSessionConfiguration.md;;7852;2026-08-31;b126dbb16b4e11cc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Disconnect-PSSession.md;;25284;2026-08-31;2227efb6b064ab06
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Enable-ExperimentalFeature.md;;3646;2026-08-31;1f3327c7a22c0bb2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Enable-PSRemoting.md;;13660;2026-08-31;acea305363253f0d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Enable-PSSessionConfiguration.md;;8399;2026-08-31;453b7a64eeb47401
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Enter-PSHostProcess.md;;9570;2026-08-31;b251ceacfc70cd01
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Enter-PSSession.md;;34342;2026-08-31;d5bdfad97835e79e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Exit-PSHostProcess.md;;1819;2026-08-31;e181231345fc4431
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Exit-PSSession.md;;3564;2026-08-31;571eaf34940ad9f2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Export-ModuleMember.md;;6592;2026-08-31;a3efe393db64201e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/ForEach-Object.md;;30868;2026-08-31;5bae19f00d73e172
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-Command.md;;26855;2026-08-31;1498121a966fe9dd
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-ExperimentalFeature.md;;2481;2026-08-31;286e814e2ceefc7a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-Help.md;;24997;2026-08-31;fbb75ad333bad01f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-History.md;;5990;2026-08-31;f4fe730d29013705
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-Job.md;;30749;2026-08-31;c1fd304c1f89f9e2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-Module.md;;26425;2026-08-31;43a9d7e89a845e22
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-PSHostProcessInfo.md;;3184;2026-08-31;1be71dcca844b12a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-PSSession.md;;31676;2026-08-31;2fb3f6ae9c80a350
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-PSSessionCapability.md;;3835;2026-08-31;3349a85279342d4d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-PSSessionConfiguration.md;;14960;2026-08-31;74da9327e9e6fdfa
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Get-PSSubsystem.md;;3927;2026-08-31;5b6a8a21e9c8b5e7
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Import-Module.md;;50410;2026-08-31;a2e09c27aea0173f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Invoke-Command.md;;70544;2026-08-31;ba54d54245cd5c51
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Invoke-History.md;;5240;2026-08-31;b7b5515cafcda480
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Microsoft.PowerShell.Core.md;;7423;2026-08-31;520c5cc0506877d9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-Module.md;;12365;2026-08-31;e81e25014715c01c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-ModuleManifest.md;;36776;2026-08-31;c7d89f75f20b2c4a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-PSRoleCapabilityFile.md;;14774;2026-08-31;a2a9fefbbb2a118e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-PSSession.md;;39575;2026-08-31;5a6ef752a503412b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-PSSessionConfigurationFile.md;;36935;2026-08-31;d392a5e0d5234830
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-PSSessionOption.md;;27037;2026-08-31;4826856d2cddcf45
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/New-PSTransportOption.md;;14780;2026-08-31;860370e8ba3a3b52
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Out-Default.md;;3017;2026-08-31;d7595c492499afa9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Out-Host.md;;5212;2026-08-31;33aaa787d0e5e921
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Out-Null.md;;2484;2026-08-31;7e2661d681181c2f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Receive-Job.md;;19616;2026-08-31;5169ba22ca712452
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Receive-PSSession.md;;38434;2026-08-31;3925b5209c8b6239
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Register-ArgumentCompleter.md;;12127;2026-08-31;98b867bbdd98f8ce
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Register-PSSessionConfiguration.md;;25325;2026-08-31;914ece539b68bb70
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Remove-Job.md;;12383;2026-08-31;78464423ae239d25
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Remove-Module.md;;8765;2026-08-31;1e4f16378a7d4b8a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Remove-PSSession.md;;11228;2026-08-31;2baacc56a17127d6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Save-Help.md;;19737;2026-08-31;54c6d3e5cd63fec0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Set-PSDebug.md;;5524;2026-08-31;7ace234737cedfee
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Set-PSSessionConfiguration.md;;25776;2026-08-31;d4fb4dfbc829d569
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Set-StrictMode.md;;7250;2026-08-31;428e96901af322f7
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Start-Job.md;;24558;2026-08-31;7fce7425b50c3898
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Stop-Job.md;;12913;2026-08-31;ae9858c5d538f049
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Switch-Process.md;;2953;2026-08-31;c9592dd7e112c907
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/TabExpansion2.md;;7003;2026-08-31;fd5e6cd5f5ef5176
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Test-ModuleManifest.md;;5534;2026-08-31;6cdbd9310599e557
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Test-PSSessionConfigurationFile.md;;5951;2026-08-31;9fd6ec238efc109c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Unregister-PSSessionConfiguration.md;;8571;2026-08-31;97e9cb0cb9c8c048
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Update-Help.md;;24094;2026-08-31;3b909e74228b55a1
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Wait-Job.md;;16768;2026-08-31;ee0608737cb2cce4
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Core/Where-Object.md;;33865;2026-08-31;48c106fd42f0e479
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Diagnostics/Get-Counter.md;;25051;2026-08-31;f35ca504cfa9af1a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Diagnostics/Get-WinEvent.md;;37302;2026-08-31;ada6497dbefd6cc0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Diagnostics/Microsoft.PowerShell.Diagnostics.md;;942;2026-08-31;39da5985359aea9d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Diagnostics/New-WinEvent.md;;6814;2026-08-31;5571334c730d2f6b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Host/Microsoft.PowerShell.Host.md;;722;2026-08-31;0084d876dfefae09
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Host/Start-Transcript.md;;9659;2026-08-31;6c10323485cf5570
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Host/Stop-Transcript.md;;2033;2026-08-31;b170396be76a3be6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Add-Content.md;;17947;2026-08-31;109effe2996763d2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Clear-Content.md;;10001;2026-08-31;b55aa012f464b367
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Clear-Item.md;;8691;2026-08-31;27aa69da2ed20eaa
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Clear-ItemProperty.md;;8261;2026-08-31;ced3bf1b1e223360
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Clear-RecycleBin.md;;3830;2026-08-31;885c841f1536191b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Convert-Path.md;;5681;2026-08-31;4fed3fc07bd9e316
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Copy-Item.md;;24726;2026-08-31;f4d0f9ff9e07ac10
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Copy-ItemProperty.md;;8502;2026-08-31;0c5cefda37f528d0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Debug-Process.md;;6587;2026-08-31;ec350b099871f182
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-ChildItem.md;;35117;2026-08-31;a9e4e0ff722841ee
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Clipboard.md;;2168;2026-08-31;b6b694fd45ccf530
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-ComputerInfo.md;;2875;2026-08-31;fa09434ab2b8d13d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Content.md;;23299;2026-08-31;2416ba95373ded54
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-HotFix.md;;7495;2026-08-31;b60343f246a98c06
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Item.md;;18583;2026-08-31;dee801b71bd4c973
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-ItemProperty.md;;8514;2026-08-31;8a0052e74c1c855e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-ItemPropertyValue.md;;8158;2026-08-31;226d12609cecf0c4
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Location.md;;9875;2026-08-31;e9fcce6119ce1ab9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-PSDrive.md;;11666;2026-08-31;cc7c3e936786cf2a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-PSProvider.md;;4465;2026-08-31;6ab2621dcece9395
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Process.md;;16696;2026-08-31;469672fd4adb970e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-Service.md;;11554;2026-08-31;f5df843314931596
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Get-TimeZone.md;;2972;2026-08-31;31e14ae663609006
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Invoke-Item.md;;7563;2026-08-31;7963c6afc73e6a8c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Join-Path.md;;7426;2026-08-31;760b7dfcaf6c8c20
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Microsoft.PowerShell.Management.md;;6274;2026-08-31;c42fb5f3f7ddd93b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Move-Item.md;;12669;2026-08-31;7f42a4db30878018
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Move-ItemProperty.md;;8461;2026-08-31;74175496967cb6cc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/New-Item.md;;20169;2026-08-31;dbb82616b17c7fd9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/New-ItemProperty.md;;11945;2026-08-31;a848e6767a256742
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/New-PSDrive.md;;18862;2026-08-31;59948b1efffcb2d8
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/New-Service.md;;8973;2026-08-31;dcb086ce0278c18f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Pop-Location.md;;7351;2026-08-31;ebeba2ab92c3757b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Push-Location.md;;9107;2026-08-31;c88bc13db6bf238d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Remove-Item.md;;16893;2026-08-31;dbb873a693679362
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Remove-ItemProperty.md;;9483;2026-08-31;aca61fa9401622be
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Remove-PSDrive.md;;5619;2026-08-31;08bc1c47e7431ed3
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Remove-Service.md;;4112;2026-08-31;95975062fabf04c6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Rename-Computer.md;;8042;2026-08-31;b743d003ce7aaeae
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Rename-Item.md;;9549;2026-08-31;af8c96485c7f1fc6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Rename-ItemProperty.md;;8330;2026-08-31;d4f3ce275778b542
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Resolve-Path.md;;8761;2026-08-31;d99e7b14b39276c3
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Restart-Computer.md;;13473;2026-08-31;57caa24bf41b9a67
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Restart-Service.md;;7358;2026-08-31;c785eb28b7db618e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Resume-Service.md;;7030;2026-08-31;0f72b2b61619bb74
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-Clipboard.md;;5412;2026-08-31;d3e3e8f897422dd7
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-Content.md;;16852;2026-08-31;d80a6c1fb9cae02d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-Item.md;;12589;2026-08-31;064307b303cd3e5f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-ItemProperty.md;;15440;2026-08-31;ccd0bc40c50139d1
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-Location.md;;10382;2026-08-31;429df59c6635682f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-Service.md;;16131;2026-08-31;e8646df1846fb802
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Set-TimeZone.md;;4754;2026-08-31;aa5a4993e25db9db
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Split-Path.md;;11602;2026-08-31;d2b563a44f5f37b0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Start-Process.md;;20533;2026-08-31;eae91802fcf87a1b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Start-Service.md;;9393;2026-08-31;eaeb5a4bb05b4a65
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Stop-Computer.md;;8792;2026-08-31;bd1a7c3d005567eb
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Stop-Process.md;;9710;2026-08-31;b3e5b45ad4918515
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Stop-Service.md;;8153;2026-08-31;f98cec5ac09ccc86
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Suspend-Service.md;;8047;2026-08-31;3c052c8741f6f069
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Test-Connection.md;;19469;2026-08-31;46182fea48da72cc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Test-Path.md;;15240;2026-08-31;ab0353cc471d9675
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Management/Wait-Process.md;;6328;2026-08-31;8fa1a5709cd5e2bc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/ConvertFrom-SecureString.md;;6904;2026-08-31;c2bb53238ec33a51
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/ConvertTo-SecureString.md;;9334;2026-08-31;14c2359432935ba0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-Acl.md;;9154;2026-08-31;890ad584f7760ba7
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-AuthenticodeSignature.md;;6258;2026-08-31;13dfc42c600a5e2c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-CmsMessage.md;;5250;2026-08-31;59e3a561fe480c5b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-Credential.md;;8775;2026-08-31;d69b2bf4467f1466
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-ExecutionPolicy.md;;7411;2026-08-31;f8ac4cd8f22537a5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Get-PfxCertificate.md;;4575;2026-08-31;d6c0e1f290d71fb6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Microsoft.PowerShell.Security.md;;2464;2026-08-31;1960efb6c92fba9b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/New-FileCatalog.md;;5092;2026-08-31;60faaed6192be6bd
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Protect-CmsMessage.md;;7229;2026-08-31;de791c756a22b896
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Set-Acl.md;;15141;2026-08-31;cb7333c67e72a29f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Set-AuthenticodeSignature.md;;11553;2026-08-31;32cda03d421f67a5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Set-ExecutionPolicy.md;;15286;2026-08-31;99999ad958947249
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Test-FileCatalog.md;;6136;2026-08-31;fa5047c8329e54ba
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Security/Unprotect-CmsMessage.md;;6813;2026-08-31;add79593f9ed41c0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Add-Member.md;;19793;2026-08-31;e4d8547e8d9891ee
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Add-Type.md;;21670;2026-08-31;5e7cb5ce64d42511
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Clear-Variable.md;;6397;2026-08-31;0822072eaafecca4
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Compare-Object.md;;16209;2026-08-31;83a12a99942d060f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-CliXml.md;;3513;2026-08-31;cf8d38832e9db063
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-Csv.md;;11299;2026-08-31;ce84d024a0636278
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-Json.md;;11405;2026-08-31;8dafd7db39114498
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-Markdown.md;;4967;2026-08-31;d95c9543639eb2f1
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-SddlString.md;;5393;2026-08-31;6ffd97a28e5bf4d9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertFrom-StringData.md;;10712;2026-08-31;976f90b4688f7b9c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertTo-CliXml.md;;3567;2026-08-31;27a328667f8cb6a8
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertTo-Csv.md;;12383;2026-08-31;c7196b8785e4c927
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertTo-Html.md;;16262;2026-08-31;0d93a0c48f181fb6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertTo-Json.md;;8580;2026-08-31;5d988e9167f8b970
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/ConvertTo-Xml.md;;4767;2026-08-31;488e58878c99fb80
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Debug-Runspace.md;;7921;2026-08-31;29f2481ceb894591
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Disable-PSBreakpoint.md;;7110;2026-08-31;7ad924567882e88b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Disable-RunspaceDebug.md;;3646;2026-08-31;9efa442753d21d2f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Enable-PSBreakpoint.md;;7513;2026-08-31;a5713ecb8cc77e11
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Enable-RunspaceDebug.md;;4216;2026-08-31;271a1353066d1353
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Export-Alias.md;;10034;2026-08-31;57fab1a27c492bec
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Export-Clixml.md;;12248;2026-08-31;67c7d4a950627bbe
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Export-Csv.md;;30257;2026-08-31;8a81c55200c6c20f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Export-FormatData.md;;8723;2026-08-31;a74d6e48059b06b0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Export-PSSession.md;;22522;2026-08-31;ef2639e080efc65f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Format-Custom.md;;8592;2026-08-31;f09294d2417a6ddb
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Format-Hex.md;;12659;2026-08-31;4aa39faae640affc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Format-List.md;;11945;2026-08-31;9a32b41519d632c1
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Format-Table.md;;20044;2026-08-31;4cd641ba377a0255
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Format-Wide.md;;9342;2026-08-31;b3d3e0e9a9f5dafc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Alias.md;;6795;2026-08-31;0a552ac05984f892
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Culture.md;;7967;2026-08-31;51ae7bdeac9648cc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Date.md;;23432;2026-08-31;b10f2b167228357a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Error.md;;5671;2026-08-31;96bb7486ce9cad76
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Event.md;;7249;2026-08-31;75b4a37592724c14
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-EventSubscriber.md;;9495;2026-08-31;5d2cad3ac95faece
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-FileHash.md;;7568;2026-08-31;52a2e6c84c4287f9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-FormatData.md;;6044;2026-08-31;7fb7f9f127e68249
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Host.md;;9196;2026-08-31;3bd70e1a59dc3835
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-MarkdownOption.md;;2329;2026-08-31;5af05a99d2f6fd4b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Member.md;;19990;2026-08-31;1ecbe9919090a7b5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-PSBreakpoint.md;;7906;2026-08-31;230994c1c771f542
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-PSCallStack.md;;3756;2026-08-31;1a840c0b76a2610e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Random.md;;11732;2026-08-31;a203d0160c7b26a5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Runspace.md;;3852;2026-08-31;f58deb6c501ab282
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-RunspaceDebug.md;;3504;2026-08-31;ecbe173e6e7f2308
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-SecureRandom.md;;9076;2026-08-31;b4253297cdbabb7d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-TraceSource.md;;2333;2026-08-31;7523d75e33899342
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-TypeData.md;;5487;2026-08-31;cbbc69ba3b157758
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-UICulture.md;;2834;2026-08-31;e16fddbbbe03b9c6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Unique.md;;7152;2026-08-31;d512671cdff06664
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Uptime.md;;2671;2026-08-31;0dc60afeaabe2774
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Variable.md;;5117;2026-08-31;841efda9ff577ea5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Get-Verb.md;;5520;2026-08-31;be8d7903c1e26590
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Group-Object.md;;15068;2026-08-31;19c14305acb38d51
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-Alias.md;;5193;2026-08-31;20bf25cc5396bcb5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-Clixml.md;;9528;2026-08-31;a17fecdcd427897d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-Csv.md;;19467;2026-08-31;689c96d397a28ff6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-LocalizedData.md;;15823;2026-08-31;6c55686d772751f0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-PSSession.md;;27053;2026-08-31;ecf356594224ca73
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Import-PowerShellDataFile.md;;3739;2026-08-31;f1962704434bb19e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Invoke-Expression.md;;5875;2026-08-31;f5efd278a43de4a6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Invoke-RestMethod.md;;52397;2026-08-31;fd90c1a4c197092a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Invoke-WebRequest.md;;52359;2026-08-31;6a8f46c142cfcaf5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Join-String.md;;10810;2026-08-31;7dfc13f3ec65558b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Measure-Command.md;;5998;2026-08-31;12452502ca4433fe
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Measure-Object.md;;15200;2026-08-31;f6631f3badda643a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Microsoft.PowerShell.Utility.md;;12128;2026-08-31;5f027fe00aed3bf2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-Alias.md;;8352;2026-08-31;04a88a3a5fa88d34
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-Event.md;;5300;2026-08-31;db821748dd882833
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-Guid.md;;3348;2026-08-31;2d405f2169782a08
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-Object.md;;12278;2026-08-31;277178ad4839eb0f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-TemporaryFile.md;;2746;2026-08-31;2c8edf9976c8e904
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-TimeSpan.md;;6238;2026-08-31;1f33ecf66b3b26bb
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/New-Variable.md;;11676;2026-08-31;7d220a2fefcf4f08
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Out-File.md;;14334;2026-08-31;5db9abedfbb06b4b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Out-GridView.md;;16136;2026-08-31;1d32350134d60c36
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Out-Printer.md;;3819;2026-08-31;fa20eb8c9b6ed47d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Out-String.md;;8730;2026-08-31;61a5ae7f07b8d78f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Read-Host.md;;5979;2026-08-31;2bb3fd025da6f8d0
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Register-EngineEvent.md;;11551;2026-08-31;72de5c981963015d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Register-ObjectEvent.md;;12876;2026-08-31;c9a499ded9e794c3
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Remove-Alias.md;;4183;2026-08-31;d7675467b8cccece
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Remove-Event.md;;3812;2026-08-31;5092b8a76b28a8ac
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Remove-PSBreakpoint.md;;5876;2026-08-31;2c5237d4ba7fa97f
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Remove-TypeData.md;;7931;2026-08-31;9462d1c3a684decb
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Remove-Variable.md;;4557;2026-08-31;fb6ac95f8f1c132e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Select-Object.md;;25188;2026-08-31;05637483369b24d6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Select-String.md;;33530;2026-08-31;b0fd6eb1288fee32
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Select-Xml.md;;12347;2026-08-31;429f1bd53c400333
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Send-MailMessage.md;;14930;2026-08-31;76337ef8425269d5
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-Alias.md;;13685;2026-08-31;84b8f7038917282e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-Date.md;;6711;2026-08-31;07b74fa2d325864c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-MarkdownOption.md;;7953;2026-08-31;09c744bbfa25fcd2
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-PSBreakpoint.md;;13914;2026-08-31;2df13dd51961e1cf
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-TraceSource.md;;10401;2026-08-31;48130e56247f6d5b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Set-Variable.md;;10383;2026-08-31;b72531a2b16faca4
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Show-Command.md;;11967;2026-08-31;6e2656e25445486c
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Show-Markdown.md;;4060;2026-08-31;35643ce9708e220b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Sort-Object.md;;23021;2026-08-31;3a289665bbf9b075
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Start-Sleep.md;;3706;2026-08-31;70c965440df18a96
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Tee-Object.md;;12352;2026-08-31;6a654c2047cd4a11
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Test-Json.md;;9892;2026-08-31;f03f6bacf9672e95
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Trace-Command.md;;11862;2026-08-31;de04a58b3d78c4fb
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Unblock-File.md;;6056;2026-08-31;bc7ae90cdf982974
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Unregister-Event.md;;5632;2026-08-31;7e8325300034db95
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Update-FormatData.md;;6626;2026-08-31;cb1d4756fa14ff50
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Update-List.md;;8960;2026-08-31;397ffd4c3646b882
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Update-TypeData.md;;33221;2026-08-31;3469a5a7b43fde8b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Wait-Debugger.md;;5214;2026-08-31;046f1f71fff30f9a
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Wait-Event.md;;4330;2026-08-31;e54a4ac81bfa0762
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Debug.md;;3874;2026-08-31;b351a58709a457cf
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Error.md;;10126;2026-08-31;3664895bf752e9fe
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Host.md;;8670;2026-08-31;20058e99c41c84df
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Information.md;;9520;2026-08-31;00d6d4c6d3b19def
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Output.md;;5058;2026-08-31;1fbd2a410a83400e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Progress.md;;10845;2026-08-31;9762f0c988fedcd6
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Verbose.md;;3727;2026-08-31;4b7ba83185495ec4
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.PowerShell.Utility/Write-Warning.md;;5128;2026-08-31;a7e1f7bf8b48a0ed
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Connect-WSMan.md;;14424;2026-08-31;4d72649ed40a0f44
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Disable-WSManCredSSP.md;;4129;2026-08-31;0d7289238aa9c0aa
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Disconnect-WSMan.md;;3932;2026-08-31;56acb38cd7311a2d
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Enable-WSManCredSSP.md;;8207;2026-08-31;f90922be2ebd5e85
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Get-WSManCredSSP.md;;3742;2026-08-31;699ee2c30449376e
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Get-WSManInstance.md;;18945;2026-08-31;467350c1972392cc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Invoke-WSManAction.md;;16338;2026-08-31;5365ce68be8ec047
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Microsoft.WSMan.Management.md;;2106;2026-08-31;dbd98b8b091ab081
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/New-WSManInstance.md;;13229;2026-08-31;75f49b4573fd48fc
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/New-WSManSessionOption.md;;8415;2026-08-31;25b6a8d7d217db88
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Remove-WSManInstance.md;;11527;2026-08-31;9651695ac5338fb9
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Set-WSManInstance.md;;16759;2026-08-31;ab7c7b862134a47b
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Set-WSManQuickConfig.md;;5381;2026-08-31;04e4a6c74425c622
+Architecture;references/shell_docs/powershell/7.5/pages/Microsoft.WSMan.Management/Test-WSMan.md;;9833;2026-08-31;806db9332bb12f25
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Disable-PSTrace.md;;2083;2026-08-31;c01fad9fa964fee6
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Disable-PSWSManCombinedTrace.md;;1516;2026-08-31;f0133a1e726bf6a5
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Disable-WSManTrace.md;;1418;2026-08-31;2058a5832c4a405d
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Enable-PSTrace.md;;2353;2026-08-31;b301b0375e699cbb
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Enable-PSWSManCombinedTrace.md;;2065;2026-08-31;0d9d4dfdac005fde
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Enable-WSManTrace.md;;1611;2026-08-31;553bcde48b4a7c21
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Get-LogProperties.md;;2021;2026-08-31;8c20c9a80c594029
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/PSDiagnostics.md;;1521;2026-08-31;12396ec62747e54c
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Set-LogProperties.md;;2595;2026-08-31;5316aecbda45c5e0
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Start-Trace.md;;5029;2026-08-31;8d47439eb8a80ff1
+Architecture;references/shell_docs/powershell/7.5/pages/PSDiagnostics/Stop-Trace.md;;2186;2026-08-31;eded4169a04dd72f
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/Get-PSReadLineKeyHandler.md;;8581;2026-08-31;26ca3dc7d43522c5
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/Get-PSReadLineOption.md;;4236;2026-08-31;f83a7fae39c5cd30
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/PSConsoleHostReadLine.md;;1295;2026-08-31;13173d7dd45f76b2
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/PSReadLine.md;;2018;2026-08-31;36672f8ea9ff01da
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/Remove-PSReadLineKeyHandler.md;;2434;2026-08-31;5b412a92a9a6f5f6
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/Set-PSReadLineKeyHandler.md;;5293;2026-08-31;268644361f4133b2
+Architecture;references/shell_docs/powershell/7.5/pages/PSReadLine/Set-PSReadLineOption.md;;27186;2026-08-31;629e0785a2c15eba
+Architecture;references/shell_docs/powershell/7.5/pages/ThreadJob/Start-ThreadJob.md;;10951;2026-08-31;25da01143adbe642
+Architecture;references/shell_docs/powershell/7.5/pages/ThreadJob/ThreadJob.md;;621;2026-08-31;676cb7335c7d2359
+Architecture;references/shell_docs/powershell/7.5/symbols.jsonl;;3929442;2026-08-31;bfe9cba5b00708b4
 Architecture;releve_tous.txt;Note d'architecture;321;2026-08-30;bae727d59c390c96
 Architecture;requirements.txt;Note d'architecture;12;2026-08-29;71749243f84428fe
-Architecture;rituels/BOUSSOLE.csv;;20820;2026-08-29;46c0352a1706fa2d
+Architecture;rituels/BOUSSOLE.csv;;292212;2026-08-31;5a54fa96ae2dc050
 Architecture;rituels/EVALUATION-LOCALE.md;;12079;2026-08-29;f16830fca4479937
 Architecture;rituels/README.md;;1756;2026-08-29;dac6503c1883887f
 Architecture;rituels/RESTE-A-FAIRE.md;;21725;2026-08-29;0f83d7dec3ff8486
 Architecture;rituels/cablage_reference.json;;407;2026-08-30;7cc65bf097122ebd
-Architecture;rituels/outillage_reference.json;;592;2026-08-31;49e5115920487843
+Architecture;rituels/outillage_reference.json;;672;2026-08-31;0b41323e0eb6e779
 Architecture;scripts/.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
 Architecture;scripts/.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;scripts/Compact-NexusDisk.ps1;;7504;2026-08-31;28d2c045ebfd3d55
@@ -2315,45 +3083,69 @@ Architecture;scripts/Install-NexusCommande.ps1;;4054;2026-08-31;5e0850f51dbbc5fd
 Architecture;scripts/Register-NexusDemarrage.ps1;;6048;2026-08-30;0ff808dccb4cad34
 Architecture;scripts/Register-NexusTraque.ps1;;4712;2026-08-30;9153708cec0a97ca
 Architecture;scripts/Register-NexusVitrine.ps1;;5966;2026-08-30;05feb2eb0f834853
-Architecture;scripts/epreuve_cablage.py;;3427;2026-08-31;6b228edefcd2096b
+Architecture;scripts/console_tools.py;;2616;2026-08-31;fc7fb3eb7b866d5c
+Architecture;scripts/epreuve_cablage.py;;5232;2026-08-31;eb5045b9abe28687
+Architecture;scripts/epreuve_cibles_shell.py;;6792;2026-08-31;fe4ad0420cb55236
+Architecture;scripts/epreuve_commande_nexus.py;;3283;2026-08-31;2f23daa8b2804041
+Architecture;scripts/epreuve_conformite_sources.py;;11786;2026-08-31;acdd3261cf5605ff
+Architecture;scripts/epreuve_doc_annexe.py;;8511;2026-08-31;3cb365702624935d
 Architecture;scripts/epreuve_garde_plan.py;;5201;2026-08-31;eb1add6218bc1470
-Architecture;scripts/nexus.ps1;;10508;2026-08-31;a37dbad28132e74b
-Architecture;scripts/nexus_agent.py;;49843;2026-08-31;2d6c4c2db09b2599
+Architecture;scripts/epreuve_garde_quote.py;;3939;2026-08-31;eda3f6d112c14c27
+Architecture;scripts/epreuve_garde_shell_ps.py;;5424;2026-08-31;a42dd72ee1b3c0cf
+Architecture;scripts/epreuve_gardes_accordes.py;;6402;2026-08-31;f1c534a9f2640ef0
+Architecture;scripts/epreuve_ingerer.py;;9912;2026-08-31;41c15b93d2aebc11
+Architecture;scripts/epreuve_maj_modeles.py;;9740;2026-08-31;18cfc2dd451be1ef
+Architecture;scripts/epreuve_offsets_annexes.py;;6095;2026-08-31;2042973900a7420c
+Architecture;scripts/epreuve_plafond_sortie.py;;5526;2026-08-31;e5be9c18d65dd6a8
+Architecture;scripts/epreuve_quota_partage.py;;3445;2026-08-31;a76f775f26a7ecd3
+Architecture;scripts/epreuve_resumer.py;;5533;2026-08-31;8c14e5b88a394bd9
+Architecture;scripts/epreuve_sonde_mcp.py;;4647;2026-08-31;427c58ad99731a49
+Architecture;scripts/epreuve_sujets_filtre.py;;5088;2026-08-31;5af8b4dfc63295a2
+Architecture;scripts/mesure_rendu_vide.py;;7322;2026-08-31;472da41fa2c80686
+Architecture;scripts/nexus.ps1;;12137;2026-08-31;a38eccc32edef3ca
+Architecture;scripts/nexus_agent.py;;54631;2026-08-31;7dfbe9b1f46a43f5
 Architecture;scripts/nexus_agent.py.avant-patch;;49956;2026-08-30;310e3bab9ab3d1fb
-Architecture;scripts/nexus_bench.py;;32667;2026-08-30;ad55dc2c3014e5e5
-Architecture;scripts/nexus_cablage.py;;14524;2026-08-31;206c5d4926f501ac
-Architecture;scripts/nexus_conformite.py;;60527;2026-08-31;e4fe086c3e6440cd
+Architecture;scripts/nexus_bench.py;;37139;2026-08-31;d95d1fb66349aca1
+Architecture;scripts/nexus_cablage.py;;19353;2026-08-31;989940a26efcb5de
+Architecture;scripts/nexus_conformite.py;;80765;2026-08-31;75087670af9235c0
 Architecture;scripts/nexus_conformite.py.avant-patch;;35895;2026-08-30;1ccee0e7fa3cffd4
-Architecture;scripts/nexus_doc.py;;16886;2026-08-31;4a9bce50b6fd40d3
+Architecture;scripts/nexus_doc.py;;38856;2026-08-31;20ccff09ba5009ec
 Architecture;scripts/nexus_essaim.py;;30059;2026-08-31;6b1ca2c824f06c19
 Architecture;scripts/nexus_fonctions.py;;9876;2026-08-29;2ba1bece318f7134
-Architecture;scripts/nexus_garde_agent.py;;9172;2026-08-31;e3b42670c6478e9f
-Architecture;scripts/nexus_garde_edition.py;;4841;2026-08-30;71918bdcf781c2d9
-Architecture;scripts/nexus_garde_lecture.py;;7283;2026-08-30;7d76a6e320a06990
-Architecture;scripts/nexus_garde_shell.py;;7012;2026-08-30;eef9e2e157fcc3d1
+Architecture;scripts/nexus_garde_agent.py;;9306;2026-08-31;91b5ffce1ac697c0
+Architecture;scripts/nexus_garde_edition.py;;5100;2026-08-31;a8c5480c1edcf1e5
+Architecture;scripts/nexus_garde_lecture.py;;20055;2026-08-31;78e5cd006129e267
+Architecture;scripts/nexus_garde_shell.py;;10758;2026-08-31;e3b5da88c8d520a9
 Architecture;scripts/nexus_import.py;;6282;2026-08-30;e6477fe5ccdc7993
-Architecture;scripts/nexus_outillage.py;;27143;2026-08-31;1431a77a4fef918a
+Architecture;scripts/nexus_ingerer.py;;17960;2026-08-31;979b50e85a6a8d88
+Architecture;scripts/nexus_maj_modeles.py;;17068;2026-08-31;abf355fcf19ccf3a
+Architecture;scripts/nexus_outillage.py;;32657;2026-08-31;2a20f391c08df948
 Architecture;scripts/nexus_patch.py;;19614;2026-08-31;32ecf60876820c2a
 Architecture;scripts/nexus_portee_import.py;;15662;2026-08-30;853e2d540c6b25fd
 Architecture;scripts/nexus_posterior.py;;5997;2026-08-30;7737b49c4efa58ef
 Architecture;scripts/nexus_preserve.py;;21602;2026-08-31;ef1e7628bd78d4f4
 Architecture;scripts/nexus_pull_host.py;;17628;2026-08-30;cd52e6f87870bdff
+Architecture;scripts/nexus_redaction.py;;15605;2026-08-31;6132113c50bbc4c7
 Architecture;scripts/nexus_relais.py;;12697;2026-08-31;ad0ee94cc1366e25
-Architecture;scripts/nexus_releve.py;;37108;2026-08-31;b5c7717f6213e54a
-Architecture;scripts/nexus_reprise.py;;15044;2026-08-31;c9dabab3a183c40f
-Architecture;scripts/nexus_rituel.py;;15056;2026-08-31;8c959b1225337566
+Architecture;scripts/nexus_releve.py;;37766;2026-08-31;e61eccc3add7eb69
+Architecture;scripts/nexus_reprise.py;;16282;2026-08-31;fffc77bddfb4a62b
+Architecture;scripts/nexus_rituel.py;;16279;2026-08-31;a85707f781687e88
 Architecture;scripts/nexus_ruche.py;;22725;2026-08-30;d5361720ef31201d
 Architecture;scripts/nexus_savings.py;;21798;2026-08-30;113dbc1551ce2ad3
+Architecture;scripts/nexus_sujets.py;;22925;2026-08-31;94a7ec83f780bb4b
 Architecture;scripts/nexus_test_outillage.py;;25094;2026-08-29;f81da04dcd695fa2
-Architecture;scripts/nexus_traque.py;;14955;2026-08-31;24c38910d77e4be8
-Architecture;scripts/nexus_valide.py;;30620;2026-08-30;56a57f1e606cf477
+Architecture;scripts/nexus_traque.py;;15635;2026-08-31;876e7556473353f8
+Architecture;scripts/nexus_valide.py;;31011;2026-08-31;562d941fa697f4fd
 Architecture;scripts/nexus_verbatim.py;;10253;2026-08-30;382c6b61dd90fce7
 Architecture;scripts/nexus_verrou_machine.py;;14509;2026-08-31;b74d6d4424da17d8
 Architecture;scripts/nexus_vitrine.py;;12857;2026-08-30;9f1a0e03aade7f2f
 Architecture;scripts/nexus_worktree.py;;21737;2026-08-31;19653309be19ed9e
+Architecture;tools/nexus-mcp/epreuve_decoupage.js;;4353;2026-08-31;283938068ee8ec4c
 Architecture;tools/nexus-mcp/epreuve_mentions.js;;4587;2026-08-30;c56a5df8e7c9eedb
 Architecture;tools/nexus-mcp/epreuve_noms_js.js;;6131;2026-08-30;e3178ae07a52f85b
+Architecture;tools/nexus-mcp/epreuve_perte_index.js;;7410;2026-08-31;c01cc0b06df0aefd
 Architecture;tools/nexus-mcp/epreuve_protocole.js;;6430;2026-08-30;68d893330732d1e9
-Architecture;tools/nexus-mcp/epreuve_semaphore.js;;9016;2026-08-30;478a7f3e8e7dc905
+Architecture;tools/nexus-mcp/epreuve_reveil.js;;5671;2026-08-31;cdb34f4042b75ba6
+Architecture;tools/nexus-mcp/epreuve_semaphore.js;;9040;2026-08-31;9c5f094c861a8dd0
 Obsolète;scripts/update_cloud_models.ps1;Remplacé — neutralisé par garde-fou;8174;2026-08-30;353969c62525aadb
 Obsolète;scripts/update_local_models.ps1;Remplacé — neutralisé par garde-fou;5141;2026-08-30;2c4a537284f89348

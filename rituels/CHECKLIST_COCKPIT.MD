@@ -5073,3 +5073,144 @@ enfreinte — jamais par un paragraphe.
 | 32 | `litellm_config.yaml` porte toujours les 37 chaînes — régénération à la main | L'amplification des replis | Contrôle vérifiant la régénération et le redémarrage effectués |
 | 33 | `thinking` — déclarée par le moteur, lue nulle part | Capacités déclarées, non exploitées | Contrôle de lecture et exploitation effective de la capacité |
 | 34 | `command-r`, `sqlcoder`, `codegemma:7b` — installés, déclarés, **jamais mesurés** | Modèles téléchargés, non intégrés | Contrôle de mesure effectuée et intégr
+
+---
+
+## 53. A2A — l'apport reel, et le premier pas que l'analyse propose a tort
+
+Demande de l'operateur : *« passer au A2A »*. La matiere etait deja sur le
+disque, et il fallait s'en servir plutot que d'en chercher d'autre :
+
+```
+references/livres/code/index.tsv   563 entrees du livre MCP + A2A
+                                   8 symboles du PROTOCOLE lui-meme
+```
+
+Lues par `nexus_doc.py`, en seek sur l'index — pas en ouvrant les fichiers.
+Le corpus reste gitignore : c'est un livre commercial, il ne sort pas.
+
+### 53.1 La difference structurelle, telle que les deux sources la montrent
+
+| | qui appelle qui | ce qui transporte |
+| --- | --- | --- |
+| **MCP** | orchestrateur -> outils, hierarchique et synchrone | arguments d'appel, resultats de fonction |
+| **A2A** | agent <-> agent, pair a pair et asynchrone | messages de protocole, **etat de tache persistant** |
+
+### 53.2 MON ARBITRAGE : le premier pas propose est LOCAL a la session
+
+L'analyse propose, comme plus petit pas verifiable : ajouter un `task_id` a
+`nexus_batch`, une `Map tachesActives` dans `server.js`, et un outil
+`nexus_task_status` qui la lit.
+
+**Cela ne marcherait pas ici.** Notre pont MCP est lance **par session** :
+une Map dans son processus est locale a cette session. `nexus_task_status`
+ne renseignerait donc que sur des taches que l'orchestrateur connait deja,
+et resterait muet sur celles des autres — c'est-a-dire precisement le cas ou
+A2A servirait.
+
+L'analyse n'avait pas cette information : elle lisait `server.js`, qui ne dit
+pas comment il est lance. *L'analyse est le signal, jamais la preuve.*
+
+### 53.3 LE MANQUE REEL, prouve par un incident de ce jour
+
+Le manque n'est pas le suivi de tache dans une session. C'est **l'identite et
+le statut d'une affirmation entre sessions**.
+
+Mesure vecue aujourd'hui : j'ai transmis a une instance voisine une
+affirmation — « cote local, ne rien ouvrir, la borne est physique » — qu'elle
+a **relayee**. Elle etait FAUSSE. J'ai du envoyer une correction, qui
+**s'ajoute** au fil au lieu de **remplacer** l'affirmation d'origine. Rien,
+dans ces messages, ne porte :
+
+* une identite d'affirmation, pour qu'une correction designe ce qu'elle
+  corrige ;
+* un statut — avancee, confirmee, retiree — pour qu'un lecteur tardif sache
+  laquelle des deux fait foi ;
+* la mesure qui la fonde, pour qu'elle soit rejouable.
+
+C'est exactement le role que joue `A2ATaskInfo` pour une tache, transpose a
+une AFFIRMATION. Et c'est ce que le fil libre ne peut pas offrir.
+
+### 53.4 Le risque, et il decide du perimetre
+
+L'analyse le nomme justement : A2A etablit un **canal persistant** entre
+agents. Aujourd'hui, chaque appel du pont est une decision explicite de
+l'orchestrateur. Un canal automatise ferait transiter des donnees d'un plan
+a l'autre **sans decision par message** — ce que §64 et §108 interdisent.
+
+Donc : emprunter la FORME — identite, statut, mesure jointe — et **non** le
+canal. C'est la regle du depot appliquee telle quelle : on emprunte une idee,
+on ne se subordonne pas a une implementation.
+
+### 53.5 Les pieges du code, releves avant tout emprunt
+
+Delegue en parallele, et chaque trouvaille est nommee sur un symbole reel :
+
+* `A2AManager` — **singleton** centralisant toute l'infrastructure : etat
+  global, mecanisme non isolable ni testable.
+* `SimpleCredentialService` — un seul identifiant par schema, **sans
+  rotation ni isolation** : service de demonstration, dangereux en production.
+* `A2AMessagePump` — si son demarrage ou son nettoyage echoue, **le contexte
+  synchrone ne voit rien** : l'echec passe inapercu.
+* `A2AExecutor` — pont synchrone vers asynchrone qui **suppose que le pair
+  repond**, et fait pendre l'appelant sinon.
+
+Les quatre sont a proscrire tels quels. Le troisieme et le quatrieme sont des
+`fail-open` et un `pendage silencieux` — deux familles que ce depot a deja
+payees.
+
+### 53.6 L'analyse complete, telle que rendue
+
+#### a2a_risque — ollama_chat/kimi-k3
+- **A2AManager** (classe A2AManager) — piège (A) : singleton déclaré qui centralise l'initialisation et le nettoyage de toute l'infrastructure A2A, donc état global partagé rendant le mécanisme non isolable et intestable.
+- **SimpleCredentialService** (classe SimpleCredentialService) — piège (B) : ne stocke qu'un seul credential par scheme, service de démonstration sans rotation ni isolation des secrets, dangereux à porter en production.
+- **A2AMessagePump** (classe A2AMessagePump) — piège (C) : pompe qui fait tourner la communication async pour un contexte sync, donc si son démarrage, son arrêt ou son nettoyage échoue, le contexte synchrone ne voit rien et l'échec passe inaperçu.
+- **A2AExecutor** (classe A2AExecutor) — piège (D) : pont sync-vers-async qui bloque l'appelant synchrone sur des opérations réseau asynchrones, donc suppose implicitement que le pair répond et le fait pendre sinon.
+
+#### a2a_apport — ollama_chat/qwen3.5:397b
+(A) **Différence STRUCTURELLE entre le modèle MCP et le modèle A2A :**
+
+*   **MCP (`server.js`) :** Architecture **Orchestrateur → Outils**. Un agent central (orchestrateur) invoque des fonctions exposées (`nexus_ask`, `nexus_route`, etc.) via un protocole JSON-RPC (stdin/stdout). Ce qui est transporté : des **arguments d'appel** et des **résultats de fonction** (texte ou erreur). La relation est hiérarchique et synchrone (requête/réponse).
+*   **A2A (`scratch_a2a.md`) :** Architecture **Agent ↔ Agent** (ou Client/Serveur pair). Des composants comme `A2AClient` et `A2AMessagePump` gèrent des échanges de **messages structurés** liés à un état persistant (`A2ATaskInfo`). Ce qui est transporté : des **messages de protocole** et des **métadonnées de tâche**. La relation est distribuée et asynchrone (cycle de vie de tâche).
+
+---
+
+(B) **Mécanismes que A2A apporte et que le pont MCP joint N'A PAS :**
+
+| Nom exact (scratch_a2a.md) | À quoi il sert |
+|---|---|
+| `A2ATaskInfo` | Maintient l'état et le cycle de vie d'une tâche active (suivi de progression/statut). |
+| `SimpleCredentialService` | Stocke et gère les identifiants/négociations d'identité par schéma (carte d'agent). |
+| `A2AMessagePump` | Gère la file de messages asynchrone structurée entre agents (protocole formel). |
+| `A2AManager` | Orchestre le cycle de vie des clients et de l'infrastructure A2A (gestion centrale). |
+| `A2AExecutor` | Gère l'exécution des opérations et le pont entre contexte synchrone et asynchrone. |
+
+---
+
+(C) **Parmi ces mécanismes, lesquels résoudraient un problème RÉEL de cette plateforme telle qu'elle est ?**
+
+| Mécanisme | Justification par ce que je vois dans `server.js` |
+|---|---|
+| `A2ATaskInfo` | **RÉSOUT UN PROBLÈME.** `server.js` expose des outils comme `nexus_batch`, mais la plateforme est décrite comme ayant « pas de cycle de vie de tache ». Ce mécanisme permettrait de suivre l'état d'un batch au-delà de la réponse JSON-RPC immédiate. |
+| `SimpleCredentialService` | **RÉSOUT UN PROBLÈME.** `server.js` agit comme pont pour un orchestrateur mais la plateforme a « pas d'identite negociee » ni « carte d'agent ». Ce mécanisme permettrait d'identifier l'agent émetteur avant de traiter une demande. |
+| `A2AMessagePump` | **RÉSOUT UN PROBLÈME.** `server.js` gère des appels d'outils, mais les sessions d'agents s'échangent des messages « en texte libre... sans protocole formel ». Ce mécanisme structurerait ces échanges machine-to-machine. |
+| `A2AManager` | **N'APPORTE RIEN ICI.** `server.js` est un service unique (« pont MCP ») qui gère déjà son propre cycle de vie via le processus Node.js ; un manager d'infrastructure externe est redondant. |
+| `A2AExecutor` | **N'APPORTE RIEN ICI.** `server.js` est nativement asynchrone (Node.js) et exécute les outils directement ; un pont d'exécution sync/async n'est pas nécessaire. |
+
+---
+
+(D) **Quel serait le PREMIER pas d'implementation, le plus petit qui apporte quelque chose de verifiable ?**
+
+1.  **Étape 1 :** Dans `server.js`, modifier le `inputSchema` de l'outil `nexus_batch` pour ajouter un champ optionnel `task_id` (string).
+2.  **Étape 2 :** Dans `server.js`, créer une Map globale `tachesActives` et y enregistrer le statut `EN_COURS` lors de la réception d'une requête `nexus_batch` contenant un `task_id`.
+3.  **Étape 3 :** Dans `server.js`, ajouter un nouvel outil `nexus_task_status` qui lit la Map `tachesActives` et retourne le statut associé au `task_id` fourni.
+
+**Fichier à toucher :** `server.js`
+
+---
+
+(E) **Quel est le principal RISQUE d'adopter A2A ici ?**
+
+Le risque majeur est la violation de la règle stricte : **« aucune donnee ne doit franchir une frontiere de fournisseur sans decision explicite »**.
+
+Dans `server.js`, chaque appel d'outil (`nexus_ask`, etc.) est une décision explicite de l'orchestrateur. A2A, via `A2AMessagePump` et `A2AClient`, risque d'établir un **canal de communication persistant** entre agents. Si ce canal est automatisé, des données pourraient transiter d'un fournisseur à un autre (ex: local vers cloud) via les messages A2A sans que l'orchestrateur ne prenne une décision explicite **pour chaque message**, contournant ainsi les garde-fous actuels du pont MCP.
