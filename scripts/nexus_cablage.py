@@ -282,7 +282,8 @@ def classer(cible: str, textes: dict) -> tuple:
         if par_le_lanceur:
             return "cable", par_le_lanceur[:2]
     scripts = [r for r in citants
-               if r.lower().endswith((".py", ".ps1"))
+               # mesure: ajout de .js pour permettre a server.js d appeler nexus_verrou_tenir.py
+               if r.lower().endswith((".py", ".ps1", ".js"))
                and "test" not in r.lower()
                and invoque(nom, textes[r])]
     if scripts:

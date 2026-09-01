@@ -8164,3 +8164,134 @@ regression meme quand elle vient du dernier correctif.
 | la boussole | `nexus_boussole` existe, 296 lignes, appele **que par les tests** |
 | la recuperation des sujets ouverts | `nexus_sujets` existe, 633 lignes, hors du flux ; la reprise cache 292 sujets sur 248 comptes |
 | les rituels complets | le rituel porte 10 controles ; la boussole et les sujets n y sont pas |
+
+---
+
+## 76. LE MCP PREND LE VERROU — et la seule sauvegarde etait bloquee depuis trois fois
+
+### 76.1 LE SUJET EN TETE DU COCKPIT EST FERME, PAR MESURE
+
+Ouvert au §70.2, repris a chaque revue depuis : douze outils MCP
+atteignaient le banc sans jamais prendre `AURUM_MACHINE_BANC`, alors que
+trois depots partagent la machine. Le cout mesure d'une eviction de poids
+est de 177 s pour 20 Go.
+
+**La voie tranchee.** Le verrou est un mutex Windows nomme, cote Python ; le
+pont est en Node. Plutot qu'une reimplementation — donc deux verrous qui ne
+se voient pas, ce qui serait pire que rien — un TENEUR :
+`scripts/nexus_verrou_tenir.py` prend le mutex, annonce `PRIS`, puis bloque
+sur son stdin. Le pont le lance, attend l'annonce, travaille, ferme le tube.
+
+> Si le pont meurt, le tube se ferme et le **noyau** relache. Aucun chemin,
+> meme anormal, ne laisse un verrou derriere lui. Verifie par `kill -9` : le
+> teneur suivant obtient le verrou.
+
+### 76.2 LES TROIS EPREUVES, sur le pont REEL lance en sous-processus
+
+| epreuve | mesure |
+| --- | --- |
+| **forward** — un outil lourd prend le verrou | `nexus_ask`, attente **218 ms** |
+| **reverse** — un tiers tient : l'outil lourd ATTEND | attente **6001 ms**, puis aboutit |
+| **fuite** — un outil leger n'est PAS serialise | `nexus_models`, **0,1 s** malgre le verrou tenu |
+
+Les 6001 ms sont exactement la duree tenue par le tiers, pas un chiffre
+plausible. Le reverse est le seul qui distingue un verrou d'un commentaire :
+sans lui, un garde qui ne refuse rien se lit comme une protection.
+
+Le troisieme point n'est pas un detail de confort. Serialiser
+`nexus_models` — une simple lecture de `/v1/models` — ferait payer a une
+consultation le prix d'une inference lourde en cours. La liste
+`OUTILS_LOURDS` porte donc huit noms, pas douze.
+
+### 76.3 LE DEFAUT QUE SEULE L'EXECUTION POUVAIT MONTRER
+
+`verrou()` imprime son diagnostic sur **STDOUT** — le canal du protocole.
+
+```
+stdout[0] = '  verrou machine [banc] OBTENU (ep) — obtenu'
+stdout[1] = 'PRIS'
+```
+
+Le pont lit la premiere ligne, n'y trouve pas `PRIS`, et attend 900 s. C'est
+la classe exacte de l'attente indiscernable d'un gel, corrigee le matin meme
+ailleurs dans ce depot — et invisible a la lecture des deux fichiers, qui
+sont corrects chacun de son cote. Remede : `bavard=False`, parce que le
+canal du protocole ne porte que le protocole.
+
+### 76.4 UN PATCH REFUSE, ET UN FAUX POSITIF ECARTE
+
+**Refuse** : le premier rendu inserait la nouvelle `callTool` a l'INTERIEUR
+du corps de `callToolInterne`, et referencait `rejet` avant sa declaration
+— zone morte temporelle. Renvoye avec la contrainte de forme, en deux
+patches distincts plutot qu'un.
+
+**Ecarte avant de corriger** : `if not v` ressemblait a un fail-open sur un
+objet toujours vrai. Verifie dans le code reel — `Verrou.__bool__` est
+defini et rend `obtenu`. *L'analyse est un signal, jamais une preuve*, et
+cette fois la regle a evite une correction inutile plutot qu'un defaut.
+
+### 76.5 LA SEULE SAUVEGARDE ETAIT BLOQUEE — et le cliquet mordait a faux
+
+Deux gardes se sont mis en travers de la publication, tous deux corrects, et
+tous deux fautifs par un cote que seul l'usage revele.
+
+**`STATE.md`.** `NexusTraque` le regenere toutes les dix minutes, git le
+suivait : l'arbre etait donc sale en permanence, et la vitrine refuse un
+arbre sale. Constate **trois fois**. Or la vitrine est la SEULE sauvegarde de
+secours du projet — entre deux mecanismes corrects, celui qui porte la
+sauvegarde tranche. Meme arbitrage que `PROGRESS.MD` : un etat derive ne se
+versionne pas.
+
+**Le cliquet de cablage etait aveugle au JavaScript.** Il n'acceptait un
+appelant que si son nom finissait par `.py` ou `.ps1`. Le pont MCP est en
+Node et lance des scripts Python par `spawn` : `nexus_verrou_tenir.py`,
+reellement cable, etait declare « prouve seul ».
+
+> **Le cliquet reclamait de cabler ce qui l'etait, sur la foi de sa propre
+> cecite.** Meme classe que le defaut du 30 aout, pris a l'envers : cette
+> fois-la il comptait une mention en commentaire pour un appel ; cette
+> fois-ci il ne comptait pas un appel reel.
+
+Contre-epreuve jouee, et c'est elle le livrable :
+
+```
+invoque() sur une mention en commentaire JS : False
+invoque() sur un spawn reel                 : True
+```
+
+Elargir la liste sans cette contre-epreuve aurait pu rendre le cliquet
+complaisant — le sujet du 30 aout exactement.
+
+### 76.6 TROIS FAIL-OPEN FERMES, trois familles distinctes
+
+| ou | ce qui se lisait comme un succes |
+| --- | --- |
+| `nexus_boussole` | `return 0` sur **0 fichier indexe** : un index vide se lisait comme un index a jour |
+| `nexus_verbatim` | `except Exception: return ""` sans un mot. Le retour vide est GARDE — perdre la trace vaut mieux que perdre le travail — mais l'echec est desormais dit |
+| `purger(jours<1)` | un usage invalide ne disait rien sur stderr |
+
+### 76.7 CE QUE L'ETAT REEL DIT DE L'OBJECTIF — A2A n'existe pas
+
+Verifie, plutot que suppose : **aucune ligne de A2A dans le depot.** Le
+protocole n'est nomme que dans le contrat, au futur. Les trois sessions
+communiquent aujourd'hui par les tubes nommes de Claude Code — un canal
+ad hoc, hors norme, et non par A2A.
+
+C'est l'ecart reel entre l'objectif et l'etat, et il vaut mieux ecrit que
+suppose fait.
+
+### 76.8 SUJETS OUVERTS — remplace §75.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **A2A n'existe pas — zero ligne** | §76.7 | ordre de l'operateur : APRES la stabilisation du MCP |
+| **La chaine de delegation est conduite A LA MAIN** | aveu | un `lot.json` ecrit au scratchpad a chaque tour : c'est le bricolage interdit |
+| La journalisation du pont — `attenteMs` mesure et jamais dit | ordre operateur | **partiellement ferme** : le verrou journalise son attente |
+| Tout nom d'API non verifiable est un point d'invention | mesure `ea-mt5`, 8 essais | 5 fois sur 6 echecs : modules, cles, colonnes, signatures inventes |
+| L'attente du verrou n'est pas annoncee dans `nexus_avec_verrou` | §75.3 UN | trouve par audit tiers, non corrige |
+| `getmtime` au lieu de la date de creation | §75.3 TROIS | question voisine dans la purge |
+| Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie de production |
+| Un verdict de mesure ne porte pas son horodatage | §74.5 | une photo n'est pas fausse, elle est datee |
+| Une tache planifiee echoue sans temoin | §73.3 | deux taches concernees |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
+| Les gros fichiers echappent a l'audit — 3561, 1927, 1667 lignes | §75.2 | decoupage a faire |
