@@ -5422,4 +5422,51 @@ jour, dans le meme fichier.**
 Compte tenu ce jour : c'est la neuvieme fois qu'une lecon est appliquee d'un
 cote et pas de l'autre. La classe merite son nom, et elle merite un controle.
 
+### 55.7 CORRIGE — et le premier correctif faisait l'INVERSE
+
+Le banc avait propose une expression reguliere multiligne. **Mesuree** sur la
+commande de trois lignes, plutot que relue :
+
+```
+origine       'python - <<\'PY\'\nx = "voir `f`"\nPY'
+apres regex   'python - <<\'PY\'\nx = "voir `f`"\n'
+```
+
+Elle **conservait le corps** et **supprimait le terminateur** — exactement
+l'inverse du but. Le refus a tort subsistait, et le fichier compilait. Un
+correctif qui compile n'est pas un correctif qui corrige.
+
+Remplace par un parcours **ligne a ligne**, sans expression reguliere
+multiligne : l'ouverture se repere sur une seule ligne, le corps est saute
+jusqu'au delimiteur seul, et un heredoc a delimiteur NON quote reste examine
+puisque le shell y substitue bien.
+
+**Les epreuves**, quatre cas sur le detecteur :
+
+| cas | attendu | obtenu |
+| --- | --- | --- |
+| heredoc QUOTE, grave dans le corps | passe | passe |
+| heredoc NON quote, grave dans le corps | refuse | refuse |
+| grave hors heredoc | refuse | refuse |
+| grave entre guillemets simples | passe | passe |
+
+**Contre-epreuve**, sur une copie du code d'avant : `detecte=True` avant,
+`detecte=False` apres. Et la suite du garde par son harnais : **12 reussis,
+0 echec**, le cas neuf compris.
+
+### 55.8 CE QUI RESTE OUVERT — le controle de la classe elle-meme
+
+Neuf fois en un jour, une lecon a ete appliquee d'un cote et pas de son
+jumeau. Aucun controle ne garde cette classe. Ce qui la fermerait :
+
+* un controle qui, pour deux fonctions **soeurs** d'un meme fichier — meme
+  prefixe de nom, meme role — signale qu'une correction a touche l'une sans
+  toucher l'autre depuis N commits ;
+* ou, plus simple et plus sur : que toute correction de garde s'accompagne
+  d'un cas d'epreuve sur **chacun** des cas declares, ce qui rend l'oubli
+  visible au moment ou il se produit.
+
+Le second est mecanisable et ne demande aucune heuristique. Il n'est pas
+fait.
+
 
