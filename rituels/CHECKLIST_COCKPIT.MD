@@ -5816,7 +5816,7 @@ outre le partage ci-dessus, comme information rendue a l'operateur.
 | maillon | etat |
 | --- | --- |
 | aujourd'hui | **0 incoherence sur 44 entrees** |
-| **sa preuve** | entree `complet=True` avec `historique=[4, 2]` injectee -> `[RATE]`, **code 1** ; registre restaure, 44 modeles intacts -> code 0 |
+| **sa preuve** | deux contradictions injectees, **une par sens** -> `[RATE] _sonde_a : complet=True, historique=[4, 2]` et `[RATE] _sonde_b : complet=False, historique=[2, 4]`, **code 1** ; registre restaure, 44 modeles intacts -> code 0 |
 | l'appelant | `nexus_test.py --only registre` |
 
 ### 59.5 ET LE PARTAGE NE TOTALISAIT PAS — deux fois
@@ -5833,6 +5833,12 @@ outre le partage ci-dessus, comme information rendue a l'operateur.
 Corrige en trois branches **exclusives**. Les nombres totalisent, et ils
 concordent avec la mesure faite a la main — laquelle a servi d'arbitre, comme
 il se doit.
+
+**Et la contre-epreuve a ete REJOUEE apres la fusion des `if`.** Le cliquet
+d'outillage a exige de fusionner deux paires de conditions imbriquees — une
+modification de la LOGIQUE DE DETECTION elle-meme. Une contre-epreuve validee
+avant ce refactor n'aurait rien prouve sur le code d'apres. Elle a donc ete
+rejouee, et cette fois **dans les deux sens** de l'incoherence.
 
 ### 59.6 Etat de la recolte apres sept entrees
 
