@@ -6165,3 +6165,96 @@ motif est un signal d'alarme, jamais un soulagement.** C'est le TOTAL qui
 prouve une absence — 169 aretes enumerees et classees, aucune non attribuee —
 jamais le motif vide.
 
+
+---
+
+## 63. LA GARDE ANTI-FUITE LISAIT LE NOM, PAS LE PLAN — 2026-09-01, 05h
+
+Premier tour apres redemarrage. Le sujet vise etait la troncature perdue par
+le MAP-REDUCE (§52.2) ; un message de la session voisine
+`sovereign-ai-system-8e` l'a fait ceder la place a un P0 de confidentialite.
+
+### 63.1 Ce que le voisin mesurait, et ce qui restait vrai
+
+Il rapportait six modules de `src/security/` sortis vers ollama.com apres une
+bascule `deepseek-coder-33b-local -> gpt-oss-120b-cloud`. Verifie ici : ce
+cas precis etait **deja ferme** par `3d9c34f` (2026-09-01, 03h32), commit
+posterieur a sa mesure.
+
+Mais son diagnostic de fond etait juste, et la breche restait ouverte
+ailleurs. Le correctif filtrait les candidats sur le **suffixe** `-local` du
+nom d'alias. Or `releve-locale` est servi en local — `api_base`
+`http://host.docker.internal:11434` — et ne porte pas ce suffixe.
+
+Mesure, reproduite avant correction :
+
+```
+releve-locale -> ['releve-locale', 'gpt-oss-120b-cloud', 'glm-4.7-flash-local']
+```
+
+> **L'instrument repondait a la question voisine** (§62.5), et cette fois
+> dans une garde de confidentialite : « le nom finit-il par `-local` ? »
+> au lieu de « le plan est-il local ? ».
+
+La garde lit desormais le plan resolu par `/v1/model/info`. Regle de surete :
+**un plan inconnu ne donne aucun repli** — la tache echoue proprement plutot
+que de reussir ailleurs.
+
+### 63.2 LA LECON DU TOUR — l'epreuve est passee ROUGE apres le correctif
+
+`epreuve_fuite_repli.py` simule avec une cle factice. Consequence non prevue :
+`/v1/model/info` repond 401, le cache reste vide, tous les plans valent
+`inconnu`, plus aucun repli n'est propose — et **deux cas sur quatre
+tombaient**, dont `cloud_fallback_to_local`.
+
+Le correctif etait bon ; l'epreuve, elle, mesurait desormais autre chose.
+
+> Un correctif de garde peut **casser l'epreuve qui le protege** sans rien
+> casser dans le produit. Le cache de plans fixe ajoute au test n'est donc pas
+> un agrement : il est la condition pour que l'epreuve continue de poser sa
+> question. Jouer l'epreuve APRES le correctif est ce qui l'a montre.
+
+### 63.3 Les trois epreuves, et la contre-epreuve
+
+| epreuve | resultat |
+| --- | --- |
+| forward | `gpt-oss-120b-cloud -> glm-4.7-flash-local` — le repli autorise survit |
+| reverse | plan inconnu -> candidat unique, echec propre |
+| fuite | `releve-locale` -> aucun candidat cloud |
+
+Contre-epreuve, jouee sur le code d'AVANT :
+
+```
+[RATE] no_cloud_for_local_alias_without_suffix :
+       releve-locale, gpt-oss-120b-cloud, glm-4.7-flash-local
+```
+
+Le cas 5 echoue sur le code defectueux et nomme la fuite. Le controle detecte.
+
+### 63.4 Rendement du banc, mesure sur ce tour
+
+Neuf rendus demandes a `gpt-oss-120b-cloud`, cout zero, 4 a 35 s chacun.
+**Quatre refuses en arbitrage**, et les motifs valent d'etre nommes :
+
+| motif du refus | occurrences |
+| --- | --- |
+| bloc APRES plus court que son AVANT — donc **destructeur** | 2 |
+| nom de variable fabrique (`plan`, local a une autre fonction) | 1 |
+| ancre presente deux fois dans le fichier | 1 |
+| rendu tronque a mi-mot, ou enveloppe dans un bloc markdown | 2 |
+
+Le ratio est celui que le contrat annonce (§0.1.5), et il reste tres
+favorable : quatre patchs ecrits a la main auraient coute davantage que neuf
+delegations dont cinq utilisables.
+
+### 63.5 SUJETS OUVERTS a la sortie de ce tour
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| `mapReduce()` ne remonte pas `tronquee` — patch rendu, non applique | §52.2 | verifie : l'objet rendu n'a pas le champ, mesure sur le code |
+| `epreuve_dire_troncature.py` ecarte EN SILENCE tout outil qui n'appelle pas `chat(` directement | §62.4 | `nexus_context` n'apparait ni en OK ni en RATE ; patch rendu, non applique |
+| `nexus_appliquer.py` n'applique que le PREMIER bloc et se tait sur les autres | trouve a l'usage ce tour | l'appelant lit APPLIQUE et croit son patch complet |
+| Un appel cloud a mis 512 s pour 16,5 s d'appel modele | voisin `ea-mt5` | ~495 s hors appel, indiscernable d'un gel |
+| Les modeles se trompent sur leur propre plan ; l'en-tete, lui, est exact | voisin `ea-mt5` | argument pour imprimer l'en-tete partout, y compris en `--json` |
+| `glm-4.7-flash-local` : reponse VIDE apres 102 s, budget epuise en raisonnement | voisin `sovereign-ai-system-8e` | plancher de `max_tokens` a etudier pour cette famille |
+| `adaptive-router-local` a servi `phi3-mini-local` sur une tache d'arbitrage | voisin `sovereign-ai-system-8e` | `quality 1.0 / cost 0.0` pourtant declare |
