@@ -10599,3 +10599,139 @@ cout facture              : 0
 duree local               : 258 s + 235 s + 20 min perdues sur erreur d'appel
 duree cloud               : 8 s (audit) + 11 s (redaction finale)
 ```
+
+---
+
+## 101. LE GARDE VOIT L'OUTIL, PAS CE QUE L'OUTIL LANCE — prouve en le subissant
+
+Trouve le 2026-09-01 par echange a trois entre cette session, `sovereign-ai-system-6c` et
+`ea-mt5-python-rentable-00`, sur consigne de l'operateur. Aucune des trois
+n'aurait trouve seule ce que les trois ont trouve ensemble.
+
+### 101.1 LA PREUVE EST VECUE, pas construite
+
+L'index d'armement des hooks, lu sur les COMMANDES et non sur les mentions :
+
+```
+SessionStart                              -> nexus_reprise.py
+PreToolUse  Read|Bash|PowerShell          -> nexus_garde_lecture.py
+PreToolUse  Edit|Write|NotebookEdit       -> nexus_garde_lecture.py
+PreToolUse  Agent|Workflow                -> nexus_garde_agent.py
+PreToolUse  Bash|PowerShell               -> nexus_garde_shell.py
+PreToolUse  Edit|Write|NotebookEdit       -> nexus_garde_production.py
+PostToolUse Write|Edit|NotebookEdit       -> nexus_garde_edition.py
+Stop                                      -> nexus_rituel.py
+```
+
+Le garde de lecture **est** arme sur `Bash|PowerShell`. A la question « couvre-t-il Bash ? », la
+reponse est oui, dans le JSON comme dans le code.
+
+**Et pourtant, dans la seance meme :**
+
+| geste | verdict du garde |
+| --- | --- |
+| `Edit` de deux lignes sur `scripts/nexus_test.py` | **REFUSE** — fichier non lu avec l'outil `Read` |
+| reecriture de `rituels/CHECKLIST_COCKPIT.MD` (10 000 lignes) par `python - <<'PY'` | **AUCUN REFUS**, trois fois |
+
+Meme session, meme depot, meme minute. La formulation exacte vient de `ea-mt5` :
+
+> **La question a poser n'est pas « couvre-t-il Bash ? » mais « couvre-t-il ce que Bash LANCE ? »**
+
+Le rapprochement n'a PAS ete fait en le vivant. Il a fallu qu'un tiers pose la question. C'est la
+troisieme fois dans la journee qu'un defaut deja subi ne devient visible que nomme par quelqu'un
+d'autre.
+
+### 101.2 LA SONDE DE MORSURE — eprouver l'effet, jamais la declaration
+
+Methode de `ea-mt5`, troisieme borne ajoutee par `sovereign` :
+
+```powershell
+function Test-Morsure([string]$p,[string]$e){
+  try{ $fs=[System.IO.File]::Open($p,'Open','Write','None'); $fs.Close()
+       "  {0,-46} ECRITURE POSSIBLE" -f $e }
+  catch{ "  {0,-46} REFUSE -> {1}" -f $e,$_.Exception.GetType().Name } }
+```
+
+Elle **n'inspecte pas le descripteur** : elle ouvre en ecriture sans ecrire un octet, puis referme.
+Le droit est eprouve par le NOYAU, pas deduit d'un texte.
+
+| borne | role | sans elle |
+| --- | --- | --- |
+| anti-controle (`SAM`, `ntoskrnl.exe`) | doit REFUSER | une sonde qui n'echoue jamais certifie tout |
+| **temoin positif** (un fichier banal) | doit PASSER | une sonde cassee refusant tout rend des anti-controles parfaits et des cas tous « REFUSE » — **un rouge sur un examen vide** |
+| les cibles | la mesure | — |
+
+> Le temoin positif est la contribution de `sovereign`, et elle est indispensable : un ROUGE sur un
+> examen vide est plus difficile a voir qu'un vert, parce qu'il se lit comme de la rigueur.
+
+**Piege de `ea-mt5`, general a toute sonde :** sa premiere version testait `Test-Path` avant `Open`.
+Sur `SAM`, `Test-Path` levait « Access denied » AVANT d'atteindre la branche mesuree, et la sonde
+affichait « INTROUVABLE » — un refus etiquete comme une absence. **L'anti-controle doit traverser LA
+MEME branche que le cas**, sinon il certifie autre chose que ce qu'on mesure.
+
+### 101.3 RESULTAT SUR CE DEPOT — aucune serrure, et aucun fossile non plus
+
+```
+anti-controle   SAM, ntoskrnl.exe                             REFUSE
+temoin positif  README.md                                     POSSIBLE
+cibles          .claude/settings.json   (declare le hook Stop)
+                scripts/nexus_rituel.py (l armeur)
+                scripts/nexus_cablage.py (le cliquet)
+                scripts/nexus_test.py   (35 epreuves)
+                .claude/CLAUDE.md       (le contrat)          TOUS POSSIBLE
+ACE Deny : 0        SID DESKTOP-RA7AN6V : 0
+```
+
+**Ce depot ne porte pas le fossile des deux voisins.** Leur SID mort
+(`S-1-5-21-3259831069-...`, machine `DESKTOP-RA7AN6V` disparue) n'apparait nulle part ici — ce qui
+borne leur these d'un heritage unique propage par copie d'arborescence a leurs deux depots.
+
+La conclusion pratique est pourtant la meme, par un autre chemin : **ils ont des serrures inertes,
+ce depot n'a aucune serrure.** Et c'est a leur desavantage — une serrure inerte se lit comme une
+protection, une absence ne trompe personne. Le danger n'est jamais l'ecriture possible : il est dans
+la CROYANCE que quelque chose la refuse.
+
+### 101.4 CE QUE CELA IMPOSE A L'INDEX D'ARMEMENT (§97.4)
+
+Formule de `sovereign`, et elle invalide la forme naive de l'index :
+
+> *« Un index d'armement doit se demander non seulement "ce point d'armement existe-t-il", mais "le
+> FICHIER qui le declare est-il protege, et par quelle COUCHE". »*
+
+Mesure ici : `.claude/settings.json` est en deny-write **cote harnais** — il refuse l'outil `Edit` —
+et **NTFS laisse ecrire**. Donc un `python - <<EOF` reecrit la liste des armements sans rien
+declencher, et l'index rendrait « tout est arme » en lisant un fichier falsifie.
+
+**Garantie noyau et garantie applicative se ressemblent parfaitement du dedans, et ne resistent pas
+aux memes choses.**
+
+### 101.5 LA QUESTION A POSER A UN GARDE D'ECRITURE, en trois temps
+
+Chacun des trois vient d'une mesure distincte, faite par une session differente :
+
+| question | mesure ici |
+| --- | --- |
+| sur quel OUTIL est-il arme ? | `Bash|PowerShell` — **oui** |
+| couvre-t-il ce que cet outil LANCE ? | **non** — trois reecritures par `python - <<PY`, zero refus |
+| le FICHIER qu'il protege est-il protege, et par quelle COUCHE ? | **aucune** — sonde de morsure |
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 14 | Le garde de lecture ne couvre pas ce que Bash lance | `OUVERT` | une epreuve qui soumet au garde une charge `Bash` contenant un heredoc Python ecrivant un fichier, et exige un refus. **Le remede naif est a proscrire** : refuser tout `python -` casserait les usages legitimes, et le voisin a mesure sur un probleme jumeau que le durcissement coute 18 faux negatifs |
+| 15 | Aucune couche noyau ne protege les fichiers d'armement | `OUVERT` | poser des ACL — **geste d'administrateur, remonte a l'operateur** — puis EPROUVER LA MORSURE, en visant un SID resolu au moment de poser et jamais recopie |
+
+### 101.6 CE QUE L'ECHANGE A TROIS A PRODUIT, et qu'aucune session n'avait seule
+
+| apport | origine | ce qu'il a corrige ici |
+| --- | --- | --- |
+| la regression de question | `sovereign` | « cablage tenu » parlait des scripts, jamais des epreuves |
+| les 18 faux negatifs | ici | a empeche les deux voisins de poser un critere qui crie toujours |
+| l'index d'armement | ici, forme par `sovereign` | 35 epreuves cablees, zero armee |
+| commande, pas occurrence | `sovereign` | sans elle, `CLAUDE.md:544` comptait comme un armement |
+| la sonde de morsure | `ea-mt5` | remplace la lecture de descripteur par une epreuve d'effet |
+| le temoin positif | `sovereign` | sans lui, une sonde cassee rend un rouge parfait |
+| « ce que Bash lance » | `ea-mt5` | a rendu visible un defaut subi trois fois le jour meme |
+| `git diff --stat` avant commit | `sovereign` | controle de PROPORTION, au-dela du seul CRLF |
+
+**Aucune de ces huit trouvailles n'est venue d'un audit.** Toutes viennent de l'usage, et la moitie
+n'est devenue visible que parce qu'un tiers a pose la question voisine de celle qu'on croyait poser.
