@@ -8726,3 +8726,124 @@ syntaxiquement valide, empreinte changee, `node --check` au vert.
 | Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
 | `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 80. LA CAUSE EST UNE REINITIALISATION DE LIAISON — et elle s'etait annoncee
+
+### 80.1 UN SEUL LIEN, DEUX VOLUMES
+
+L'operateur confirme que **les deux volumes** sont tombes — celui de travail
+et le miroir. Aucune hypothese de « deux disques defaillants a la meme
+seconde » ne tient : la coincidence serait invraisemblable. Le journal
+systeme donne la cause commune.
+
+```
+11:35:01   disk       153   E/S REESSAYEE sur le disque 1      <- 15 s avant
+11:35:16   UASPStor   129   REINITIALISATION emise au peripherique \Device\RaidPort3
+11:35:16   disk       153   E/S reessayee                      (x5)
+11:35:17   Ntfs        50   ecriture differee ECHOUEE          (55 au total)
+11:35:17   disk        51   erreur sur \Device\Harddisk1\DR5, en PAGINATION
+11:35:17   Ntfs       140   n'a pas pu vider le journal des transactions
+11:35:21   disk        11   erreur du CONTROLEUR sur \Device\Harddisk2\DR6
+```
+
+`UASPStor` est le pilote **USB Attached SCSI**, le mode rapide des boitiers
+USB 3.0. L'evenement 129 est une reinitialisation de la LIAISON, et elle
+precede d'une seconde la premiere ecriture perdue. Les quatre controleurs
+hotes sont des **AMD USB 3.10 eXtensible**, tous en `OK` a present : leur
+etat actuel ne dit rien, c'est la liaison qui a lache sous charge.
+
+> **Deux sauvegardes sur le meme BUS ne sont pas deux sauvegardes.** La these
+> de `sovereign` portait sur l'hote ; la mesure la resserre d'un cran. Le
+> volume de travail et son miroir partageaient le lien UAS qui a lache. Seul
+> le distant etait sur un autre chemin physique.
+
+### 80.2 LE SIGNAL EXISTAIT, ET PERSONNE NE L'ECOUTAIT
+
+`disk 153` a 11:35:01 : une E/S reessayee, **quinze secondes avant** la
+perte. C'est le seul fait exploitable de la journee sur ce plan.
+
+Il est consigne comme **CONSTAT, pas comme outil** :
+
+> *La reinitialisation de liaison s'annonce, et rien ne l'ecoute.*
+
+**Pourquoi pas un outil** — et les trois raisons viennent de l'audit que
+`sovereign` a fait de ma proposition, une heure apres que j'aie corrige la
+sienne :
+
+| son objection | verdict |
+| --- | --- |
+| « pousser » LIT les objets d'un volume deja incoherent | **retenue, et decisive** |
+| quinze secondes est un echantillon de UN | retenue — classe 2 |
+| le moniteur vivrait sur le volume qu'il surveille | retenue, sans reponse |
+
+La premiere corrige un remede qui aurait fait des degats : `git push` a cet
+instant lit un depot que les 55 `Ntfs 50` et le `Ntfs 140` declarent
+incoherent. **On transformerait la seule sauvegarde saine en sauvegarde
+suspecte.** La reaction sure est de FIGER, jamais d'agir.
+
+> Le cycle a trois temps a tourne **entre sessions** plutot que dans une
+> seule, et dans les deux sens le meme jour. C'est la premiere fois ici.
+
+### 80.3 POUSSE DEVIENT PROUVE — la verification forte du distant
+
+`ls-remote` prouve qu'une REFERENCE pointe quelque part. Il ne prouve ni que
+les objets sont complets ni que le depot est clonable. Le §17 du contrat de
+`sovereign` distingue les deux, et la distinction a paye.
+
+Clone reel, mesure, puis **supprime** — 1,5 Go, rien de permanent ecrit :
+
+```
+git clone --branch v1.104        code 0
+git rev-parse HEAD               f3a2d5232c7e133d15f56778edd3713d07bf5679
+git log --oneline | wc -l        392 commits
+git fsck --no-progress           AUCUNE sortie — aucun objet manquant ni casse
+CLAUDE.md:1127                   « # 30. LOI 1, EN DUR : QUI CORRIGE NE PEUT PLUS AUDITER »
+```
+
+**ET LE POINT QUE `ls-remote` N'AURAIT JAMAIS MONTRE :**
+
+```
+fatal: unable to checkout working tree
+error: unable to create file _REFERENCE_PYTHON_LIBS/.../CloughTocher2DInterpolator.json:
+       Filename too long
+
+chemin le plus long de l'arbre   152 caracteres
+destination du clone             124 caracteres
+total                            276  >  260 = MAX_PATH de Windows
+```
+
+`git status` rendait **33 465** fichiers non materialises. Les objets etaient
+tous la ; la copie de travail, non.
+
+> Les quatre fichiers demandes sont apparus **parce que leurs chemins sont
+> courts**. Un controle porte sur eux seuls aurait rendu un vert franc sur un
+> arbre incomplet a 33 465 fichiers. **Un clone superficiellement reussi
+> trompe mieux qu'un clone rate.**
+
+Remede pour la reprise : cloner sur un chemin COURT, ou poser
+`git config --global core.longpaths true` AVANT.
+
+### 80.4 SUJETS OUVERTS — remplace §79.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **La reinitialisation s'annonce et rien ne l'ecoute** | §80.2 | CONSTAT ; l'outil n'a pas d'endroit ou vivre |
+| **`D:` ne s'enumere pas — deux depots a terre** | §79.3 | materiel ; hors de portee d'un agent |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| Un clone sur chemin long rend un arbre incomplet | §80.3 | 33 465 fichiers, avertissement facile a manquer |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| Un alias invalide echoue au SERVEUR | demande `sovereign` | validation cliente en 0 s |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Recensement gardes non appeles / gardes inexistants | §78.4 | classes 4 et 5 |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| J'ecris moi-meme le fichier qui arme mes gardes | §77.3 | demande une main tierce |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
