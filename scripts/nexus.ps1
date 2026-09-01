@@ -247,6 +247,10 @@ switch ($Commande.ToLower()) {
         & python (Join-Path $PSScriptRoot 'nexus_sujets.py') @Reste
         Exit-Avec $LASTEXITCODE
     }
+    'appliquer' {
+        & python (Join-Path $PSScriptRoot 'nexus_appliquer.py') @Reste
+        Exit-Avec $LASTEXITCODE
+    }
 
     'maj-modeles' {
         # Rafraichit les modeles Ollama DEJA INSTALLES. Le depot savait

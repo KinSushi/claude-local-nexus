@@ -6037,3 +6037,89 @@ eux-memes : leur verification des aretes etait un filtre par motif, la mienne
 un comptage **structure qui totalise** — 169 aretes classees, aucune non
 attribuee. *C'est le total qui prouve l'absence, pas le motif vide.*
 
+---
+
+## 62. REPRISE APRES REDEMARRAGE — etat au 2026-09-01, 04h
+
+Section ecrite **pour la session suivante**, parce qu'un redemarrage de Claude
+Code efface la boucle et le bac a sable. Elle se relit au demarrage et se
+remplace au prochain arret.
+
+### 62.1 Ce qui NE survit PAS, et qu'il faut refaire
+
+| perdu au redemarrage | remede |
+| --- | --- |
+| la boucle `ScheduleWakeup` | **la rearmer au premier tour**, ou relancer `/loop` |
+| le bac a sable de la session | rien d'utile n'y reste : le seul outil qui comptait est promu (§62.2) |
+| le fil des instances voisines | leurs messages arrivent au demarrage de LEUR session, pas de la mienne |
+
+Ce qui survit, et qu'il est inutile de refaire : le depot publie, les mesures
+de `.nexus/`, les sauvegardes, et **toutes** les sections de ce cockpit.
+
+### 62.2 CE QUI A ETE SAUVE DU BAC A SABLE
+
+`scripts/nexus_appliquer.py` — l'outil qui a pose une quarantaine de patchs
+dans la session et qui en a **refuse cinq** parce que le bloc a remplacer ne
+correspondait pas aux octets reels du fichier. C'est lui qui a empeche des
+fichiers d'etre mutiles.
+
+Il vivait dans un repertoire temporaire. Promu, dote d'un echec propre — code
+2 et mode d'emploi au lieu d'une trace brute — et cable au point d'entree
+sous `nexus appliquer`.
+
+**Les 239 autres scripts du bac a sable sont jetables** : des consignes, des
+sondes ponctuelles et des copies de securite d'avant patch.
+
+### 62.3 CE QUI EST EN VOL, par ordre d'importance
+
+1. **La recolte des 34 sujets** (§52) — huit entrees examinees. Le rythme
+   mesure : *une entree sur trois designe un defaut reel a l'endroit qu'elle
+   nomme.* Les autres sont perimees ou mal ciblees, et **trois des quatre
+   perimees ont tout de meme mene a un defaut reel a cote**.
+2. **La classe que le P0 vient de nommer** (§61) — *une protection qui depend
+   d'une option de l'appelant n'est pas une protection.* Chercher les autres :
+   quels gardes de ce depot sont conditionnes a un drapeau plutot que
+   structurels ?
+3. **Une decision qui appartient a l'operateur** (§59.3) — **13 des 18
+   modeles du pool** y sont entres sans confirmation. Le champ `stable` existe
+   pour la rendre lisible ; `eligible_au_pool` ne le lit pas. Le chiffre est
+   pose, la politique ne l'est pas.
+4. **39 commits de code sur 79 sans auteur declare** (§57.2) — mesure, jamais
+   juge.
+
+### 62.4 Les six controles neufs de la session, tous cables et prouves
+
+| epreuve | ce qu'elle refuse |
+| --- | --- |
+| `--only orphelines` | une fonction de module que personne ne reference |
+| `--only couverture` | un detecteur de garde non mene a ses DEUX issues |
+| `--only troncature` | un outil du pont qui appelle le modele sans dire la troncature |
+| `--only verdicts` | un controle du rituel qui ne peut pas rendre son verdict rouge |
+| `--only registre` | une incoherence interne du registre des epreuves |
+| `--only rassurant` | un verdict rassurant qui tait son incertitude |
+| `--only fuite` | **un repli `local -> cloud`** — l'epreuve la plus importante |
+
+Chacune porte sa contre-epreuve, jouee sur le code d'AVANT correction. Deux
+ont du etre **rejouees** apres un refactor exige par le cliquet d'outillage :
+*une preuve validee avant un refactor ne prouve rien sur le code d'apres.*
+
+### 62.5 La lecon la plus chere de la session
+
+Dite par une instance voisine, et elle vaut mieux que ma formulation :
+
+> **« L'instrument qui repond a la question VOISINE. »** Un chiffre exact,
+> rapide, sans erreur — et une conclusion fausse, parce qu'on lui prete un
+> enonce qu'il ne porte pas. Le remede : enoncer la question a laquelle
+> l'instrument repond REELLEMENT, et la comparer **mot pour mot** a celle
+> qu'on voulait poser.
+
+Commise **cinq fois** dans cette seule session, toujours sur mes propres
+mesures : un compteur d'antislashs qui comptait la forme correcte ; un lecteur
+interrogeant un champ inexistant ; un partage dont les nombres ne totalisaient
+pas ; un code de sortie lu a travers un tube, **deux fois**.
+
+Et son corollaire, de la meme source : **un compte bas apres une mesure par
+motif est un signal d'alarme, jamais un soulagement.** C'est le TOTAL qui
+prouve une absence — 169 aretes enumerees et classees, aucune non attribuee —
+jamais le motif vide.
+
