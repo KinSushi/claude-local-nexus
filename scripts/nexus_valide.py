@@ -701,6 +701,13 @@ def main():
             portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
                       if changed_funcs else "diff entier, aucune fonction isolee")
             print("Aucune regression detectee — juge par le banc gratuit (%s)." % portee)
+            # l'incertitude doit se dire SURTOUT sur le verdict rassurant
+            # car c'est celui apres lequel on passe a la suite
+            for ligne in (texte or "").splitlines():
+                if ligne.startswith("[!]"):
+                    print("  %s" % ligne.rstrip())
+            if bascule:
+                print("  (bascule de plan : %s)" % bascule)
             return 0
 
 if __name__ == "__main__":

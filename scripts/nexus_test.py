@@ -1255,7 +1255,7 @@ def main() -> int:
                                  "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
                                  "terminal", "noms", "registre", "atomique", "plan",
                                  "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte", "plafond", "quote", "orphelines", "couverture", "troncature", "verdicts", "registre"],
+                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte", "plafond", "quote", "orphelines", "couverture", "troncature", "verdicts", "registre", "rassurant"],
                         help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
@@ -1352,6 +1352,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_verdicts_rituel.py", "verdicts du rituel")
     if args.only in (None, "registre"):
         jouer_epreuve_python("epreuve_registre_epreuves.py", "coherence du registre")
+    if args.only in (None, "rassurant"):
+        jouer_epreuve_python("epreuve_verdict_rassurant.py", "verdict rassurant")
     if args.only in (None, "releve"):
         test_releve()
 
