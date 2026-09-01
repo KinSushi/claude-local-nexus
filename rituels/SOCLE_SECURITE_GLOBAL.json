@@ -1,10 +1,7 @@
 {
   "_commentaire": "SOCLE DE SECURITE MULTI-PROJET — union des listes de local-llm-docker, sovereign-ai-system et ea-mt5-python-rentable, consolidee le 2026-09-01. A FUSIONNER dans C:\\Users\\dibac\\.claude\\settings.json, cle 'permissions'. Ne PAS remplacer le fichier : y ajouter ces cles. Le niveau global est le seul ou une revision ne diverge pas — trois listes locales recopiees divergent des qu'on en touche une.",
-
-  "_regle_ask_ou_deny": "ea-mt5 : 'reset --hard est reparable PAR LE REFLOG, reflog expire et gc --prune=now DETRUISENT le reflog'. Donc : geste rattrapable -> ask acceptable ; geste qui detruit le reflog ou reecrit l'histoire -> deny, JAMAIS ask. On ne demande pas l'autorisation de supprimer le moyen de revenir en arriere : la reponse arrive au moment ou l'on est le moins dispose a reflechir, et un ask repete finit approuve machinalement.",
-
+  "_regle_ask_ou_deny": "TROIS branches, chacune payee par une mesure. (1) geste RATTRAPABLE par le reflog -> ask acceptable : git reset --hard se repare par git reset --hard HEAD@{1}, et le denier bloquerait un geste de travail courant. (2) geste qui DETRUIT le reflog ou reecrit l'histoire -> deny, JAMAIS ask : on ne demande pas l'autorisation de supprimer le moyen de revenir en arriere, la reponse arrive au moment ou l'on est le moins dispose a reflechir, et un ask repete finit approuve machinalement. git clean entre ici : il supprime des fichiers NON SUIVIS qu'aucun reflog ne rattrape. (3) geste a DOUBLE TRANCHANT, qui detruit ET repare -> ask, avec sa raison ECRITE : git checkout -- <chemin> et git restore sont la seule destruction vraiment irreversible de git (les modifications non commitees n'ont pas de reflog) ET la commande qui a repare l'incident des 28 456 fichiers chez sovereign — git restore --source=HEAD --staged --worktree . Les denier rendrait la reparation impossible le jour ou elle sert.",
   "_epreuve_obligatoire": "Cette liste ne prouve RIEN par sa presence. Mesure du 2026-09-01 : chez sovereign fnmatch annoncait des trous inexistants ; ici la recherche par sous-chaine annoncait une couverture inexistante — rm -rf, git update-ref -d et git filter-branch PASSAIENT tous les trois, rc=0. Eprouver chaque motif par MESURE D'EFFET sur cible inexistante, et REJOUER l'epreuve apres tout changement de mode de permission.",
-
   "permissions": {
     "deny": [
       "Bash(git filter-branch *)",
@@ -21,11 +18,12 @@
       "PowerShell(git reflog expire*)",
       "Bash(git gc --prune=now*)",
       "PowerShell(git gc --prune=now*)",
+      "Bash(git clean *)",
+      "PowerShell(git clean *)",
       "Bash(git push --force*)",
       "PowerShell(git push --force*)",
       "Bash(git push -f *)",
       "PowerShell(git push -f *)",
-
       "Bash(rm -rf *)",
       "Bash(rm -fr *)",
       "Bash(rm -r *)",
@@ -38,7 +36,6 @@
       "PowerShell(Remove-Item -Force *)",
       "PowerShell(rm -r *)",
       "PowerShell(Clear-Content *)",
-
       "Bash(dd *)",
       "Bash(format *)",
       "Bash(diskpart *)",
@@ -48,23 +45,19 @@
       "PowerShell(Initialize-Disk *)",
       "PowerShell(Remove-Partition *)",
       "Bash(* > /dev/sd*)",
-
       "Bash(shutdown *)",
       "PowerShell(Stop-Computer *)",
       "PowerShell(Set-ExecutionPolicy *)",
-
       "Bash(chmod *)",
       "Bash(icacls *)",
       "Bash(takeown *)",
       "PowerShell(icacls *)",
       "PowerShell(takeown *)",
       "PowerShell(Set-Acl *)",
-
       "PowerShell(Invoke-WebRequest * | iex*)",
       "PowerShell(iwr * | iex*)",
       "PowerShell(Invoke-WebRequest * | Invoke-Expression*)",
       "PowerShell(Invoke-RestMethod * | Invoke-Expression*)",
-
       "Read(**/.env)",
       "Read(**/.env.local)",
       "Read(**/.env.production)",
@@ -74,14 +67,19 @@
       "Read(**/id_rsa)",
       "Read(**/id_ed25519)",
       "Read(**/.ssh/**)",
-      "Read(**/.aws/credentials)"
+      "Read(**/.aws/credentials)",
+      "Bash(rmdir *)",
+      "PowerShell(rmdir *)",
+      "Bash(del *)",
+      "PowerShell(del *)",
+      "Bash(erase *)",
+      "PowerShell(erase *)",
+      "Bash(git push --mirror*)",
+      "PowerShell(git push --mirror*)"
     ],
-
     "ask": [
       "Bash(git reset --hard *)",
       "PowerShell(git reset --hard *)",
-      "Bash(git clean *)",
-      "PowerShell(git clean *)",
       "Bash(git push *)",
       "PowerShell(git push *)",
       "Bash(git tag *)",
@@ -90,16 +88,19 @@
       "Bash(docker volume rm *)",
       "PowerShell(docker volume rm *)",
       "Bash(docker system prune *)",
-      "PowerShell(docker system prune *)"
+      "PowerShell(docker system prune *)",
+      "Bash(git checkout -- *)",
+      "PowerShell(git checkout -- *)",
+      "Bash(git restore *)",
+      "PowerShell(git restore *)"
     ]
   },
-
   "_correctif_hook": "Le hook global declare matcher \"Agent\". Le code de nexus_garde_agent.py traite Agent ET Workflow — sa branche _handle_workflow, son OUTILS_JUGES et son message de refus dedie ne sont JAMAIS atteints. Le depot a mesure 460 sous-agents lances par Workflow en une nuit : le garde ecrit pour cet incident precis ne peut pas le voir. Correctif : matcher \"Agent|Task|Workflow\". ATTENTION — cette branche s'executera alors pour la PREMIERE fois en conditions reelles ; un code jamais execute peut etre faux aussi.",
-
   "_ce_que_ce_socle_ne_ferme_pas": [
     "Le heredoc python - <<EOF : declare, non ferme. Le remede naif coute 18 faux negatifs, mesures.",
     "Le depechage d'agent sans worktree : couvert par le hook d'isolation, ecrit et audite UTILISABLE, NON ARME.",
     "Deux sessions sur le meme arbre git : aucune coordination, mesure ce jour — quatre sessions dans .nexus/lectures/ du meme depot.",
     "La fraicheur d'une sauvegarde HORS-DISQUE : aucun controle des trois depots ne la mesure."
-  ]
+  ],
+  "_familles": "1 suppression (dont rm NU, trou commun aux trois) · 2 le filet git · 3 git destructif · 4 disque · 5 droits · 6 systeme · 7 telechargement-execution (apport sovereign) · 8 fuite de secrets (apport local-llm-docker, seules regles dont l'effet soit deja eprouve) · 9 double tranchant (apport sovereign, tranche par ea-mt5)"
 }
