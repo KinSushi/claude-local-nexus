@@ -315,6 +315,38 @@ def outillage_tenu(racine) -> tuple[str, str]:
         return IGNORE, str(exc).splitlines()[0][:60]
 
 
+def loi1_tenue(racine):
+    """
+    CLIQUET LOI 1 : la LOI 1 dit que qui PRODUIT ne peut pas AUDITER.
+    Gravee le 2026-09-01, violee par son auteur dans l'heure.
+    Le contrat du depot declarait au paragraphe 0.1.5 qu'aucun controle ne la gardait.
+    C'est un CLIQUET, pas une porte : il refuse l'aggravation sans reparer le passe.
+    """
+    try:
+        r = subprocess.run([sys.executable, "scripts/nexus_loi1.py"],
+                           cwd=racine, capture_output=True, text=True,
+                           timeout=300, encoding="utf-8", errors="replace")
+        lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
+        if r.returncode == 0:
+            for prefix in ("Conformite", "part manuelle non aggravee"):
+                for l in lignes:
+                    if l.startswith(prefix):
+                        return OK, l
+            return OK, lignes[0] if lignes else ""
+        elif r.returncode == 1:
+            for l in lignes:
+                if l.startswith("Violation"):
+                    return MANQUE, l
+            return MANQUE, lignes[0] if lignes else ""
+        else:
+            return IGNORE, "code de retour inattendu"
+    except subprocess.TimeoutExpired:
+        return IGNORE, "nexus_loi1 n'a pas repondu en 300 s"
+    except Exception as exc:
+        msg = str(exc).splitlines()[0][:60]
+        return IGNORE, msg
+
+
 def redaction_declaree(racine):
     try:
         r = subprocess.run([sys.executable, 'scripts/nexus_redaction.py'],
@@ -370,6 +402,7 @@ def main() -> int:
         ("cablage tenu", lambda: cablage_tenu(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),
         ("redaction declaree", lambda: redaction_declaree(racine)),
+        ("loi1 tenue", lambda: loi1_tenue(racine)),
         # Ce controle GENERE au lieu de verifier parce qu'un etat que personne
         # ne regenere est un etat de memoire et que l'operateur l'a interdit
         ("progres", lambda: progres(racine)),

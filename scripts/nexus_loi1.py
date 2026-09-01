@@ -9,7 +9,6 @@ au paragraphe 0.1.5 qu'aucun controle ne la gardait.
 
 import argparse
 import json
-import os
 import sys
 import subprocess
 from pathlib import Path
@@ -21,7 +20,7 @@ def _load_traces(max_entries=400):
     try:
         from nexus_verbatim import charger_index, lire
     except Exception as e:
-        raise RuntimeError(f"Impossible d'importer nexus_verbatim: {e}")
+        raise RuntimeError(f"Impossible d'importer nexus_verbatim: {e}") from e
 
     entries, _ = charger_index()
     # Journal en AJOUT (JSONL) : ordonne du plus ancien au plus recent (4141 entrees mesurees)
@@ -47,12 +46,11 @@ def _git_diff_name_only(base):
     if result.returncode != 0:
         raise RuntimeError("git diff --name-only a echoue")
     files = result.stdout.splitlines()
-    filtered = [
+    return [
         f for f in files
         if (f.endswith(".py") or f.endswith(".js"))
         and ("epreuve" not in f) and ("test" not in f)
     ]
-    return filtered
 
 def _git_added_lines(base, path):
     """Retourne les lignes ajoutees (>=24 caracteres) du fichier path."""
@@ -75,10 +73,7 @@ def _git_added_lines(base, path):
 
 def _is_delegated(line, traces):
     """Determine si la ligne apparait dans au moins une trace."""
-    for txt in traces:
-        if line in txt:
-            return True
-    return False
+    return any(line in txt for txt in traces)
 
 def _print_table(stats):
     """Affiche un tableau simple des resultats."""
@@ -167,8 +162,8 @@ def main():
         try:
             ref_data = json.loads(ref_path.read_text(encoding="utf-8"))
             reference = ref_data.get("reference", 0)
-        except Exception:
-            raise RuntimeError("Impossible de lire la reference existante")
+        except Exception as e:
+            raise RuntimeError("Impossible de lire la reference existante") from e
 
         if total_manual > reference:
             diff = total_manual - reference
