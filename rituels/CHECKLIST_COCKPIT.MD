@@ -6899,3 +6899,115 @@ reelle est un diff que personne ne relit.
 | `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
 | Smart App Control bloque `uv` ; la reinstallation de `ruff` mordrait | voisin | `uv 0.12.6` repond encore ici |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+
+---
+
+## 68. LE VERROU QUI MORD, ET LA MESURE QUI NE PROUVAIT RIEN — 2026-09-01, 10h-11h
+
+### 68.1 LE VERROU DU BANC EST POSE, ARME, ET EPROUVE PAR UN TIERS
+
+Le sujet en tete de §67.5 est ferme. `nexus_agent.py` prend
+`AURUM_MACHINE_BANC` des qu'une tache du lot vise le plan LOCAL, jamais sur
+le cloud.
+
+L'ordre des epreuves a ete impose par le voisin, et il est le bon :
+
+| epreuve | ce qu'elle repond |
+| --- | --- |
+| **ARMEMENT** | le mecanisme est-il BRANCHE ? |
+| reverse | verrou tenu, une tache locale sort-elle en 75 ? |
+| forward | verrou tenu, une tache cloud passe-t-elle ? |
+
+> **L'armement d'abord, sinon rien ne prouve rien.** Un `push()` au lieu d'un
+> `enter_context()` n'entre pas le contexte : le verrou ne serait jamais pris
+> tout en ayant l'air de l'etre. Une epreuve differentielle rendrait alors une
+> **infirmation fausse** du mecanisme — avec toute l'apparence d'une mesure.
+
+**Eprouve par qui ne l'a pas ecrit**, LOI 1 dans sa meilleure forme. Le voisin
+a verifie l'armement lui-meme — *« je ne l'ai pas pris sur parole, le push()
+absent est le point que je regardais en premier »* — puis lance deux lots
+locaux a 8 s d'intervalle :
+
+```
+premier : code 0   verrou machine [banc] OBTENU (nexus)
+second  : code 75  un AUTRE processus tient « banc » — attendu 0s en vain
+```
+
+*Ce n'est pas un vert, c'est un REFUS OBSERVE.* Et le verrou s'est montre en
+production sans etre cherche, sur deux delegations locales du meme tour.
+
+### 68.2 L'ATTENTE FIGEE EMPECHAIT DE MESURER LE REFUS
+
+`attente_s=120` en dur : l'epreuve ne pouvait pas SOLLICITER le refus, puisque
+le lanceur attendait, obtenait, et sortait normalement. Reglable par
+`NEXUS_VERROU_ATTENTE_S`.
+
+> Le voisin l'a formule mieux que moi : c'est **le piege de `push()` sous sa
+> forme symetrique**. Dans un cas le mecanisme est absent et l'epreuve le dit ;
+> dans l'autre le mecanisme est correct et l'epreuve ne peut pas le
+> solliciter. *Les deux produisent le meme faux verdict, par deux chemins
+> opposes.*
+>
+> D'ou sa regle, adoptee : **verifier qu'une epreuve PEUT echouer avant de
+> croire qu'elle a reussi.**
+
+### 68.3 MA MESURE DE LA BUFFERISATION NE PROUVAIT RIEN
+
+`ea-mt5` signale que Python bufferise `stdout` par blocs hors terminal — il
+venait de subir 55 et 92 minutes de runs muets chez lui.
+
+Premiere mesure ici : le lanceur en sous-processus rend sa premiere ligne a
+**11,6 s sur 11,7**. J'en ai conclu la bufferisation. **C'etait faux** : le
+lanceur n'imprime rien sur stdout avant la fin de l'appel modele, donc la
+mesure montrait l'absence de sortie precoce, pas le tampon. Le correctif
+applique, la mesure a rendu exactement le meme verdict — ce qui l'a trahie.
+
+Mesure PROPRE, sur une sonde qui imprime puis dort 3 s :
+
+| | premiere ligne lue |
+| --- | --- |
+| sans `reconfigure` | **3,0 s** — a la fin |
+| avec `line_buffering` | **0,0 s** |
+
+Le defaut etait donc reel et le correctif le supprime. Mais **l'instrument
+repondait a la question voisine — cinquieme fois de la journee**, et cette
+fois sur ma propre verification.
+
+> Un correctif juste pose sur une mesure fausse reste un correctif juste. Il
+> n'en est pas moins vrai que la mesure ne le soutenait pas, et le dire coute
+> moins cher que de laisser un raisonnement faux au dossier.
+
+### 68.4 `gemma4-31b` EXISTE EN LOCAL — meme rendu, cinquante fois plus lent
+
+Question de l'operateur. Mesure sur la meme tache de patch :
+
+| | jetons | duree | rendu |
+| --- | --- | --- | --- |
+| `gemma4-31b-cloud` | 217 | **3 s** | `import io` |
+| `gemma4-31b-local` a froid | 643 | 195 s | `import io` |
+| `gemma4-31b-local` a chaud | 660 | **159 s** | `import io` |
+
+**Rendu identique au caractere pres.** La qualite ne se degrade pas au local.
+Et l'ecart de ~50x **survit au chargement** — 159 s a chaud contre 195 a
+froid — donc il vient de la machine, non de l'eviction. Le voisin croyait
+l'inverse et l'a corrige sur cette mesure.
+
+> **La confidentialite decide, et elle seule.** Jamais le local pour la
+> vitesse, jamais le cloud pour la qualite sur ce modele.
+
+### 68.5 SUJETS OUVERTS — remplace §67.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Une cle `fichiers_communs` au niveau du lot | demande `ea-mt5` | quatre lectures du meme contenu sur une frappe de quatre |
+| Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | deux mesures faites sur 71 modeles |
+| L'obeissance au FORMAT n'est pesee par aucun routeur | voisin | pour tout rendu structure, c'est elle qui decide |
+| `tokens_sortie / max_tokens` proche de 1,00 avec `part_raisonnement` a 0 | voisin | signature du bavardage ; 3 points, non eprouvee |
+| Le message « augmenter le plafond » est FAUX dans le cas bavard | §65.2 | un seul message pour deux diagnostics opposes |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | la formule existe et est mesuree |
+| Un mode `--essaim N` : meme tache, N familles reellement distinctes | voisin | `nexus_essaim.py` fait autre chose |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees |
+| `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
+| Le verrou ne couvre pas un `ollama run` lance a la main | §68.1 | il protege les trois sessions, pas la machine |
+| Smart App Control bloque `uv` ; la reinstallation de `ruff` mordrait | voisin | `uv 0.12.6` repond encore ici |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
