@@ -5951,3 +5951,89 @@ meme mene a un defaut reel a cote** — l'outil accuse, la verification deplace
 l'accusation. C'est la valeur exacte de cette recolte : *elle indique une
 zone, jamais une ligne.*
 
+---
+
+## 61. P0 — UN REPLI `local -> cloud` POUVAIT FAIRE SORTIR DES DONNEES
+
+Le plus grave defaut de la journee, et il etait dans mon propre script.
+
+### 61.1 Le defaut
+
+```python
+candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+if local_seul:                                   # <-- le filtre etait ICI
+    candidats = [c for c in candidats if c.endswith("-local")]
+```
+
+`REPLIS_GRATUITS` vaut `["gpt-oss-120b-cloud", "glm-4.7-flash-local"]`. Le
+filtre local ne s'appliquait **que si l'appelant avait pose `local_seul`**. Une
+tache demandant un alias `-local` sans ce drapeau recevait donc un modele
+**cloud** en repli des que le local expirait.
+
+Or §108 est sans condition : `local -> cloud` est **interdit**, parce qu'un
+repli est *subi, jamais choisi*, et ne doit pas elargir l'exposition.
+
+> **Une protection qui depend d'une option de l'appelant n'est pas une
+> protection.** L'interdit est structurel ; il etait facultatif.
+
+**Corrige** : le filtrage est **inconditionnel**.
+
+### 61.2 L'EPREUVE DE FUITE — la plus importante des trois
+
+Elle ne verifie pas qu'un chemin interdit **echoue**, mais qu'il n'est jamais
+**emprunte**. Jouee sans reseau, en interceptant les appels :
+
+| version | candidats tentes |
+| --- | --- |
+| **avant** | `deepseek-coder-33b-local`, **`gpt-oss-120b-cloud`**, `glm-4.7-flash-local` |
+| **apres** | `deepseek-coder-33b-local`, `glm-4.7-flash-local` |
+
+Un repli local subsiste : *la confidentialite ne coute pas la robustesse.*
+
+**Contre-epreuve** : sur le fichier d'avant, **exactement un cas echoue** —
+celui de la fuite — les trois autres passant comme ils le doivent. Rejouee une
+seconde fois apres le refactor exige par le cliquet d'outillage.
+
+### 61.3 Les jumeaux, verifies et sains
+
+* **MAP-REDUCE** : pour un modele nomme, `plans = [(modele, ...)]`, et une
+  branche locale dediee dont le commentaire dit deja *« le repartir entre deux
+  plans serait une fuite, pas une optimisation »*.
+* **Pont MCP** : `REPLIS_GRATUITS` en est **absent** ; `nexus_ask` appelle
+  `chat()` avec **un seul** modele ; `withRetry` rejoue **la meme cloture**,
+  donc le meme modele — elle attend, elle ne substitue pas.
+* **Passerelle** : 169 aretes enumerees et classees — 138 local-local, 20
+  cloud-local, 5 anthropic-anthropic, 4 anthropic-local, 2 cloud-cloud.
+  **Aucune** local-cloud.
+
+Le trou n'existait que pour les appelants en ligne de commande directe.
+
+### 61.4 CE QUE J'AI AFFIRME SANS L'AVOIR MESURE
+
+Le signalement m'est arrive par un relais, et je l'ai attribue a la mauvaise
+session voisine. Celle-ci m'a arrete **deux fois**, a juste titre : le
+differentiel pseudo-code, les FAIL_OPEN et le chemin `src/security/` ne sont
+pas d'elle — et ce chemin **n'existe pas** dans son depot.
+
+| | |
+| --- | --- |
+| la **capacite** de fuite | **PROUVEE** par l'epreuve sur les deux versions |
+| l'**evenement** | **NON VERIFIE** — ni les fichiers, ni la trace |
+
+Le correctif tient sur la premiere et ne s'appuie pas sur la seconde. J'aurais
+du tenir cette distinction des le premier message plutot qu'apres deux rappels
+a l'ordre.
+
+### 61.5 Deux lecons de methode, venues de la session voisine
+
+**« L'instrument qui repond a la question VOISINE. »** Leur premier test
+etablissait *« un appel local abouti reste-t-il local ? »* ; ils voulaient
+*« le chemin MCP est-il sain ? »*. Deux enonces, deux questions. Le geste :
+enoncer la question a laquelle l'instrument repond REELLEMENT, et la comparer
+**mot pour mot** a celle qu'on voulait poser.
+
+**Un grep qui ne trouve rien ne prouve rien.** Ils ont pose la reserve
+eux-memes : leur verification des aretes etait un filtre par motif, la mienne
+un comptage **structure qui totalise** — 169 aretes classees, aucune non
+attribuee. *C'est le total qui prouve l'absence, pas le motif vide.*
+
