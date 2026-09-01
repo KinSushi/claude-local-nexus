@@ -571,6 +571,43 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
     sorties = [None] * n
     if not n:
         return sorties
+    import hashlib
+    # le journal preserve ET reprend desormais
+    # l'empreinte existe pour qu'un journal d'un AUTRE corpus ne soit jamais fusionne, ce qui serait pire que la perte evitee
+    # le refus est dit plutot que tu
+    # calcul de l'empreinte du corpus
+    _sep = b'\x1e'
+    _hasher = hashlib.sha256()
+    for _i, _c in enumerate(contenus):
+        if _i:
+            _hasher.update(_sep)
+        _hasher.update(_c.encode() if isinstance(_c, str) else _c)
+    _empreinte = _hasher.hexdigest()
+    _journal = os.getenv('NEXUS_MAP_JOURNAL')
+    if _journal:
+        try:
+            if os.path.exists(_journal) and os.path.getsize(_journal) > 0:
+                with open(_journal, 'r', encoding='utf-8') as _f:
+                    _first = _f.readline()
+                    _header = json.loads(_first)
+                    if _header.get('empreinte') == _empreinte:
+                        _reprise = 0
+                        for _line in _f:
+                            _data = json.loads(_line)
+                            _idx = _data.get('indice')
+                            _res = _data.get('resultat')
+                            if _idx is not None:
+                                sorties[_idx] = _res
+                                _reprise += 1
+                        sys.stderr.write(f"{_reprise} fenetres reprises sur {n}\n")
+                    else:
+                        sys.stderr.write(f"Refus de reprendre le journal {_journal} car il porte un autre corpus\n")
+            else:
+                with open(_journal, 'w', encoding='utf-8') as _f:
+                    json.dump({'empreinte': _empreinte, 'fenetres': n}, _f)
+                    _f.write('\n')
+        except Exception as _e:
+            sys.stderr.write(f"Erreur de lecture/ecriture du journal {_journal}: {_e}\n")
 
     # Un modele nomme explicitement par l'appelant n'est jamais substitue.
     if not modele.startswith("adaptive-router"):
@@ -590,8 +627,10 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
                  ("adaptive-router-local", PLAFOND_FILS["local"])]
 
     file = queue.Queue()
+    # une fenetre deja reprise du journal ne doit pas etre recalculee, sinon la reprise ne servirait a rien
     for couple in enumerate(contenus):
-        file.put(couple)
+        if sorties[couple[0]] is None:
+            file.put(couple)
 
     compte = {}
 

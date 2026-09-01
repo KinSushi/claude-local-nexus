@@ -5397,10 +5397,49 @@ strictement celui d'avant.
 La troisieme est celle qui compte. Avant, une mort perdait la totalite du
 travail deja paye ; elle ne perd desormais que la fenetre en cours.
 
-**Ce qui reste, et qui n'est pas fait** : le journal PRESERVE, il ne REJOUE
-pas. Une relance repart de zero. La reprise depuis le journal demande une
-identite de corpus — sans elle, on fusionnerait les fenetres d'un corpus dans
-un autre.
+**FERME le meme jour** : le journal PRESERVE **et REPREND**.
+
+L'exigence qui prime sur la reprise : deux corpus differents ne doivent jamais
+voir leurs fenetres fusionnees — un tel melange serait pire que la perte
+evitee. D'ou une **empreinte sha256** calculee sur les contenus des fenetres,
+dans l'ordre, avec separateur : une redecoupe differente donne une empreinte
+differente.
+
+| a la relance | comportement |
+| --- | --- |
+| empreinte **egale** | les fenetres deja calculees sont reprises |
+| empreinte **differente** | **refus explicite**, dit sur stderr, calcul depuis zero |
+| journal illisible | dit, et calcul depuis zero |
+
+Aucun de ces chemins ne leve : un journal abime ne doit jamais empecher le
+travail.
+
+**Les trois epreuves :**
+
+```
+passe neuve      28 s, journal a 6 lignes (en-tete + 5 fenetres)
+MEME corpus      19 s  ->  « 5 fenetres reprises sur 5 »
+AUTRE corpus           ->  « Refus de reprendre le journal ... »
+```
+
+La phase MAP est entierement sautee. Les 19 s restantes sont l'etage REDUCE,
+qui depend de toutes les fenetres — propriete de l'algorithme, pas limite de
+la reprise.
+
+**Deux defauts attrapes par l'arbitrage, pas par le compilateur** :
+
+* **la reprise etait INERTE** — `sorties` etait bien rempli depuis le journal,
+  mais la boucle suivante remettait TOUTES les fenetres dans la file, et les
+  ouvriers ecrasaient le travail repris. *Produit, non consomme.*
+* **l'en-tete et le premier enregistrement sur la MEME ligne** — l'ecriture
+  employait la sequence de deux caracteres au lieu d'un saut de ligne, et la
+  lecture echouait en « Extra data ». Le repli de surete a tenu : l'exception
+  a ete DITE, le calcul a repris de zero.
+
+**Et mon propre compteur etait faux** : pour verifier qu'il ne restait plus de
+sequence fautive, je comptais « antislash suivi de n » — or c'est la forme
+CORRECTE ; la fautive est le DOUBLE antislash. Troisieme instrument errone de
+ma main ce jour. Mesure juste : zero fautive, quatre justes.
 
 ### 55.6 ET LE GARDE M'A REBLOQUE — sur le JUMEAU du defaut corrige ce matin
 
