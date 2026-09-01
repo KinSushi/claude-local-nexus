@@ -4893,3 +4893,101 @@ cas de test encodait encore la croyance fausse sur le heredoc quote. Corrige,
 avec son jumeau non quote ajoute. Restent deux echecs anterieurs :
 `phi3-mini-local` injoignable, et le generateur idempotent en echec.
 
+---
+
+## 50. LE PLAN LOCAL N'EST PAS BRIDE PAR LA PHYSIQUE — j'avais herite, pas mesure
+
+L'operateur : *« pourquoi cote local ne rien ouvrir alors que l'on pourrait le
+faire ? »* Question juste, et elle m'a pris en defaut.
+
+### 50.1 L'erreur, et c'est exactement celle que je venais de denoncer
+
+J'ai refute, une heure plus tot, un commentaire qui s'annoncait « MESURE »
+cote cloud. **Et j'ai accepte son jumeau local sans le verifier** :
+
+```python
+# ...et le plan local plafonne des le deuxieme.
+PLAFOND_FILS = {..., "local": 2}
+```
+
+*Une lecon appliquee d'un cote et pas a son jumeau* — septieme occurrence
+enregistree dans ce depot.
+
+### 50.2 Ce que la machine dit, et qui dement la doctrine
+
+```
+OLLAMA_NUM_PARALLEL        2       <- un REGLAGE, pas une loi physique
+OLLAMA_MAX_LOADED_MODELS   3
+OLLAMA_KEEP_ALIVE          15m
+memoire hote : 66,2 Go totale, 23,5 Go LIBRE
+```
+
+Trois faits en decoulent :
+
+* **`PLAFOND_FILS["local"] = 2` ne mesure rien** : il RECOPIE
+  `OLLAMA_NUM_PARALLEL = 2`. Le lever cote script seul ne servirait a rien,
+  la file se formerait au moteur. Le vrai levier est la variable du moteur.
+* **La doctrine de ce contrat est perimee sur DEUX variables.** §107.0 affirme
+  `OLLAMA_KEEP_ALIVE` non defini, §107.1 affirme `OLLAMA_MAX_LOADED_MODELS`
+  non defini. **Les deux sont definis.**
+* Il y avait **23,5 Go libres**. La saturation invoquee n'existait pas.
+
+### 50.3 La distinction que le plafond de 2 ECRASE
+
+| cas | cout reel |
+| --- | --- |
+| N appels vers des modeles **DIFFERENTS** | eviction-rechargement, 20 Go qui se poussent |
+| N appels vers le **MEME** modele resident | **aucun rechargement** |
+
+Et un MAP-REDUCE est exactement le second cas. Le plafond de 2 traite les
+deux de la meme facon.
+
+### 50.4 Reste OUVERT, et pourquoi la mesure n'a pas ete faite
+
+De combien monter n'est **pas** mesure. Le moteur local etait occupe par
+`deepseek-coder:33b`, 21 Go, pendant toute la fenetre disponible ; deux
+reveils ont expire a 300 s puis 422 s. Mesurer alors aurait rendu un chiffre
+confondu — l'erreur evitee tout au long de ce tour.
+
+**L'idee de l'operateur, a instruire** : autoriser plusieurs residents pour
+que **plusieurs petits modeles forment un essaim**, en ne reservant la
+prudence qu'aux gros par leur taille. La memoire libre la soutient ; il
+manque la mesure.
+
+Une instance voisine apporte un point de methode : `api/ps` liste les modeles
+**CHARGES**, pas les requetes **ACTIVES**. Un modele resident ne travaille pas
+forcement — attribuer une occupation a une charge qui n'existe plus fausserait
+la mesure.
+
+---
+
+## 51. LE PONT MCP COUPAIT AVANT LA PASSERELLE
+
+Rapporte par une instance voisine — deux `nexus_ask` echoues a 600 s sur une
+classe de tache que la ligne de commande servait — puis verifie ici.
+
+| etage | plafond |
+| --- | --- |
+| `nexus_agent.py` | `DELAI` 900 s |
+| passerelle LiteLLM | `request_timeout` 900 s (releve ce jour) |
+| **pont MCP** | `DEFAULT_TIMEOUT_MS` **600 s** |
+
+Le pont coupait donc le premier, et rendait une erreur de delai **pour un
+appel que la passerelle aurait servi**. Aligne a 900 s.
+
+**Epreuve** : appel reel via le pont apres correction, 356 jetons rendus, plan
+cloud annonce.
+
+### 51.1 Reste OUVERT — la reprise sur troncature
+
+Le voisin mesure, sur 78 taches : **onze bascules pour onze troncatures,
+exactement un pour un**. La troncature est la cause UNIQUE des bascules. Et
+son mode d'echec est traitre : un budget trop court ne rend pas plus court,
+il rend **inexploitable**, coupe en plein JSON. A 2000 jetons, 3 sur 12
+tronques ; a 4000, **0 sur 144**.
+
+Le remede — rejouer UNE fois a budget double — est **delegue mais NON
+APPLIQUE** : les deux rendus du banc proposaient de renommer la fonction
+`chat`, trop invasif pour un pont ACTIF chez deux instances a cet instant.
+Inscrit ouvert plutot qu'applique a la hate.
+
