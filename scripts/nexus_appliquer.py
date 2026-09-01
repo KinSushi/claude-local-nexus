@@ -4,11 +4,15 @@
 L'orchestrateur ne retape pas : il verifie que chaque bloc AVANT est REEL
 et UNIQUE dans le fichier cible, applique tous les blocs, et laisse
 l'epreuve juger. Un bloc absent ou multiple provoque un REFUS total.
+Le script verifie la syntaxe Python avant ecriture et lance ruff apres.
 """
 import io
 import json
 import re
 import sys
+import ast
+import os
+import subprocess
 
 def main():
     if len(sys.argv) < 4:
@@ -71,11 +75,50 @@ def main():
     for avant, apres in blocs:
         nouveau_src = nouveau_src.replace(avant, apres)
 
+    # Verification syntaxique avant ecriture pour eviter de casser le fichier
+    if cible_path.endswith(".py"):
+        try:
+            ast.parse(nouveau_src)
+        except SyntaxError as e:
+            print("[!] Le patch produirait un fichier SYNTAXIQUEMENT INVALIDE")
+            print("[!] Erreur : %s" % (e))
+            return 1
+
     # Ecriture du fichier cible
     with io.open(cible_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(nouveau_src)
 
     print("APPLIQUE : %d bloc(s) dans %s" % (len(blocs), cible_path))
+
+    # Analyse ruff apres ecriture reussie
+    try:
+        ruff_exe = None
+        dir_actuel = os.path.dirname(os.path.abspath(cible_path))
+        while dir_actuel != os.path.dirname(dir_actuel):
+            for marqueur in [".git", ".nexus"]:
+                if os.path.exists(os.path.join(dir_actuel, marqueur)):
+                    if os.name == "nt":
+                        cand = os.path.join(dir_actuel, ".nexus", "outillage", "ruff_venv", "Scripts", "ruff.exe")
+                    else:
+                        cand = os.path.join(dir_actuel, ".nexus", "outillage", "ruff_venv", "bin", "ruff")
+                    if os.path.exists(cand):
+                        ruff_exe = cand
+                    break
+            if ruff_exe:
+                break
+            dir_actuel = os.path.dirname(dir_actuel)
+
+        if ruff_exe:
+            args = [ruff_exe, "check", "--select", "E9,F,B,C4,SIM,RET", cible_path]
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = proc.communicate()
+            if stdout:
+                print("[!] Violations detectees :\n%s" % stdout)
+            if stderr:
+                print("[!] L'analyseur n'a PAS PU se prononcer :\n%s" % stderr)
+    except Exception:
+        pass
+
     return 0
 
 if __name__ == "__main__":

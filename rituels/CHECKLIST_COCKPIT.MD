@@ -7756,3 +7756,131 @@ suivante ET **enumerer les chiffres autorises**.
 | `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s depensees, 0 octet |
 | Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
 | Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
+
+---
+
+## 73. LE CYCLE COMPLET, ET DEUX TACHES QUI ECHOUENT SANS TEMOIN
+
+### 73.1 `nexus_appliquer` VERIFIE ENFIN AVANT D'ECRIRE
+
+Le sujet en tete de §72.6 est ferme. Trois assemblages avaient echoue ; la
+quatrieme tentative est passee par une REECRITURE COMPLETE du fichier —
+exception deja justifiee pour cet outil, qui ne peut pas se patcher lui-meme
+puisque son code cite les marqueurs.
+
+| epreuve | resultat |
+| --- | --- |
+| patch produisant une syntaxe invalide | code 1, **fichier INTACT** verifie par empreinte |
+| patch valide introduisant F823, dans le depot | applique, **et la violation affichee** |
+| fichier hors depot | ruff introuvable, repli silencieux |
+
+> Le second cas boucle la journee : l'outil signale desormais **le defaut exact
+> qui avait coute la matinee**, au moment ou le patch l'introduit.
+
+### 73.2 LE CYCLE A TROIS TEMPS, DEUXIEME APPLICATION — il a encore trouve
+
+L'audit de la CORRECTION, confie a une famille qui n'avait ni diagnostique ni
+corrige, a releve un defaut que l'arbitrage n'avait pas vu : **ruff etait lance
+sur TOUS les fichiers**, y compris ceux qui ne sont pas du Python.
+
+Verifie par mesure, sur un markdown reellement patche :
+
+```
+[!] Violations detectees : All checks passed!
+[!] L'analyseur n'a PAS PU se prononcer : No Python files found
+```
+
+> **Une alarme pour dire que tout va bien.** Deux messages inquietants sur un
+> fichier parfaitement sain — un verdict trompeur dans les deux sens.
+
+Le correctif n'est PAS pose : le rendu du banc proposait un `continue` hors
+boucle, et la forme qui n'exige aucune reindentation reste a trouver. Sujet
+ouvert plutot que patch force.
+
+### 73.3 DEUX TACHES PLANIFIEES QUI ECHOUENT SANS TEMOIN
+
+Demande de l'operateur — desarmer ce qui serait deja mecanise. **Rien n'a ete
+desarme**, et la verification a trouve autre chose :
+
+| tache | dernier | resultat |
+| --- | --- | --- |
+| NexusTraque, 10 min | 09:49 | 0 |
+| NexusVitrine, 6 h | 07:35 | 0 |
+| **Mise a jour, quotidienne 04:00** | 04:00:01 | **1 — ECHEC** |
+| **Demarrage au logon** | 30/11/1999 | **267011 — JAMAIS EXECUTEE** |
+
+Le journal de la mise a jour :
+
+```
+Modele gemma4-31b-cloud declare 'vision' mais n'a pas 'mode: vision'
+=> Configuration INVALIDE : ne pas redemarrer LiteLLM.
+[ERROR] Generation en echec : configuration inchangee
+```
+
+**Le garde a bien travaille** — il a refuse de mettre en place une
+configuration invalide, et l'existante est restee intacte. Verifie a
+l'instant : `Test-NexusConfig` rend « Configuration valide », et le fichier en
+place porte bien `mode: vision`.
+
+> Mais l'echec n'est visible que dans un journal que personne ne lit. **Une
+> tache planifiee qui echoue tous les jours a 04:00 est indiscernable d'une
+> tache qui reussit**, tant qu'on ne va pas chercher son code de retour. C'est
+> la meme classe que le fichier a 0 octet et que le tube qui avale le code de
+> sortie — trois formes du meme defaut en une journee.
+
+**Non reproductible en simulation** : `-DryRun` passe sans erreur. L'echec
+tenait donc a un etat transitoire de la generation, ce qui le rend plus
+inquietant, pas moins.
+
+### 73.4 NexusTraque REGENERE STATE.md, ET BLOQUE LA VITRINE
+
+Mesure de son action reelle :
+
+```
+nexus_traque.py --muet ; nexus_state.py
+```
+
+`nexus_state.py` reecrit `rituels/STATE.md`, qui est SUIVI par git. Toutes les
+dix minutes, l'arbre devient donc sale — et `nexus_vitrine` refuse de publier
+sur un arbre sale. Constate **trois fois** aujourd'hui.
+
+Deux mecanismes corrects, un conflit ne de leur rencontre. Aucun des deux
+n'est fautif seul.
+
+### 73.5 UN APPEL LOCAL QUI NE DEMARRE JAMAIS — signale par `ea-mt5`
+
+```
+appel lance 09:37, toujours bloque 09:52
+UserSec 0,05 en quinze minutes
+GET /api/version -> repond
+GET /api/ps      -> {"models":[]}   AUCUN poids resident
+```
+
+**0,05 seconde de CPU en quinze minutes** : la requete n'a jamais atteint le
+point ou les poids seraient demandes, ou elle a ete acceptee puis abandonnee
+en silence.
+
+> Et c'est le mode d'echec que nous avons nomme toute la journee : *une absence
+> de resultat qui ne se distingue pas d'un travail en cours*. Sans `api/ps`,
+> il aurait conclu « le modele reflechit » et attendu indefiniment.
+
+Sa demande : un delai cote nexus sur l'appel local, et un message distinguant
+**trois etats** — requete non partie, poids en cours de chargement, inference
+en cours. Aujourd'hui les trois sont indiscernables de l'exterieur.
+
+### 73.6 SUJETS OUVERTS — remplace §72.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Un appel local peut ne jamais demarrer, sans delai ni message** | §73.5 | 15 min, 0,05 s CPU, `api/ps` vide |
+| **Une tache planifiee echoue sans temoin** | §73.3 | « Mise a jour » en echec a 04:00, « Demarrage » jamais executee |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
+| `NexusTraque` salit l'arbre et bloque la vitrine | §73.4 | `STATE.md` suivi par git, reecrit toutes les 10 min |
+| Sur `Invalid model name`, rendre les alias PROCHES | demande `sovereign` | la classe se repete |
+| Un champ `chiffres_autorises` dans la consigne | §72.5 | remede mesure a la fabrication |
+| Le vide n'est pas un probleme de budget mais de FAMILLE | §72.4 | corrige §28.5 |
+| Le MCP ne prend pas le verrou — douze outils | §70.2 | le plus urgent pour A2A |
+| Decharger les poids en sortant du VERROU | §70.3 | cout mesure ~177 s pour 20 Go |
+| La reprise de plafond absente du MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
+| `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s, 0 octet |
+| Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
