@@ -5852,3 +5852,96 @@ rejouee, et cette fois **dans les deux sens** de l'incoherence.
 La recolte reste un signal. Sur sept entrees, **une seule sur trois** a designe
 un defaut reel a l'endroit qu'elle nommait.
 
+---
+
+## 60. L'INCERTITUDE ETAIT DITE LA OU L'ON REGARDE, ET TUE LA OU L'ON PASSE
+
+Cinquieme entree de la recolte : *« biais systematique du validateur »*.
+
+### 60.1 L'entree est PERIMEE — le remede etait deja en place
+
+Le defaut date du 2026-08-30 : le modele avait ecrit *« REGRESSION : aucune
+variable renommee n'est referencee… »*, une **rubrique** que le parseur lisait
+comme un verdict. Le remede est applique : la ligne `VERDICT_FINAL`, cherchee
+**en premier**, avec un mot-cle qu'une rubrique de prose ne peut pas imiter.
+
+**Quatrieme entree perimee sur huit examinees.**
+
+### 60.2 Mais un defaut REEL a cote, et il touche l'instrument de la LOI 1
+
+Le validateur a deux branches finales, et elles ne disent pas la meme chose :
+
+| branche | ce qui sort |
+| --- | --- |
+| REGRESSION | verdict + **tout le texte** + la bascule de plan |
+| AUCUNE REGRESSION | **une seule ligne** |
+
+Or c'est la seconde qui porte l'avertissement le plus utile. Quand le modele
+n'a rendu **aucune** ligne `VERDICT_FINAL`, le code pose bien la mention
+*« verdict lu par heuristique, a confirmer »* — dans le **texte**, que seule
+la branche regression imprime.
+
+Un verdict **rassurant** lu par heuristique, ou rendu par un plan de repli,
+sortait donc **indiscernable** d'un verdict sur.
+
+> *L'incertitude etait annoncee la ou l'on regarde de toute facon, et tue la
+> ou l'on passe a la suite.*
+
+Et ce fichier ecrit lui-meme, plus haut : *« Un verdict rassurant rendu sans
+examen est pire qu'aucun verdict : il tient lieu de preuve. »*
+
+**C'est un defaut d'USAGE.** Je lance ce validateur a chaque tour en ne lisant
+que les dernieres lignes. Il ne se voit pas en relisant le code — il se voit
+en s'en servant.
+
+### 60.3 L'epreuve et sa contre-epreuve
+
+`scripts/epreuve_verdict_rassurant.py` remplace `free_plan_judgment` par un
+faux — **aucun appel de modele** — qui rend « aucune regression », une bascule
+de plan, et un texte portant l'avertissement. Elle capture la sortie de `main`
+et verifie trois marques.
+
+**Contre-epreuve**, sur une copie du validateur d'avant :
+
+```
+[OK  ] absence de regression : Aucune regression detectee
+[RATE] ligne d'avertissement : Avertissement manquant
+[RATE] bascule de plan : Mention de la bascule absente      code 1
+```
+
+**Exactement les deux controles neufs echouent**, et le comportement
+preexistant passe toujours. Validateur corrige, code 0. Cable sous
+`nexus_test.py --only rassurant`.
+
+### 60.4 Une alerte levee a tort, puis corrigee en une minute
+
+Le premier jet de l'epreuve imprimait :
+
+```
+[OK  ] ligne d'avertissement : Avertissement manquant
+```
+
+J'y ai vu un **faux vert parfait**. C'en etait un d'apparence seulement : la
+condition etait bien evaluee, les trois cas passaient, et seul le **libelle**
+etait faux — la branche succes imprimait le message d'echec.
+
+> Un message qui contredit son propre verdict n'est pas un faux vert, mais il
+> en produit la lecture. C'est assez pour meriter correction.
+
+Corrige : chaque cas porte desormais deux libelles, celui du succes et celui
+de l'echec.
+
+### 60.5 Etat de la recolte apres huit entrees
+
+| | |
+| --- | --- |
+| perimees | **4** |
+| fausse mais utile | 1 |
+| justes, corrigees | 2 |
+| frontiere, non un defaut | 1 |
+
+Quatre entrees sur huit etaient perimees, et **trois de ces quatre ont tout de
+meme mene a un defaut reel a cote** — l'outil accuse, la verification deplace
+l'accusation. C'est la valeur exacte de cette recolte : *elle indique une
+zone, jamais une ligne.*
+
