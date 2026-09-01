@@ -5378,9 +5378,48 @@ protection sans en etre une. Deplacee.
 nouvelle orpheline echouera desormais — ce qui est la seule facon de fermer
 un sujet dans ce depot.
 
-### 55.5 Reste OUVERT
+### 55.5 FERME — le journal est pose dans le chemin vivant, et mesure
 
-Le journal du MAP-REDUCE — le besoin d'origine — **n'est pas pose**. Il doit
-aller dans `_repartir_map`, le chemin vivant, et non dans la fonction morte
-qui l'a recu par erreur. Une mort de tache y perd toujours tout.
+Pose dans `_ouvrier`, a l'interieur de `_repartir_map` : une ligne JSON par
+fenetre, ecrite DES QU'ELLE TOMBE, sur le chemin de succes ET sur celui
+d'erreur — un trou dans le journal se confondrait avec une fenetre jamais
+traitee. Chemin lu dans `NEXUS_MAP_JOURNAL` : absent, le comportement est
+strictement celui d'avant.
+
+**Les trois epreuves, jouees :**
+
+| epreuve | mesure |
+| --- | --- |
+| **forward** | 5 fenetres annoncees, **5 lignes journalisees**, cles `indice` et `resultat` presentes |
+| **reverse** | sans `NEXUS_MAP_JOURNAL`, **aucun fichier ecrit** |
+| **survie** | processus tue a 75 s : rendu final **0 octet**, journal **38 fenetres** |
+
+La troisieme est celle qui compte. Avant, une mort perdait la totalite du
+travail deja paye ; elle ne perd desormais que la fenetre en cours.
+
+**Ce qui reste, et qui n'est pas fait** : le journal PRESERVE, il ne REJOUE
+pas. Une relance repart de zero. La reprise depuis le journal demande une
+identite de corpus — sans elle, on fusionnerait les fenetres d'un corpus dans
+un autre.
+
+### 55.6 ET LE GARDE M'A REBLOQUE — sur le JUMEAU du defaut corrige ce matin
+
+En ecrivant ce commit, le garde shell a refuse la commande au titre du CAS B,
+« accent grave non echappe entre guillemets doubles ». Or ces accents graves
+etaient dans un heredoc a delimiteur QUOTE, ou le shell ne fait AUCUNE
+substitution.
+
+Mesure, faite avant d'affirmer quoi que ce soit :
+
+```
+heredoc QUOTE     ->  un texte avec `_repartir_map` entre accents graves
+```
+
+L'accent grave arrive LITTERAL. **C'est exactement l'angle mort que j'ai
+corrige ce matin sur le CAS A, et que je n'ai pas porte a son jumeau le meme
+jour, dans le meme fichier.**
+
+Compte tenu ce jour : c'est la neuvieme fois qu'une lecon est appliquee d'un
+cote et pas de l'autre. La classe merite son nom, et elle merite un controle.
+
 

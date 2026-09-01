@@ -608,8 +608,28 @@ def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
                     [{"role": "system", "content": MAP_SYSTEME},
                      {"role": "user", "content": contenu}],
                     plafond_jetons, cle, temperature, DELAI_MAP)
+                # Mesure 2026-08-31: ecriture du journal pour chaque fenetre
+                # Evite perte de travail en cas d'arret brutal du processus
+                journal_path = os.environ.get('NEXUS_MAP_JOURNAL')
+                if journal_path:
+                    try:
+                        with open(journal_path, 'a', encoding='utf-8') as f:
+                            json.dump({"indice": indice, "resultat": sorties[indice]}, f)
+                            f.write('\n')
+                    except Exception:
+                        pass
             except Exception as exc:
                 sorties[indice] = {"erreur": str(exc)}
+                # Mesure 2026-08-31: ecriture du journal pour chaque fenetre
+                # Evite perte de travail en cas d'arret brutal du processus
+                journal_path = os.environ.get('NEXUS_MAP_JOURNAL')
+                if journal_path:
+                    try:
+                        with open(journal_path, 'a', encoding='utf-8') as f:
+                            json.dump({"indice": indice, "resultat": sorties[indice]}, f)
+                            f.write('\n')
+                    except Exception:
+                        pass
             pris += 1
 
     fils_total = sum(fils for _, fils in plans)
