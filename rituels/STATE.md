@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 20:29 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 21:09 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `abbf2ab` |
+| Commit | `beb56d6` |
 | Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 2 days (healthy)
-litellm-proxy	litellm	Up 54 minutes
+litellm-proxy	litellm	Up 2 hours
 litellm-redis	redis	Up 2 days (healthy)
 ```
 
@@ -34,7 +34,7 @@ litellm-redis	redis	Up 2 days (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 329.7 Go |
+| Disque libre | 329.6 Go |
 
 ## Inventaire exposé — 81 modèles
 
@@ -62,7 +62,7 @@ Verdict : **valide**
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `c9e49eec98c0e482634eb3faefc4a5b6b577ad02ec40acb71817d357e9e19d64` |
-| `tools/nexus-mcp/server.js` | `c54101e2ea08995816d93f58a1ad4636dadefeb8758626bf642c90ec2e72aed9` |
+| `tools/nexus-mcp/server.js` | `05804526716af98ec04694727ae98ec3f22da96230109e0249543cd86e25b595` |
 | `scripts/nexus_generate.py` | `7bdb7c9b0626e3392c5b12fb5a4985ca246440aa036132b3a79a7d0131047d9b` |
 | `scripts/nexus_validate.py` | `f861fb7f5d50240ba56a41233fb22c5b24426cb5d9d91cdc881f31f90dd64613` |
 | `scripts/nexus_capability.py` | `2dd9e691834d26ff9139bc2e21155094ef4762f27479df1bfa34646f2ae151a3` |

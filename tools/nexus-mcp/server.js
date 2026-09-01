@@ -781,7 +781,14 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   await reveillerModele(model, timeoutMs);
   const t = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
   const depart = Date.now();
-  const corps = { model, messages, max_tokens: maxTokens || 2048 };
+  // Mesure 2026-08-31: max_tokens=12 rend 523 jetons ; num_predict=12 rend exactement 12 jetons avec finish_reason length ; les deux ensemble rendent 523, donc envoyer max_tokens annule la borne qui fonctionnait.
+  // Sans cela toute borne de sortie du pont est inerte et une reprise a budget double ne changerait rien.
+  const corps = { model, messages };
+  if (String(model).startsWith("claude-")) {
+    corps.max_tokens = maxTokens || 2048;
+  } else {
+    corps.num_predict = maxTokens || 2048;
+  }
   // Les modeles Anthropic recents rejettent certains parametres
   // d'echantillonnage (16, 85) : on ne leur en impose aucun.
   if (t !== null && !String(model).startsWith("claude-")) corps.temperature = t;
@@ -800,13 +807,36 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     attenteMs = Date.now() - depart;
     return appelReseau();
   });
-  const choice = body.choices && body.choices[0];
+  let choice = body.choices && body.choices[0];
   if (!choice) throw new Error("aucune reponse du modele " + model);
-  const usage = body.usage || {};
+  let usage = body.usage || {};
   // Une generation coupee par max_tokens remontait comme une reponse
   // normale : l'appelant recevait un texte tronque sans le savoir, et
   // pouvait conclure sur une phrase interrompue.
-  const tronquee = choice.finish_reason === "length";
+  let tronquee = choice.finish_reason === "length";
+  // Mesure : sur 78 taches, onze bascules pour onze troncatures, exactement
+  // un pour un ; a 2000 jetons trois rendus sur douze tronques, a 4000 zero
+  // sur cent quarante-quatre.
+  const PLAFOND_REPRISE = 16384;
+  if (tronquee) {
+    const ancienBudget = corps.num_predict ?? corps.max_tokens;
+    const nouveauBudget = Math.min(ancienBudget * 2, PLAFOND_REPRISE);
+    // Une reprise avec un budget egal reproduirait le meme appel pour le meme resultat.
+    if (nouveauBudget > ancienBudget) {
+      log("troncature de " + model + " : reprise unique, max_tokens " + ancienBudget + " -> " + nouveauBudget);
+      if (corps.num_predict !== undefined) {
+        corps.num_predict = nouveauBudget;
+      } else {
+        corps.max_tokens = nouveauBudget;
+      }
+      const retour = await appelReseau();
+      const secondBody = retour.body;
+      choice = secondBody.choices && secondBody.choices[0];
+      if (!choice) throw new Error("aucune reponse du modele " + model);
+      usage = secondBody.usage || {};
+      tronquee = choice.finish_reason === "length";
+    }
+  }
   // Derriere un routeur adaptatif, le corps et x-litellm-model-group ne
   // renvoient que le nom du routeur. Seul x-litellm-adaptive-router-model
   // designe le modele que le routeur a choisi.

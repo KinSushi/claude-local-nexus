@@ -312,6 +312,25 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
         if not os.path.exists(complet):
             refus.append("%s (introuvable)" % brut)
             continue
+        # Mesure du 30 aout 2026 : accepte dossiers pour eviter Argument list too long
+        if os.path.isdir(complet):
+            for root, _, files in os.walk(complet):
+                for f in sorted(files):
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext not in (".txt", ".py", ".md", ".json", ".yaml", ".yml",
+                                   ".csv", ".tsv", ".html", ".htm", ".css", ".js",
+                                   ".sh", ".ini", ".cfg", ".conf", ".rst", ".tex",
+                                   ".log"):
+                        continue
+                    chemin_f = os.path.join(root, f)
+                    try:
+                        chemin_norm = os.fsdecode(chemin_f)
+                        contenu = io.open(chemin_norm, encoding="utf-8", errors="replace").read()
+                    except (OSError, UnicodeDecodeError) as exc:
+                        refus.append("%s (illisible : %s)" % (chemin_f, exc))
+                        continue
+                    morceaux.append("--- %s ---\n%s" % (chemin_f, contenu))
+            continue
         try:
             # Normaliser le chemin pour les systèmes où le nom peut contenir
             # des octets non UTF‑8.
