@@ -9718,3 +9718,137 @@ demontes (`Ntfs 303`), rien n'est en vol.
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 88. CE QUI N'EXISTAIT QUE DANS LES MESSAGES — verifie avant la coupure
+
+> **Comment ce chapitre est ne.** Avant l'arret, `sovereign` a confirme n'avoir
+> plus rien a sauver, en listant cinq points nes APRES son vidage. Plutot que de
+> l'accepter, la presence de chacun a ete **cherchee sur le disque**. Quatre sur
+> cinq n'y etaient pas : ils ne vivaient que dans les messages entre sessions,
+> qui disparaissent avec elles.
+>
+> *« Je crois que c'est consigne »* et *« c'est consigne »* sont deux etats
+> differents, et un `grep` les separe en trois secondes.
+
+### 88.1 LE DISCRIMINANT CHARGE / SUSPENSION — mesure, et NON SEPARABLE
+
+Les deux reinitialisations ont la **meme signature**, sur le **meme port** :
+
+```
+31/08   06:55:28   disk 153   E/S reessayee, isolee
+        06:55:44   disk 153   x7 meme seconde
+        06:55:44   UASPStor 129   \Device\RaidPort3
+                   -> seize secondes entre le premier reessai et la reinitialisation
+
+01/09   11:35:01   disk 153   E/S reessayee, isolee
+        11:35:16   disk 153   x5 meme seconde
+        11:35:16   UASPStor 129   \Device\RaidPort3
+                   -> quinze secondes
+```
+
+Cet intervalle constant est tres probablement le **delai d'expiration de
+`STORPORT`** : le peripherique cesse de repondre a une requete en vol, le delai
+court, la requete expire, le pilote reinitialise. Le mecanisme est
+reproductible.
+
+**Mais il ne separe pas les deux hypotheses**, et la raison est generale :
+
+> **Le journal systeme n'enregistre que les ECHECS.** Une E/S qui reussit n'y
+> laisse rien. Les cinq minutes vides avant 11:35:01 **ne disent pas** que la
+> machine etait au repos — elles disent que rien n'a echoue. **Un vide de
+> journal n'est pas une mesure d'inactivite.**
+
+Suspension selective et charge predisent exactement la meme trace. Il faudrait
+des compteurs de performance ou une trace d'activite disque, qui ne sont pas
+conserves.
+
+**Ce qui penche, sans conclure** : sept reessais dans la meme seconde
+ressemblent davantage a de l'activite qu'a un reveil depuis la suspension. Mais
+un peripherique suspendu qui ne se reveille pas produirait aussi des reessais.
+
+⇒ **Non separable avec les traces disponibles — et c'est un resultat, pas une
+mesure ratee.** D'ou la formulation qui remplace la precedente :
+
+> **On desactive la suspension selective parce que cela ne coute rien, pas
+> parce qu'on a prouve que c'est la cause.**
+
+### 88.2 L'ORDRE PAR IRREVERSIBILITE — et ou je m'etais trompe d'un cran
+
+J'avais range la re-enumeration logicielle comme « le geste le moins risque ».
+`sovereign` corrige, et il a raison :
+
+```
+LECTURES — ne touchent RIEN, pas meme la pile de peripheriques
+  Get-WinEvent · Get-Disk · Get-PnpDevice · observation des peripheriques
+
+ACTIONS — reversibles
+  pnputil /scan-devices · Disable/Enable-PnpDevice · powercfg
+
+PHYSIQUE — irreversible dans ses effets
+  debrancher · changer de port · sortir le disque du boitier
+```
+
+⇒ Elle est la moins risquee **des actions**, pas de la liste. Trois lectures
+precedent toute action, et elles sont gratuites.
+
+### 88.3 LE TUNNEL USB N'EST PAS MORT — et c'est la dixieme classe en action
+
+Le dock porte trois ecrans, **le reseau et les peripheriques d'entree**, et
+tous fonctionnent. J'avais donne ce fait comme un AVERTISSEMENT — *« les ecrans
+ne prouvent rien, leur tunnel DisplayPort est distinct »* — ce qui etait juste.
+
+**Mais le reseau USB et les HID sont sur le tunnel USB, pas sur le
+DisplayPort.**
+
+> ⇒ **Le tunnel USB n'est donc PAS mort. Seul le chemin STOCKAGE est tombe.**
+> Je detenais la reponse a ma propre question et je l'avais rangee sous une
+> autre. C'est le §84.4 en action, sur la mesure qui l'a fait nommer.
+
+**Suggestif, non decisif** : un clavier emet en permanence et ne se suspend
+jamais ; un disque au repos, si. Si la suspension selective etait en cause, on
+observerait exactement cela — ce qui peut se suspendre tombe, ce qui ne le peut
+pas survit. **Mais une reinitialisation UAS vise le protocole de stockage** et
+pourrait epargner le HID sans que la suspension y soit pour rien. Les deux
+hypotheses restent compatibles.
+
+### 88.4 CE QUE CE CHAPITRE ETABLIT SUR LE TRAVAIL A PLUSIEURS SESSIONS
+
+Trois sessions ont echange toute la journee, et ces echanges ont produit les
+meilleures trouvailles — le remede mecanique de la classe 9, la correction de
+trois causes racines fausses, l'audit qui a coupe en deux un outil dangereux.
+
+> **Et tout cela ne vivait nulle part.** Un message entre sessions a exactement
+> la duree de vie des deux sessions qui le portent. Quatre des cinq points de
+> ce chapitre etaient dans ce cas, une minute avant l'arret.
+
+**La regle qui en sort, et elle est mecanisable** : *avant de declarer un
+echange consigne, chercher trois de ses formules exactes sur le disque.* Un
+`grep` de trois secondes separe « je crois que c'est ecrit » de « c'est ecrit ».
+
+### 88.5 SUJETS OUVERTS — remplace §87.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **L'arret complet n'a pas encore ete fait** | §87.3 | seul remede documente non essaye |
+| **Un echange entre sessions ne vit nulle part** | §88.4 | 4 points sur 5 rattrapes a la derniere minute |
+| **La mise a jour du 26/08 reste le suspect principal** | §86.1 | 45 jours propres avant |
+| Charge et suspension : NON SEPARABLES | §88.1 | le journal n'enregistre que les echecs |
+| 3 To dont aucun agent ne sait rien | §85.1 | decide entre image bloc et copie fichier |
+| Le disque de 16 To doit etre hors du dock | §85.4 | condition absolue |
+| `REPRISE_2026-09-01.md` n'est nulle part ailleurs | §84.2 | priorite absolue au retour |
+| Les `SORTIE_*.txt` et leurs SHA-256 | §84.2 | preuve rejouable contre resultat rapporte |
+| `_QUARANTINE` de `sovereign`, 1 790 fichiers | §84.2 | sa seule reserve de recuperation |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| Classe 10 : posseder la mesure, la ranger ailleurs | §84.4 | non mecanisable a ce jour |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | **il s'armera au redemarrage** |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
