@@ -1063,6 +1063,26 @@ def rendre(resultat: dict) -> None:
            resultat.get("adresse", "?")))
     print("  %d tokens, %.0f s, cout %s" %
           (resultat.get("tokens", 0), resultat.get("duree", 0.0), resultat.get("cout", "0")))
+    # Heuristique famille servie vs demande
+    servi_par = resultat.get("servi_par", "?")
+    if servi_par != "?":
+        slash_idx = servi_par.rfind('/')
+        colon_idx = servi_par.find(':', slash_idx + 1)
+        if slash_idx != -1:
+            start = slash_idx + 1
+            end = colon_idx if colon_idx != -1 else len(servi_par)
+            racine = servi_par[start:end]
+        else:
+            racine = ""
+    else:
+        racine = ""
+    # exclusion du cas ou l'alias demande commence par adaptive-router
+    if racine and racine != "?" and racine not in resultat.get("modele", "") and not resultat.get('modele', '').startswith('adaptive-router'):
+        print("  [!] famille servie differente de la demande (heuristique) : %s -> %s" % (resultat["modele"], racine))
+    # Avertissement rendu tronque
+    if resultat.get('tronque'):
+        n = resultat.get('tokens_sortie', 0)
+        print("[!] RENDU TRONQUE a %d jetons de sortie" % n)
     # Message specifique lorsqu'un plafond est insuffisant
     if resultat.get("plafond_insuffisant"):
         print("  [!] Plafond insuffisant : le modele a consomme tout son budget sans produire de texte. %s" % resultat.get("detail", ""))
