@@ -7011,3 +7011,97 @@ l'inverse et l'a corrige sur cette mesure.
 | Le verrou ne couvre pas un `ollama run` lance a la main | §68.1 | il protege les trois sessions, pas la machine |
 | Smart App Control bloque `uv` ; la reinstallation de `ruff` mordrait | voisin | `uv 0.12.6` repond encore ici |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+
+### 68.6 CORRECTION DE §68.4 — le facteur 50 n'etait pas attribuable au plan
+
+Ecrit une heure apres, apres refutation par l'operateur et par la session
+`ea-mt5`, qui s'est designee elle-meme comme la cause du biais.
+
+**Ce que la machine faisait pendant ma mesure**, releve par le voisin :
+
+```
+PID 32948   97 % d'un coeur   107 min   calcul de durees sur 64 symboles
+PID 35364   96 % d'un coeur    65 min   balayage de 22 figures
+------------------------------------------------------------------
+1,93 coeur en continu, et 31,4 Go libres seulement sur 61,6
+```
+
+Ces deux processus lisent en continu des CSV de 42 000 barres et calculent
+dessus. Ils consomment donc **precisement la ressource qui etrangle
+l'inference locale** — la bande passante memoire, non le nombre de coeurs,
+puisque l'iGPU Radeon 890M n'a pas de VRAM dediee et partage les 61,6 Go.
+
+C'est ma propre doctrine (§107.0) retournee contre ma propre mesure.
+
+| | avant correction | apres |
+| --- | --- | --- |
+| ce que la mesure disait | « local contre cloud » | « local **SOUS CHARGE ETRANGERE** contre cloud » |
+| le facteur 50 | etabli | **non interpretable** |
+
+> **Un mot d'ecart entre la question posee et la question mesuree, et le
+> chiffre devient inutilisable.** Sixieme occurrence de la journee, et la
+> premiere ou c'est un voisin qui me corrige en se designant comme la cause.
+
+**CE QUI SURVIT, et ne depend pas de la charge :**
+
+* le rendu est **identique au caractere pres** entre les deux plans — la
+  qualite ne se degrade pas au local ;
+* l'ecart persistait a chaud, donc il ne vient pas du seul chargement ;
+* le local est plus lent que le cloud, **dans un rapport inconnu**.
+
+**CE QUI TOMBE :** la magnitude. 50x, 20x, 10x — rien ne tranche. Et
+l'affirmation de §68.4 selon laquelle « l'ecart vient de la machine et non de
+l'eviction » n'est plus soutenue : une part vient de la contention, dont on
+ignore laquelle.
+
+La conclusion operatoire, elle, ne bouge pas : **la confidentialite decide, et
+elle seule.** Elle ne reposait pas sur le chiffre.
+
+**Ce que cela fait au verrou : cela le RENFORCE.** Si un simple calcul Python
+d'une autre session fausse d'un facteur inconnu un chronometrage local, alors
+deux inferences locales simultanees se genent bien plus que la convention « a
+tour de role » ne le laissait croire. Mais le mutex **ne voit pas les charges
+Python**, qui ne prennent aucun verrou — il protege les trois sessions du
+banc, pas la machine.
+
+Re-mesure convenue, machine au repos, des que les deux runs du voisin auront
+fini. Deux mesures — une chargee, une au repos — donnent la part imputable au
+plan et la part imputable a la contention. Un chiffre non interpretable
+devient deux chiffres utiles.
+
+**Regle qui en sort, et qui manquait :** avant tout chronometrage du plan
+local, relever la charge de la machine. Une latence locale mesuree sous charge
+etrangere ne mesure pas le plan.
+
+### 68.7 CE QUI SURVIT A LA CONTENTION, ET CE QUI N'Y SURVIT PAS
+
+Distinction apportee par `sovereign-ai-system-8e`, qui corrigeait ses propres
+mesures dans la meme heure. Elle vaut pour toute la journee et merite d'etre
+la regle :
+
+> **Un RAPPORT entre grandeurs mesurees dans le meme appel survit a la
+> contention. Une DUREE ABSOLUE, non.**
+
+Passees au crible, les mesures du jour :
+
+| mesure | nature | verdict |
+| --- | --- | --- |
+| `part_raisonnement` — brut contre nettoye | rapport, meme appel | **tient** |
+| `car_par_jeton` — 0,02 contre 3,15 | rapport, meme appel | **tient** |
+| raisonnement constant quelle que soit l'entree (voisin) | rapport | **tient** |
+| a 3000, le raisonnement double et la sortie baisse | rapport | **tient** |
+| jetons consommes par famille — 217, 226, 516, 802 | compte, pas duree | **tient** |
+| durees CLOUD — 3 a 9 s | duree, mais calcul distant | peu affecte, la part locale est l'attente passerelle |
+| durees LOCALES — 159 s, 195 s | duree, calcul sur la machine | **suspect** |
+| 50,8 / 367,4 / 399,0 s du voisin | duree locale | **suspect**, et sa non-linearite inexpliquee trouve peut-etre la son explication |
+
+Les conclusions batties sur des rapports ne bougent donc pas : la formule
+`budget = raisonnement_constant + sortie_attendue`, la complementarite des
+deux detecteurs, le classement des familles par sobriete. Ce sont les
+CONSTANTES qui sont a remesurer, pas les formes.
+
+**Regle inscrite : avant de publier une duree mesuree sur cette machine,
+mesurer qui d'autre y travaille.** Le voisin l'a formule apres avoir publie
+une non-linearite qu'il n'expliquait pas, mesuree sur une machine dont il ne
+controlait pas la charge — *« je vous avais donne la bonne reserve et la
+mauvaise raison »*.
