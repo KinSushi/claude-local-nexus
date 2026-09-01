@@ -5541,4 +5541,73 @@ d'un garde. La classe plus large — toute lecon non portee a son jumeau, quel
 que soit le jumeau — reste sans mecanisme general, et il est douteux qu'elle
 puisse en avoir un sans heuristique.
 
+---
+
+## 56. LA RECOLTE, PREMIERE ENTREE TRAITEE — et elle accusait le mauvais outil
+
+Entree #10 de la recolte des 34 : *« `nexus_compare` perd le drapeau
+`tronquee` que `chat()` calcule »*.
+
+### 56.1 Verifiee dans le code reel : FAUSSE
+
+`nexus_compare` recoit son `result` de `chat()` et le passe **deux fois** a
+`mentionsReponse`, lignes 2995 et 2996. Rien n'est perdu.
+
+**Mais l'entree designait le mauvais outil.** Arithmetique exacte sur les
+bornes des gestionnaires — de chaque `if (name === "nexus_x")` jusqu'au
+suivant — croisee avec les appels a `chat()` et a `mentionsReponse` :
+
+| gestionnaire | `chat()` | mention | verdict |
+| --- | --- | --- | --- |
+| `nexus_ask` | 2521 | 2526 | dit |
+| `nexus_route` | 2548 | 2553 | dit |
+| `nexus_vision` | 2670 | 2672 | dit |
+| **`nexus_summarize`** | 2728, 2825 | **aucune** | **TAIT** |
+| **`nexus_batch`** | 2958 | **aucune** | **TAIT** |
+| `nexus_compare` | 2990 | 2992 | dit |
+
+Deux outils sur six taisaient une information qu'ils **calculent**. Le plus
+grave est `nexus_summarize` : un resume coupe en plein milieu est precisement
+le cas ou l'appelant conclut sur un texte interrompu sans le savoir.
+
+### 56.2 TROIS PIEGES, attrapes par l'arbitrage et non par le compilateur
+
+1. **La mention etait inerte.** Le premier jet lisait une variable
+   `tronquees` **declaree nulle part**. Et la condition employait un test de
+   type sur un identifiant non declare — ce qui ne leve pas en JavaScript et
+   vaut donc faux **pour toujours**, en silence. Le faux vert parfait.
+2. **Le commentaire sans sa variable.** Le correctif suivant a pose le
+   commentaire « compte les resumes coupes a max_tokens » et **oublie la
+   declaration**. Un commentaire decrivant une variable qui n'existe pas.
+3. **L'increment sans declaration** aurait cree une variable **globale** en
+   CommonJS non strict : le compte se serait accumule d'un appel a l'autre, et
+   aurait ete faux des le deuxieme.
+
+Chaine complete desormais : declaree 2688, incrementee 2777 et 2877, lue 2897.
+
+### 56.3 LE CONTROLE QUI FERME LA CLASSE
+
+`scripts/epreuve_dire_troncature.py` analyse le **source** du pont : pour
+chaque gestionnaire, si son etendue contient un appel a `chat()`, elle exige
+la marque `mentionsReponse` **ou** la marque `tronquee`. Un gestionnaire qui
+n'appelle pas le modele n'est pas concerne.
+
+| maillon | etat |
+| --- | --- |
+| le script | `scripts/epreuve_dire_troncature.py` |
+| **sa preuve** | sur une copie du code d'AVANT : `[RATE] nexus_summarize`, `[RATE] nexus_batch`, **code 1** ; code corrige -> code 0 |
+| l'appelant | `nexus_test.py --only troncature` |
+| la porte | 6 gestionnaires concernes, 6 verts |
+
+Elle **refuse aussi de se taire** : si elle ne trouve aucun appel a `chat()`,
+elle echoue en le disant — un depot sain et un motif casse rendent le meme
+silence.
+
+### 56.4 Ce que cette entree enseigne sur la recolte elle-meme
+
+Sur les quatre entrees examinees jusqu'ici, **trois etaient perimees** (§52.1)
+et **une designait le mauvais outil** tout en pointant un defaut REEL. La
+recolte reste utile — elle a mene ici — mais elle se lit comme un signal, pas
+comme un constat. *Verifier chaque entree dans le code reel n'est pas une
+precaution : c'est la moitie du travail.*
 
