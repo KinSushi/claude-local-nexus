@@ -12,54 +12,59 @@ import io
 import json
 import sys
 
-if len(sys.argv) < 4:
-    print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
-    sys.exit(2)
-jsonl, nom, cible = sys.argv[1], sys.argv[2], sys.argv[3]
+def main():
+    if len(sys.argv) < 4:
+        print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
+        return 2
+    jsonl, nom, cible = sys.argv[1], sys.argv[2], sys.argv[3]
 
-texte = None
-with io.open(jsonl, encoding="utf-8") as fh:
-    lignes_brutes = fh.readlines()
-for ligne in lignes_brutes:
-    ligne = ligne.strip()
-    if not ligne:
-        continue
-    d = json.loads(ligne)
-    if d.get("nom") == nom:
-        texte = d.get("texte") or ""
-        break
+    texte = None
+    with io.open(jsonl, encoding="utf-8") as fh:
+        lignes_brutes = fh.readlines()
+    for ligne in lignes_brutes:
+        ligne = ligne.strip()
+        if not ligne:
+            continue
+        d = json.loads(ligne)
+        if d.get("nom") == nom:
+            texte = d.get("texte") or ""
+            break
 
-if texte is None:
-    print("REFUS : aucune tache nommee %s dans %s" % (nom, jsonl))
-    sys.exit(1)
+    if texte is None:
+        print("REFUS : aucune tache nommee %s dans %s" % (nom, jsonl))
+        return 1
 
-if "AUCUN DEFAUT" in texte.upper():
-    print("Le banc declare AUCUN DEFAUT SUR -- rien a appliquer.")
-    sys.exit(2)
+    if "AUCUN DEFAUT" in texte.upper():
+        print("Le banc declare AUCUN DEFAUT SUR -- rien a appliquer.")
+        return 2
 
-try:
-    avant = texte.split("<<<AVANT>>>", 1)[1].split("<<<APRES>>>", 1)[0]
-    apres = texte.split("<<<APRES>>>", 1)[1].split("<<<FIN>>>", 1)[0]
-except IndexError:
-    print("REFUS : le rendu ne porte pas les trois marqueurs.")
-    print(texte[:400])
-    sys.exit(1)
+    try:
+        avant = texte.split("<<<AVANT>>>", 1)[1].split("<<<APRES>>>", 1)[0]
+        apres = texte.split("<<<APRES>>>", 1)[1].split("<<<FIN>>>", 1)[0]
+    except IndexError:
+        print("REFUS : le rendu ne porte pas les trois marqueurs.")
+        print(texte[:400])
+        return 1
 
-# Les marqueurs sont poses sur leur propre ligne : on retire le saut qui suit
-# l'ouverture et celui qui precede la fermeture, jamais l'indentation.
-avant = avant.strip("\r\n")
-apres = apres.strip("\r\n")
+    # Les marqueurs sont poses sur leur propre ligne : on retire le saut qui suit
+    # l'ouverture et celui qui precede la fermeture, jamais l'indentation.
+    avant = avant.strip("\r\n")
+    apres = apres.strip("\r\n")
 
-with io.open(cible, encoding="utf-8") as f:
-    src = f.read()
-n = src.count(avant)
-print("bloc AVANT : %d occurrence(s) dans %s" % (n, cible))
-if n != 1:
-    print("REFUS : le bloc doit etre unique et reel. Non applique.")
-    print("--- ce que le banc a cru trouver ---")
-    print(avant[:400])
-    sys.exit(1)
+    with io.open(cible, encoding="utf-8") as f:
+        src = f.read()
+    n = src.count(avant)
+    print("bloc AVANT : %d occurrence(s) dans %s" % (n, cible))
+    if n != 1:
+        print("REFUS : le bloc doit etre unique et reel. Non applique.")
+        print("--- ce que le banc a cru trouver ---")
+        print(avant[:400])
+        return 1
 
-with io.open(cible, "w", encoding="utf-8", newline="\n") as f:
-    f.write(src.replace(avant, apres))
-print("APPLIQUE : %s" % cible)
+    with io.open(cible, "w", encoding="utf-8", newline="\n") as f:
+        f.write(src.replace(avant, apres))
+    print("APPLIQUE : %s" % cible)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
