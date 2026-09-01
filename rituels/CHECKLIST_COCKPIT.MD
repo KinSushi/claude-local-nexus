@@ -7480,3 +7480,115 @@ Il a reporte ; le lanceur sous verrou (§70.7) existe pour cette raison.
 
 Inscrit au contrat en §0.6, en memoire, et ici. Les trois, parce que la
 consigne dit exactement cela : *« tu vas oublier »*.
+
+---
+
+## 71. TROIS GARDES N'ONT RIEN VU — 2026-09-01, 14h
+
+### 71.1 LA CLASSE QUE LE VOISIN A NOMMEE
+
+> **La propriete qui protege une preuve d'un agent est celle qui permet a un
+> agent isole de la POLLUER.**
+
+Chez lui, une ancre de preuve vit HORS de l'arbre suivi, deliberement, pour
+qu'un agent qui detruit l'arbre ne detruise pas la preuve. C'est exactement ce
+qui la place hors du perimetre d'isolement des worktrees — un worktree d'agent
+isole y avait ecrit.
+
+*La menace pensee etait « un agent EFFACE la preuve ». Jamais « un agent
+AJOUTE a la preuve ».*
+
+Meme dispositif ici : `.nexus/verbatim/` vit hors de l'arbre, et ses entrees ne
+portaient AUCUNE origine. Champ ajoute, verifie.
+
+### 71.2 UN IMPORT LOCAL, ET TROIS GARDES AVEUGLES
+
+Le rendu du banc placait `import os` DANS une fonction qui utilisait deja `os`
+plus haut. En Python, un import local rend le nom LOCAL a TOUTE la fonction :
+les appels qui le PRECEDENT levent `UnboundLocalError`.
+
+| garde | ce qu'il a rendu | pourquoi il n'a rien vu |
+| --- | --- | --- |
+| `nexus_appliquer` | APPLIQUE | son role est que le bloc soit REEL et UNIQUE, jamais qu'il soit JUSTE |
+| `deposer` elle-meme | `''` | son `except` global avale tout, PAR CONCEPTION |
+| `nexus_portee_import` | **OK**, 14/14 | il pose la question VOISINE |
+
+Le troisieme est le plus instructif : **ce controle existe pour cette classe.**
+Sa question est « un nom est-il employe hors de la fonction qui l'importe ? ».
+Le defaut ici est l'inverse — un nom importe DANS une fonction qui l'utilisait
+deja par l'import global.
+
+> Le second merite d'etre lu deux fois. `deposer` avale ses exceptions parce
+> que *« perdre la trace est regrettable, perdre le travail serait
+> inacceptable »* — decision juste. **Mais le meme mecanisme masque les
+> defauts du depot lui-meme**, et c'est ainsi qu'un patch casse a survecu a
+> trois gardes.
+
+Il a fallu EXECUTER la fonction pour voir : elle rendait une chaine vide, et
+rien d'autre ne le disait.
+
+### 71.3 LE DIAGNOSTIC A ETE DELEGUE, DEUX FOIS, ET AUCUNE PASSE N'A TROUVE
+
+Conformement a la LOI 1 rappelee par l'operateur au moment meme. Les deux
+passes ont propose : cache de bytecode, shadowing d'import, cache
+`sys.modules`, reecriture par `purger`. **Aucune n'etait la bonne.**
+
+Elles ont pourtant servi : elles ont ECARTE quatre hypotheses par des
+verifications mecaniques, et oriente vers l'execution — qui a tranche.
+
+> Un diagnostic delegue qui se trompe quatre fois vaut mieux qu'un diagnostic
+> juste ecrit par celui qui a pose le defaut : le premier laisse une trace
+> verifiable, le second se confond avec son intention.
+
+### 71.4 `part_raisonnement` REND DESORMAIS 'inconnu'
+
+Defaut mesure par le voisin : 1.0 en appel direct, 0.0 par la passerelle, meme
+modele et meme question. La passerelle n'expose pas `message.thinking`.
+
+```
+ANCIEN   0.0        lu « modele bavard »    remede : BRIDER
+NOUVEAU  'inconnu'  aucun diagnostic        rien n'a ete observe
+```
+
+Deux diagnostics OPPOSES pour le meme rendu selon le chemin d'appel.
+`car_par_jeton` reste la grandeur valable dans le cas hors bande.
+
+### 71.5 LA MESURE DU VOISIN, avec ses reserves entieres
+
+96 277 fichiers haches en **24 min 29 s**, soit ~65,5 fichiers/s. Et ce qu'il
+en dit lui-meme : un seul echantillon donc « de l'ordre de 25 min » ; machine
+PARTAGEE et non au repos ; debit non transposable, les tailles etant tres
+inegales ; 112 fichiers illisibles comptes et non omis.
+
+**Il a corrige son propre chiffre DEUX FOIS** — 154 416 puis 73 919 puis
+96 277 — et sa conclusion vaut d'etre gardee : *le seul chiffre qui vaut est
+celui du releve qu'on cite, avec sa date.*
+
+Et son moniteur a rendu **« PROCESSUS DISPARU SANS NOUVELLE ANCRE »** alors
+que le releve avait abouti : il surveillait la COPIE de l'ancre, pas la
+canonique. Il avait ecrit une heure plus tot un document decrivant cette
+erreur exacte.
+
+> *Une erreur comprise et ecrite n'est pas une erreur mecanisee.* Il n'avait
+> pas retenu sa lecon — il avait retenu de l'AVOIR ECRITE, ce qui donne
+> exactement la meme confiance.
+
+Et le mode d'echec est le pire des trois : le moniteur n'a pas rendu « je ne
+sais pas », il a rendu un **verdict negatif affirmatif** sur une donnee qu'il
+ne pouvait pas voir.
+
+### 71.6 SUJETS OUVERTS — remplace §70.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **`nexus_portee_import` ne voit pas l'import local masquant un import global** | §71.2 | le controle existe POUR cette classe et rend OK |
+| Quand une source ne peut pas repondre, l'outil dit-il « absent » ou « pas regarde » ? | §71.5 | les deux se lisent pareil et se corrigent a l'oppose |
+| Le MCP ne prend pas le verrou — douze outils, `server.js:1546` | §70.2 | le plus urgent pour A2A |
+| Decharger les poids en sortant du VERROU | §70.3 | cout mesure ~177 s pour 20 Go |
+| Un champ de verdict unique `etat: complet / tronque_budget / tronque_bavard` | demande `sovereign` | evite de croiser quatre champs |
+| La reprise de plafond existe dans le lanceur, PAS dans le MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
+| `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s depensees, 0 octet rendu |
+| Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
+| Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | deux mesures sur 71 modeles |
+| Une cle `fichiers_communs` au niveau du lot | demande `ea-mt5` | quatre lectures du meme contenu |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
