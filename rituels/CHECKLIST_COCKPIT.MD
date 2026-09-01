@@ -10844,3 +10844,159 @@ suggestion d'un pair.** Les deux sont remontees a l'operateur avec leur mesure.
 | --- | --- | --- | --- |
 | 16 | Aucune regle `deny` ne protege l'ecriture des gardes | `OUVERT` | decision de l'operateur sur `settings.json`, puis une epreuve qui soumet un `Edit` sur un garde et exige le refus |
 | 17 | Cible declaree vs cible effective, sans signal | `OUVERT` | un controle qui, pour chaque protection declaree, verifie que sa cible existe ENCORE et contient ce qu'elle pretend proteger |
+
+---
+
+## 103. LE REFERENTIEL DES CONSIGNES DE L OPERATEUR — seance du 2026-09-01, et il vaut pour LES TROIS DEPOTS
+
+Consolide sur demande explicite : *« reprends toutes les mesures que j'ai citees depuis le debut pour
+avoir une vision d'ensemble »*, precedee de *« ce que je te dis cela vaut pour les 3 »*.
+
+Ce qui suit n'est pas une reformulation : ce sont ses consignes, dans leur ordre d'apparition,
+regroupees par objet, avec pour chacune l'etat MESURE a la fin de la seance.
+
+---
+
+### 103.1 MATERIEL ET DISQUES — trois arbitrages, tous contre la proposition initiale
+
+| consigne | etat |
+| --- | --- |
+| *« pas besoin de polluer C: si les deux volumes sont revenus sains »* | **TENU** — 1,1 Go / 36 530 fichiers copies puis SUPPRIMES |
+| *« on a besoin de C: pour ajouter des modeles LLM en local »* | **TENU** — C: a 330 Go libres, rien n'y reste |
+| *« si les pilotes anterieurs n'etaient pas stables, d'ou la nouvelle mise a jour, alors on ne touche a rien »* | **TENU** — retour arriere REJETE, correlation des 45 jours consignee non jouee |
+| *« par contre on desactive les mises a jour futures »* | **FAIT PAR L'OPERATEUR**, manuellement, dans les parametres |
+| *« si rejeu des volumes au montage et que tout est sain on poursuit tel quel »* | **VERIFIE** — Repair-Volume NoErrorsFound, Ntfs 98, zero erreur UASP |
+
+**Le principe general qu'il en tire, et qui vaut pour les trois :** sur un volume convalescent, un
+geste cosmetique est le pire rapport benefice/risque. Les ACE fossiles de `ea-mt5` et `sovereign`
+sont INERTES (sonde de morsure) ; les retirer couterait `takeown /r` + `icacls /T` sur 654 Go d'un
+disque revenu depuis trois heures. **Ne rien faire est une DECISION, et elle s'ecrit.**
+
+---
+
+### 103.2 INDEPENDANCE — les deux questions qui ont structure la seance
+
+*« si abonnement claude OFF et abonnement ollama OFF, qui prendra le relai et comment ? »*
+*« dans le cas de figure ou l'on veut tout faire local avec un peu de cloud gratuit mais sans en
+dependre, qui prendra ta place ? »*
+
+**Reponse mesuree, et elle scinde en deux ce que la question reunit :**
+
+| | verdict |
+| --- | --- |
+| l'EXECUTION | **survit** — `glm-4.7-flash-local` 22 s, cout 0, endpoint `host.docker.internal:11434`, `attempted-fallbacks: 0`. 55 modeles locaux, dont 14 a 4/4 aux epreuves d'orchestration |
+| l'ORCHESTRATION | **ne survit pas** — Claude Code est le harnais autant que le modele |
+
+Ce qui continue sans session : quatre taches planifiees, dont `NexusTraque` (PT10M) et
+`NexusVitrine` (PT6H). Ce qui manque : la boucle qui lit, decide, applique, verifie et recommence.
+
+---
+
+### 103.3 ROUTAGE — repere a l'oeil nu par l'operateur, confirme a 53,2 %
+
+*« le routage tombe tres souvent sur le meme modele alors qu'on en a une panoplie »*
+
+Mesure : `gpt-oss-120b-cloud` = **3829 requetes sur 7195**, 72 % des requetes et 88 % du volume
+sortent de la machine. Cause structurelle : `REPLIS_GRATUITS` a deux membres sur cinquante, le cloud
+en tete, et 26 fichiers du depot le prescrivent en exemple (§90).
+
+*« sinon cloud »* — arbitrage explicite quand le local depasse le raisonnable. **Ce n'est pas la
+contradiction du point precedent, c'en est la regle d'application** : choisir selon la tache et le
+dire, jamais par habitude. Le defaut denonce est l'habitude, pas le cloud.
+
+---
+
+### 103.4 TENUE DU DEPOT — huit consignes, toutes tenues
+
+| consigne | etat |
+| --- | --- |
+| *« ces sujets ouverts tu les notes dans la checklist »* | §90 a §102, dix-sept sujets |
+| *« tu fais progresser le PROGRESS.md journal d'avancement »* | 191 -> 350 lignes |
+| *« tu reconsilie tes fichiers »* | collision `PROGRESS.md` genere / manuscrit levee et consignee (§93) |
+| *« tu le mets a jour au fur et a mesure du progres »* | cinq commits, cockpit commite avec le code |
+| *« sans oublier les rituels de livraisons »* | `nexus_rituel.py` -> **rituel tenu** |
+| *« tu batti ton plan / checklist correctement »* | chaque sujet porte *ce qui le fermerait*, jamais un paragraphe |
+| *« tu mecanises tout »* | une epreuve posee et cablee ; le reste **ouvert et dit comme tel** |
+| *« n'oublies pas les cablages correct »* | `nexus_cablage.py` : aucune regression — et son propre trou mesure (§97) |
+| *« n'oublies pas la boussole, cela va plus vite qu'un grep »* | regeneree, 3205 fichiers indexes |
+
+---
+
+### 103.5 LE ROLE — quatre enonces qui se resserrent, et le dernier est le plus strict
+
+1. *« tu es orchestrateur, pas producteur ni auteur. tu peux auditer ca oui »*
+2. *« LIRE avant d'ecrire »*
+3. *« interdit de valider son propre code si tu es auteur »*
+4. *« ce que tu ne produis pas tu peux l'auditer, mais l'inverse non »*
+
+Le quatrieme est le plus fort et il subsume les autres : **l'audit n'est permis que sur ce dont on
+n'est pas l'auteur.** Ce n'est pas une preference de methode, c'est une condition de validite du
+verdict.
+
+**Etat mesure :** aucun de ces quatre points n'est mecanise. Le contrat le reconnait deja en toutes
+lettres — *« aucun controle n'echoue aujourd'hui quand l'orchestrateur ecrit lui-meme le
+correctif »*. Et la seance en donne la demonstration : la v4 du hook a ete ecrite par `kimi-k3`, son
+audit final avait ECHOUE sur un plafond, et elle allait etre presentee comme prete. **Sans le rappel
+de l'operateur, un hook non audite passait pour valide.**
+
+---
+
+### 103.6 GARDES ANTI-DERIVE — la consigne qui a deplace toute la concertation
+
+*« il faut que tu puisses continuer en toute autonomie, mais avec les gardes anti-derives »*
+*« si tu oublies de mettre des agents en worktree isoles avec une COPIE du fichier la catastrophe
+peut arriver et elle peut etre irreversible »*
+
+**Cette phrase a change la cible des trois depots.** Nous debattions de proteger les GARDES ; le
+chemin vers l'irreversible etait ailleurs, et personne ne l'avait vu :
+
+```
+nexus_garde_agent.py  ->  ZERO occurrence de « isolation » ou « worktree »
+sovereign             ->  ZERO hook sur le depechage ; 28 456 fichiers supprimes en silence
+ea-mt5                ->  ZERO matcher sur Agent
+```
+
+Le classement qui a emporte la decision est celui de la REVERSIBILITE, non de la gravite ressentie :
+un garde modifie se rattrape par git ; une ACE fossile ne refuse rien ; **un agent non isole ecrase
+des fichiers qui ne sont dans aucun commit.**
+
+---
+
+### 103.7 COMMUNICATION ENTRE LES TROIS — et ce qu'elle a produit
+
+*« communique avec sovereign »* · *« donne-lui le chemin de son contexte »* ·
+*« concertez-vous entre vous 3 sur la justesse et le bon niveau »* · *« mettez-vous tous les 3
+d'accord »* · *« ce que je te dis cela vaut pour les 3 »*
+
+**Aucune des trouvailles majeures de la seance ne vient d'un audit. Toutes viennent de l'usage, et
+la moitie n'est devenue visible que parce qu'un TIERS a pose la question voisine.**
+
+| apport | origine | ce qu'il a corrige ici |
+| --- | --- | --- |
+| la regression de question | `sovereign` | « cablage tenu » parlait des scripts, jamais des epreuves |
+| les 18 faux negatifs | ici | a empeche les deux voisins de poser un critere qui crie toujours |
+| l'index d'armement | ici, forme par `sovereign` | 35 epreuves cablees, **zero armee** |
+| commande, pas occurrence | `sovereign` | sans elle, `CLAUDE.md:544` comptait comme un armement |
+| la sonde de morsure | `ea-mt5` | remplace la lecture de descripteur par une epreuve d'effet |
+| le temoin positif | `sovereign` | sans lui, une sonde cassee rend « un rouge sur un examen vide » |
+| « ce que Bash LANCE » | `ea-mt5` | a rendu visible un defaut subi trois fois le jour meme |
+| `git diff --stat` avant commit | `sovereign` | controle de PROPORTION, au-dela du seul CRLF |
+| le temoin d'enumeration | `ea-mt5` | avant « zero veut-il dire rien ou rien-compte », verifier qu'on VOIT |
+| ma v2 refusait `Bash`, `Read`, `Edit` | `ea-mt5` | quatre familles ne l'avaient pas vu |
+| `session_id` vs `agent_id` | `ea-mt5` | m'a evite d'importer une conclusion vraie chez lui, fausse ici |
+
+---
+
+### 103.8 CE QUI RESTE, et personne ne le maquille
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| A16 | LIRE AVANT D ECRIRE fait partie du dispositif, au meme titre que l'isolation | **OUVERT** |
+| A17 | Interdit de valider son propre code quand on en est l'auteur | **OUVERT**, mecanisation deleguee |
+| A15 | Lire-avant-ecrire pour les sous-agents | **NON TRANCHE ICI** — mon garde indexe par `session_id`, zero occurrence d'`agent_id` ; la mesure de `ea-mt5` vaut chez lui, pas chez moi |
+| 13 | Aucune gate ne joue `nexus_test.py` | **OUVERT** — 35 epreuves, 550 s, 4 echecs preexistants |
+| — | Le hook d'isolation | **ECRIT, EPROUVE, AUDITE UTILISABLE — NON ARME** |
+
+**Rien n'est arme chez aucun des trois.** Poser et armer sont des gestes d'operateur : aucune session
+ne modifie sa propre configuration de permissions, a plus forte raison sur suggestion d'un pair,
+meme validee par les trois.
