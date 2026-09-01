@@ -5214,3 +5214,102 @@ payees.
 Le risque majeur est la violation de la règle stricte : **« aucune donnee ne doit franchir une frontiere de fournisseur sans decision explicite »**.
 
 Dans `server.js`, chaque appel d'outil (`nexus_ask`, etc.) est une décision explicite de l'orchestrateur. A2A, via `A2AMessagePump` et `A2AClient`, risque d'établir un **canal de communication persistant** entre agents. Si ce canal est automatisé, des données pourraient transiter d'un fournisseur à un autre (ex: local vers cloud) via les messages A2A sans que l'orchestrateur ne prenne une décision explicite **pour chaque message**, contournant ainsi les garde-fous actuels du pont MCP.
+
+---
+
+## 54. LE MASSIF — 44 audits, 5 trouvailles, UNE qui tient
+
+Lot bati depuis le depot lui-meme : un script par tache, **six familles de
+defaut que CE depot a payees**, neuf modeles cloud distincts, trois fronts,
+**24 appels simultanes**. 44 sur 44 abouties.
+
+### 54.1 Le rendement brut, et ce qu'il dit
+
+| | |
+| --- | --- |
+| taches abouties | **44 / 44** |
+| rendus **non vides** | **5** |
+| rendus vides | 11 |
+| « AUCUN DEFAUT SUR » | 28 |
+| bascules | 13 — dont **10 par troncature**, 3 par delai |
+
+Cinq trouvailles sur quarante-quatre audits etroits. Les six familles que ce
+depot a payees sont donc, pour l'essentiel, **deja purgees de ses propres
+scripts** — ce qui est le resultat souhaite, et qu'il fallait mesurer plutot
+que supposer.
+
+### 54.2 L'ARBITRAGE : une sur quatre tient
+
+La cinquieme etait une non-reponse — le modele reclamait le fichier qu'on lui
+avait deja donne.
+
+| trouvaille | verdict, verifie dans le code reel |
+| --- | --- |
+| `nexus_garde_shell` — « le refus sort en 0, donc ne bloque rien » | **REJETEE** |
+| `nexus_relais` — « `total_jetons` calcule et jamais employe » | **REJETEE** — employe ligne 333 |
+| `nexus_generate:215` — « code de sortie de `ollama show` ignore » | **REJETEE** — la ligne 215 est une docstring, l'emplacement est invente |
+| `nexus_maj_modeles` — mesure sans date, constantes gelees | **CONFIRMEE** |
+
+**La premiere merite d'etre expliquee, car elle instruit.** Le code est :
+
+```python
+def refuser(motif):
+    sys.stdout.write(json.dumps({... "permissionDecision": "deny" ...}))
+    sys.exit(0)
+```
+
+Un hook `PreToolUse` communique son refus **par ce JSON**, jamais par son
+code de sortie. Sortir en 0 EST le mecanisme de blocage — et ce garde a
+bloque son auteur trois fois dans la journee.
+
+> *Une regle vraie sur un mecanisme est fausse sur son voisin.* La doctrine
+> « un refus qui sort en 0 ne bloque rien » a ete payee sur un AUTRE
+> mecanisme ; elle ne se transporte pas ici. C'est la meme erreur de
+> generalisation que §112.3 corrige sur les modeles, commise cette fois par
+> le banc, et arretee par la verification.
+
+### 54.3 La seule confirmee, et elle vise la famille du jour
+
+`scripts/nexus_maj_modeles.py` portait :
+
+```python
+MARGE_DISQUE_GO = 50
+DELAI_PULL_S = 1800
+```
+
+et, plus loin, un commentaire affirmant *« Mesure apres correction : un
+modele a jour est classe en 0,7 seconde »* — **sans dire quand**.
+
+Corrige : les deux valeurs se lisent desormais depuis l'environnement
+(`NEXUS_MARGE_DISQUE_GO`, `NEXUS_DELAI_PULL_S`), avec le motif ecrit a cote —
+une marge de disque est une POLITIQUE qui depend de la machine, et un delai
+de telechargement depend du debit reseau, qui n'est pas une propriete du
+depot.
+
+### 54.4 LES ONZE VIDES : le script diagnostiquait, et se taisait ensuite
+
+Lu un enregistrement EN ENTIER plutot qu'agrege — apres deux lectures fausses
+de suite :
+
+```
+erreur              plafond insuffisant : demande 4000 jetons, augmenter le plafond
+plafond_insuffisant True
+modele              glm-4.7-flash-local      <- dernier candidat essaye
+lot demandait       nemotron-3-ultra-cloud   <- le vrai demande, PERDU
+```
+
+Deux defauts, tous deux des JUMEAUX oublies :
+
+* le champ `demande_initiale` n'etait pose que sur le chemin de BASCULE,
+  jamais sur celui de l'EPUISEMENT — d'ou un chiffre lu a l'envers deux fois ;
+  desormais pose systematiquement ;
+* le pont MCP a recu ce jour une reprise unique a budget double sur ce cas
+  precis ; **le script ne l'avait pas eue**. Ajoutee, avec ses trois bornes :
+  une seule reprise, plafond a 16384, et seulement si le nouveau budget est
+  STRICTEMENT superieur.
+
+**Et le premier jet de cette reprise etait un faux vert parfait** : le banc
+avait declare `PLAFOND_REPRISE = 16384` et ne s'en servait NULLE PART. Une
+constante sans sa mecanique — *produit, non consomme*. Attrapee par
+l'arbitrage, pas par le compilateur.
+

@@ -8,9 +8,10 @@ import shutil
 import json
 import tempfile
 
-# Constantes
-MARGE_DISQUE_GO = 50
-DELAI_PULL_S = 1800
+# La marge de disque est une POLITIQUE et non une mesure, elle depend de la machine et se regle donc sans toucher au code.
+# Le delai de telechargement depend du debit reseau, qui n'est pas une propriete du depot.
+MARGE_DISQUE_GO = int(os.getenv('NEXUS_MARGE_DISQUE_GO', '50'))
+DELAI_PULL_S = int(os.getenv('NEXUS_DELAI_PULL_S', '1800'))
 
 def execute_command(cmd, encoding='utf-8'):
     """Execute une commande et retourne stdout, stderr, code de sortie."""

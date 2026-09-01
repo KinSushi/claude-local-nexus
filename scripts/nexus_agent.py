@@ -188,6 +188,12 @@ DELAI = int(os.environ.get("NEXUS_AGENT_TIMEOUT", "900"))
 # lot qui compte, pas l'obstination sur un fragment.
 DELAI_MAP = int(os.environ.get("NEXUS_MAP_TIMEOUT", "180"))
 
+# Plafond maximal autorise pour la reprise automatique en cas de plafond
+# insuffisant. Mesure du 2026-08-31 : onze taches sur quarante-quatre, a
+# 4000 jetons, ont echoue par plafond trop bas ; le pont MCP a recu ce jour
+# une reprise unique a budget double.
+PLAFOND_REPRISE = 16384
+
 # Temperature par defaut. 0.2 et non le defaut des modeles, souvent 0.7 a
 # 0.8 : le travail dominant ici est de la relecture de code, de l'extraction
 # et des sorties au format strict, ou une temperature haute produit la
@@ -929,8 +935,9 @@ def executer(tache: dict, cle: str) -> dict:
                               % (candidat, resultat.get("tokens", 0)))
                 continue
 
+        # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
-                         "plan": plan_de(resultat["adresse"])})
+                         "plan": plan_de(resultat["adresse"]), "demande_initiale": modele})
         if local_seul and resultat.get("plan") != "local":
             return {"nom": nom, "modele": candidat,
                     "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
@@ -958,6 +965,15 @@ def executer(tache: dict, cle: str) -> dict:
             "detail": f"demande {plafond} jetons, augmenter le plafond",
             "erreur": f"plafond insuffisant : demande {plafond} jetons, augmenter le plafond"
         })
+        # mesure: onze taches sur 44 a 4000 jetons, reprise a plafond egal reproduirait meme appel
+        new_plafond = min(plafond * 2, PLAFOND_REPRISE)
+        if new_plafond > plafond and not tache.get('_reprise'):
+            copie = dict(tache)
+            copie['max_tokens'] = new_plafond
+            copie['_reprise'] = True
+            resultat = executer(copie, cle)
+            resultat['reprise_plafond'] = f"{plafond} -> {new_plafond}"
+            return resultat
         return trunc_failure
 
     return {"nom": nom, "modele": modele,
