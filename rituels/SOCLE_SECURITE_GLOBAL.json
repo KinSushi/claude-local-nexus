@@ -1,0 +1,105 @@
+{
+  "_commentaire": "SOCLE DE SECURITE MULTI-PROJET — union des listes de local-llm-docker, sovereign-ai-system et ea-mt5-python-rentable, consolidee le 2026-09-01. A FUSIONNER dans C:\\Users\\dibac\\.claude\\settings.json, cle 'permissions'. Ne PAS remplacer le fichier : y ajouter ces cles. Le niveau global est le seul ou une revision ne diverge pas — trois listes locales recopiees divergent des qu'on en touche une.",
+
+  "_regle_ask_ou_deny": "ea-mt5 : 'reset --hard est reparable PAR LE REFLOG, reflog expire et gc --prune=now DETRUISENT le reflog'. Donc : geste rattrapable -> ask acceptable ; geste qui detruit le reflog ou reecrit l'histoire -> deny, JAMAIS ask. On ne demande pas l'autorisation de supprimer le moyen de revenir en arriere : la reponse arrive au moment ou l'on est le moins dispose a reflechir, et un ask repete finit approuve machinalement.",
+
+  "_epreuve_obligatoire": "Cette liste ne prouve RIEN par sa presence. Mesure du 2026-09-01 : chez sovereign fnmatch annoncait des trous inexistants ; ici la recherche par sous-chaine annoncait une couverture inexistante — rm -rf, git update-ref -d et git filter-branch PASSAIENT tous les trois, rc=0. Eprouver chaque motif par MESURE D'EFFET sur cible inexistante, et REJOUER l'epreuve apres tout changement de mode de permission.",
+
+  "permissions": {
+    "deny": [
+      "Bash(git filter-branch *)",
+      "PowerShell(git filter-branch *)",
+      "Bash(git filter-repo *)",
+      "PowerShell(git filter-repo *)",
+      "Bash(git commit --amend*)",
+      "PowerShell(git commit --amend*)",
+      "Bash(git rebase *)",
+      "PowerShell(git rebase *)",
+      "Bash(git update-ref -d *)",
+      "PowerShell(git update-ref -d *)",
+      "Bash(git reflog expire*)",
+      "PowerShell(git reflog expire*)",
+      "Bash(git gc --prune=now*)",
+      "PowerShell(git gc --prune=now*)",
+      "Bash(git push --force*)",
+      "PowerShell(git push --force*)",
+      "Bash(git push -f *)",
+      "PowerShell(git push -f *)",
+
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r *)",
+      "Bash(rm -f *)",
+      "Bash(rm --recursive*)",
+      "Bash(rm --force*)",
+      "Bash(rm *)",
+      "PowerShell(Remove-Item * -Recurse*)",
+      "PowerShell(Remove-Item -Recurse*)",
+      "PowerShell(Remove-Item -Force *)",
+      "PowerShell(rm -r *)",
+      "PowerShell(Clear-Content *)",
+
+      "Bash(dd *)",
+      "Bash(format *)",
+      "Bash(diskpart *)",
+      "PowerShell(diskpart *)",
+      "PowerShell(Format-Volume *)",
+      "PowerShell(Clear-Disk *)",
+      "PowerShell(Initialize-Disk *)",
+      "PowerShell(Remove-Partition *)",
+      "Bash(* > /dev/sd*)",
+
+      "Bash(shutdown *)",
+      "PowerShell(Stop-Computer *)",
+      "PowerShell(Set-ExecutionPolicy *)",
+
+      "Bash(chmod *)",
+      "Bash(icacls *)",
+      "Bash(takeown *)",
+      "PowerShell(icacls *)",
+      "PowerShell(takeown *)",
+      "PowerShell(Set-Acl *)",
+
+      "PowerShell(Invoke-WebRequest * | iex*)",
+      "PowerShell(iwr * | iex*)",
+      "PowerShell(Invoke-WebRequest * | Invoke-Expression*)",
+      "PowerShell(Invoke-RestMethod * | Invoke-Expression*)",
+
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.production)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/.ssh/**)",
+      "Read(**/.aws/credentials)"
+    ],
+
+    "ask": [
+      "Bash(git reset --hard *)",
+      "PowerShell(git reset --hard *)",
+      "Bash(git clean *)",
+      "PowerShell(git clean *)",
+      "Bash(git push *)",
+      "PowerShell(git push *)",
+      "Bash(git tag *)",
+      "Bash(docker compose down -v*)",
+      "PowerShell(docker compose down -v*)",
+      "Bash(docker volume rm *)",
+      "PowerShell(docker volume rm *)",
+      "Bash(docker system prune *)",
+      "PowerShell(docker system prune *)"
+    ]
+  },
+
+  "_correctif_hook": "Le hook global declare matcher \"Agent\". Le code de nexus_garde_agent.py traite Agent ET Workflow — sa branche _handle_workflow, son OUTILS_JUGES et son message de refus dedie ne sont JAMAIS atteints. Le depot a mesure 460 sous-agents lances par Workflow en une nuit : le garde ecrit pour cet incident precis ne peut pas le voir. Correctif : matcher \"Agent|Task|Workflow\". ATTENTION — cette branche s'executera alors pour la PREMIERE fois en conditions reelles ; un code jamais execute peut etre faux aussi.",
+
+  "_ce_que_ce_socle_ne_ferme_pas": [
+    "Le heredoc python - <<EOF : declare, non ferme. Le remede naif coute 18 faux negatifs, mesures.",
+    "Le depechage d'agent sans worktree : couvert par le hook d'isolation, ecrit et audite UTILISABLE, NON ARME.",
+    "Deux sessions sur le meme arbre git : aucune coordination, mesure ce jour — quatre sessions dans .nexus/lectures/ du meme depot.",
+    "La fraicheur d'une sauvegarde HORS-DISQUE : aucun controle des trois depots ne la mesure."
+  ]
+}
