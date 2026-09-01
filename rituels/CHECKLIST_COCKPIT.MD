@@ -5466,7 +5466,40 @@ jumeau. Aucun controle ne garde cette classe. Ce qui la fermerait :
   d'un cas d'epreuve sur **chacun** des cas declares, ce qui rend l'oubli
   visible au moment ou il se produit.
 
-Le second est mecanisable et ne demande aucune heuristique. Il n'est pas
-fait.
+Le second est mecanisable et ne demande aucune heuristique. **Il est fait** —
+sous une forme meilleure que celle envisagee, et c'est une mesure qui l'a
+corrigee avant l'ecriture.
+
+### 55.9 FERME — le controle de la classe, et le critere qu'une mesure a change
+
+**Ce que j'allais ecrire** : un controle exigeant que l'epreuve NOMME le
+detecteur qu'elle couvre.
+
+**Ce que la mesure a dit** : `epreuve_garde_shell_ps.py` n'en nomme **aucun**.
+Elle passe par le protocole du hook, en boite noire — ce qui est **meilleur**,
+puisqu'elle eprouve toute la chaine, refus compris. Le controle envisage
+aurait donc rougi sur la meilleure des epreuves.
+
+**Le critere retenu, exact et sans heuristique** : pour chaque fonction du
+garde nommee `detecter_cas_*`, verifier qu'elle est menee aux **deux issues**.
+
+> Un detecteur qui ne peut pas rendre vrai ne refuse RIEN.
+> Un detecteur qui ne peut pas rendre faux refuse TOUT.
+
+Les deux ont deja ete payes ici. La decouverte est **dynamique** : un
+detecteur ajoute demain fait echouer l'epreuve tant qu'il n'a pas ses deux
+cas.
+
+| maillon | etat |
+| --- | --- |
+| le script | `scripts/epreuve_couverture_gardes.py` |
+| **sa preuve** | detecteur temporaire ajoute sans cas -> `[RATE] detecter_cas_zz : missing test cases`, **code 1** ; garde restaure -> code 0 |
+| l'appelant | `nexus_test.py --only couverture` |
+| la porte | 6 reussis, 0 echec par le harnais |
+
+Ce qui n'est PAS couvert, et se dit : le controle vaut pour les detecteurs
+d'un garde. La classe plus large — toute lecon non portee a son jumeau, quel
+que soit le jumeau — reste sans mecanisme general, et il est douteux qu'elle
+puisse en avoir un sans heuristique.
 
 
