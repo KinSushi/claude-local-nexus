@@ -162,5 +162,14 @@
       "Bash(uv pip install *)",
       "Bash(npm install *)"
     ]
-  }
+  },
+  "_ATTENTION_regles_Write_NON_EPROUVEES": "AFFIRMATION DE ea-mt5, DOCUMENTEE CHEZ LUI ET NON RE-MESUREE : « depuis Claude Code v2.1.210, les regles de chemin sur Write / MultiEdit / NotebookEdit sont ACCEPTEES MAIS JAMAIS CONSULTEES. En garder ne durcit rien : cela gonfle le fichier et FAIT CROIRE A UNE PROTECTION QUI N'EXISTE PAS. » Son depot serait passe de 495 regles a 111 pour cette raison, et un invariant les fait rougir chez lui. CE FICHIER EN CONTIENT 6. MESURE FAITE ICI, et elle ne tranche PAS : « echo x > fichier.pem » PASSE (rc=0) alors que Read(**/*.pem) est en deny actif — donc les prefixes d'outil ont un sens, le harnais les distingue, et Read() ne couvre pas l'ecriture. Mais aucune regle Write() n'est ACTIVE dans ce depot, donc son inertie ne peut pas etre eprouvee avant la pose. DECISION : NI RETIREES NI PRESENTEES COMME PROTECTRICES. Les retirer sur une affirmation non re-mesuree remplacerait une incertitude par une autre ; les garder en silence ferait croire a une protection. Elles sont donc CONSERVEES ET MARQUEES. MESURE A FAIRE APRES LA POSE, sans danger : ecrire par l'outil Write un fichier NEUF a un chemin couvert par une regle Write(...), en zone scratch. Si l'ecriture passe, la regle est inerte et c'est PROUVE — alors seulement les retirer. SI ELLES SONT INERTES, LE TROU N'EST PAS FERMABLE PAR UNE REGLE : il rejoint le heredoc et python -c open(...) dans ce qui se DECLARE. Troisieme trou du jour sans fermeture possible, et les trois fois le traitement juste a ete la declaration, jamais un motif de plus.",
+  "_regles_Write_dans_ce_fichier": [
+    "Write(**/.env)",
+    "Write(**/secrets/**)",
+    "Write(**/*.pem)",
+    "Write(**/*.key)",
+    "Write(.claude/settings.json)",
+    "Write(.claude/settings.local.json)"
+  ]
 }
