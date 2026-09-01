@@ -11735,3 +11735,124 @@ ET un local peuple pour comparer. **La mesure ne peut donc etre faite qu'APRES l
 | 33 | Les destructives de ce depot sont en `ask` donc inertes | `OUVERT` — conversion en `deny`, geste de l'operateur, zero ligne a ecrire |
 | 34 | La precedence global/local n'est mesuree par personne | `OUVERT` — mesurable seulement APRES la pose |
 | 35 | La lecture d'un secret par un interpreteur reste ouverte | `DECLARE` — aucun motif ne la couvre, dans les trois depots |
+
+---
+
+## 111. UN ARTEFACT CORRECT DONT L'USAGE DOCUMENTE EST FAUX — la classe que la pose a revelee
+
+Trouvee le 2026-09-01, en produisant la commande de verification du socle. C'est la classe la plus
+tardive de la journee et l'une des plus dangereuses : **elle ne porte sur aucun defaut du fichier.**
+
+### 111.1 LE FAIT
+
+`SOCLE_UNIVERSEL.json` porte `deny` et `ask` **a la racine**, pas sous une cle `permissions`. Le
+harnais lit `permissions.deny`. **Copie tel quel dans `settings.json`, le socle ne s'applique pas.**
+
+```
+head SOCLE_UNIVERSEL.json  ->  { "deny": [ ...        <- a la racine
+cles sous "permissions"    ->  0
+```
+
+**Le fichier est juste.** Son empreinte est juste, sa liste est juste, ses 185 regles sont justes.
+**C'est le mode d'emploi ecrit autour de lui qui est faux.**
+
+### 111.2 CE QUE CELA A FAILLI COUTER — chez `sovereign`, deux fois
+
+Il avait ecrit a son operateur, par deux fois :
+
+> *« copier `CANDIDAT_permissions_globales.json` vers `~/.claude/settings.json` »*
+
+**Cette instruction aurait pose un socle INERTE** : 185 regles presentes dans le fichier, zero
+consultee, et un `git diff` parfaitement propre pour l'attester. **Le pire cas possible — la
+protection paraissait posee.**
+
+Ce qui l'a sauve n'est pas sa vigilance : son `poser_socle.py` FUSIONNE au lieu de copier, il lit
+`socle.get("deny")` a la racine et ecrit dans `apres["permissions"]["deny"]`. La forme est donc
+traduite correctement — **par accident de conception, pas parce que le piege avait ete vu.** Si son
+operateur avait suivi l'instruction ECRITE plutot que lance le SCRIPT, le socle etait mort.
+
+> **Le fichier est un FRAGMENT SOURCE, pas un `settings.json`.**
+
+### 111.3 POURQUOI AUCUNE DE NOS VERIFICATIONS NE POUVAIT LE VOIR
+
+Nous avions verifie, chacun de notre cote :
+
+| ce que nous comparions | verdict |
+| --- | --- |
+| l'empreinte sha256 des trois copies | identique |
+| la presence des sept motifs de reference | tous presents |
+| l'absence de chemin d'installation | aucun |
+| le nombre de regles | 185 deny, 26 ask |
+
+**Aucun de ces controles ne porte sur la FORME ATTENDUE PAR LE DESTINATAIRE.** Nous validions le
+contenu contre nos intentions, jamais contre le format que le harnais sait lire.
+
+C'est la meme dissymetrie que le §109.2, deplacee d'un cran : l'index d'armement demande « ce qui
+est declare tourne-t-il », le cliquet demande « ce qui existe est-il declare » — et il manquait
+« ce qui est produit est-il DANS LA FORME que son consommateur attend ».
+
+### 111.4 CE QUI L'A REVELE : un script qui LIT le fichier comme le harnais le lirait
+
+Le defaut a ete trouve en ecrivant `nexus_socle.py`, et par un chemin instructif : **sa premiere
+version cherchait `data["permissions"]["deny"]` et rendait « les sept motifs manquent » sur un
+fichier qui les contient tous.**
+
+Le faux negatif de l'outil ETAIT le defaut du fichier. La version posee essaie `permissions` puis
+la racine, par une fonction unique que toutes les lectures traversent — et un cinquieme controle
+nomme `structure fusionnable` rend desormais :
+
+```
+[RATE] structure fusionnable : non fusionnable tel quel, envelopper deny et ask
+       dans une cle permissions (local-llm-docker, sovereign)
+```
+
+> **Un outil qui consomme un artefact comme son destinataire le consommera trouve ce qu'aucune
+> relecture ne trouve.**
+
+### 111.5 LE REMEDE POSE ICI — sans toucher a la preuve
+
+Deux fragments SEPARES, produits depuis le socle sans le modifier :
+
+```
+rituels/A_POSER_global.json   185 deny, 26 ask, sous une cle permissions
+rituels/A_POSER_local.json     44 deny
+empreinte du socle apres production : cef66586c7fbebfb — INTACTE
+```
+
+**Contrainte que la preuve impose et que personne n'avait anticipee : le fichier qui porte
+l'empreinte devient intouchable.** Toute correction, meme juste, casse la demonstration de
+convergence. D'ou des fragments derives plutot qu'une modification.
+
+### 111.6 DEUX DEFAUTS EVITES PAR AUDIT CROISE, dans les outils de pose
+
+| chez | defaut | ce qu'il aurait fait |
+| --- | --- | --- |
+| `sovereign` | la sauvegarde etait faite AVANT le test du mode constat | **le mode qui promet de ne rien toucher creait un fichier a chaque lancement** |
+| `ea-mt5` | modification du matcher par INDEX, `PreToolUse[0]` | **aurait casse deux gardes en silence** — chez `sovereign`, `PreToolUse` porte CINQ entrees et la premiere n'est pas celle du dispatch |
+
+Le second est le plus instructif : ses trois invariants ne l'auraient PAS vu. Aucune cle perdue,
+aucune regle perdue, commande du hook inchangee. **Il verifiait que la commande ne bouge pas, pas
+qu'elle est LA BONNE.**
+
+**Verification ici, a sa demande, et par la STRUCTURE et non par le resultat observe :**
+
+```
+144  if mode == '--simulation':
+157      return 0                      <- sortie explicite
+159  elif mode == '--poser':
+161      backup_path = backup_file()   <- inatteignable depuis la simulation
+
+occurrences de « hooks » dans nexus_poser_socle.py : 0
+```
+
+Le mode simulation ne peut pas atteindre la sauvegarde — c'est structurel. Et le script ne touche
+aucun hook, donc le defaut d'index ne s'applique pas.
+
+> Sa demande etait la bonne : *« verifie que le test vient bien AVANT l'appel a la copie, pas
+> seulement que le resultat observe est bon. »* Un resultat correct peut sortir d'une structure
+> fausse — et il ne previent pas le jour ou l'ordre change.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 36 | Un artefact correct peut avoir un mode d'emploi faux | `DECLARE` — aucun controle ne verifie la forme attendue par le destinataire |
+| 37 | Le fichier qui porte une empreinte de preuve devient intouchable | `DECLARE` — toute correction casse la demonstration, d'ou des fragments derives |
