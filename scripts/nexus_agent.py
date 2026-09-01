@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 import queue
 import io
 import json
@@ -1204,6 +1205,9 @@ def charger_competence(nom: str) -> str:
 
 
 def main() -> int:
+    with contextlib.suppress(Exception):
+        # Premiere ligne a 11,6s sur 11,7s; run long indiscernable d'un run gele
+        sys.stdout.reconfigure(line_buffering=True)
     parseur = argparse.ArgumentParser(description=__doc__)
     parseur.add_argument("--tache", help="Consigne adressee au modele.")
     parseur.add_argument("--fichiers", nargs="*", default=[],
@@ -1318,6 +1322,28 @@ def main() -> int:
         largeur = max(1, min(args.parallele, len(taches)))
     else:
         largeur = max(1, min(args.parallele, 8, len(taches)))
+    pile_verrou = contextlib.ExitStack()
+    est_local = False
+    try:
+        plans = plans_par_alias(cle)
+        for t in taches:
+            nom = t.get('modele') or ''
+            if plans.get(nom) == 'local' or nom.endswith('-local'):
+                est_local = True
+                break
+    except Exception:
+        est_local = True  # profil illisible : ne pas desactiver la protection
+    if est_local:
+        # l'attente est bornee a 120 secondes pour qu'une contention reste visible au lieu de devenir un blocage silencieux
+        from nexus_verrou_machine import verrou
+        try: attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
+        except ValueError: attente_verrou = 120 # une valeur gravee ment le lendemain, et surtout une epreuve ne peut pas solliciter le REFUS du verrou si elle doit le tenir plus de deux minutes — un verrou qu'on n'a jamais vu refuser n'est pas mesure.
+        ctx = pile_verrou.enter_context(verrou('banc', projet='nexus', attente_s=attente_verrou, bavard=True))
+        if not ctx.obtenu:
+            # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
+            pile_verrou.close()
+            print('banc: contention detectee', file=sys.stderr)
+            return 75
     depart = time.time()
     resultats: List[dict] = []
     # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
@@ -1371,6 +1397,9 @@ def main() -> int:
     finally:
         if flux is not None:
             flux.close()
+        # Une erreur a la fermeture ne doit pas masquer l'erreur d'origine
+        with contextlib.suppress(Exception):
+            pile_verrou.close()
 
     if args.json:
         print(json.dumps(resultats, ensure_ascii=False, indent=2))
