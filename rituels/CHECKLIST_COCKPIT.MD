@@ -7592,3 +7592,36 @@ ne pouvait pas voir.
 | Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | deux mesures sur 71 modeles |
 | Une cle `fichiers_communs` au niveau du lot | demande `ea-mt5` | quatre lectures du meme contenu |
 | Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
+
+### 71.7 LE TROISIEME TEMPS, ET POURQUOI IL SE SAUTE SANS SE VOIR
+
+Precision de l'operateur, apres avoir vu la LOI 1 enfreinte sous une forme qui
+se donnait l'air de la respecter :
+
+> *« Passer par un audit rend la faute INVISIBLE, parce qu'on peut dire "j'ai
+> fait auditer". Le bon geste etait : audit -> correction produite par un tiers
+> -> AUDIT DE LA CORRECTION. Tu n'auras fait que le premier tiers. »*
+
+| temps | qui | ce qui arrive si on le saute |
+| --- | --- | --- |
+| 1. audit | un tiers | on corrige un defaut suppose |
+| 2. correction | un tiers, jamais le meme | on verifie son intention, pas son effet |
+| **3. audit de la CORRECTION** | un tiers, jamais l'auteur du 2 | **personne n'a regarde ce qui a ete pose** |
+
+**Deux tiers sur trois donnent le sentiment d'un cycle complet.** C'est le
+dernier qui porte la garantie : les deux premiers ne font que PRODUIRE.
+
+Applique retroactivement au tour meme, et le troisieme temps a servi. Un
+auditeur qui n'avait ecrit ni le diagnostic ni le correctif a confirme que le
+piege de l'import local etait ecarte, et souleve un risque que je lui avais
+signale : **un appelant comparant `part_raisonnement` numeriquement casserait
+maintenant que le champ peut valoir une chaine.**
+
+Verification faite : aucun consommateur numerique dans ce depot. Mais les deux
+sessions voisines LISENT ce champ — c'est un changement de contrat de sortie,
+et il leur a ete signale.
+
+> La question a se poser avant de clore n'est pas « ai-je delegue ? » mais
+> **« qui, n'ayant ecrit ni le diagnostic ni le correctif, a verifie que ce qui
+> a ete pose fait ce qu'il annonce ? »** Si la reponse est « moi », le cycle
+> n'est pas clos, quel qu'ait ete le travail en amont.

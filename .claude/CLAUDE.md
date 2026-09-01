@@ -211,9 +211,6 @@ QUESTION que l'outil pose, pas sur son emplacement.
 > Quand un outil neuf est ecrit ici, la question a poser est : **un autre
 > projet pourrait-il l'appeler tel quel ?** Si oui, il ne doit rien supposer de
 > ce depot. Si non, dire pourquoi.
-
----
-
 ## 0.6 ZERO BRICOLAGE — la plateforme n'est pas un fourre-tout
 
 Enonce par l'operateur le 2026-09-01, et repete : *« 0 bricolage, la
@@ -331,6 +328,52 @@ tiers qui l'a vu.
 
 > La question n'est jamais « ai-je bien corrige ? » mais **« qui, n'ayant pas
 > ecrit ce correctif, a verifie qu'il fait ce qu'il annonce ? »**
+
+### 0.7.1 LE CYCLE A TROIS TEMPS — et le troisieme est celui qu'on saute
+
+Precision apportee par l'operateur le 2026-09-01, apres avoir vu la regle
+enfreinte sous une forme qui se donnait l'air de la respecter :
+
+> *« C'est exactement le piege, et il est plus insidieux que l'auto-validation
+> directe : passer par un audit rend la faute INVISIBLE, parce qu'on peut dire
+> "j'ai fait auditer". Le bon geste etait : audit -> correction produite par un
+> tiers -> AUDIT DE LA CORRECTION. Tu n'auras fait que le premier tiers. »*
+
+| temps | qui | ce qui se passe si on le saute |
+| --- | --- | --- |
+| **1. AUDIT** | un tiers | on corrige un defaut qu'on a suppose |
+| **2. CORRECTION** | un tiers, **jamais le meme** | on verifie son intention, pas son effet |
+| **3. AUDIT DE LA CORRECTION** | un tiers, **jamais l'auteur du 2** | **le trou reel** — personne n'a regarde ce qui a ete pose |
+
+**Le troisieme temps est celui qu'on saute, et il se saute sans se voir.**
+Ayant delegue l'audit et la correction, on se croit couvert : deux tiers sur
+trois donnent le sentiment d'un cycle complet. Or c'est le dernier qui porte
+la garantie — les deux premiers ne font que produire, le troisieme seul
+verifie.
+
+**Mesure du jour, sur ce depot** : un patch a ete audite par le banc, corrige
+par le banc, applique — et il cassait la fonction qu'il modifiait. Elle
+echouait en silence. Trois gardes l'ont laisse passer (§71.2). Personne
+n'avait audite la CORRECTION : l'orchestrateur avait verifie lui-meme qu'elle
+« marchait », ce qui est precisement le temps 3 fait par la mauvaise personne.
+
+**Ce qui compte n'est pas le nombre de delegations, c'est QUI regarde en
+dernier.** Un cycle a deux tiers et un juge interesse vaut moins qu'un cycle
+sans delegation mais audite par un tiers : dans le premier cas, l'absence de
+verification est masquee par la delegation qui l'a precedee.
+
+**La question a se poser avant de clore** n'est donc pas « ai-je delegue ? »
+mais :
+
+> **QUI, n'ayant ecrit ni le diagnostic ni le correctif, a verifie que ce qui a
+> ete pose fait ce qu'il annonce ?**
+
+Si la reponse est « moi », le cycle n'est pas clos, quel qu'ait ete le travail
+en amont.
+
+---
+
+
 ## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
 
 Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même
