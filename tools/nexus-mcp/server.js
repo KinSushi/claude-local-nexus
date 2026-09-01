@@ -2489,7 +2489,8 @@ function runPython(args, timeoutMs = 300000) {
     'nexus_summarize',
     'nexus_batch',
     'nexus_compare',
-    'nexus_index_build'
+    'nexus_index_build',
+    'nexus_search'
   ]);
 
   async function callToolInterne(name, args) {

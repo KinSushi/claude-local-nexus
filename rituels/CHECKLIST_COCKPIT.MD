@@ -8572,3 +8572,157 @@ contrat : une regle non mecanisee ne protege pas son auteur, le jour meme.
 | Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
 | `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 79. LA CAUSE RACINE ETAIT FAUSSE — et ma propre conclusion l'etait aussi
+
+### 79.1 CE QUE §78.1 AFFIRMAIT, ET QUI EST RETIRE
+
+Le §78.1 consignait, sous le diagnostic de `sovereign` : *« `settings.json`
+arme ses hooks par chemin ABSOLU a lettre de lecteur »*. **C'est faux.** Les
+traces reelles, montrees par l'operateur :
+
+```
+"python ${CLAUDE_PROJECT_DIR}/scripts/hook_rappel_rituels.py"
+  -> can't open file 'D:\SAS\...\scripts\hook_rappel_rituels.py'
+```
+
+Les deux depots employaient **deja** `${CLAUDE_PROJECT_DIR}`. La variable a
+fait exactement son travail : elle s'est resolue fidelement vers un volume
+mort.
+
+**Et `sovereign` a nomme le mecanisme mieux que moi**, en se retirant :
+
+> *« J'ai lu l'EXPANSION et j'en ai deduit la DECLARATION. Un message
+> d'erreur porte le chemin RESOLU, jamais le chemin ECRIT. »*
+
+Son propre grep du matin rendait `2 scripts/hook_lecture_avant_ecriture...`
+— **relatif, aucune lettre**. Il avait la mesure juste sous les yeux et a
+affirme le contraire, parce que le MESSAGE affichait `D:\`. C'est la classe 7
+— *lire un resultat par un canal qui ne peut pas le porter* — appliquee a une
+variable d'environnement. Le mecanisme est general : il vaut pour tout alias,
+tout lien symbolique, toute expansion.
+
+### 79.2 MA PROPRE CONCLUSION TOMBE AVEC LA SIENNE
+
+J'avais ecrit au §78.2 : *« Ce depot survit a un changement de lettre »*, et
+je l'ai transmis aux deux autres comme un modele a suivre. Le grep est juste ;
+**la conclusion ne suit pas.**
+
+> Ce depot survit a un changement de LETTRE. Il ne survit pas a la perte de
+> son VOLUME. Mes dix `$CLAUDE_PROJECT_DIR` se resoudraient vers un disque
+> mort exactement comme les leurs. **Je n'ai pas survecu par vertu de
+> configuration, j'ai survecu par accident de localisation.**
+
+*Une cause racine fausse coute plus qu'une cause inconnue, parce qu'on batit
+dessus* — et nous avions commence a batir dessus tous les trois. L'outil `O2`
+que `sovereign` en tirait tombe avec le motif.
+
+### 79.3 L'ETAT MATERIEL, MESURE
+
+```
+Get-Disk         0  CT1000P310SSD8             931,5 Go  Online     -> C:
+                 2  Kingston DataTraveler 3.0  230,9 Go  Online     -> G:
+                 3  Generic MassStorageClass     0,0 Go  No Media
+                 4  Generic MassStorageClass     0,0 Go  No Media
+Get-Partition    partitions sans lettre > 1 Go : UNE, la Recovery de 1,2 Go
+```
+
+Journal systeme, **01/09/2026 11:35** :
+
+```
+11:35:17  disk  51   erreur sur \Device\Harddisk1\DR5 pendant une PAGINATION   (x3)
+11:35:20  Ntfs  140  n'a pas pu vider les donnees dans le journal des transactions (x4)
+11:35:21  disk  11   erreur du CONTROLEUR sur \Device\Harddisk2\DR6
+```
+
+`Get-PnpDevice -Class DiskDrive` : dix-sept entrees, **quatre en `OK`**
+seulement — le SSD interne, la cle Kingston, et les deux lecteurs de cartes
+vides. Toutes les autres sont `Unknown`, c'est-a-dire connues de Windows et
+**non presentes**. La liste des peripheriques en etat d'ERREUR est vide.
+
+> **L'operateur dit le disque branche, et Windows ne l'enumere pas du tout.**
+> Ce n'est ni une lettre manquante ni un pilote en defaut : le bus ne le voit
+> pas. Les candidats absents sont `ROG ESD-S1C`, `Seagate Portable` et
+> `SanDisk 3.2 Gen 1`.
+
+Deux consequences qui ne sont pas des suppositions :
+
+* **L'evenement 140 rend tout etat local suspect.** Des ecritures n'ont pas
+  ete vidangees. Une reparation a l'aveugle — `chkdsk /f` — peut detruire ce
+  qui reste lisible. Copier d'abord.
+* **L'evenement 11 designe `Harddisk2\DR6`, c'est-a-dire la cle Kingston**,
+  a la meme seconde. Les miroirs de secours sont sur un bus qui vient
+  d'erreur, et ils datent du **8-9 aout, vingt-quatre jours**.
+
+### 79.4 LE DISTANT A TENU, ET IL EST LE SEUL
+
+```
+git ls-remote  ->  refs/heads/v1.104  f3a2d5232c7e133d15f56778edd3713d07bf5679
+```
+
+La journee de `sovereign` est integralement sauvee : douze commits, les
+lecons L-276 a L-280, `CORRECTION-02` a `-08`. Il ne pouvait pas l'etablir
+lui-meme, et c'etait le seul fait qui comptait encore de son cote.
+
+> Arbre vif, miroir `H:`, miroir `G:` — **les trois partagent l'hote, et deux
+> bus ont erreur dans la meme seconde.** « Trois sauvegardes » dont une seule
+> est ailleurs n'est pas trois sauvegardes. Le distant est le seul qui n'ait
+> jamais eu de transaction en vol.
+
+### 79.5 LE MCP, STABILISE — ce qui a ete pose ce tour
+
+**`nexus_search` etait hors du verrou, et ne devait pas l'etre.** Mon pari
+etait que les quatre outils de consultation ne touchent jamais la ressource
+protegee. `sovereign` a demande a le mesurer plutot qu'a le croire. Mesure :
+
+```
+nexus_search    -> searchIndex()  -> await embed(model, [query])   INFERENCE
+nexus_models    -> getJson(), /api/ps                              metadonnees
+nexus_profile   -> getJson(), runPython()                          metadonnees
+nexus_savings   -> getJson(), runPython()                          metadonnees
+```
+
+Le pari etait faux pour un des quatre. `nexus_search` est desormais serialise ;
+les trois autres restent libres, et cette fois sur une mesure, pas sur un pari.
+
+**Et une seconde cecite au JavaScript, dans un second outil, le meme jour.**
+`nexus_appliquer` verifie la syntaxe du contenu CALCULE avant d'ecrire —
+pour les `.py` seulement. Mesure : le premier patch de `OUTILS_LOURDS` a
+produit un `server.js` casse — `SyntaxError: Unexpected token ]` — qu'il a
+fallu restaurer par git.
+
+> **L'outil dont la raison d'etre est de ne pas mutiler ecrivait a l'aveugle
+> sur le fichier le plus critique du depot.** Le pont MCP fait 3 300 lignes de
+> JavaScript.
+
+Corrige : les `.js`, `.mjs` et `.cjs` passent par `node --check` sur un
+fichier temporaire avant toute ecriture. Si `node` est introuvable, l'outil
+dit qu'il n'a PAS PU se prononcer et continue — jamais confondre « pas pu
+verifier » et « verifie bon ».
+
+Contre-epreuve : le patch corrige, applique ensuite, a laisse le fichier
+syntaxiquement valide, empreinte changee, `node --check` au vert.
+
+### 79.6 SUJETS OUVERTS — remplace §78.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **`D:` ne s'enumere pas — deux depots a terre** | §79.3 | materiel ; hors de portee d'un agent |
+| **Aucun temoin hors du volume** | §79.4 | seul `origin` a tenu, pour les trois |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| Un alias invalide echoue au SERVEUR | demande `sovereign` | validation cliente en 0 s |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Recensement gardes non appeles / gardes inexistants | §78.4 | classes 4 et 5 |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| J'ecris moi-meme le fichier qui arme mes gardes | §77.3 | demande une main tierce |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |

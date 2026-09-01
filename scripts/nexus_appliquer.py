@@ -84,6 +84,25 @@ def main():
             print("[!] Erreur : %s" % (e))
             return 1
 
+    # Verification syntaxique pour les fichiers JavaScript
+    if cible_path.endswith(('.js', '.mjs', '.cjs')):
+        try:
+            import tempfile
+            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.js', encoding='utf-8') as tmp:
+                tmp_path = tmp.name
+                tmp.write(nouveau_src)
+            result = subprocess.run(['node', '--check', tmp_path],
+                                    capture_output=True, text=True,
+                                    encoding='utf-8', errors='replace', timeout=60)
+            os.remove(tmp_path)
+            if result.returncode != 0:
+                print("[!] Le patch produirait un fichier SYNTAXIQUEMENT INVALIDE")
+                first_line = result.stderr.splitlines()[0] if result.stderr else ''
+                print(first_line)
+                return 1
+        except FileNotFoundError:
+            print("L'analyseur n'a PAS PU se prononcer", file=sys.__stderr__)
+
     # Ecriture du fichier cible
     with io.open(cible_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(nouveau_src)
