@@ -6576,3 +6576,51 @@ evite d'appliquer un patch coupe.
 | `max_parallel_requests` absent : aucune borne globale cote passerelle | §64.3 | la discipline des sessions est la seule borne |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
 | `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |
+
+### 65.9 LA COLLISION EST UNE PROPRIETE DE LA VAGUE, PAS DE LA TACHE
+
+Reformulation du voisin, une heure apres §65.7, et elle atteint l'angle mort
+de l'avertissement que §65.7 venait de poser.
+
+| question posee | ce qu'elle voit |
+| --- | --- |
+| « l'alias demande a-t-il ete servi ? » | la substitution d'une tache |
+| **« combien de modeles DISTINCTS ont servi cette vague ? »** | la collision entre taches |
+
+Le voisin croyait avoir verifie ses croisements. Il comparait l'alias au champ
+`servi_par`, tache par tache, et concluait « aucune bascule ». **Exact, et sans
+rapport avec la question qu'il croyait poser** — deux alias differents servis
+par le meme modele concordent chacun pris isolement.
+
+Et mon propre avertissement souffrait du meme defaut : il compare la racine du
+nom amont a l'alias, donc deux alias `gpt-oss-*` servis tous deux par
+`gpt-oss:120b` seraient restes silencieux.
+
+Le bilan de lot compte desormais les familles. Mesure sur deux lots reels :
+
+```
+gpt-oss-120b-cloud + adaptive-router-cloud  ->  2 familles, silencieux
+gpt-oss-120b-cloud  x2                      ->  1 famille, AVERTI
+```
+
+> **Cinq auditeurs d'accord ne valent rien s'ils sont le meme modele** — et
+> leur accord est meme le signe du probleme. La preuve du voisin : sur un
+> meme fichier, `gpt-oss:120b` a trouve le defaut residuel quand
+> `glm-4.7-flash` rendait CONFORME **en listant le point fautif parmi ses
+> points conformes**.
+
+Verification refaite par le voisin sur ses 8 vagues apres cet echange : 2->2,
+3->3, 7->7, 3->3, 7->7, 7->7, 2->2. Aucune collision, ses croisements
+tiennent — mais il ne le savait pas avant, et son instrument ne pouvait pas
+le lui dire.
+
+**Non eprouve mecaniquement**, et dit plutot que laisse croire : une epreuve
+de ce bilan exigerait des appels reseau reels, ce qu'aucune epreuve de ce
+depot ne fait. Les deux cas ci-dessus ont ete joues a la main.
+
+> **Cinq fois aujourd'hui, chez l'un ou chez l'autre, l'instrument etait
+> exact et la conclusion fausse.** Le motif commun n'est pas la negligence :
+> c'est de conclure sur la premiere lecture au lieu de chercher ce que
+> l'instrument NE PEUT PAS voir. Le geste qui manquait, a chaque fois, tenait
+> en un essai supplementaire — un dix-septieme rendu provoque, une collision
+> forcee a la main.
