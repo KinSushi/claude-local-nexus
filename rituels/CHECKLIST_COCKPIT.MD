@@ -6258,3 +6258,139 @@ delegations dont cinq utilisables.
 | Les modeles se trompent sur leur propre plan ; l'en-tete, lui, est exact | voisin `ea-mt5` | argument pour imprimer l'en-tete partout, y compris en `--json` |
 | `glm-4.7-flash-local` : reponse VIDE apres 102 s, budget epuise en raisonnement | voisin `sovereign-ai-system-8e` | plancher de `max_tokens` a etudier pour cette famille |
 | `adaptive-router-local` a servi `phi3-mini-local` sur une tache d'arbitrage | voisin `sovereign-ai-system-8e` | `quality 1.0 / cost 0.0` pourtant declare |
+
+---
+
+## 64. LES 495 SECONDES INVISIBLES, ET L'OUTIL QUI MUTILAIT EN DISANT « APPLIQUE »
+
+Tour du 2026-09-01, 05h-06h. Trois defauts fermes, tous trouves a l'usage et
+deux signales par les sessions voisines.
+
+### 64.1 `nexus_appliquer.py` mutilait, et se l'est fait a lui-meme
+
+Deux defauts dans l'outil qui pose les patchs du banc :
+
+* il n'appliquait que le PREMIER triplet de marqueurs. Un rendu en porte
+  couramment cinq. Les autres disparaissaient **en silence**, et l'appelant
+  lisait « APPLIQUE » ;
+* son decoupage cherchait la chaine `<<<APRES>>>` **n'importe ou**. Deux
+  fichiers du depot la citent dans leur propre contenu : cet outil, et
+  `.claude/CLAUDE.md` qui documente le format.
+
+Mesure, sur ce fichier meme, en tentant de le corriger :
+
+```
+SyntaxError: unterminated string literal (detected at line 41)
+```
+
+et le message affiche etait `APPLIQUE`.
+
+> **L'outil dont la raison d'etre est d'empecher les mutilations en
+> produisait une, en annoncant le succes.** Il ne pouvait pas se patcher
+> lui-meme, ni patcher le contrat — les deux fichiers les plus centraux.
+
+Ancres desormais SEULES SUR LEUR LIGNE, tous les triplets extraits, refus
+total si un seul bloc manque. `epreuve_appliquer.py` porte les trois cas, et
+sa contre-epreuve sur l'ancien code rend `[RATE]` trois fois — dont un fichier
+mutile avec des marqueurs injectes dedans.
+
+### 64.2 LA TROUVAILLE DU TOUR — 495 secondes que personne ne voyait
+
+Signale par `ea-mt5` : un appel de **512 s au total** dont le champ `duree`
+portait **16,5 s**. Sa premiere hypothese etait une boucle de reprises ; sa
+seconde, un second appel non compte. Les deux sont fausses, et la vraie cause
+est pire.
+
+Une reponse vide et TRONQUEE etait traitee comme une panne du modele, donc le
+code passait au candidat suivant :
+
+```
+1. gpt-oss-120b-cloud a 2500 jetons  -> TRONQUE
+2. glm-4.7-flash-local a 2500 jetons -> ~495 s, ne POUVAIT PAS aboutir
+3. reprise a 5000 -> reponse en 16,5 s
+```
+
+> **Une troncature n'est pas une panne du modele : c'est un budget
+> insuffisant.** Changer de modele n'y change rien — seul le budget compte.
+> Le repli etait donc garanti sterile, et il coutait un chargement de 20 Go.
+
+Mesure avant / apres, par `epreuve_reprise_avant_repli.py` :
+
+| | appels | dont local | annonce |
+| --- | --- | --- | --- |
+| avant | **4** | 2 | aucune |
+| apres | 2 | 0 | « troncature a N jetons : reprise du plafond plutot que repli » |
+
+**Ce que l'on perd**, inscrit et non tu : un modele de repli NON raisonnant
+aurait pu reussir au budget initial. Cette chance disparait, et si la reprise
+echoue a son tour plus aucun repli n'est tente.
+
+### 64.3 LA COORDINATION A TROIS — ce qui a ete mesure pour l'autoriser
+
+L'operateur a demande des envois massifs local + cloud. La question posee par
+`sovereign-ai-system-8e` etait juste et bloquante : son brief mesurait **46
+refus 429 en 5 minutes**, imputes a 37 chaines `cloud -> cloud` multipliees
+par `num_retries: 2`.
+
+Enumeration complete de la configuration — et le premier script de mesure a
+rendu **zero arete**, motif inadapte au format YAML reel : *un compte bas
+apres une mesure par motif est un signal d'alarme, jamais un soulagement*
+(§62.5), applique a moi-meme.
+
+| direction | aretes |
+| --- | --- |
+| `local -> local` | 72 |
+| `cloud -> local` | 19 |
+| `anthropic -> local` | 4 |
+| `anthropic -> anthropic` | 3 |
+| `inconnu -> *` | 10 |
+| **`cloud -> cloud`** | **0** |
+| **`local -> cloud`** | **0** (l'interdit du contrat, tenu) |
+
+108 aretes, toutes attribuees. L'amplification est structurellement
+impossible, non pas reduite. Garde-fous : `num_retries: 2`,
+`allowed_fails: 2`, `cooldown_time: 120`, et **`max_parallel_requests`
+ABSENT** — aucune borne globale cote passerelle.
+
+**Le couplage que personne n'avait nomme** : les 19 aretes `cloud -> local`
+font qu'un pic de 429 deverse les trois instances sur la ressource PARTAGEE.
+Et `allowed_fails: 2` sur une passerelle commune fait qu'une frappe punit les
+deux autres sessions pendant 120 s.
+
+Regle arretee : **cloud libre pour les trois a 4 fils chacun**, montee a 6
+apres dix minutes sans 429, jamais au-dela sans se le dire ; **local a tour de
+role**, annonce avant de le prendre. Les trois sessions l'ont acceptee.
+
+### 64.4 Un plancher de `max_tokens` ne reglerait rien — mesure du voisin
+
+`sovereign` a mesure `glm-4.7-flash` en direct, Ollama, question courte :
+
+| `num_predict` | s | car. raisonnement | car. sortie | fin |
+| --- | --- | --- | --- | --- |
+| 600 | 50,8 | 2211 | **0** | `length` |
+| 1200 | 367,4 | 3364 | 263 | `stop` |
+| 3000 | 399,0 | 6269 | **230** | `stop` |
+
+Entre 1200 et 3000 le budget monte de 150 %, le raisonnement de 86 %, et la
+sortie **BAISSE**. Sa conclusion, qui refute la sienne propre : budget de
+raisonnement SEPARE, pas plancher.
+
+Et la distinction qui compte pour nous : a 600 c'est `length` avec sortie
+vide — detectable ; a 1200 et 3000 c'est `stop` avec sortie MINCE — **aucun
+signal**. Notre correctif de 64.2 traite le premier cas. Le second passe
+toujours pour un succes.
+
+Reserves du voisin, tenues : un echantillon par point, aucun intervalle, une
+seule question, et repartition en jetons DEDUITE des caracteres.
+
+### 64.5 SUJETS OUVERTS a la sortie de ce tour
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| `done_reason: stop` avec sortie MINCE ne declenche aucun signal | §64.4 | 96,5 % du budget parti en raisonnement, tous les signaux disent succes |
+| Apres une reprise echouee, plus aucun repli n'est tente | §64.2 | echange assume, mais reel |
+| `max_parallel_requests` absent : aucune borne globale cote passerelle | §64.3 | la discipline des sessions est la seule borne |
+| 10 aretes de repli dont un plan est `inconnu`, dont 2 vers le cloud | §64.3 | non instruites, signalees au voisin plutot que tues |
+| Le verrou machine `AURUM_MACHINE_` n'a pas de classe `banc` | §64.3 | une convention n'est pas un mecanisme (§0.2.1) |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+| `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |

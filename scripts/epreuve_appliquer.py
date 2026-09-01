@@ -1,4 +1,9 @@
-import os, sys, json, subprocess, tempfile, pathlib, io
+import io
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
 
 def _ecrire(chemin, contenu):
     with io.open(chemin, "w", encoding="utf-8", newline="\n") as f:

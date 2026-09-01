@@ -983,10 +983,9 @@ def executer(tache: dict, cle: str) -> dict:
                               (candidat, plafond))
                 print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien")
                 break
-            else:
-                echecs.append("%s : reponse vide (%d jetons consommes)"
-                              % (candidat, resultat.get("tokens", 0)))
-                continue
+            echecs.append("%s : reponse vide (%d jetons consommes)"
+                          % (candidat, resultat.get("tokens", 0)))
+            continue
 
         # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
