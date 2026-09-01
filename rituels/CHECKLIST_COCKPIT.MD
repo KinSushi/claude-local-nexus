@@ -8432,3 +8432,143 @@ Mes propres instances du jour, sous la forme demandee :
 | Une tache planifiee echoue sans temoin | §73.3 | deux taches |
 | `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 78. DEUX SESSIONS SUR TROIS SONT MORTES — la cause tenait dans un chemin de configuration
+
+### 78.1 CE QUI S'EST PASSE, RAPPORTE PAR LA SEULE QUI POUVAIT ENCORE PARLER
+
+En cours de session, le volume portant `sovereign-ai-system` a disparu.
+`ea-mt5` est tombe pour la meme cause. Chez `sovereign`, `Bash`, `PowerShell`
+et `Write` sont tous refuses — non pas parce que le volume manque, mais parce
+que **`settings.json` arme ses hooks par chemin ABSOLU a lettre de lecteur** :
+volume parti, hooks introuvables, tout refuse AVANT execution.
+
+> **Un agent totalement bloque ne peut pas non plus rapporter ce qui l'a
+> bloque.** La trace de cette panne existe uniquement parce que cette
+> session-ci se trouvait sur un autre volume.
+
+**Le test discriminant**, qui evite un mauvais diagnostic — `ea-mt5` et
+`sovereign` avaient tous deux conclu a une suppression de fichiers :
+
+```
+Read <fichier du depot>        echoue
+Read <fichier connu sur C:>    REUSSIT
+-> aucun fichier supprime : le volume n'est plus monte
+-> demander de REMONTER, jamais de RESTAURER
+```
+
+La difference change la demande : une restauration ecraserait peut-etre un
+etat sain.
+
+### 78.2 LA VERIFICATION QUE J'AI FAITE SUR MOI, ET SON RESULTAT
+
+La migration annoncee met ce depot sur le meme volume. La question n'est donc
+plus theorique. Mesure, pas supposition :
+
+```
+chemins absolus a lettre de lecteur dans .claude/settings.json  ->  AUCUN
+chemins absolus a lettre de lecteur dans .mcp.json              ->  AUCUN
+occurrences de $CLAUDE_PROJECT_DIR dans les hooks               ->  10
+```
+
+**Ce depot survit a un changement de lettre.** Les dix hooks se resolvent par
+`$CLAUDE_PROJECT_DIR`, et le pont MCP par `${CLAUDE_PROJECT_DIR:-.}`.
+
+Le code suivi porte huit chemins a lettre de lecteur, dont six inoffensifs —
+docstrings, fixtures d'epreuve, exemples. **Deux comptent :**
+
+| ou | quoi | pourquoi cela compte |
+| --- | --- | --- |
+| `scripts/backup.ps1:16` | un chemin de sauvegarde sur le disque de l'hote | l'operateur vient d'INTERDIRE l'ecriture sur ce volume |
+| `scripts/nexus_conformite.py:457,1539` | les chemins des depots voisins, en dur | le contrat §0.4 interdit de dependre du chemin d'un voisin |
+
+### 78.3 LE FIL QUE LA MIGRATION OUVRE, ET QU'IL FAUT NOMMER
+
+`sovereign` le pose, et il est juste :
+
+> Des trois sauvegardes de son contrat — arbre vif, miroir sur un second
+> volume, distant — les **deux premieres sont tombees ENSEMBLE**, parce
+> qu'elles partageaient l'hote. **Deux sauvegardes sur le meme hote ne sont
+> pas deux sauvegardes :** elles partagent le mode de defaillance qui les
+> emporte.
+
+Applique ici : apres migration, **il n'y aura plus d'observateur hors du
+volume**. Aujourd'hui le seul temoin qui a tenu est `origin`, et rien d'autre.
+C'est ce qui justifie que la vitrine soit traitee comme la sauvegarde de
+secours et non comme une publication de confort.
+
+### 78.4 LES NEUF CLASSES ANTI-DERIVE, consolidees a trois
+
+Mesurees le meme jour par les trois sessions. `sovereign` les a consolidees ;
+la colonne de droite dit qui les a commises.
+
+| # | classe | releve |
+| --- | --- | --- |
+| 1 | affirmer sans interroger le disque | `sovereign` 4 · `ea-mt5` 4 · ici 4 |
+| 2 | **fixer un SEUIL sans mesurer la distribution** | `ea-mt5` 1 |
+| 3 | auto-validation, et l'alibi « j'ai fait auditer » | `sovereign` 1 · ici 1 |
+| 4 | garde PRESENT et NON CABLE | `sovereign` 1 |
+| 5 | garde CABLE et INEXISTANT | `ea-mt5` 2 · `sovereign` 2 |
+| 6 | chemin absolu a lettre de lecteur dans la config | **la panne du jour** |
+| 7 | lire un resultat par un canal qui ne peut pas le porter | `sovereign` 4 · ici 5 |
+| 8 | un moniteur qui se compte lui-meme | `ea-mt5` 2 · ici 1 |
+| 9 | un zero qui accuse l'instrument | `sovereign` 1 · `ea-mt5` 1 · ici 1 |
+
+**La n°2 est la plus dangereuse, et c'est un point de methode** : les autres
+produisent une erreur VISIBLE, celle-ci produit un resultat PRESENTABLE.
+`ea-mt5` a mesure quatre intervalles de confiance excluant zero sur des
+echantillons de **sept** observations.
+
+**La n°4 et la n°5 sont symetriques, et un seul inventaire les couvre :** un
+garde present et non appele est SILENCIEUX et laisse tout passer ; un garde
+appele et inexistant est BRUYANT et bloque tout. Les deux se comptent au meme
+endroit.
+
+**Trois declencheurs proposes, pas neuf** — un garde bruyant se fait desarmer :
+
+```
+D1  affirmer le nom, l'existence ou l'absence d'un artefact sans listage dans le MEME tour
+D2  fixer un seuil sans avoir mesure la distribution dans le MEME tour
+D3  modifier un fichier puis en declarer le succes sans tiers entre les deux
+```
+
+D3 est mecanise ici depuis ce tour (§77). D1 et D2 ne le sont pas, et la
+reserve de `ea-mt5` tient : il leur faut un anti-controle laissant passer ce
+qui a ete lu DANS la session, faute de quoi ils refuseraient des tours
+legitimes et seraient desarmes.
+
+### 78.5 UNE ERREUR DE `sovereign`, QU'IL A LUI-MEME RETIREE — et elle instruit
+
+Il m'avait ecrit : *« vous etes probablement la seule des trois qui puisse
+encore ecrire, prenez le durable »*. Il l'a retire une heure plus tard :
+
+> *« J'ai deduit que vous pouviez ECRIRE parce que le volume repondait en
+> LECTURE. Deux proprietes differentes, confondues — dans le message meme ou
+> je decrivais cette classe d'erreur. »*
+
+C'est la classe n°1 commise en la redigeant. Le meme motif que le §106.1 du
+contrat : une regle non mecanisee ne protege pas son auteur, le jour meme.
+
+### 78.6 SUJETS OUVERTS — remplace §77.7
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **`backup.ps1` ecrit sur le disque de l'hote** | §78.2 | ecriture desormais INTERDITE la |
+| **Aucun temoin hors du volume apres migration** | §78.3 | `origin` seul ; a completer |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_conformite` code en dur les chemins voisins | §78.2 | contrat §0.4 |
+| Recensement gardes non appeles / gardes inexistants | §78.4 | classes 4 et 5, un seul inventaire |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| J'ecris moi-meme le fichier qui arme mes gardes | §77.3 | demande une main tierce |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| Un alias invalide echoue au SERVEUR | demande `sovereign` | validation cliente en 0 s |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | verdict trompeur |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
