@@ -11318,3 +11318,115 @@ sur la sauvegarde marche jusqu'au jour ou l'objet detruit n'etait pas suivi.
 cas le mecanisme EXISTE, et il manque une seule chose entre lui et son effet — un armement, une
 comparaison, une gate, un champ, une decision. **Aucun des huit ne demande d'ecrire un mecanisme
 neuf.** Tous demandent de finir de cabler celui qui est deja la.
+
+---
+
+## 107. LES SECURITES SHELL DES TROIS DEPOTS — et la mesure qui invalide les trois listes
+
+Consigne de l'operateur : *« tu es en charge de recueillir les memes niveaux et exigences de
+securites que tout le monde »*, apres *« concertez-vous avec la liste complete avec NEXUS + les
+securites powershell bash dont sovereign s'etait charge d'elaborer »*.
+
+### 107.1 LA MESURE QUI DOIT PRECEDER LA LISTE
+
+`sovereign` a construit un instrument qui confronte des gestes reels aux motifs par `fnmatch`. Il
+annoncait trois trous beants sur ses propres regles `rm`. **Il a fait la mesure d'effet avant de
+l'envoyer comme un P0** — sur une cible inexistante, donc sans dommage possible :
+
+```
+rm -rf /tmp/repertoire_qui_n_existe_pas_test_2026
+  -> « Permission to use Bash with command ... has been denied »
+```
+
+**Le harnais refusait.** `fnmatch` n'est pas son algorithme de correspondance, et toute l'epreuve
+reposait sur cette hypothese jamais verifiee.
+
+**La meme mesure, ici, donne l'inverse — et c'est plus grave :**
+
+```
+rm -rf /tmp/repertoire_inexistant_test_2026        rc=0, AUCUN refus
+git update-ref -d refs/heads/branche-inexistante   rc=0, AUCUN refus
+git filter-branch  (sans argument)                 DEMARRE, rc=0, aucun refus
+```
+
+Historique verifie immediatement apres : HEAD `c20a29c` inchange, 534 commits, arbre propre,
+**0 `refs/original`**, reflog a 431 entrees. Rien n'a ete reecrit — mais `filter-branch` a demarre.
+
+**LA CAUSE : les neuf regles de ce depot sont toutes en `ask`, aucune en `deny`, et rien ne les
+declenche dans le mode courant.**
+
+> **Une liste ne dit rien de l'effet, ni en bien ni en mal.** Chez `sovereign` elle annoncait des
+> trous inexistants ; ici elle annonce une couverture qui n'existe pas. Seule la mesure d'effet
+> separe les deux — et elle doit se rejouer **apres tout changement de mode de permission**, car
+> rien dans le depot ne signale que la meme liste ne mord plus.
+
+### 107.2 LES TROIS LISTES, ET LEURS LACUNES DISJOINTES
+
+| depot | regles | destructives en `ask` |
+| --- | --- | --- |
+| `sovereign` | 99 `deny`, 19 `ask` — **38 motifs destructifs** | **aucune** |
+| `ea-mt5` | 61 `deny` dont **39 shell** (suppression 13 · disque 8 · git 11 · droits 6 · systeme 3) | aucune |
+| **ici** | **9 regles, toutes en `ask`** | **toutes — et sans effet mesure** |
+
+**Les sept de `sovereign` qui manquent aux deux autres**, et ce sont les pires :
+
+```
+git filter-branch · git filter-repo · git commit --amend · git rebase
+git update-ref -d · git reflog expire · git gc --prune=now
+```
+
+**Les neuf de `ea-mt5` qui manquent aux deux autres :**
+
+```
+dd · format · diskpart · Clear-Disk · Initialize-Disk · Remove-Partition
+shutdown · Stop-Computer · Set-ExecutionPolicy
+```
+
+**Ce qui manque aux TROIS, et personne ne l'avait releve : `rm` NU.** Toutes les listes visent
+`-rf`, `-fr`, `-r`, `-f`, `--recursive`, `--force`. **`rm fichier` passe partout** — et sur un
+fichier non suivi par git, il est irreversible.
+
+### 107.3 LA DISTINCTION QUI DECIDE `ask` OU `deny` — apport de `ea-mt5`
+
+> **« `reset --hard` est reparable PAR LE REFLOG — et je le bloque. `reflog expire` et
+> `gc --prune=now` DETRUISENT le reflog — et je les laisse passer. Je bloque le geste reparable et
+> je laisse passer celui qui supprime la reparation. »**
+
+D'ou la regle, et elle n'admet pas d'exception :
+
+| famille | regime |
+| --- | --- |
+| geste RATTRAPABLE par le reflog | `ask` acceptable |
+| geste qui DETRUIT le reflog ou reecrit l'histoire | **`deny`, JAMAIS `ask`** |
+
+**Pourquoi `ask` est une contradiction sur la seconde famille :** on demande l'autorisation de
+supprimer le moyen de revenir en arriere, et la reponse arrive au moment ou l'on est le moins
+dispose a reflechir. Un `ask` repete finit approuve machinalement — etabli pour le hook de
+depechage, et il vaut ici avec plus de force puisque l'approbation est irreversible.
+
+Chez `sovereign`, **aucune destructive n'est en `ask`**. C'est une position, pas un hasard.
+
+### 107.4 LES GARDES HEREDOC — les trois ont le meme, et le meme defaut de nom
+
+`nexus_garde_shell.py` ici, `garde_heredoc_echappements` chez `sovereign` : meme piege, meme
+calibration mesuree — ils ne mordent **que** sur la presence d'un antislash, sinon ils seraient
+desarmes le jour de leur pose.
+
+La mesure qui les a fait naitre ici : **le 30 aout, dans UNE session, le heredoc a mange les
+echappements QUATRE fois** — dont une sur un message de commit, parti ampute de ses noms techniques
+sans que rien ne le signale.
+
+**Le defaut commun, trouve par `sovereign` en le mesurant :** son garde a mordu sur un `python -c`
+avec guillemets echappes — a raison — mais son message annoncait « HEREDOC PYTHON AVEC
+ECHAPPEMENTS ». **Sa PORTEE est plus large que son NOM.** Un lecteur qui verifie « ai-je un
+heredoc ? » conclut au faux positif et le desarme.
+
+> C'est la classe cible-declaree / cible-effective appliquee au MESSAGE. Le garde couvre bien, et il
+> se decrit mal.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 25 | Les neuf regles sont en `ask` et ne mordent pas | `OUVERT` | passer les destructives en `deny` — geste de l'operateur |
+| 26 | Seize motifs manquants, plus `rm` nu | `OUVERT` | union des trois listes |
+| 27 | Aucune epreuve de couverture par mesure d'effet | `OUVERT` | P9b : cible inexistante, motif par motif, rejouee apres tout changement de mode |
+| 28 | Le message du garde shell est plus etroit que sa portee | `OUVERT` | non verifie ici, signale par `sovereign` chez lui |
