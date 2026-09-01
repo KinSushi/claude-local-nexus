@@ -18,7 +18,9 @@ if len(sys.argv) < 4:
 jsonl, nom, cible = sys.argv[1], sys.argv[2], sys.argv[3]
 
 texte = None
-for ligne in io.open(jsonl, encoding="utf-8"):
+with io.open(jsonl, encoding="utf-8") as fh:
+    lignes_brutes = fh.readlines()
+for ligne in lignes_brutes:
     ligne = ligne.strip()
     if not ligne:
         continue
@@ -48,7 +50,8 @@ except IndexError:
 avant = avant.strip("\r\n")
 apres = apres.strip("\r\n")
 
-src = io.open(cible, encoding="utf-8").read()
+with io.open(cible, encoding="utf-8") as f:
+    src = f.read()
 n = src.count(avant)
 print("bloc AVANT : %d occurrence(s) dans %s" % (n, cible))
 if n != 1:
@@ -57,5 +60,6 @@ if n != 1:
     print(avant[:400])
     sys.exit(1)
 
-io.open(cible, "w", encoding="utf-8", newline="\n").write(src.replace(avant, apres))
+with io.open(cible, "w", encoding="utf-8", newline="\n") as f:
+    f.write(src.replace(avant, apres))
 print("APPLIQUE : %s" % cible)
