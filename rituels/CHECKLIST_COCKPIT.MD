@@ -8136,3 +8136,31 @@ un etat de memoire.
 et `nexus_sujets` EXISTENT, 296 et 633 lignes, et ne sont appeles **que par les
 tests** — donc hors du flux. La mecanisation reclamee par l'operateur les
 concerne, et ils ne sont pas encore cables.
+
+### 75.8 LE GENERATEUR SALISSAIT L ARBRE, ET LE CLIQUET L A REPRIS
+
+Deux defauts de mon propre correctif, tous deux attrapes par des mecanismes
+deja armes.
+
+**UN — un etat DERIVE ne se versionne pas.** Le rituel regenere PROGRESS.MD,
+donc l arbre devenait sale a chaque tour et la vitrine refusait de publier.
+C est exactement le conflit deja mesure sur STATE.md, **reproduit par le
+correctif cense mecaniser**. PROGRESS.MD est desormais gitignore : il reste
+regenere a chaque rituel, donc toujours frais localement. On reconstruit un
+etat derive, on ne le conserve pas.
+
+> STATE.md a le meme statut et reste versionne. Le sujet demeure ouvert.
+
+**DEUX — le cliquet d outillage a refuse deux regressions** introduites par le
+generateur : F541, deux f-strings sans champ, et SIM102, deux if imbriques.
+Il a fait son travail sur un fichier pose une heure plus tot — refuser une
+regression meme quand elle vient du dernier correctif.
+
+### 75.9 CE QUI RESTE A MECANISER, nomme et non promis
+
+| demande de l operateur | etat mesure |
+| --- | --- |
+| PROGRESS.MD | **fait**, genere et cable au rituel |
+| la boussole | `nexus_boussole` existe, 296 lignes, appele **que par les tests** |
+| la recuperation des sujets ouverts | `nexus_sujets` existe, 633 lignes, hors du flux ; la reprise cache 292 sujets sur 248 comptes |
+| les rituels complets | le rituel porte 10 controles ; la boussole et les sujets n y sont pas |
