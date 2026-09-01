@@ -11148,3 +11148,173 @@ Preuve immediate : elle n'est pas armee depuis le redemarrage de ce matin, le ri
 | 18 | Un contexte de session ne se sauve pas | `OUVERT` — parade manuelle seulement |
 | 19 | La trace d'auteur est l'exception (2/65) | `OUVERT` — A17, mecanisation deleguee |
 | 20 | Un IGNORE repete ne change jamais d'etat | `OUVERT` — la boucle en est la preuve |
+
+---
+
+## 105. LOCALISABLE — la septieme qualite, et celle dont la seance a le mieux montre le prix
+
+Ajoutee par l'operateur apres les six autres : *« localisable »*.
+
+C'est la qualite qui repond a une question differente de toutes les autres. Les six premieres
+demandent « est-ce sauve, trace, auditable, reproductible, propre, protege ». Celle-ci demande :
+**sait-on OU c'est ?** Et une chose parfaitement sauvegardee dont personne ne retrouve le chemin est
+perdue en pratique.
+
+### 105.1 CE QUI LA PORTE ICI
+
+| mecanisme | mesure |
+| --- | --- |
+| `rituels/BOUSSOLE.md` + `.csv` | **3 205 fichiers indexes** — Role, Fichier, Objet, Taille, Modifie, **SHA-256** |
+| `nexus_doc.py` | **166 507 symboles** Python + 24 073 annexes, ancres sur les versions INSTALLEES |
+| `nexus_search` / `nexus_index_build` (MCP) | recherche dans le corpus sans ramener le corpus |
+
+Deux proprietes qui ne se voient pas au premier regard :
+
+**`nexus_doc` sert par `seek`, jamais en lisant le fichier.** Sa sortie porte l'offset :
+`(offset 2023, 2075 o)`. Cout ~280 jetons par consultation — **moins cher que relire trois lignes de
+code**. C'est un index, pas une recherche.
+
+**La boussole porte des EMPREINTES SHA-256.** Ce n'est donc pas seulement un index de localisation :
+c'est un manifeste d'integrite a moitie construit. Il lui manque la VERIFICATION — comparer les
+empreintes d'un passage au suivant — mais la moitie couteuse existe deja.
+
+> Cela repond directement au cliquet d'integrite que `sovereign` propose : chez lui il est a ecrire
+> entierement ; ici la collecte est faite, seule la comparaison manque.
+
+### 105.2 LE PRIX DE SON ABSENCE, mesure aujourd'hui
+
+L'inventaire de sauvetage — ecrit de memoire par une session mourante — situait `STATE.md` et les
+`SORTIE_*.txt` **a la racine** du depot `ea-mt5`. Mesure au retour :
+
+```
+D:\EA MT5 PYTHON RENTABLE ROBUSTE\SORTIE_*.txt                    -> 0 fichier
+...\workspace\_SCRATCH\descripteurs_2026-09-01\SORTIE_*.txt       -> 13 fichiers, TOUS presents
+```
+
+Ces treize fichiers portent les sorties brutes et les SHA-256 qui font la difference entre une
+**preuve rejouable** et un **resultat rapporte** — la distinction que ces trois depots placent au
+dessus de tout.
+
+**Ils n'ont ete sauves que par accident** : la copie a ete faite par REPERTOIRE, pas par liste
+nominative. Une copie fidele a l'inventaire les aurait tous manques.
+
+> **Un inventaire ecrit de memoire est une localisation sans index.** La parade n'est pas d'ecrire
+> de meilleurs inventaires : c'est d'avoir un index que la memoire n'a pas a suppleer.
+
+### 105.3 LE TROU : personne ne regenere la boussole
+
+```
+grep nexus_boussole  dans  nexus_rituel.py, nexus_traque.py, nexus_vitrine.py, settings.json
+  -> AUCUNE occurrence
+```
+
+Elle a ete regeneree ce jour a 15:10 **parce que l'operateur l'a demande**. Ni le rituel, ni la
+traque PT10M, ni la vitrine PT6H, ni aucun hook ne la reconstruit.
+
+C'est exactement la classe du §97 : le mecanisme existe, il est bon, et **rien ne l'arme**. Un index
+perime est pire qu'un index absent — il repond avec assurance sur un etat qui n'existe plus, et
+c'est le §3.1 du contrat sous une autre forme : *une mesure figee ment le lendemain*.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 21 | Personne ne regenere la boussole | `OUVERT` | l'appeler depuis `nexus_traque.py` (PT10M, sans session) ou depuis le rituel, et un controle qui echoue si l'index est plus ancien que le dernier commit |
+| 22 | Les SHA-256 de la boussole ne sont jamais COMPARES | `OUVERT` | la moitie couteuse du cliquet d'integrite est deja faite ; il manque la comparaison d'un passage au suivant |
+
+### 105.4 LES SEPT QUALITES, ET CE QU'ELLES DEMANDENT CHACUNE
+
+| qualite | la question qu'elle pose | le trou mesure |
+| --- | --- | --- |
+| tout sauver | est-ce ailleurs qu'ici ? | un contexte de session ne se sauve pas |
+| tracable | qui a fait quoi, et quand ? | 2 commits sur 65 declarent leur auteur |
+| auditable | qui a verifie, n'etant pas l'auteur ? | rien n'echoue si l'auteur valide |
+| reproductible | peut-on le rejouer ? | aucune gate ne joue les 35 epreuves |
+| code premium | est-ce propre, et le reste-t-il ? | le garde de production n'a jamais eu a trancher |
+| eviter les derives | qu'est-ce qui ne peut PAS arriver ? | le depechage d'agent n'est garde par personne |
+| **localisable** | **sait-on OU c'est ?** | **rien ne regenere l'index** |
+
+**Les sept trous ont la meme forme.** Dans les sept cas le mecanisme EXISTE et quelque chose manque
+entre lui et son effet : un armement, une comparaison, une gate, un champ, une decision. Aucun des
+sept ne demande d'ecrire un mecanisme neuf — tous demandent de finir de cabler celui qui est la.
+
+---
+
+## 106. REVERSIBLE — la huitieme qualite, et celle qui a arbitre toute la journee
+
+Ajoutee en dernier par l'operateur : *« et dernier point : reversible »*. Son voisin `ea-mt5` rend
+la meme liste de son cote, dans les memes termes — deux operateurs, deux depots, la meme exigence le
+meme jour.
+
+### 106.1 CE CRITERE A DECIDE LE CORRECTIF DU JOUR
+
+La concertation a trois hesitait entre ACL, regles `deny`, cliquet d'integrite et hook de
+depechage. **C'est le classement par REVERSIBILITE, et non par gravite ressentie, qui a tranche :**
+
+| risque | reversible ? | garde par |
+| --- | --- | --- |
+| agent depeche sans worktree | **NON** — ecrase des fichiers dans aucun commit | **personne** |
+| garde modifie par heredoc | oui, git rattrape | personne, mais sans consequence durable |
+| ACE fossile | sans objet — inerte, mesure | — |
+
+Toutes les autres pistes protegeaient le reversible. **Une seule portait sur un trou nu.**
+
+### 106.2 MESURE DE CE DEPOT
+
+```
+HEAD nommable                    main @ 59fbc2a
+amont de la branche              origin/main
+arbre propre                     0 entree
+non suivis NON ignores           0        (hors .nexus, gitignore)
+suppressions non commitees       0
+regles `ask` sur l'irreversible  9        push, reset --hard, clean, down -v, volume rm, prune
+```
+
+**Corrige apres verification, plutot que de garder une trouvaille flatteuse.** Un premier relevé —
+`git branch -r --contains HEAD` vide — a ete lu comme « HEAD n'est nulle part ailleurs ». C'est
+exact et la conclusion etait fausse : l'amont existe, la tache `NexusVitrine` a publie a **13:35:16**
+avec succes et republiera a **19:35:15**. Le mecanisme fonctionne.
+
+**Ce qui reste vrai est plus fin :** entre deux passages de la tache, il existe une **fenetre de six
+heures** pendant laquelle le travail n'existe que sur ce disque. Ce n'est pas un defaut du
+mecanisme, c'est sa periode — mais elle doit etre connue, parce que la lecon du matin etait
+exactement celle-la : *« Seul `origin` a tenu. C'est le seul chemin qui n'etait pas physique. »*
+
+### 106.3 CE QUE `sovereign` APPORTE, et qui manque ici
+
+Sa distinction est la plus utile de la journee sur ce point : **mecanique** contre **discipline**.
+
+| chez lui, MECANIQUE | chez moi |
+| --- | --- |
+| 24 regles `deny` destructives — `rm -rf`, `filter-branch`, `commit --amend`, `rebase`, `reflog expire`, `gc --prune=now`, `Format-Volume` | **9 regles `ask`** — elles demandent, elles ne refusent pas |
+| un garde qui MESURE les suppressions d'une greffe (`git diff --diff-filter=D`) et refuse celles qui ne se declarent pas | **absent** |
+| append-only verifie par comparaison de PREFIXE D'OCTETS | **absent** |
+
+> **« La reversibilite se mesure a ce qu'un geste destructeur rencontre AVANT de s'executer, jamais
+> a ce qu'on se promet de faire. »**
+
+Et son incident donne la mesure : un `cherry-pick` a supprime **28 456 fichiers en silence**, le
+conflit ne portant que sur quatre d'entre eux — les 28 452 autres se sont appliques sans un mot.
+**Ce sont git et la sauvegarde qui les ont rendus, pas la methode.** Une reversibilite qui repose
+sur la sauvegarde marche jusqu'au jour ou l'objet detruit n'etait pas suivi.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 23 | 9 regles `ask` la ou `sovereign` en a 24 en `deny` | `OUVERT` | un `ask` interrompt, et un `ask` repete finit approuve machinalement. La liste des gestes qui REECRIVENT L'HISTOIRE — `filter-branch`, `commit --amend`, `rebase`, `reflog expire`, `gc --prune=now` — n'est couverte par aucune de mes neuf |
+| 24 | Rien ne mesure les suppressions d'une greffe | `OUVERT` | `git diff --diff-filter=D` avant application, et refus de ce qui ne se declare pas |
+
+### 106.4 LES HUIT QUALITES, ET CE QU'ELLES ONT EN COMMUN
+
+| qualite | la question | le trou mesure ici |
+| --- | --- | --- |
+| tout sauver | est-ce ailleurs qu'ici ? | un contexte de session ne se sauve pas |
+| tracable | qui a fait quoi ? | 2 commits sur 65 declarent leur auteur |
+| auditable | qui a verifie, n'etant pas l'auteur ? | rien n'echoue si l'auteur valide |
+| reproductible | peut-on le rejouer ? | aucune gate ne joue les 35 epreuves |
+| localisable | sait-on OU c'est ? | rien ne regenere l'index |
+| code premium | est-ce propre, et le reste-t-il ? | le garde de production n'a jamais eu a trancher |
+| eviter les derives | qu'est-ce qui ne peut PAS arriver ? | le depechage d'agent n'est garde par personne |
+| **reversible** | **que rencontre un geste destructeur AVANT de s'executer ?** | **`ask` la ou il faudrait `deny` ; les suppressions d'une greffe ne sont pas mesurees** |
+
+**Les huit trous ont la meme forme, et c'est le resultat le plus utile de la seance :** dans les huit
+cas le mecanisme EXISTE, et il manque une seule chose entre lui et son effet — un armement, une
+comparaison, une gate, un champ, une decision. **Aucun des huit ne demande d'ecrire un mecanisme
+neuf.** Tous demandent de finir de cabler celui qui est deja la.
