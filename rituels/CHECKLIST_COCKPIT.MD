@@ -9500,3 +9500,103 @@ la reponse**, et elle est superieure pour une raison precise.
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 86. CINQUANTE JOURS PROPRES, PUIS UNE MISE A JOUR DE PILOTES — la correlation
+
+### 86.1 LE JOURNAL COUVRE TOUTE LA VIE DE LA MACHINE, ET IL EST NET
+
+Windows a ete installe le **12 juillet 2026** ; le plus ancien evenement du
+journal Systeme date du meme jour. **Le journal n'est donc pas tronque : il
+couvre tout.**
+
+```
+2026-07-12     disk/11 x1                                  <- jour de l'installation
+   ... 45 jours, RIEN ...
+2026-08-26     disk/158 x2         <- les pilotes de stockage sont remplaces a 17:31
+2026-08-27     disk/158 x7
+2026-08-29     disk/51 x101
+2026-08-31     disk/11 x2  disk/153 x8  UASPStor/129 x1     <- premiere reinitialisation
+2026-09-01     disk/11 x1  disk/51 x9   disk/153 x6
+               Ntfs/50 x55  UASPStor/129 x1                  <- la panne
+```
+
+**Et les horodatages des pilotes :**
+
+```
+uaspstor.sys    10.0.26100.8972    26/08/2026 17:31:25
+usbstor.sys     10.0.26100.1       26/08/2026 17:31:25
+storport.sys    10.0.26100.9168    26/08/2026 17:31:53
+disk.sys        10.0.26100.1       26/08/2026 17:31:25
+usbxhci.sys     10.0.26100.8972    26/08/2026 17:31:25
+```
+
+Correlatifs : `KB5123304`, `KB5095189`, `KB5050575`, `KB5054273` installes le
+26/08, puis `KB5120708`, `KB5054156`, `KB5121003` le 27/08.
+
+> **Quarante-cinq jours sans une seule erreur. Les cinq pilotes de la chaine de
+> stockage sont remplaces le 26 aout a 17h31. Les erreurs commencent le jour
+> meme, s'aggravent pendant six jours, et le volume tombe le 1er septembre.**
+
+**C'est une correlation, pas une preuve** — et elle porte sur cinq fichiers
+remplaces a la meme seconde, donc elle ne designe pas lequel. Mais c'est la
+seule hypothese qui explique **pourquoi maintenant** : ni le boitier, ni le
+dock, ni la charge n'ont change ce jour-la.
+
+Et elle recoupe la documentation : Microsoft documente *« Devices connected
+through a Thunderbolt Dock stop working »*, et des cas rapportent des disques
+externes cessant d'etre reconnus **apres une mise a jour**, avec pour voie de
+resolution le retour arriere ou une mise a jour de micrologiciel.
+
+### 86.2 CINQ FAMILLES, DEUX CAMPS, ET LES DEUX ONT UN FAIT FAUX
+
+Sur l'outil de copie :
+
+| famille | verdict | erreur de fait |
+| --- | --- | --- |
+| `gemma`, `gpt-oss`, `mistral` | `robocopy` | *« reprend exactement ou il s'est arrete »* — vrai au fichier, **pas a l'octet** |
+| `minimax`, `kimi` | `ddrescue` | `minimax` ecrit que robocopy *« repart de zero »* — **faux**, il saute ce qui est deja copie |
+
+**Arbitrage, et il ne tranche pas pour un camp :** les deux outils reprennent,
+a des granularites differentes, et le bon choix depend d'un fait qu'aucune
+famille n'avait — **3,5 To occupes sur 5 To de capacite.**
+
+* une image bloc a bloc copie **5 To**, dont 1,5 To de vide, sur un lien qui
+  lache : trente pour cent du temps d'exposition gaspille ;
+* `robocopy` copie **3,5 To**, mais **ne voit que ce que le systeme de fichiers
+  declare** — or l'inventaire est incomplet de trois teraoctets (§85.1), et un
+  fichier efface recuperable lui est invisible.
+
+⇒ **Le choix depend de ce qu'on cherche, et l'operateur seul le sait.** Ce qui
+est certain : `xcopy`, `copy` et un glisser-deposer sont exclus — aucun ne
+reprend.
+
+**Un argument de `gemma` que personne d'autre n'a fait, et qu'il faut garder** :
+un amorcage externe suppose un redemarrage, et **rien ne garantit que le dock
+et le disque reviennent apres**. Ce n'est pas un argument decisif, mais c'est
+un cout qu'aucun des quatre autres n'a compte.
+
+### 86.3 SUJETS OUVERTS — remplace §85.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **La mise a jour du 26/08 est le suspect principal** | §86.1 | 45 jours propres avant, erreurs le jour meme |
+| **3 To dont aucun agent ne sait rien** | §85.1 | decide entre image bloc et copie fichier |
+| **Le disque de 16 To doit etre hors du dock defaillant** | §85.4 | condition absolue |
+| `REPRISE_2026-09-01.md` n'est nulle part ailleurs | §84.2 | priorite absolue si le volume revient |
+| Les `SORTIE_*.txt` et leurs SHA-256 | §84.2 | preuve rejouable contre resultat rapporte |
+| `_QUARANTINE` de `sovereign`, 1 790 fichiers | §84.2 | sa seule reserve |
+| Suspension selective active sur 30 peripheriques | §81.2 | gratuit, reversible, **pas une cause prouvee** |
+| Classe 10 : posseder la mesure, la ranger ailleurs | §84.4 | commise par son auteur au tour suivant |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
