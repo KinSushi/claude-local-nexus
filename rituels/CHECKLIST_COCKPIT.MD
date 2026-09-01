@@ -6070,6 +6070,19 @@ sous `nexus appliquer`.
 **Les 239 autres scripts du bac a sable sont jetables** : des consignes, des
 sondes ponctuelles et des copies de securite d'avant patch.
 
+**Et sa promotion a manque le casser.** Le cliquet d'outillage exigeait trois
+gestionnaires de contexte ; le troisieme patch a indente la boucle dans un
+`with` et laisse un `break` hors boucle. C'est l'outil avec lequel tous les
+patchs sont appliques — le casser privait la session de ses mains. Une copie
+de securite prise AVANT le patch l'a restaure automatiquement.
+
+Repris avec une forme qui ne reindente rien : le `with` lit les lignes dans
+une variable, se ferme, et la boucle porte sur cette variable.
+
+> La taille de l'ancre est un parametre de surete ; **la FORME du remede
+> aussi**. Un correctif qui deplace de l'indentation touche du code qu'il ne
+> voit pas.
+
 ### 62.3 CE QUI EST EN VOL, par ordre d'importance
 
 1. **La recolte des 34 sujets** (§52) — huit entrees examinees. Le rythme
