@@ -50,7 +50,11 @@ def _propager(taches, max_tokens, temperature):
     spec.loader.exec_module(module)
 
     class Args:
-        pass
+        def __getattr__(self, name):
+            # Cette forme evite de rouvrir l'epreuve a chaque option nouvelle,
+            # une option non posee vaut None donc n'est pas propagee,
+            # ce qui est exactement le comportement voulu.
+            return None
 
     args = Args()
     args.max_tokens = max_tokens

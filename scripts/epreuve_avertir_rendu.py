@@ -60,13 +60,13 @@ def main():
                           servi_par="ollama_chat/gpt-oss:120b"))
     if not _dire("famille servie differente" in sortie,
                  "la famille divergente est annoncee",
-                 repr(sortie.strip().splitlines()[-1][:70])):
+                 "\n".join([l for l in sortie.splitlines() if "[" in l]) or f"{len(sortie.splitlines())} lignes"):
         code = 1
 
     # 2 : le faux positif. Derriere un routeur, la divergence est le principe.
     sortie = _rendre(dict(BASE, modele="adaptive-router-cloud",
                           servi_par="ollama_chat/qwen3.5:397b"))
-    if not _dire("famille servie differente" not in sortie,
+    if not _dire("servi" in sortie and "famille servie differente" not in sortie,
                  "un routeur adaptatif n'avertit pas",
                  "silencieux" if "famille" not in sortie else "CRIE A TORT"):
         code = 1
@@ -74,7 +74,7 @@ def main():
     # 3 : concordance. L'alias porte la famille reellement servie.
     sortie = _rendre(dict(BASE, modele="gpt-oss-120b-cloud",
                           servi_par="ollama_chat/gpt-oss:120b"))
-    if not _dire("famille servie differente" not in sortie,
+    if not _dire("servi" in sortie and "famille servie differente" not in sortie,
                  "une famille concordante n'avertit pas",
                  "silencieux" if "famille" not in sortie else "CRIE A TORT"):
         code = 1
@@ -84,7 +84,7 @@ def main():
                           servi_par="ollama_chat/gpt-oss:120b",
                           tronque=True, tokens_sortie=1400))
     if not _dire("TRONQUE" in sortie, "la troncature est annoncee a l'ecran",
-                 repr(sortie.strip().splitlines()[-1][:70])):
+                 "\n".join([l for l in sortie.splitlines() if "[" in l]) or f"{len(sortie.splitlines())} lignes"):
         code = 1
 
     return code

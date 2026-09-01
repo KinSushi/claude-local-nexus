@@ -552,7 +552,27 @@ def _decouper_en_fenetres(corpus: str, taille: int | None = None) -> List[str]:
 # Pourquoi la valeur passe quand meme de 3 a 16 : non pour un gain prouve, mais pour que le chiffre cesse d'affirmer une mesure que rien ne soutient, et parce qu'il devient reglable sans toucher au code.
 # Le plafond local de 2 tient pour une raison PHYSIQUE : l'hote a 61,6 Go partages avec un iGPU sans VRAM dediee, et deux modeles de 20 Go n'y coexistent pas.
 # Les noms des variables d'environnement : NEXUS_FILS_CLOUD et NEXUS_FILS_LOCAL.
-PLAFOND_FILS = {"cloud": int(os.getenv("NEXUS_FILS_CLOUD", "16")), "local": int(os.getenv("NEXUS_FILS_LOCAL", "2"))}
+
+TAILLE_MODELE_GB = float(os.getenv('NEXUS_TAILLE_MODELE_GB', '20'))
+
+def plafond_local():
+    try:
+        from nexus_capability import build_profile
+        profile = build_profile()
+        if not profile.get("gpu_usable_for_offload", False):
+            return 2
+        vram_gb = (profile.get('gpu') or {}).get('vram_gb', 0)
+        if vram_gb <= 0:
+            return 2
+        # Ce diviseur est une hypothese NON MESUREE, le profil materiel n'expose pas la taille des modeles, la contre-epreuve doit etre rejouee des qu'un GPU dedie existera
+        return max(2, min(8, int(vram_gb / TAILLE_MODELE_GB)))
+    except Exception:
+        return 2
+
+PLAFOND_FILS = {
+    "cloud": int(os.getenv("NEXUS_FILS_CLOUD", "16")),
+    "local": int(os.getenv("NEXUS_FILS_LOCAL") or plafond_local())
+}
 
 
 
@@ -1246,6 +1266,10 @@ def main() -> int:
         if args.max_tokens is not None:
             for t in taches:
                 t['max_tokens'] = args.max_tokens
+        # troisieme option de cette classe ; le message d'erreur conseillait une option inerte
+        if args.racine is not None:
+            for t in taches:
+                t['racine'] = args.racine
     elif args.tache:
         taches = [{"nom": args.modele, "modele": args.modele, "tache": args.tache,
                    "fichiers": args.fichiers, "systeme": args.systeme,
