@@ -473,6 +473,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "part_raisonnement": round(part_raisonnement, 3),
         # Nombre de tokens de sortie (completion) ; 0 par defaut si absent.
         "tokens_sortie": (corps.get("usage") or {}).get("completion_tokens", 0),
+        # part_raisonnement voit le raisonnement INLINE et cette grandeur voit le raisonnement HORS BANDE, mesures 0,02 contre 3,15
+        "car_par_jeton": round(len(texte) / (corps.get("usage") or {}).get("completion_tokens", 0), 2) if (corps.get("usage") or {}).get("completion_tokens", 0) else None,
     }
 
 

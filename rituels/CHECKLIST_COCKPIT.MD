@@ -6486,3 +6486,45 @@ second. Le refus total a evite une mutilation reelle, pas theorique.
 | `max_parallel_requests` absent : aucune borne globale cote passerelle | §64.3 | la discipline des sessions est la seule borne |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
 | `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |
+
+### 65.6 LE RAISONNEMENT HORS BANDE — ma mesure ne le voyait pas
+
+Ajoute une heure apres §65.1, et c'est une correction de ma propre mesure.
+
+`part_raisonnement` compare le texte BRUT au texte NETTOYE. Elle ne voit donc
+que le raisonnement **inline**, celui que le modele laisse dans `content`
+entre des balises. Le cas `glm-4.7-flash` mesure par le voisin est de
+ceux-la.
+
+`gpt-oss-120b` fait autrement : son raisonnement est **hors bande**. Il est
+compte dans `completion_tokens` et n'apparait jamais dans le contenu. Ma
+mesure rend donc `0,000` — un silence qui se lit comme « pas de raisonnement »
+alors qu'il signifie « raisonnement invisible ici ».
+
+Mesure faite sur deux appels au MEME modele et au MEME budget de 2000 jetons :
+
+| rendu | caracteres | jetons de sortie | car./jeton | `part_raisonnement` |
+| --- | --- | --- | --- | --- |
+| « PRET » | 4 | 231 | **0,02** | 0,000 |
+| cinq phrases | 681 | 216 | **3,15** | 0,000 |
+
+231 jetons pour rendre quatre caracteres. Le rapport `caracteres / jetons de
+sortie` — piste proposee par le voisin a partir de trois points — capte
+exactement ce que la mienne manque.
+
+> **Les deux grandeurs ne se remplacent pas.** `part_raisonnement` voit le
+> raisonnement inline ; `car_par_jeton` voit le hors bande. Un modele peut
+> echapper a l'une et pas a l'autre, et c'est le cas des deux familles que
+> nous avons mesurees.
+
+Reserve, et elle compte : rejoue une seconde fois, l'ecart etait de 0,07
+contre 1,53 — facteur 22 la ou le premier tirage donnait 150. **Le sens de
+l'ecart est net, son amplitude ne l'est pas.** Un seuil fixe serait donc
+fragile, et aucun n'est pose : le champ est rendu, la lecture reste a
+l'appelant. C'est la reserve exacte que le voisin avait formulee sur ses
+propres trois points.
+
+Corrige au passage, par la mesure : le voisin signalait que
+`part_raisonnement` n'apparaissait que dans 3 rendus sur 16, tous en echec.
+Un appel de controle sur un SUCCES montre le champ present. Ses 16 rendus
+precedaient le correctif, et 3 seulement l'ont suivi.
