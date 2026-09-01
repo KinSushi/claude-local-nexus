@@ -4991,3 +4991,85 @@ APPLIQUE** : les deux rendus du banc proposaient de renommer la fonction
 `chat`, trop invasif pour un pont ACTIF chez deux instances a cet instant.
 Inscrit ouvert plutot qu'applique a la hate.
 
+---
+
+## 52. RECOLTE DES SUJETS OUVERTS — et trois qui etaient deja fermes
+
+Demande de l'operateur : *« recolte tous les sujets ouverts a traiter »*.
+Delegue au banc, qui a lu les **264 Ko** de ce document en quatre fenetres et
+**115 790 jetons**, puis rendu le tableau ci-dessous, classe par degat.
+
+### 52.1 L'ARBITRAGE D'ABORD — la source ment, pas le banc
+
+Le banc a ete FIDELE. Ce sont trois entrees du cockpit qui etaient perimees,
+et que les mesures de ce jour ferment :
+
+| entree recoltee | ce que la mesure du 2026-08-31 dit |
+| --- | --- |
+| #19 « `OLLAMA_KEEP_ALIVE` non defini » | il vaut **15m**, releve directement |
+| #6 « les modeles cloud echouent en serie (429) » | **zero 429** sur 144 taches, et zero sur ma propre rampe a 20 |
+| #32 « la config porte toujours les 37 chaines » | **2** chaines `cloud -> cloud`, remesure et confirme avec l'instance voisine |
+
+> **Le cockpit accumule et ne retire jamais.** Un sujet ferme qui reste
+> inscrit ouvert coute deux fois : il occupe l'attention, et il decredibilise
+> les sujets qui, eux, sont reels.
+
+C'est un defaut de ce document, pas des mesures. Il n'a aucun mecanisme de
+retrait, et cette recolte est la premiere chose qui le revele.
+
+### 52.2 ET UN DEFAUT TROUVE EN PRODUISANT CETTE RECOLTE
+
+Le tableau ci-dessous s'arrete en plein mot, a l'entree 34 — et le champ
+`tronque` du resultat vaut **`None`**, pas `True`.
+
+**Le chemin MAP-REDUCE perd le drapeau de troncature.** L'appel simple le
+porte, la fusion en plusieurs paliers ne le remonte pas. Un appelant qui
+demande un corpus de 264 Ko recoit donc un rendu coupe **sans le savoir**.
+
+C'est exactement l'entree #10 de la recolte — *« `nexus_compare` perd le
+drapeau `tronquee` que `chat()` calcule »* — observee ici sur un autre
+chemin, en produisant la liste qui la mentionne. La famille est plus large
+que l'entree ne le disait.
+
+### 52.3 La recolte, telle que rendue
+
+Les entrees 6, 19 et 32 sont **fermees** par 52.1 ; les autres restent
+ouvertes. Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est
+enfreinte — jamais par un paragraphe.
+
+| # | Sujet ouvert | Section | Ce qui le fermerait concrètement |
+|---|---|---|---|
+| 1 | Tâches de fond tuées (trois fois de suite, cause non identifiée) | Défauts constatés, non corrigés | Contrôle qui échoue si la récidive de tuerie de tâche survient |
+| 2 | `nexus_index_build` expire (600 s) — embedding 8 Go au lieu de 46 Mo | Défauts constatés, non corrigés | Contrôle validant le temps d'exécution inférieur au timeout |
+| 3 | `nexus_search` expire (600 s) — même cause probable | Défauts constatés, non corrigés | Contrôle validant le temps d'exécution inférieur au timeout |
+| 4 | `releve-locale` expire dans le MCP (HTTP 408 après 180 s) | Défauts constatés, non corrigés | Contrôle validant la complétion de la requête avant timeout |
+| 5 | Un amont qui **pend** attend 3 × 180 s avant tout repli | La sélection naturelle tournait sur une jambe | Contrôle vérifiant le délai de repli réduit et fonctionnel |
+| 6 | Les modèles **cloud échouent en série** (429 Too Many Requests) | Sujets ouverts consolidés | Contrôle vérifiant la borne de concurrence cloud respectée |
+| 7 | 9 appels Anthropic sur 9 échouent — le repli masque la cause | Sujets ouverts consolidés / Vérifications jamais faites | Contrôle avec repli désactivé validant la lecture de la cause réelle |
+| 8 | Suite complète après tous les changements — trois lancements interrompus | Vérifications jamais faites | Contrôle d'exécution de la suite complète sans interruption |
+| 9 | Une réponse vidée par le retrait du raisonnement est rendue **sans le dire** | Charge massive sur le pont MCP | Contrôle échouant si le signalement explicite disparaît dans les appelants |
+| 10 | `nexus_compare` perd le drapeau `tronquee` que `chat()` calcule | Charge massive sur le pont MCP | Contrôle échouant si le drapeau `tronquee` est absent en sortie |
+| 11 | Biais systématique du validateur (pas protégé du biais de format) | Défauts constatés, non corrigés | Contrôle vérifiant la protection contre le biais de format |
+| 12 | La moitié du pool d'orchestration est **confirmée incapable d'orchestrer** (deepseek-coder-33b, phi3-mini) | La moitié du pool d'orchestration ne sait pas orchestrer | Contrôle mécanisé vérifiant l'exclusion effective des modèles incapables |
+| 13 | Les épreuves promeuvent mais ne rétrogradent jamais | La moitié du pool d'orchestration ne sait pas orchestrer | Contrôle vérifiant l'application de la politique de rétrogradation |
+| 14 | La politique de promotion elle-même — décision réservée à l'opérateur | Un 4/4 obtenu une fois n'est pas un 4/4 confirmé | Contrôle vérifiant l'application de la décision de l'opérateur |
+| 15 | `nexus_essaim` : 3 échecs sur 6, palier jamais revérifié | Défauts constatés, non corrigés | Contrôle de revérification du palier de réussite |
+| 16 | Le profil `reasoning` a répondu entièrement hors sujet — aucune épreuve de compréhension | Charge massive sur le pont MCP | Contrôle d'épreuve de compréhension par profil exécuté |
+| 17 | `nexus_search` rend 8 extraits à score 0,205 sur une requête absurde | Charge massive sur le pont MCP | Contrôle vérifiant le seuil de score ou la mention explicite |
+| 18 | Chaque worker dans un **worktree isolé** — c'est un répertoire, pas un worktree git | Règles du 30/08 encore OUVERTES / Sujets ouverts consolidés | Contrôle échouant si la règle de worktree git véritable est enfreinte |
+| 19 | Réglages du moteur Ollama (`OLLAMA_KEEP_ALIVE` non défini) | Bloqué sur une décision qui ne m'appartient pas | Contrôle vérifiant la définition effective de la variable d'environnement |
+| 20 | Taille du pool local — couplé au réglage ci-dessus, borné à 4 modèles | Bloqué sur une décision qui ne m'appartient pas | Contrôle vérifiant la taille du pool suite à la décision hôte |
+| 21 | Préserver le contexte de l'orchestrateur — mesurable mais non mesuré par tour | Règles du 30/08 encore OUVERTES / Sujets ouverts consolidés | Contrôle de rituel comparant jetons facturés et délégués |
+| 22 | Le pont MCP est **beaucoup plus lent** que LiteLLM en direct — mesuré, non expliqué | Le plafond mesuré | Contrôle d'instrumentation validant l'explication du surcoût |
+| 23 | Débit mesuré sur 7 modèles sur 71 — le banc n'a jamais tourné en entier | Sujets ouverts consolidés | Contrôle d'exécution de `nexus_bench.py --debit` machine au repos |
+| 24 | Coût binaire mesuré sur aucun modèle — jamais lancé | Sujets ouverts consolidés | Contrôle d'exécution de `nexus_bench.py --cout` |
+| 25 | `epreuves.json` ne juge qu'un modèle sur 71 (maintenant 25/44, mais `stable` exige 2 mesures) | La sélection naturelle tournait sur une jambe / Un 4/4 obtenu une fois n'est pas un 4/4 confirmé | Contrôle validant deux mesures par modèle pour confirmer `stable` |
+| 26 | Le détail des sept modèles déjà partiels — perdu, reviendra à la prochaine mesure | Combien ont échoué ne dit pas laquelle | Contrôle de conservation du détail lors de la prochaine mesure |
+| 27 | Qualité de résumé — grandeur manquante pour trancher `DEFAULT_CHAT_MODEL` | Mesures incomplètes | Contrôle de mesure de similarité sémantique résumé↔source |
+| 28 | Niveau de qualité — 21 modèles sur 36 restent à `tier 0` (jamais déclaré, jamais déduit) | Capacités déclarées, non exploitées | Contrôle de déclaration ou déduction du niveau pour tous les modèles |
+| 29 | `qwen3-vl-32b` hors classement — écarté par verdict matériel ? Non vérifié | Défauts constatés, non corrigés | Contrôle de vérification du verdict matériel d'exclusion |
+| 30 | `This model isn't mapped yet` sur les alias `ollama_chat/*` — effet réel à établir | Le plan cloud est tombé sous mes propres vagues | Contrôle établissant l'effet réel du mapping d'alias |
+| 31 | `num_retries: 2` sur un 429 — politique à vérifier dans la doc LiteLLM | L'amplification des replis | Contrôle de vérification dans la documentation LiteLLM |
+| 32 | `litellm_config.yaml` porte toujours les 37 chaînes — régénération à la main | L'amplification des replis | Contrôle vérifiant la régénération et le redémarrage effectués |
+| 33 | `thinking` — déclarée par le moteur, lue nulle part | Capacités déclarées, non exploitées | Contrôle de lecture et exploitation effective de la capacité |
+| 34 | `command-r`, `sqlcoder`, `codegemma:7b` — installés, déclarés, **jamais mesurés** | Modèles téléchargés, non intégrés | Contrôle de mesure effectuée et intégr
