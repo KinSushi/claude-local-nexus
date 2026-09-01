@@ -7990,3 +7990,113 @@ verdicts opposes sans qu'aucune ne se trompe.
 | Decharger les poids en sortant du VERROU | §70.3 | ~177 s pour 20 Go ; `glm-4.7-flash` seul en occupe 20,7 |
 | La reprise de plafond absente du MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
 | `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s, 0 octet |
+
+---
+
+## 75. AUDIT MASSIF DU DEPOT — le verdict de l'operateur, et ce que la mesure lui donne
+
+### 75.1 LE VERDICT, TRANSMIS MOT POUR MOT PAR UNE SESSION VOISINE
+
+> *« et l'autre instance a mal fait son travail, il est bacle, tant que code
+> premium audite partout non execute alors il y aura toujours des instabilites
+> et des erreurs silencieuses »*
+
+**Accepte sans discussion.** Six faits mesures le meme jour l'etablissent, et
+aucun ne vient de moi :
+
+| # | fait | classe |
+| --- | --- | --- |
+| 1 | appel local bloque 16 min, 0,05 s de CPU, aucun message | erreur silencieuse |
+| 2 | rendu contenant `&lt;`, `SyntaxError` garantie, aucune verification | pas de garde en sortie |
+| 3 | un appel rend 0 octet sans un mot de cause | erreur silencieuse |
+| 4 | impossible de distinguer lent / en file / bloque de l'exterieur | journalisation absente |
+| 5 | `AURUM_MACHINE_BANC` existe et **aucun des 12 outils MCP ne la prend** | garde au mauvais niveau |
+| 6 | un appel qui n'aboutit pas ne dit meme pas quel modele a ete engage | tracabilite absente |
+
+Le mot sur lequel tout tient est **« execute »** : un test ecrit et jamais
+lance ne protege rien. Trois preuves du jour — `ruff` F823 arme et jamais
+interroge, deux taches planifiees en echec silencieux depuis un jour, et le
+test d'acceptation d'un voisin ecrit a 09:14 et lance a 09:49.
+
+### 75.2 L'AUDIT MASSIF, ET MON PROPRE GARDE QUI M'A REPRIS
+
+Huit cibles, cinq familles, machine verifiee au repos. Une famille par cible,
+aucune ne relisant ce qu'une autre a produit.
+
+```
+7 alias -> 4 famille(s) distincte(s)
+[!] Des taches ont partage une meme famille, le croisement n'a pas eu lieu
+```
+
+**Le compteur pose au §64.3 m'a repris sur mon propre lot** : j'avais reutilise
+deux familles pour huit cibles. Le croisement est donc PARTIEL, et l'avertissement
+est exact — il ne l'aurait pas ete si je l'avais lu apres coup dans le JSONL,
+comme le voisin l'avait fait avant que ce compteur n'existe.
+
+Une cible a echoue en plafond insuffisant a 8000 jetons. Sept rendus, dont deux
+`AUCUN DEFAUT SUR` — ce qui est le comportement voulu quand il n'y a rien.
+
+### 75.3 LES TROIS FINDINGS RETENUS EN ARBITRAGE
+
+**UN — `nexus_avec_verrou.py` : l'attente du verrou n'est pas annoncee.**
+Trouve par `gemma4-31b`. C'est exactement le defaut que je venais de corriger
+dans le lanceur, present ici aussi et que je n'avais pas vu : *un code
+defectueux ferait passer un gel du processus pour une attente normale de
+ressource.* L'outil pose pour rendre la contention visible attend lui-meme en
+silence.
+
+**DEUX — `nexus_verbatim.py` : un usage invalide rend le code 0.**
+`purger(jours < 1)` rend `(-1, 0)`, l'appelant affiche un message, et le code
+de sortie reste 0. Un refus qui se lit comme un succes — la classe exacte du
+fail-open corrige ce matin sur `nexus_charge`, presente ailleurs.
+
+**TROIS — `nexus_verbatim.py` : `getmtime` repond a la question voisine.**
+La purge par age lit la date de MODIFICATION, jamais celle de creation. Un
+fichier touche apres coup echappe a la purge, ou y tombe a tort.
+
+### 75.4 CE QUI EST REJETE, ET POURQUOI
+
+* *« deux blocs partageant un fragment commun »* dans `nexus_appliquer` : le
+  risque est reel en theorie, mais l'unicite de chaque bloc est verifiee sur
+  la source avant tout remplacement. A verifier, pas a corriger a l'aveugle.
+* *« le chemin `.nexus/verbatim` sans provenance »* : convention documentee
+  ailleurs dans le depot. Finding formel sans degat.
+* *« l'`except Exception: pass` de l'analyse ruff »* : voulu et documente —
+  l'analyse est un service, jamais une condition. **Mais l'auditeur a raison
+  sur un point** : il avale aussi les pannes de l'outil lui-meme, et rien ne
+  distingue « ruff n'a rien trouve » de « ruff n'a pas pu tourner ».
+
+### 75.5 SOUTENIR LA CHARGE — reponse franche a la question de l'operateur
+
+*« Vas-tu soutenir la charge ? »*
+
+Oui, et voici sur quoi cela repose plutot qu'une affirmation :
+
+| ce qui tient la charge | etat |
+| --- | --- |
+| le rituel de fin de tour, joue a chaque iteration | **arme**, il a refuse 5 fois aujourd'hui |
+| le cliquet de cablage, qui refuse un script orphelin | **arme**, m'a repris 3 fois |
+| le cliquet d'outillage, qui refuse une regression ruff | **arme** |
+| la vitrine, qui refuse de publier sur un arbre sale | **arme**, a refuse 3 fois |
+| le compteur de familles distinctes | **arme**, m'a repris a l'instant |
+| le cycle a trois temps | **applique**, a trouve 4 defauts que l'arbitrage manquait |
+
+Ce qui ne tient PAS encore, et qu'il faut dire : le verrou du MCP, la
+journalisation du pont, et la verification en sortie de production. Trois
+sujets ouverts, nommes, non promis pour un tour precis.
+
+### 75.6 SUJETS OUVERTS — remplace §74.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Le MCP ne prend pas le verrou — douze outils** | §75.1 fait 5 | point d'insertion identifie, voie non tranchee |
+| **La journalisation du pont** — `log()` existe, `attenteMs` et `dureeMs` mesures et jamais dits | ordre operateur | patch ecrit, non pose : trois rendus a marqueurs malformes |
+| L'attente du verrou n'est pas annoncee | §75.3 UN | trouve par audit tiers |
+| `purger` rend 0 sur usage invalide | §75.3 DEUX | fail-open, meme classe que `nexus_charge` |
+| `getmtime` au lieu de la date de creation | §75.3 TROIS | question voisine dans la purge |
+| Une entite HTML dans un rendu casse le code | mesure `ea-mt5` | `compile()` en sortie de production |
+| Un verdict de mesure ne porte pas son horodatage | §74.5 | une photo n'est pas fausse, elle est datee |
+| Une tache planifiee echoue sans temoin | §73.3 | deux taches concernees |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
+| `NexusTraque` salit l'arbre et bloque la vitrine | §73.4 | trois blocages constates |
+| Les gros fichiers echappent a l'audit — 3561, 1927, 1667 lignes | §75.2 | depassent la fenetre utile, decoupage a faire |
