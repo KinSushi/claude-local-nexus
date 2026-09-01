@@ -540,36 +540,7 @@ def _decouper_en_fenetres(corpus: str, taille: int | None = None) -> List[str]:
 PLAFOND_FILS = {"cloud": int(os.getenv("NEXUS_FILS_CLOUD", "16")), "local": int(os.getenv("NEXUS_FILS_LOCAL", "2"))}
 
 
-def _map_sur_plan(taches, alias, fils, plafond_jetons, cle, temperature):
-    """
-    Traite les fenetres d'UN plan, et rend des couples (indice, resultat).
 
-    `fils` borne la concurrence, `plafond_jetons` borne la taille de chaque
-    reponse. Les confondre est l'erreur qui guette ici : un plafond de
-    jetons passe a max_workers donnerait trois threads pour trois jetons.
-    """
-    if not taches:
-        return []
-    resultats = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=fils) as executeur:
-        futurs = {
-            executeur.submit(
-                appeler, alias,
-                [{"role": "system", "content": MAP_SYSTEME},
-                 {"role": "user", "content": contenu}],
-                plafond_jetons, cle, temperature, DELAI_MAP): indice
-            for indice, contenu in taches
-        }
-        for futur in concurrent.futures.as_completed(futurs):
-            indice = futurs[futur]
-            try:
-                resultats.append((indice, futur.result()))
-            except Exception as exc:
-                # None a sa place plutot qu'un trou : le fragment manquant
-                # se verra en aval, la ou un silence se confondrait avec un
-                # fragment vide.
-                resultats.append((indice, {"erreur": str(exc)}))
-    return resultats
 
 
 def _repartir_map(contenus, modele, cle, plafond_jetons, temperature,
