@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-09-01 07:49 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-09-01 08:29 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `81e0df9` |
+| Commit | `7d75504` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 2 days (healthy)
-litellm-proxy	litellm	Up 12 hours
+litellm-proxy	litellm	Up 13 hours
 litellm-redis	redis	Up 2 days (healthy)
 ```
 
@@ -62,7 +62,7 @@ Verdict : **valide**
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
 | `Set-ClaudeModel.ps1` | `c9e49eec98c0e482634eb3faefc4a5b6b577ad02ec40acb71817d357e9e19d64` |
-| `tools/nexus-mcp/server.js` | `16f85569c70e5184e0c5fc0d2c90b80d9a6ab65c4a30f7331701ca7e458a9ebf` |
+| `tools/nexus-mcp/server.js` | `fadea2d6e84e04e4d296a4f4ab927229d56646421196f371000f4d4bc526af84` |
 | `scripts/nexus_generate.py` | `7bdb7c9b0626e3392c5b12fb5a4985ca246440aa036132b3a79a7d0131047d9b` |
 | `scripts/nexus_validate.py` | `f861fb7f5d50240ba56a41233fb22c5b24426cb5d9d91cdc881f31f90dd64613` |
 | `scripts/nexus_capability.py` | `2dd9e691834d26ff9139bc2e21155094ef4762f27479df1bfa34646f2ae151a3` |
@@ -72,11 +72,11 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-79 fichier(s) analyse(s)
+80 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       41
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
-  classe 4  valeur neutre rendue par un except     6
+  classe 4  valeur neutre rendue par un except     5
   classe 5  refus rendu en sortie 0                0
   classe 6  refus rendu en retour 0                0
 ```

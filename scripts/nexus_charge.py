@@ -8,6 +8,14 @@ La mesure a ete lue comme 'local vs cloud' alors qu'elle etait 'local sous charg
 
 Un rapport entre grandeurs du meme appel (ex: ratio) survit a la contention car
 le ralentissement affecte le numerateur et le denominateur. Une duree absolue, non.
+
+Codes de sortie :
+0 : Machine au repos (libre)
+1 : Machine chargee
+2 : Mesure impossible (verdict INCONNU)
+
+Formule : une mesure impossible n'est PAS une mesure a zero ; un garde qui confond 
+« rien trouve » et « pas pu chercher » autorise precisement ce qu'il ne sait pas voir.
 """
 import os
 import sys
@@ -21,6 +29,7 @@ def main():
     args = parser.parse_args()
 
     if os.name != 'nt':
+        # Ce n'est pas un echec de mesure, c'est une absence de besoin
         print("Plateforme non Windows : diagnostic ignore")
         return 0
 
@@ -36,7 +45,7 @@ def main():
             'Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'python.exe\' } | '
             'Select-Object ProcessId, UserModeTime, KernelModeTime, WorkingSetSize, CommandLine | ConvertTo-Json"'
         )
-        res_proc = subprocess.check_output(cmd_proc, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8')
+        res_proc = subprocess.check_output(cmd_proc, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8', errors='replace')
         procs_data = json.loads(res_proc)
         if isinstance(procs_data, dict):
             procs_data = [procs_data]
@@ -49,7 +58,7 @@ def main():
             'Get-CimInstance Win32_OperatingSystem | '
             'Select-Object FreePhysicalMemory, TotalVisibleMemorySize | ConvertTo-Json"'
         )
-        res_ram = subprocess.check_output(cmd_ram, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8')
+        res_ram = subprocess.check_output(cmd_ram, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8', errors='replace')
         ram_data = json.loads(res_ram)
 
         # Filtrage et calculs
@@ -102,11 +111,13 @@ def main():
             raison.append("RAM insuffisante")
 
         est_au_repos = len(raison) == 0
+        etat = 'repos' if est_au_repos else 'chargee'
         verdict = "machine AU REPOS" if est_au_repos else "machine CHARGEE : " + ", ".join(raison)
 
         if args.json:
             print(json.dumps({
                 "au_repos": est_au_repos,
+                "etat": etat,
                 "verdict": verdict,
                 "processus_significatifs": significatifs,
                 "ram_libre_go": ram_libre_go,
@@ -122,8 +133,14 @@ def main():
         return 0 if est_au_repos else 1
 
     except Exception as e:
-        print("Erreur lors du diagnostic : %s. L'outil ne doit pas bloquer le travail." % e)
-        return 0
+        print("Erreur lors du diagnostic : %s. Verdict INCONNU, l'appelant doit decider en connaissance de cause." % e)
+        if args.json:
+            print(json.dumps({
+                "au_repos": False,
+                "etat": "inconnu",
+                "verdict": "ERREUR : mesure impossible"
+            }))
+        return 2
 
 if __name__ == "__main__":
     sys.exit(main())

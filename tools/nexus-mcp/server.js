@@ -1803,6 +1803,7 @@ async function mapReduce(text, instruction, model, contextTokens, onProgress) {
   }
   const windows = splitIntoWindows(text, budget);
   let tokens = 0;
+  let tronquee = false;
 
   const MAP_SYSTEM =
     "Tu analyses UN FRAGMENT d'un ensemble plus vaste. Extrais fidelement " +
@@ -1862,6 +1863,7 @@ ${windows[i]}`,
         mapTokens
       );
       tokens += result.tokens;
+      tronquee = tronquee || result.tronquee;
       const body = (result.text || "").trim();
       // Ecriture a indice fixe : l'ordre des fragments est preserve meme si
       // les reponses reviennent dans le desordre. Un REDUCE qui recolle des
@@ -1891,7 +1893,7 @@ ${windows[i]}`,
 
   if (!mapped.length) {
     return { text: "Aucun fragment pertinent.", windows: windows.length,
-             passes: 1, tokens, model, converge: true };
+             passes: 1, tokens, model, converge: true, tronquee };
   }
 
   // --- REDUCE --------------------------------------------------------
@@ -1923,6 +1925,7 @@ ${windows[i]}`,
         mapTokens
       );
       tokens += result.tokens;
+      tronquee = tronquee || result.tronquee;
       next.push((result.text || "").trim());
       group = [];
       size = 0;
@@ -1947,7 +1950,7 @@ ${windows[i]}`,
     level = next;
   }
 
-  return { text: level[0], windows: windows.length, passes, tokens, model, converge };
+  return { text: level[0], windows: windows.length, passes, tokens, model, converge, tronquee };
 }
 
 const TOOLS = [
