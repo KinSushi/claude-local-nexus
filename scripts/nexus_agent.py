@@ -1354,6 +1354,17 @@ def main() -> int:
     total = sum(r.get("tokens", 0) for r in resultats)
     print("  %d tache(s), %d token(s), %.0f s au total, %d echec(s)"
           % (len(resultats), total, time.time() - depart, len(echecs)))
+    # question par tache et la question par vague sont differentes
+    # comptage des familles distinctes
+    resultats_sans_erreur = [r for r in resultats if not r.get("erreur")]
+    if len(resultats_sans_erreur) >= 2:
+        familles = {r["servi_par"] for r in resultats_sans_erreur
+                    if r.get("servi_par") and r["servi_par"] != "?"}
+        N = len(resultats_sans_erreur)
+        M = len(familles)
+        print(f"  {N} alias -> {M} famille(s) distincte(s)")
+        if M < N:
+            print("  [!] Des taches ont partage une meme famille, le croisement n'a pas eu lieu")
     if factures:
         print("  [!] %d tache(s) servies par Anthropic, donc FACTUREES : %s"
               % (len(factures), ", ".join(r["nom"] for r in factures)))
