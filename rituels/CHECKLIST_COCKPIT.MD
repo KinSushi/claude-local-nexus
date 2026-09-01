@@ -7368,3 +7368,84 @@ pour obtenir 3,0 s contre 0,0 s. C'etait un forward-test.
 | Un outil qui produit un effet de bord qu'il mesure ensuite | classe `sovereign` | leur `gate.sh` se sabordait ; a verifier ici |
 | Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
 | `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
+
+### 70.7 LE WRAPPER QUI MANQUAIT — aucun chemin legitime n'existait
+
+Demande n°7 de `sovereign`, et elle nommait un manque structurel :
+
+| chemin | prend le verrou | limite |
+| --- | --- | --- |
+| `nexus_agent.py` | oui | n'appelle QUE la passerelle |
+| `nexus_verrou_machine.py` | — | `--etat` seulement |
+| `curl :11434` | non | contournement |
+
+> **La mesure qui comparerait l'appel direct a l'appel par la passerelle etait
+> impossible a mener proprement, puisque la mener contournait le verrou.**
+
+`scripts/nexus_avec_verrou.py` : `<classe> --attente-s N -- <commande>`. Il
+prend le verrou, lance la commande sans capturer sa sortie — un run long doit
+rester discernable d'un run gele — et rend SON code de sortie tel quel.
+
+```
+usage sans commande              code 2
+commande sous verrou libre       code 0, verrou OBTENU affiche
+code de la commande propage      42
+verrou tenu par un tiers         code 75    <- reverse
+```
+
+Le voisin a REFUSE d'ecrire ce wrapper chez lui, et sa raison vaut d'etre
+gardee : *« un wrapper prive serait un septieme contournement, et il ne
+servirait qu'a moi — alors que le manque concerne les trois sessions et,
+bientot, A2A. »*
+
+### 70.8 `part_raisonnement` DEPEND DU CHEMIN — deux diagnostics opposes
+
+Mesure de `sovereign`, meme modele, meme question, meme budget :
+
+```
+en direct (:11434)     part_raisonnement = 1.0
+par la passerelle      part_raisonnement = 0.0
+```
+
+La passerelle n'expose pas `message.thinking`. Le champ rend donc `0.0` non
+parce qu'il n'y a pas de raisonnement, mais parce qu'il est **invisible par ce
+chemin**.
+
+> Consequence, et c'est ma propre grille qui bascule : `part ~1,0` signifie
+> budget trop court donc AUGMENTER, `part 0,0` signifie modele bavard donc
+> BRIDER. **Un meme rendu recoit deux diagnostics OPPOSES et deux remedes
+> OPPOSES selon le chemin d'appel.**
+
+Le remede suit la regle posee le matin meme sur `nexus_charge` : une mesure
+impossible n'est pas une mesure a zero. Le champ doit rendre `inconnu` quand
+le nettoyage n'a RIEN observe. **Non applique** : le rendu du banc referencait
+une variable inexistante, et le sujet reste ouvert.
+
+### 70.9 LA VARIANCE ANNULE NOS DEUX CONCLUSIONS DU MATIN
+
+Trois tirages identiques par `sovereign`, meme travail exact — 1339 jetons,
+1200 en sortie, meme reprise, meme troncature :
+
+```
+270,6 s   a froid, avec chargement
+ 76,7 s   a chaud
+110,4 s   a chaud
+```
+
+**Variance a chaud : 44 %.** L'effet qu'il cherchait le matin valait 53 %.
+*Le bruit est du meme ordre que le signal.*
+
+Je l'avais DEDUIT d'un resultat physiquement impossible — le local a chaud
+plus lent au repos que sous charge. Il le CONFIRME par mesure directe. Aucun
+de nous deux n'a mesure ce qu'il croyait, et nous l'avons tous deux publie.
+
+**Et le chiffre qui manquait, obtenu dans la meme sequence** :
+
+```
+270,6 s (froid) - 93,5 s (mediane a chaud) = ~177 s pour recharger 20 Go
+```
+
+Il tranche l'arbitrage du dechargement : un lot de dix taches locales paierait
+177 s une fois s'il garde les poids, dix fois s'il decharge apres chaque
+tache. D'ou le dechargement a la sortie du VERROU et non de la tache. Et pour
+la session suivante, attendre 177 s vaut mieux que le `keep_alive` de 15 min.

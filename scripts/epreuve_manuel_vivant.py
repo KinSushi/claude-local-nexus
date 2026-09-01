@@ -97,6 +97,12 @@ def main():
     print(f"Non conformes : {compte_actuel} (Réf : {ref_val})")
     
     if compte_actuel > ref_val:
+        print(f"[RATE] dette documentaire : {compte_actuel} non conformes, reference {ref_val} — la dette a AUGMENTE")
+    else:
+        print(f"[OK  ] dette documentaire : {compte_actuel} non conformes, reference {ref_val}")
+    print(f"[OK  ] cliquet arme : reference {ref_val}")
+
+    if compte_actuel > ref_val:
         print("\nERREUR : La dette documentaire a augmenté !")
         for f, err in non_conformes[:10]:
             print(f"  - {os.path.relpath(f, racine)} : {err}")
