@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import contextlib
+import importlib.util
 import os
 import sys
-import importlib.util
 import traceback
+
 
 def _find_repo_root(start_path):
     """Search upward from start_path for a directory containing a 'scripts' subdirectory."""
@@ -56,9 +58,8 @@ def _run_test(name, fake_run, expected_verdict, expect_detail_contains=None):
     if verdict != expected_verdict:
         return False, f"Verdict {verdict!r} != expected {expected_verdict!r}"
     # verify detail if needed
-    if expect_detail_contains is not None:
-        if expect_detail_contains not in detail:
-            return False, f"Detail does not contain expected text. Got: {detail!r}"
+    if expect_detail_contains is not None and expect_detail_contains not in detail:
+        return False, f"Detail does not contain expected text. Got: {detail!r}"
     return True, detail
 
 if __name__ == '__main__':
@@ -115,10 +116,8 @@ if __name__ == '__main__':
     all_pass = all_pass and passed
 
     # Ensure global restoration (defensive)
-    try:
+    with contextlib.suppress(Exception):  # best effort; we already reported failures above
         nexus.subprocess.run = original_run_global
-    except Exception:
-        pass  # best effort; we already reported failures above
 
     # Print results
     for line in results:

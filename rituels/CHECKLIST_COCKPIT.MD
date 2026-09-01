@@ -5611,3 +5611,78 @@ recolte reste utile — elle a mene ici — mais elle se lit comme un signal, pa
 comme un constat. *Verifier chaque entree dans le code reel n'est pas une
 precaution : c'est la moitie du travail.*
 
+---
+
+## 57. UN CONTROLE RENDAIT OK SUR L'ECHEC MEME QU'IL SURVEILLAIT
+
+Deuxieme entree de la recolte traitee. Contrairement a la premiere, **elle
+etait juste** : `redaction_declaree`, dans `nexus_rituel.py`, ne pouvait
+jamais rendre un verdict rouge.
+
+### 57.1 Le defaut, exact
+
+Il n'examinait le code de sortie du script appele que pour la valeur 2 :
+
+```python
+if r.returncode == 2:
+    return IGNORE, 'mesure impossible'
+```
+
+Or `scripts/nexus_redaction.py` porte son propre critere, a sa derniere ligne
+utile :
+
+```python
+exit_code = 0 if delegated >= commits and commits > 0 else 1
+```
+
+Il rend donc **1** quand les appels **delegues** tombent sous le nombre de
+commits de code — c'est-a-dire dans la situation que cette plateforme existe
+pour empecher. **Le rituel aurait dit OK ce jour-la**, en AFFICHANT la ligne
+du rapport sans la juger.
+
+Tous les autres controles de ce fichier testent bien un code non nul. Celui-ci
+etait l'exception : *la meme lecon appliquee cinq fois, et pas ici.*
+
+**Aucune politique inventee** : le verdict emploie le critere du script appele.
+
+### 57.2 Ce que la mesure montre aujourd'hui
+
+```
+Commits de code: 79
+Appels delegues: 2457
+Auteur declare : 40 sur 79 commits de code -- 39 MUETS
+```
+
+Le code de sortie vaut 0 : la delegation tient largement, 31 appels par
+commit. Mais **39 commits sur 79 ne declarent pas leur auteur**, et le
+controle le montrait deja sans en rien conclure. Ce point-la **reste ouvert**.
+
+### 57.3 L'epreuve, et ses quatre issues
+
+`scripts/epreuve_verdicts_rituel.py` remplace `subprocess.run` par un faux —
+aucun processus n'est lance — et mene le controle a **chacun** de ses
+verdicts :
+
+| entree | verdict attendu |
+| --- | --- |
+| code 1 | **MANQUE** — le chemin rouge, qui n'existait pas |
+| code 2 | IGNORE |
+| code 0 avec la ligne du rapport | OK, la ligne en detail |
+| exception levee | IGNORE, sans trace brute |
+
+**Contre-epreuve**, sur une copie du rituel d'avant :
+`[RATE] code 1 : Verdict 'OK' != expected 'MANQUE'`, **code 1** ; rituel
+corrige, code 0. Cable sous `nexus_test.py --only verdicts`.
+
+### 57.4 Et deux pieges ou j'etais deja tombe le meme jour
+
+* **Le tube masque le code de sortie.** J'ai lu « code=0 » sur la
+  contre-epreuve et failli conclure qu'elle ne detectait rien : c'etait le
+  code de `head`. Remesure sans tube : 1 avant, 0 apres. **Deuxieme fois du
+  jour.**
+* **Un patch trop large casse.** Demander au banc de corriger deux violations
+  d'outillage d'un seul bloc lui a fait mutiler soixante lignes — chaine non
+  terminee. Repris **une violation a la fois**, avec des ancres serrees : les
+  deux passent. *La taille de l'ancre est un parametre de surete, pas de
+  confort.*
+
