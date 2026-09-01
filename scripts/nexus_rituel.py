@@ -333,13 +333,12 @@ def loi1_tenue(racine):
                     if l.startswith(prefix):
                         return OK, l
             return OK, lignes[0] if lignes else ""
-        elif r.returncode == 1:
+        if r.returncode == 1:
             for l in lignes:
                 if l.startswith("Violation"):
                     return MANQUE, l
             return MANQUE, lignes[0] if lignes else ""
-        else:
-            return IGNORE, "code de retour inattendu"
+        return IGNORE, "code de retour inattendu"
     except subprocess.TimeoutExpired:
         return IGNORE, "nexus_loi1 n'a pas repondu en 300 s"
     except Exception as exc:
