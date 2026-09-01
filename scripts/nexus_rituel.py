@@ -306,6 +306,10 @@ def redaction_declaree(racine):
         return IGNORE, str(exc).splitlines()[0][:60]
     if r.returncode == 2:
         return IGNORE, 'mesure impossible'
+    # critere du script appele: exit_code = 0 if delegated >= commits and commits > 0 else 1
+    # un controle qui ignore le signal d'echec ne peut jamais rougir
+    if r.returncode == 1:
+        return MANQUE, f'delegation passee sous le nombre de commits, code={r.returncode}'
     lignes = [l.strip() for l in (r.stdout or '').splitlines() if l.strip()]
     detail = ''
     # CORRECTION : on prefere la ligne commencant par 'Auteur declare'
