@@ -169,6 +169,26 @@ def releves_lisibles(racine: Path) -> tuple[str, str]:
         return MANQUE, "releve illisible : %s" % str(exc).splitlines()[0][:40]
 
 
+def progres(racine: Path) -> tuple[str, str]:
+    """
+    Regenere PROGRESS.MD.
+    Genere au lieu de verifier car un etat que personne ne regenere
+    est un etat de memoire et l'operateur l'a interdit.
+    """
+    try:
+        res = subprocess.run(
+            [sys.executable, "scripts/nexus_progres.py"],
+            cwd=racine,
+            capture_output=True,
+            text=True
+        )
+        if res.returncode == 0:
+            return OK, "PROGRESS.MD regenere"
+        return MANQUE, res.stderr[:80]
+    except Exception as e:
+        return MANQUE, str(e)
+
+
 def arbres_en_attente(racine: Path) -> tuple[str, str]:
     """
     Des arbres de travail isolés ont-ils été laissés en plan ?
@@ -350,6 +370,9 @@ def main() -> int:
         ("cablage tenu", lambda: cablage_tenu(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),
         ("redaction declaree", lambda: redaction_declaree(racine)),
+        # Ce controle GENERE au lieu de verifier parce qu'un etat que personne
+        # ne regenere est un etat de memoire et que l'operateur l'a interdit
+        ("progres", lambda: progres(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 

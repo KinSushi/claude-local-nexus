@@ -8100,3 +8100,39 @@ sujets ouverts, nommes, non promis pour un tour precis.
 | `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
 | `NexusTraque` salit l'arbre et bloque la vitrine | §73.4 | trois blocages constates |
 | Les gros fichiers echappent a l'audit — 3561, 1927, 1667 lignes | §75.2 | depassent la fenetre utile, decoupage a faire |
+
+### 75.7 PROGRESS.MD — GENERE, JAMAIS REDIGE
+
+Ordre de l'operateur, non negociable : *« tu ne peux pas agir et repondre de
+memoire. IMPOSSIBLE. C'est NON NEGOCIABLE. »* et *« maintenir PROGRESS.MD pour
+savoir OU tu en es dans le projet »*.
+
+`scripts/nexus_progres.py` derive donc CHAQUE chiffre de l'etat reel au moment
+de la generation, et le fichier porte son horodatage plus l'avertissement que
+toute edition manuelle sera ecrasee.
+
+Ce qu'il a mesure a sa premiere execution, et que je ne savais pas :
+
+```
+Scripts nexus_        50        Scripts epreuve_      34
+Options --only        55        SUJETS OUVERTS       248
+Non mecanises          3        dont 2 fichiers .avant-patch
+```
+
+**248 sujets ouverts**, la ou la reprise de session n'en montre que 18 et en
+declare 292 non affiches. Le chiffre existait, personne ne le comptait.
+
+**CABLE AU RITUEL**, et c'est le point : un PROGRESS.MD qui depend d'un geste
+manuel est perime des le premier oubli.
+
+```
+[OK    ] progres            PROGRESS.MD regenere
+```
+
+Le controle GENERE au lieu de verifier — un etat que personne ne regenere est
+un etat de memoire.
+
+**Mesure faite plutot que supposee, sur les autres mecanismes** : `nexus_boussole`
+et `nexus_sujets` EXISTENT, 296 et 633 lignes, et ne sont appeles **que par les
+tests** — donc hors du flux. La mecanisation reclamee par l'operateur les
+concerne, et ils ne sont pas encore cables.
