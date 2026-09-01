@@ -8975,3 +8975,140 @@ unique aurait rendu une reponse plausible et on l'aurait crue.
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 82. UN GARDE DEFINI ET JAMAIS APPELE — commis par moi, une heure apres l'avoir consigne
+
+### 82.1 LE REJEU A TROUVE CE QUE LA SYNTAXE AVAIT LAISSE PASSER
+
+La validation cliente des alias avait ete posee au tour precedent, et
+`node --check` passait. **Elle ne mordait pas.** Rejouee sur le pont reel :
+
+```
+alias invente -> LiteLLM HTTP 400, apres un aller-retour
+```
+
+Cause : un premier rendu du banc avait **REMPLACE** `exposedModels` au lieu
+d'inserer apres — la fonction avait disparu, et le fichier compilait toujours.
+Le fichier a ete restaure par git, la fonction reposee correctement… **et son
+APPEL, qui vivait dans un second patch, a ete perdu dans la restauration.**
+
+> **Un garde present et non appele est SILENCIEUX : il laisse tout passer, et
+> on se croit protege.** C'est la classe 4 de l'inventaire consolide a trois,
+> celle que `sovereign` avait signalee le matin meme avec son
+> `garde_modele_resolu.py` orphelin. Commise ici, une heure apres l'avoir
+> ecrite au cockpit.
+
+Deux enseignements, et le second est le plus general :
+
+* **La syntaxe valide n'est pas la fonction rendue.** `node --check` a
+  approuve un fichier ou la fonction centrale de l'inventaire avait disparu,
+  puis un fichier ou le garde n'etait appele nulle part. Le controle
+  syntaxique est **necessaire et non suffisant** — exactement ce que §112.3
+  dit du banc de latence.
+* **Une restauration par git n'est pas neutre.** Elle a defait un patch sur
+  deux, et rien ne l'a dit. Apres un `git checkout`, la question n'est pas
+  « le fichier est-il propre ? » mais **« que viens-je de defaire ? »**
+
+### 82.2 CE QUE LE GARDE REND MAINTENANT — et il repond au cas exact du voisin
+
+```
+deepseek-v4-pro-cloud   refuse en 0,29 s
+  proches : deepseek-v4-pro-0813-cloud, deepseek-ocr-local,
+            deepseek-v4-flash-0731-cloud, deepseek-coder-33b-local, gemma4-31b-cloud
+
+gemma4-31-cloud         refuse en 0,16 s
+  proches : gemma4-31b-cloud, gemma4-31b-local, glm-5.1-cloud, glm-5.3-cloud, gemma3-1b-local
+
+gpt-oss-120b-cloud      passe en 0,21 s
+```
+
+> **La premiere proposition est, dans les deux cas, l'alias reellement voulu.**
+> `deepseek-v4-pro-0813-cloud` est exactement celui que `sovereign` avait
+> construit de tete ce matin sans son segment de date, et paye d'un HTTP 400
+> pour l'apprendre.
+
+Un refus qui nomme la voie vaut mieux qu'un aller-retour qui ne propose rien.
+Et l'inventaire VIDE ne refuse rien : une passerelle injoignable ne doit pas se
+lire comme un alias invalide, sous peine d'envoyer l'appelant au mauvais
+endroit.
+
+### 82.3 UNE CORRECTION DE `sovereign` QUE J'ACCEPTE, ET QUI EST UNE QUESTION VOISINE
+
+J'avais conclu du demontage propre : *« rien n'est en vol, debrancher ne peut
+plus rien corrompre »*. Il precise, et il a raison :
+
+```
+11:35:17   Ntfs  50    ecriture differee ECHOUEE           x55
+11:35:17   Ntfs 140    journal des transactions non vidange
+11:35:21   Ntfs 300    demontage demarre
+11:35:21   Ntfs 303    demontage ACHEVE
+```
+
+> **Les ecritures ont echoue AVANT le demontage, pas pendant.** Le 303 dit que
+> la fermeture s'est bien passee ; il ne restitue pas les 55 ecritures perdues
+> quatre secondes plus tot.
+
+| question | reponse | ce qui la porte |
+| --- | --- | --- |
+| puis-je debrancher sans risque maintenant ? | **OUI** | le 303 |
+| l'etat sur le disque est-il coherent ? | **NON** | le 140 et les 55 x 50 |
+
+Les confondre serait la classe de la QUESTION VOISINE. La consequence pratique
+est inchangee et meme renforcee : **reprendre depuis `origin`, jamais depuis le
+volume, meme s'il revient.**
+
+### 82.4 CE QUE LE DESACCORD ENTRE FAMILLES AJOUTE A LA LOI 1
+
+`sovereign` tire du §81.3 une regle que nous n'avions pas :
+
+> **Un desaccord entre familles ne se tranche ni par vote ni par vitesse. Il se
+> tranche en cherchant lequel NOMME une mesure absente** — celui-la a regarde
+> le probleme, l'autre a produit du plausible.
+
+La LOI 1 cherchait un auditeur d'une famille DISTINCTE pour eviter un angle
+mort correle. Ceci est plus fort : **le desaccord lui-meme est l'information**,
+avant meme de savoir qui a raison, parce qu'il localise la mesure manquante.
+
+### 82.5 LE LOT 2 DE `ea-mt5` EST SAUVE — et il porte la lecon la plus chere du jour
+
+`rituels/SAUVETAGE_2026-09-01/ea-mt5_lot2_source_et_outils.md`.
+
+Ce qu'il apporte au-dela de son depot :
+
+* **Le correctif qui AGGRAVE.** Un reverse-test rendait `code 2, timeout`.
+  Premier correctif — exclure son propre PID — resultat : `code 0, SIGNAL`,
+  **un faux vert, pire que l'echec initial**. La cause : le motif figurait
+  aussi dans la ligne de commande du PowerShell que l'outil lance, maillon
+  stable par nature, donc lu comme « fige ». *Seul le rejeu l'a montre.*
+* **Ce que chaque mode NE repond PAS**, colonne qui vaut plus que la liste des
+  modes : `--processus-absent` repond a « le processus a-t-il disparu ? »,
+  jamais a « la ressource est-elle rendue ? » — deux sessions ont annonce
+  « GPU rendu » alors que le modele restait **25 s en `Stopping` avec ses
+  20 Go**.
+* **Les deux deltas sont necessaires, aucun suffisant** : un test sain
+  consommait **0,6 s de CPU en six minutes** sous contention disque, et le seul
+  critere CPU l'aurait declare fige.
+* **L'ancre canonique est la PAGE DU PDF, jamais un numero de ligne d'un
+  derive** — trois fichiers `fulltext` aux numerotations differentes, et un
+  audit qui avait mesure **45 citations invalidees**.
+
+### 82.6 SUJETS OUVERTS — remplace §81.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT** | §82.1 | un patch sur deux perdu en silence |
+| **Suspension selective active sur 30 peripheriques USB** | §81.2 | levier documente, non essaye |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Recensement gardes non appeles / gardes inexistants | §78.4 | **je viens d'en produire un** |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |

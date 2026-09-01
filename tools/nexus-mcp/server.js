@@ -2599,6 +2599,8 @@ function runPython(args, timeoutMs = 300000) {
       note = ` · profil ${args.profile}`;
     }
     model = model || DEFAULT_CHAT_MODEL;
+    // Un alias inconnu doit echouer ici, en zero seconde et en proposant les plus proches, plutot qu'au serveur apres un aller-retour
+    await exigerAliasConnu(model);
 
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
