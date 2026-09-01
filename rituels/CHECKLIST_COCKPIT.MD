@@ -6394,3 +6394,95 @@ seule question, et repartition en jetons DEDUITE des caracteres.
 | Le verrou machine `AURUM_MACHINE_` n'a pas de classe `banc` | §64.3 | une convention n'est pas un mecanisme (§0.2.1) |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
 | `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |
+
+---
+
+## 65. DEUX MODES D'ECHEC QUI RENDAIENT LA MEME TRACE — 2026-09-01, 06h-07h
+
+Tour ouvert sur le premier sujet de §64.5, ferme avec un resultat que je
+n'avais pas prevu : la mesure ajoutee pour un defaut en a separe deux.
+
+### 65.1 La part de raisonnement se MESURE, elle ne s'estime pas
+
+Un modele a raisonnement etendu rend `finish_reason: stop` — succes apparent
+— avec une sortie minuscule. Mesures du voisin sur `glm-4.7-flash` : 6269
+caracteres de reflexion pour 230 de sortie, 3364 pour 263. **Aucun controle
+ne detectait cela**, ni chez lui ni ici.
+
+La piste qu'il proposait — le rapport `caracteres / jetons generes`, qui
+s'effondre d'un ordre de grandeur — aurait demande une constante de
+conversion. Il y a mieux, et c'est exact :
+
+```
+_sans_raisonnement recoit le BRUT et rend le NETTOYE
+part = (len(brut) - len(nettoye)) / len(brut)
+```
+
+Aucune conversion, aucune constante, aucune estimation. La grandeur etait
+deja sur la table.
+
+### 65.2 CE QUE JE N'AVAIS PAS PREVU — le champ separe DEUX diagnostics
+
+Le voisin s'en est servi dans l'heure, en production, et il en a tire plus
+que ce que j'y avais mis. Deux de ses audits echouaient avec **exactement la
+meme trace de surface** que le cas ci-dessus :
+
+| | `part_raisonnement` | `tokens_sortie` | trace de surface |
+| --- | --- | --- | --- |
+| cas mesure cette nuit | ~1,0 | faible | `tronque=True`, `plafond_insuffisant=True` |
+| ses deux audits | **0,0** | 3400 (le plafond exact) | `tronque=True`, `plafond_insuffisant=True` |
+
+> **`part_raisonnement = 0,0` avec troncature ne dit pas « il a trop
+> reflechi » : il dit « il a trop ECRIT ».** Et le remede s'inverse —
+> augmenter le budget regle le premier cas et ne regle RIEN au second, ou il
+> faut brider la longueur demandee.
+
+Sans ce champ, il aurait range les deux ensemble et augmente le budget.
+
+### 65.3 `--max-tokens` n'atteignait JAMAIS les taches d'un lot
+
+Signale par le voisin apres lecture du parseur, verifie ici. La branche
+`--lot` propage `args.temperature` sur chaque tache et **ne propage pas**
+`args.max_tokens`.
+
+Sa formulation est plus juste que la mienne : je disais que le budget de la
+tache « ecrase » celui de la ligne de commande. Il ne l'ecrase pas — *il ne
+le recoit jamais*. Ecraser supposerait qu'une valeur arrive puis soit
+remplacee.
+
+Le degat n'est pas ergonomique : le defaut est `1500`, et ~1300 jetons
+partent en raisonnement avant la premiere ligne de sortie. Il restait ~200
+jetons de reponse. **Une vague lancee par `--lot` sans `max_tokens` dans son
+JSON etait structurellement condamnee a tronquer** — pour l'utilisateur qui
+avait justement passe `--max-tokens 8000` pour s'en premunir. Bilan de sa
+vague : 7 frappes, **3 tuees par ce seul defaut**.
+
+Le premier remede rendu par le banc **imbriquait** le nouveau test dans celui
+de la temperature : `--max-tokens` n'aurait fonctionne qu'avec
+`--temperature`. Le meme piege, deplace. Refuse.
+
+### 65.4 Les correctifs des tours precedents, verifies PAR L'USAGE
+
+Aucun des deux n'a ete sollicite : ils se sont montres seuls, pendant ce tour.
+
+| mecanisme | ce qu'il a fait, en production |
+| --- | --- |
+| `3e5b01a` reprise avant repli | « troncature a 1597 jetons : reprise du plafond plutot que repli » s'est affiche sur une de mes taches. Ce qui etait 495 s de silence est desormais une phrase. |
+| `nexus_appliquer` multi-blocs | a pose DEUX blocs d'un coup, puis a REFUSE un rendu dont le second bloc etait introuvable — rang nomme, fichier intact verifie par empreinte. |
+
+Le second refus est le plus instructif : le bloc 1 de ce rendu **supprimait
+une ligne de commentaire**. L'ancien outil l'aurait pose et aurait tu le
+second. Le refus total a evite une mutilation reelle, pas theorique.
+
+### 65.5 SUJETS OUVERTS a la sortie de ce tour
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Le mode « bavard » — `part_raisonnement` 0,0 et troncature — n'a aucun controle | §65.2 | mesure chez le voisin, non instrumente ici |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | `raisonnement_constant + sortie_attendue` est mesurable, le doublement est aveugle |
+| `part_raisonnement` ne voit que le raisonnement INLINE (balises think) | §65.1 | un raisonnement hors bande compte dans `completion_tokens` et echappe a la mesure |
+| `NexusTraque` regenere `STATE.md` toutes les 10 min ; la vitrine exige un arbre propre | §64 | fenetre de publication etroite, constate deux fois |
+| Apres une reprise echouee, plus aucun repli n'est tente | §64.2 | echange assume, mais reel |
+| `max_parallel_requests` absent : aucune borne globale cote passerelle | §64.3 | la discipline des sessions est la seule borne |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+| `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |
