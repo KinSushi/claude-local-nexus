@@ -1072,7 +1072,14 @@ def main() -> int:
     parseur.add_argument("--competence",
                          help="Consigne systeme prise dans competences/. "
                               "Disponibles : %s" % (", ".join(lister_competences()) or "aucune"))
-    parseur.add_argument("--max-tokens", type=int, default=1500)
+    # Le défaut était 1500 quand le paramètre était inerte : la passerelle
+    # ignorait max_tokens et appliquait 4096 (ou 8192 en cloud). Depuis que
+    # le script envoie num_predict, la borne est réelle. Baisser ce défaut
+    # régressait le comportement de tous les appelants qui ne le précisent pas.
+    parseur.add_argument("--max-tokens", type=int, default=4096,
+                         help="Nombre maximum de jetons (défaut 4096). "
+                              "Depuis la correction, la borne est réelle ; "
+                              "un budget trop court rend une réponse vide.")
     parseur.add_argument("--temperature", type=float, default=None,
                          help="Defaut %.1f. Ne monter au-dessus de 0.5 que "
                               "pour une redaction libre." % TEMPERATURE_DEFAUT)

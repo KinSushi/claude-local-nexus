@@ -1952,7 +1952,7 @@ litellm_settings:
   failure_callback:
     - langfuse
 
-  request_timeout: 180
+  request_timeout: 900
 
 # ============================================================
 # 12. OLLAMA — VARIABLES D'ENVIRONNEMENT

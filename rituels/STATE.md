@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 19:29 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 19:39 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `cd3a772` |
+| Commit | `3a8e1b1` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 2 days (healthy)
-litellm-proxy	litellm	Up 20 hours
+litellm-proxy	litellm	Up 4 minutes
 litellm-redis	redis	Up 2 days (healthy)
 ```
 
@@ -34,15 +34,15 @@ litellm-redis	redis	Up 2 days (healthy)
 | GPU | AMD Radeon(TM) 890M Graphics (2.1 Go) |
 | Offload GPU | non |
 | Stockage modèles | `C:\Users\dibac\.ollama\models` |
-| Disque libre | 330.0 Go |
+| Disque libre | 329.4 Go |
 
-## Inventaire exposé — 80 modèles
+## Inventaire exposé — 81 modèles
 
 
 
 | Plan | Nombre | Facturation |
 |---|---|---|
-| Local | 53 | aucune, rien ne quitte la machine |
+| Local | 54 | aucune, rien ne quitte la machine |
 | Ollama Cloud | 19 | abonnement Ollama |
 | Anthropic | 0 | crédits API, distincts de l'abonnement claude.ai |
 | Routeurs | 4 | selon le plan retenu |
@@ -57,7 +57,7 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a675092a96fc184c8dc51777362ea383dca2ef` |
-| `litellm_config.yaml` | `b04522a0be29ba8deddbf255a6b31172f93ff2e8dd7078464616c0cb7f53db4b` |
+| `litellm_config.yaml` | `2b6a678affb8611bf7e3506fed59c5f0dbb829bf2fdaeea51be958eefd74de89` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e199854f44f0c1ff6571c5ac7fdb0e7a6ceace` |
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |
