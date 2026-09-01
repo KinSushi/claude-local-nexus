@@ -132,7 +132,10 @@ const DEFAULT_EMBED_MODEL = process.env.NEXUS_EMBED_MODEL || "all-minilm-local";
 // Le plus leger des modeles multimodaux installes : sur CPU, un llava:34b
 // mettrait des dizaines de minutes a decrire une capture d'ecran.
 const DEFAULT_VISION_MODEL = process.env.NEXUS_VISION_MODEL || "llava-7b-local";
-const DEFAULT_TIMEOUT_MS = Number(process.env.NEXUS_TIMEOUT_MS || 600000);
+// 900 s aligne le pont sur le delai du script nexus_agent.py et sur request_timeout de la passerelle.
+// Un pont plus court que la passerelle rend une erreur de delai pour un appel qui aurait abouti, mesure le 2026-08-31 par une instance voisine dont deux appels ont echoue a 600 s.
+// La valeur reste surchargeable par NEXUS_TIMEOUT_MS.
+const DEFAULT_TIMEOUT_MS = Number(process.env.NEXUS_TIMEOUT_MS || 900000);
 
 function log(...args) {
   process.stderr.write("[nexus-local] " + args.join(" ") + "\n");
