@@ -83,6 +83,7 @@ CLASSES = {
     "robocopy": "une copie miroir massive (contention d'E/S disque)",
     "pytest": "une suite de tests (caches et fixtures partages)",
     "hachage": "un hachage massif d'arborescence (contention d'E/S disque)",
+    "banc": "une inference locale sur le banc de modeles, la memoire du moteur etant partagee",
 }
 
 

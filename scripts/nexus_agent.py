@@ -1270,6 +1270,13 @@ def main() -> int:
         if args.racine is not None:
             for t in taches:
                 t['racine'] = args.racine
+        # regle desormais UNIFORME pour toutes les options : celle passee explicitement en ligne de commande l'emporte sur le JSON, et que c'etait l'asymetrie non dite qui constituait le piege
+        if args.fichiers:
+            for t in taches:
+                t['fichiers'] = args.fichiers
+        if args.systeme is not None:
+            for t in taches:
+                t['systeme'] = args.systeme
     elif args.tache:
         taches = [{"nom": args.modele, "modele": args.modele, "tache": args.tache,
                    "fichiers": args.fichiers, "systeme": args.systeme,
