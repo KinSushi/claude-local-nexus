@@ -83,6 +83,16 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/scripts/nexus_garde_production.py\"",
+            "timeout": 30
+          }
+        ]
       }
     ],
     "Stop": [
