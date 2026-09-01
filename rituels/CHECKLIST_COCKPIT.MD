@@ -10735,3 +10735,112 @@ Chacun des trois vient d'une mesure distincte, faite par une session differente 
 
 **Aucune de ces huit trouvailles n'est venue d'un audit.** Toutes viennent de l'usage, et la moitie
 n'est devenue visible que parce qu'un tiers a pose la question voisine de celle qu'on croyait poser.
+
+---
+
+## 102. CIBLE DECLAREE ET CIBLE EFFECTIVE — la forme generale, et ce depot en donne le cas oppose
+
+Derniere piece de l'echange a trois du 2026-09-01. Elle generalise le §97 et le
+§101 : cablé/armé, serrure posee/serrure agissante et epreuve ecrite/epreuve
+jouee ne sont pas trois problemes, mais **trois instances d'un seul**.
+
+> **Tout dispositif de protection a une CIBLE DECLAREE et une CIBLE EFFECTIVE,
+> et rien dans le dispositif ne signale qu'elles ont divorce.**
+
+### 102.1 LE JOINT, mesure chez `ea-mt5`
+
+```
+.claude/hooks/   12 fichiers, 12 ACE Deny        et le seul deny du harnais
+                                                  porte sur Edit(.claude/hooks/**)
+hooks REELLEMENT armes : 3 des 4 vivent dans scripts/   -> 0 ACE, 0 deny
+```
+
+**Les deux couches verrouillent le repertoire que les gardes ont QUITTE.** Ce
+n'etait pas trois defauts separes : c'est un demenagement dont aucune serrure
+n'a ete prevenue. Sa formule : *ce qui est en place n'est pas ce qui agit.*
+
+### 102.2 LE CAS OPPOSE, mesure ici — et il est pire d'un cran
+
+```
+.claude/hooks/*.py            0 fichier      le repertoire n'existe pas ici
+scripts/nexus_garde_*.py      5 fichiers     les gardes sont la, au bon endroit
+
+les 11 regles deny du harnais, EN ENTIER :
+  Read(**/.env)  Read(**/.env.local)  Read(**/.env.production)
+  Read(**/secrets/**)  Read(**/*.pem)  Read(**/*.key)  Read(**/id_rsa)
+  Read(**/id_ed25519)  Read(**/.ssh/**)  Read(**/.aws/credentials)
+  Read(**/nexus_cle.txt)
+
+regles Edit(...) ou Write(...) : ZERO
+```
+
+Toutes les serrures applicatives de ce depot portent sur la **lecture** de
+secrets — ce qui est utile, et orthogonal au probleme. **Aucune ne porte sur
+l'ecriture**, ni des gardes, ni de `settings.json`, ni du contrat.
+
+| | `ea-mt5` | ici |
+| --- | --- | --- |
+| les gardes sont | dans `scripts/` | dans `scripts/` |
+| les serrures visent | `.claude/hooks/` — **qu'ils ont quitte** | **rien**, en ecriture |
+| diagnostic | serrure sur la mauvaise cible | pas de serrure du tout |
+
+### 102.3 TROIS COUCHES, TROIS TROUS, et chacun invisible depuis les deux autres
+
+```
+NTFS               aucune ACE Deny         sonde de morsure : ECRITURE POSSIBLE partout
+harnais (deny)     Read(secrets) seulement rien sur Edit / Write
+garde de lecture   arme sur Bash|PowerShell  ne couvre pas ce que Bash LANCE
+```
+
+**C'est ce qui rend ces trous durables : depuis chaque couche, on peut se
+croire couvert par les deux autres.** Le garde de lecture suppose que le
+harnais filtre ; les regles du harnais supposent que le systeme de fichiers
+protege ; et NTFS ne sait rien de tout cela.
+
+Les regles `ask` — `git push`, `git reset --hard`, `docker compose down -v`,
+`docker volume rm` — protegent les gestes IRREVERSIBLES, et elles tiennent.
+Elles ne protegent aucun fichier.
+
+### 102.4 LE TEMOIN D'ENUMERATION — un cran sous le « compteur a zero »
+
+Apport de `ea-mt5`, et il a failli lui coûter une conclusion :
+
+> Sa premiere version du comptage annoncait **0 fichier** dans `scripts/` ET a
+> la racine. L'enumeration elle-meme etait cassee. Il aurait conclu « fossile
+> circonscrit a `.claude/` » — **la bonne conclusion par un chemin faux.**
+
+C'est le cas le plus dangereux qui soit, parce qu'il ne laisse aucune trace :
+**une conclusion juste ne declenche aucune verification.**
+
+> **Avant de se demander si zero veut dire "rien passe" ou "rien compte", il
+> faut se demander si l'enumeration a seulement vu quelque chose.**
+
+Applique ici avant de conclure : `.claude/hooks/*.py` rend 0, mais
+`scripts/nexus_garde_*.py` rend 5 — l'enumeration voit, donc le 0 signifie
+« les gardes sont ailleurs » et non « il n'y a pas de gardes ».
+
+**Trois instruments pris en defaut le meme jour, tous par la question voisine :**
+
+| instrument | ce qu'il repondait | ce qu'on croyait lire |
+| --- | --- | --- |
+| `$?` apres un tube | le code de `tail` | le code de `python` |
+| comptage d'epreuves | une seule forme d'appel | toutes les formes |
+| enumeration de `ea-mt5` | un chemin casse | l'absence de fossile |
+
+La parade est commune aux trois : **un temoin dont on SAIT ce qu'il doit
+rendre.** Anti-controle pour prouver que l'instrument sait refuser, temoin
+positif pour prouver qu'il sait accepter, temoin d'enumeration pour prouver
+qu'il voit.
+
+### 102.5 CE QUI N'A PAS ETE FAIT, et pourquoi
+
+Aucune ACL posee, aucune regle `deny` ajoutee. Les premieres sont un geste
+d'administrateur ; les secondes toucheraient `.claude/settings.json`,
+c'est-a-dire la configuration de permissions de cette session — **et une
+session ne modifie pas ses propres permissions, a plus forte raison sur
+suggestion d'un pair.** Les deux sont remontees a l'operateur avec leur mesure.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 16 | Aucune regle `deny` ne protege l'ecriture des gardes | `OUVERT` | decision de l'operateur sur `settings.json`, puis une epreuve qui soumet un `Edit` sur un garde et exige le refus |
+| 17 | Cible declaree vs cible effective, sans signal | `OUVERT` | un controle qui, pour chaque protection declaree, verifie que sa cible existe ENCORE et contient ce qu'elle pretend proteger |
