@@ -7884,3 +7884,109 @@ en cours. Aujourd'hui les trois sont indiscernables de l'exterieur.
 | La reprise de plafond absente du MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
 | `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s, 0 octet |
 | Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
+
+---
+
+## 74. QUINZE MINUTES DE SILENCE — le delai fonctionnait, pas la parole
+
+### 74.1 LE DEFAUT N'ETAIT PAS OU ON LE CROYAIT
+
+Signale par `ea-mt5` : un appel local lance a 09:37, toujours bloque a 09:52.
+Processus vivant, **0,05 seconde de CPU en quinze minutes**, fichier de sortie
+a zero octet, serveur Ollama joignable, aucun poids resident.
+
+Sa demande etait « un delai cote nexus ». **Le delai existait** :
+`NEXUS_AGENT_TIMEOUT` vaut 900 s, soit exactement les quinze minutes
+observees. Verifie ensuite : le processus a disparu de lui-meme.
+
+> Le garde etait la et il a fait son travail. **Ce qui manquait, c'etait la
+> parole.** Pendant 900 secondes rien n'etait imprime, et une absence de
+> resultat devient alors indiscernable d'un travail en cours.
+
+Troisieme fois de la journee que le remede demande n'est pas celui qu'il
+fallait, et que la mesure le montre : le manque n'etait ni dans les regles
+(§72.1), ni dans les delais, mais dans ce que l'outil DIT pendant qu'il
+travaille.
+
+### 74.2 L'AUDIT A ETABLI DEUX FAITS, dont un que je n'avais pas vu
+
+| question | reponse mesuree |
+| --- | --- |
+| `timeout` borne-t-il la duree TOTALE ? | **non** — il borne l'inactivite entre paquets |
+| quelque chose est-il imprime pendant l'attente ? | **rien** |
+
+Le premier est le plus retors : un serveur qui envoie un octet toutes les dix
+minutes tiendrait indefiniment sans jamais declencher le delai.
+
+### 74.3 DEUX MARQUES, ET LE CYCLE A TROIS TEMPS QUI LES A IMPOSEES
+
+Le premier correctif posait une annonce juste avant l'appel reseau. Mesure
+apres pose : **elle arrivait a 8,3 s sur un appel de 12,5 s.**
+
+L'audit du troisieme temps a tranche : *« pendant les 8,3 secondes
+precedentes, on ne sait pas si le processus est bloque avant le depart ou en
+train de charger. Si l'incident pouvait aussi se produire en amont, le
+correctif ne l'attraperait pas. »*
+
+D'ou une SECONDE marque, au debut de la preparation :
+
+```
+ 5,9 s : PREPARATION commence pour <modele> : lecture des pieces jointes
+ 8,0 s : Appel modele <modele> (timeout 900s) : depart maintenant
+11,7 s : processus fini
+```
+
+| ce qu'on voit | ce que cela dit |
+| --- | --- |
+| rien apres ~6 s | bloque au demarrage |
+| PREPARATION sans « Appel modele » | bloque en preparation |
+| « Appel modele » sans fin | attente reseau ou inference |
+
+Le troisieme etat ne peut pas etre subdivise depuis un appel bloquant, et
+l'auditeur l'a dit plutot que de le promettre. Les deux annonces vont sur
+stderr, jamais sur stdout qui porte le rendu.
+
+### 74.4 L'ANALYSEUR A PARLE DES SON PREMIER USAGE REEL
+
+`nexus_appliquer`, corrige au tour precedent, a signale **cinq violations
+preexistantes** dans le fichier au moment ou il le patchait. Aucune regression
+— le cliquet passe de 78 a 77 — mais c'est la premiere fois que l'etat d'un
+fichier est rendu visible au moment ou on y touche.
+
+### 74.5 UNE PHOTO N'EST PAS FAUSSE, ELLE EST DATEE
+
+Le voisin allait signaler une contradiction : `nexus_models` annoncait un
+modele chaud quand `api/ps` rendait une liste vide trois minutes plus tot.
+Re-mesure :
+
+```
+09:52  api/ps -> {"models":[]}
+09:55  api/ps -> glm-4.7-flash, 20,7 Go, expires_at 09:55:01
+```
+
+Les deux avaient raison — le modele avait ete charge entre les deux releves.
+
+> *« models est vide » repondait a « a 09:52 », jamais a « en ce moment ».*
+
+Propriete a inscrire, qui vaut pour `nexus_charge` autant que pour `api/ps` :
+**une photo n'est pas fausse, elle est datee.** Ce qui manque, c'est que le
+verdict PORTE son horodatage — sans quoi un lecteur le prend pour un etat.
+Deux sessions qui interrogent a trois minutes d'ecart peuvent obtenir des
+verdicts opposes sans qu'aucune ne se trompe.
+
+### 74.6 SUJETS OUVERTS — remplace §73.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Un verdict de mesure ne porte pas son horodatage** | §74.5 | vaut pour `nexus_charge` et tout ce qui photographie |
+| `timeout` borne l'inactivite, pas la duree totale | §74.2 | un octet toutes les dix minutes tiendrait indefiniment |
+| Une tache planifiee echoue sans temoin | §73.3 | « Mise a jour » en echec, « Demarrage » jamais executee |
+| `nexus_appliquer` lance ruff sur les fichiers NON Python | §73.2 | « Violations detectees : All checks passed! » |
+| `NexusTraque` salit l'arbre et bloque la vitrine | §73.4 | `STATE.md` suivi par git, reecrit toutes les 10 min |
+| Le local est lent AUSSI par le MCP | mesure `ea-mt5` | `qwen2.5-coder-7b-local` a depasse 120 s sur deux fonctions |
+| Sur `Invalid model name`, rendre les alias PROCHES | demande `sovereign` | la classe se repete |
+| Un champ `chiffres_autorises` dans la consigne | §72.5 | remede mesure a la fabrication |
+| Le MCP ne prend pas le verrou — douze outils | §70.2 | le plus urgent pour A2A |
+| Decharger les poids en sortant du VERROU | §70.3 | ~177 s pour 20 Go ; `glm-4.7-flash` seul en occupe 20,7 |
+| La reprise de plafond absente du MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
+| `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s, 0 octet |

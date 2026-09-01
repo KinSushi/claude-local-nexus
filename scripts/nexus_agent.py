@@ -425,6 +425,9 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     )
     depart = time.time()
     ctx = ssl.create_default_context()
+    # 15 min de silence, 0.05s CPU: l'appelant ne distingue pas requete non partie et inference.
+    # Annonce sur stderr pour ne pas polluer le rendu.
+    print(f"Appel modele {modele} (timeout {delai or DELAI}s) : depart maintenant", file=sys.stderr, flush=True)
     with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
         corps = json.loads(reponse.read().decode("utf-8"))
         entetes = {k.lower(): v for k, v in reponse.getheaders()}
@@ -918,6 +921,8 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
 import os
 
 def executer(tache: dict, cle: str) -> dict:
+    # Trois etats: preparation en cours, appel reseau parti, attente de reponse
+    print(f"PREPARATION commence pour {tache.get('modele') or 'modele inconnu'}: lecture des pieces jointes et resolution du plan", file=sys.stderr, flush=True)
     local_seul = bool(tache.get("local_seul")) or os.environ.get("NEXUS_LOCAL_SEUL") == "1"
     nom = tache.get("nom") or tache.get("modele") or "tache"
     modele = tache.get("modele") or "adaptive-router"
