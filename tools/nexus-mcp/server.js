@@ -2684,6 +2684,8 @@ async function callTool(name, args) {
     const parts = [];
     const resumes = [];
     let totalTokens = 0;
+    // compte les resumes coupes a max_tokens, sinon la banniere serait morte
+    let tronquees = 0;
 
     for (const raw of paths) {
       const full = resolvePath(raw);
@@ -2772,6 +2774,7 @@ async function callTool(name, args) {
           1024
         );
         totalTokens += result.tokens;
+        if (result.tronquee) tronquees++;
         texte = result.text.trim();
       }
       parts.push(`### ${raw}\n${texte}`);
@@ -2871,6 +2874,7 @@ async function callTool(name, args) {
         1024
       );
       totalTokens += fusion.tokens;
+      if (fusion.tronquee) tronquees++;
       entete =
         `\n\n## Synthese des resumes ci-dessus\n` +
         `(produite a partir des RESUMES, jamais des fichiers)\n` +
@@ -2889,7 +2893,10 @@ async function callTool(name, args) {
       `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n` +
       `## Par fichier\n\n` +
       parts.join("\n\n") +
-      entete
+      entete +
+      ((typeof tronquees === "number" && tronquees > 0)
+        ? `\n\n${tronquees} résumé(s) ont été tronqué(s) à max_tokens.`
+        : "")
     );
   }
 
@@ -2962,7 +2969,7 @@ async function callTool(name, args) {
         );
         total += result.tokens;
         parts.push(
-          `### ${i + 1}. ${result.model} — ${((Date.now() - started) / 1000).toFixed(1)}s\n` +
+          `### ${i + 1}. ${result.model} — ${((Date.now() - started) / 1000).toFixed(1)}s${mentionsReponse(result)}\n` +
           result.text.trim()
         );
       } catch (err) {
