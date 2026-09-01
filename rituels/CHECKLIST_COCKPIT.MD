@@ -9112,3 +9112,135 @@ Ce qu'il apporte au-dela de son depot :
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 83. LE LIEN AVERTISSAIT DEPUIS SIX JOURS — et personne ne regardait
+
+### 83.1 LA QUESTION DE L'OPERATEUR, ET LA REPONSE EST NON
+
+*« Si on reattribue la meme lettre de lecteur a chacun des deux volumes, on
+repart ? »*
+
+```
+Get-Disk
+  0  CT1000P310SSD8             931,5 Go  Online   -> C:
+  2  Kingston DataTraveler 3.0  230,9 Go  Online   -> G:
+  3  Generic MassStorageClass     0,0 Go  No Media
+  4  Generic MassStorageClass     0,0 Go  No Media
+
+partitions sans lettre et > 1 Go : UNE, la Recovery de 1,2 Go du disque 0
+lettres prises : C E F G
+```
+
+> **Ce n'est pas « la lettre ne suffira pas », c'est qu'il n'y a RIEN a quoi
+> l'attribuer.** `diskpart`, `mountvol` et `diskmgmt` n'ont aucune cible.
+
+### 83.2 LA MESURE QUI DECIDE — et elle contredit l'accident de charge
+
+`ea-mt5` avait pose le bon discriminant : *premiere occurrence de `UASPStor
+129` = accident de charge, occurrences repetees = materiel qui se degrade.*
+
+```
+Get-WinEvent  ProviderName=UASPStor,  30 jours
+  31/08/2026  06:55:44   129
+  01/09/2026  11:35:16   129
+```
+
+**Deux, a vingt-neuf heures d'intervalle.** Et l'histoire complete est pire que
+deux points :
+
+```
+2026-08-26     disk/158 x2
+2026-08-27     disk/158 x7
+2026-08-29     disk/51 x101                                    <- CENT UNE erreurs d'E/S
+2026-08-31     disk/11 x2   disk/153 x8   UASPStor/129 x1      <- premiere reinitialisation
+2026-09-01     disk/11 x1   disk/51 x9    disk/153 x6
+               Ntfs/50 x55  UASPStor/129 x1                    <- la panne
+```
+
+> **Cent une erreurs d'E/S le 29 aout, et personne ne regardait.** Le lien
+> avertissait depuis six jours. La panne du 1er septembre n'est pas un
+> evenement, c'est un **aboutissement**.
+
+⇒ Consequence a dire sans l'adoucir : **meme si le volume revient, il
+retombera.** La correction de fond est de sortir le stockage de ce segment de
+dock, ou de desarmer la suspension selective — 30 peripheriques USB l'ont
+ACTIVE, aucun a l'arret, et c'est le levier que Microsoft designe pour
+l'evenement 129.
+
+**Le dock n'est pas tombe** : reseau USB, camera, claviers, souris, les cinq
+concentrateurs et les quatre routeurs USB4 sont tous en `OK`, aucun en erreur.
+Seul le tunnel USB 3.x du stockage est tombe.
+
+**Re-enumerer sans toucher au cable a ete essaye et exige l'elevation :**
+`pnputil /scan-devices` rend « Echec de la recherche d'appareils ». Il reste le
+premier geste a tenter, mais par l'operateur en console elevee — il est
+reversible, un debranchement sous tension l'est moins.
+
+### 83.3 LE MIROIR `G:` EST SAIN — un zero qui accusait l'instrument
+
+`ea-mt5` mesurait des timeouts de 20 s sur la cle et ne pouvait pas conclure :
+*« je ne peux PAS distinguer une cle qui faiblit d'un `ripgrep` qui balaie
+231 Go par nature. »*
+
+```
+Get-ChildItem G:\                                       0,03 s
+Get-ChildItem G:\MIROIR_EA_MT5_PYTHON_RENTABLE_ROBUSTE   0,02 s,  92 entrees
+```
+
+**La cle est saine.** Ses timeouts etaient l'instrument, pas le peripherique —
+sa propre classe 9, et il avait eu raison de ne pas conclure. Le miroir date du
+08/08, vingt-quatre jours : un filet, pas une reprise.
+
+### 83.4 CE QUE LE LOT 3 APPORTE, ET QUI VAUT AU-DELA DE SON DEPOT
+
+**Le remede mecanique de la classe 9**, et c'est le meilleur de la journee :
+
+```
+Glob "*"  sans chemin              -> zero                        (ambigu, invite a conclure)
+Glob "*"  path="D:\<projet>"       -> "Directory does not exist"  (constat)
+Glob "*"  path="D:\"               -> "Directory does not exist"  <- LE NIVEAU
+```
+
+> **Le niveau ou l'absence commence EST le diagnostic.** `D:\` existant +
+> projet absent = suppression, restaurer ; `D:\` absent = volume parti,
+> remonter. Les deux rendent le meme message sur le chemin profond ; **seule la
+> remontee les separe.**
+
+**Un accord ENSEMENCE n'est pas une verification.** Son deuxieme diagnostic
+faux avait ete « corrige » par `sovereign` — qui lui avait envoye le test ET sa
+reponse dans le meme message. Il n'a **jamais reussi** la moitie qui verifiait,
+son `Read` echouant aussi. Il a donc acquiesce a une conclusion sans l'avoir
+eprouvee, avec toutes les apparences du croisement et aucune de sa valeur.
+
+**La symetrie des gardes, complete :**
+
+| forme | comportement | dangerosite |
+| --- | --- | --- |
+| garde EXISTANT mais non cable | **silencieux**, laisse tout passer | la pire |
+| garde CABLE mais inexistant | **bruyant**, bloque tout | la moindre |
+
+Le garde orphelin de `sovereign` est reste invisible des **semaines** ; le garde
+inexistant les a arretes en **une minute**. Et j'ai produit le premier type
+moi-meme ce tour-ci (§82.1).
+
+### 83.5 SUJETS OUVERTS — remplace §82.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Le lien se degrade depuis six jours, sans temoin** | §83.2 | 101 erreurs le 29/08, deux reinitialisations |
+| **Suspension selective active sur 30 peripheriques USB** | §81.2 | levier documente, non essaye, exige l'elevation |
+| **Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT** | §82.1 | un patch sur deux perdu en silence |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Recensement gardes non appeles / gardes inexistants | §83.4 | la symetrie est desormais complete |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
