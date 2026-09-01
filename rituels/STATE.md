@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 20:09 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 20:19 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,15 +9,15 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `b68385d` |
-| Arbre de travail | modifie |
+| Commit | `5b1f4a7` |
+| Arbre de travail | propre |
 | Version de routage | `r19be7650d1` |
 
 ## Services
 
 ```
 litellm-db	db	Up 2 days (healthy)
-litellm-proxy	litellm	Up 34 minutes
+litellm-proxy	litellm	Up 44 minutes
 litellm-redis	redis	Up 2 days (healthy)
 ```
 
@@ -66,7 +66,7 @@ Verdict : **valide**
 | `scripts/nexus_generate.py` | `7bdb7c9b0626e3392c5b12fb5a4985ca246440aa036132b3a79a7d0131047d9b` |
 | `scripts/nexus_validate.py` | `f861fb7f5d50240ba56a41233fb22c5b24426cb5d9d91cdc881f31f90dd64613` |
 | `scripts/nexus_capability.py` | `2dd9e691834d26ff9139bc2e21155094ef4762f27479df1bfa34646f2ae151a3` |
-| `scripts/nexus_test.py` | `592cece8e6ed1282feef8d2c9b72333bea4e74d701149abb4ecbd096358b0b05` |
+| `scripts/nexus_test.py` | `fbfc4df9a00e26335ff18205607444087b3c7de4d0c3a9a42173531438c30e1c` |
 | `scripts/Update-NexusModels.ps1` | `1fedad75868f29c99749fb9eb1825d1e7f181ba683f9be000ad65af37ce6f8f4` |
 
 ## Traque mecanique
