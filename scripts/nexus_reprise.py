@@ -253,7 +253,7 @@ def bloc_sujets() -> None:
     if not montres:
         print("  Aucun sujet ouvert lisible — verifier le cockpit a la main.")
     elif non_affiches > 0:
-        print("  %d sujet(s) non affiché(s) — voir rituels/CHECKLIST_COCKPIT.MD" % non_affiches)
+        print("  %d sujet(s) non affiché(s) — voir rituels/CHECKLIST_COCKPIT.MD. La SECTION 62, intitulée REPRISE APRES REDEMARRAGE, porte l'état en vol et se lit en premier." % non_affiches)
     print("")
     print("  Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est")
     print("  enfreinte. Un paragraphe ne ferme rien (contrat 0.2.1).")
