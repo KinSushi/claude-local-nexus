@@ -9600,3 +9600,121 @@ un cout qu'aucun des quatre autres n'a compte.
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 87. ETAPES 1 ET 2 JOUEES — etat fige avant l'arret complet
+
+### 87.1 CE QUI A ETE FAIT, ET CE QUE CHAQUE GESTE A APPRIS
+
+**Etape 1 — re-enumeration logicielle, en console elevee.**
+
+```
+pnputil /scan-devices   ->   « Analyse terminee. »
+Get-Disk                ->   0, 3, 4, 2  —  INCHANGE
+```
+
+> **Resultat net et negatif : la re-enumeration logicielle ne suffit pas.** Le
+> peripherique ne repond pas du tout a l'enumeration du bus. Ce n'est ni une
+> lettre manquante, ni un pilote a recharger.
+
+Premiere tentative refusee — `Accès refusé` — parce que la console n'etait pas
+elevee. **Le refus ne nommait pas ce qui manquait**, et l'invite `C:\Users\...`
+au lieu de `C:\Windows\system32` etait le seul indice. Meme classe que tout ce
+qui a ete traque aujourd'hui.
+
+**Etape 2 — suspension selective USB, desarmee.**
+
+```
+avant   Index alternatif 0x00000001   Index continu 0x00000001
+apres   Index alternatif 0x00000000   Index continu 0x00000000
+```
+
+Verifie deux fois, dont une independamment. Entierement reversible.
+
+### 87.2 LE COLLAGE EST ARRIVE A L'ENVERS, ET LE RENDU FAISAIT ILLUSION
+
+Le premier bloc a ete recu **dans l'ordre inverse** : la verification a tourne
+d'abord, avec ses variables encore vides, donc `powercfg` a deverse le plan
+entier — soixante lignes —, puis les deux `SETVALUEINDEX` ont echoue en
+`Paramètres non valides`, et les affectations sont arrivees en dernier.
+
+> **Rien n'avait ete applique, et la sortie etait abondante.** Un rendu
+> volumineux qui masque une absence d'effet : c'est la forme la plus
+> confortable du faux vert, parce qu'on lit le volume comme une preuve de
+> travail.
+
+**Le remede a ete de supprimer la dependance a l'ordre** : GUID en clair, une
+seule ligne, et un critere de succes qui ne peut pas se confondre — *« deux
+lignes exactement, si tu en vois cinquante c'est que les GUID n'ont pas ete
+pris »*. Un critere qui distingue le bon rendu du mauvais vaut mieux qu'une
+consigne qui suppose l'ordre respecte.
+
+### 87.3 L'ETAT FIGE, POUR COMPARAISON AU RETOUR
+
+```
+disques enumeres     0, 3, 4, 2
+lettres              C E F G
+duree de marche      118,2 heures
+demarrage rapide     HiberbootEnabled = 0   -> l'arret sera un ARRET COMPLET reel
+suspension selective DESACTIVEE, secteur et batterie
+```
+
+**Et le fait qui justifie l'arret :**
+
+```
+26/08 17:31   les cinq pilotes de stockage sont remplaces
+26-27/08      plusieurs redemarrages
+27/08 15:13   DERNIER DEMARRAGE
+   ... 118 heures ...
+29/08         101 erreurs d'E/S
+31/08         premiere reinitialisation UASP
+01/09         la panne
+```
+
+> **La machine n'a jamais redemarre depuis que la degradation a commence.** Le
+> remede documente par Microsoft pour ce cas exact n'a donc jamais ete
+> essaye — et un ARRET, contrairement a un redemarrage, coupe l'alimentation
+> du dock et force le disque a se reinitialiser physiquement.
+
+### 87.4 CE QUI SE JOUE AU RETOUR, DANS L'ORDRE
+
+```
+1  Get-Disk   AVANT d'ouvrir quoi que ce soit
+2  si un disque de ~4657 Go apparait : NE PAS L'OUVRIR DANS L'EXPLORATEUR
+     diskpart -> select disk N -> attributes disk set readonly
+     NTFS rejoue son journal au montage, et rejouer est une ECRITURE
+3  brancher le support de 16 To HORS du dock, puis copier
+4  ordre de copie : le plus precieux et le plus petit d'abord
+     REPRISE_2026-09-01.md · STATE.md · les dix SORTIE_*.txt · les instruments
+     puis _QUARANTINE · puis le volumineux
+```
+
+Si `Get-Disk` en montre toujours quatre, l'etape suivante est le branchement
+direct sur la carte mere, hors du dock — premier geste physique, et le
+debranchement ne peut plus rien corrompre : les volumes ont ete proprement
+demontes (`Ntfs 303`), rien n'est en vol.
+
+### 87.5 SUJETS OUVERTS — remplace §86.3
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **L'arret complet n'a pas encore ete fait** | §87.3 | seul remede documente non essaye |
+| **La mise a jour du 26/08 reste le suspect principal** | §86.1 | 45 jours propres avant, erreurs le jour meme |
+| 3 To dont aucun agent ne sait rien | §85.1 | decide entre image bloc et copie fichier |
+| Le disque de 16 To doit etre hors du dock | §85.4 | condition absolue |
+| `REPRISE_2026-09-01.md` n'est nulle part ailleurs | §84.2 | priorite absolue au retour |
+| Les `SORTIE_*.txt` et leurs SHA-256 | §84.2 | preuve rejouable contre resultat rapporte |
+| `_QUARANTINE` de `sovereign`, 1 790 fichiers | §84.2 | sa seule reserve |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| Classe 10 : posseder la mesure, la ranger ailleurs | §84.4 | commise par son auteur au tour suivant |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | **il s'armera au redemarrage** |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
