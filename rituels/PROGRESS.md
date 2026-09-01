@@ -185,3 +185,166 @@ Migration du moteur hors de Docker, par étapes et réversible jusqu'à la
 dernière. Voir la section 1 du cockpit, et
 [`RESTE-A-FAIRE.md`](RESTE-A-FAIRE.md) pour les 27 correctifs identifiés
 et non encore appliqués.
+
+---
+
+## 2026-09-01 — Retour après l'arrêt complet : le disque est sauf, le routage ne l'est pas
+
+### Point de départ
+
+Reprise après un arrêt complet décidé la veille pour forcer la
+réinitialisation physique d'un dock USB. La passation ordonnait `Get-Disk`
+comme première commande, et interdisait d'ouvrir le volume récupéré avant de
+l'avoir passé en lecture seule.
+
+### Ce que la mesure a établi, contre la passation elle-même
+
+Le disque 1 (Seagate 4657,5 Go, GPT) est revenu — mais **Windows l'avait déjà
+monté en lecture-écriture** avant toute intervention. Le rejeu du journal NTFS
+avait donc eu lieu. La séquence prescrite était inapplicable au retour ; elle
+supposait un contrôle sur le moment du montage que la session n'a pas.
+
+Vérification de santé, faite plutôt que supposée :
+
+```
+Repair-Volume D: -Scan     NoErrorsFound
+HealthStatus               Healthy
+Ntfs event 98              « Volume D: est sain. Aucune action n'est nécessaire. »
+erreurs disque / UASP      aucune depuis le démarrage
+```
+
+**`sovereign` : perte nulle, et démontrée.** `git ls-files --others
+--exclude-standard` hors worktrees renvoie **0 fichier**, et `HEAD f3a2d523`
+est sur `origin/v1.104`. Tout ce qui n'est pas sur le distant est ignoré par
+construction.
+
+**`ea-mt5` : 5 fichiers non commités**, dont `STATE.md` et
+`REPRISE_2026-09-01.md` — les deux nommés « irremplaçables » par l'inventaire.
+`HEAD 4b8d30c4` est sur `origin`.
+
+**L'inventaire de sauvetage désignait de mauvais chemins.** Il situait
+`STATE.md` et les `SORTIE_*.txt` à la racine du dépôt. Les 13 fichiers
+`SORTIE_*.txt` sont en réalité dans
+`workspace/_SCRATCH/descripteurs_2026-09-01/`. Une copie par répertoire les a
+attrapés malgré l'erreur ; une copie par liste nominative les aurait tous
+manqués. **La granularité de la copie a rattrapé le défaut de l'inventaire**,
+et c'est un accident, pas une méthode.
+
+**L'échelle réelle du volume, jamais mesurée avant :** `workspace/` pèse
+**654 Go pour 175 265 fichiers**, dont 569 Go pour `VANTAGE_DATA` seul. La
+« récupération ciblée de quelques dizaines de fichiers » que l'inventaire
+annonçait portait en fait sur 32 632 fichiers non suivis et non ignorés.
+
+### Décidé par l'opérateur, contre la proposition
+
+**Ne rien copier.** Les volumes sont revenus sains, `C:` est réservé aux
+modèles locaux. Les 1,1 Go / 36 530 fichiers déjà copiés ont été supprimés.
+
+**Le retour arrière des pilotes est rejeté**, et l'argument est neuf : *« si
+les pilotes antérieurs n'étaient pas stables, d'où la nouvelle mise à jour…
+alors on ne touche à rien »*. Le fait qui le soutient : le volume est revenu
+sain **sans** qu'on touche aux pilotes, après un simple arrêt complet — ce que
+la passation notait comme jamais essayé en 118 h. La corrélation des cinq
+pilotes remplacés le 26/08 à 17:31 reste écrite, mais elle n'a pas été jouée.
+Le blocage des mises à jour futures a été fait à la main, dans les paramètres.
+
+### La trouvaille de la séance — l'exécution survit, l'orchestration non
+
+Question posée : *les deux abonnements coupés, qui prend le relai ?*
+
+Elle mélange deux rôles qui ne tombent pas ensemble, et c'est la réponse.
+
+**L'exécution survit, prouvé et non déduit :**
+
+```
+glm-4.7-flash-local     22 s, 473 jetons, coût 0
+  endpoint contacté     http://host.docker.internal:11434
+adaptive-router-local   63 s à froid, HTTP 200
+  attempted-fallbacks   0        aucune fuite vers ollama.com
+```
+
+Le repli est câblé dans le bon sens : chaque alias cloud retombe sur
+`glm-4.7-flash-local`, jamais l'inverse. **44 modèles locaux ont été éprouvés**
+sur les capacités d'orchestration — protocole, demande d'outil, usage du
+résultat, chaînage — et **14 passent 4/4, complet et concluant**. Douze
+échouent, dont `mixtral-8x7b` et `phi3-medium` : l'épreuve discrimine.
+
+**L'orchestration ne survit pas.** Claude Code est le harnais autant que le
+modèle. Ce qui continue sans session : les 4 tâches planifiées, et
+`nexus_agent.py` qui s'exécute seul. Ce qui manque : la boucle qui lit, décide,
+applique, vérifie et recommence.
+
+### Le biais de routage — repéré à l'œil nu par l'opérateur, confirmé par la mesure
+
+> *« le routage tombe très souvent sur le même modèle alors qu'on en a une
+> panoplie »*
+
+```
+7195 requêtes sur 7 jours
+  gpt-oss-120b-cloud   3829   53,2 % à lui seul
+  releve-locale         666    9,3 %
+par plan    cloud 5192  vs  local 1975      72 % des requêtes sortent
+par volume  20,6 M jetons cloud vs 2,7 M    88 % du volume sort
+échecs      382/5192 cloud  vs  79/1975 local
+```
+
+**Cause racine**, et elle est structurelle :
+
+```python
+scripts/nexus_agent.py:221
+REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
+scripts/nexus_agent.py:962
+candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+```
+
+Deux modèles sur plus de cinquante, le cloud en tête, et cette chaîne s'ajoute
+à **tout** modèle demandé. Le MCP fait exactement l'inverse
+(`DEFAULT_CHAT_MODEL = "glm-4.7-flash-local"`), et **26 fichiers du dépôt**
+prescrivent `--modele gpt-oss-120b-cloud` en exemple. Les deux chemins d'appel
+se contredisent, et le plus documenté est celui qui sort les données.
+
+C'est le §0.6 pris en défaut par le dépôt lui-même : *la voie la plus simple
+doit être la voie correcte*.
+
+**Le routeur local souffre du même mal, mesuré au passage :**
+`adaptive-router-local` a envoyé une consigne triviale à `deepseek-coder:33b`
+— 18 Go, spécialiste code — qui a **refusé de répondre** au motif que la
+question n'était pas de la programmation. 63 secondes pour un refus.
+
+### Erreurs commises pendant la séance
+
+**J'ai appelé `gpt-oss-120b-cloud` quatre fois par habitude**, dans la séance
+même où le biais était mesuré, alors que le contrat dit *« choisir selon la
+tâche, jamais par habitude »*. Le §106.1 encore : une règle non mécanisée ne
+protège pas son propre auteur, le jour même.
+
+**Deux plafonds mal fixés**, tous deux échoués proprement : 60 jetons sur un
+modèle à raisonnement, puis 2200 sur 15 215 jetons d'entrée. Dans les deux
+cas le script a nommé le nombre exact à demander et a refusé de basculer
+ailleurs en expliquant pourquoi — *« un autre modèle ne changerait rien »*.
+
+### Le banc pris en défaut trois fois, et rattrapé trois fois
+
+1. **Cinq numéros de ligne sur cinq fabriqués**, avec des noms de fonction
+   tous exacts. Écart systématique de +40 à +74 lignes. C'est la forme la plus
+   dangereuse : la trouvaille est juste, l'ancrage est faux.
+2. **« Étape 5 absente »** — alors que `nexus_ruche.py:8` annonce « la relance
+   en cas d'échec » et que `nexus_essaim.py:142` implémente un réessai.
+3. **« `UsoSvc` est protégé par une ACL refusant même un administrateur »** —
+   faux : `sc sdshow` donne `(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)`, le droit
+   `WRITE_PROP` est accordé. Le banc avait déclaré son incertitude, ce qui est
+   le bon comportement ; la vérification restait obligatoire.
+
+### Trouvé hors du dépôt
+
+**Deux pages officielles Microsoft se contredisent** sur le nom d'une même
+valeur de registre : `ExcludeWUDriversInQualityUpdate` (page *Configure
+Windows Update client policies*, celle qui documente ce que la GPO écrit)
+contre `ExcludeWUDriversFromQualityUpdates` (page *Windows Autopatch*). Un
+blocage posé sous le mauvais nom serait silencieusement inopérant — le pire
+mode de défaillance pour une protection.
+
+### Suite
+
+Voir la section 90 du cockpit pour les sept sujets ouverts par cette séance,
+et le plan qui les ordonne.

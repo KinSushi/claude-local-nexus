@@ -9989,3 +9989,259 @@ disque avant de declarer un echange consigne.*
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 90. LE ROUTAGE SE CONCENTRE SUR UN SEUL MODELE — repere a l'oeil nu, confirme a 53,2 %
+
+Seance du 2026-09-01, apres l'arret complet. Le disque est revenu sain et n'a
+rien coute ; le vrai defaut de la journee etait ailleurs, et c'est l'operateur
+qui l'a vu le premier, sans instrument :
+
+> *« le routage tombe tres souvent sur le meme modele alors qu'on en a une
+> panoplie »*
+
+### 90.1 La mesure, et elle est pire que l'impression
+
+```
+7195 requetes passees par la passerelle en 7 jours
+  gpt-oss-120b-cloud   3829    53,2 %  a lui seul
+  releve-locale         666     9,3 %
+  all-minilm-local      163
+  gemma4-31b-cloud      146
+  mistral-large-3-675b  135
+  glm-5.3-flash-cloud   126
+
+par plan     cloud 5192  vs  local 1975      72 % des requetes SORTENT
+par volume   20,6 M jetons cloud vs 2,7 M    88 % du volume SORT
+echecs       382 / 5192 cloud   vs  79 / 1975 local    le cloud echoue 2x plus
+```
+
+Cinquante-cinq modeles sont installes localement. Deux concentrent
+l'essentiel du trafic, et le premier est distant.
+
+### 90.2 LA CAUSE EST STRUCTURELLE, pas comportementale
+
+```python
+scripts/nexus_agent.py:221
+REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
+
+scripts/nexus_agent.py:962
+candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+```
+
+Cette chaine s'ajoute a **tout** modele demande, quel qu'il soit. Deux membres
+sur plus de cinquante, et le cloud en tete.
+
+**Les deux chemins d'appel du depot se contredisent :**
+
+| chemin | defaut | plan |
+| --- | --- | --- |
+| `tools/nexus-mcp/server.js:106` | `glm-4.7-flash-local` | **local** |
+| `scripts/nexus_agent.py:221` | `gpt-oss-120b-cloud` en tete des replis | **cloud** |
+
+Et **26 fichiers du depot** prescrivent `--modele gpt-oss-120b-cloud` en
+exemple — dont le contrat lui-meme, trois fois, et le contrat global deux
+fois. Le chemin le plus documente est celui qui sort les donnees.
+
+> **C'est le §0.6 pris en defaut par le depot lui-meme.** La voie la plus
+> simple doit etre la voie correcte ; ici la voie la plus visible envoie 88 %
+> du volume hors de la machine, sur une plateforme construite pour ne pas en
+> dependre.
+
+**Aggravant, mesure la meme seance :** l'orchestrateur a appele
+`gpt-oss-120b-cloud` **quatre fois par habitude**, dans la seance ou le biais
+etait mesure. §106.1 encore : une regle non mecanisee ne protege pas son
+propre auteur, le jour meme.
+
+### 90.3 CE QUI FERMERAIT CE SUJET — et rien de moins
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 1 | Concentration du routage | `OUVERT` | une epreuve qui ECHOUE si un modele depasse un plafond de part. `nexus_savings` affiche le classement sans jamais **juger** — il n'a aucun seuil et ne peut pas rendre rouge |
+| 2 | Les deux chemins se contredisent | `OUVERT` | meme epreuve, cas 2 : compare le defaut du MCP et la tete de `REPLIS_GRATUITS`, echoue s'ils ne designent pas le meme plan |
+| 3 | Pas de profil de tache cote `nexus_agent.py` | `OUVERT` | le §109 (coding / reasoning / rapide / multimodal) n'existe **que** dans le MCP. Verifie : les occurrences de « profil » dans `nexus_agent.py` concernent le profil MATERIEL, pas la tache |
+| 4 | Le routeur local mal apparie | `OUVERT` | une epreuve de routage par CLASSE : une consigne triviale ne doit pas atteindre un specialiste de 18 Go |
+
+**Le fait qui fonde le point 4**, mesure : `adaptive-router-local` a envoye
+« Reponds exactement: RELAI LOCAL OPERATIONNEL » a `deepseek-coder:33b`, qui a
+**refuse de repondre** au motif que la question n'etait pas de la
+programmation. HTTP 200, 63 secondes, pour un refus. Le routage n'a pas
+plante : il a mal appareille, ce qui ne declenche aucune alarme.
+
+---
+
+## 91. L'EXECUTION SURVIT AUX DEUX ABONNEMENTS, L'ORCHESTRATION NON
+
+Question de l'operateur : *les deux abonnements coupes, qui prend le relai ?*
+Elle melange deux roles qui ne tombent pas ensemble — et c'est la reponse.
+
+### 91.1 Ce qui est PROUVE, pas deduit
+
+```
+glm-4.7-flash-local      22 s, 473 jetons, cout 0
+  servi par              ollama_chat/glm-4.7-flash [local]
+  endpoint contacte      http://host.docker.internal:11434
+adaptive-router-local    63 s a froid, HTTP 200
+  x-litellm-attempted-fallbacks  0
+```
+
+Aucun octet vers ollama.com. Le repli est cable dans le bon sens : chaque
+alias cloud retombe sur `glm-4.7-flash-local`, `adaptive-router-cloud` et
+`adaptive-router-anthropic` retombent sur `adaptive-router-local`. Jamais
+l'inverse — un repli `local -> cloud` ferait fuiter, et §108 l'interdit.
+
+### 91.2 QUATORZE modeles locaux savent orchestrer — la releve existe
+
+`.nexus/epreuves.json`, mesure le 2026-09-01 a 13:53 : **44 modeles** eprouves
+sur protocole, demande d'outil, usage du resultat, chainage. **14 passent 4/4,
+complet ET concluant :**
+
+```
+glm-4.7-flash-local   qwen3-coder-30b-local   qwen3-32b-local    gemma4-31b-local
+gpt-oss-20b-local     qwen3.6-27b-local       qwen3-14b-local    gemma4-local
+codestral-local       qwen2.5-32b-local       qwen3-8b-local     qwen3.5-9b-local
+llama3.1-8b-local     llama3.2-3b-local
+```
+
+**Douze echouent** — `mixtral-8x7b` et `phi3-medium` a 0/4,
+`qwen2.5-coder-32b` a 1/4. L'epreuve discrimine donc reellement ; ce n'est pas
+un tampon distribue a tous.
+
+> Ce n'est pas un modele unique et fragile : c'est de la redondance, du 3 B au
+> 31 B. **Cote modele, l'independance est acquise et mesuree.**
+
+### 91.3 Le HARNAIS — ce qui manque, et il est nomme depuis longtemps
+
+`nexus_ruche.py` et `nexus_essaim.py` sont deja loin. Le banc leur attribue
+quatre etapes sur cinq — **et sa cinquieme reponse est fausse**, verifiee :
+
+| etape | verdict, ancres VERIFIEES |
+| --- | --- |
+| 1 LIRE l'etat | `charger_etat()` **108**, `decouvrir_cibles()` **142** |
+| 2 DEMANDER a un modele | `executer_audit()` **136** |
+| 3 APPLIQUER | `creer_consigne_temp()` **259**, `traiter_cible()` **288** |
+| 4 VERIFIER | `verifier_syntaxe()` **203** |
+| 5 RECOMMENCER | le banc dit ABSENTE — **faux** : `nexus_ruche.py:8` annonce « la relance en cas d'echec », `nexus_essaim.py:142` reessaie une fois a plafond double |
+
+**Reste a etablir** : le reessai de `nexus_essaim.py:142` porte sur la
+TRONCATURE, pas sur l'echec de correction. La relance annoncee par la
+docstring de la ruche n'a **pas** ete tracee jusqu'a son code.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 5 | Le harnais, etape 5 | `OUVERT` | une epreuve qui fait ECHOUER une cible volontairement et verifie qu'elle est rejouee — la docstring ne prouve rien |
+
+---
+
+## 92. TROIS FABRICATIONS DU BANC EN UNE SEANCE — dont la plus dangereuse
+
+### 92.1 Cinq numeros de ligne sur cinq, tous faux, avec des noms tous exacts
+
+| fonction | annonce par le banc | reel |
+| --- | --- | --- |
+| `charger_etat` | 68 | **108** |
+| `decouvrir_cibles` | 99 | **142** |
+| `executer_audit` | 93 | **136** |
+| `verifier_syntaxe` | 131 | **203** |
+| `creer_consigne_temp` | 185 | **259** |
+
+Ecart systematique de +40 a +74 lignes. **C'est la forme la plus dangereuse de
+l'erreur** : les six fonctions citees existent toutes, la trouvaille est juste,
+seul l'ancrage est faux. Un correctif applique sur ces ancres aurait frappe a
+cote — ou pire, aurait trouve du texte plausible a la mauvaise ligne.
+
+### 92.2 Deux affirmations fausses, verifiees dans le reel
+
+* **« l'etape 5 est absente »** — dementie par la docstring et par le code.
+* **« `UsoSvc` est protege par une ACL refusant meme un administrateur »** —
+  dementie par `sc sdshow` : `(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)`, le droit
+  `WRITE_PROP` est bien accorde aux administrateurs. Le banc avait **declare
+  son incertitude**, ce qui est le comportement correct ; la verification
+  restait obligatoire.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 6 | Ancres fabriquees par le banc | `OUVERT` | une verification AUTOMATIQUE des numeros de ligne rendus : toute ancre citee est confrontee au fichier avant lecture humaine. `nexus_appliquer.py` verifie le bloc AVANT ; **rien ne verifie une ligne citee dans un rapport** |
+
+---
+
+## 93. DEUX FICHIERS DE MEME NOM ET DE NATURE OPPOSEE
+
+```
+PROGRESS.md (racine)   GENERE par nexus_progres.py
+                       « AVERTISSEMENT : Toute edition manuelle sera ecrasee »
+rituels/PROGRESS.md    JOURNAL manuscrit des decisions et des erreurs
+```
+
+Qui edite le mauvais perd son travail au prochain passage du generateur. Le
+piege ne se voit qu'apres la perte.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 7 | Collision de noms genere / manuscrit | `OUVERT` | un controle qui echoue si deux fichiers de meme nom coexistent dont l'un porte l'avertissement « sera ecrase » |
+
+---
+
+## 94. LE HEREDOC A MUTILE UNE ECRITURE — un defaut deja consigne, subi en direct
+
+La derniere ligne du cockpit, avant cette section, disait :
+
+```
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+```
+
+L'ecriture de cette section meme a echoue sur
+`unexpected EOF while looking for matching '`, contenu perdu, **fichier
+heureusement intact**. Le defaut est donc reproductible, connu, et son
+contournement — passer par un fichier ecrit hors du shell — a du etre
+redecouvert au moment ou il mordait.
+
+> **Un defaut « contourne, non corrige » se paie a chaque rencontre, par
+> quiconque le rencontre.** C'est la definition meme du §0.6 : le
+> contournement ne se transporte pas, seul le correctif le fait.
+
+---
+
+## 95. CE QUE LA RECUPERATION A APPRIS, ET QUI N'ETAIT PAS DANS LE PLAN
+
+* **`sovereign` : perte nulle, demontree** — `git ls-files --others
+  --exclude-standard` hors worktrees renvoie **0**, `HEAD f3a2d523` est sur
+  `origin/v1.104`.
+* **L'inventaire de sauvetage designait de mauvais chemins.** Les 13
+  `SORTIE_*.txt` etaient dans `workspace/_SCRATCH/descripteurs_2026-09-01/`,
+  pas a la racine. **Une copie par REPERTOIRE les a attrapes ; une copie par
+  liste nominative les aurait tous manques.** Accident heureux, pas methode —
+  et cela dit quelque chose sur la granularite a choisir quand la source de
+  verite est un inventaire ecrit de memoire.
+* **L'echelle reelle n'avait jamais ete mesuree** : `workspace/` pese
+  **654 Go / 175 265 fichiers**, dont 569 Go pour `VANTAGE_DATA`. La
+  « recuperation de quelques dizaines de fichiers » portait en fait sur
+  **32 632 fichiers** non suivis et non ignores.
+* **La sequence de protection etait inapplicable au retour.** Elle exigeait
+  `diskpart ... readonly` **avant** que Windows ne monte le volume — un
+  controle sur le moment du montage qu'une session ouverte apres le demarrage
+  n'a pas.
+* **Deux pages officielles Microsoft se contredisent** sur une meme valeur de
+  registre : `ExcludeWUDriversInQualityUpdate` contre
+  `ExcludeWUDriversFromQualityUpdates`. Une protection posee sous le mauvais
+  nom serait **silencieusement inoperante**.
+
+---
+
+## 96. SUJETS OUVERTS — remplace §89.5
+
+| # | Sujet | Etat | Pourquoi il compte |
+| --- | --- | --- | --- |
+| 1 | Concentration du routage a 53,2 % | `OUVERT` | epreuve `epreuve_concentration_routage.py` EN COURS de redaction par le banc, non posee |
+| 2 | Deux chemins d'appel contradictoires | `OUVERT` | meme epreuve, cas 2 |
+| 3 | Pas de profil de tache cote `nexus_agent.py` | `OUVERT` | le §109 existe, mais sur un seul des deux chemins |
+| 4 | Routeur local mal apparie | `OUVERT` | 63 s pour un refus, sans aucune alarme |
+| 5 | Harnais, etape 5 | `OUVERT` | le seul maillon entre « le banc survit » et « la plateforme survit » |
+| 6 | Ancres fabriquees par le banc | `OUVERT` | 5 sur 5 fausses, avec des noms exacts |
+| 7 | Collision `PROGRESS.md` | `OUVERT` | une perte de travail silencieuse en attente |
+| 8 | Heredoc mutilant | `OUVERT` | consigne comme contourne depuis §81.1, subi de nouveau |
+
+> **Zero ferme sur huit a cette minute.** Un sujet ne se clot que lorsqu'un CONTROLE echoue
+> si la regle est enfreinte (§0.2.1). Les six autres portent ici leur mesure,
+> pas leur garde.
