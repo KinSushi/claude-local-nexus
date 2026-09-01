@@ -62,6 +62,10 @@ def main():
     ACCENT_GRAVE = 'git commit -m "voir `nexus_bench.py` pour la mesure"'
     verifier("bash : accent grave refuse", soumettre("Bash", ACCENT_GRAVE),
              "substitution de commande, le cas du 2026-08-30")
+    verifier("bash : heredoc accent grave autorise",
+             not soumettre("Bash",
+                 "python - <<'ZZ'" + chr(10) + "print(\"`\")" + chr(10) + "ZZ" + chr(10)),
+             "le corps d'un heredoc quote est protege")
 
     # ANTI-CONTROLE, et c'est le cas qui empeche le garde d'etre desarme :
     # la MEME commande doit PASSER en PowerShell, ou l'accent grave n'est que

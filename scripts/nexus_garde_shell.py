@@ -125,13 +125,39 @@ def detecter_cas_a(commande):
 
 def detecter_cas_b(commande):
     """
-    Accent grave non echappe a l'interieur de guillemets DOUBLES.
+    Accent grave non echappe a l'interieur de guillemets doubles.
 
     Entre guillemets doubles, le shell execute ce qui est entre accents
-    graves et REMPLACE le tout par sa sortie : un message de commit citant du
+    graves et remplace le tout par sa sortie : un message de commit citant du
     code perd donc silencieusement ses noms techniques. Entre guillemets
-    SIMPLES, rien n'est substitue -- refuser la serait un faux positif pur.
+    simples, rien n'est substitue -- refuser la serait un faux positif pur.
+
+    Un heredoc dont le delimiteur est quote (entre ' ou ") ne subit aucune
+    substitution du shell ; son corps est donc exclu de l'examen.
+    Mesure du 2026-08-31.
     """
+    # Exclure le corps des heredocs dont le delimiteur est quote (entre ' ou ")
+    # Le shell ne fait aucune substitution dans ces heredocs ; on les retire
+    # du texte avant le balayage des backticks, ligne par ligne.
+    lignes = commande.split('\n')
+    gardees = []
+    dans_heredoc = False
+    delimiteur = None
+    for ligne in lignes:
+        if not dans_heredoc:
+            m = re.search(r'<<\s*([\'"])(\S+)\1', ligne)
+            if m:
+                gardees.append(ligne)
+                dans_heredoc = True
+                delimiteur = m.group(2)
+            else:
+                gardees.append(ligne)
+        else:
+            if ligne.strip() == delimiteur:
+                dans_heredoc = False
+                delimiteur = None
+    commande = '\n'.join(gardees)
+
     dans_double = dans_simple = echappe = False
     for c in commande:
         if echappe:
