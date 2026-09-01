@@ -11544,3 +11544,80 @@ mesure**, et les trois epreuves ont deja donne trois resultats differents sur le
 | 29 | Le socle est prepare et non pose | `OUVERT` — geste de l'operateur |
 | 30 | Le hook est pose et non arme | `OUVERT` — le cliquet de cablage le signale en orphelin, a raison |
 | 31 | A17 et `nexus_redaction.py` ne parlent pas le meme format | `OUVERT` — la regle doit s'accorder au controle |
+
+---
+
+## 109. LES TROIS ONT REPONDU NON — et pourquoi ce cliquet est le seul a voir ce que personne n'a declare
+
+Reddition commune du 2026-09-01, au format a quatre cases.
+
+### 109.1 LES TROIS ETATS
+
+| session | PREPARE | POSE | ARME | EPROUVE | reponse |
+| --- | --- | --- | --- | --- | --- |
+| `local-llm-docker` (ici) | 72 deny / 15 ask | 161 lignes | **non** | partiel | **NON** |
+| `sovereign-ai-system` | 110 deny / 9 ask | ruff 0, mypy --strict 0 | **non** | partiel | **NON** |
+| `ea-mt5-python-rentable` | 67 deny / 6 ask, 9 familles | redacteur en worktree | **non** | non | **NON** |
+
+Trois depots, trois listes convergees, **aucune protection active**. Et les trois mesures d'effet
+divergent toujours sur le meme geste : `rm -rf` refuse chez `sovereign`, `rm` s'execute chez
+`ea-mt5`, `rm -rf` passe ici.
+
+> **D'accord sur le contenu : oui. Prets a poser : oui. Proteges : non.** Ce sont trois questions,
+> et les confondre etait la faute que la journee entiere a servi a nommer.
+
+### 109.2 POURQUOI CE CLIQUET VOIT CE QUE LES DEUX AUTRES NE PEUVENT PAS VOIR
+
+Constat de `ea-mt5`, et c'est une propriete de CONCEPTION, pas de qualite d'ecriture :
+
+```
+wiring_check.py (sovereign)      ne couvre que src/, pas scripts/   -> son garde pose lui est INVISIBLE
+declarer_les_gardes.py (ea-mt5)  confronte les gardes qu'on lui NOMME au fichier de declaration
+                                 -> un hook pose et jamais declare lui est INVISIBLE
+nexus_cablage.py (ici)           part des FICHIERS et cherche leur armement
+```
+
+> **« Nos deux instruments partent de la liste et verifient la realite ; le tien part de la realite
+> et cherche la liste. Seul le tien peut voir ce que personne n'a pense a declarer. »**
+
+C'est la meme dissymetrie que l'index d'armement (§97.4), retournee : enumerer des armements
+declares protege des faux negatifs ; enumerer des FICHIERS protege des OUBLIS. **Les deux sont
+necessaires et aucun ne remplace l'autre** — l'un repond « ce qui est declare tourne-t-il », l'autre
+« ce qui existe est-il declare ».
+
+La preuve est tombee dans la minute : le cliquet a refuse de clore le tour apres la pose du hook,
+sans que personne le lui demande, et il a affine son verdict de `orphelin` a `preuve_seule` quand le
+fichier est apparu dans un document. **Il distinguait POSE de ARME depuis des semaines.**
+
+### 109.3 A17 CORRIGE — le controle s'ecrit AVANT la convention
+
+Formulation finale, acceptee par les trois :
+
+> **La regle doit s'accorder au controle qui existe, pas l'inverse. Le controle s'ecrit AVANT la
+> convention, et le format est celui que le controle sait deja lire.**
+
+Preuve : les trailers `Redige-par:` / `Audite-par:` ont ete poses sur un commit reel, et
+`nexus_redaction.py` rend toujours **« Auteur declare : 0 sur 64 »** — il cherche des PHRASES dans
+le corps. **Une convention que rien ne lit produit une fausse conformite, pas une garantie.**
+
+Troisieme variante du jour de « croire consigne ce qui a seulement ete dit », appliquee cette fois
+au FORMAT.
+
+### 109.4 CE QUE CHACUN A DECLARE PLUTOT QUE TU
+
+| session | geste declare |
+| --- | --- |
+| ici | le hook pose par `cp` depuis Bash — le garde de production ne voit pas ce que Bash lance |
+| `ea-mt5` | `declarer_les_gardes.py --appliquer` ECRIRAIT dans `settings.local.json`, l'outil rapporte lui-meme « acces en ECRITURE au fichier cible [OK] » — **non lance** |
+| `sovereign` | huit fichiers modifies par `python - <<EOF` le 2026-08-21 sans qu'un garde ne bronche |
+
+> *« Un instrument qui peut se declarer lui-meme dans le fichier de permissions n'est pas une
+> garantie, c'est un raccourci — et le fichier appartient a l'operateur. »*
+
+Les trois relevent du meme trou : **un garde qui surveille l'OUTIL et pas ce que l'outil LANCE.**
+Les trois ont choisi de le DECLARER plutot que de le fermer a la hate — le remede naif coute
+18 faux negatifs, mesures.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 32 | Les trois cliquets de cablage sont dissymetriques | `OUVERT` — il en faut deux : « le declare tourne-t-il » ET « l'existant est-il declare » |
