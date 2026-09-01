@@ -6083,6 +6083,19 @@ une variable, se ferme, et la boucle porte sur cette variable.
 > aussi**. Un correctif qui deplace de l'indentation touche du code qu'il ne
 > voit pas.
 
+**Et la conformite l'a bloque une derniere fois** : le script s'executait
+**a l'import**, et depuis l'ajout du mode d'emploi il sortait meme en code 2.
+Le controle « import des scripts » importe chaque script pour verifier
+qu'aucun n'a d'effet de bord — la publication etait refusee.
+
+C'est le **meme defaut corrige le matin meme** sur `epreuve_plafond_sortie.py`,
+non porte a son jumeau au moment de la promotion. **Onzieme occurrence du
+jour** de cette classe.
+
+Corps place dans une fonction rendant un code, sous la garde habituelle. Les
+quatre issues verifiees inchangees, et l'effet de bord a l'import **mesure** :
+chaine vide.
+
 ### 62.3 CE QUI EST EN VOL, par ordre d'importance
 
 1. **La recolte des 34 sujets** (§52) — huit entrees examinees. Le rythme
