@@ -7210,3 +7210,161 @@ distinction se fait sur la QUESTION que l'outil pose, pas sur son emplacement.
 | Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees |
 | `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
 | `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+
+---
+
+## 70. LE FAIL-OPEN, ET LA VOIE LA PLUS SIMPLE QUI N'EST PAS PROTEGEE
+
+Tour du 2026-09-01, 12h-13h. Trois sujets, tous nes de l'usage par des tiers.
+
+### 70.1 UN OUTIL DE SURETE QUI DIT « ALLEZ-Y » QUAND IL N'A RIEN PU MESURER
+
+`nexus_charge`, pose au tour precedent, a ete essaye par `ea-mt5`. Un processus
+de la machine porte un octet `0xae` dans sa ligne de commande. L'outil levait,
+attrapait, imprimait « l'outil ne doit pas bloquer le travail » — et rendait
+**le code 0**, c'est-a-dire son propre verdict « machine au repos ».
+
+> **Une mesure impossible n'est PAS une mesure a zero ; un garde qui confond
+> « rien trouve » et « pas pu chercher » autorise precisement ce qu'il ne sait
+> pas voir.**
+
+Le moment de l'echec est le pire possible : il survient quand l'appelant
+SCRIPTE. « Si code 0, lancer le lot local » aurait lance sur une machine dont
+on ne sait rien, **sans jamais lire le message d'erreur**.
+
+Les deux remedes ensemble : decodage tolerant — un caractere illisible dans un
+nom de processus ne doit pas couter le diagnostic quand le PID et le CPU sont
+lisibles — et un **troisieme code de sortie 2**, distinct de 0 et de 1.
+
+```
+nominal                 code 1
+seuil non numerique     code 2   (et non 0)
+```
+
+### 70.2 LA VOIE LA PLUS SIMPLE EST LA VOIE NON PROTEGEE
+
+Decouverte par `sovereign`, et sa preuve est la plus forte possible : **il a
+contourne le verrou qu'il avait lui-meme EPROUVE quelques heures plus tot**,
+sans s'en apercevoir, en appelant la couche du dessous.
+
+| chemin | prend le verrou | frequence d'emploi |
+| --- | --- | --- |
+| `nexus_agent.py` | **oui** | le moins employe |
+| MCP, douze outils | non | **le plus naturel** |
+| `curl :11434` | non | scripts de mesure |
+
+Verifie ici : les six occurrences de « verrou » ou « banc » dans `server.js`
+sont des COMMENTAIRES ; `server.js:1546` appelle Ollama en direct.
+
+> Un mecanisme tient quand le contournement est plus PENIBLE que le respect.
+> Ici c'est l'inverse — et cela vaut plus encore pour A2A, ou un agent tiers
+> emploiera le MCP et jamais nos scripts.
+
+### 70.3 DEUX RESSOURCES, DEUX CYCLES DE VIE, UNE SEULE GEREE
+
+Nos deux sessions se sont evincees mutuellement 20 Go de poids pendant la
+fenetre de repos qu'`ea-mt5` avait payee en arretant un run de 136 minutes.
+
+> **Le verrou libere ce qu'il tient en sortant du contexte ; les POIDS non.**
+
+`OLLAMA_KEEP_ALIVE` vaut 15 minutes : sans dechargement EXPLICITE, les poids
+tiennent le GPU un quart d'heure apres la fin du travail.
+
+```
+curl -X POST localhost:11434/api/generate -d '{"model":"<alias>","keep_alive":0,"prompt":""}'
+```
+
+**Et j'ai commis l'erreur exacte que le voisin m'avait decrite une heure plus
+tot** : annoncer « GPU rendu » apres avoir vu ma commande interrompue, sans
+verifier `/api/ps`. J'avais lu sa mise en garde et l'avais approuvee.
+
+> **La connaissance de la regle ne protege pas de son application.** Deux fois
+> le meme motif en une heure, sur deux sessions differentes — lui contournant
+> un verrou qu'il avait eprouve, moi repetant une erreur qu'on venait de
+> m'expliquer. Ce n'est pas de la negligence, c'est une propriete du
+> dispositif.
+
+Protocole de mesure locale, adopte par les deux sessions :
+
+```
+1. /api/ps AUCUN resident      <- pas seulement « aucun processus »
+2. nexus_charge code 0
+3. trois tirages consecutifs
+4. DECHARGER explicitement     <- oublie par les deux
+5. annoncer
+```
+
+### 70.4 LA RE-MESURE N'A PAS TRANCHE, ET C'EST LE RESULTAT
+
+| | sous charge | au repos |
+| --- | --- | --- |
+| cloud | 3 s | 13, 7, 8, 10 s |
+| local a froid | 195 s | 175 s |
+| local a chaud | 159 s | **187 s** |
+
+**Le local a chaud est plus lent AU REPOS que sous charge** — physiquement
+impossible. La variance domine l'effet cherche ; un tirage par condition ne
+peut pas trancher, et le facteur local/cloud reste **inconnu**.
+
+Ce qui tient et ne depend d'aucune duree : le rendu est identique au caractere
+pres entre les deux plans.
+
+### 70.5 CE QUE LES VOISINS ONT APPORTE SUR LE CODE PREMIUM
+
+Deux depots, deux gabarits, et **aucun des deux n'a de controle automatique** —
+les deux le disent franchement.
+
+| source | ce qu'ils ont | ce qui manque |
+| --- | --- | --- |
+| `ea-mt5` | `CODE_PREMIUM_TEMPLATE.md`, gabarit de MANDAT colle dans les consignes | aucun hook ne verifie |
+| `sovereign` | `CODE_PREMIUM_STANDARD.md`, 22 clauses etiquetees MECANIQUE / PARTIELLE / DISCIPLINE | aucun garde sur l'en-tete d'un fichier |
+
+**La regle la plus utile recue, de `ea-mt5`** — la PROVENANCE : tout chiffre
+metier doit tracer son origine sous l'un de deux types seulement, citation
+exacte de la source OU disclosure explicite d'un jugement de conception. *Un
+chiffre nu est interdit.* Applique ici, cela viserait `PLAFOND_FILS`,
+`allowed_fails`, `cooldown_time`, `NEXUS_CHARGE_SEUIL_MIN`.
+
+**La reserve la plus utile, de `sovereign`** : un gabarit impose produit des
+rubriques remplies pour etre remplies. « CE QU'IL NE PRETEND PAS : rien » est
+pire qu'une absence, parce qu'il declare qu'on a reflechi. **Le controle doit
+porter sur la PRESENCE, jamais sur le CONTENU.**
+
+D'ou le CLIQUET plutot qu'un controle binaire : dette mesuree a **60 fichiers
+non conformes sur 90**, et refus de la voir CROITRE. Contre-epreuve faite.
+
+**Les trois epreuves, re-expliquees par `ea-mt5` avec quatre preuves du jour** :
+test prouve que le chemin autorise passe ; reverse-test que le chemin interdit
+est BLOQUE, en assertant sur le refus lui-meme ; forward-test confronte le
+VERDICT au monde par un chemin INDEPENDANT.
+
+> Les deux premieres valident l'INSTRUMENT. Seule la troisieme valide le
+> RESULTAT — elles interrogent le filtre, jamais l'enonce, et **une erreur de
+> seuil, de fenetre ou de perimetre passe les deux premieres sans les faire
+> rougir.**
+
+Quatre defauts P0 chez lui ce jour, **aucun detectable par test ou
+reverse-test** : une garde presente mais jamais atteinte (3 279 trades a cout
+nul), un diagnostic juste au mecanisme et nul en effet, une figure a +0,705 R
+dont le stop etait inatteignable, et notre fail-open.
+
+Illustration ici meme : ma premiere mesure de la bufferisation ne prouvait
+rien — je chronometrais le lanceur, dont la premiere ligne n'arrive qu'apres
+l'appel modele. Il a fallu une sonde independante — imprimer puis dormir —
+pour obtenir 3,0 s contre 0,0 s. C'etait un forward-test.
+
+### 70.6 SUJETS OUVERTS — remplace §69.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Le MCP ne prend pas le verrou** — douze outils, `server.js:1546` | §70.2 | le plus urgent pour A2A ; `server.js:135` non instruit |
+| Decharger les poids en sortant du VERROU, pas de la tache | §70.3 | le cout d'un rechargement est mesure par le voisin ; un dechargement prend ~25 s, donc recouvrement possible |
+| Un champ de verdict unique `etat: complet / tronque_budget / tronque_bavard` | demande `sovereign` | evite a chaque appelant de croiser quatre champs |
+| La reprise de plafond existe dans le lanceur, PAS dans le MCP | demande `ea-mt5` | 1400 jetons consommes, zero caractere rendu |
+| La cle de contenu est-elle stable entre lanceur et MCP ? | demande `sovereign` | `texte` dans le lanceur ; MCP non verifie |
+| Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
+| Une matrice de routage par CLASSE DE TACHE, mesuree | §66.1 | deux mesures faites sur 71 modeles |
+| Une cle `fichiers_communs` au niveau du lot | demande `ea-mt5` | quatre lectures du meme contenu |
+| Un outil qui produit un effet de bord qu'il mesure ensuite | classe `sovereign` | leur `gate.sh` se sabordait ; a verifier ici |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
+| `FENETRE_CARACTERES` reste un litteral | §66.4 | derniere borne materielle gravee |
