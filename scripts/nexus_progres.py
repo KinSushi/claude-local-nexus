@@ -36,9 +36,9 @@ def main():
     # UN : Entete
     now = datetime.datetime.now().isoformat()
     script_name = os.path.basename(__file__)
-    lines.append(f"# PROGRESS.MD")
+    lines.append("# PROGRESS.MD")
     lines.append(f"*GENERE AUTOMATIQUEMENT le {now} par {script_name}*")
-    lines.append(f"*AVERTISSEMENT : Toute edition manuelle sera ecrasee.*\n")
+    lines.append("*AVERTISSEMENT : Toute edition manuelle sera ecrasee.*\n")
 
     # DEUX : Etat du depot
     lines.append("## ETAT DU DEPOT")
@@ -101,11 +101,10 @@ def main():
                     if sections[i].startswith('#'):
                         last_title = sections[i].strip('# ').strip()
                         # Si le titre contient "ouvert", on compte les lignes de tableau dans la section suivante
-                        if "ouvert" in sections[i].lower():
-                            if i + 1 < len(sections):
-                                body = sections[i+1]
-                                # Lignes de tableau commencent souvent par |
-                                open_count += len([l for l in body.splitlines() if l.strip().startswith('|') and '---' not in l])
+                        if "ouvert" in sections[i].lower() and i + 1 < len(sections):
+                            body = sections[i+1]
+                            # Lignes de tableau commencent souvent par |
+                            open_count += len([l for l in body.splitlines() if l.strip().startswith('|') and '---' not in l])
                 
                 lines.append(f"- Sujets ouverts : {open_count}")
                 lines.append(f"- Dernier etat : {last_title}")
