@@ -5913,6 +5913,12 @@ et verifie trois marques.
 preexistant passe toujours. Validateur corrige, code 0. Cable sous
 `nexus_test.py --only rassurant`.
 
+**Rejouee apres le refactor exige par le cliquet d'outillage** — retrait d'une
+variable inutilisee dans le corps meme de l'epreuve : 2 cas en echec sur le
+code d'avant, 0 sur le code corrige. Une preuve validee avant un refactor ne
+prouve rien sur le code d'apres, et c'est la deuxieme fois du jour que ce
+geste s'impose.
+
 ### 60.4 Une alerte levee a tort, puis corrigee en une minute
 
 Le premier jet de l'epreuve imprimait :
