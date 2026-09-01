@@ -977,11 +977,12 @@ def executer(tache: dict, cle: str) -> dict:
         if texte_vide:
             if resultat.get("tronque"):
                 # Le modèle a consommé tout son budget sans produire de texte.
-                # On consigne l'échec et on continue avec le candidat suivant.
+                # On consigne l'échec et on sort de la boucle pour reprendre le plafond immédiatement.
                 trunc_failure = resultat
                 echecs.append("%s : reponse vide tronquee (demande %d jetons)" %
                               (candidat, plafond))
-                continue
+                print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien")
+                break
             else:
                 echecs.append("%s : reponse vide (%d jetons consommes)"
                               % (candidat, resultat.get("tokens", 0)))

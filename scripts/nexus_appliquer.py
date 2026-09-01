@@ -39,7 +39,7 @@ def main():
 
     # Extraction de tous les blocs AVANT/APRES/FIN
     pattern = re.compile(
-        r'^<<<AVANT>>>$(.*?)^<<<APRES>>>$(.*?)^<<<FIN>>>$',
+        r'^<<<AVANT>>>[ \t]*\r?$(.*?)^<<<APRES>>>[ \t]*\r?$(.*?)^<<<FIN>>>[ \t]*\r?$',
         re.MULTILINE | re.DOTALL
     )
     blocs = []
