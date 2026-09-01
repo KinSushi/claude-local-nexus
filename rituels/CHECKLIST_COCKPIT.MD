@@ -6096,22 +6096,22 @@ Corps place dans une fonction rendant un code, sous la garde habituelle. Les
 quatre issues verifiees inchangees, et l'effet de bord a l'import **mesure** :
 chaine vide.
 
-### 62.3 CE QUI EST EN VOL, par ordre d'importance
+### 62.3 SUJETS OUVERTS A LA REPRISE — par ordre d'importance
 
-1. **La recolte des 34 sujets** (§52) — huit entrees examinees. Le rythme
-   mesure : *une entree sur trois designe un defaut reel a l'endroit qu'elle
-   nomme.* Les autres sont perimees ou mal ciblees, et **trois des quatre
-   perimees ont tout de meme mene a un defaut reel a cote**.
-2. **La classe que le P0 vient de nommer** (§61) — *une protection qui depend
-   d'une option de l'appelant n'est pas une protection.* Chercher les autres :
-   quels gardes de ce depot sont conditionnes a un drapeau plutot que
-   structurels ?
-3. **Une decision qui appartient a l'operateur** (§59.3) — **13 des 18
-   modeles du pool** y sont entres sans confirmation. Le champ `stable` existe
-   pour la rendre lisible ; `eligible_au_pool` ne le lit pas. Le chiffre est
-   pose, la politique ne l'est pas.
-4. **39 commits de code sur 79 sans auteur declare** (§57.2) — mesure, jamais
-   juge.
+Mis en TABLEAU deliberement : `nexus_reprise.py` n'extrait que les lignes de
+tableau situees sous un titre portant le mot « ouvert ». Une liste numerotee
+sous un autre titre serait invisible au demarrage — c'est-a-dire au moment
+precis ou elle sert.
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Poursuivre la recolte des 34 sujets — 8 examinees sur 34 | §52 | une entree sur trois designe un defaut reel a l'endroit qu'elle nomme |
+| Chercher les protections conditionnees a un drapeau plutot que structurelles | §61 | classe nommee par le P0, jamais cherchee ailleurs |
+| 13 des 18 modeles du pool promus sans confirmation | §59.3 | chiffre pose, DECISION A L'OPERATEUR |
+| 39 commits de code sur 79 sans auteur declare | §57.2 | mesure, jamais juge |
+| Le goulot du MAP-REDUCE, que l'essai alterne laisse ouvert | §49.2 | 3 fils et 16 fils rendent la meme mediane |
+| `num_ctx: 8192` sur 30 modeles locaux, pour des fichiers de 15 a 40 Ko | §49.3 | non mesure |
+| `max_concurrent_requests` absente de la configuration | §49.5 | piste, non instruite |
 
 ### 62.4 Les six controles neufs de la session, tous cables et prouves
 

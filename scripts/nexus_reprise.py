@@ -202,7 +202,7 @@ def bloc_sujets() -> None:
     except OSError as exc:
         print("  [!] cockpit illisible : %s" % str(exc)[:60])
         return
-    dedans, montres, corps = False, 0, False
+    dedans, montres, corps, non_affiches = False, 0, False, 0
     for ligne in lignes:
         if ligne.startswith("### "):
             # « jamais » seul captait « CE DONT JE DISPOSE — inventaire mesure le
@@ -248,8 +248,12 @@ def bloc_sujets() -> None:
             if cellule and montres < 18:
                 print("     - %s" % cellule[:96])
                 montres += 1
+            elif cellule:
+                non_affiches += 1
     if not montres:
         print("  Aucun sujet ouvert lisible — verifier le cockpit a la main.")
+    elif non_affiches > 0:
+        print("  %d sujet(s) non affiché(s) — voir rituels/CHECKLIST_COCKPIT.MD" % non_affiches)
     print("")
     print("  Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est")
     print("  enfreinte. Un paragraphe ne ferme rien (contrat 0.2.1).")
