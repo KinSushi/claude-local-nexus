@@ -414,12 +414,17 @@ def main() -> int:
                 regressions.append((nom, cible))
 
     if not regressions:
+        # Un progres constate et non retenu laisse repasser le retour en arriere en silence.
+        # Le resserrement est ce qui distingue un cliquet d'un simple rapport.
         gagnes = (len(connus.get("orphelin") or []) - len(categories["orphelin"])
                   + len(connus.get("preuve_seule") or [])
                   - len(categories["preuve_seule"]))
         print("Cablage : aucune regression.%s"
               % ("" if gagnes <= 0 else " %d script(s) mieux cable(s) qu'avant."
                  % gagnes))
+        if gagnes > 0:
+            ecrire_reference(categories)
+            print("Reference a ete resserree automatiquement.")
         return 0
 
     # NOMMEMENT, jamais un compte : « 3 regressions » n'apprend rien a qui
