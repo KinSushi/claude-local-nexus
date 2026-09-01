@@ -94,10 +94,13 @@ def main():
     #
     # Un heredoc n'existe pas en PowerShell ; appliquer le CAS A la-bas
     # refuserait une chaine qui n'a rien de dangereux.
-    HEREDOC = "python - <<'ZZ'\nimport re\nprint(re.sub(r'\\\\d', '', 'a1'))\nZZ\n"
-    verifier("bash : heredoc a antislash refuse", soumettre("Bash", HEREDOC),
-             "le shell consomme l'antislash avant Python")
-    verifier("powershell : le CAS A ne deborde pas", not soumettre("PowerShell", HEREDOC),
+    HEREDOC_QUOTE = "python - <<'ZZ'\nimport re\nprint(re.sub(r'\\\\d', '', 'a1'))\nZZ\n"
+    verifier("bash : heredoc a antislash passe", not soumettre("Bash", HEREDOC_QUOTE),
+             "le quoting protège le corps du heredoc")
+    HEREDOC_NU = "python - <<ZZ\nimport re\nprint(re.sub(r'\\\\d', '', 'a1'))\nZZ\n"
+    verifier("bash : heredoc a antislash refuse", soumettre("Bash", HEREDOC_NU),
+             "sans quoting le shell traite les échappements")
+    verifier("powershell : le CAS A ne deborde pas", not soumettre("PowerShell", HEREDOC_NU),
              "un heredoc n'existe pas en PowerShell")
 
     # --- Le travail PowerShell ordinaire passe ---------------------------- #

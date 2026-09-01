@@ -364,12 +364,27 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     latence de Redis, pas celle du modele, et ferait croire a un travail
     accompli qui ne l'a pas ete.
     """
+    # Determination du plan pour adapter les tokens (Ollama ignore max_tokens si present).
+    # Mesure : max_tokens=12 rend 523 jetons, num_predict=12 en rend 12.
+    plan = "inconnu"
+    if not hasattr(appeler, "_cache_plans"):
+        try:
+            appeler._cache_plans = plans_par_alias(cle)
+        except Exception:
+            appeler._cache_plans = {}
+    plan = appeler._cache_plans.get(modele, "inconnu")
+
     corps_requete = {
         "model": modele,
         "messages": messages,
-        "max_tokens": max_tokens,
         "cache": {"no-cache": True},
     }
+    # Inconnu retombe sur max_tokens parce qu'Anthropic l'exige et qu'Ollama se contente de l'ignorer.
+    # Utilise num_predict uniquement lorsque le plan est connu et vaut 'local' ou 'cloud'.
+    if plan in ("local", "cloud"):
+        corps_requete["num_predict"] = max_tokens
+    else:
+        corps_requete["max_tokens"] = max_tokens
     if temperature is not None:
         corps_requete["temperature"] = temperature
     charge = json.dumps(corps_requete).encode("utf-8")
@@ -902,6 +917,11 @@ def executer(tache: dict, cle: str) -> dict:
         if candidat != modele:
             resultat["bascule"] = "%s -> %s apres : %s" % (
                 modele, candidat, " | ".join(echecs))
+            resultat["demande_initiale"] = modele
+            motif = next((e for e in echecs if e.startswith(modele + " :")), "")
+            if not motif and echecs:
+                motif = echecs[-1]
+            resultat["motif_bascule"] = motif
         return resultat
 
     # Aucun candidat n'a produit de texte.

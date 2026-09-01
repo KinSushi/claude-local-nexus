@@ -4620,3 +4620,191 @@ diagnostic « le harnais est sain, c'est le budget qui est trop court » est
 juste, et la conclusion utile est en amont : *choisir le modele selon la
 tache, explicitement.*
 
+---
+
+## 46. LA BRIDE LEVEE — et trois diagnostics faux avant le bon
+
+L'operateur : « leve la bride, les instances voisines sont en debit reduit et
+l'on a acces a plus de 80 IA connectees, c'est un comble ». La bride etait
+reelle et elle etait **de nous**.
+
+### 46.1 Ou elle etait, et pourquoi son motif ne valait qu'a moitie
+
+```python
+largeur = max(1, min(args.parallele, 8, len(taches)))
+```
+
+Le commentaire justifiait le plafond de 8 par la RAM : « plusieurs gros
+modeles charges en meme temps sur une machine qui n'a qu'une reserve de RAM ».
+
+**Ce motif ne vaut que pour le plan LOCAL.** Un modele `-cloud` tourne chez
+ollama.com et ne consomme aucune RAM ici. Le plafond avait ete etendu au plan
+ou son motif n'existe pas — encore le motif *« une lecon appliquee d'un cote
+et pas a son jumeau »*.
+
+### 46.2 La rampe, qui autorise l'ouverture
+
+Appels de seize jetons, paliers separes de cinq secondes :
+
+| connexions | OK | bascules | refus | p95 |
+| --- | --- | --- | --- | --- |
+| 4 | 4 | 0 | 0 | 6,3 s |
+| 8 | 8 | 0 | 0 | 6,4 s |
+| 12 | 12 | 0 | 0 | 4,6 s |
+| 16 | 16 | 0 | 0 | 2,3 s |
+| **20** | **20** | **0** | **0** | **2,6 s** |
+
+Vingt connexions simultanees, zero refus, et **la latence qui baisse**. Le
+plafond de 8 ne tient pas cote cloud. Il demeure cote local, ou la contrainte
+est physique et non politique.
+
+### 46.3 TROIS DIAGNOSTICS FAUX AVANT LE BON — et c'est le sujet
+
+Durant le meme tour, dix-neuf taches lancees sur dix-neuf alias cloud
+distincts : sept ont bascule vers un autre modele. J'ai avance trois causes,
+et **les deux premieres sont refutees par la mesure suivante** :
+
+| j'ai dit | ce qui l'a refute |
+| --- | --- |
+| « aucun echec cloud » (sur le lot 1 seul) | le lot 2 : sept bascules |
+| « la contrainte est le nombre de connexions » | la rampe : 20 simultanees, zero refus |
+| « nos propres delais expirent » | `DELAI` vaut **900 s** ; la plus longue a mis 525 s |
+
+### 46.3.1 J'ai accuse l'instrument, et c'etait encore moi
+
+J'ai ecrit ici, une heure durant, que « l'instrument a detruit la preuve ».
+**Faux.** Le champ `bascule` la portait depuis le debut :
+
+```
+glm-5.3-cloud -> gpt-oss-120b-cloud apres : glm-5.3-cloud : timed out
+kimi-k2.7-code-cloud -> gpt-oss-120b-cloud apres : ... : timed out
+gpt-oss-20b-cloud -> gpt-oss-120b-cloud apres : ... : timed out
+```
+
+**Huit bascules, huit `timed out`.** Mon lecteur interrogeait un champ `refus`
+qui n'existe pas, et concluait « aucun detail consigne ». Quatrieme fois du
+jour qu'un artefact de MA mesure passe pour un defaut du code.
+
+Donc mon DEUXIEME diagnostic — « nos propres delais expirent » — etait le bon,
+et je l'avais refute a tort en citant `DELAI = 900`, qui n'est pas le delai
+qui a mordu. Celui-ci est `request_timeout: 180`, cote passerelle.
+
+### 46.3.2 Le defaut REEL de l'instrument, lui, existe : `duree` sous-declare
+
+Ce qui rendait la chronologie incomprehensible — `switch` bascule « en 14,4 s »
+alors que le delai est de 180 s — tient a ceci, verifie a la ligne 390 :
+
+```python
+duree = time.time() - depart      # duree de CET appel-ci
+```
+
+Sur une bascule, le resultat rendu est celui du candidat qui a **reussi**, et
+il ne porte que **sa** duree. Les 180 s brulees par le candidat qui a expire
+ne sont additionnees nulle part.
+
+> *Une duree qui n'additionne pas les tentatives ecartees ne mesure pas le
+> cout : elle mesure la fin de l'histoire.*
+
+C'est ce defaut-la qu'il faut corriger, et non celui que j'avais invente.
+Les champs `demande_initiale` et `motif_bascule` sont ajoutes quand meme : la
+raison etait lisible, mais dans une chaine a decouper plutot que dans un champ.
+
+### 46.3.3 Ce qui explique alors les huit bascules
+
+Coherent avec toutes les mesures du jour, et rien n'y contredit :
+
+| fait | mesure |
+| --- | --- |
+| 20 connexions LEGERES simultanees | 0 refus, p95 2,6 s |
+| 9 alias dits morts, appeles seuls | 9 vivants, 2,8 a 6,0 s |
+| 8 taches LOURDES sous ~16 simultanees | 8 `timed out` a 180 s |
+
+Ce n'est donc ni le quota, ni le nombre de connexions, ni la nature des
+alias : c'est la **duree de generation sous charge**, contre un
+`request_timeout` de 180 s. Un appel de seize jetons ne l'atteint jamais ;
+un appel qui lit un fichier de 30 Ko et redige un correctif l'atteint.
+
+Ce qui suit de la, pour ouvrir vraiment les vannes : la largeur ne doit pas
+se choisir par plan seul, mais par POIDS de la tache. Vingt taches legeres
+passent ; huit taches lourdes ne passent pas.
+
+### 46.4 Ce que la mesure a aussi rendu
+
+Neuf alias cloud dits « morts » dans le lot, appeles **seuls** :
+
+```
+deepseek-v4-flash-0731-cloud   VIVANT  2.8s
+nemotron-3-super-cloud         VIVANT  5.3s
+glm-5.3-flash-cloud            VIVANT  3.8s
+minimax-m2.7-cloud             VIVANT  3.4s
+kimi-k2.6-cloud                VIVANT  6.0s
+glm-5.1-cloud                  VIVANT  6.0s
+gpt-oss-20b-cloud              VIVANT  3.1s
+nemotron-3-nano-30b-cloud      VIVANT  3.2s
+minimax-m3-cloud               VIVANT  3.4s
+```
+
+**9 sur 9.** Aucun n'est mort. Les dix-neuf alias cloud existent bel et bien.
+
+---
+
+## 47. `max_tokens` EST INERTE — et l'envoyer DETRUIT la borne qui marchait
+
+§45.1.1 laissait ouvert : « le plafond de sortie n'est pas applique ». La
+cause est etablie, et elle n'est pas celle que j'avais ecrite.
+
+**Ce n'est pas une preseance, c'est un ECART DE NOM.** Mesure sur
+`gpt-oss-120b-cloud`, meme question, meme temperature :
+
+| corps envoye | jetons rendus | `finish_reason` |
+| --- | --- | --- |
+| `max_tokens: 12` | **523** | `stop` — ignore |
+| `num_predict: 12` | **12** | `length` — **honore exactement** |
+| **les deux a 12** | **523** | `stop` — max_tokens gagne, et il est inerte |
+
+La troisieme ligne est la plus dure : **envoyer `max_tokens` a cote de
+`num_predict` annule la borne qui fonctionnait.**
+
+Le generateur epingle `num_predict: 4096` (local) et `8192` (cloud) dans les
+`litellm_params`. Il porte, sur la *temperature*, un commentaire explicite :
+« declaree et non imposee : un parametre envoye dans la requete l'emporte ».
+Ce raisonnement n'a jamais ete reproduit pour `num_predict` — et il ne pouvait
+pas l'etre, puisque l'appelant n'envoie pas ce nom-la.
+
+**Consequence sur l'outil que j'emploie a chaque delegation** : le drapeau
+`--max-tokens` de `nexus_agent.py` est **inerte** sur tout modele Ollama,
+local comme cloud, depuis toujours. Une tache demandee a 2 400 jetons en a
+rendu 10 126. Et `nexus_summarize`, `nexus_context`, `nexus_batch` ainsi que
+la MAP-REDUCE de §110 bornent leur sortie par ce meme parametre.
+
+Le remede ne coute rien et il est en cours : envoyer `num_predict` pour les
+modeles servis par Ollama, `max_tokens` pour les autres.
+
+---
+
+## 48. LES 138 REPLIS LOCAUX — mesure voisine, confirmee, et mon compteur etait aveugle
+
+L'instance voisine annonce sur NOTRE configuration : 2 chaines
+`cloud -> cloud` la ou son brief en portait 37, et **138 chaines
+`local -> local` visant toutes un poids DIFFERENT**, donc payant chacune une
+eviction-rechargement.
+
+**Ma premiere remesure a rendu 72 et j'ai failli les contredire.** Mon
+compteur ne lisait que `router_settings.fallbacks` : la cle
+`context_window_fallbacks`, au premier niveau du document, lui echappait —
+**68 paires**. En l'incluant :
+
+```
+local -> local total      : 138
+  vers poids DIFFERENT    : 138
+  vers le MEME poids      :   0
+```
+
+**Leur mesure est confirmee au chiffre pres.** Soupconner son propre
+instrument avant l'annonce d'autrui n'est pas une politesse : c'est ce qui a
+evite de leur renvoyer un dementi faux.
+
+Reste OUVERT : ces 138 replis descendent une echelle de tailles, et chaque
+saut paie un chargement. Rien ne prefere aujourd'hui un modele deja resident.
+Les pieces existent — `/api/ps` se lit — mais rien ne les emploie.
+

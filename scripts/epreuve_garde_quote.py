@@ -14,7 +14,6 @@ La troisieme est la seule qui prouve que le controle detecte quelque chose :
 un depot sain et un motif casse rendent exactement le meme silence.
 """
 import importlib.util
-import io
 import os
 import sys
 
@@ -23,8 +22,18 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def charger(chemin, nom):
     spec = importlib.util.spec_from_file_location(nom, chemin)
+    if spec is None:
+        print("impossible de charger %s : spec non creee pour %s" % (nom, chemin))
+        sys.exit(1)
+    if spec.loader is None:
+        print("impossible de charger %s : aucun loader pour %s (extension .py manquante ?)" % (nom, chemin))
+        sys.exit(1)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception as e:
+        print("impossible de charger %s depuis %s : %s" % (nom, chemin, e))
+        sys.exit(1)
     return mod
 
 
