@@ -5686,3 +5686,71 @@ corrige, code 0. Cable sous `nexus_test.py --only verdicts`.
   deux passent. *La taille de l'ancre est un parametre de surete, pas de
   confort.*
 
+---
+
+## 58. LE CLIQUET CONSTATAIT LE PROGRES ET NE LE RETENAIT JAMAIS
+
+Troisieme entree de la recolte traitee, juste elle aussi.
+
+### 58.1 Le defaut, dit par le code lui-meme
+
+`nexus_cablage.py` calculait la variable `gagnes`, l'imprimait sous la forme
+*« N script(s) mieux cable(s) qu'avant »*... **puis rendait zero sans toucher
+a la reference**. `ecrire_reference` n'etait appelee qu'a la main, sous
+`--rebaseline`.
+
+Consequence : un retour en arriere jusqu'au niveau precedent repassait **en
+silence**, la reference portant encore l'ancien etat, plus permissif.
+
+> Un cliquet qui ne se resserre jamais n'est pas un cliquet, c'est un rapport.
+
+### 58.2 Ce que le resserrement a revele des la premiere execution
+
+| categorie | avant | apres | sortis |
+| --- | --- | --- | --- |
+| `orphelin` | 1 | **0** | `nexus_test_outillage.py` |
+| `preuve_seule` | 6 | **3** | `Install-NexusCommande.ps1`, `nexus_ruche.py`, `nexus_worktree.py` |
+
+**Quatre progres reels** que le cliquet oubliait a chaque execution — dont
+*« `nexus_test_outillage.py` orphelin »*, inscrit au cockpit depuis des jours
+et **en realite deja cable**. Le sujet etait clos sans que rien ne le dise.
+
+### 58.3 La contre-epreuve, de bout en bout
+
+Une epreuve decablee de `nexus_test.py` :
+
+```
+Cablage : 1 REGRESSION(S).
+  preuve_seule   scripts/epreuve_verdicts_rituel.py       code 1
+```
+
+Recablee, code 0. **Avant ce correctif, cette meme regression serait
+passee** : la reference d'origine tolerait encore ce script comme non cable.
+
+### 58.4 POURQUOI CE DEFAUT A SURVECU SI LONGTEMPS
+
+Parce qu'il ne se voit **que dans le sens du progres**. Un depot qui se
+degrade declenche le cliquet et se fait remarquer ; un depot qui s'ameliore
+ne declenche rien, et l'amelioration se perd sans bruit.
+
+> *Le silence du cas favorable est ce qui protege ce defaut.* C'est la meme
+> raison qui rend une contre-epreuve obligatoire : un depot sain et un
+> mecanisme casse rendent le meme silence.
+
+Le cliquet des fonctions orphelines, ecrit le meme jour, avait le
+resserrement **des sa premiere version** — il est passe de 1 a 0 tout seul.
+La lecon existait donc deja dans le depot, appliquee au neuf et pas a
+l'ancien : **dixieme occurrence du motif du jour.**
+
+### 58.5 Etat de la recolte des 34
+
+| entree | verdict |
+| --- | --- |
+| #6, #19, #32 | **perimees** — fermees par les mesures du jour (§52.1) |
+| #10 `nexus_compare` | **fausse**, mais elle designait un defaut reel a cote (§56) |
+| `redaction_declaree` | **juste** — corrigee et eprouvee (§57) |
+| cliquet qui ne se resserre pas | **juste** — corrigee et eprouvee (§58) |
+
+Six entrees examinees : trois perimees, une mal ciblee, deux justes. La
+recolte reste un signal utile, jamais un constat.
+
