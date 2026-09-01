@@ -1597,6 +1597,56 @@ async function modelesResidents() {
   });
 }
 
+// fonction qui récupère la taille (en octets) de chaque modèle
+async function poidsDesModeles() {
+  return new Promise((resolve) => {
+    const url = new URL('/api/tags', OLLAMA_URL);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'GET',
+      timeout: 5000,
+    };
+
+    const req = http.request(options, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString('utf8');
+          const data = JSON.parse(body);
+          const map = new Map();
+          if (Array.isArray(data.models)) {
+            data.models.forEach((m) => {
+              if (m && typeof m.name === 'string' && typeof m.size === 'number') {
+                map.set(m.name, m.size);
+              }
+            });
+          }
+          resolve(map);
+        } catch (err) {
+          console.error('Erreur de parsing de la réponse Ollama tags :', err.message);
+          resolve(new Map());
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('Echec de la requête Ollama tags :', err.message);
+      resolve(new Map());
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      console.error('Timeout (5 s) lors de l\'appel à Ollama /api/tags');
+      resolve(new Map());
+    });
+
+    req.end();
+  });
+}
+
 
 async function exposedModels() {
   if (cachedExposed && cachedExposed.size && Date.now() < cacheExpire) {

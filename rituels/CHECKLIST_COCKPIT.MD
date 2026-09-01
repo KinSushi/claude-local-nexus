@@ -9381,3 +9381,122 @@ ne peut savoir a quelle question une mesure repond.
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 85. TROIS CORRECTIONS DE MOI EN UN TOUR — et la dixieme classe frappe son auteur
+
+### 85.1 « LA RECUPERATION EST PETITE » ETAIT FAUX, ET LA FAUTE EST NOMMEE
+
+Le §84.2 concluait : *« il ne s'agit pas de restaurer 33 Gio ni 96 277 fichiers,
+mais quelques dizaines de fichiers »*. **L'operateur a repris cette phrase, et
+il a raison.**
+
+L'inventaire venait des deux sessions, **et chacune ne connait que son propre
+depot**. Les deux arbres cumules font quelques dizaines de gigaoctets ; le
+volume en portait **3,5 To**. Plus de trois teraoctets dont **aucun agent ne
+sait rien.**
+
+> **C'est la dixieme classe, commise dans le tour meme ou je l'inscrivais** :
+> posseder une mesure — « ce que les deux depots ont perdu » — et la ranger
+> sous la mauvaise question — « ce que le disque a perdu ». La mesure etait
+> juste ; la question ne l'etait pas.
+
+**Un inventaire construit en interrogeant des agents ne couvre jamais ce que
+l'operateur a mis lui-meme.** La limite est structurelle, pas accidentelle, et
+elle vaut pour tout inventaire produit de cette facon.
+
+### 85.2 LA CAPACITE, ET CE QU'ELLE IDENTIFIE
+
+```
+D:  capacite 5 To,  environ 3,5 To occupes
+G:  capacite 230 a 250 Go   (mesure : 230,9 Go, Kingston DataTraveler 3.0)
+```
+
+Parmi les quatre boitiers UAS connus de la machine, **un seul constructeur
+livre des portables de 5 To** : `VID_0BC2`, Seagate. `ROG ESD-S1C` et `SanDisk
+3.2 Gen 1` sont des supports flash qui ne montent pas a cette capacite.
+
+⇒ **`D:` est tres probablement le `Seagate Portable`, et c'est donc un disque
+MECANIQUE.** Deduction de capacite, a confirmer d'un regard — mais elle porte
+deux consequences reelles : la copie de 3,5 To se compte en heures, et un
+disque mecanique est plus fragile a un cycle d'arret-demarrage qu'un SSD.
+
+**Fait releve dans la documentation constructeur, et il compte pour la suite :**
+le pont USB-SATA est **dans le boitier**, et un boitier dont le controleur
+lache laisse tres souvent le disque intact — ce qui est coherent avec
+l'evenement `disk 11`, « erreur du CONTROLEUR ». Mais certains externes
+Seagate chiffrent en materiel sur ce meme controleur : **sortir le disque nu ne
+garantit pas d'y acceder.** Le demontage est donc un dernier recours, jamais
+une premiere idee.
+
+### 85.3 DEBRANCHER : LE RISQUE N'EST PAS CELUI QU'ON CROIT
+
+L'operateur refuse de debrancher *« au cas ou, cela aggraverait notre cas »*.
+La prudence est juste, la cible ne l'est pas.
+
+| risque redoute | verdict mesure |
+| --- | --- |
+| corruption de donnees | **nul** — `Ntfs 303` deux fois, demontage ACHEVE ; aucun objet peripherique, aucune partition, aucun volume ; **zero evenement depuis 11:36** |
+| risque mecanique d'un cycle arret-demarrage | **reel mais faible**, et il ne concerne que le materiel, pas les donnees |
+
+> Il n'y a rien en vol. Debrancher un peripherique que Windows n'enumere plus
+> n'a pas plus d'effet que de deplacer un cable qui ne porte rien.
+
+**Mais le debranchement n'est pas necessaire**, et c'est cela qui repond
+vraiment : deux gestes purement logiciels le precedent, tous deux reversibles
+et sans contact physique.
+
+### 85.4 UN SUPPORT DE 16 To EXISTE — l'image integrale redevient la bonne voie
+
+C'est le fait qui renverse le §85.1 dans l'autre sens.
+
+```
+source        D:   5 To de capacite, ~3,5 To occupes
+destination   disque externe de secours, 16 To
+```
+
+**La place existe pour les DEUX volumes.** La copie ciblee n'est donc plus un
+pis-aller impose par le manque de destination : **l'image bloc a bloc redevient
+la reponse**, et elle est superieure pour une raison precise.
+
+| | copie de fichiers | **image bloc a bloc** |
+| --- | --- | --- |
+| suppose un inventaire complet | **oui** — et il ne l'est pas | non |
+| survit a une coupure du lien | non : reprendre, c'est recommencer | **oui**, avec un fichier de correspondance |
+| recupere les fichiers effaces | non | oui |
+
+⚠️ **Deux conditions, et la premiere est absolue :**
+
+* **le disque de 16 To ne doit PAS etre sur le meme segment de dock.** Sinon
+  la source ET la destination passent par le lien qui a lache deux fois, et une
+  coupure emporte les deux cotes de la copie.
+* **l'outil doit savoir REPRENDRE.** Sur un lien qui se reinitialise, une copie
+  naive qui meurt a 40 % recommence a zero. `ddrescue` tient un fichier de
+  correspondance et **reprend ou il s'est arrete** — c'est le seul choix
+  raisonnable ici, et il se lance depuis une cle Linux amorcable, sans rien
+  installer sur l'hote.
+
+### 85.5 SUJETS OUVERTS — remplace §84.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **Trois teraoctets dont aucun agent ne sait rien** | §85.1 | l'inventaire est structurellement incomplet |
+| **Le disque de 16 To doit etre hors du dock defaillant** | §85.4 | condition absolue avant toute copie |
+| **`REPRISE_2026-09-01.md` n'est nulle part ailleurs** | §84.2 | ordres operateur verbatim + LOI 1 durcie |
+| **Les `SORTIE_*.txt` et leurs SHA-256** | §84.2 | preuve rejouable contre resultat rapporte |
+| `_QUARANTINE` de `sovereign`, 1 790 fichiers non suivis | §84.2 | sa seule reserve de recuperation |
+| **Le lien se degrade depuis six jours, sans temoin** | §83.2 | 101 erreurs le 29/08, deux reinitialisations |
+| **Suspension selective active sur 30 peripheriques** | §81.2 | gratuit et reversible ; **pas une cause prouvee** |
+| Classe 10 : posseder la mesure, la ranger sous la mauvaise question | §84.4 | **commise par son auteur au tour suivant** |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
