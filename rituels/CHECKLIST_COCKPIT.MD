@@ -6528,3 +6528,51 @@ Corrige au passage, par la mesure : le voisin signalait que
 `part_raisonnement` n'apparaissait que dans 3 rendus sur 16, tous en echec.
 Un appel de controle sur un SUCCES montre le champ present. Ses 16 rendus
 precedaient le correctif, et 3 seulement l'ont suivi.
+
+### 65.7 DEUX FAITS AFFICHES NE REPONDENT PAS A LA QUESTION
+
+Signale par `ea-mt5` : les lignes « demande » et « servi » posaient deux
+faits cote a cote, et **rien ne disait qu'ils differaient**.
+
+Le champ `bascule` n'est pose que si le LANCEUR change de candidat. Quand la
+PASSERELLE replie en interne, il reste vide. Mesure du voisin :
+`deepseek-v4-pro-0813-cloud` et `qwen3.5-397b-cloud` servis tous deux par
+`ollama_chat/gpt-oss:120b`, `refus: []` — **trois lots sur quatre sur le meme
+modele**, invisible sans comparer `demande_initiale` a `modele` apres coup.
+
+> Pour un audit croise, dont la LOI 1 exige que l'auditeur soit d'une autre
+> famille que le producteur, cette bascule **annule l'objet meme de la
+> frappe** sans rien dire. Sa mesure le prouve : sur le meme fichier,
+> `gpt-oss:120b` a trouve le defaut et `glm-4.7-flash` a rendu CONFORME en
+> listant le point fautif parmi ses points conformes. **Un vert rendu par un
+> modele incapable de voir le defaut est pire qu'aucun audit.**
+
+Meme famille de defaut pour `tronque`, jamais affiche : il l'a decouvert
+parce qu'un fichier Python rendu ne compilait pas.
+
+**Le faux positif, trouve en essayant et non en relisant.** Derriere un
+routeur adaptatif, la divergence est le fonctionnement NORMAL. Le premier jet
+criait a chaque appel de `adaptive-router-cloud`. Un avertissement qui crie
+toujours est desarme par son lecteur — et il masque alors le vrai cas. Le
+banc, lui, avait vise la mauvaise variable : la famille servie au lieu de
+l'alias demande.
+
+**Verifie par l'usage dans la minute** : « [!] RENDU TRONQUE a 1400 jetons »
+s'est affiche sur un rendu du banc pendant la pose meme du correctif, et a
+evite d'appliquer un patch coupe.
+
+### 65.8 SUJETS OUVERTS — remplace §65.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| Un mode `--essaim N` : meme tache, N familles REELLEMENT distinctes | demande de `ea-mt5` | `nexus_essaim.py` existe mais fait autre chose — audit puis patch, pas N familles |
+| Le message « augmenter le plafond » est FAUX dans le cas bavard | §65.2 | le voisin y est alle ; un seul message pour deux diagnostics opposes |
+| La reprise DOUBLE le budget au lieu de le CALCULER | §65.3 | `L10_transparence` : deux appels perdus par doublement, reussite du premier coup a 2700 declare |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE, jamais l'original | contrat §0.4 | le cloud fait SORTIR les donnees, donc un original passe est sa version exacte exfiltree |
+| Smart App Control bloque les binaires `uv` sur cette machine depuis 05h29 | alerte `ea-mt5` | `uv 0.12.6` repond encore ici ; le venv `ruff` existant survit, le blocage mordrait a la REINSTALLATION — au pire moment |
+| `car_par_jeton` : aucun seuil pose, et c'est deliberé | §65.6 | facteur 150 au premier tirage, 22 au second — le sens est net, l'amplitude non |
+| `NexusTraque` regenere `STATE.md` toutes les 10 min ; la vitrine exige un arbre propre | §64 | fenetre de publication etroite, constate trois fois |
+| Apres une reprise echouee, plus aucun repli n'est tente | §64.2 | echange assume, mais reel |
+| `max_parallel_requests` absent : aucune borne globale cote passerelle | §64.3 | la discipline des sessions est la seule borne |
+| `mapReduce()` ne remonte toujours pas `tronquee` | §52.2 | patch rendu, non applique |
+| `epreuve_dire_troncature.py` ecarte en silence les outils sans `chat(` direct | §62.4 | `nexus_context` invisible, ni OK ni RATE |
