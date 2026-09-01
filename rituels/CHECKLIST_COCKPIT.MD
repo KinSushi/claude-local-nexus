@@ -11621,3 +11621,117 @@ Les trois ont choisi de le DECLARER plutot que de le fermer a la hate — le rem
 | # | Sujet | Etat |
 | --- | --- | --- |
 | 32 | Les trois cliquets de cablage sont dissymetriques | `OUVERT` — il en faut deux : « le declare tourne-t-il » ET « l'existant est-il declare » |
+
+---
+
+## 110. LE PLANCHER EST SOVEREIGN — et l'ecart n'etait pas celui qu'on croyait
+
+Decision de l'operateur, 2026-09-01 : *« il faut que vous soyez au meme niveau de securite. le
+plancher c'est sovereign. »*
+
+### 110.1 L ETAT REEL DES TROIS, apres correction d'une donnee fausse
+
+| depot | regles ACTIVES | mordent ? | diagnostic |
+| --- | --- | --- | --- |
+| `sovereign` | **99 deny** | **oui** — `rm -rf` refuse | le plancher |
+| `ea-mt5` | **61 deny** | **oui** — `git update-ref -d` refuse | lacune de **LISTE** : `rm` nu non couvert |
+| ici | 11 deny + **15 ask** | deny oui, **ask NON** | lacune de **REGIME** |
+
+**J'avais publie « ea-mt5 : 0 deny actif ». C'etait faux** — ses regles mordent, il lui manque des
+motifs. Trois diagnostics DIFFERENTS pour un meme symptome apparent, et le mien etait le seul ou le
+probleme n'est pas la liste.
+
+### 110.2 LA MESURE QUI EXPLIQUE TOUT — le regime, pas le nombre
+
+```
+cat .env  (nom EXACT)   -> « Permission to use Bash with command ... has been denied »
+                           alors que la regle est Read(**/.env)
+rm -rf <inexistant>     -> rc=0, aucun refus
+git filter-branch       -> DEMARRE
+```
+
+**Les `deny` MORDENT. Les `ask` NON.** Et le harnais matche le motif sur la **commande entiere**,
+quel que soit l'outil : une regle `Read()` a refuse une commande `Bash`.
+
+> **Le trou « le garde voit l'outil, pas ce que l'outil lance » n'existe PAS au niveau des
+> permissions. Il n'existe qu'au niveau des HOOKS.**
+
+Formulation de `ea-mt5`, qui hierarchise les gestes mieux que le comptage :
+
+> *« Ton probleme n'est pas "il me manque 63 motifs". Ajouter 63 motifs en `ask` ne changerait
+> rien — tu aurais 72 regles decoratives au lieu de 9. »*
+
+⇒ **Le premier geste n'est pas d'ajouter, c'est de convertir.** Zero ligne a ecrire, et il fait
+passer ce depot de zero protection effective a quinze regles mordantes.
+
+### 110.3 L ALIGNEMENT — 72 -> 153 deny
+
+De la liste complete de `sovereign`, reecrite aux chemins de ce depot (clause 0) :
+
+| famille | ce qu'elle apporte |
+| --- | --- |
+| secrets en **ECRITURE** (14) | le pendant que la liste d'ici n'avait pas |
+| **le noyau de confiance** (16) | `settings.json`, `settings.local.json`, `CLAUDE.md`, les six gardes, le verrou machine |
+| les voisins et volumes (14) | `D:/SAS` et `D:/EA MT5` en lecture seule par contrat, `SAS_VAULT` en deny de LECTURE |
+| systeme et profil (9) | Windows, Program Files, `.ssh`, `.ollama`, OneDrive, Documents |
+| telechargement-execution (6) | `curl|sh`, `curl|bash`, `wget|sh`, `wget|bash`, `rd /s` |
+| **famille 8b** (22) | lecture d'un secret par COMMANDE — `cat`, `head`, `Get-Content`, `strings`… |
+
+**Le plus precieux et le moins evident : le noyau de confiance.** Ni `ea-mt5` ni moi n'y avions
+pense — c'est ce qui empeche un agent de reecrire les protections elles-memes.
+
+> **PLANCHER = SOVEREIGN UNION LES APPORTS DES TROIS**, jamais sovereign seul. Aligner en
+> remplacant ferait perdre les 9 motifs systeme de `ea-mt5`, les `Read()` de ce depot, le `rm` nu
+> absent des trois, et la famille double-tranchant.
+
+### 110.4 CONCLUSION FAUSSE, PROPOSITION JUSTE — une classe nouvelle
+
+`sovereign` a conteste ma mesure : chez lui, `cat` sur un `.env` ne serait pas refuse. Sa
+contre-mesure portait sur un fichier nomme `..._mesure_regime.env` — **qui ne matche pas `**/.env`**,
+lequel vise le nom EXACT. Son echec venait de `cat`, pas du harnais.
+
+Mais **sa proposition restait necessaire** : `Read(**/.env)` ne couvre que `.env`, donc
+`production.env` passe. D'ou la famille 8b, integree.
+
+> **Un raisonnement errone peut produire un remede necessaire.** Jusqu'ici la liste du jour ne
+> portait que « instrument exact, conclusion fausse ». C'est l'inverse — et rejeter la proposition
+> parce que l'argument est faux aurait laisse le trou ouvert. **Les deux se jugent separement.**
+
+Et la famille 8b est **declaree partielle** dans le fichier lui-meme :
+`python -c "print(open('.env').read())"` n'est couvert par aucun motif imaginable.
+
+### 110.5 LE P0 DU CRASH — teste ici, le hook resiste
+
+Trouve par `sovereign` dans deux depots : `x in un_set` calcule `hash(x)`, une liste JSON n'est pas
+hashable, `TypeError`, **code 1 — ni 0 ni 2, hors contrat**. Si le harnais lit un code non-2 comme
+« pas de refus », la charge FAIT TAIRE le garde.
+
+Six charges malformees jouees sur `scripts/nexus_garde_isolation.py` :
+
+```
+isolation = LISTE (sa charge exacte)  rc=2 DENY
+tool_name = LISTE / DICT / ENTIER     rc=2 DENY
+isolation = DICT · tool_input = LISTE rc=2 DENY
+```
+
+**Il resiste**, et par la STRUCTURE : `isinstance(tool_name, str)` precede l'appartenance a
+l'ensemble, et `isolation` est compare par `==`, jamais par `in`. C'est `sovereign` lui-meme qui
+avait signale cette protection avant de trouver le P0 chez lui.
+
+### 110.6 L INCONNUE QUI PRIME SUR TOUT
+
+**La precedence global/local n'est mesuree par personne.** Si le global SUBSTITUE au local, poser ce
+socle chez `sovereign` remplacerait ses 99 regles actives — **les seules eprouvees des trois** — par
+un socle plus court. Il PERDRAIT de la protection en croyant en gagner.
+
+Son protocole du temoin AVANT pose ne marche pas, il l'a corrige lui-meme : il faut un global peuple
+ET un local peuple pour comparer. **La mesure ne peut donc etre faite qu'APRES la pose.**
+
+> C'est le meilleur argument pour que rejouer l'epreuve de couverture soit obligatoire : **entre la
+> pose et l'epreuve, personne ne peut dire « pose donc protege ».**
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 33 | Les destructives de ce depot sont en `ask` donc inertes | `OUVERT` — conversion en `deny`, geste de l'operateur, zero ligne a ecrire |
+| 34 | La precedence global/local n'est mesuree par personne | `OUVERT` — mesurable seulement APRES la pose |
+| 35 | La lecture d'un secret par un interpreteur reste ouverte | `DECLARE` — aucun motif ne la couvre, dans les trois depots |

@@ -156,7 +156,27 @@
       "PowerShell(type *.env*)",
       "PowerShell(Get-Content *id_rsa*)",
       "PowerShell(Get-Content *credentials*)",
-      "PowerShell(Get-Content *.pem*)"
+      "PowerShell(Get-Content *.pem*)",
+      "Write(scripts/nexus_garde_agent.py)",
+      "NotebookEdit(scripts/nexus_garde_agent.py)",
+      "Write(scripts/nexus_garde_lecture.py)",
+      "NotebookEdit(scripts/nexus_garde_lecture.py)",
+      "Write(scripts/nexus_garde_shell.py)",
+      "NotebookEdit(scripts/nexus_garde_shell.py)",
+      "Write(scripts/nexus_garde_production.py)",
+      "NotebookEdit(scripts/nexus_garde_production.py)",
+      "Write(scripts/nexus_garde_edition.py)",
+      "NotebookEdit(scripts/nexus_garde_edition.py)",
+      "Write(scripts/nexus_garde_isolation.py)",
+      "NotebookEdit(scripts/nexus_garde_isolation.py)",
+      "Write(scripts/nexus_rituel.py)",
+      "NotebookEdit(scripts/nexus_rituel.py)",
+      "Write(scripts/nexus_cablage.py)",
+      "NotebookEdit(scripts/nexus_cablage.py)",
+      "Write(scripts/nexus_verrou_machine.py)",
+      "NotebookEdit(scripts/nexus_verrou_machine.py)",
+      "Write(.claude/CLAUDE.md)",
+      "NotebookEdit(.claude/CLAUDE.md)"
     ],
     "ask": [
       "Bash(git reset --hard *)",
@@ -196,5 +216,6 @@
   "_precedence_NON_MESUREE": "INCONNUE BLOQUANTE, et aucune des trois sessions ne l'a mesuree : des regles posees au GLOBAL s'AJOUTENT-elles aux regles LOCALES, ou s'y SUBSTITUENT-elles ? L'enjeu est concret : si le global remplace le local, poser ce socle chez sovereign ferait passer ses 99 deny actifs a un socle plus court — il PERDRAIT de la protection en croyant en gagner. MESURE PROPOSEE par sovereign, une seule regle temoin et aucun effet de bord : poser au GLOBAL Bash(echo TEMOIN_PRECEDENCE_GLOBAL), puis lancer ce geste depuis un depot dont le local est peuple. REFUSE -> le global s'ajoute. PASSE -> le global est ignore quand un local existe. A FAIRE AVANT LA POSE, geste d'operateur.",
   "_qui_a_refuse": "APPORT DE ea-mt5 : le message de refus dit QUI a refuse. « Permission to use Bash with command ... has been denied » = une REGLE de permission. Un texte metier = un HOOK. Sans cette distinction, un rm -rf refuse par un hook fait croire que la syntaxe de la regle mord. SYNTAXE PROUVEE : Bash(git update-ref -d *) avec espace et glob est ATTEINTE et HONOREE, mesuree chez sovereign ET chez ea-mt5 sur cible inexistante.",
   "_famille_8b": "LECTURE D'UN SECRET PAR COMMANDE — apport de sovereign, avec une correction de son argument. IL AFFIRMAIT que Read(**/.env) ne couvre pas les commandes shell, mesure chez lui par cat sur un fichier nomme « ...mesure_regime.env ». MESURE ICI sur le nom EXACT : cat .env -> « Permission to use Bash with command ... has been denied ». Le motif COUVRE donc bien les commandes Bash. Sa contre-mesure testait un nom qui ne matche pas **/.env. MAIS SA PROPOSITION RESTE JUSTE : Read(**/.env) ne couvre que le nom exact « .env » — « production.env » ou « backup.env » passent entierement. D'ou cette famille. CONCLUSION FAUSSE, PROPOSITION JUSTE : les deux se jugent separement.",
-  "_famille_8b_INCOMPLETE": "DECLARE PARTIEL, jamais presente comme ferme. Aucun motif imaginable ne couvre python -c \"print(open('.env').read())\" ni un interpreteur quelconque lisant le fichier. Meme asymetrie que le trou heredoc : enumerable en surface, pas en profondeur. LA LECTURE D'UN SECRET PAR UN INTERPRETEUR RESTE OUVERTE DANS LES TROIS DEPOTS. Ce qu'on choisit de ne pas couvrir se declare."
+  "_famille_8b_INCOMPLETE": "DECLARE PARTIEL, jamais presente comme ferme. Aucun motif imaginable ne couvre python -c \"print(open('.env').read())\" ni un interpreteur quelconque lisant le fichier. Meme asymetrie que le trou heredoc : enumerable en surface, pas en profondeur. LA LECTURE D'UN SECRET PAR UN INTERPRETEUR RESTE OUVERTE DANS LES TROIS DEPOTS. Ce qu'on choisit de ne pas couvrir se declare.",
+  "_noyau_de_confiance": "APPORT DE sovereign, avec le manque qu'il a lui-meme trouve dans sa liste : « aucune de mes 99 regles ne protege les 23 gardes eux-memes. Le fichier qui les DECLARE est protege, les gardes ne le sont pas. » Ici les deux sont couverts — settings.json ET les neuf gardes — et un troisieme trou a ete trouve en le verifiant : les regles portaient sur Edit() seulement. Un Write() ecrase le fichier entier sans passer par Edit. Le pendant Write et NotebookEdit est donc ajoute. REGLE GENERALE : un chemin protege doit l'etre pour TOUS les outils d'ecriture, pas seulement celui auquel on a pense en ecrivant la regle."
 }
