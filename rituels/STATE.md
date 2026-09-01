@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-08-31 19:39 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-08-31 20:09 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `3a8e1b1` |
+| Commit | `b68385d` |
 | Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
@@ -17,7 +17,7 @@
 
 ```
 litellm-db	db	Up 2 days (healthy)
-litellm-proxy	litellm	Up 4 minutes
+litellm-proxy	litellm	Up 34 minutes
 litellm-redis	redis	Up 2 days (healthy)
 ```
 
@@ -57,7 +57,7 @@ Verdict : **valide**
 | Fichier | Empreinte |
 |---|---|
 | `docker-compose.yml` | `d60af63eaaa60b59c9e0e01857a675092a96fc184c8dc51777362ea383dca2ef` |
-| `litellm_config.yaml` | `2b6a678affb8611bf7e3506fed59c5f0dbb829bf2fdaeea51be958eefd74de89` |
+| `litellm_config.yaml` | `0de981bbf44cb8086422741b642426ad3cc7a9fec1001a743c47019e1c873c19` |
 | `model_list.txt` | `310b5f8a5f8367a09771645407e199854f44f0c1ff6571c5ac7fdb0e7a6ceace` |
 | `cloud_models.txt` | `17684bcb15b3a210bd2c660511bc68327c41e3d17b0bafe18c91192eff31ae6e` |
 | `.mcp.json` | `2622bc6acf81e92285537bda8468c839ab6c5efd85876ec63b2ebe2fb101e7c5` |

@@ -4808,3 +4808,88 @@ Reste OUVERT : ces 138 replis descendent une echelle de tailles, et chaque
 saut paie un chargement. Rien ne prefere aujourd'hui un modele deja resident.
 Les pieces existent — `/api/ps` se lit — mais rien ne les emploie.
 
+---
+
+## 49. « ON NE VEUT AUCUNE BRIDE » — ce qui bridait vraiment, mesure par mesure
+
+L'operateur, avec deux instances voisines deja lancees sur du lourd et du
+massif : *« consulte un ou deux gros modeles cloud, on ne veut aucune
+bride »*. Fait — et la consultation a trouve ce que je n'avais pas vu.
+
+### 49.1 La bride qui comptait etait CACHEE, et elle mentait sur elle-meme
+
+`qwen3.5-397b-cloud` et `kimi-k3-cloud` ont ete consultes sur la
+configuration et sur `nexus_agent.py`. Le second a nomme une constante que je
+n'avais pas ouverte :
+
+```python
+# Fils simultanes par plan. Ces deux nombres sont MESURES : au-dela de trois
+# appels concurrents le cloud n'accelere plus [...]
+PLAFOND_FILS = {"cloud": 3, "local": 2}
+```
+
+Elle gouverne le MAP-REDUCE — **tout le travail lourd distribue** — et son
+commentaire invoque une mesure. **Ma rampe du jour la dement** : de 4 a 20
+connexions, zero refus, zero 429, p95 de 6,3 s a 2,6 s. *Une mesure gelee ment
+le lendemain*, et celle-ci mentait en s'annoncant comme mesure.
+
+### 49.2 ET POURTANT LA LEVER N'A RIEN DONNE — essai alterne
+
+La tentation etait de porter le chiffre a 16 et d'annoncer un gain. Essai
+alterne, trois tours par valeur, meme corpus de 670 Ko, huit fenetres :
+
+| fils cloud | mediane | min | max |
+| --- | --- | --- | --- |
+| 3 | **36 s** | 34 s | 39 s |
+| 16 | **36 s** | 34 s | 37 s |
+
+**Ecart des medianes : 0 s. Etendue du bruit : 5 s. INDISCERNABLE.**
+
+Deux essais isoles avaient d'abord donne 30 contre 25 s, puis 33 contre 38 s
+— deux directions opposees. Sans l'essai alterne j'aurais publie le premier.
+
+La valeur passe quand meme a 16, **et pas pour un gain** : pour que le chiffre
+cesse d'affirmer une mesure que rien ne soutient, et parce qu'il devient
+reglable par `NEXUS_FILS_CLOUD` sans toucher au code. Le goulot du MAP est
+ailleurs, et **il reste a trouver**.
+
+### 49.3 Ce que la consultation a rendu, verifie cle par cle
+
+Toutes les cles citees par `qwen3.5-397b` existent — `drop_params`,
+`routing_strategy`, `health_check_interval: 900`, `RateLimitErrorRetries: 0`,
+`num_retries`, `allowed_fails`, `cooldown_time`. **Aucune invention.** Et il a
+ecrit « JE NE SAIS PAS » sur `max_concurrent_requests`, qui est en effet
+ABSENTE de la configuration — une piste, pas une erreur.
+
+Sa trouvaille la plus utile, verifiee : **30 modeles locaux a `num_ctx: 8192`**
+pour des fichiers de 15 a 40 Ko. Verifie sur les quatre modeles qui avaient
+echoue : ils portent 131 072, donc **ce n'etait pas la cause chez eux** — mais
+la remarque tient pour le plan local.
+
+### 49.4 Les quatre echecs cloud ne sont PAS une bride
+
+`gpt-oss-20b-cloud` sur la meme tache lourde, **appele seul**, budget
+identique : bascule quand meme. Ce n'est donc ni la concurrence, ni le delai,
+ni le contexte. **C'est le modele.** Quatre alias sur dix-neuf ne tiennent pas
+une tache d'audit lourde — question de pool (§76 : declare n'est pas eligible),
+pas de plafond a lever.
+
+### 49.5 L'etat des brides, apres ce tour
+
+| bride | verdict |
+| --- | --- |
+| `request_timeout: 180` | **levee** a 900 s — c'etait un reglage a nous |
+| `PLAFOND_FILS["cloud"] = 3` | **levee** a 16, reglable — sans gain mesure |
+| `max_tokens` inerte | **corrige** : `num_predict` est honore |
+| defaut `--max-tokens 1500` | **relve** a 4096, sinon regression |
+| `PLAFOND_FILS["local"] = 2` | **TENUE** — contrainte physique, pas prudence |
+| `num_ctx: 8192` sur 30 modeles locaux | **OUVERT**, non mesure |
+| `max_concurrent_requests` | **ABSENTE** de la config — piste ouverte |
+
+### 49.6 Et une batterie complete, en reel
+
+383 reussis, 3 echecs, 1 ignore. Un des trois etait **de moi** : un second
+cas de test encodait encore la croyance fausse sur le heredoc quote. Corrige,
+avec son jumeau non quote ajoute. Restent deux echecs anterieurs :
+`phi3-mini-local` injoignable, et le generateur idempotent en echec.
+

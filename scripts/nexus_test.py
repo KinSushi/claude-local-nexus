@@ -3483,8 +3483,11 @@ def test_garde_shell() -> None:
         return ("deny" in (r.stdout or "")), r.returncode
 
     cas = [
-        ("heredoc python avec antislash => REFUS",
+        ("heredoc quote a antislash => AUTORISE",
          "python - <<'PYEOF'" + chr(10) + "rx = r'[^" + barre + "s]+'"
+         + chr(10) + "PYEOF", False, "Bash"),
+        ("heredoc NON quote a antislash => REFUS",
+         "python - <<PYEOF" + chr(10) + "rx = r'[^" + barre + "s]+'"
          + chr(10) + "PYEOF", True, "Bash"),
         ("accent grave entre guillemets doubles => REFUS",
          'git commit -m "voir ' + grave + 'py_compile' + grave + '"',

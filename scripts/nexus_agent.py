@@ -506,10 +506,13 @@ def _decouper_en_fenetres(corpus: str, taille: int | None = None) -> List[str]:
     return fenetres
 
 
-# Fils simultanes par plan. Ces deux nombres sont MESURES : au-dela de trois
-# appels concurrents le cloud n'accelere plus, et le plan local plafonne des
-# le deuxieme. Ce ne sont pas des reglages a gout.
-PLAFOND_FILS = {"cloud": 3, "local": 2}
+# Ce que l'ancien commentaire affirmait, et qui n'etait pas soutenu : au-dela de trois appels concurrents le cloud n'accelererait plus.
+# Ce que la rampe du 2026-08-31 montre : de 4 a 20 connexions simultanees, zero refus et zero 429, et une latence p95 qui BAISSE de 6,3 s a 2,6 s. Le cloud accepte donc bien plus que trois.
+# Ce qu'un essai ALTERNE de trois tours par valeur ne montre PAS : sur une charge MAP de huit fenetres, la mediane vaut 36 s avec trois fils et 36 s avec seize. Aucun gain discernable du bruit. Le goulot est ailleurs, et il reste a trouver.
+# Pourquoi la valeur passe quand meme de 3 a 16 : non pour un gain prouve, mais pour que le chiffre cesse d'affirmer une mesure que rien ne soutient, et parce qu'il devient reglable sans toucher au code.
+# Le plafond local de 2 tient pour une raison PHYSIQUE : l'hote a 61,6 Go partages avec un iGPU sans VRAM dediee, et deux modeles de 20 Go n'y coexistent pas.
+# Les noms des variables d'environnement : NEXUS_FILS_CLOUD et NEXUS_FILS_LOCAL.
+PLAFOND_FILS = {"cloud": int(os.getenv("NEXUS_FILS_CLOUD", "16")), "local": int(os.getenv("NEXUS_FILS_LOCAL", "2"))}
 
 
 def _map_sur_plan(taches, alias, fils, plafond_jetons, cle, temperature):
