@@ -11000,3 +11000,151 @@ la moitie n'est devenue visible que parce qu'un TIERS a pose la question voisine
 **Rien n'est arme chez aucun des trois.** Poser et armer sont des gestes d'operateur : aucune session
 ne modifie sa propre configuration de permissions, a plus forte raison sur suggestion d'un pair,
 meme validee par les trois.
+
+---
+
+## 104. LES RITUELS AU SOCLE — six qualites exigees, ce qui les porte, et le trou de chacune
+
+Consigne de l'operateur, 2026-09-01 : *« je rajouterais tous les rituels aussi — vous devez avoir
+les memes, ceux qui permettent de tout sauver, que tout soit tracable, auditable, reproductible,
+code premium »*, puis *« et qui evitent les derives »*.
+
+Six qualites. Aucune n'est un slogan : chacune se rattache a un mecanisme existant, et chacune porte
+un trou MESURE. Le tableau ci-dessous est la forme a transmettre aux trois depots — pas les scripts,
+qui sont propres a chacun (clause 0).
+
+---
+
+### 104.1 TOUT SAUVER
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| `nexus_vitrine.py` | 7 controles bloquants avant publication ; tache `NexusVitrine` PT6H, sans session |
+| le commit a chaque tour | controle `travail commite` du rituel |
+| `backup.ps1` | configuration seule, ou volumes avec `-IncludeVolumes` |
+
+**LE TROU, mesure aujourd'hui de la pire facon.** Un contexte de SESSION ne se sauve pas. Deux
+sessions voisines ont perdu leur volume a 11:35:16 et ce qu'elles portaient encore n'etait sur aucun
+disque. Le sauvetage a du etre fait **a la main**, par une troisieme session, dans
+`rituels/SAUVETAGE_2026-09-01/`.
+
+> Aucun rituel des trois depots ne sauve ce qu'une session porte en vol. La parade employee ce jour
+> — ecrire les verbatim dans le depot AVANT l'arret — a fonctionne parce qu'elle a ete decidee a
+> temps, pas parce qu'un mecanisme l'imposait.
+
+---
+
+### 104.2 TRACABLE
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| commits portant la MESURE, non l'intention | tenu — six commits ce jour, chacun avec ses chiffres |
+| `rituels/PROGRESS.md` | journal manuscrit des decisions ET des erreurs, 350 lignes |
+| `rituels/CHECKLIST_COCKPIT.MD` | sujets ouverts, chacun avec « ce qui le fermerait » |
+| `.nexus/lectures/` | registre des fichiers lus, par session |
+
+**LE TROU : la tracabilite de l'AUTEUR.** `Auteur declare : 2 sur 65 commits de code — 63 MUETS`.
+Le controle existe, il MESURE, et il ne mord pas : sa ligne 396 dit en clair que *« le nombre de
+MUETS ne doit pas a lui seul declencher l'echec »*. Chez `ea-mt5`, 1 commit sur 20. **La trace de
+delegation est l'exception, pas la regle — et rien ne l'exige.**
+
+---
+
+### 104.3 AUDITABLE
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| LOI 1 — `nexus_valide.py --base HEAD` | joue ce jour : « aucune regression, 6 fonctions touchees », cout zero |
+| le cycle a trois temps (§0.7.1) | joue en entier : six familles distinctes sur le hook d'isolation |
+| A14 — les deux questions | « laisse-t-il passer a tort » ET « refuse-t-il a tort » |
+| A13 — la lecture par un tiers | chacun des trois hooks lu par l'un des deux autres |
+
+**LE TROU : rien n'echoue quand l'auteur valide son propre travail.** Le contrat le reconnait :
+*« aucun controle n'echoue aujourd'hui quand l'orchestrateur ecrit lui-meme le correctif »*. Et la
+seance en donne la demonstration en direct — la v4 du hook allait etre presentee comme prete alors
+que son audit final avait ECHOUE sur un plafond et n'avait pas ete relance.
+
+> **Cette regle ne protege pas de l'ignorance, elle protege de l'inattention.** Aucune des trois
+> sessions n'en est exempte : la faute a ete commise a l'instant meme ou la regle etait proposee.
+
+---
+
+### 104.4 REPRODUCTIBLE
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| 35 epreuves `epreuve_*.py` | toutes citees dans `nexus_test.py`, **zero orpheline** (verifie une par une) |
+| la contre-epreuve obligatoire | un cas hors perimetre qui doit PASSER, sans quoi un garde qui refuse tout passe |
+| les charges reelles sur stdin | l'epreuve d'effet, distincte du temoin du fichier |
+
+**LE TROU : aucune gate ne joue `nexus_test.py`.** Mesure : le rituel lance `nexus_savings`,
+`nexus_progres`, `nexus_worktree`, `nexus_cablage`, `nexus_outillage` — **jamais `nexus_test`**. Ni
+la vitrine, ni la conformite, ni un hook, ni une tache. Les trente-cinq epreuves ne tournent que si
+quelqu'un lance la suite a la main.
+
+Et la suite coute **550 s** avec **4 echecs preexistants** : l'armer telle quelle la rendrait rouge
+en permanence, donc desarmee dans la semaine. **C'est la decision qui manque, pas le mecanisme.**
+
+---
+
+### 104.5 CODE PREMIUM
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| `nexus_outillage.py` | cliquet ruff — **a morde mon propre travail ce jour** : F401 2 -> 3 |
+| `nexus_cablage.py` | cliquet des orphelins — aucune regression |
+| `nexus_garde_edition.py` | `PostToolUse` : un fichier ecrit compile-t-il encore ? |
+| `nexus_garde_production.py` | refuse d'ecrire du code source en production, et NOMME la voie |
+
+**Ce que le cliquet a prouve aujourd'hui :** l'import mort etait dans un code que le banc venait
+d'ecrire, ni redige ni relu par moi, et aucune relecture ne l'aurait vu. **Un cliquet sur un
+COMPTEUR voit ce que l'oeil ne voit pas.**
+
+**LE TROU : `nexus_garde_production.py` n'a jamais eu a trancher.** J'ai pose un `.py` en production
+ce jour — exactement sa cible — par `python - <<'PY'` depuis Bash. Il est arme sur
+`Edit|Write|NotebookEdit` ; Bash ne le declenche pas. Le garde voit l'OUTIL, pas ce que l'outil
+LANCE.
+
+---
+
+### 104.6 EVITER LES DERIVES
+
+| ce qui le porte | etat mesure |
+| --- | --- |
+| huit hooks armes | lecture, shell, production, edition, agent, reprise, rituel |
+| `nexus_traque.py` | PT10M, **sans session** |
+| le hook d'isolation | ecrit, eprouve, audite UTILISABLE par six familles — **NON ARME** |
+| les regles `ask` | `git push`, `git reset --hard`, `docker compose down -v`, `docker volume rm` |
+
+**LE TROU PRINCIPAL, et c'est celui que l'operateur a designe :** le depechage d'agent.
+`nexus_garde_agent.py` matche `Agent|Workflow` et ne regarde que le MODELE FACTURE — zero occurrence
+d'« isolation » ou de « worktree ». Chez `sovereign`, une branche d'agent non isolee greffee dans
+l'arbre vif a supprime **28 456 fichiers en silence**.
+
+> **C'est le seul geste des trois depots dont l'echec soit IRREVERSIBLE.** Tout le reste se rattrape
+> par git.
+
+---
+
+### 104.7 LE TROU QUI TRAVERSE LES SIX — et le rituel ne peut pas le voir
+
+```
+[IGNORE] boucle armee    verifiable seulement par la session
+```
+
+**Le seul controle que le rituel ne sait pas faire est celui de sa propre reconduction.** La boucle
+de session ne vit ni sur disque ni dans le Planificateur : elle vit dans la session, et un
+redemarrage l'efface.
+
+Preuve immediate : elle n'est pas armee depuis le redemarrage de ce matin, le rituel l'a affichee
+**onze fois** en `IGNORE`, et personne ne l'a traitee comme un manque.
+
+> **Un IGNORE repete se lit comme un OK a la troisieme fois.** « Je n'ai pas pu mesurer une fois »
+> et « je n'ai jamais pu mesurer depuis onze tours » ne sont pas le meme etat. Le second est une
+> panne d'instrument et merite un MANQUE.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 18 | Un contexte de session ne se sauve pas | `OUVERT` — parade manuelle seulement |
+| 19 | La trace d'auteur est l'exception (2/65) | `OUVERT` — A17, mecanisation deleguee |
+| 20 | Un IGNORE repete ne change jamais d'etat | `OUVERT` — la boucle en est la preuve |
