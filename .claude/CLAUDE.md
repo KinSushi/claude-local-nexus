@@ -211,6 +211,63 @@ QUESTION que l'outil pose, pas sur son emplacement.
 > Quand un outil neuf est ecrit ici, la question a poser est : **un autre
 > projet pourrait-il l'appeler tel quel ?** Si oui, il ne doit rien supposer de
 > ce depot. Si non, dire pourquoi.
+
+---
+
+## 0.6 ZERO BRICOLAGE — la plateforme n'est pas un fourre-tout
+
+Enonce par l'operateur le 2026-09-01, et repete : *« 0 bricolage, la
+plateforme Claude Code Nexus MCP et bientot avec l'extension A2A ne doit pas
+etre un fourre-tout avec du bricolage, on veut du propre et professionnel »*,
+puis *« note le partout tu vas oublier »*.
+
+### Pourquoi c'est une regle de CONCEPTION, pas d'hygiene
+
+**Un contournement local ne se transporte pas.** Ce qui compense un defaut
+dans le scratchpad d'une session reste invisible a tout agent tiers qui
+rencontrera le meme defaut — et A2A signifie qu'il y en aura d'autres que les
+trois sessions d'aujourd'hui.
+
+La formulation la plus juste vient d'une session voisine, qui a refuse
+d'ecrire chez elle un outil qui lui manquait :
+
+> *« Un wrapper prive serait un septieme contournement, et il ne servirait
+> qu'a moi — alors que le manque concerne les trois sessions et, bientot,
+> A2A. »*
+
+Elle a REPORTE le manque au lieu de le compenser. Le lanceur sous verrou
+(§70.7) existe parce qu'elle a refuse de bricoler.
+
+### Ce que « bricolage » designe exactement
+
+| bricolage | ce qu'il faut a la place |
+| --- | --- |
+| un outil maison qui compense un defaut du pont | reporter le defaut, corriger le pont |
+| un script prive qui refait ce qu'un outil devrait faire | ajouter le mode manquant a l'outil |
+| une convention a tenir de tete | un mecanisme qui refuse |
+| un chemin d'appel qui contourne une garde | rendre la garde presente sur TOUS les chemins |
+| une valeur gravee dans le code | une derivation, ou une hypothese NOMMEE |
+
+### Le corollaire mesure le meme jour
+
+Un mecanisme tient quand le contournement est plus PENIBLE que le respect.
+Mesure : `nexus_agent.py` prend le verrou et c'est le chemin le MOINS employe ;
+les douze outils MCP ne le prennent pas et c'est le plus naturel (§70.2).
+
+> **La voie la plus simple doit etre la voie correcte.** Tant qu'elle ne l'est
+> pas, la discipline ne tiendra chez personne — une session a contourne un
+> verrou qu'elle avait elle-meme EPROUVE quelques heures plus tot.
+
+### Ce que cela impose a chaque tour
+
+Avant de compenser quoi que ce soit dans un coin, la question est :
+**un autre agent rencontrera-t-il ce manque ?** Si oui, ce n'est pas un
+contournement a ecrire, c'est un defaut a corriger a sa source — ou a
+reporter, si la source n'est pas chez soi.
+
+Voir §0.5 sur la portabilite : les deux regles disent la meme chose depuis
+deux angles. Un outil portable sert a tous ; un bricolage local ne sert qu'a
+son auteur, et masque le defaut pour tous les autres.
 ## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
 
 Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même

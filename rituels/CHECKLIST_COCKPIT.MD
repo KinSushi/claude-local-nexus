@@ -7449,3 +7449,34 @@ Il tranche l'arbitrage du dechargement : un lot de dix taches locales paierait
 177 s une fois s'il garde les poids, dix fois s'il decharge apres chaque
 tache. D'ou le dechargement a la sortie du VERROU et non de la tache. Et pour
 la session suivante, attendre 177 s vaut mieux que le `keep_alive` de 15 min.
+
+### 70.10 ZERO BRICOLAGE — consigne repetee, inscrite au contrat §0.6
+
+L'operateur, deux fois dans le meme tour : *« 0 bricolage, la plateforme
+Claude Code Nexus MCP et bientot avec l'extension A2A ne doit pas etre un
+fourre-tout avec du bricolage, on veut du propre et professionnel »*, puis
+*« note le partout tu vas oublier »*.
+
+C'est une regle de CONCEPTION et non d'hygiene : **un contournement local ne
+se transporte pas.** Ce qui compense un defaut dans le scratchpad d'une
+session reste invisible a tout agent tiers qui rencontrera le meme defaut.
+
+La meilleure illustration est venue d'un voisin le meme jour, qui a REFUSE
+d'ecrire chez lui l'outil qui lui manquait :
+
+> *« Un wrapper prive serait un septieme contournement, et il ne servirait
+> qu'a moi — alors que le manque concerne les trois sessions et, bientot,
+> A2A. »*
+
+Il a reporte ; le lanceur sous verrou (§70.7) existe pour cette raison.
+
+| bricolage | ce qu'il faut a la place |
+| --- | --- |
+| un outil maison qui compense un defaut du pont | reporter, corriger le pont |
+| un script prive qui refait ce qu'un outil devrait faire | ajouter le mode manquant |
+| une convention a tenir de tete | un mecanisme qui refuse |
+| un chemin d'appel qui contourne une garde | la garde sur TOUS les chemins |
+| une valeur gravee | une derivation, ou une hypothese NOMMEE |
+
+Inscrit au contrat en §0.6, en memoire, et ici. Les trois, parce que la
+consigne dit exactement cela : *« tu vas oublier »*.
