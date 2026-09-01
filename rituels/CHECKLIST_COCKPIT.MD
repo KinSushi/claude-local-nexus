@@ -7625,3 +7625,134 @@ et il leur a ete signale.
 > **« qui, n'ayant ecrit ni le diagnostic ni le correctif, a verifie que ce qui
 > a ete pose fait ce qu'il annonce ? »** Si la reponse est « moi », le cycle
 > n'est pas clos, quel qu'ait ete le travail en amont.
+
+---
+
+## 72. LE GARDE VOYAIT — PERSONNE NE L'A INTERROGE — 2026-09-01, 15h
+
+### 72.1 LA CORRECTION D'UN DIAGNOSTIC ECRIT UNE HEURE PLUS TOT
+
+§71.6 portait en tete : *« `nexus_portee_import` ne voit pas l'import local
+masquant un import global — le controle existe POUR cette classe et rend
+OK »*. C'etait vrai et **secondaire**. Le vrai fait est ailleurs.
+
+`ruff` porte la regle **F823** — « Local variable referenced before
+assignment » — et elle est dans la selection `E9,F,B,C4,SIM,RET` que le
+cliquet d'outillage emploie deja. Mesure faite sur le cas reduit ET sur le
+fichier reel, defaut remis a l'identique :
+
+```
+F823 Local variable `os` referenced before assignment
+Found 3 errors.
+```
+
+> **Le garde existait, il etait arme, il fonctionnait. Personne ne l'a
+> interroge au bon moment.** Le manque n'est pas dans les regles, il est dans
+> le PROCESSUS : poser un patch ne declenche aucune verification du fichier
+> touche.
+
+C'est une correction de mon propre diagnostic, et elle deplace le remede :
+il ne s'agissait pas d'ecrire un controle de plus, mais de faire jouer celui
+qui existe au moment ou il sert.
+
+### 72.2 LE CYCLE A TROIS TEMPS, MENE EN ENTIER, ET IL A PAYE
+
+Premiere application complete de §0.7.1.
+
+| temps | famille | resultat |
+| --- | --- | --- |
+| 1. audit | `gemma4-31b` | a nomme la question REELLE du controle et la question VOULUE |
+| 2. correction | `minimax-m2.7` puis `gemma4-31b` | un premier rendu refuse en arbitrage — recherche de racine fautive |
+| 3. **audit de la correction** | `kimi-k2.7-code` | **trois defauts trouves** |
+
+Les trois defauts du temps 3, dont deux que l'arbitrage avait manques :
+
+* la commande `ruff` omettait sa sous-commande `check` — **sans elle ruff ne
+  fait rien, et son silence se lit comme une absence de violation** ;
+* `stderr` n'etait pas imprime : une erreur d'usage de l'analyseur passait
+  pour un verdict propre ;
+* la remontee vers la racine n'etait pas protegee — une `OSError` aurait fait
+  echouer l'outil **alors que le patch etait deja ecrit**.
+
+> Le troisieme temps a trouve ce que l'arbitrage n'avait pas vu, sur un
+> correctif qui semblait bon. C'est exactement ce que la regle annonce, et
+> c'est la premiere fois qu'on le mesure ici.
+
+### 72.3 LE GARDE A MORDU SUR SON PROPRE FICHIER — et l'ordre etait mauvais
+
+La version posee verifiait le fichier APRES l'avoir ecrit. Elle a
+correctement detecte un patch invalide et rendu 1 :
+
+```
+[!] Le fichier est SYNTAXIQUEMENT INVALIDE apres application
+[!] Erreur : unexpected indent (<unknown>, line 125)
+```
+
+**Mais le fichier casse restait sur le disque**, et il a fallu le restaurer a
+la main — ce que l'auditeur du temps 3 avait signale.
+
+> **Verifier apres avoir ecrit protege le LECTEUR, jamais le FICHIER.** Pour un
+> outil dont la raison d'etre est de ne pas mutiler, la verification doit
+> porter sur le contenu CALCULE, avant toute ecriture.
+
+La version corrigee — verification avant ecriture — a ete tentee et **n'est
+pas posee** : l'assemblage a intercale le bloc d'analyse a l'interieur du
+`with` d'ecriture, produisant `ValueError: I/O operation on closed file`. Les
+epreuves l'ont vu, le fichier a ete restaure, et le sujet reste OUVERT plutot
+que de bruler des passes.
+
+### 72.4 CE QUE LE VOISIN A MESURE, ET QUI CORRIGE §28.5
+
+Sept appels, meme tache, sept familles :
+
+```
+mistral-large-3-675b   11,7 s   2 072 jetons   exploitable
+gpt-oss-120b                                   exploitable
+gemma4-31b                                     exploitable
+kimi-k3                VIDE     3 401 jetons produits
+deepseek-v4-pro-0813   VIDE     2 364 jetons produits
+qwen3.5-397b           VIDE     3 759 jetons produits
+deepseek-v4-pro        HTTP 400, l'alias n'existe pas
+```
+
+Il a relance `qwen3.5-397b` avec un budget porte de 1 200 a 3 000 : **3 759
+jetons produits, rendu vide quand meme.**
+
+> §28.5 disait « au-dela de ~2 000 jetons de sortie demandes ». **La mesure la
+> corrige : ce n'est pas un seuil de BUDGET, c'est une propriete de FAMILLE.**
+> Un routeur qui repond au vide en augmentant `max_tokens` depense sans rien
+> changer ; celui qui change de famille reussit du premier coup.
+
+### 72.5 UNE REPRISE CHANGE CE QUI EST FACILE A PRODUIRE
+
+Le mode d'echec que le voisin n'avait jamais vu, et qui est le pire : un
+rendu incomplet renvoye avec le defaut nomme a **FABRIQUE** — un nombre absent
+de tout ce qui lui avait ete fourni, et un tableau de quatre lignes bati
+autour.
+
+Et sa cause est du cote de la consigne, non du modele : la reprise ajoutait
+une contrainte de FORME a une contrainte de CONTENU.
+
+> **La forme est plus facile a satisfaire que le fond.** Une consigne qui
+> insiste sur la forme oriente vers elle — et le modele remplit la forme
+> demandee avec de l'invente. *Une reprise n'est pas un second essai : elle
+> change la distribution de ce qui est facile a produire.*
+
+Le remede a marche du premier coup : nommer la fabrication dans la consigne
+suivante ET **enumerer les chiffres autorises**.
+
+### 72.6 SUJETS OUVERTS — remplace §71.6
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **`nexus_appliquer` ne verifie pas le contenu avant d'ecrire** | §72.3 | trois tentatives, assemblage fautif, restaure |
+| Sur `Invalid model name`, rendre les alias PROCHES | demande `sovereign` | la classe se repete : un alias plausible construit de tete |
+| Un champ `chiffres_autorises` dans la consigne | §72.5 | le remede a la fabrication, mesure efficace |
+| Le vide n'est pas un probleme de budget mais de FAMILLE | §72.4 | corrige §28.5 ; le routeur devrait basculer, pas augmenter |
+| Le MCP ne prend pas le verrou — douze outils | §70.2 | le plus urgent pour A2A |
+| Decharger les poids en sortant du VERROU | §70.3 | cout mesure ~177 s pour 20 Go |
+| Un champ de verdict unique `etat` | demande `sovereign` | evite de croiser quatre champs |
+| La reprise de plafond absente du MCP | demande `ea-mt5` | 1400 jetons, zero caractere |
+| `nexus_ask` jette le PARTIEL a l'expiration | demande `ea-mt5` | 900 s depensees, 0 octet |
+| Mecaniser la PROVENANCE des chiffres | §70.5 | aucun des trois depots ne le fait |
+| Regle 0.4 non mecanisee : un worker recoit une COPIE | contrat §0.4 | le cloud fait SORTIR les donnees |
