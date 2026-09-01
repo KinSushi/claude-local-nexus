@@ -2478,8 +2478,22 @@ function runPython(args, timeoutMs = 300000) {
   });
 }
 
-async function callTool(name, args) {
-  args = args || {};
+  // Ces huit outils engagent une inference lourde et doivent etre serialises entre depots,
+  // le cout mesure d'une eviction de poids etant de 177 secondes pour 20 Go,
+  // tandis que les outils de simple consultation ne doivent pas etre serialises.
+  const OUTILS_LOURDS = new Set([
+    'nexus_ask',
+    'nexus_route',
+    'nexus_context',
+    'nexus_vision',
+    'nexus_summarize',
+    'nexus_batch',
+    'nexus_compare',
+    'nexus_index_build'
+  ]);
+
+  async function callToolInterne(name, args) {
+    args = args || {};
 
   // La table des plans est chargee avant tout appel : sans elle, planOf
   // retombe sur le suffixe du nom et peut annoncer un plan faux -- ce qui,
@@ -3266,3 +3280,91 @@ function main() {
 }
 
 main();
+
+async function tenirVerrou(classe) {
+  // fonction qui attend le verrou en lançant le script python
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('node:child_process')
+    const path = require('path')
+    let timer
+    let pris = false
+    let child
+
+    // spawn du processus, capture des exceptions
+    try {
+      const python = process.env.NEXUS_PYTHON || 'python'
+      const script = path.join(__dirname, '..', '..', 'scripts', 'nexus_verrou_tenir.py')
+      child = spawn(python, [script, classe, '--projet', 'mcp', '--attente-s', '900'], { stdio: ['pipe', 'pipe', 'inherit'] })
+    } catch (e) {
+      log('Erreur lors du spawn du verrou :', e)
+      // resolve avec relacher qui ne fait rien
+      resolve({ relacher: () => {} })
+      return
+    }
+
+    // buffer pour accumuler stdout
+    let buffer = ''
+    const onData = (data) => {
+      buffer += data.toString()
+      const parts = buffer.split('\n')
+      buffer = parts.pop() // conserve le morceau incomplet
+      for (const line of parts) {
+        if (line.trim() === 'PRIS') {
+          pris = true
+          clearTimeout(timer)
+          resolve({ relacher: () => { child.stdin.end() } })
+          child.stdout.removeListener('data', onData)
+          return
+        }
+      }
+    }
+    child.stdout.on('data', onData)
+
+    // gestion des erreurs du processus
+    child.on('error', (err) => {
+      log('Erreur du processus verrou :', err)
+      clearTimeout(timer)
+      resolve({ relacher: () => {} })
+    })
+
+    // fermeture du processus sans avoir vu PRIS
+    child.on('close', (code) => {
+      if (!pris) {
+        clearTimeout(timer)
+        reject(new Error('Verrou non pris, code 75 (CONTENTION)'))
+      }
+    })
+
+    // minuteur de 15 minutes qui tue le processus et rejette
+    timer = setTimeout(() => {
+      if (child && !pris) {
+        child.kill()
+        reject(new Error('Timeout verrou, code 75 (CONTENTION)'))
+      }
+    }, 900000)
+  })
+}
+
+async function callTool(name, args) {
+  // appel direct si l'outil n'est pas dans le set bruyant
+  if (!OUTILS_LOURDS.has(name)) {
+    return callToolInterne(name, args)
+  }
+  log(`Attente du verrou pour l'outil ${name}`)
+  const start = Date.now()
+  const verrou = await tenirVerrou('banc')
+  const attente = Date.now() - start
+  log(`Temps d'attente ${attente} ms`)
+  try {
+    return await callToolInterne(name, args)
+  } finally {
+    if (verrou && typeof verrou.relacher === 'function') {
+      verrou.relacher()
+    }
+  }
+}
+
+// export uniquement si le module exporte déjà callTool
+if (typeof module !== 'undefined' && module.exports && Object.prototype.hasOwnProperty.call(module.exports, 'callTool')) {
+  module.exports.callTool = callTool
+}

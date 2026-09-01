@@ -108,7 +108,9 @@ def deposer(reponse: str, modele: str, tache: str = "",
         with io.open(INDEX, "a", encoding="utf-8", errors="replace") as fh:
             fh.write(json.dumps(entree, ensure_ascii=False) + "\n")
         return ident
-    except Exception:
+    except Exception as e:
+        sys.stderr.write(f"[nexus-verbatim] {type(e).__name__}: {e}\n")
+        sys.stderr.flush()
         return ""
 
 
@@ -158,6 +160,8 @@ def purger(jours: int) -> tuple:
     plantait sur le cas même que le garde protégeait.
     """
     if jours < 1:
+        sys.stderr.write("[!] Le nombre de jours doit valoir au moins 1 et rien n'a ete purge.\n")
+        sys.stderr.flush()
         return -1, 0
     limite = datetime.now(timezone.utc) - timedelta(days=jours)
     entrees, sautees = charger_index()

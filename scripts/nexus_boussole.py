@@ -289,6 +289,11 @@ def main() -> int:
     print("Boussole regeneree : %d fichiers indexes" % len(rows))
     print("  %s" % os.path.relpath(OUT_MD, ROOT))
     print("  %s" % os.path.relpath(OUT_CSV, ROOT))
+
+    # Si aucun fichier indexe, l'index n'est pas fiable.
+    if not rows:
+        print("[!] AUCUN fichier n'a ete indexe ; l'index n'est donc pas fiable", file=sys.stderr)
+        return 1
     return 0
 
 
