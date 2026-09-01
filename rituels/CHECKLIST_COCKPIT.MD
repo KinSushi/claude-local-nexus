@@ -9244,3 +9244,140 @@ moi-meme ce tour-ci (§82.1).
 | La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
 | Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
 | Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
+
+---
+
+## 84. UN SEUL VOLUME PORTAIT LES DEUX PROJETS — et la recuperation tient en quelques fichiers
+
+### 84.1 CE QUE LE REGISTRE DIT, ET QUE NI L'UNE NI L'AUTRE SESSION NE SAVAIT
+
+Les deux ont repondu `D:`. **Les deux projets etaient donc sur LE MEME
+volume**, et le second disque perdu est le miroir de `sovereign`, pas un second
+disque de travail.
+
+```
+HKLM\SYSTEM\MountedDevices
+  C:   signature GPT
+  D:   signature GPT            <- AUCUNE entree USBSTOR
+  E:   _??_USBSTOR#...Generic&Prod_MassStorageClass...
+  F:   _??_USBSTOR#...Generic&Prod_MassStorageClass...
+  G:   _??_USBSTOR#...Kingston&Prod_DataTraveler_3.0...
+```
+
+> **`D:` ne s'enumerait pas en `USBSTOR` mais en SCSI** — ce que font les
+> boitiers UASP, et cela ferme la boucle avec `UASPStor` comme pilote qui l'a
+> reinitialise.
+
+**Quatre boitiers UAS sont connus de cette machine**, identifies par leur VID :
+
+| VID | fabricant | fantome correspondant |
+| --- | --- | --- |
+| `0781` | SanDisk | `SanDisk 3.2 Gen 1` |
+| `0B05` | ASUSTek | `ROG ESD-S1C` |
+| `0BC2` | Seagate | `Seagate Portable` |
+| `174C` | **ASMedia** | pont NVMe/SATA vers USB, generique |
+
+**Piste et non conclusion** : les ponts ASMedia en mode UAS sont un candidat
+documente pour ce mode de defaillance sur controleurs AMD. Le logiciel ne peut
+pas dire lequel des quatre etait `D:` ; l'operateur le sait en regardant.
+
+**Les deux sessions ont refuse de deviner le modele**, et c'est la bonne
+reponse. `ea-mt5` : *« je ne vais pas nommer un modele de disque par
+elimination sur une liste que vous m'avez fournie »* — apres trois diagnostics
+faux dans la journee.
+
+### 84.2 LA TROUVAILLE DE L'INVENTAIRE : LA RECUPERATION EST PETITE
+
+`rituels/SAUVETAGE_2026-09-01/inventaire_des_pertes.md`.
+
+> **Il ne s'agit pas de restaurer 33 Gio ni 96 277 fichiers. Il s'agit de
+> retrouver quelques dizaines de fichiers, dans deux arborescences connues.**
+
+Pour `sovereign` : **perte probablement nulle.** 33 343 fichiers suivis sur
+`origin`, 43 782 en worktrees d'agents — jetables par construction —, le reste
+en caches reconstructibles. Son ancre canonique et ses memoires vivent hors du
+disque mort. **Seule reserve nommee : `_QUARANTINE`**, 1 790 fichiers non
+suivis, dont son contrat dit « rien n'est jamais detruit ».
+
+Pour `ea-mt5`, trois categories, et la premiere est la seule qui compte :
+
+| categorie | contenu |
+| --- | --- |
+| **irremplacable** | `STATE.md` post-`4b8d30c4` et les dix `SORTIE_*.txt` |
+| reconstructible ~2 h | les deux outils et douze instruments de mesure |
+| **gouvernance** | `REPRISE_2026-09-01.md`, +5 230 octets |
+
+**Les chiffres sont saufs** — ils sont au lot 1. **Ce qui est perdu, ce sont
+les sorties brutes et leurs SHA-256** :
+
+> Sans elles, ces mesures passent du statut de **preuve rejouable** a celui de
+> **resultat rapporte**. C'est exactement la distinction que ces trois depots
+> placent au-dessus de tout, et c'est elle qui est en jeu — pas les chiffres.
+
+Et `REPRISE_2026-09-01.md` porte les ordres de l'operateur en verbatim et la
+LOI 1 durcie ; **c'est le fichier lu au demarrage de chaque session, et il
+n'est nulle part ailleurs.**
+
+⇒ **Cela change l'ordre des gestes.** Si le volume revient ne serait-ce qu'une
+minute, ces chemins passent en premier et rien d'autre. Une copie integrale de
+33 Gio sur un lien qui a lache deux fois est un pari ; une copie de quelques
+megaoctets n'en est pas un.
+
+### 84.3 LE POINT QUI PROTEGE CE QUI RESTE, ET LA CLASSE QU'IL REVELE
+
+> **NTFS rejoue son journal au MONTAGE, et rejouer est une ECRITURE.**
+
+`ea-mt5` a reconnu que sa propre consigne etait insuffisante d'un cran :
+
+> *« Copier avant de reparer repond a "ai-je sauvegarde avant l'operation
+> risquee ?", jamais a "l'acces lui-meme est-il une operation risquee ?" »*
+
+**La question voisine, portee cette fois sur le geste cense nous proteger.**
+C'est la forme la plus retorse rencontree aujourd'hui : la precaution elle-meme
+repondait a cote.
+
+```
+1  diskpart -> select disk N -> attributes disk set readonly
+     AVANT que Windows ne monte
+2  monter en lecture seule
+3  COPIER, dans l'ordre de l'inventaire
+4  seulement ensuite, envisager autre chose
+```
+
+### 84.4 UNE DIXIEME CLASSE ANTI-DERIVE, ET ELLE EST DE MOI
+
+`sovereign` propose de l'ajouter aux neuf :
+
+> **Posseder la mesure et ne pas la compter comme reponse.**
+
+Distincte de la classe 1 : ici on a INTERROGE, on a la reponse, et on la range
+sous la mauvaise question. J'avais ecrit que le reseau et les peripheriques
+d'entree du dock fonctionnent — en le donnant comme un AVERTISSEMENT sur les
+ecrans. Or ils sont sur le tunnel USB : **c'etait la reponse a « le tunnel USB
+est-il mort ? », et je l'avais classee ailleurs.**
+
+**C'est peut-etre la plus difficile a mecaniser des dix**, parce qu'aucun garde
+ne peut savoir a quelle question une mesure repond.
+
+### 84.5 SUJETS OUVERTS — remplace §83.5
+
+| sujet ouvert | ou | etat |
+| --- | --- | --- |
+| **`_QUARANTINE` de `sovereign`, 1 790 fichiers non suivis** | §84.2 | la seule reserve de recuperation qu'il formule |
+| **`REPRISE_2026-09-01.md` n'est nulle part ailleurs** | §84.2 | ordres operateur verbatim + LOI 1 durcie |
+| **Les `SORTIE_*.txt` et leurs SHA-256** | §84.2 | preuve rejouable contre resultat rapporte |
+| **Le lien se degrade depuis six jours, sans temoin** | §83.2 | 101 erreurs le 29/08, deux reinitialisations |
+| **Suspension selective active sur 30 peripheriques** | §81.2 | gratuit et reversible ; **pas une cause prouvee** |
+| Classe 10 : posseder la mesure, la ranger sous la mauvaise question | §84.4 | non mecanisable a ce jour |
+| Apres un `git checkout`, rien ne dit ce qui a ete DEFAIT | §82.1 | un patch sur deux perdu en silence |
+| **A2A n'existe pas — zero ligne** | §76.7 | apres la stabilisation du MCP |
+| `nexus_models` ne donne pas le POIDS d'un alias | demande `sovereign` | `glm-4.7-flash` fait 19 Go |
+| `nexus_ask` n'a aucune borne de temps | demande `sovereign` | contention sans borne a trois |
+| `nexus_context` : 1800 s de silence | demande `sovereign` | compte de fenetres traitees |
+| `backup.ps1` ecrit sur le disque de l'hote | §78.2 | ecriture desormais interdite la |
+| Declencheurs D1 et D2 non mecanises | §78.4 | anti-controle necessaire |
+| Le garde de production ne s'arme qu'au prochain demarrage | §77.3 | cable et prouve |
+| Le garde CAS TUBE, redige et jamais pose | §77.4 | cinq repetitions |
+| La chaine de delegation est conduite A LA MAIN | aveu | bricolage a supprimer |
+| Le heredoc du shell mutile les gros contenus | §81.1 | contourne, non corrige |
+| Les gros fichiers echappent a l'audit | §75.2 | 3561, 1927, 1667 lignes |
