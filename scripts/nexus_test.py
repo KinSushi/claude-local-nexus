@@ -1274,6 +1274,8 @@ def main() -> int:
         test_policy(models)
     if args.only in (None, "routage"):
         test_routage_par_profil()
+        jouer_epreuve_python("epreuve_concentration_routage.py",
+                             "coherence des deux chemins d'appel")
     if args.only in (None, "code"):
         test_code()
     if args.only in (None, "ruche"):

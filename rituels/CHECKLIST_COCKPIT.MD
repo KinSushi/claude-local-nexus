@@ -10059,7 +10059,7 @@ propre auteur, le jour meme.
 | # | Sujet | Etat | Ce qui le ferme |
 | --- | --- | --- | --- |
 | 1 | Concentration du routage | `OUVERT` | une epreuve qui ECHOUE si un modele depasse un plafond de part. `nexus_savings` affiche le classement sans jamais **juger** — il n'a aucun seuil et ne peut pas rendre rouge |
-| 2 | Les deux chemins se contredisent | `OUVERT` | meme epreuve, cas 2 : compare le defaut du MCP et la tete de `REPLIS_GRATUITS`, echoue s'ils ne designent pas le meme plan |
+| 2 | Les deux chemins se contredisent | `GARDE` | meme epreuve, cas 2 : compare le defaut du MCP et la tete de `REPLIS_GRATUITS`, echoue s'ils ne designent pas le meme plan |
 | 3 | Pas de profil de tache cote `nexus_agent.py` | `OUVERT` | le §109 (coding / reasoning / rapide / multimodal) n'existe **que** dans le MCP. Verifie : les occurrences de « profil » dans `nexus_agent.py` concernent le profil MATERIEL, pas la tache |
 | 4 | Le routeur local mal apparie | `OUVERT` | une epreuve de routage par CLASSE : une consigne triviale ne doit pas atteindre un specialiste de 18 Go |
 
@@ -10234,7 +10234,7 @@ redecouvert au moment ou il mordait.
 | # | Sujet | Etat | Pourquoi il compte |
 | --- | --- | --- | --- |
 | 1 | Concentration du routage a 53,2 % | `OUVERT` | epreuve `epreuve_concentration_routage.py` EN COURS de redaction par le banc, non posee |
-| 2 | Deux chemins d'appel contradictoires | `OUVERT` | meme epreuve, cas 2 |
+| 2 | Deux chemins d'appel contradictoires | `GARDE` | garde par epreuve_concentration_routage.py, cablee ; pas encore ARMEE, voir 13 |
 | 3 | Pas de profil de tache cote `nexus_agent.py` | `OUVERT` | le §109 existe, mais sur un seul des deux chemins |
 | 4 | Routeur local mal apparie | `OUVERT` | 63 s pour un refus, sans aucune alarme |
 | 5 | Harnais, etape 5 | `OUVERT` | le seul maillon entre « le banc survit » et « la plateforme survit » |
@@ -10242,7 +10242,7 @@ redecouvert au moment ou il mordait.
 | 7 | Collision `PROGRESS.md` | `OUVERT` | une perte de travail silencieuse en attente |
 | 8 | Heredoc mutilant | `OUVERT` | consigne comme contourne depuis §81.1, subi de nouveau |
 
-> **Zero ferme sur huit a cette minute.** Un sujet ne se clot que lorsqu'un CONTROLE echoue
+> **Un garde sur treize.** Le sujet 2 a desormais un controle qui echoue ; il n'est pas encore arme par une gate (sujet 13). Un sujet ne se clot que lorsqu'un CONTROLE echoue
 > si la regle est enfreinte (§0.2.1). Les six autres portent ici leur mesure,
 > pas leur garde.
 
@@ -10451,3 +10451,151 @@ regle generale.
 | # | Sujet | Etat | Ce qui le ferme |
 | --- | --- | --- | --- |
 | 12 | Le contrat decrit un moteur que personne ne lance | `OUVERT` | un controle qui lit `ollama ps` et echoue si le processeur employe contredit ce que le contrat affirme |
+
+---
+
+## 100. PREMIERE MECANISATION DE LA SEANCE — et le maillon qui manque a TOUTES les epreuves
+
+`scripts/epreuve_concentration_routage.py`, posee et cablee le 2026-09-01. Elle
+garde le sujet 2 du §90.3 : les deux chemins d'appel doivent designer le meme
+plan.
+
+### 100.1 Ce qu'elle rend, contre le depot REEL
+
+```
+[OK  ] plan_de rend local : foo-local => local
+[OK  ] plan_de rend cloud : bar-cloud => cloud
+[OK  ] plan_de rend inconnu : baz => inconnu
+[OK  ] extraire_defaut_mcp rend alias : found glm-4.7-flash-local
+[OK  ] extraire_defaut_mcp vide rend None : None
+[OK  ] extraire_tete_replis rend premier alias : found gpt-oss-120b-cloud
+[OK  ] extraire_tete_replis absent rend None : None
+[OK  ] extraction server.js : alias glm-4.7-flash-local
+[OK  ] extraction nexus_agent.py : alias gpt-oss-120b-cloud
+[RATE] plans differents : glm-4.7-flash-local (local) vs gpt-oss-120b-cloud (cloud)
+code de sortie 1
+```
+
+**La contre-epreuve n'a pas eu a etre fabriquee : le depot en fait office, en
+vrai grandeur.** L'epreuve rougit aujourd'hui et ne passera au vert que le jour
+ou les deux chemins seront reconcilies. Un mecanisme qui ne peut pas rougir ne
+prouve rien (§0.1.4.1) ; celui-ci rougit sur le defaut qu'il existe pour
+attraper.
+
+Deux contre-epreuves internes en plus : `extraire_defaut_mcp("")` et
+`extraire_tete_replis` sur un texte sans la ligne doivent rendre `None`. Sans
+elles, une fonction qui retournerait toujours une valeur passerait le cas
+nominal.
+
+### 100.2 LE CYCLE A TROIS TEMPS, joue en entier pour la premiere fois
+
+Quatre modeles distincts, zero ligne ecrite par l'orchestrateur, cout facture
+nul :
+
+| temps | qui | duree | resultat |
+| --- | --- | --- | --- |
+| 1 ecriture | `qwen2.5-coder-32b-local` | 258 s | 3 defauts dont un **faux vert** |
+| 2 correction | `codestral-local` | 235 s | corrige les 3, **fabrique** des donnees de test |
+| 3 audit | `gemma4-31b-local` | >20 min | abandonne — voir §100.4 |
+| 3 audit (bis) | `gpt-oss-120b-cloud` | **8 s** | **A REJETER**, cinq defauts nommes |
+| redaction finale | `gpt-oss-120b-cloud` | 11 s | version integrant les cinq |
+
+**Le temps 3 a trouve deux defauts que l'arbitrage n'avait pas vus** : que
+l'epreuve ne LISAIT aucun fichier du depot — donc ne prouvait rien sur son
+etat — et qu'elle pouvait rendre un faux vert. Sans lui, une epreuve affichant
+vert sur un depot en defaut etait posee.
+
+> C'est la demonstration exacte du §0.7.1. Deux delegations sur trois donnaient
+> deja le sentiment d'un cycle complet ; **c'est la troisieme qui portait la
+> garantie.**
+
+Le temps 2 a lui-meme fabrique : il a remplace `glm-4.7-flash-local` par
+`gpt-3.5-turbo-local` dans ses donnees de test. Corriger trois defauts en en
+introduisant un quatrieme est le regime normal, et c'est pourquoi le temps 3
+n'est pas optionnel.
+
+### 100.3 LES SIX MAILLONS — quatre tenus, deux manquants, et le manquant vaut pour TOUT le depot
+
+| maillon (§0.2.1) | etat |
+| --- | --- |
+| le script | `scripts/epreuve_concentration_routage.py`, 130 lignes |
+| sa propre preuve | rougit sur le defaut reel + 2 contre-epreuves internes |
+| **le caller** | cable dans `nexus_test.py --only routage` — verifie : ses 10 cas sont reverses dans la suite, le `[RATE]` devient `[FAIL]` |
+| **la gate** | **AUCUNE** — voir ci-dessous |
+| la documentation | cette section |
+| la regression | **absente** — rien n'echoue si le cablage est retire |
+
+**LE MANQUE EST STRUCTUREL, pas particulier a cette epreuve.** Mesure :
+
+```
+nexus_rituel.py lance REELLEMENT :  nexus_savings.py  nexus_progres.py
+                                    nexus_worktree.py  nexus_cablage.py
+                                    nexus_outillage.py
+nexus_test.py est lance par        : RIEN
+                                     ni la vitrine, ni le rituel, ni la
+                                     conformite, ni un hook, ni une tache
+epreuves portees par nexus_test.py : 35
+```
+
+Donc **les trente-cinq epreuves du depot ne tournent que si quelqu'un lance la
+suite a la main.** Le rituel affiche « cablage tenu » — mais il parle du
+cablage des SCRIPTS, jamais de l'execution des EPREUVES. Deux questions
+voisines, encore (§97).
+
+Ce n'est pas forcement un oubli : la suite complete interroge la passerelle et
+les modeles, et peut couter du temps qu'une gate a 6 heures ne veut pas payer.
+**Mais alors la decision doit etre ecrite, et un sous-ensemble rapide doit
+etre arme.** En l'etat, elle n'est ni ecrite ni armee.
+
+| # | Sujet | Etat | Ce qui le ferme |
+| --- | --- | --- | --- |
+| 2 | Les deux chemins se contredisent | `GARDE` | le controle existe, echoue, et est cable. Il n'est pas ARME : voir 13 |
+| 13 | Aucune gate ne joue `nexus_test.py` | `OUVERT` | armer la suite — ou un sous-ensemble rapide — dans le rituel ou la vitrine, et un controle qui echoue si l'armement disparait |
+
+### 100.4 TROIS DEFAUTS D'USAGE COMMIS ET RATTRAPES DANS LE MEME TOUR
+
+**1. Vingt minutes d'audit local SANS FICHIER.** Le fichier a auditer avait ete
+place dans le scratchpad de session, hors de la racine du depot. Le garde l'a
+refuse **proprement, en nommant la voie** :
+
+```
+[refuse] ...\jobs\...\a_auditer.py (hors de la racine de travail C:\local-llm-docker ;
+         --racine pour en designer une autre, ou copier le fichier sous la racine)
+```
+
+J'ai lu « c'est lent » la ou l'instrument ecrivait « je n'ai pas ton fichier ».
+**Un refus propre qui nomme la voie ne sert a rien si l'appelant ne le lit
+pas.** Correction de la mesure du §98 : sur les >20 minutes imputees au local,
+la lenteur n'explique qu'une part — le reste etait une erreur d'appel.
+
+Le modele cloud, confronte au meme manque, a repondu cinq fois
+« NON — ligne inconnue, je n'ai pas le script sous les yeux » et rendu
+`A REJETER` pour la bonne raison. **Il n'a rien invente** : c'est le
+comportement attendu, et il merite d'etre note aussi souvent que les
+fabrications.
+
+**2. Un faux defaut evite de justesse.** `nexus_test.py --only routage | tail`
+rendait 0 malgre un echec — apparemment un refus qui ne bloque pas, la classe
+la plus grave du depot. Verifie sans le tube : le code REEL est **1**, aux deux
+niveaux. C'etait `$?` qui capturait le code de `tail`. Un defaut declare sur
+une mesure fausse aurait envoye corriger un mecanisme sain.
+
+**3. Une fausse trouvaille arretee par la verification.** « 35 epreuves sur
+disque, 31 citees » semblait designer quatre orphelines. Verification une par
+une : **zero orpheline**. L'ecart venait de mon comptage, qui ne cherchait que
+`jouer_epreuve_python(` alors que d'autres formes d'appel existent.
+
+> Les trois relevent de la meme classe que le §97 : **l'instrument repondait a
+> la question voisine de celle que je croyais poser.** Trois fois en un tour,
+> et chaque fois c'est d'etre alle regarder le reel qui a tranche.
+
+### 100.5 CE QUE LA SEANCE A COUTE, mesure
+
+```
+ecrit par l'orchestrateur : les mesures et leur consignation (§112.4 le reserve
+                            a qui detient les mesures)
+ecrit par le banc         : le script, sa correction, son audit, sa version finale
+cout facture              : 0
+duree local               : 258 s + 235 s + 20 min perdues sur erreur d'appel
+duree cloud               : 8 s (audit) + 11 s (redaction finale)
+```
