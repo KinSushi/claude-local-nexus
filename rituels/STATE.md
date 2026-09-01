@@ -1,6 +1,6 @@
 # État de la plateforme
 
-> Généré par `python scripts/nexus_state.py` le 2026-09-01 08:39 Amér. du Sud - Pac..
+> Généré par `python scripts/nexus_state.py` le 2026-09-01 08:49 Amér. du Sud - Pac..
 > **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,
 > pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.
 
@@ -9,8 +9,8 @@
 | | |
 |---|---|
 | Branche | `main` |
-| Commit | `7d21430` |
-| Arbre de travail | propre |
+| Commit | `79d5cb7` |
+| Arbre de travail | modifie |
 | Version de routage | `r19be7650d1` |
 
 ## Services
@@ -72,7 +72,7 @@ Verdict : **valide**
 ## Traque mecanique
 
 ```
-80 fichier(s) analyse(s)
+82 fichier(s) analyse(s)
   classe 1  handler muet sur un try qui agit       41
   classe 2  decision prise sur un nom              5
   classe 3  defaut de modele non mesure            5
