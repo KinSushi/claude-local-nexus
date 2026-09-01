@@ -36,3 +36,11 @@ cloud_models.txt     linguist-generated
 # conversion CRLF/LF suffirait a faire diverger l'empreinte sans changer une
 # seule instruction.
 scripts/nexus_verrou_machine.py -text
+
+# MEME RAISON, meme remede, 2026-09-01. Le socle universel de securite est
+# partage par les trois depots et sa PREUVE de convergence est son empreinte
+# sha256. Mesure : la copie recue porte 216 CRLF ; apres normalisation LF son
+# empreinte passe de cef66586... a 34828bed... — le controle « meme niveau »
+# se casserait tout seul au premier passage de git, sans qu'une seule regle
+# change. Git avait d'ailleurs deja emis l'avertissement.
+rituels/SOCLE_UNIVERSEL.json -text
