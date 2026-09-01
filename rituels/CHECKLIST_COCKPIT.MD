@@ -5313,3 +5313,74 @@ avait declare `PLAFOND_REPRISE = 16384` et ne s'en servait NULLE PART. Une
 constante sans sa mecanique — *produit, non consomme*. Attrapee par
 l'arbitrage, pas par le compilateur.
 
+---
+
+## 55. UNE FONCTION MORTE, ET DEUX INSTRUMENTS CASSES DE MA MAIN
+
+Point de depart : une tache de fond **tuee pour la quatrieme fois du jour** —
+l'entree #1 de la recolte, celle classee la plus grave. La cause est hors du
+depot : aucun script n'y tue de processus, les taches planifiees etaient au
+repos, **42 Go etaient libres**, et *tous* les processus python sont tombes
+ensemble. Je ne la trouverai pas d'ici.
+
+**Alors plutot que de la reinscrire une quatrieme fois, rendre le travail
+survivant.** Le chemin des LOTS possede `--sortie`, qui ecrit chaque tache
+des qu'elle aboutit — precisement pour cela. Le chemin MAP ne l'avait jamais
+eu : ses resultats s'accumulent en memoire seule, et une mort perd vingt
+minutes de calcul local.
+
+### 55.1 En cherchant ou poser ce journal, j'ai patche du code MORT
+
+`_map_sur_plan` n'a **aucun appelant**, nulle part. C'est l'implementation
+**supersedee** : la docstring de `_repartir_map`, qui la remplace, explique
+pourquoi une file commune vaut mieux qu'une part assignee d'avance.
+
+Le patch est annule, la fonction retiree.
+
+### 55.2 L'ANGLE MORT QU'ELLE REVELE
+
+`nexus_cablage.py` traque les **scripts** orphelins. Rien ne traquait les
+**fonctions** orphelines. Une granularite entiere echappait au cliquet — et
+c'est en tombant dedans que je l'ai vue.
+
+### 55.3 TROIS INSTRUMENTS, DEUX FAUX, ET C'EST LE SUJET
+
+| jet | regle | resultat |
+| --- | --- | --- |
+| 1er | ne compter que « nom( » | **13 candidats**, la plupart faux : manque les rappels, les cles de tri, les types d'argument |
+| 2e | seuil « au plus une reference » | **46 candidats**, dont `_repartir_map` dont j'avais VERIFIE l'appel |
+| 3e | seuil ZERO, references par `ast` | **UNE**, concordant exactement avec la recherche textuelle |
+
+L'erreur du 2e jet, nommee : **une definition de fonction ne produit aucun
+noeud `Name`**. Le seuil est donc zero reference, jamais une. J'avais suppose
+le contraire sans le verifier.
+
+> Deux instruments casses de ma main, sur le meme sujet, en quinze minutes.
+> C'est exactement ce que l'operateur martele : *ce qu'on ecrit soi-meme, on
+> le valide soi-meme, et l'erreur passe.*
+
+### 55.4 LE CLIQUET, ET SES QUATRE MAILLONS
+
+| maillon | etat |
+| --- | --- |
+| le script | `scripts/epreuve_orphelines.py` |
+| **sa preuve** | contre-epreuve : une orpheline ajoutee -> **code 1**, les deux nommees ; retiree -> code 0. **Rejouee a travers le harnais.** |
+| l'appelant | `nexus_test.py --only orphelines` |
+| la porte | le harnais **a refuse** l'epreuve : muette a zero orpheline. Corrigee pour toujours dire son compte |
+
+**Et un defaut attrape en comparant aux jumeaux.** Ma reference vivait dans
+`.nexus/`, **ignore par git**, alors que `cablage_reference.json` et
+`outillage_reference.json` vivent dans `rituels/`, **suivis**. Une reference
+ignoree se remet a zero sur chaque machine : le cliquet lit comme une
+protection sans en etre une. Deplacee.
+
+**Le cliquet s'est RESSERRE de 1 a 0** en retirant la fonction morte. Toute
+nouvelle orpheline echouera desormais — ce qui est la seule facon de fermer
+un sujet dans ce depot.
+
+### 55.5 Reste OUVERT
+
+Le journal du MAP-REDUCE — le besoin d'origine — **n'est pas pose**. Il doit
+aller dans `_repartir_map`, le chemin vivant, et non dans la fonction morte
+qui l'a recu par erreur. Une mort de tache y perd toujours tout.
+
