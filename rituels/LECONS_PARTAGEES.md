@@ -171,3 +171,52 @@ le connaît**. Soit **~88 % des leçons ne sont tenues par aucun script.**
 **`shutil.copy` passe** — même geste, même fichier, même destination. **La garde protège ceux
 qui passent par `cp`, pas la ressource.** Un sous-processus Python est le chemin par lequel on
 ne doit jamais élargir ses droits. À tester dans chaque dépôt.
+
+
+---
+
+## 10. J'AI FAILLI DÉCLARER UNE GARDE AVEUGLE — le test envoyait le mauvais nom
+
+**Mesuré le 2026-09-02, et c'est la sixième occurrence de la classe 1 dans la journée.**
+
+    tool_name: "Task"    ->  EXIT=0, aucun message   « la garde est aveugle ! »
+    tool_name: "Agent"   ->  EXIT=2, refus explicite  la garde va très bien
+
+`Task` est le nom **historique** de l'outil ; la garde juge `Agent`, le nom **actuel**.
+⇒ **J'allais alerter deux sessions sur un trou qui n'existe pas**, exactement comme un pair a
+failli relayer mon faux positif sur `git check-ignore` quelques heures plus tôt.
+
+★ **Ce qui m'a arrêté : la contre-épreuve.** Avant de crier au trou, j'ai demandé *« cette garde
+refuse-t-elle QUOI QUE CE SOIT ? »*. Un `exit 0` partout ne dit pas « la garde est aveugle » —
+il dit **« ou la garde est aveugle, ou mon invocation est fausse »**, et ces deux-là ne se
+distinguent pas sans un cas positif.
+
+> **Une garde muette sur tous les cas est un signal d'INVOCATION avant d'être un signal de
+> GARDE.** Le test négatif seul ne sépare jamais les deux.
+
+⚠️ **Et j'ai commis dans le même geste la faute que j'avais inscrite une heure plus tôt** :
+`python garde.py | head -3; echo EXIT=$?` — le `$?` est celui de `head`. **Il a fallu refaire
+sans pipe pour voir les vrais codes.** Une leçon écrite ne protège pas son auteur le jour même.
+
+---
+
+## 11. L'ÉCART DOC↔CODE SE MESURE DANS LES DEUX SENS *(origine : EA MT5)*
+
+**On parlait tous de « 60 bibliothèques manquantes ». Mesuré par AST sur les imports réels :**
+
+| | EA MT5 | Nexus |
+| --- | --- | --- |
+| modules externes réellement importés | 26 | **2** (`yaml`, `console_tools`) |
+| **[MANQUE_DOC]** appelé, non documenté | **3** | **2** |
+| **[DOC_ORPHELINE]** documenté, jamais appelé | 40 | **63 sur 63** |
+
+★ **Trois questions opposées étaient confondues sous un seul mot :**
+
+    « documentée mais absente de l'interpréteur »  ->  de la doc POUR RIEN
+    « appelée mais non documentée »                ->  le VRAI manque, et il est PETIT
+    « documentée et jamais appelée »               ->  ni l'un ni l'autre
+
+⇒ **Mon « 92 % de bibliothèques absentes » ne mesurait pas une dette — il mesurait une doc
+EXCÉDENTAIRE.** Le vrai manque de ce dépôt tient en deux modules. **Un chiffre alarmant qui
+répond à la question voisine est plus coûteux qu'une absence de chiffre** : il oriente le
+travail vers un chantier qui n'existe pas.
