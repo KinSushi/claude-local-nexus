@@ -499,3 +499,36 @@ generant ne peut pas rendre compte de sa propre modification.
 > **Un « inconnu » affiche a la place d un succes est un defaut grave** : il se
 > lit comme une mesure impossible alors que la mesure a reussi et vaut zero.
 > C est la meme famille que le « vide lu comme une panne », vue a l envers.
+
+### 17.1 LES AGENTS TRAVAILLAIENT SANS LES LIVRES — mesure du 2026-09-02
+
+Consigne de l operateur : *« n oublies pas de leur fournir une copie des
+livres »*. Verification faite immediatement, et elle donne raison a la
+consigne :
+
+```
+worktree agent-xxx : references/livres/  ->  1 entree   (_POINTEUR_CORPUS.md)
+arbre principal    : references/livres/  ->  4 entrees  (+ code, epub, packt)
+```
+
+**Cause** : `references/livres/` est **gitignore** — a raison, c est 59 Mo de
+corpus qui n ont rien a faire dans l historique. Mais un worktree neuf ne
+recoit que ce qui est SUIVI. Les cinq agents en vol travaillaient donc **sans
+le corpus**, alors que leurs consignes leur disaient de le consulter.
+
+Deux d entre eux l avaient d ailleurs signale sans que j en tire la
+consequence : *« le corpus lui-meme, gitignore, n y existe tout simplement
+pas »* — ils lisaient depuis l arbre principal, ce qui viole la regle 0.4
+(un worker recoit une COPIE, jamais la source).
+
+**Remede applique** : les trois rayons copies dans les cinq worktrees actifs.
+Verifie : 4 entrees chacun.
+
+> **Une consigne qui prescrit de consulter une ressource ABSENTE produit soit
+> une abstention, soit une invention.** C est probablement la vraie cause de
+> l audit faux du tour precedent — l agent a conclu qu un terme etait absent du
+> corpus ; il l etait de SON corpus, qui etait vide.
+
+**Ce qui reste OUVERT** : aucun controle ne verifie qu un worktree d agent
+porte les ressources que sa consigne lui demande de consulter. Tant qu il
+n existe pas, ce paragraphe ne ferme rien (contrat 0.2.1).
