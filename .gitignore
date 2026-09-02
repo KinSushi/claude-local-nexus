@@ -94,3 +94,4 @@ v15*.json
 # Meme regle que references/livres/ : la matiere reste hors historique, seul
 # son pointeur est suivi par l exception plus bas.
 references/livres_texte/
+references/python_libs_docs_eamt5/
