@@ -15359,3 +15359,28 @@ suspects.** Elle etait fausse, et le modele l'a suivie exactement.
 **Rendement mesure : 0 signalement sur 100+ scripts sains, et 4 sur 4 sur les temoins
 defectueux.** C'est ce qui le rend citable — un controle bruyant se fait desarmer dans la
 semaine, et 41 detections ne sont pas 41 defauts (§115.47).
+
+### 115.80 L'OUTIL A DESORMAIS SON EPREUVE — 7 cas sur 7, dont celui qui prouve le silence
+
+`epreuve_verifie_rendu.py`, cablee dans `nexus_test.py:2465`. Les sept cas sont tous fondes
+sur un defaut REEL mesure cette nuit :
+
+    UN     ecrit puis sort non nul     -> aucune alarme   (le cas de la session voisine)
+    DEUX   dort plus que le delai      -> signale         (le seul vrai defaut du controle 1)
+    TROIS  fichier sain                -> silence
+    QUATRE sort non nul sans ecrire    -> NOTE, pas alarme, code nul
+    CINQ   tranche a 8 pour prefixe 7  -> signale
+    SIX    antislash simple + oblique  -> signale
+    SEPT   deux antislashes            -> SE TAIT
+
+**Le cas SEPT est celui qui compte le plus** : sans lui, un outil devenu aveugle apres un
+resserrage passerait au vert. C'est exactement le risque couru deux fois ce soir en resserrant
+de 27 a 2 puis de 2 a 0 faux positifs.
+
+**Contrainte de transport respectee dans l'epreuve elle-meme** : aucun antislash litteral
+n'est ecrit en clair, ils sont construits par `chr(92)`. L'epreuve qui verifie qu'un antislash
+n'a pas ete mange ne peut pas se permettre que le sien le soit — sinon elle resterait verte
+sans rien verifier (§115.75).
+
+`epreuve_fonctions.py` est cablee aussi, ligne 2464 : son premier patch avait ete REFUSE pour
+marqueur colle en fin de ligne, et je ne l'avais pas revu.
