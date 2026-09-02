@@ -22,6 +22,8 @@ import json
 TEMP_SUBSTRINGS = ("scratchpad", "temp", "tmp", "AppData")
 CODE_EXTENSIONS = {".py", ".js", ".mjs", ".cjs", ".ts", ".ps1"}
 TARGET_TOOLS = {"Edit", "Write", "NotebookEdit"}
+# Cette constante declare le perimetre JUGE afin qu il puisse etre confronte au matcher qui arme la garde, voir la constante du meme nom dans nexus_garde_agent.py
+OUTILS_JUGES = ("Edit", "Write", "NotebookEdit")
 
 
 def _is_temp_path(path: str) -> bool:
