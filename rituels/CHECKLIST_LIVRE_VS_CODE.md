@@ -373,3 +373,54 @@ ouvert, c est qu **aucun controle ne refuse une consigne qui pointe vers
 **Et la vraie racine est ailleurs** : ces 157 commits non pousses sont eux-memes
 la cause. Deux sessions voisines l ont dit le meme jour, apres avoir perdu leur
 volume : *« ce qui sauve le travail, ce sont les poussees regulieres »*.
+
+---
+
+## 16. CABLAGE DES EPREUVES — deux dettes DECLAREES, aucune maquillee
+
+Mecanique appliquee : ROUGE = non satisfait, et **aucune promotion sans
+preuve**. Ce qui suit est mesure, pas suppose.
+
+| epreuve | etat REEL mesure | verdict |
+| --- | --- | --- |
+| `epreuve_journal_disjoncteur.py` | **cablee mais IMBRIQUEE** sous `if args.only in (None, "import")`. Elle se joue en passe complete — `args.only` vaut `None` — mais **`--only` ne peut pas l atteindre seule** : elle n a pas de cle propre | 🟡 **PARTIEL** |
+| `epreuve_cles_only.py` | **ORPHELINE**. Ecrite, verte, contre-epreuve prouvee — et **personne ne l appelle**. Le cliquet la signale : `orphelin scripts/epreuve_cles_only.py` | 🔴 **NON CABLEE** |
+
+### Ce que j ai commis, et qui est la faute la plus interessante du tour
+
+**J ai ecrit une epreuve et je ne l ai pas cablee — le jour meme ou j inscrivais
+que « l appelant est le lien le plus souvent manquant ».** Le cliquet l a
+attrape en une passe. C est exactement ce que le contrat 0.2.1 prevoit : la
+regle ecrite n a pas protege son auteur, le CONTROLE si.
+
+Et en revenant en arriere, j ai decouvert que **mon cablage du matin etait deja
+mal pose** : `epreuve_journal_disjoncteur` avait ete inseree SANS son propre
+`if`, donc imbriquee. Elle tournait, elle passait, et elle etait mal branchee.
+Personne ne l aurait vu : elle rend vert en passe complete.
+
+### QUATRE tentatives de reparation, quatre echecs, et ce qu ils prouvent
+
+| passe | rendu du banc | ce qui a arrete |
+| --- | --- | --- |
+| 1 | bloc **imbrique a 12 espaces** au lieu de 8 | rien — applique, puis retire par moi |
+| 2 | ancre alteree | `REFUS : occurrences trouvees : 0` |
+| 3 | rendu **VIDE** apres 76 s | le banc lui-meme, en echec |
+| 4 | patch syntaxiquement invalide | `[!] Le patch produirait un fichier SYNTAXIQUEMENT INVALIDE` |
+
+**Trois gardes sur quatre ont mordu.** Seule la premiere passe est entree — et
+c est la plus instructive : le fichier restait **syntaxiquement valide** et
+faisait **autre chose que ce qui etait demande**. C est exactement le troisieme
+mode de defaillance du livre, cite verbatim :
+
+> *« Semantic mismatches: These are subtle but critical failure modes where a
+> tool executes successfully but produces a result that does not align with the
+> user's intent. »*
+> — *30 Agents Every AI Engineer Must Build*, ch. 7, « Common failure modes »
+
+Aucune garde ne l a vue, parce qu aucune ne juge l INTENTION. `py_compile`
+passe, `ruff` passe, l applicateur passe. **Seule une relecture du resultat
+l attrape** — et c est la raison d etre du temps 3 du contrat 0.7.1.
+
+**Arret decide apres quatre passes**, comme pour `nexus_ombre.py`. Les deux
+lignes restent a leur couleur reelle. Un cablage force au chausse-pied vaudrait
+moins qu une dette ecrite.

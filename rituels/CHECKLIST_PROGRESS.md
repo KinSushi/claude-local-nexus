@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 13:57:34
+Generated: 2026-09-02 14:19:28
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 161 |
+| Commits non pushes | 164 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 13:54:46 -0500 |
+| Date du dernier commit | 2026-09-02 14:07:24 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -24,8 +24,8 @@ Generated: 2026-09-02 13:57:34
 | Couleur | Nombre |
 |---|---|
 | Vert | 13 |
-| Jaune | 10 |
-| Rouge | 13 |
+| Jaune | 11 |
+| Rouge | 14 |
 
 ## 5. Sauvegardes
 | Metric | Value |
@@ -41,7 +41,7 @@ Generated: 2026-09-02 13:57:34
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 7
 - Regressions d outillage : 84
-- Prescriptions rouges : 13
+- Prescriptions rouges : 14
   - Dependency validation
   - Coordination testing
   - Tool compatibility checks
@@ -57,4 +57,5 @@ Generated: 2026-09-02 13:57:34
   - reste 🔴
   - `nexus_epreuve_vide.py` est appele SANS ARGUMENT
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
-- Commits non pousses : 161
+  - ORPHELINE
+- Commits non pousses : 164
