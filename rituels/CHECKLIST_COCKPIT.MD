@@ -13493,3 +13493,62 @@ Inscrites parce qu'un audit rejete est aussi un resultat.
 | 2 | Un refus de piece jointe ne fait pas echouer la tache : `1 reussie, 0 echec`, rc=0. Dans un lot de vingt fichiers dont un est ecarte, la perte est silencieuse | `OUVERT` — meme classe que le « 0 echec » sur troncature |
 | 3 | Joindre l'etat de charge a un echec de delai. `nexus_charge.py` rend deja processus lourds, RAM libre et verdict — le remede est un APPEL, pas une conception | `OUVERT` |
 | 4 | `git add -A` a emporte le travail d'une autre session, **cinquieme collision en trois heures** | `OUVERT` — l'attention ne suffit pas, il faut un mecanisme |
+
+### 115.33 LE REPLI CLOUD → LOCAL EST AUTORISE, ET IL PEUT ETRE NUISIBLE
+
+Mesure du 2026-09-01, 22:28. Un lot de trois taches, **toutes demandees sur des
+alias CLOUD**, tournait encore vingt minutes apres son lancement. Derniere ligne
+de son journal :
+
+    Appel modele glm-4.7-flash-local (timeout 900s) : depart maintenant
+
+**Aucune tache du lot ne demandait un modele local.** Il s'agit donc du repli
+automatique entre plans gratuits : le modele cloud a echoue ou expire, et le
+lanceur a bascule vers un modele local. Ce repli est AUTORISE par la doctrine
+(§108) et il est meme souhaitable : il ne coute que de la capacite, jamais de la
+confidentialite, et il evite une panne.
+
+**MAIS SUR UNE MACHINE CHARGEE, IL RETOURNE LE BENEFICE.** Trois consequences
+mesurees, aucune annoncee a l'appelant au moment ou elle survient :
+
+| Consequence | Mesure |
+| --- | --- |
+| un appel cloud de 2-3 s devient un appel local de plusieurs minutes | le lot tournait depuis 20 min, contre 26 s pour un lot cloud comparable |
+| le repli PREND LE VERROU MACHINE | les autres sessions se voient refuser le plan local, code 75, sans savoir pourquoi |
+| il consomme la RAM d'un hote deja sature | `glm-4.7-flash` pese 19 Go, et `nexus_charge` annoncait « machine CHARGEE, RAM insuffisante » |
+
+**Le meme lot avait ete lance parce que le cloud est libre de verrou.** Le repli
+a donc annule la propriete meme qui justifiait le choix du plan — silencieusement.
+
+**Ce qui la fermerait**, par cout croissant :
+1. DIRE le repli au moment ou il survient, avec sa raison — le journal le montre,
+   mais seulement a qui le lit ligne a ligne pendant l'execution ;
+2. CONSULTER la charge avant de replier vers le local : `nexus_charge.py` rend
+   deja le verdict, et un repli vers un plan sature n'est pas un repli, c'est un
+   blocage ;
+3. permettre a l'appelant de REFUSER le repli local — un lot lance pour sa
+   propriete « sans verrou » ne veut pas d'un repli qui prend le verrou.
+
+**Rapprochement** : une session voisine a signale le meme motif sur le chemin
+MCP — modele cloud demande, modele local servi, rien dans le rendu pour le dire.
+Le chemin SCRIPT, lui, l'ecrit dans son journal. Le defaut n'est donc pas le
+repli : c'est qu'il soit **subi sans etre su**.
+
+### 115.34 `nexus_stats_jsonl.py` — PREUVE SEULE, raison ecrite AVANT le rebaseline
+
+Le cliquet de cablage le classe `preuve_seule` : seule son epreuve le nomme.
+
+**C'est le cas normal pour cet outil, et le cabler serait un defaut.** Il repond
+a une question posee par un HUMAIN devant un journal — « ce taux global cache-t-il
+des groupes tres differents ? » — et sa reponse est un tableau a lire, non une
+valeur qu'un autre script consommerait. Lui inventer un appelant reviendrait a
+faire tourner une analyse statistique a chaque rituel pour que personne ne la
+lise.
+
+Sa valeur est deja demontree : rejoue sur les 824 ecritures shell journalisees,
+il a CONFIRME par un chemin interne ce qu'une session tierce avait etabli par un
+chemin externe — heredoc a +15,5 points d'ecart contre +6,2 pour `2>&1`. C'est
+un instrument d'enquete, pas un maillon de chaine.
+
+Meme arbitrage que `nexus_preload` (§115.29) : **on ne cable pas un outil pour
+satisfaire un cliquet.** La reference est reprise avec cette raison ecrite avant.
