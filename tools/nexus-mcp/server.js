@@ -419,13 +419,13 @@ const LIBELLE_PLAN = {
 
 function planOf(alias) {
   if (!alias) return "plan inconnu";
-  // La table lue a la source prime toujours ; le suffixe n'est qu'un repli
-  // pour le cas ou la passerelle n'aurait pas encore repondu.
+  // Un plan inconnu honnete vaut mieux qu'une affirmation de confidentialite
+  // non mesuree, et le repli le plus dangereux est celui qui rassure.
   const connu = plansConnus && plansConnus.get(alias);
   if (connu) return LIBELLE_PLAN[connu] || connu;
   if (alias.endsWith("-cloud")) return "Ollama Cloud, les donnees sortent";
   if (alias.startsWith("claude-")) return "Anthropic, facture au token";
-  return "local, cout 0";
+  return "plan inconnu";
 }
 
 // Concurrence des plans, bornee au niveau du SERVEUR.
@@ -883,6 +883,8 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     // Le cout reel, tel que la passerelle le calcule. Preferable a une
     // affirmation « cout 0 » deduite du nom du modele.
     cout: Number(headers["x-litellm-response-cost-original"] || 0),
+    substitue: resolved !== model,
+    demande: model,
   };
 }
 
