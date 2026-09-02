@@ -1138,6 +1138,10 @@ def rendre(resultat: dict) -> None:
     print("  %s" % resultat["nom"])
     if resultat.get("erreur"):
         print("  ECHEC : %s" % resultat["erreur"])
+        print("TRACABILITE: %s [%s] %s" % (
+            resultat.get("servi_par", "?"),
+            resultat.get("plan", "?"),
+            resultat.get("adresse", "?")))
         print("=" * 72)
         return
     if resultat.get("bascule"):
@@ -1495,12 +1499,13 @@ def main() -> int:
     echecs = [r for r in resultats if r.get("erreur")]
     tronquees = [r for r in resultats if r.get("tronque") and not r.get("erreur")]
     etiquetees = [r for r in resultats if r.get("etiquete")]
-    reussies = [r for r in resultats if not r.get("erreur") and not r.get("tronque") and not r.get("etiquete")]
+    reussies = [r for r in resultats if not r.get("erreur") and not r.get("tronque") and not r.get("etiquete") and (r.get("texte") or "").strip()]
+    vides = [r for r in resultats if not r.get("erreur") and not r.get("tronque") and not r.get("etiquete") and not (r.get("texte") or "").strip()]
     factures = [r for r in resultats if r.get("plan") == "anthropic"]
     total = sum(r.get("tokens", 0) for r in resultats)
-    print("  %d tache(s) : %d reussie(s), %d etiquetee(s), %d tronquee(s), %d echec(s), "
+    print("  %d tache(s) : %d reussie(s), %d rendues vides, %d etiquetee(s), %d tronquee(s), %d echec(s), "
           "%d token(s), %.0f s au total"
-          % (len(resultats), len(reussies), len(etiquetees), len(tronquees), len(echecs),
+          % (len(resultats), len(reussies), len(vides), len(etiquetees), len(tronquees), len(echecs),
              total, time.time() - depart))
     # question par tache et la question par vague sont differentes
     # comptage des familles distinctes
