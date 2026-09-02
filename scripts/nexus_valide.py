@@ -533,7 +533,7 @@ def free_plan_judgment(diff_text, callers, modele=None):
             # On applique la logique existante sur chaque morceau.
             try:
                 reg, bas, txt = free_plan_judgment(morceau, callers, modele)  # appel récursif contrôlé
-            except RuntimeError as e:
+            except RuntimeError:
                 # Propagation de l’erreur si un morceau ne peut être jugé.
                 raise
             regression_global = regression_global or reg
@@ -747,18 +747,17 @@ def main():
                 # de repli ne se lit pas comme un verdict du plan demande.
                 print("  (bascule de plan : %s)" % bascule)
             return 1
-        else:
-            portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
-                      if changed_funcs else "diff entier, aucune fonction isolee")
-            print("Aucune regression detectee — juge par le banc gratuit (%s)." % portee)
-            # l'incertitude doit se dire SURTOUT sur le verdict rassurant
-            # car c'est celui apres lequel on passe a la suite
-            for ligne in (texte or "").splitlines():
-                if ligne.startswith("[!]"):
-                    print("  %s" % ligne.rstrip())
-            if bascule:
-                print("  (bascule de plan : %s)" % bascule)
-            return 0
+        portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
+                  if changed_funcs else "diff entier, aucune fonction isolee")
+        print("Aucune regression detectee — juge par le banc gratuit (%s)." % portee)
+        # l'incertitude doit se dire SURTOUT sur le verdict rassurant
+        # car c'est celui apres lequel on passe a la suite
+        for ligne in (texte or "").splitlines():
+            if ligne.startswith("[!]"):
+                print("  %s" % ligne.rstrip())
+        if bascule:
+            print("  (bascule de plan : %s)" % bascule)
+        return 0
 
 if __name__ == "__main__":
     sys.exit(main())

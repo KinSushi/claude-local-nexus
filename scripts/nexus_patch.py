@@ -66,10 +66,9 @@ def lire_consigne(args):
     """Retourne la consigne fournie soit par fichier, soit en ligne."""
     if args.consigne:
         return charger_fichier(args.consigne)
-    elif args.consigne_texte:
+    if args.consigne_texte:
         return args.consigne_texte
-    else:
-        raise ValueError("Une consigne doit etre fournie")
+    raise ValueError("Une consigne doit etre fournie")
 
 def ajouter_exigence_fichier(consigne):
     """

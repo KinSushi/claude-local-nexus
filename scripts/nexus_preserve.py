@@ -143,8 +143,7 @@ def _format_size(gb: float) -> str:
     """Retourne une représentation lisible en Go ou Mo."""
     if gb >= 0.1:
         return f"{gb:.1f} Go"
-    else:
-        return f"{gb * 1024:.0f} Mo"
+    return f"{gb * 1024:.0f} Mo"
 
 
 def inventory() -> list[dict]:

@@ -40,9 +40,8 @@ def cas_nominal(outil_path):
         if code == 0 and "Debut traitement de" in output and "Fin traitement de" in output:
             print("[OK] Cas nominal")
             return True
-        else:
-            print(f"[ECHEC] Cas nominal - Code: {code}\n{output}")
-            return False
+        print(f"[ECHEC] Cas nominal - Code: {code}\n{output}")
+        return False
 
 def cas_inverse(outil_path):
     cmd = [sys.executable, str(outil_path), "--plans", "cloud"]
@@ -51,9 +50,8 @@ def cas_inverse(outil_path):
     if code != 0 and "No targets to process" in output:
         print("[OK] Cas inverse (pas de cibles)")
         return True
-    else:
-        print(f"[ECHEC] Cas inverse - Code: {code}\n{output}")
-        return False
+    print(f"[ECHEC] Cas inverse - Code: {code}\n{output}")
+    return False
 
 def cas_malforme(outil_path):
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -66,9 +64,8 @@ def cas_malforme(outil_path):
         if code == 0 or "Debut traitement de" in output:
             print("[OK] Cas malformé (traité sans plantage)")
             return True
-        else:
-            print(f"[ECHEC] Cas malformé - Code: {code}\n{output}")
-            return False
+        print(f"[ECHEC] Cas malformé - Code: {code}\n{output}")
+        return False
 
 def cas_usage(outil_path):
     cmd = [sys.executable, str(outil_path)]
@@ -77,9 +74,8 @@ def cas_usage(outil_path):
     if code != 0 and "usage: nexus_relais.py" in output:
         print("[OK] Cas usage (affichage de l'aide)")
         return True
-    else:
-        print(f"[ECHEC] Cas usage - Code: {code}\n{output}")
-        return False
+    print(f"[ECHEC] Cas usage - Code: {code}\n{output}")
+    return False
 
 def main():
     outil_path = verifier_fichier_outil()

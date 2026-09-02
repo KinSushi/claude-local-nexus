@@ -146,9 +146,8 @@ def cas_usage():
         if result.returncode != 0:
             print("[OK_USAGE] Refus correct sans arguments")
             return 0
-        else:
-            print("[ECHEC_USAGE] Le script a reussi sans arguments")
-            return 1
+        print("[ECHEC_USAGE] Le script a reussi sans arguments")
+        return 1
     except subprocess.TimeoutExpired:
         print("[ECHEC_USAGE] Timeout")
         return 1

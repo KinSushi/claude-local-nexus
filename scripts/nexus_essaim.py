@@ -213,7 +213,7 @@ def verifier_syntaxe(cible: Path) -> bool:
         if suffix == ".py":
             ast.parse(cible.read_text(encoding="utf-8", errors="replace"))
             return True
-        elif suffix == ".js":
+        if suffix == ".js":
             cmd = ["node", "--check", str(cible)]
             res = subprocess.run(
                 cmd,
@@ -223,7 +223,7 @@ def verifier_syntaxe(cible: Path) -> bool:
                 timeout=30,
             )
             return res.returncode == 0
-        elif suffix == ".ps1":
+        if suffix == ".ps1":
             # Utilisation du parser PowerShell pour une vraie vérification.
             chemin = str(cible).replace("'", "''")
             ps_cmd = (
@@ -245,9 +245,8 @@ def verifier_syntaxe(cible: Path) -> bool:
                 timeout=30,
             )
             return res.returncode == 0
-        else:
-            # Type inconnu : on considère que la vérification échoue.
-            return False
+        # Type inconnu : on considère que la vérification échoue.
+        return False
     except Exception as e:
         print(f"Syntax check error for {cible.name}: {e}")
         return False

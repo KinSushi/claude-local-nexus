@@ -12,7 +12,7 @@ def main():
     parser.add_argument("-r", "--read", help="ID du fragment a lire")
     args = parser.parse_args()
 
-    ref_dir = Path(Path(__file__).parent).parent.parent.joinpath("references")
+    ref_dir = Path(Path(__file__).parent).parent.joinpath("references")
     if not ref_dir.exists() or not ref_dir.is_dir():
         print(f"Aucun corpus trouve dans {ref_dir}")
         sys.exit(2)
@@ -36,6 +36,9 @@ def main():
             except Exception as e:
                 print(f"Fichier illisible {idx_path}: {e}", file=sys.stderr)
 
+    if not found_any_corpus:
+        print(f"Aucun corpus n a ete trouve sous le repertoire des references {ref_dir}", file=sys.stderr)
+        sys.exit(1)
     if args.read:
         for root, _, files in os.walk(ref_dir):
             if "symbols.jsonl" in files:
