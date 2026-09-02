@@ -31,3 +31,28 @@ Une liste des meilleures skills, outils et ressources Claude.
 Garde la sortie de votre agent courte et lisible en diagonale : l'action d'abord, les étapes numérotées, zéro remplissage.
 
 C'est certainement votre meilleur investissement du week-end.
+
+---
+VERIFICATION 2026-09-02 (une recherche web, WebSearch, sur l'entree 1
+seulement -- verifier les dix aurait ete disproportionne face au fait que
+le README du dossier disqualifie deja ce fichier comme source) -- note
+laissee intacte ci-dessus.
+
+Entree 1 (« Anthropic Skills, 172k ») : VERIFIE PAR RECOUPEMENT, plausible.
+Une recherche web situe le depot `anthropics/skills` a environ 173k etoiles
+au moment de cette verification (source : cryptobriefing.com, citant une
+mesure recente), et signale une croissance de ~73k (fevrier 2026) a ~149k
+(juin 2026) puis ~173k -- une trajectoire compatible avec 172k au moment ou
+cette note a ete ecrite. Ecart normal de derive, pas une fabrication.
+
+Entrees 2 a 10 : NON VERIFIABLE ici (dix recherches web supplementaires pour
+une note deja etiquetee comme non-reference par
+`docs/architecture/README.md` : « Les chiffres qu'elle cite sont ceux de la
+publication d'origine et n'ont pas ete verifies ; les liens sont des
+redirections. À traiter comme une piste, pas comme une reference. »). Cette
+disqualification prealable est CONFIRMEE exacte par le seul point verifie :
+un chiffre correct aujourd'hui ne le reste pas, precisement parce que ce
+sont des compteurs vivants sur un depot tiers.
+
+Les liens `lnkd.in/...` n'ont pas ete resolus (redirections LinkedIn hors
+perimetre de verification technique de ce depot) -- NON VERIFIABLE.

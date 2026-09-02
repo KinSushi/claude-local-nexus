@@ -30,3 +30,30 @@ policy checks
 accept / reject
 
 Cela réduit fortement le risque de laisser le premier modèle s'auto-valider.
+
+---
+VERIFICATION 2026-09-02 (grep + `test -f`, jamais execute) -- note laissee
+intacte ci-dessus.
+
+CONFIRME : aucun agent ni script nomme litteralement « Verifier » ou
+« VerificationAgent » n'existe dans le depot (grep insensible a la casse sur
+l'arbre entier : seules trois mentions, toutes documentaires --
+rituels/BOUSSOLE.md, rituels/BOUSSOLE.csv qui cataloguent cette note, et
+docs/architecture/README.md qui la reference).
+
+Le role EST tenu, mais par un ensemble d'outils distincts plutot que par un
+agent unique -- tous les trois confirmes presents par `test -f` :
+  - `scripts/nexus_valide.py` (existe) -- validation d'un correctif, cout
+    facture nul, cf. CLAUDE.md §0.2 point 1 et §105.4 ;
+  - `scripts/nexus_conformite.py` (existe) -- controles bloquants (dont
+    `controle_delegation`, cf. CLAUDE.md §112.2) ;
+  - `scripts/Test-NexusConfig.ps1` (existe) -- porte d'integrite sur
+    litellm_config.yaml, cf. CLAUDE.md §18.
+A quoi s'ajoute LOI 1 (CLAUDE.md §0.7) : la garantie n'est pas un agent
+dedie, mais la regle qu'aucun auteur d'un correctif ne peut en etre le
+verificateur. C'est une architecture de verification distribuee, differente
+de la note (« un agent ou une phase specialisee »), mais qui en remplit la
+fonction annoncee ligne 7 : « Son job n'est pas de refaire le travail. »
+
+Rien a corriger : le contenu propose reste une piste distincte de ce qui a
+ete construit, ni fausse ni perimee en elle-meme.

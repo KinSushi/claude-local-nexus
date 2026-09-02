@@ -17,3 +17,26 @@ prompt:
   compatible_models:
     - qwen3-coder
     - claude-sonnet
+
+---
+VERIFICATION 2026-09-02 (git ls-files + grep, jamais execute) -- note
+laissee intacte ci-dessus.
+
+CONFIRME ABSENT : `git ls-files | grep "^prompts/"` ne rend rien -- aucun
+dossier `prompts/` dans le depot. `grep -r "prompt_version"` sur l'arbre
+entier hors docs/architecture/*.txt ne trouve que `.claude/CLAUDE.md` §88
+(« Prompt versioning »), qui est de la DOCTRINE ecrite en prose et non un
+champ reellement porte par un fichier ou une trace -- CLAUDE.md le dit
+lui-meme : « Do not silently change the core agent contract without
+recording the change », sans mecanisme associe. `compatible_models` par
+prompt : zero occurrence hors cette note.
+
+Ce que le depot fait a la place, aujourd'hui : les consignes systeme sont
+des fichiers plats sous `competences/` (verifie : `competences/
+repondre-court.txt` existe et est charge dynamiquement par
+`scripts/nexus_agent.py` via `charger_competence()`, lignes 1322-1440), sans
+version ni liste de modeles compatibles. C'est un registre de fait, mais
+plus pauvre que celui que cette note propose.
+
+Rien a corriger dans le contenu propose : il decrit fidelement une cible non
+construite.

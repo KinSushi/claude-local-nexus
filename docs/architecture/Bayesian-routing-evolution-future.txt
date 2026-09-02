@@ -46,3 +46,24 @@ Pas :
 production
 → self modify
 → production
+
+---
+VERIFICATION 2026-09-02 (grep + lecture, jamais execute) -- note laissee
+intacte ci-dessus.
+
+VERIFIE, NON CONTREDIT : ni Thompson Sampling ni bandit contextuel
+n'existent dans le depot. `tools/nexus-mcp/server.js` ligne 665-668 le dit
+lui-meme dans un commentaire : « C'est la brique 8 de
+docs/architecture/Adaptive-Inference-Controller.md, et la seule qui rende
+les suivantes possibles : sans traces accumulees, aucun bandit n'a de quoi
+selectionner, et le controleur adaptatif reste une intention. » Le seul
+element reellement pose est le magasin d'observations (brique 8), prealable
+necessaire au bandit propose ici -- pas le bandit lui-meme. Confirme aussi
+par CLAUDE.md §106.2, qui classe explicitement la temperature comme
+« territoire metaheuristique, genuinement » mais nomme trois pieges (UCB/
+Thompson, Bayesian optimisation, recuit simule) sans annoncer qu'aucun soit
+implemente.
+
+Rien a corriger : cette note decrit fidelement une piste non commencee, et
+le README du dossier (`docs/architecture/README.md`) la classe deja comme
+telle.

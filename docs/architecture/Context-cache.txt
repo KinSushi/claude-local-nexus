@@ -9,3 +9,29 @@ embedding cache
 tool-result cache
 
 Ce sont des problèmes différents.
+
+---
+VERIFICATION 2026-09-02 (lecture de litellm_config.yaml + grep, jamais
+execute) -- note laissee intacte ci-dessus.
+
+`response cache` (au sens exact-match) EST implemente :
+litellm_config.yaml lignes 1920-1932, `cache: true`, `cache_params: {type:
+redis, host: redis, port: 6379, ttl: 3600}`.
+
+`semantic cache` A ETE ESSAYE PUIS RETIRE -- ce n'est donc pas une case a
+cocher plus tard, c'est une decision deja prise et documentee sur place.
+litellm_config.yaml ligne 1925 : « Cache exact uniquement. Le cache
+semantique a ete retire : sur des etapes d'agent et des appels d'outils,
+deux prompts « proches » n'ont pas la meme reponse correcte (§27). » Cela
+correspond exactement a CLAUDE.md §27, qui interdit deja la mise en cache
+semantique pour les etapes d'agent, les appels d'outils et les operations
+non idempotentes.
+
+`context cache`, `embedding cache`, `tool-result cache` : absents du code
+(grep sur l'arbre entier, aucune occurrence hors cette note). Confirme
+matiere premiere au sens du README du dossier.
+
+Correction utile pour qui reprend cette note plus tard : le distinguo a
+faire n'est plus « lequel construire d'abord » mais « lequel des quatre
+restants vaut la peine, sachant qu'un des cinq a deja ete tente et rejete
+pour une raison mesuree ».

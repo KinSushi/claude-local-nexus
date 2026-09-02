@@ -15,7 +15,7 @@ supports:
 - embeddings
 - tools
 - vision
-- thinking
+- thinking  # NON CONFIGURE aujourd'hui, verifie 2026-09-02 : voir la note en pied de fichier
 
 ollama-cloud:
 trust_zone: cloud
@@ -61,3 +61,41 @@ allowed:
 - ollama-local
 - ollama-cloud
 - anthropic
+
+---
+VERIFICATION 2026-09-02 (grep sur litellm_config.yaml + l'arbre entier,
+jamais execute) -- registre laisse intact ci-dessus.
+
+CONFIRME ABSENT DU CODE REEL : `trust_zone`, `network_boundary`,
+`privacy_level`, et les etiquettes `L0`/`L1`/`L2`/`L3` sous cette forme
+n'apparaissent nulle part hors ce fichier et docs/architecture/Event-log.txt
+(une autre note, pas du code). La classification de souverainete du depot
+(CLAUDE.md §35) reste, elle aussi, de la doctrine en prose -- aucun fichier
+YAML de ce genre ne pilote reellement le routage.
+
+FAUX, precis et verifie par execution -- `ollama-local: supports: thinking`.
+`grep -n "thinking" litellm_config.yaml` ne montre AUCUNE configuration de
+« thinking » sur un modele Ollama local : la seule occurrence hors
+commentaires concerne « Claude Fable 5 — adaptive thinking » (ligne 49,
+description d'un modele Anthropic), et les deux autres occurrences sont des
+commentaires sur la purge des blocs de thinking CLAUDE dans l'historique
+(lignes 1313, 1745). Cela contredit directement CLAUDE.md §16, que ce
+depot applique deja : « Thinking behavior is model-specific. Never assume
+thinking = enabled ... is portable across providers. » Ce registre affirme
+le contraire pour ollama-local sans qu'aucune configuration reelle ne le
+confirme. Correction : retirer `thinking` de la liste `supports` de
+`ollama-local`, ou le marquer explicitement comme NON CONFIGURE a ce jour.
+
+VERIFIE EXACT -- `ollama-local: supports: vision`. Confirme : plusieurs
+blocs `mode: vision` existent pour des modeles ollama_chat locaux
+(litellm_config.yaml, ex. `llama3.2-vision-11b-local` ligne 374-383, et
+d'autres lignes 177, 306, 399, 416, 433, 594, 623).
+
+VERIFIE EXACT -- `ollama-cloud: supports: selected_multimodal`. Confirme :
+au moins un bloc declare sous `api_base: https://ollama.com` porte
+`mode: vision` (litellm_config.yaml ligne ~1284) -- « selected » est le mot
+juste, ce n'est pas la totalite du pool cloud.
+
+VERIFIE EXACT -- `anthropic: supports: adaptive_thinking`. Conforme a
+CLAUDE.md §16 : « For Claude Fable 5 / Sonnet 5 / Opus 5: adaptive thinking
+is an important part of the current API behavior. »
