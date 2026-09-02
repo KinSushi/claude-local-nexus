@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 13:04:30
+Generated: 2026-09-02 13:13:43
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 154 |
+| Commits non pushes | 155 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 12:48:12 -0500 |
+| Date du dernier commit | 2026-09-02 13:04:54 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -23,7 +23,7 @@ Generated: 2026-09-02 13:04:30
 ## 4. Checklist VS Code
 | Couleur | Nombre |
 |---|---|
-| Vert | 11 |
+| Vert | 12 |
 | Jaune | 9 |
 | Rouge | 10 |
 
@@ -50,6 +50,6 @@ Generated: 2026-09-02 13:04:30
   - Graceful degradation EN TIERS
   - TTL sur les donnees echangees
   - Timeout-aware retry with backoff
-  - `record_failure` n est pas atteint quand TOUS les candidats echouent
   - 12 639 PDF a portee, jamais ingeres
-- Commits non pousses : 154
+  - le repli automatique n essaie qu UN SEUL candidat
+- Commits non pousses : 155

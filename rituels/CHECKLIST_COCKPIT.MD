@@ -17697,3 +17697,77 @@ moi.**
 ⇒ **L'extraction aurait produit 20 304 fichiers a maintenir, a ignorer dans git, a resynchroniser
 a chaque changement du corpus.** L'API prend le texte directement. **Le contournement etait
 l'extraction ; la solution etait de lire la doc de l'API.**
+
+---
+
+# 116. LE DISJONCTEUR ETAIT UN DECOR — 2026-09-02
+
+## 116.1 Le faux vert, et ce qu il masquait
+
+`rituels/CHECKLIST_LIVRE_VS_CODE.md` declarait « Circuit breakers, cable dans
+nexus_agent » en VERT. Mesure :
+
+```
+from nexus_disjoncteur import Disjoncteur
+ImportError: cannot import name 'Disjoncteur'
+```
+
+La classe s appelle `CircuitBreaker`. Le nom importe n a jamais existe, et
+`except Exception: pass` avalait l erreur. `record_failure` n avait **aucun
+appelant dans tout le depot** : le circuit ne pouvait pas s ouvrir.
+
+RETROGRADE, puis referme par etapes, chacune prouvee par EFFET :
+
+| etape | preuve |
+| --- | --- |
+| filtrage vivant | les 5 candidats apparaissent dans `nexus_disjoncteur.py --etat` ; aucune entree n existait avant |
+| journal du POURQUOI | 3/3 classes, exit 0 ; la contre-epreuve rend exit 1 sur la version d avant en nommant `cible-permanente` |
+| enregistrement sur echec TOTAL | journal **1120 -> 1586 octets**, `etat=open`, `fail_count=3` |
+| non-regression | les 4 replis gratuits restent `closed`, `fail_count=0` |
+
+## 116.2 Ce qui reste OUVERT, et n est PAS explique
+
+**Le repli automatique n essaie qu UN SEUL candidat.** `REPLIS_GRATUITS` en
+porte quatre, la boucle fait `continue` apres chaque echec, le seul `break`
+concerne la troncature — et la sortie `--sortie` compte **1** echec. Le chemin
+de retour et la boucle sont dans la meme fonction : la boucle a donc tourne.
+Pourquoi une seule fois n est pas etabli, et aucune cause plausible n est
+inscrite ici.
+
+## 116.3 La faute de l orchestrateur, gravee parce qu elle est la classe du depot
+
+Premier instrument employe : `grep -o "ECHEC : [^|]*"`. Le message concatene
+les echecs avec ` | `, **que la classe de caracteres excluait**. Conclusion
+tiree — « un seul echec » — sur une sortie qui pouvait en porter plusieurs.
+
+> L instrument etait EXACT, la conclusion FAUSSE. Commise en traquant la meme
+> classe chez une session voisine, le meme jour.
+
+La relecture par fichier a confirme le chiffre. **L anomalie est reelle ; le
+premier instrument qui la « montrait » ne prouvait rien.**
+
+## 116.4 Trois sessions, deux verrouillees — et le defaut qui les a verrouillees
+
+`D:` a disparu chez SAS et EA MT5. Leurs hooks y vivent ; un hook qui echoue
+BLOQUE l appel. Mesure par paliers : Bash, PowerShell, **Write** — tous morts.
+
+> Le fail-closed doit porter sur l ACTION gardee, jamais sur la DISPONIBILITE
+> du garde.
+
+Mesure ici avant de conclure : **16 chemins de scripts, 0 hors du volume
+systeme, 0 introuvable**. Le risque ne se transpose pas. **La question n est
+pas tranchee pour autant** — et un paragraphe ne ferme rien.
+
+Leurs etats sont graves chez nous : `rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md`,
+`rituels/DECHARGE_EA_MT5_2026-09-02.md`, `LECONS_PARTAGEES.md` §27.
+
+## 116.5 Ce que le cockpit lui-meme a appris ce jour
+
+`cockpit frais` bloquait la vitrine. Un agent isole a mesure les deux horloges
+et tranche : **le cockpit etait reellement perime** — 15 commits de code depuis
+sa derniere mise a jour — et **aucun script ne le regenere** (`nexus_traque.py`
+ne le mentionne meme pas : 0 occurrence).
+
+Il a **refuse de corriger l instrument**, ce qui aurait masque le manque. C est
+le geste juste, et il merite d etre note : *un controle qu on adoucit parce
+qu il derange cesse d etre un controle.*

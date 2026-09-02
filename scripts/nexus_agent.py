@@ -1138,6 +1138,16 @@ def executer(tache: dict, cle: str) -> dict:
             resultat["motif_bascule"] = motif
         return etiqueter_ecritures(resultat, tache, consigne)
 
+    # Enregistrement de tous les échecs dans le disjoncteur (c'est le seul endroit où l'échec total est constaté)
+    if _dj is not None:
+        try:
+            for e in echecs:
+                parts = e.split(" : ", 1)
+                if len(parts) == 2:
+                    cible, motif = parts
+                    _dj.record_failure(cible, motif)
+        except Exception:
+            pass
     # Aucun candidat n'a produit de texte.
     if trunc_failure:
         # Retourner le premier échec par troncature comme refus de plafond.

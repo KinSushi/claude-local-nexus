@@ -136,7 +136,7 @@ ete demandee de facon verifiable.**
 
 | fait | etat | preuve |
 | --- | --- | --- |
-| **`record_failure` n est pas atteint quand TOUS les candidats echouent** | 🔴 **OUVERT** | journal a **694 octets AVANT et 694 APRES** un echec total mesure ce jour. C est le cas ou le circuit DOIT s ouvrir, et c est celui qui n enregistre rien |
+| ~~**`record_failure` n est pas atteint quand TOUS les candidats echouent**~~ **FERME** | 🟢 **PROUVE PAR EFFET** | journal **1120 -> 1586 octets** apres un echec total, et `modele-qui-n-existe-pas` passe a `etat=open`, `fail_count=3`. **Non-regression verifiee dans le meme geste** : les 4 replis gratuits restent `closed`, `fail_count=0` — le correctif n a banni aucun modele reel |
 | **12 639 PDF a portee, jamais ingeres** | 🔴 **OUVERT** | comptes ce jour sous `D:\SAS\reference` (dont le benchmark GAIA). La doc PyMuPDF est deja sur disque (8 Ko, `open`/`get_text`/`get_pixmap`/`get_toc`) : le moyen existe, l ingestion n a jamais eu lieu |
 | **`recovery_timeout` passe de 0 a 300 s par defaut** | 🟡 **A SURVEILLER** | le code d avant passait `delai=0` ; le correctif n a pas repris le parametre, donc le defaut du module (300 s) s applique. Sans consequence tant que rien n ouvre le circuit — mais deviendra visible des que la rouge ci-dessus sera fermee |
 
@@ -148,3 +148,47 @@ reelle. La troisieme est passee sans que le modele change : seul le FORMAT a
 change. L orchestrateur a fourni les ancres, verifiees uniques dans le fichier
 reel, et le banc n a plus rendu que le remplacement. **L invention d ancre
 devient alors impossible, non pas decouragee.**
+
+
+## 10. ANOMALIE OUVERTE, mesuree et NON EXPLIQUEE — 2026-09-02
+
+| fait | etat |
+| --- | --- |
+| **le repli automatique n essaie qu UN SEUL candidat** | 🔴 **OUVERT** |
+
+Mesure, par le fichier de sortie et non par l affichage :
+
+```
+python scripts/nexus_agent.py --modele modele-qui-n-existe-pas --sortie echec.jsonl
+  -> candidats en echec : 1
+  -> "tous les replis gratuits ont echoue : modele-qui-n-existe-pas : HTTP 400 ..."
+```
+
+`REPLIS_GRATUITS` porte quatre modeles ; `candidats` en compte donc cinq ; la
+boucle fait `continue` apres chaque echec et le seul `break` concerne la
+troncature. **Un seul essai a pourtant eu lieu.** Plus troublant : au moment de
+cette mesure `modele-qui-n-existe-pas` etait deja `open`, donc le filtrage du
+disjoncteur aurait du l ECARTER — et c est lui, et lui seul, qui figure dans
+les echecs.
+
+**Aucune hypothese n est retenue ici.** Le chemin de retour (ligne 1175) et la
+boucle (ligne 1062) appartiennent bien a la meme fonction `executer` : la
+boucle a donc tourne. Pourquoi elle n a tourne qu une fois n est PAS etabli, et
+ecrire une cause plausible serait exactement la faute que ce depot mesure
+depuis deux jours.
+
+### La faute que j ai commise en le cherchant, et qui vaut d etre gravee
+
+Premiere mesure : `grep -o "ECHEC : [^|]*"`. Le message concatene les echecs
+avec ` | `, **que ma propre classe de caracteres excluait**. J ai donc lu « un
+seul echec » sur une sortie qui en portait peut-etre plusieurs, et j ai failli
+declarer une anomalie de MESSAGE la ou il n y en avait pas.
+
+> **L instrument etait exact — `grep -o` fait exactement ce qu on lui demande —
+> et la conclusion etait fausse.** La classe du depot, commise par
+> l orchestrateur lui-meme, dans le geste ou il traquait la meme classe chez un
+> autre.
+
+C est la relecture par le fichier `--sortie` qui a tranche, et elle a confirme
+le chiffre : **1**. L anomalie est reelle. Le premier instrument qui l avait
+« montree » ne prouvait rien.
