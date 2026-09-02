@@ -269,3 +269,46 @@ ILLISIBLE »* — un témoin positif, formulé hors de mes motifs.
 une version délibérément cassée du code et vérifier qu'elle rougit. Plus coûteux, et seule
 mesure honnête. *Le contrat le disait déjà — « la contre-épreuve est le livrable, pas un
 supplément » — et je l'ai réappris en l'enfreignant.*
+
+
+---
+
+## 13. NE JAMAIS DEMANDER À UN PRODUCTEUR D'ATTESTER CE QU'IL NE PEUT PAS OBSERVER *(EA MT5)*
+
+**Mesuré le 2026-09-02.** Une consigne demandait au modèle d'écrire, en dernière ligne, le plan
+et le modèle sur lesquels il avait tourné — pour satisfaire la traçabilité LOI 1.
+
+    en-tête imprimé par le HARNAIS :  servi : ollama_chat/gpt-oss:120b [cloud] https://ollama.com
+    dernière ligne écrite par le MODÈLE : « Plan exécuté : default — Modèle : gpt-4o »
+
+**`gpt-4o` n'existe dans aucun banc et le modèle n'y a jamais tourné.**
+
+★ **Et ce n'est pas une hallucination de difficulté** : le même rendu citait **15 identifiants,
+15 présents dans la pièce jointe, 0 invention**, vérifié par script. **Le seul champ faux était
+celui qui portait sur LUI-MÊME.**
+
+> **Un modèle ne sait pas de façon fiable sous quel alias il a été servi.** Le lui demander, c'est
+> lui demander ce que la consigne ne lui donne pas — et un champ ainsi construit ne produit pas
+> une vérification : **il produit une invention bien formatée, qui a l'air d'une preuve.**
+
+⇒ **Le remède est un déplacement, pas un durcissement** : le plan ne se DEMANDE pas, il
+s'**IMPRIME par le harnais**, qui le connaît. La traçabilité devient **passive** — elle ne dépend
+plus de la coopération du producteur.
+
+⚠️ **Conséquence pour tout banc de mesure** : si l'on demande aux modèles de déclarer quoi que ce
+soit **sur eux-mêmes** — modèle, durée, troncature — **ces champs seront les moins fiables de
+tout leur rendu**, pendant que le reste sera bon. **Ne pas les compter dans un taux de
+fiabilité : ils mesurent la consigne, pas le modèle.**
+
+### 13.1 Et le vérificateur a validé le mensonge
+
+Son auteur le déclare : le script cherchait `(cloud|local|Ollama|plan)` dans la fin du rendu et a
+conclu **« déclare son PLAN : OUI »**.
+
+    il répondait à   « une déclaration est-elle PRÉSENTE ? »
+    la question       « la déclaration est-elle VRAIE ? »
+
+**Neuvième occurrence de la classe 1 dans la journée — sur l'instrument même qui devait faire
+respecter la règle, dans le tour où elle était écrite.** ⇒ *Une leçon écrite ne protège pas son
+auteur le jour même* : constaté le matin dans un dépôt, vérifié le soir dans l'autre, une heure
+après avoir été citée.

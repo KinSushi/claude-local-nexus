@@ -1184,6 +1184,11 @@ def rendre(resultat: dict) -> None:
 
     print("-" * 72)
     print(resultat["texte"].strip())
+    # la tracabilite doit être PASSIVE, elle ne doit pas dépendre de la coopération du producteur
+    print("TRACABILITE: %s [%s] %s" % (
+        resultat.get("servi_par", "?"),
+        resultat.get("plan", "?"),
+        resultat.get("adresse", "?")))
     print("=" * 72)
     print()
 
