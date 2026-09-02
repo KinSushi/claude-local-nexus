@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 12:21:22
+Generated: 2026-09-02 12:25:34
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 149 |
+| Commits non pushes | 150 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 12:18:06 -0500 |
+| Date du dernier commit | 2026-09-02 12:21:22 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -24,8 +24,8 @@ Generated: 2026-09-02 12:21:22
 | Couleur | Nombre |
 |---|---|
 | Vert | 10 |
-| Jaune | 6 |
-| Rouge | 11 |
+| Jaune | 8 |
+| Rouge | 9 |
 
 ## 5. Sauvegardes
 | Metric | Value |
@@ -41,16 +41,14 @@ Generated: 2026-09-02 12:21:22
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 6
 - Regressions d outillage : 85
-- Prescriptions rouges : 11
+- Prescriptions rouges : 9
   - Idempotency
   - Dependency validation
   - Coordination testing
-  - backoff exponentiel
-  - jitter
   - journal du POURQUOI de chaque echec
   - Tool compatibility checks
   - Tool shadowing
   - Graceful degradation EN TIERS
   - TTL sur les donnees echangees
   - Timeout-aware retry with backoff
-- Commits non pousses : 149
+- Commits non pousses : 150

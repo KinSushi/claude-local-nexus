@@ -24,9 +24,9 @@
 | prescription | etat | preuve |
 | --- | --- | --- |
 | **classer transitoire vs permanent** | 🟢 **MECANISE** | `echec_transitoire()` dans `nexus_disjoncteur` — patron `_is_retryable` du livre · 9 cas eprouves · un echec PERMANENT ouvre le circuit IMMEDIATEMENT |
-| **backoff exponentiel** 100→200→400→800 ms | 🔴 absent | — |
-| **jitter** contre le *thundering herd* | 🔴 absent | — |
-| **plafond d'essais** (5) | 🟡 partiel | regle empirique « six renvois », non imposee |
+| **backoff exponentiel** 100→200→400→800 ms | 🟡 **ECRIT, SANS APPELANT** | `_retry_delay()` dans `nexus_disjoncteur` — valeurs du livre eprouvees 0.1/0.2/0.4/0.8/1.6, plafond 30 s. **Une seule occurrence : sa definition.** |
+| **jitter** contre le *thundering herd* | 🟡 **ECRIT, SANS APPELANT** | tirage uniforme prouve : deux appels identiques rendent 1.5052 et 1.0678. **Meme fonction, meme absence d'appelant.** |
+| **plafond d'essais** (5) | 🟡 **CONSTANTE DECLAREE, NON EMPLOYEE** | `MAX_RETRIES = 5` — la valeur du livre, mais **aucun code ne la lit** |
 | **journal du POURQUOI de chaque echec** | 🔴 absent | c'est ce qui empechait de CLASSER |
 | **seuil du disjoncteur** (50 % sur 10) | 🟢 pose | seuil 3 echecs consecutifs |
 | **etats OPEN / HALF-OPEN / CLOSED** | 🟢 pose | prouve sur 6 cas + persistance entre processus |

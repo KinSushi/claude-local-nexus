@@ -18,6 +18,19 @@ from threading import RLock
 
 _STATE_DIR = ".nexus"
 _STATE_FILE = "circuit_state.json"
+MAX_RETRIES = 5
+
+def _retry_delay(attempt):
+    """
+    Return delay in seconds for the given attempt number (starting at 0).
+    Base delay is 0.1 s, doubled each attempt, capped at 30 s,
+    plus a random jitter uniformly distributed between 0 and the current delay.
+    """
+    import random
+    base = 0.1 * (2 ** attempt)
+    delay = min(base, 30.0)
+    jitter = random.uniform(0, delay)
+    return delay + jitter
 
 
 def _state_path():
