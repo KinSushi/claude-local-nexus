@@ -191,7 +191,7 @@ def main() -> int:
         by_blob.setdefault(blob, []).append((name, size))
 
     unique = []
-    for blob, names in by_blob.items():
+    for _blob, names in by_blob.items():
         canonical = sorted(names, key=lambda n: (len(n[0]), n[0]))[0]
         unique.append((canonical[0], canonical[1], [n for n, _ in names]))
 
@@ -212,13 +212,13 @@ def main() -> int:
     used = 0.0
     taken: set[str] = set()
 
-    for key, pattern, label in ROLES:
+    for _key, pattern, label in ROLES:
         candidates = [r for r in runnable
                       if re.match(pattern, r[0]) and r[0] not in taken]
         # A role couvre, le plus leger suffit : la place economisee
         # profite aux roles suivants.
         candidates.sort(key=lambda r: r[1])
-        for name, size, aliases, state, reason in candidates:
+        for name, size, _aliases, _state, _reason in candidates:
             if used + size > budget:
                 continue
             chosen.append((name, size, label))
@@ -226,7 +226,7 @@ def main() -> int:
             used += size
             break
 
-    for name, size, aliases, state, reason in sorted(runnable, key=lambda r: r[1]):
+    for name, size, _aliases, _state, _reason in sorted(runnable, key=lambda r: r[1]):
         if name in taken or used + size > budget:
             continue
         chosen.append((name, size, "elargissement"))
@@ -256,7 +256,7 @@ def main() -> int:
         total_rejected = sum(size for _, size, _, _, _ in rejected)
         print("\n  A NE PAS MIGRER — inexecutable ici, %.0f Go recuperables"
               % total_rejected)
-        for name, size, aliases, state, reason in sorted(rejected, key=lambda r: -r[1]):
+        for name, size, _aliases, _state, reason in sorted(rejected, key=lambda r: -r[1]):
             print("    %-28s %6.1f Go   %s" % (name, size, reason))
 
     if left:
