@@ -41,9 +41,8 @@ def verify(name, input_data, expected_code, env_vars=None, check_deny=False):
         except (json.JSONDecodeError, AttributeError, TypeError):
             success = False
             
-    if not check_deny and expected_code == 0:
-        if out.strip() != "":
-            success = False
+    if not check_deny and expected_code == 0 and out.strip() != "":
+        success = False
 
     marker = "[OK  ]" if success else "[FAIL]"
     print(f"{marker} {name}")

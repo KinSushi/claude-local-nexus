@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 import pathlib
 import subprocess
 import sys
 import tempfile
-import json
 
 def verifier_fichier_outil():
     script_dir = pathlib.Path(__file__).resolve().parent

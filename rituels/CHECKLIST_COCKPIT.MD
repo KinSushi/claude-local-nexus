@@ -15884,3 +15884,202 @@ tort** faute de le trouver au catalogue public.
 **Nuance mesuree** : la plupart rendent **(vide)** a `max_tokens: 24`. Ce n'est pas un defaut
 du modele mais un budget trop serre, defaut deja connu de ces familles. Seul
 `mistral-large-3` a rendu du contenu — en italien, sur une consigne francaise.
+
+### 115.99 LE SERVEUR MCP EXPOSE DOUZE OUTILS ET N'A AUCUNE EPREUVE
+
+Question de l'operateur : *« des suggestions d'ameliorations ou des erreurs a te reporter a
+toi-meme sur le MCP A2A ? »* Mesure avant de repondre.
+
+**Les douze outils exposes :**
+
+    nexus_ask       nexus_batch     nexus_compare   nexus_context
+    nexus_index_build  nexus_models nexus_profile   nexus_route
+    nexus_savings   nexus_search    nexus_summarize nexus_vision
+
+**Epreuves du serveur MCP : AUCUNE.** Aucun fichier `epreuve_mcp*`, aucun test dans
+`tools/nexus-mcp/`.
+
+> C'est le plus gros trou du dispositif, et il est symetrique de celui de `nexus_ruche`
+> (§115.91) : **la piece la plus employee est celle qu'aucun controle ne garde.** Les trois
+> sessions de cette machine passent par ces douze outils a chaque tour ; leurs defauts n'ont
+> ete trouves que par l'USAGE — `planOf` declarant « local » un alias inconnu, l'enveloppe
+> annoncant « tokens traites » pour un corpus soumis, `max_tokens` non expose.
+
+**A2A : aucune implementation.** Le sigle n'apparait que dans le contrat, jamais dans le code.
+Les echanges entre sessions passent aujourd'hui par le mecanisme du client, pas par le MCP.
+C'est une INTENTION, et le §0.6 la nomme comme telle — mais il faut cesser de raisonner comme
+si elle existait.
+
+### 115.100 CE QUE JE ME REPORTE A MOI-MEME — sept fautes de ce tour, comptees
+
+L'operateur demande explicitement les erreurs a me reporter. Les voici, toutes mesurees, sans
+en retirer aucune.
+
+| # | faute | ce qu'elle a coute |
+| --- | --- | --- |
+| 1 | lire une valeur derriere un `tail` ou un pipe | **sept fois**. Vingt minutes sur un patch jamais applique ; un faux defaut presque inscrit ; un code de retour lu comme 0 alors qu'il valait 1 |
+| 2 | inscrire une affirmation FAUSSE au cockpit | attribution de trois violations ruff a une garde armee — retiree en §115.64, dix lignes apres avoir ecrit qu'il ne fallait pas le faire |
+| 3 | deviner un nom d'option (`--chaines` au lieu de `--refs`) | une passe entiere de contre-epreuve perdue, sur la faute que j'impose a chaque consigne d'eviter |
+| 4 | livrer 65 noms d'outils **sans une seule commande** | inutilisable ; l'operateur a du le dire deux fois |
+| 5 | donner un alias de passerelle pour un nom de moteur | le test de l'operateur a echoue en HTTP 404 |
+| 6 | faire reecrire onze epreuves pour **six causes differentes** | deux vagues sans resultat, avant de mesurer les causes une par une |
+| 7 | trois hypotheses fausses sur le tool calling | mesurees et infirmees avant la bonne (§115.97) |
+
+**Le denominateur commun des sept : j'ai conclu avant de mesurer.** Les quatre premieres sont
+des lectures trop rapides, les trois dernieres des consignes ecrites sur une supposition. Le
+remede est le meme et il est deja applique : **mesurer la cause AVANT de deleguer le remede**
+(§115.97), et **lancer chaque commande avant de l'ecrire** (§115.95).
+
+### 115.101 CE QUE JE PROPOSE, RECU DES DEUX SESSIONS VOISINES ET MESURE
+
+Trois ameliorations arrivees ce tour, chacune avec son chiffre. **Deux sont deja satisfaites
+ici, et c'est utile de le dire :**
+
+**A1 — le format HUNK contre « rends le fichier complet ».** Mesure de la session voisine sur
+un fichier de 479 lignes, meme modele :
+
+    fichier complet, 4 tours   ->  198 puis 40 puis 64 puis 66 lignes SUPPRIMEES
+    hunks, 1 tour              ->  6 hunks sur 7 appliques, net +35, ZERO suppression
+
+> **Le defaut n'etait pas le modele, c'etait le FORMAT.** Une consigne « ne supprime rien » a
+> echoue quatre fois ; le format a reussi du premier coup.
+
+**Ce dispositif emploie deja ce format** — `<<<AVANT>>>` / `<<<APRES>>>` / `<<<FIN>>>` EST un
+hunk ancre. Verifie a l'instant sur un patch a trois blocs dont le deuxieme visait une
+fonction inexistante :
+
+    REFUS : le bloc 1 doit etre unique et reel. Occurrences trouvees : 0
+    fichier INTACT — le refus est TOTAL, aucune ecriture partielle
+
+**A2 — refuser d'ecrire sur une destination existante.** La session voisine a ECRASE un
+fichier de 285 lignes suivi par git avec un rendu de 40 lignes, restaure par `git checkout`.
+Son constat vaut d'etre repris : *aucun de ses controles ne regardait la DESTINATION — tous
+jugeaient le RENDU.* Applicable a `nexus_patch` en mode creation ; sans objet pour
+`nexus_appliquer`, qui doit ecrire sur un fichier existant par nature.
+
+**A3 — le differentiel de lignes dans le JSONL.** Un rendu qui supprime 198 lignes et en
+ajoute 80 est **indiscernable** d'un rendu correct : meme forme, pas de troncature,
+`1 reussie`. A ajouter : `lignes_source`, `lignes_rendues`, `supprimees`, `ajoutees`, avec une
+alarme quand les suppressions depassent les ajouts sur un correctif d'AJOUT. **Se cumule avec
+`fichiers_joints` : l'un dit ce qui est ENTRE, l'autre ce qui est SORTI.**
+
+**Et un trou de securite reel, signale et verifie :** `nexus_appliquer` ne contient nulle part
+le mot « tronque ». Un patch coupe applique tel quel supprime les lignes du bloc AVANT sans
+poser toutes celles du bloc APRES : **le fichier ne devient pas incomplet, il devient FAUX**,
+et peut rester syntaxiquement valide donc passer la verification en place. Correctif en vol.
+
+### 115.102 UNE CAPACITE DECLAREE N'EST PAS UNE CAPACITE — regle generale
+
+Formulation issue d'une mesure de ce tour et generalisee par une session voisine.
+
+Les six modeles locaux interroges declarent tous `tools` via `/api/show`. A l'epreuve reelle,
+avec un seul outil, **un seul emet un vrai bloc `tool_use`**.
+
+> **Toute capacite annoncee par un fournisseur doit avoir une EPREUVE reelle avant qu'on
+> route dessus. Une table de capacites remplie par declaration est une table de suppositions.**
+
+C'est la meme forme que la grappe tautologique de la session voisine — *la reponse etait dans
+la definition, pas dans le comportement* — et que les §115.98 et §115.96 de ce tour :
+`ollama list` ne dit pas ce qui est accessible, `capabilities` ne dit pas ce qui fonctionne, et
+un contexte natif de 131 072 ne dit pas ce que le moteur applique.
+
+### 115.103 DEUX P0 DE L'OPERATEUR — les bibliotheques et les livres, les mesures anti-derives
+
+Enonces le 2026-09-02 : *« 0 bricolage, aide toi des bibliotheques + livres = P0 »*, puis
+*« les mesures anti derives aussi = P0 »*.
+
+**CE QUE « S'AIDER DES BIBLIOTHEQUES » VEUT DIRE ICI, mecaniquement :** avant d'ecrire une
+fonction, verifier qu'elle n'existe pas deja. L'outil est en place et il est bon marche :
+
+    python scripts/nexus_doc.py <symbole>     # ex. subprocess.run, New-Item, trap
+
+166 507 symboles Python plus 24 073 annexes, ancres sur les versions INSTALLEES ici, ~280
+jetons par consultation — l'index lit l'entree par `seek`, jamais le fichier entier. **Moins
+cher que relire trois lignes de code**, et il ne peut pas halluciner une signature.
+
+> **La regle qui en decoule** : ecrire une fonction sans avoir consulte ce qui existe est du
+> bricolage au sens du §0.6, meme quand le resultat marche. Ce qu'on ecrit soi-meme n'a pas de
+> documentation, pas de tests amont, et personne d'autre ne le maintient.
+
+**CE QUE LES LIVRES APPORTENT, et comment y entrer** — methode d'une session voisine, mesuree
+sur son corpus de 102 livres :
+
+    concepts.tsv           les concepts extraits, avec leur page
+    unites_atomiques.tsv   definitions, theoremes, algorithmes, exemples, snippets NUMEROTES,
+                           chacun avec sa PAGE et sa citation VERBATIM
+
+**On entre par les CONCEPTS, jamais par le texte.** Exemple : un ouvrage porte 142 snippets
+methodologiques numerotes, atteignables sans ouvrir une page.
+
+**Trois precautions, chacune payee par cette session :**
+
+* **l'extracteur declare ce qu'il OMET**, avec sa raison. *« Fabriquer une borne ici serait une
+  INVENTION, pas une extraction — omis, non invente. »* **Un corpus qui ne declare pas ses
+  trous fait croire a une couverture.**
+* **chaque citation porte sa PAGE** : sans elle, une citation est inverifiable et le code
+  s'eloigne de sa source sans que personne le voie.
+* **l'ordre compte** : `ls` des rayons, puis l'INDEX du domaine, **puis seulement** les
+  embeddings. *« Un essaim d'embeddings repond aux questions qu'on lui pose ; il ne dit jamais
+  ce qu'on n'a pas pense a demander. L'inventaire brut, lui, le dit. »* Cette session a du
+  s'entendre dire quatre fois qu'elle etait loin du compte avant de faire ce `ls` — qui a
+  revele l'auteur du modele qu'elle s'appretait a reimplementer.
+
+**ETAT MESURE ICI** : 2 928 fichiers dans `references/`, jamais inventories. `nexus_corpus.py`
+a ete ecrit pour cela et n'a jamais tourne sur eux. **C'est le premier geste du prochain tour.**
+
+**LES MESURES ANTI-DERIVES, et lesquelles tiennent reellement** — distinction d'une session
+voisine, mesuree :
+
+| ce qui a tenu | ce qui a echoue |
+| --- | --- |
+| les instruments **PASSIFS**, qui s'interposent sans qu'on les appelle | les instruments **ACTIFS**, qu'il faut penser a lancer |
+| gardes armees, cliquets du rituel, refus de `nexus_appliquer` | rituels de reprise en halt, generateurs casses |
+
+> **Les outils qui s'imposent protegent ; les outils disponibles ne protegent pas.** Un
+> controle qu'il faut penser a invoquer sera oublie le jour ou il servirait.
+
+C'est la regle de conception a appliquer desormais : **tout nouveau controle doit etre cable a
+un cliquet ou a un hook, jamais laisse a la discipline.**
+
+### 115.104 J'AI BLOQUE MA PROPRE SAUVEGARDE — 79 commits, et la cause etait de moi
+
+**Enchainement mesure**, dans cet ordre :
+
+    epreuves posees sans garde __main__
+        -> l'import ecrit sur la sortie
+        -> nexus_conformite : NON CONFORME
+        -> nexus_vitrine : publication REFUSEE
+        -> 79 commits non sauvegardes
+
+**Trois fichiers en cause** : `epreuve_bascule`, `epreuve_bascule_contre`,
+`epreuve_stats_jsonl`. Tout leur code s'executait au niveau du module. Pour la contre-epreuve
+c'etait doublement grave : elle **copie des fichiers et lance des sous-processus**.
+
+Corrige — code sous garde `__main__`, `sys.exit` depuis la garde. Conformite retablie.
+
+**ET UN SECOND DEFAUT TROUVE AU PASSAGE** : `epreuve_stats_jsonl` construisait
+`scripts/scripts/nexus_stats_jsonl.py` — le double segment, **cinquieme occurrence de la
+nuit**. Elle rendait correctement « outil introuvable » avec un code reserve : elle se
+comportait bien **tout en n'eprouvant rien**. Corrigee : 4 cas sur 4.
+
+**NOTE DE METHODE, contre moi** : ma mesure du silence a l'import a produit un FAUX POSITIF sur
+`epreuve_bascule_contre`. L'exception venait de MON temoin — `StringIO` n'a pas de methode
+`reconfigure`. Le fichier etait sain. **Verifier le temoin avant d'accuser le mesure**, une
+fois de plus.
+
+### 115.105 TREIZE EPREUVES VERTES, HUIT CABLEES — l'etat reel
+
+Apres la nuit, les epreuves qui passent et protegent :
+
+    bascule · bascule_contre · stats_jsonl · posterior · preload · schema
+    garde_isolation · garde_agent · garde_production · fonctions
+    verifie_rendu · libs · sonde_aveugle
+
+**Huit viennent d'etre cablees** dans `nexus_test.py`, qui compte desormais 52 appels
+d'epreuves. Les cinq autres l'etaient deja.
+
+**Ce qui reste rouge, et pourquoi** : `relais`, `progres`, `outillage`, `garde_lecture`,
+`garde_shell`, `import`, `ruche`. Causes mesurees separement (§115.97) — quatre ne lancent pas
+l'outil, deux plantent, une a des attentes fausses. **Elles ne sont PAS cablees**, et ce n'est
+pas un oubli : cabler une epreuve fausse rendrait la suite rouge en permanence, et une suite
+toujours rouge cesse d'etre lue.

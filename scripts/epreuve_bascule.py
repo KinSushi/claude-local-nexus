@@ -1,4 +1,4 @@
-import importlib.util, os, sys, json, inspect
+import importlib.util, os, sys, inspect
 
 def main():
     # Charger le module à tester sans l'exécuter

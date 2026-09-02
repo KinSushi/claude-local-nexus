@@ -3,8 +3,6 @@ import os
 import sys
 import subprocess
 import tempfile
-import shutil
-import time
 
 def verifier_fichier_source():
     script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nexus_progres.py")

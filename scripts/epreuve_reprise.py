@@ -24,9 +24,8 @@ def executer(*args, **kwargs):
     code for the presence of the word 'bascule'.
     """
     # Example placeholder result
-    result = {"bascule": True}
+    return {"bascule": True}
     # In a real implementation, args and kwargs would influence the result.
-    return result
 
 if __name__ == "__main__":
     # Simple manual test when run directly

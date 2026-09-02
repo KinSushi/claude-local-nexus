@@ -2,7 +2,6 @@
 import os
 import sys
 import subprocess
-import tempfile
 import time
 from pathlib import Path
 
@@ -18,7 +17,7 @@ def verifier_existence_outil():
     return True
 
 def lister_fichiers(repertoire):
-    return set(f for f in repertoire.iterdir() if f.is_file())
+    return {f for f in repertoire.iterdir() if f.is_file()}
 
 def executer_test(args, timeout=90, capture_sortie=True):
     cmd = [sys.executable, "scripts/nexus_secours.py"] + args

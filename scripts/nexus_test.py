@@ -2463,6 +2463,14 @@ def test_commande_nexus() -> None:
     jouer_epreuve_python("epreuve_corpus.py", "inventaire d'un corpus et detection de doublons")
     jouer_epreuve_python("epreuve_fonctions.py", "outil de manipulation des fonctions")
     jouer_epreuve_python("epreuve_verifie_rendu.py", "controle mecanique des rendus de code")
+    jouer_epreuve_python("epreuve_bascule.py", "bascule automatique entre plans quand un abonnement tombe")
+    jouer_epreuve_python("epreuve_bascule_contre.py", "contre-epreuve de cette bascule")
+    jouer_epreuve_python("epreuve_stats_jsonl.py", "statistiques sur journal JSONL")
+    jouer_epreuve_python("epreuve_posterior.py", "l outil posterior")
+    jouer_epreuve_python("epreuve_preload.py", "prechargement des modeles")
+    jouer_epreuve_python("epreuve_schema.py", "squelette des fichiers de donnees")
+    jouer_epreuve_python("epreuve_secours.py", "diagnostic de secours du moteur local")
+    jouer_epreuve_python("epreuve_libs.py", "ecart entre bibliotheques documentees et installees")
 
 
 def test_decoupage_emoji() -> None:
