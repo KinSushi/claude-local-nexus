@@ -136,6 +136,18 @@ def main():
     # L'ancien extracteur ajoutait la quote au chemin ou ne renvoyait rien.
     att("bash -c 'echo x > f.txt'", ['f.txt'], False, "bash -c avec apostrophe")
     att("eval 'echo x > f.txt'", ['f.txt'], False, "eval avec apostrophe")
+
+    # --- Quatre motifs reels manquants au banc initial ----------------------
+    # Issus de sessions reelles, ils n'avaient jamais ete couverts : aucun ne
+    # ressemble aux cas ecrits a la main ci-dessus.
+    att("cat err 2>&1 | grep motif", [], False,
+        "CAS A : 2>&1 n'ecrit aucun fichier ; le tube non plus")
+    att('grep "x < y" fichier.py', [], False,
+        "CAS B : chevron dans une chaine citee, pas une redirection")
+    att("cat << 'fin'", [], True,
+        "CAS C : heredoc, cible indeterminee")
+    att("echo x > doit_passer.txt", ["doit_passer.txt"], False,
+        "CAS D : anti-controle, redirection simple inchangee")
     print("")
     if echecs:
         print("epreuve ratee : %d cas" % echecs)

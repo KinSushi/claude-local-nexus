@@ -19,18 +19,18 @@ def load_settings():
         with open(TARGET_PATH, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        raise Exception("Fichier settings introuvable")
+        raise Exception("Fichier settings introuvable") from None
     except json.JSONDecodeError:
-        raise Exception("JSON invalide")
+        raise Exception("JSON invalide") from None
     except Exception as e:
-        raise Exception(f"Erreur lecture: {e}")
+        raise Exception(f"Erreur lecture: {e}") from e
 
 def save_settings(data):
     try:
         with open(TARGET_PATH, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        raise Exception(f"Erreur ecriture: {e}")
+        raise Exception(f"Erreur ecriture: {e}") from e
 
 def backup():
     timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -39,7 +39,7 @@ def backup():
         shutil.copy2(TARGET_PATH, backup_path)
         return backup_path
     except Exception as e:
-        raise Exception(f"Echec sauvegarde: {e}")
+        raise Exception(f"Echec sauvegarde: {e}") from e
 
 def restore_latest_backup():
     backups = sorted(glob.glob(BACKUP_PATTERN))
@@ -50,7 +50,7 @@ def restore_latest_backup():
         shutil.copy2(latest, TARGET_PATH)
         return latest
     except Exception as e:
-        raise Exception(f"Echec restauration: {e}")
+        raise Exception(f"Echec restauration: {e}") from e
 
 def find_groups_by_command(settings, command_substring):
     """Retourne la liste des groupes (dict) dont un hook a une command contenant command_substring."""
@@ -209,14 +209,13 @@ def main():
     if mode == '--simulation':
         code, _ = process_armer(simulate=True)
         return code
-    elif mode == '--armer':
+    if mode == '--armer':
         code, _ = process_armer(simulate=False)
         return code
-    elif mode == '--restaurer':
+    if mode == '--restaurer':
         return process_restaurer()
-    else:
-        usage()
-        return 0
+    usage()
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())

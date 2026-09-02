@@ -478,7 +478,7 @@ def verdict(size_gb: float, profile: dict) -> tuple[str, str]:
         return DEGRADED, ("%.0f Go sur %.0f Go : chargeable, mais sans marge "
                           "pour le contexte et le cache"
                           % (size_gb, profile["inference_memory_gb"]))
-    return ACCEPT, "%.0f Go, dans le budget" % size_gb
+    return ACCEPT, "%.1f Go, dans le budget" % size_gb
 
 
 def can_download(size_gb: float, profile: dict) -> tuple[bool | None, str]:

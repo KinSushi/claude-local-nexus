@@ -1,10 +1,11 @@
 {
-  "mesure_le": "2026-09-02T00:18:32.572138+00:00",
+  "mesure_le": "2026-09-02T02:11:23.964902+00:00",
   "categories": {
     "orphelin": [],
     "preuve_seule": [
       "scripts/Compact-NexusDisk.ps1",
       "scripts/Initialize-Nexus.ps1",
+      "scripts/nexus_armer_hook.py",
       "scripts/nexus_boussole.py",
       "scripts/nexus_poser_socle.py"
     ]

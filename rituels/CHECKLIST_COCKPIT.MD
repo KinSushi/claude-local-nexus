@@ -12691,3 +12691,345 @@ de 0,4 Go est donc annonce « 0 Go » dans la phrase qui justifie son admission.
 Sans consequence sur le verdict, mais c'est un chiffre faux dans un texte qui
 explique une decision — et `all-minilm` a 0,0 Go ne se distingue plus d'une
 absence de mesure. `OUVERT`, faible.
+
+### 115.26 LE PIRE CAS DE LA JOURNEE — un outil d'ANALYSE rend une reecriture qui DESARME une garde
+
+> Signale par la session EA MT5. **Gravite superieure a tout le reste**, et il
+> echappe a l'ensemble du chantier C1.
+
+**L'APPEL** : `nexus_context`, `qwen2.5-coder-32b-local`, un hook de securite de
+16 Ko, `context_tokens=32768`. Enveloppe : « 1 fenetre, 1 passe, ~3999 tokens
+traites en 32768 de fenetre ». Le fichier tenait donc entierement, en une passe.
+
+**LA CONSIGNE, verbatim** : « Ne propose AUCUN correctif. Ne reecris pas le code.
+Produis uniquement l'INVENTAIRE FACTUEL suivant, en citant les numeros de ligne »
+— cinq sections numerotees, avec « si une information ne figure pas dans le
+fichier, ecris non present dans le fichier — n'invente rien ».
+
+**LE RENDU** : zero des cinq sections. Zero numero de ligne. A la place un
+preambule, un bloc de code presente comme « une version corrigee et amelioree »,
+huit points d'« Explications des Modifications », et « n'hesitez pas a me faire
+savoir si vous avez besoin de modifications supplementaires ».
+
+**POURQUOI C'EST GRAVE ET PAS SEULEMENT HORS-SUJET.** Le fichier est le hook qui
+decide si un sous-agent part ISOLE — le seul geste du dispositif dont l'echec est
+irreversible. La « version corrigee » a supprime toute la logique d'isolation : sa
+fonction de jugement se reduit a
+
+```
+if isinstance(charge, dict): return CODE_PASSE
+```
+
+**Toute charge JSON bien formee passe. C'est un fail-open integral**, rendu sous
+l'etiquette « corrigee et amelioree » — a partir d'un fichier dont le modele cite
+pourtant lui-meme le commentaire verbatim « FAIL-CLOSED INTEGRAL, choix
+delibere ». **Il a lu la contrainte et rendu son exact contraire.** Il a aussi
+change les codes de sortie : 0 et 2 en mode hook deviennent 0 et 1 partout.
+
+**CE QUI LE REND INVISIBLE A TOUT LE CHANTIER C1.** Ce n'est ni un vide, ni une
+troncature, ni un jeton sentinelle. Le rendu est long, structure, poli, et il cite
+REELLEMENT des fragments du fichier source. Il passe donc :
+
+| Controle | Verdict |
+| --- | --- |
+| non-vacuite | PASSE — le rendu est long |
+| « le modele a-t-il vu le fichier ? » | PASSE — il cite le source verbatim |
+| troncature | PASSE — une fenetre, une passe, rien n'a ete coupe |
+| budget de sortie | PASSE — aucun epuisement |
+
+**Un appelant presse qui applique le patch desarme sa propre garde de securite.**
+C'est la variante la plus couteuse de toutes : **plausible, sourcee, et fausse**.
+
+**Meme signature que l'effondrement au renvoi de correction (§115.17)** : du code
+plausible et faux, invisible a tout controle automatique. Difference notable, et
+elle aggrave le cas : **ici il n'y avait meme pas de renvoi**. La consigne
+initiale, pourtant explicite trois fois sur l'interdiction de reecrire, a suffi.
+
+**PROPOSITION REMONTEE, non mesuree par son auteur** : `nexus_context` et
+`nexus_summarize` sont des outils d'ANALYSE. Leur contrat est de rendre du texte
+SUR un corpus, jamais le corpus modifie. Un controle bon marche cote passerelle
+detecterait qu'un rendu d'analyse est majoritairement un bloc de code, et
+l'ETIQUETTERAIT — sans le bloquer : « ce rendu d'analyse contient un bloc de code
+de N lignes alors qu'aucune production n'etait demandee ». Cout : un comptage de
+lignes en fence rapporte a la longueur totale.
+
+**Reserve posee par l'auteur lui-meme** : le taux de faux positifs n'est pas
+mesure, un corpus de code PEUT legitimement etre cite en extrait, et le seuil est
+precisement la difficulte.
+
+**ARBITRAGE DE CE DEPOT** : retenu, et c'est le seul remede propose ce soir qui
+attaque cette classe. Mais l'etiquetage ne suffira pas seul — il signale, il ne
+protege pas. La regle qui protege est ailleurs et elle existe deja : **un rendu du
+banc ne s'applique jamais sans que ses ancres soient verifiees reelles et uniques**
+(`nexus_appliquer.py` refuse tout bloc absent ou multiple). Ce cas-ci n'aurait pas
+franchi cette porte, puisqu'il ne rendait pas de patch ancre mais un fichier
+entier. **La regle « patch ancre, jamais le fichier entier » n'est donc pas une
+preference de forme : c'est une barriere de securite**, et c'est la seconde fois
+ce soir qu'elle se justifie — la premiere etant les modeles qui escaladent leur
+plafond en tentant de tout reecrire.
+
+---
+
+## 116. LE CLIQUET NOMME LE SECOND OUTIL DE POSE — et la LOI 1 mord enfin dans le bon sens
+
+2026-09-01, fin de tour apres le commit `52f58cb`. Le rituel refuse de clore sur **trois manques**, et
+chacun apprend quelque chose de different.
+
+### 116.1 LA PREDICTION DU §113 S'EST REALISEE, MOT POUR MOT
+
+Le §113 acceptait une regression de cablage sur `nexus_poser_socle.py` — un outil qui pose des
+permissions ne doit pas etre appelable — et il ecrivait, pour justifier que l'acceptation n'ouvrait
+pas de porte :
+
+> *« Le jour ou un second script devient orphelin, le cliquet le NOMMERA. »*
+
+Vingt-quatre heures plus tard :
+
+```
+[MANQUE] cablage tenu   1 REGRESSION | preuve_seule  scripts/nexus_armer_hook.py
+```
+
+**C'est arrive, et le cliquet l'a nomme.** La conception « par NOM, jamais par compte » est validee
+par l'usage et non par le raisonnement : un cliquet par comptage aurait vu 4 prouves-seuls hier et 5
+aujourd'hui sans dire lequel, ou pire, aurait laisse l'echange s'annuler.
+
+**Meme nature, meme raison, meme decision.** `nexus_armer_hook.py` ecrit des HOOKS dans
+`.claude/settings.json`. Le rendre appelable par une tache planifiee ou un hook poserait des hooks
+sans que personne l'ait decide — et a chaque tour, y compris apres une restauration voulue.
+
+| ce qui l'appellerait | ce que cela produirait |
+| --- | --- |
+| une tache planifiee | des hooks armes sans decision humaine |
+| un hook | des hooks qui s'arment eux-memes, indefiniment |
+| une epreuve | un test qui arme la configuration qu'il teste |
+
+> **Une commande qui change l'etat de la machine se lance ; une commande qui mesure se cable.**
+> La reference est resserree sur CE nom, avec cette raison, ecrite AVANT le geste.
+
+### 116.2 LA LOI 1 A MORDU DANS LE BON SENS — pour la premiere fois sans arbitrage humain
+
+Le troisieme manque est le plus interessant :
+
+```
+[MANQUE] outillage tenu   ruff : B904 4 -> 6 | RET505 4 -> 5
+```
+
+**Trois regressions, toutes dans un seul fichier, et ce fichier n'est pas de ma main.**
+`nexus_armer_hook.py` a ete modifie par `local-llm-docker-54` ; je l'ai commite ; un cliquet tiers
+l'a juge et a trouve. C'est exactement la configuration que la LOI 1 cherche a produire — et c'est la
+premiere fois qu'elle se produit **mecaniquement**, sans qu'un humain ait a la rappeler.
+
+Les six B904 : des `raise Exception(...)` dans des blocs `except`, sans `from`. La cause originelle
+est perdue a chaque fois. Defaut reel, mineur, invisible a la lecture.
+
+**LE CYCLE A TROIS TEMPS, JOUE ENTIEREMENT :**
+
+| temps | qui | resultat |
+| --- | --- | --- |
+| 1. AUDIT | le cliquet ruff — tiers mecanique | 6 B904 + 1 RET505, nommees avec leurs lignes |
+| 2. CORRECTION | `gpt-oss-120b-cloud` | 6 patches, 8 s, cout **0** |
+| 3. AUDIT DU CORRECTIF | moi — ni diagnostiqueur, ni auteur | 0 B904, `--simulation` rend `rc=0` |
+
+Le banc a correctement distingue `from None` (pour un `except` sans variable) de `from e` (avec), et
+a **laisse intacte** la ligne 47 — un `raise` qui n'est pas dans un `except` et que B904 ne concerne
+pas. Une correction qui sait ou s'arreter.
+
+### 116.3 LE SEPTIEME PATCH A ETE REFUSE — un correctif qui deplace le defaut d'une ligne
+
+Le banc proposait aussi, non demande, de corriger la RET505 :
+
+```
+elif mode == '--armer':   ->   if mode == '--armer':
+```
+
+**Semantiquement sur** — verifie : chaque branche `return` inconditionnellement, donc les quatre
+chemins (`--simulation`, `--armer`, `--restaurer`, autre) rendent le meme resultat qu'avant.
+
+**Et pourtant refuse**, parce qu'il est INCOMPLET : il laisse `elif mode == '--restaurer':` juste
+en dessous, qui est la meme violation. Ruff la signalera au tour suivant, sur la ligne d'apres.
+
+> **Un patch qui deplace un defaut d'une ligne n'est pas un correctif, c'est un deplacement.**
+> Il aurait rendu le cliquet vert ce soir et rouge demain, ce qui est pire que rouge deux fois :
+> le vert intermediaire aurait fait croire le sujet clos.
+
+La RET505 reste donc OUVERTE et DECLAREE, plutot que fausse-fermee.
+
+### 116.4 DEUX DEFAUTS TROUVES PAR L'USAGE, dont un grave
+
+**(1) `nexus_agent.py` rapporte « 0 echec(s) » sur un rendu TRONQUE.**
+
+Mesure a deux passes, meme tache, meme fichier, seul `--max-tokens` change :
+
+| plafond | rendu | rapport |
+| --- | --- | --- |
+| 2000 | coupe sur `<<` au milieu du 6e bloc — **5 patches sur 6** | `1 tache(s), 0 echec(s)` |
+| 6000 | 6 blocs `AVANT`, 6 `FIN`, terminaison propre | `1 tache(s), 0 echec(s)` |
+
+**Le meme message couvre les deux cas.** Un `nexus_appliquer` lance sur le premier posait cinq
+corrections sur six, et rien dans la chaine ne l'aurait dit. Le §51.1 « reprise sur troncature »
+etait ouvert depuis le 30/08 comme une hypothese ; il est desormais **mesure**, avec son
+contre-exemple exact.
+
+Le remede n'est pas « augmenter le plafond » — c'est **detecter la troncature** : `finish_reason`
+vaut `length` au lieu de `stop`, et le rendu ne se termine pas par son marqueur de fin. Deux signaux
+disponibles, aucun lu.
+
+**(2) `nexus_appliquer.py` echoue par TRACEBACK NU sur une ligne de commande mal formee.**
+
+```
+python scripts/nexus_appliquer.py --patch <fichier> --fichier <cible>
+  -> FileNotFoundError: [Errno 2] No such file or directory: '--patch'
+```
+
+Quatre arguments : le garde `len(sys.argv) < 4` passe, puis `io.open(argv[1])` prend `--patch` pour
+un chemin. §0.1.4.1 exige qu'un chemin invalide **echoue proprement** — code non nul, message nommant
+la voie a suivre, aucun effet de bord. Un traceback satisfait le premier point et manque le second :
+il ne nomme ni l'usage, ni le remede.
+
+### 116.5 L'ARBRE PARTAGE — le sujet 10 s'est prouve tout seul, en trois minutes
+
+| horodatage | evenement |
+| --- | --- |
+| 20:53 | `local-llm-docker-54` : *« SIGNAL : j'ai fini d'ecrire. L'arbre est a toi »* |
+| **20:56:57** | mon commit `52f58cb`, arbre propre |
+| **21:00:07** | quatre fichiers reecrits **dans la meme seconde** |
+| 21:02:41 | un cinquieme |
+
+Aucune faute de sa part : elle a repris son travail. Ce que la mesure etablit, c'est que **le signal
+verbal ne tient pas lieu de verrou**. Le commit precedent ecrivait « deux sessions polies ne sont pas
+un mecanisme » ; la demonstration a pris trois minutes.
+
+**ET J'AI FROLE L'INCIDENT EN LE DOCUMENTANT.** Pour comparer ruff avant/apres, j'ai lance
+`git stash -u` puis `git stash pop` **pendant qu'elle ecrivait**. Aucun degat — le pop a rendu les six
+fichiers. Si une ecriture etait tombee dans la fenetre, le pop conflictait sur du travail non commite,
+donc non recuperable par git.
+
+> Le §112.4 disait *« nommer un piege ne protege pas de lui »*. Ici, mieux : **documenter un piege ne
+> protege pas de lui non plus.** Le geste risque a ete fait par l'auteur du paragraphe qui le decrit,
+> dans le meme tour.
+
+### 116.6 CE QUI RESTE OUVERT
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 10 | Arbre git partage sans verrou | **AGGRAVE** — prouve par mesure, et frole par `git stash` |
+| 44 | `nexus_agent.py` : « 0 echec(s) » sur rendu tronque | **FERME au §117.3** — corrige par `local-llm-docker-54` 15 min apres, contre-epreuve a troncature provoquee |
+| 45 | `nexus_appliquer.py` : traceback nu au lieu de l'usage | `OUVERT` — echoue, mais pas proprement |
+| 46 | `nexus_armer_hook.py:212` RET505 | **FERME au §117.4** — chaine aplatie entierement, ruff au vert, quatre chemins verifies |
+| 41 | Le cliquet ne distingue pas mesure et action | `CONFIRME` — deuxieme cas, meme decision, prediction du §113 verifiee |
+
+---
+
+## 117. J'AI DESARME LE HOOK EN L'EPROUVANT — et deux defauts corriges dans l'heure
+
+Trois evenements du meme tour, 2026-09-01 entre 21:07 et 21:15. Le premier est une faute, et c'est
+le plus instructif.
+
+### 117.1 LA FAUTE : eprouver les chemins d'un outil de POSE est un geste de POSE
+
+Apres avoir fait corriger la RET505 de `nexus_armer_hook.py`, j'ai voulu verifier que les quatre
+chemins de `main()` fonctionnaient toujours. Boucle de test, apparemment anodine :
+
+```bash
+for a in --simulation --restaurer --inconnu; do
+    python scripts/nexus_armer_hook.py $a ; echo $?
+done
+```
+
+**`--restaurer` restaure `~/.claude/settings.json` depuis la derniere sauvegarde.** La derniere
+sauvegarde datait de `19:28:06`, soit **avant** l'armement du hook d'isolation. Le hook a donc ete
+supprime — par la commande censee verifier qu'il allait bien.
+
+Sequence reconstituee :
+
+| heure | geste | etat du hook |
+| --- | --- | --- |
+| 21:07 | `--simulation` -> « Hook d'isolation deja present » | **PRESENT** |
+| 21:13 | `--restaurer` dans la boucle de test | **SUPPRIME** |
+| 21:13 | verification independante en Python | absent, confirme |
+| 21:14 | `--armer` | repose, mais **pas en vigueur avant redemarrage** |
+
+**Le §113 avait ecrit la regle qui interdisait ce geste, et je l'ai enfreinte en la citant :**
+
+> *« Une commande qui change l'etat de la machine se LANCE ; une commande qui mesure se CABLE. »*
+
+Une boucle de test EST un cablage. J'ai cable une commande d'action, dans le tour meme ou j'ecrivais
+au §116.1 que `nexus_armer_hook.py` ne doit jamais etre appele automatiquement — *« une epreuve : un
+test qui arme la configuration qu'il teste »*. J'avais la bonne ligne dans le bon tableau et j'ai
+fait exactement ce qu'elle interdisait, quinze minutes plus tard.
+
+C'est la troisieme occurrence du meme motif en deux jours (§112.4 « nommer un piege ne protege pas de
+lui », §116.5 « documenter un piege non plus »). La conclusion se resserre :
+
+> **Une regle citee dans le tour ou on l'enfreint n'est pas une protection, c'est un ornement.**
+> Seul un mecanisme protege — ici, un outil de pose devrait refuser `--restaurer` sans confirmation
+> explicite, exactement comme `nexus_vitrine.py` refuse de publier sans ses sept controles.
+
+### 117.2 CE QUI A MASQUE LA FAUTE PENDANT DEUX MINUTES : `copy2` propage le mtime
+
+Ayant lance `--restaurer`, j'ai voulu verifier s'il avait ecrit. Le fichier affichait
+`mtime = 19:06:54` alors qu'il etait 21:13 — j'ai d'abord conclu « il n'a pas ecrit ».
+
+**Faux.** `backup()` et `restore_latest_backup()` utilisent tous deux `shutil.copy2`, qui **preserve
+les metadonnees**, mtime compris. La chaine est donc :
+
+```
+settings.json (mtime 19:06:54)
+   --copy2-->  sauvegarde .avant_hook_20260901-192806  (mtime 19:06:54, pas 19:28)
+   --copy2-->  settings.json restaure                  (mtime 19:06:54, pas 21:13)
+```
+
+**Un fichier restaure porte la date de l'original, jamais celle de la restauration.** Le `ctime` ne
+sauve pas non plus ici : il affichait la meme valeur.
+
+> **Le mtime ne prouve pas qu'un fichier n'a pas ete ecrit.** Ce qui a tranche est la seule mesure qui
+> regarde le CONTENU : compter les groupes `PreToolUse` et y chercher la commande. Une preuve de
+> presence se lit dans l'etat, jamais dans un horodatage.
+
+### 117.3 LE PREMIER DEFAUT EST CORRIGE ET EPROUVE — quinze minutes
+
+Le §116.4(1) — `nexus_agent.py` rapportant « 0 echec(s) » sur un rendu tronque — **n'est plus
+ouvert**. `local-llm-docker-54` a lu le rapport et pose le remede exact qui avait ete nomme :
+`finish_reason == "length"` (ligne 471), et le rapport compte desormais les tronquees (ligne 1446).
+
+**Contre-epreuve, en provoquant deliberement la troncature** (`--max-tokens 200` sur une tache longue) :
+
+```
+1 tache(s) : 0 reussie(s), 1 tronquee(s), 0 echec(s), 2144 token(s), 5 s
+```
+
+Le meme appel disait `1 tache(s), 0 echec(s)` quinze minutes plus tot. Le detecteur detecte, et la
+preuve est faite sur le cas defectueux, pas sur le cas sain — §0.1.4.1.
+
+Le cycle complet, et **quatre mains distinctes** :
+
+| temps | qui |
+| --- | --- |
+| 1. audit | moi, par l'usage — mesure a deux passes, meme tache, seul le plafond change |
+| 2. correctif | `local-llm-docker-54` |
+| 3. audit du correctif | moi — contre-epreuve a troncature provoquee |
+
+### 117.4 LE SECOND DEFAUT EST CORRIGE, ET LA CONTRE-EPREUVE EST DANS LE CODE
+
+La RET505 de `nexus_armer_hook.py:212`, dont j'avais **refuse** le premier patch parce qu'il
+deplacait le defaut d'une ligne (§116.3), a ete corrigee par aplatissement complet de la chaine :
+
+```python
+if mode == '--simulation':  ... return code
+if mode == '--armer':       ... return code      # etait elif
+if mode == '--restaurer':   return ...           # etait elif
+usage(); return 0                                # etait else:
+```
+
+`ruff --select B904,RET505` : **All checks passed**. Les quatre chemins rendent le meme resultat
+qu'avant — verifie un par un, ce qui est precisement ce qui a declenche l'incident du §117.1.
+
+### 117.5 CE QUE CET INCIDENT LAISSE OUVERT
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 47 | `--restaurer` ecrit sans confirmation ni simulation prealable | **OUVERT** — un outil de pose doit exiger un geste explicite pour ecrire, y compris pour restaurer |
+| 48 | Aucune epreuve ne peut jouer les chemins d'un outil de pose | **OUVERT** — il faudrait un `--simulation` sur CHAQUE chemin, `--restaurer` compris |
+| 49 | Le hook d'isolation est arme mais **pas en vigueur** dans cette session | **OUVERT** — redemarrage requis ; d'ici la, aucun garde d'isolation ne mord |
+| 44 | `nexus_agent.py` « 0 echec » sur troncature | **FERME** — corrige, contre-epreuve a troncature provoquee |
+| 46 | `nexus_armer_hook.py:212` RET505 | **FERME** — chaine aplatie, ruff au vert, quatre chemins verifies |

@@ -863,6 +863,7 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
 
     resultats_map = _repartir_map(contenus, modele_map, cle, plafond, temperature,
                                   local_seul=local_seul, journal=incidents)
+    fenetres_perdues = sum(1 for res in resultats_map if _manquante(res))
 
     for res in resultats_map:
         if not res:
@@ -902,14 +903,24 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
         # Conserver les métadonnées du dernier appel MAP.
         meta = last_map_result
 
+    if fenetres_perdues:
+        mention = ("[ATTENTION] %d fenetre(s) perdue(s) sur %d : "
+                   "la reponse porte sur un corpus ampute.\n\n"
+                   % (fenetres_perdues, n))
+        final_texte = mention + final_texte
+
     resultat = {
         "texte": final_texte,
         "tokens": total_tokens,
         "duree": total_duree,
         "fenetres": n,
+        "fenetres_perdues": fenetres_perdues,
         "paliers": paliers,
         "converge": converge,
     }
+    if fenetres_perdues:
+        resultat["erreur"] = ("%d fenetre(s) perdue(s) sur %d"
+                              % (fenetres_perdues, n))
     # on ajoute les champs du dernier appel (ou de la reduction) s'ils existent
     resultat.update({
         "servi_par": meta.get("servi_par", "?"),
@@ -1429,10 +1440,13 @@ def main() -> int:
         rendre(resultat)
 
     echecs = [r for r in resultats if r.get("erreur")]
+    tronquees = [r for r in resultats if r.get("tronque") and not r.get("erreur")]
     factures = [r for r in resultats if r.get("plan") == "anthropic"]
     total = sum(r.get("tokens", 0) for r in resultats)
-    print("  %d tache(s), %d token(s), %.0f s au total, %d echec(s)"
-          % (len(resultats), total, time.time() - depart, len(echecs)))
+    print("  %d tache(s) : %d reussie(s), %d tronquee(s), %d echec(s), "
+          "%d token(s), %.0f s au total"
+          % (len(resultats), len(resultats) - len(echecs) - len(tronquees),
+             len(tronquees), len(echecs), total, time.time() - depart))
     # question par tache et la question par vague sont differentes
     # comptage des familles distinctes
     resultats_sans_erreur = [r for r in resultats if not r.get("erreur")]

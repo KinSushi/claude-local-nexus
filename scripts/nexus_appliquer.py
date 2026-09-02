@@ -58,8 +58,13 @@ def main():
         return 1
 
     # Lecture du fichier cible
-    with io.open(cible_path, encoding="utf-8") as f:
-        src = f.read()
+    try:
+        with io.open(cible_path, encoding="utf-8") as f:
+            src = f.read()
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        print(f"ERREUR : impossible d'ouvrir le fichier cible '{cible_path}' : {e}")
+        print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
+        sys.exit(1)
 
     # Verification de chaque bloc AVANT
     for idx, (avant, _) in enumerate(blocs, start=1):

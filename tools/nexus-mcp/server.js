@@ -3204,9 +3204,25 @@ function runPython(args, timeoutMs = 300000) {
     } else if (residents.length === 0) {
       ligneChauds = "MODELES CHAUDS — aucun : le premier appel paiera le chargement des poids\n";
     } else {
+      // Le moteur rend le nom OLLAMA BRUT (ex. phi3.5:latest), inutilisable
+      // tel quel : la passerelle n'expose que des alias (ex. phi3.5-local).
+      // Chaque resident est donc traduit dans le vocabulaire du reste de la
+      // sortie, le nom brut garde entre parentheses ; sans correspondance,
+      // le nom brut est affiche et signale non expose.
+      const aliasDe = (brut) => {
+        const base = String(brut).split(":")[0];
+        const exact = base + "-local";
+        if (groups.local.includes(exact)) return exact;
+        // Variante de suffixe : « releve-locale » expose « releve:... ».
+        return groups.local.find((a) => a.startsWith(exact)) || null;
+      };
+      const affiches = residents.map((brut) => {
+        const alias = aliasDe(brut);
+        return alias ? alias + " (" + brut + ")" : brut + " (non expose)";
+      });
       ligneChauds =
         `MODELES CHAUDS — deja en memoire, repondent sans payer le chargement (${residents.length})\n  ` +
-        residents.join("\n  ") + "\n";
+        affiches.join("\n  ") + "\n";
     }
 
     return (

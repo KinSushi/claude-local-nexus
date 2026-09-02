@@ -1343,6 +1343,61 @@ def controle_doc_python() -> None:
                      "index suspect : %d symboles seulement" % lignes)
     noter("doc python", True, AVERTISSEMENT, "%d symboles consultables" % lignes)
 
+def controle_encodage_sortie() -> None:
+    """
+    Quel script accentue plantera-t-il demain sur une console cp1252 ?
+
+    Mesure quatre fois en deux jours : un script affiche du texte accentue
+    sans reconfigurer sa sortie, et UnicodeEncodeError (charmap) le tue sur
+    la console Windows. Chacun a ete corrige UN PAR UN, quand il mordait --
+    ce qui garantit seulement que le prochain plantera aussi. Ce controle
+    remplace la correction au cas par cas par le recensement de tous les
+    exposes : ceux qui ecrivent (print ou sys.stdout.write), portent du non
+    ASCII, et n'appellent pas sys.stdout.reconfigure.
+
+    AVERTISSEMENT et non BLOQUANT : un defaut d'affichage n'empeche pas de
+    demarrer, et refuser le demarrage punirait l'operateur venu corriger.
+
+    Ne plante jamais : un fichier illisible est passe, non juge.
+    """
+    dossier = os.path.join(ROOT, "scripts")
+    try:
+        noms = sorted(n for n in os.listdir(dossier) if n.endswith(".py"))
+    except OSError as exc:
+        ignorer("encodage sortie", "scripts illisible : %s" % str(exc)[:60])
+        return
+    exposes = []
+    for nom in noms:
+        try:
+            with open(os.path.join(dossier, nom), "rb") as f:
+                brut = f.read()
+        except Exception:
+            continue  # illisible : passe, jamais fatal
+        if brut.isascii():
+            continue
+        source = brut.decode("utf-8", errors="replace")
+        if "sys.stdout.reconfigure" in source:
+            continue
+        if not re.search(r"\bprint\s*\(", source) and "sys.stdout.write" not in source:
+            continue
+        exposes.append(nom)
+    if exposes:
+        noter(
+            "encodage sortie",
+            False,
+            AVERTISSEMENT,
+            "%d script(s) exposes : %s"
+            % (len(exposes), ", ".join(exposes[:6])),
+        )
+    else:
+        noter(
+            "encodage sortie",
+            True,
+            AVERTISSEMENT,
+            "tout script accentue reconfigure sa sortie",
+        )
+
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -1948,6 +2003,7 @@ def main() -> int:
         controle_readme_chiffres_wrap,
         controle_config_active_wrap,
         controle_commande_nexus_wrap,
+        controle_encodage_sortie,
     ):
         try:
             controle()
