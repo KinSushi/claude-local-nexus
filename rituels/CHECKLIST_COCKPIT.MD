@@ -16461,3 +16461,130 @@ existe et ce qui manque. Les corpus pesent 59 Mo et n'ont rien a faire dans l'hi
 etait le seul que personne ne pouvait recevoir.
 
 Remede pose ici : `!references/*/_POINTEUR_CORPUS.md`, avec la raison ecrite dans le fichier.
+
+
+### 115.119 L'ECART DE DOCUMENTATION, MESURE — et il n'est pas ou je le croyais
+
+Demande de l'operateur : *« la documentation manquante des 60 bibliotheques python et python
+pur, ecart a mesurer et a combler par internet »*.
+
+**PREMIERE MESURE, FAUSSE, et je l'ai failli publier** : « stdlib 194 modules, **0** documente ».
+Mon instrument excluait les dossiers commencant par `_` — or toute la stdlib vit dans
+`_LIVRABLE_PYTHON_STDLIB_267`. **Cinquieme fois du jour qu'un instrument exact rend une
+conclusion fausse**, et la seule chose qui l'a arretee est que le chiffre CONTREDISAIT le
+contrat. ⇒ **Une contradiction avec un document connu est un signal d'INSTRUMENT, pas de
+document.**
+
+| mesure | valeur |
+| --- | --- |
+| stdlib publique | 194 modules |
+| couverts par l'index | **160** |
+| ecart brut | 34 |
+| dont hors plateforme Windows | 7 (`fcntl`, `grp`, `posix`, `pwd`...) |
+| dont internes/non publics | 15 (`sre_compile`, `genericpath`, `nt`...) |
+| **ecart utile a combler** | **12** |
+| tierces documentees | 63 |
+| **tierces ABSENTES de l'interpreteur** | **58 = 92 %** |
+
+★ **LES DEUX ECARTS SONT DE NATURE DIFFERENTE, et les confondre serait notre classe** : la
+stdlib manque de DOCUMENTATION ; les tierces ont leur documentation et manquent
+d'INSTALLATION. **Combler par internet ne repare que le premier.** EA MT5 mesure 60 % chez
+elle ; **92 % ici** — meme classe, ampleur pire.
+
+**COMBLE : 307 symboles extraits de l'OBJET VIVANT** — `errno` 136, `turtle` 141, `pstats` 14,
+`annotationlib` 8, `cProfile` 5, `venv` 3. 176 537 octets, deposes pour EA MT5, **designee par
+l'operateur responsable de la reprise des manques** (python pur + stdlib + doc pre-machee des
+60+ bibliotheques).
+
+⚠️ **TROIS ECHECS QUI CONFIRMENT LA TETRADE UNE TROISIEME FOIS** : `curses`, `tty`, `pty` —
+`find_spec` les TROUVE, `import_module` ECHOUE. Identique a `import arch` qui reussit et
+`arch.univariate.GARCH` qui echoue. **Mon tri « utiles ici » etait faux pour trois entrees sur
+douze**, et c'est l'extraction qui l'a revele, pas le tri.
+
+### 115.120 L'ANCRAGE DECLARE UNE CHOSE FAUSSE — mais la derive mesuree est de 0,2 %
+
+Chaque fragment stdlib porte `version installee : 3.13.2` et **« Ancrage : OUI — decrit la
+stdlib de l'interpreteur qui a genere ce fichier »**. **L'interpreteur courant est 3.14.7.**
+L'ancrage etait vrai a la generation, il est faux maintenant, et rien ne l'annonce — l'angle
+mort exact qu'EA MT5 a nomme.
+
+**MAIS LA MESURE REFUSE LA CONCLUSION FACILE :**
+
+    symboles indexes                3 068
+    verifiables sur l'interpreteur  2 554
+    DISPARUS en 3.14.7                  6  = 0,2 %
+
+> **Le defaut est dans la DECLARATION, pas dans le contenu.** J'attendais une derive justifiant
+> une regeneration ; elle est de six symboles. **Regenerer couterait cher pour 0,2 % ; corriger
+> l'en-tete coute une ligne.** Le remede juste n'est pas celui que le diagnostic suggerait.
+
+⇒ **NON MESURE, et je le dis plutot que de le supposer** : l'ecart INVERSE — les symboles
+NOUVEAUX de 3.14 absents de la doc. 0,2 % de disparus ne dit rien du nombre d'ajouts.
+
+### 115.121 LA THESE DES DIX WORKERS LOCAUX — MESUREE, ET ELLE TIENT
+
+*« 10 petits workers pour du code avec de la docu et bibliotheques python en main produiront
+aussi vite que le cloud et on peut en faire entrer 10 »*.
+
+**Place mesuree AVANT le banc** : 10 petits modeles = **3,4 Go** sur **22,3 Go libres**.
+
+    MUR                       245,2 s pour les dix EN PARALLELE
+    somme sequentielle       1613,8 s
+    GAIN                          x6,6
+    REUSSITES                    10/10
+    modeles a ZERO invention      8/10
+
+**TROIS OBJECTIONS D'EA MT5, VERIFIEES CHEZ MOI PLUTOT QUE SUPPOSEES** — son banc a vu cinq
+modeles sur six rendre zero, et aucun n'avait halluciné :
+
+| son objection | verifie ici | verdict |
+| --- | --- | --- |
+| verrou `banc` exclusif -> 9 refuses | mon banc appelle `/api/generate` **directement**, aucun verrou | **ne s'applique pas** |
+| troncature silencieuse du fragment | doc **1 260 car**, envoi plafonne a 5 000 -> **0 tronque** | **ne s'applique pas** |
+| « 0 cite » lu comme « 0 invente » | mes colonnes `justes` et `inventes` sont **separees** | **evite** |
+
+**La preuve du parallelisme reel n'est pas l'arithmetique memoire — c'est la forme des
+durees** : 104, 127, 129, 131, 134, 134, 146, 221, 242, 245 s pour un mur de 245 s. Des appels
+serialises auraient donne un mur egal a leur somme, 1 614 s. ⇒ **La memoire et le verrou sont
+deux ressources distinctes ; mon arithmetique ne prouvait que la premiere, les durees prouvent
+la seconde.**
+
+★ **Sa lecon tient malgre tout, et je la retiens** : *un banc qui ne distingue pas l'echec
+d'INFRASTRUCTURE de l'echec de MODELE accuse les modeles des fautes de l'orchestrateur.*
+
+**RESERVE HONNETE SUR MON PROPRE CHIFFRE** : la doc jointe ne fait que 1 260 caracteres. Dix
+modeles reussissent **sur une doc courte** ; rien ici ne dit ce qu'ils font sur 10 000.
+
+### 115.122 LE PYTHON PUR LIT LE TEXTE, LA BIBLIOTHEQUE INTERROGE L'OBJET
+
+*« le python pur a ses limites, et ce que les autres bibliotheques permettent de faire :
+franchir les limites du python pur »*. **Applique a mon banc en vol, ce critere l'a invalide.**
+
+    extraction par REGEX depuis la doc     6 parametres
+    inspect.signature(subprocess.run)     33 parametres
+    faux positifs                          0
+    MANQUES                               27  -> cwd, env, encoding, text, shell, errors...
+
+**82 % de manques, zero faux positif.** La doc *mentionne* six parametres dans sa prose ; la
+fonction en *accepte* trente-trois.
+
+★ **LA CONSEQUENCE EST L'INVERSE DE CE QU'ON CHERCHE** : un modele ecrivant `text=` ou `cwd=` —
+**reels** — etait compte comme INVENTANT. Deux des trois « inventions » relevees etaient `text`.
+**Un instrument trop severe ne se voit pas : il rend un chiffre plausible, dans le mauvais
+sens.** J'aurais publie un taux d'hallucination gonfle et conclu CONTRE la these de l'operateur
+alors qu'elle tient.
+
+    ma regex repondait a  « quels parametres la doc MENTIONNE-t-elle ? »
+    la question etait     « quels parametres la fonction ACCEPTE-t-elle ? »
+
+**Le detail qui compte** : `inspect.signature(subprocess.run)` seul ne suffit pas — `run`
+declare `**kwargs` et relaie a `Popen`. Il faut l'union avec `Popen.__init__`, sinon `cwd` et
+`env` manquent encore. **Une signature n'est pas toute la verite quand la fonction relaie.**
+
+> **Ce n'est pas la bibliotheque qui fait mieux la meme chose : elle repond a une question que
+> le texte ne peut pas atteindre.** Le Python pur parie sur la FORME du texte ; `inspect`
+> interroge l'objet vivant, `ast` l'arbre reel, `importlib.metadata` l'installation reelle.
+
+⇒ **CRITERE DE REVUE PERMANENT** : partout ou ce depot extrait du sens par `re`, demander si
+`ast`, `inspect` ou `importlib.metadata` repond exactement. Un pari sur la forme du texte est
+une hypothese ; une introspection est une mesure.
