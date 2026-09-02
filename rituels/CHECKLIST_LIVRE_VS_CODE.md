@@ -129,3 +129,22 @@ une validation**, et elle n'est pas non plus une infirmation : c'est INCONNU.
 donc lisible depuis n'importe quel editeur. **Aucune integration VS Code n'existe et aucune n'a
 ete demandee de facon verifiable.**
 
+
+---
+
+## 9. Ce que ce tour a mesure et laisse OUVERT — 2026-09-02
+
+| fait | etat | preuve |
+| --- | --- | --- |
+| **`record_failure` n est pas atteint quand TOUS les candidats echouent** | 🔴 **OUVERT** | journal a **694 octets AVANT et 694 APRES** un echec total mesure ce jour. C est le cas ou le circuit DOIT s ouvrir, et c est celui qui n enregistre rien |
+| **12 639 PDF a portee, jamais ingeres** | 🔴 **OUVERT** | comptes ce jour sous `D:\SAS\reference` (dont le benchmark GAIA). La doc PyMuPDF est deja sur disque (8 Ko, `open`/`get_text`/`get_pixmap`/`get_toc`) : le moyen existe, l ingestion n a jamais eu lieu |
+| **`recovery_timeout` passe de 0 a 300 s par defaut** | 🟡 **A SURVEILLER** | le code d avant passait `delai=0` ; le correctif n a pas repris le parametre, donc le defaut du module (300 s) s applique. Sans consequence tant que rien n ouvre le circuit — mais deviendra visible des que la rouge ci-dessus sera fermee |
+
+**Ce que ce tour confirme sur la METHODE, et qui vaut au-dela du disjoncteur :**
+
+Le format de rendu est une garde. Deux passes ont ete refusees au banc, la
+seconde parce que **deux ancres sur quatre etaient FABRIQUEES** — 0 occurrence
+reelle. La troisieme est passee sans que le modele change : seul le FORMAT a
+change. L orchestrateur a fourni les ancres, verifiees uniques dans le fichier
+reel, et le banc n a plus rendu que le remplacement. **L invention d ancre
+devient alors impossible, non pas decouragee.**

@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 12:45:24
+Generated: 2026-09-02 12:48:12
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 152 |
+| Commits non pushes | 153 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 12:28:45 -0500 |
+| Date du dernier commit | 2026-09-02 12:45:56 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -24,8 +24,8 @@ Generated: 2026-09-02 12:45:24
 | Couleur | Nombre |
 |---|---|
 | Vert | 11 |
-| Jaune | 8 |
-| Rouge | 8 |
+| Jaune | 9 |
+| Rouge | 10 |
 
 ## 5. Sauvegardes
 | Metric | Value |
@@ -41,7 +41,7 @@ Generated: 2026-09-02 12:45:24
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 6
 - Regressions d outillage : 87
-- Prescriptions rouges : 8
+- Prescriptions rouges : 10
   - Idempotency
   - Dependency validation
   - Coordination testing
@@ -50,4 +50,6 @@ Generated: 2026-09-02 12:45:24
   - Graceful degradation EN TIERS
   - TTL sur les donnees echangees
   - Timeout-aware retry with backoff
-- Commits non pousses : 152
+  - `record_failure` n est pas atteint quand TOUS les candidats echouent
+  - 12 639 PDF a portee, jamais ingeres
+- Commits non pousses : 153
