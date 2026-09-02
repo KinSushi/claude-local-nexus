@@ -1,17 +1,17 @@
 # Checklist Progress
-Generated: 2026-09-02 14:21:23
+Generated: 2026-09-02 14:38:28
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 165 |
+| Commits non pushes | 0 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 14:19:29 -0500 |
+| Date du dernier commit | 2026-09-02 14:31:20 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
-| nexus_cablage.py | inconnu |
+| nexus_cablage.py | 0 |
 | nexus_outillage.py | 84 |
 
 ## 3. Outils
@@ -58,4 +58,3 @@ Generated: 2026-09-02 14:21:23
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
   - ORPHELINE
   - Consequence tenue
-- Commits non pousses : 165

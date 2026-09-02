@@ -67,9 +67,13 @@ def run_ritual(script_path):
         # chercher un entier dans la sortie
         # check=True levait des qu un rituel rendait un code non nul,
         # or c est le cas NORMAL quand il detecte des regressions.
-        m = re.search(r"(\d+)", result.stdout)
-        if m:
-            regressions = int(m.group(1))
+        # pourquoi ce cas existe : un rituel qui reussit n ecrit aucun chiffre, et son succes se lisait comme une ignorance
+        if re.search(r"aucune regression", result.stdout, re.IGNORECASE):
+            regressions = 0
+        else:
+            m = re.search(r"(\d+)", result.stdout)
+            if m:
+                regressions = int(m.group(1))
     except Exception:
         pass
     return regressions

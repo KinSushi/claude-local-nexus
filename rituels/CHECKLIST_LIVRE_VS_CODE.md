@@ -458,3 +458,44 @@ cet aveu, pas a sa place.
 **Ce qui manque, et qui n est PAS ecrit ce tour** : un controle qui distingue
 une citation d un appel. Tant qu il n existe pas, ce paragraphe ne ferme rien
 (contrat 0.2.1).
+
+---
+
+## 17. INVENTAIRE AVANT L AUDIT FINAL — 2026-09-02
+
+Consigne de l operateur : *« avant FABLE 5, assure-toi qu il ne manque aucun
+fichier a faire reparer »*. Inventaire mecanique, pas declaratif.
+
+| ensemble | compte |
+| --- | --- |
+| fichiers suivis par git | 278 |
+| dont **le PROJET** (hors `nexus_*`, `epreuve_*`, `rituels/`, `references/`, `.claude/`) | **93** |
+| couverts par un agent de reparation | **44** |
+| **jamais vus par personne** | **49** |
+
+Les 49 se repartissent ainsi, et deux lots ont ete depeches pour les couvrir :
+
+* **2 scripts Python du projet** — `console_tools.py`, `mesure_rendu_vide.py` —
+  du CODE jamais audite ;
+* **3 `competences/*.txt`**, charges dynamiquement par `nexus_agent.py` comme
+  consigne systeme : une consigne qui se contredit est un defaut reel ;
+* **44 documents** sous `docs/`, dont ~36 `docs/architecture/*.txt`.
+
+### Deux ecarts trouves par la confrontation checklist vs depot
+
+La regle « verifie que ce que tu affirmes correspond a ce que tu as fait » a
+ete appliquee au tableau de bord lui-meme. Deux ecarts, tous deux dans
+l INSTRUMENT :
+
+| declare | reel | cause |
+| --- | --- | --- |
+| arbre « propre » | **modifie** | le generateur mesure l arbre AVANT de s ecrire : il ne peut jamais voir son propre effet |
+| cablage « inconnu » | **0 regression** | le rituel qui REUSSIT ecrit « aucune regression » — sans chiffre. Le motif `(\d+)` ne trouvait rien et lisait un SUCCES comme une IGNORANCE |
+
+Le second est repare et verifie : le tableau affiche desormais **0**.
+Le premier est **OUVERT** : un tableau de bord qui se salit lui-meme en se
+generant ne peut pas rendre compte de sa propre modification.
+
+> **Un « inconnu » affiche a la place d un succes est un defaut grave** : il se
+> lit comme une mesure impossible alors que la mesure a reussi et vaut zero.
+> C est la meme famille que le « vide lu comme une panne », vue a l envers.
