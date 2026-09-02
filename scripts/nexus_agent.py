@@ -1019,6 +1019,13 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs = [], []
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+    try:
+        from nexus_disjoncteur import Disjoncteur
+        _dj = Disjoncteur(seuil=3, delai=0)
+        _c = [c for c in candidats if _dj.is_available(c)]
+        if _c: candidats = _c
+    except Exception:
+        pass
     # la direction local vers cloud est interdite par le contrat et non pas deconseillee
     # auparavant la protection dependait d'une option de l'appelant, ce qui la rendait facultative
     # incident du 2026-09-01 avec les six modules de securite

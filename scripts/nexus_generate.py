@@ -1188,6 +1188,11 @@ def set_block(lines: list[str], marker: str, content: list[str]) -> list[str]:
 
 
 def main() -> int:
+    # An interrupt allows the operator to freeze generation during an incident without uninstalling the tool
+    # This switch is controlled by the environment variable NEXUS_GENERATION_GELEE
+    if os.getenv("NEXUS_GENERATION_GELEE") == "1":
+        print("Generation is frozen by switch; clear NEXUS_GENERATION_GELEE to resume.", file=sys.stderr)
+        return 1
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true",
                         help="affiche ce qui serait généré sans rien écrire")
