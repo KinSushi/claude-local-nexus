@@ -15491,3 +15491,189 @@ et n'a **cite aucune ligne reelle** malgre une consigne explicite.
 
 **Chaque epreuve cablee est un morceau d'arbitrage qui survit a la coupure, definitivement et
 gratuitement.** C'est ce qui rend le cablage des epreuves prioritaire sur les audits.
+
+### 115.85 LA VOIE DE SECOURS EXISTE ET ELLE EST MESUREE — le moteur parle le protocole Anthropic
+
+**Reponse a la question de l'operateur : « QUI pour te remplacer reellement, et que cela
+fonctionne ? »**
+
+Trois tentatives ont ete faites, dans cet ordre, et seule la troisieme aboutit :
+
+    /model glm-4.7-flash-local          REFUSE par le client
+    ANTHROPIC_BASE_URL -> passerelle    expire, mesure NON CONCLUANTE sous charge (§115.83)
+    le MOTEUR directement               HTTP 200 en 48.9 s, rendu 'PRET'
+
+**Mesure decisive, faite a l'instant :**
+
+    POST http://localhost:11434/v1/messages
+    modele qwen3-coder:30b  ->  HTTP 200 en 48.9 s  ->  'PRET'
+
+> **Le moteur d'inference expose LUI-MEME un point d'entree conforme au protocole du
+> fournisseur proprietaire.** Pas de passerelle, pas d'abonnement, pas de cle. La bascule du
+> client vers le plan local ne demande donc qu'une variable d'environnement pointant sur
+> l'adresse locale.
+
+Et `ollama launch claude` existe sur la version installee (0.33.2), parmi seize integrations
+declarees — c'est la meme voie, packagee par le fournisseur du moteur.
+
+**CE QUI RESTE A PROUVER, et ce n'est pas prouve :** que Claude Code lui-meme, une fois
+redirige, fonctionne reellement de bout en bout sur un modele local — outils compris. Le
+protocole repond ; l'usage agentique complet n'a PAS ete eprouve. Le dire, plutot que de
+laisser croire que la question est reglee.
+
+⇒ `nexus_secours.py` est en cours d'ecriture : il diagnostique la voie, mesure le temps de
+reponse, et AFFICHE la configuration a poser — sans jamais la poser lui-meme. Un outil de
+secours qui modifie l'environnement pendant qu'on diagnostique aggrave la panne.
+
+### 115.86 INVENTAIRE EXHAUSTIF DES SUJETS OUVERTS — du debut de la session a maintenant
+
+Demande explicite de l'operateur. **Rien n'est omis, y compris ce qui m'embarrasse.**
+
+**RESOLU ET PROUVE PAR EPREUVE** (ne revient plus) :
+
+    sous_racine : « absent » contre « hors racine »        3 epreuves, aucun refus relache
+    nexus_charge : trois etats du moteur                   3 etats mesures separement
+    nexus_armer_garde : code 0 sans rien armer             64 / 1 / 2, non-regression verifiee
+    nexus_armer_garde : egalite au lieu d'inclusion        + ajout inattendu refuse, cable
+    enveloppe MCP : « traites » -> « soumis »              + taille du corpus affichee
+    nexus_appliquer : encodage cp1252                      lecture forcee en UTF-8
+    nexus_appliquer : « absent » contre « mal place »      3 epreuves
+    decoupage de nexus_valide                              113 986 car., 25 morceaux, PROUVE
+    mentions_hors_perimetre + fichiers_joints              2 sur un temoin, 1 fichier joint
+    regex de chemins : prefixe de lecteur Windows          3 cas capturent le chemin ENTIER
+    nexus_verifie_rendu : 4 controles                      7 cas sur 7, cable
+    la bascule automatique                                 contre-epreuve integrale, cablee
+    3 gardes eprouvees pour la premiere fois               isolation 5/5, agent 5/5, prod 6/6
+
+**OUVERT, ET CHACUN AVEC SON ETAT REEL :**
+
+| sujet | etat exact |
+| --- | --- |
+| **11 epreuves rouges** | posees, attentes non verifiees, NON cablees. Vague de 13 en vol pour les corriger avec la regle du contenu plutot que du code |
+| **10 regressions de cablage** | ce sont EXACTEMENT ces 11 epreuves. Elles se cableront quand elles seront vertes, pas avant |
+| **11 regressions d'outillage** | dont deux regles NEUVES du cliquet (B006, B007). Un cliquet dont le referentiel s'elargit fait bouger son propre chiffre — le diagnostic est rendu, le correctif n'est pas pose |
+| **conflit des deux cliquets** | NOMME (§115.60), non resolu. Une passe de style fait tomber l'un et monter l'autre, mecaniquement |
+| **registre d'audits pour LOI 1** | OUVERT. `nexus_loi1` mesure la PROVENANCE, pas l'AUDIT. Diagnostic rendu, rien de pose |
+| **la passerelle bloque-t-elle le local ?** | NON CONCLUANT — mesure prise sous charge (3.8 Go libres). A reposer machine au repos |
+| **Claude Code sur modele local, de bout en bout** | protocole PROUVE, usage agentique complet NON eprouve |
+| **corpus de 74 000 fichiers** | `nexus_corpus` pose, son epreuve posee, NON cablee. Le corpus lui-meme n'a jamais ete inventorie |
+| **vitrine GitHub** | 60+ commits non pousses. La publication est REFUSEE tant que le rituel n'est pas clos — et c'est voulu |
+| **pool de redaction derive** (§115.42) | diagnostics rendus, arbitrage non tranche, rien de pose |
+| **`epreuve_bascule_contre`** | verte mais orpheline : c'est une contre-epreuve, elle n'a pas d'appelant |
+
+**CE QUE CET INVENTAIRE APPREND, et c'est le plus utile :** treize sujets sont clos par une
+EPREUVE, onze restent ouverts — et **dix des onze ouverts sont le meme sujet**, les epreuves
+dont les attentes n'ont pas ete verifiees. Ce n'est pas onze chantiers, c'est un seul, repete
+onze fois. Le cliquet de cablage compte des fichiers ; il ne dit pas qu'ils forment un seul
+probleme.
+
+### 115.87 DOUZE SUR DOUZE : quand une epreuve echoue, c'est l'ATTENTE qui est fausse
+
+Statistique de la nuit, et elle change la facon de lire un rouge.
+
+    epreuves corrigees cette nuit                    12
+    dont l'ATTENTE etait fausse                      12
+    dont l'OUTIL etait reellement defectueux          0
+
+Les causes, toutes mesurees : un cas nominal omettant la cle qu'il testait ; une structure
+JSON lue a la racine alors qu'elle est imbriquee ; une cle `tool_name` absente ; un chemin
+d'outil construit avec un segment en trop ; un cas de test exigeant un comportement de
+terminal impossible en sous-processus ; une attente exigeant un code nul la ou l'outil signale
+correctement un defaut.
+
+> **Quand une epreuve echoue, la premiere question n'est pas « quel defaut a-t-elle trouve ? »
+> mais « a-t-elle seulement pu lancer ce qu'elle teste, et attend-elle la bonne chose ? »**
+> Douze fois sur douze, la reponse etait non — et une seule fois sur douze j'ai failli faire
+> corriger un outil sain a cause de cela.
+
+C'est desormais inscrit dans la consigne d'epreuve elle-meme, pour que le banc le sache avant
+d'ecrire plutot que moi apres avoir lu.
+
+### 115.88 `nexus_secours` — LA VOIE DE REMPLACEMENT, MESUREE DE BOUT EN BOUT
+
+Reponse outillee a la question de l'operateur : *« QUI pour te remplacer reellement, et que
+cela fonctionne ? »*
+
+**L'outil rend, mesure a l'instant :**
+
+    Moteur joignable, 1 modele resident
+    Modeles installes: 55 ; Modeles residents: 1 (dont 1 capables de conversation)
+    Reponse valide recue en 2.98 secondes
+    ANTHROPIC_BASE_URL="http://localhost:11434"
+    ANTHROPIC_AUTH_TOKEN="local"
+    Avertissement : cette voie a ete verifiee au niveau du PROTOCOLE seulement.
+
+**CINQ DEFAUTS ONT DU ETRE CORRIGES AVANT QU'IL FONCTIONNE, et quatre sur cinq sont la MEME
+classe — deux ensembles confondus :**
+
+    1. max_tokens absent du corps          -> HTTP 400 (champ obligatoire du protocole)
+    2. modele par defaut 'test-model'      -> un nom INVENTE, aucun modele installe
+    3. « installes » = les RESIDENTS       -> 5 annonces au lieu de 55 : /api/ps au lieu de /api/tags
+    4. en-tete anthropic-version absent    -> HTTP 400 malgre un corps correct
+    5. ★ « resident » = « CAPABLE de chat » -> il sondait nomic-embed-text, un modele
+                                              d'EMBEDDING, incapable de dialoguer
+
+**Le cinquieme est le plus instructif** : etre RESIDENT en memoire et etre CAPABLE DE
+REPONDRE sont deux proprietes differentes, et l'outil traitait la premiere comme si elle
+impliquait la seconde. Le serveur refusait en 400, et **il avait raison**. L'outil affiche
+desormais les deux nombres cote a cote — `1 resident (dont 1 capable de conversation)` — pour
+que l'ecart soit visible avant qu'il ne morde.
+
+**CE QUE L'OUTIL NE FAIT PAS, deliberement** : il ne pose AUCUNE variable, n'ecrit AUCUN
+fichier. Un outil de secours qui modifie l'environnement pendant qu'on diagnostique aggrave
+la panne.
+
+**CE QUI RESTE NON PROUVE, et l'outil le dit lui-meme** : le protocole repond, mais l'usage
+agentique complet du client — outils, sessions, fichiers — n'a PAS ete eprouve. Une sonde
+reussie ne prouve pas que tout fonctionne.
+
+### 115.89 LA CONTRAINTE 64 k CONTRE 1 M — mesuree, et deja resolue par le dispositif
+
+Rappel de l'operateur : *« la contrainte de base 64k de contexte, mais avoir 1M grace a un
+essaim de modeles locaux avec un modele orchestrateur »*.
+
+**Mesure sur le dispositif reel :**
+
+    fenetre d'UN SEUL modele local     8 192 jetons  (24 371 caracteres utiles)
+    carte_reduction                    present
+    _decouper_en_fenetres              present
+
+    pour traiter    64 k jetons  (~  256 000 car.)   11 fenetres,  ~6 min
+    pour traiter     1 M jetons  (~4 000 000 car.)  165 fenetres, ~82 min
+
+Hypothese NOMMEE et non gravee : ~4 caracteres par jeton.
+
+> **La fenetre d'un modele ne borne PLUS le volume traitable — le decoupage la contourne.**
+> Ce qui borne est le TEMPS. Et localement, le temps ne coute rien d'autre que du temps :
+> ni jeton facture, ni quota, ni sortie de donnee.
+
+C'est exactement le §110, et c'est ce qui rend la voie de secours viable malgre une fenetre
+locale de 8 k : **un modele a 8 k coordonne par un decoupage vaut mieux qu'un modele a 1 M
+qu'on ne peut plus payer.**
+
+**CE QUI RESTE A FAIRE** : le client de codage, lui, ne connait pas ce decoupage. Rediriger
+`ANTHROPIC_BASE_URL` vers le moteur donne un modele a 8 k, pas un essaim. **L'essaim n'est
+accessible qu'a travers les outils de ce depot** — `nexus_agent`, `nexus_context`. C'est une
+limite reelle de la voie de secours, et elle doit etre dite : la redirection sauve la
+CAPACITE de repondre, pas la capacite de traiter un gros corpus d'un seul tenant.
+
+### 115.90 UNE PANNE DU CLASSIFICATEUR, EN DIRECT, PENDANT CE TOUR
+
+Survenue pendant la mesure, et elle illustre la question mieux qu'un raisonnement :
+
+    claude-sonnet-5[1m] is temporarily unavailable (connection failed),
+    so auto mode cannot determine the safety of Bash right now.
+
+**Un service distant est tombe, et l'outil de travail s'est arrete** — les operations de
+lecture restaient possibles, les ecritures non. Deux consequences mesurees :
+
+* une consigne de lot n'a **jamais ete ecrite** : le blocage est survenu avant, et le lot
+  suivant a echoue sur un fichier absent. J'ai d'abord cru le lot perdu ; il n'avait jamais
+  existe. **Encore deux situations confondues** — « le lot a echoue » et « le lot n'a jamais
+  ete lance » — cette fois par moi, en lisant un `FileNotFoundError` ;
+* la reprise a demande de reposer la consigne par FICHIER plutot que par commande, ce qui est
+  precisement le remede du §115.75.
+
+⇒ **Ce n'est pas une hypothese sur ce qui arriverait si les abonnements tombaient : c'est
+arrive, brievement, et le travail s'est arrete.** La voie de secours n'est donc pas une
+precaution theorique.

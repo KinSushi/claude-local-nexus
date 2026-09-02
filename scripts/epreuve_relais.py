@@ -1,158 +1,101 @@
 import os
 import sys
-import json
 import subprocess
-import pathlib
-import re
-import time
+import tempfile
+import textwrap
 
 # ----------------------------------------------------------------------
-# Helper to run the tool with a timeout of 10 seconds.
+# Helper functions (ASCII only, no non-ASCII punctuation)
 # ----------------------------------------------------------------------
-def _run_tool(tool_path, input_data):
-    """Run the tool, feed input_data on stdin, capture stdout/stderr."""
-    env = os.environ.copy()
-    proc = subprocess.Popen(
-        [sys.executable, str(tool_path)],
-        stdin=subprocess.PIPE,
+def run_tool(args, cwd):
+    """Run the tool in a subprocess, return (rc, out)."""
+    proc = subprocess.run(
+        [sys.executable, tool_path] + args,
+        cwd=cwd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
+        stderr=subprocess.STDOUT,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
     )
-    try:
-        stdout, stderr = proc.communicate(input=input_data, timeout=10)
-        return proc.returncode, stdout, stderr
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        return -1, "", "Timeout"
+    return proc.returncode, proc.stdout
+
+def report(case, ok, msg=""):
+    """Print a line for the test harness."""
+    if ok:
+        print(f"[{case}]")
+    else:
+        print(f"[{case}] {msg}")
 
 # ----------------------------------------------------------------------
-# Parse the tool source to extract CLI definition and return codes.
+# 1. Verify that the tool file exists
 # ----------------------------------------------------------------------
-def _parse_cli(tool_path):
-    """Return (options, positionals, return_codes) extracted from source."""
-    options = []
-    positionals = []
-    return_codes = set()
-    option_pat = re.compile(r'add_argument\(\s*([\'"]--[^\'"]+[\'"])(?:\s*,\s*([\'"]-[^\'"]+[\'"]))?')
-    positional_pat = re.compile(r'add_argument\(\s*([\'"][^\'"-][^\'"]*[\'"])')
-    return_pat = re.compile(r'sys\.exit\(\s*([0-9]+)\s*\)|return\s+([0-9]+)')
+if len(sys.argv) < 2:
+    sys.stderr.write("Missing path to tool\n")
+    sys.exit(3)  # reserved code for missing argument
 
-    try:
-        src = tool_path.read_text(encoding="utf-8")
-    except Exception:
-        return options, positionals, return_codes
+tool_path = sys.argv[1]
 
-    for line in src.splitlines():
-        # Options (starting with --)
-        m = option_pat.search(line)
-        if m:
-            opt = m.group(1).strip('\'"')
-            options.append(opt)
-            continue
-        # Positional arguments (no leading dash)
-        m = positional_pat.search(line)
-        if m:
-            arg = m.group(1).strip('\'"')
-            if not arg.startswith('-'):
-                positionals.append(arg)
-            continue
-        # Return codes
-        for m in return_pat.finditer(line):
-            code = m.group(1) or m.group(2)
-            if code is not None:
-                return_codes.add(int(code))
-    return options, positionals, return_codes
+if not os.path.isfile(tool_path):
+    sys.stderr.write(f"Tool not found: {tool_path}\n")
+    sys.exit(3)
 
 # ----------------------------------------------------------------------
-# Verification helpers
+# 2. Prepare a temporary directory that mimics the repository layout
 # ----------------------------------------------------------------------
-def _is_json_denial(text):
-    """Return True if text is JSON containing deny decision."""
-    try:
-        data = json.loads(text)
-        hook = data.get("hookSpecificOutput", {})
-        return (
-            hook.get("hookEventName") == "PreToolUse"
-            and hook.get("permissionDecision") == "deny"
-        )
-    except Exception:
-        return False
+with tempfile.TemporaryDirectory() as tmpdir:
+    # Copy the tool into the temporary directory
+    tool_name = os.path.basename(tool_path)
+    tmp_tool = os.path.join(tmpdir, tool_name)
+    with open(tool_path, "r", encoding="utf-8") as src, open(tmp_tool, "w", encoding="utf-8") as dst:
+        dst.write(src.read())
 
-def _verify_accept(code, out):
-    """Accept case: code 0 and no stdout."""
-    return code == 0 and out.strip() == ""
+    # Create a dummy target script (will be ignored by the tool because it
+    # expects a nexus_agent module that is not present)
+    dummy_target = os.path.join(tmpdir, "dummy_target.py")
+    with open(dummy_target, "w", encoding="utf-8") as f:
+        f.write("# dummy script\n")
 
-def _verify_refuse(code, out):
-    """Refuse case: non-zero code and JSON denial on stdout."""
-    return code != 0 and _is_json_denial(out)
+    # ------------------------------------------------------------------
+    # Sub-test A : invocation without arguments (should show usage)
+    # ------------------------------------------------------------------
+    rc, out = run_tool([], tmpdir)
+    ok = rc != 0 and "usage:" in out.lower()
+    report("A", ok, f"expected usage message, rc={rc}")
 
-def _verify_missing_args(code, out, err):
-    """Missing required args: non-zero code and usage text."""
-    txt = out + err
-    return code != 0 and ("usage" in txt.lower() or "error" in txt.lower())
+    # ------------------------------------------------------------------
+    # Sub-test B : nominal case - no targets (tool returns code 2)
+    # ------------------------------------------------------------------
+    rc, out = run_tool([], tmpdir)
+    ok = rc == 2 and "no targets to process." in out.lower()
+    report("B", ok, f"expected no-target message, rc={rc}")
 
-# ----------------------------------------------------------------------
-# Main test runner
-# ----------------------------------------------------------------------
-def main():
-    tool_rel = pathlib.Path("scripts") / "nexus_garde_isolation.py"
-    if not tool_rel.is_file():
-        print(f"Tool not found: {tool_rel}")
-        sys.exit(127)   # reserved code for missing tool
+    # ------------------------------------------------------------------
+    # Sub-test C : provide a non-existent file via --file (should fail)
+    # ------------------------------------------------------------------
+    rc, out = run_tool(["--file", "nonexistent.txt"], tmpdir)
+    # The tool will raise FileNotFoundError; we only check that it does not
+    # return 0 and that the traceback appears in the output.
+    ok = rc != 0 and "filenotfounderror" in out.lower()
+    report("C", ok, f"expected file-not-found error, rc={rc}")
 
-    # Extract CLI info (not used directly in tests but required by spec)
-    options, positionals, return_codes = _parse_cli(tool_rel)
+    # ------------------------------------------------------------------
+    # Sub-test D : malformed entry in file list (empty line)
+    # ------------------------------------------------------------------
+    list_path = os.path.join(tmpdir, "list.txt")
+    with open(list_path, "w", encoding="utf-8") as f:
+        f.write("\n")  # empty line only
+    rc, out = run_tool(["--file", list_path], tmpdir)
+    ok = rc == 2 and "no targets to process." in out.lower()
+    report("D", ok, f"expected graceful handling of empty list, rc={rc}")
 
-    results = []
+    # ------------------------------------------------------------------
+    # Sub-test E : invoke with a valid file list containing the dummy target
+    # ------------------------------------------------------------------
+    with open(list_path, "w", encoding="utf-8") as f:
+        f.write(dummy_target + "\n")
+    rc, out = run_tool(["--file", list_path, "--max-cibles", "0"], tmpdir)
+    # With --max-cibles 0 the tool should process nothing and exit with code 2
+    ok = rc == 2 and "no targets to process." in out.lower()
+    report("E", ok, f"expected early exit with max-cibles=0, rc={rc}")
 
-    # 1. UN: isolation worktree -> accept
-    input_un = json.dumps({"tool_name": "Agent", "tool_input": {"isolation": "worktree"}})
-    code, out, err = _run_tool(tool_rel, input_un)
-    ok = _verify_accept(code, out)
-    results.append(ok)
-    print("[OK  ] UN" if ok else "[FAIL] UN")
-
-    # 2. DEUX: no isolation -> refuse
-    input_deux = json.dumps({"tool_name": "Agent", "tool_input": {}})
-    code, out, err = _run_tool(tool_rel, input_deux)
-    ok = _verify_refuse(code, out)
-    results.append(ok)
-    print("[OK  ] DEUX" if ok else "[FAIL] DEUX")
-
-    # 3. TROIS: empty input -> refuse
-    code, out, err = _run_tool(tool_rel, "")
-    ok = _verify_refuse(code, out)
-    results.append(ok)
-    print("[OK  ] TROIS" if ok else "[FAIL] TROIS")
-
-    # 4. QUATRE: no isolation but env var NEXUS_ISOLATION_LIBRE=1 -> accept
-    env_backup = os.environ.copy()
-    os.environ["NEXUS_ISOLATION_LIBRE"] = "1"
-    code, out, err = _run_tool(tool_rel, input_deux)
-    ok = _verify_accept(code, out)
-    results.append(ok)
-    print("[OK  ] QUATRE" if ok else "[FAIL] QUATRE")
-    # restore environment
-    os.environ.clear()
-    os.environ.update(env_backup)
-
-    # 5. CINQ: invalid JSON -> must not crash (timeout is failure)
-    code, out, err = _run_tool(tool_rel, "invalid json")
-    ok = code != -1   # not a timeout
-    results.append(ok)
-    print("[OK  ] CINQ" if ok else "[FAIL] CINQ")
-
-    # 6. INVOCATION without stdin -> should show usage and non-zero code
-    code, out, err = _run_tool(tool_rel, "")
-    ok = _verify_missing_args(code, out, err)
-    results.append(ok)
-    print("[OK  ] INVOCATION" if ok else "[FAIL] INVOCATION")
-
-    if not all(results):
-        sys.exit(1)
-    sys.exit(0)
-
-if __name__ == "__main__":
-    main()

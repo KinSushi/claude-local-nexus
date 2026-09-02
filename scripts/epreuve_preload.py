@@ -1,125 +1,84 @@
-# -*- coding: utf-8 -*-
-import os
-import sys
 import subprocess
+import sys
+import os
 import tempfile
 import json
-import time
 
-# Codes de retour réservés
-CODE_OUTIL_INTROUVABLE = 127
-CODE_TIMEOUT = 124
-
-def executer_outil(args, timeout=10):
-    """Exécute l'outil en sous-processus avec délai maximal."""
-    chemin_outil = os.path.join("scripts", "nexus_preload.py")
-    if not os.path.exists(chemin_outil):
-        print(f"[ERREUR] Outil introuvable: {chemin_outil}")
-        sys.exit(CODE_OUTIL_INTROUVABLE)
-
-    cmd = [sys.executable, chemin_outil] + args
-    with tempfile.TemporaryDirectory() as tmpdir:
-        env = os.environ.copy()
-        env["TMPDIR"] = tmpdir
-        try:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=tmpdir,
-                env=env
-            )
-            stdout, stderr = proc.communicate(timeout=timeout)
-            return proc.returncode, stdout, stderr
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            return CODE_TIMEOUT, "", "Timeout: l'outil n'a pas rendu la main"
-
-def verifier_nominal():
-    """Cas nominal: préchargement réussi."""
-    code, stdout, stderr = executer_outil(["test-model"])
-    if code != 0:
-        print("[FAIL] NOMINAL (code inattendu)")
-        return False
-    if "test-model: succes" not in stdout:
-        print("[FAIL] NOMINAL (sortie incorrecte)")
-        return False
-    if stderr:
-        print("[FAIL] NOMINAL (erreur sur stderr)")
-        return False
-    print("[OK  ] NOMINAL")
-    return True
-
-def verifier_refus_modele_distant():
-    """Cas inverse: modèle distant refusé."""
-    code, stdout, stderr = executer_outil(["test-cloud"])
-    if code != 0:
-        print("[FAIL] REFUS_DISTANT (code inattendu)")
-        return False
-    if "Modèle distant" not in stdout:
-        print("[FAIL] REFUS_DISTANT (refus non détecté)")
-        return False
-    print("[OK  ] REFUS_DISTANT")
-    return True
-
-def verifier_entree_malformee():
-    """Cas malformé: JSON invalide (simulé par timeout serveur)."""
-    code, stdout, stderr = executer_outil(["invalid-model"], timeout=2)
-    if code == CODE_TIMEOUT:
-        print("[OK  ] ENTREE_MALFORMEE (timeout attendu)")
-        return True
-    if code != 0 and "Passerelle inaccessible" in stdout + stderr:
-        print("[OK  ] ENTREE_MALFORMEE (erreur réseau)")
-        return True
-    print("[FAIL] ENTREE_MALFORMEE (comportement inattendu)")
-    return False
-
-def verifier_usage_manquant():
-    """Cas manquant: arguments requis absents."""
-    code, stdout, stderr = executer_outil([])
-    if code == 0:
-        print("[FAIL] USAGE_MANQUANT (code 0 inattendu)")
-        return False
-    if "usage:" not in stderr:
-        print("[FAIL] USAGE_MANQUANT (message d'usage manquant)")
-        return False
-    print("[OK  ] USAGE_MANQUANT")
-    return True
-
-def verifier_sortie_json():
-    """Cas JSON: sortie formatée en JSON."""
-    code, stdout, stderr = executer_outil(["--json", "test-model"])
-    if code != 0:
-        print("[FAIL] SORTIE_JSON (code inattendu)")
-        return False
+def run_tool(args):
+    tool_path = os.path.join("scripts", "nexus_preload.py")
+    cmd = [sys.executable, tool_path] + args
     try:
-        json.loads(stdout)
-    except json.JSONDecodeError:
-        print("[FAIL] SORTIE_JSON (JSON invalide)")
-        return False
-    print("[OK  ] SORTIE_JSON")
-    return True
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=os.getcwd()
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired:
+        return -1, "", "L'outil n'a pas rendu la main"
+    except Exception as e:
+        return -1, "", str(e)
 
 def main():
-    cas = [
-        verifier_nominal,
-        verifier_refus_modele_distant,
-        verifier_entree_malformee,
-        verifier_usage_manquant,
-        verifier_sortie_json,
-    ]
+    tool_path = os.path.join("scripts", "nexus_preload.py")
+    if not os.path.exists(tool_path):
+        print(f"[FAIL] Fichier introuvable: {tool_path}")
+        sys.exit(127)
 
-    resultats = []
-    for test in cas:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.chdir(tmpdir)
+        
+        # CAS 1: Invocation sans arguments (Usage + Code non nul)
+        # Note: argparse sort normalement en code 2 pour manque d'args
+        rc, out, err = run_tool([])
+        if rc != 0 and "usage" in err.lower():
+            print("[OK] Invocation sans arguments")
+        else:
+            print(f"[FAIL] Sans arguments: rc={rc}, err={err}")
+            sys.exit(1)
+
+        # CAS 2: Modèle distant (Refus explicite)
+        # L'outil doit refuser les alias finissant par -cloud
+        rc, out, err = run_tool(["model-cloud"])
+        if rc == 0 and "erreur" in out and "Modèle distant" in out:
+            print("[OK] Refus modèle distant")
+        else:
+            print(f"[FAIL] Modèle distant: rc={rc}, out={out}")
+            sys.exit(1)
+
+        # CAS 3: Entrée malformée / Passerelle inaccessible (Nominal erreur)
+        # On teste un alias local alors que rien n'écoute sur le port 4000
+        rc, out, err = run_tool(["model-local"])
+        if rc == 0 and "erreur" in out and "Passerelle inaccessible" in out:
+            print("[OK] Gestion passerelle inaccessible")
+        else:
+            print(f"[FAIL] Passerelle inaccessible: rc={rc}, out={out}")
+            sys.exit(1)
+
+        # CAS 4: Sortie JSON
+        rc, out, err = run_tool(["model-local", "--json"])
         try:
-            resultats.append(test())
+            data = json.loads(out)
+            if isinstance(data, list) and len(data) > 0 and "etat" in data[0]:
+                print("[OK] Sortie JSON valide")
+            else:
+                raise ValueError("Structure JSON incorrecte")
         except Exception as e:
-            print(f"[FAIL] {test.__name__.upper()} (exception: {type(e).__name__})")
-            resultats.append(False)
+            print(f"[FAIL] Sortie JSON: {e}")
+            sys.exit(1)
 
-    if not all(resultats):
-        sys.exit(1)
+        # CAS 5: Plusieurs alias
+        rc, out, err = run_tool(["m1", "m2"])
+        if rc == 0 and out.count(":") >= 2:
+            print("[OK] Multiples alias")
+        else:
+            print(f"[FAIL] Multiples alias: rc={rc}, out={out}")
+            sys.exit(1)
+
+    print("[ALL TESTS PASSED]")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

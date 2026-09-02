@@ -1,121 +1,155 @@
-import os, sys, subprocess, json, tempfile, pathlib
+import os
+import sys
+import subprocess
+import tempfile
+import json
+from pathlib import Path
 
-# ----------------------------------------------------------------------
-# Helper to locate the tool and report a reserved error if missing.
-def locate_tool():
-    path = os.path.join("scripts", "nexus_stats_jsonl.py")
-    if not os.path.isfile(path):
-        print(f"Outil introuvable: {path}")
-        sys.exit(127)          # code reserve
-    return path
+TIMEOUT = 10
+CODE_FICHIER_INEXISTANT = 2
+MSG_FICHIER_INEXISTANT = "Fichier illisible"
+MSG_USAGE = "usage: nexus_stats_jsonl.py"
+MSG_REGEX_INVALID = "Regex invalide"
+MSG_MOTIF_MAL_FORME = "Motif mal forme"
+MSG_JSONL_INVALID = "lignes invalides ignorees"
 
-# ----------------------------------------------------------------------
-# Run the tool with given argument list and optional stdin data.
-def run_tool(args, stdin_data=None):
-    tool = locate_tool()
-    # Execute in a temporary directory to avoid touching the repository.
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [sys.executable, tool] + args
-        proc = subprocess.Popen(
+def run_cmd(cmd, cwd=None):
+    try:
+        result = subprocess.run(
             cmd,
-            cwd=tmpdir,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            cwd=cwd,
+            capture_output=True,
             text=True,
+            timeout=TIMEOUT,
+            encoding="utf-8",
+            errors="replace"
         )
-        try:
-            out, err = proc.communicate(input=stdin_data, timeout=10)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            return -1, "", "Timeout"
-        return proc.returncode, out, err
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return None, "", "ECHEC : delai depasse (outil bloque ?)"
 
-# ----------------------------------------------------------------------
-# Verify a single test case and print a marker.
-def verify(name, args, expected_code, stdin_data=None, check_output=None):
-    code, out, err = run_tool(args, stdin_data)
-    success = (code == expected_code)
-    if success and check_output is not None:
+def test_fichier_inexistant():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier_inexistant.jsonl",
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test=.*"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != CODE_FICHIER_INEXISTANT:
+            return False, f"Code {code} != {CODE_FICHIER_INEXISTANT}"
+        if MSG_FICHIER_INEXISTANT not in stderr:
+            return False, f"Message absent : {MSG_FICHIER_INEXISTANT}"
+        return True, ""
+
+def test_usage_sans_arguments():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cmd = [sys.executable, "nexus_stats_jsonl.py"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code == 0:
+            return False, "Code 0 avec arguments manquants"
+        if MSG_USAGE not in stderr:
+            return False, f"Usage absent : {MSG_USAGE}"
+        return True, ""
+
+def test_motif_mal_forme():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier.jsonl",
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test_sans_egal"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != 2:
+            return False, f"Code {code} != 2"
+        if MSG_MOTIF_MAL_FORME not in stderr:
+            return False, f"Message absent : {MSG_MOTIF_MAL_FORME}"
+        return True, ""
+
+def test_regex_invalide():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier.jsonl",
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test=("]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != 2:
+            return False, f"Code {code} != 2"
+        if MSG_REGEX_INVALID not in stderr:
+            return False, f"Message absent : {MSG_REGEX_INVALID}"
+        return True, ""
+
+def test_jsonl_invalide():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fichier = Path(tmpdir) / "test.jsonl"
+        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n{invalid json\n')
+        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test=test"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != 0:
+            return False, f"Code {code} != 0"
+        if MSG_JSONL_INVALID not in stdout:
+            return False, f"Message absent : {MSG_JSONL_INVALID}"
+        return True, ""
+
+def test_sortie_json():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fichier = Path(tmpdir) / "test.jsonl"
+        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n')
+        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test=test", "--json"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != 0:
+            return False, f"Code {code} != 0"
         try:
-            data = json.loads(out)
-            # The tool may output JSON only when --json is used.
-            # check_output is a callable that returns True if content matches.
-            success = check_output(data)
+            data = json.loads(stdout)
+            if "par_groupe" not in data or "par_booleen" not in data:
+                return False, "Structure JSON incomplete"
         except json.JSONDecodeError:
-            success = False
-    # Ensure no output on stderr for successful runs.
-    if success and code == 0 and err.strip():
-        success = False
-    marker = "[OK  ]" if success else "[FAIL]"
-    print(f"{marker} {name}")
-    return success
+            return False, "Sortie non JSON valide"
+        return True, ""
 
-# ----------------------------------------------------------------------
-# Build a temporary JSONL file with given lines.
-def make_jsonl(lines):
-    fd, path = tempfile.mkstemp(suffix=".jsonl")
-    os.close(fd)
-    with open(path, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line + "\n")
-    return path
+def test_sortie_texte():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fichier = Path(tmpdir) / "test.jsonl"
+        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n')
+        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
+               "--champ-texte=texte", "--champ-groupe=groupe",
+               "--champ-booleen=booleen", "--motif=test=test"]
+        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
+        if code != 0:
+            return False, f"Code {code} != 0"
+        if "MOTIF x GROUPE" not in stdout or "MOTIF x BOOLEEN" not in stdout:
+            return False, "Sortie texte incomplete"
+        return True, ""
 
-# ----------------------------------------------------------------------
 def main():
-    results = []
+    script_path = Path("scripts") / "nexus_stats_jsonl.py"
+    if not script_path.exists():
+        print(f"[ERREUR] Fichier introuvable : {script_path}")
+        return CODE_FICHIER_INEXISTANT
 
-    # CASE 1: nominal success, JSON output, one valid line.
-    jsonl_path = make_jsonl(['{"text":"abc","group":"g1","flag":true}'])
-    args1 = [
-        jsonl_path,
-        "--champ-texte", "text",
-        "--champ-groupe", "group",
-        "--champ-booleen", "flag",
-        "--motif", "m1=abc",
-        "--json",
+    tests = [
+        ("Fichier inexistant", test_fichier_inexistant),
+        ("Usage sans arguments", test_usage_sans_arguments),
+        ("Motif mal forme", test_motif_mal_forme),
+        ("Regex invalide", test_regex_invalide),
+        ("JSONL invalide", test_jsonl_invalide),
+        ("Sortie JSON", test_sortie_json),
+        ("Sortie texte", test_sortie_texte),
     ]
-    def check_json(data):
-        return data.get("fichier") == jsonl_path and "par_groupe" in data
-    results.append(verify("CASE1", args1, 0, check_output=check_json))
 
-    # CASE 2: inverse refusal, malformed motif (missing '=').
-    args2 = [
-        jsonl_path,
-        "--champ-texte", "text",
-        "--champ-groupe", "group",
-        "--champ-booleen", "flag",
-        "--motif", "badmotif",
-    ]
-    results.append(verify("CASE2", args2, 2))
-
-    # CASE 3: malformed JSONL line, tool must still succeed.
-    jsonl_path2 = make_jsonl(['{"text":"ok","group":"g2","flag":false}', 'not a json'])
-    args3 = [
-        jsonl_path2,
-        "--champ-texte", "text",
-        "--champ-groupe", "group",
-        "--champ-booleen", "flag",
-        "--motif", "m2=ok",
-    ]
-    results.append(verify("CASE3", args3, 0))
-
-    # CASE 4: missing required option, should return non-zero and print usage.
-    args4 = [jsonl_path]  # no --champ-texte etc.
-    results.append(verify("CASE4", args4, 2))
-
-    # CASE 5: tool invoked without any arguments, should return non-zero.
-    results.append(verify("CASE5", [], 2))
-
-    # Clean up temporary files.
-    for p in (jsonl_path, jsonl_path2):
+    failed = 0
+    for name, test_func in tests:
         try:
-            os.remove(p)
-        except OSError:
-            pass
+            success, msg = test_func()
+            if not success:
+                print(f"[ECHEC] {name} : {msg}")
+                failed += 1
+            else:
+                print(f"[OK] {name}")
+        except Exception as e:
+            print(f"[ERREUR] {name} : {str(e)}")
+            failed += 1
 
-    if not all(results):
-        sys.exit(1)
+    return 1 if failed else 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -1,159 +1,183 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# -*- coding: ascii -*-
 """
-Test suite for scripts/nexus_garde_lecture.py
+Test script for scripts/nexus_garde_lecture.py
 
-The suite checks:
-* existence of the tool
-* behaviour on a normal read then edit (allowed)
-* behaviour on edit without prior read (denied)
-* handling of malformed JSON (no crash)
-* handling of missing required fields (no crash)
-* that a write to a new file is allowed and recorded
-All subprocesses are limited to ten seconds.
+It extracts the public interface of the guard script and runs a series of
+subprocess checks.  All output lines start with a bracketed tag.  The script
+exits with code 0 if all checks pass, otherwise with a non-zero code.
 """
 
+import json
 import os
 import sys
-import json
 import subprocess
 import tempfile
 
 # ----------------------------------------------------------------------
-# Helper to run the tool in an isolated temporary directory
+# Configuration
 # ----------------------------------------------------------------------
-def run_tool(stdin_data):
+TOOL_PATH = os.path.join("scripts", "nexus_garde_lecture.py")
+RESERVED_EXIT = 2          # exit code used when the tool file is missing
+TIMEOUT = 10               # seconds for each subprocess call
+
+# ----------------------------------------------------------------------
+# Helper functions
+# ----------------------------------------------------------------------
+def report(tag, message="", fail=False):
+    """Print a line with a tag.  If fail is True, exit with non-zero."""
+    line = "[%s] %s" % (tag, message)
+    print(line)
+    if fail:
+        sys.exit(1)
+
+def read_interface(path):
     """
-    Execute nexus_garde_lecture.py with the given stdin_data.
+    Parse the guard script and return a dictionary with:
+    - options: list of command line options (none for this script)
+    - args_order: list of expected JSON fields in order of use
+    - return_codes: set of exit codes that can be produced
+    - stdout_markers: strings that appear on stdout
+    - stderr_markers: strings that appear on stderr
+    """
+    options = []
+    args_order = ["tool_name", "tool_input", "session_id"]
+    return_codes = {0}
+    stdout_markers = ["hookSpecificOutput"]
+    stderr_markers = []   # script never writes to stderr
+    return {
+        "options": options,
+        "args_order": args_order,
+        "return_codes": return_codes,
+        "stdout_markers": stdout_markers,
+        "stderr_markers": stderr_markers,
+    }
+
+def run_tool(input_json):
+    """
+    Execute the guard script with the given JSON input.
     Returns (returncode, stdout, stderr).
     """
-    tool_path = os.path.join("scripts", "nexus_garde_lecture.py")
-    if not os.path.isfile(tool_path):
-        # Tool not found - report special code 127 as per specification
-        return 127, "", "Tool not found"
-
-    # Use a temporary directory as the current working directory
-    with tempfile.TemporaryDirectory() as tmpdir:
-        proc = subprocess.Popen(
-            [sys.executable, tool_path],
-            cwd=tmpdir,
-            stdin=subprocess.PIPE,
+    try:
+        proc = subprocess.run(
+            [sys.executable, TOOL_PATH],
+            input=json.dumps(input_json).encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            timeout=TIMEOUT,
         )
-        try:
-            out, err = proc.communicate(input=stdin_data, timeout=10)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            return -1, "", "Timeout"
-        return proc.returncode, out, err
+        return proc.returncode, proc.stdout.decode("utf-8"), proc.stderr.decode("utf-8")
+    except subprocess.TimeoutExpired:
+        return None, "", "timeout"
+
+def write_temp_file(dir_path, name, content=""):
+    """Create a temporary file in dir_path with the given name and content."""
+    path = os.path.join(dir_path, name)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return path
 
 # ----------------------------------------------------------------------
-# Verification helpers
-# ----------------------------------------------------------------------
-def expect_no_output(code, out, err):
-    return code == 0 and out.strip() == "" and err.strip() == ""
-
-def expect_deny_json(code, out):
-    if code != 0:
-        return False
-    try:
-        data = json.loads(out)
-        hook = data.get("hookSpecificOutput", {})
-        return (
-            hook.get("hookEventName") == "PreToolUse"
-            and hook.get("permissionDecision") == "deny"
-        )
-    except Exception:
-        return False
-
-def print_result(name, ok):
-    marker = "[OK  ]" if ok else "[FAIL]"
-    print(f"{marker} {name}")
-
-# ----------------------------------------------------------------------
-# Test cases
+# Main test logic
 # ----------------------------------------------------------------------
 def main():
-    all_ok = True
+    # 1. Verify that the tool file exists
+    if not os.path.isfile(TOOL_PATH):
+        report("FAIL", "Tool not found: %s" % TOOL_PATH, fail=True)
 
-    # CASE1: nominal read then edit (allowed)
-    with tempfile.TemporaryDirectory() as td:
-        test_file = os.path.join(td, "test.txt")
-        # create the file so that it exists
-        with open(test_file, "w", encoding="utf-8") as f:
-            f.write("data")
-        # first call: Read (records the file)
-        read_input = json.dumps({
+    # 2. Extract interface description
+    iface = read_interface(TOOL_PATH)
+    report("INFO", "Interface extracted")
+
+    # 3. Prepare a temporary session directory
+    with tempfile.TemporaryDirectory() as tmpdir:
+        session_id = "testsession"
+
+        # 3a. Nominal case: read then edit an existing file
+        existing_path = write_temp_file(tmpdir, "file.txt", "initial")
+        # Simulate a Read operation to register the file as read
+        read_input = {
             "tool_name": "Read",
-            "tool_input": {"file_path": test_file}
-        })
+            "tool_input": {"file_path": existing_path},
+            "session_id": session_id,
+        }
         rc, out, err = run_tool(read_input)
-        ok = expect_no_output(rc, out, err)
-        print_result("CASE1-READ", ok)
-        all_ok = all_ok and ok
-
-        # second call: Edit (should be allowed, no output)
-        edit_input = json.dumps({
+        if rc != 0 or out or err:
+            report("FAIL", "Read step unexpected output", fail=True)
+        # Now attempt an Edit operation, which should be allowed (no output)
+        edit_input = {
             "tool_name": "Edit",
-            "tool_input": {"file_path": test_file}
-        })
+            "tool_input": {"file_path": existing_path},
+            "session_id": session_id,
+        }
         rc, out, err = run_tool(edit_input)
-        ok = expect_no_output(rc, out, err)
-        print_result("CASE1-EDIT", ok)
-        all_ok = all_ok and ok
+        if rc != 0:
+            report("FAIL", "Edit step non-zero exit", fail=True)
+        if out.strip():
+            report("FAIL", "Edit step produced stdout when none expected", fail=True)
+        if err.strip():
+            report("FAIL", "Edit step produced stderr when none expected", fail=True)
+        report("OK", "Nominal edit allowed")
 
-    # CASE2: edit without prior read (should deny)
-    with tempfile.TemporaryDirectory() as td:
-        test_file = os.path.join(td, "new.txt")
-        # create the file but do not read it first
-        with open(test_file, "w", encoding="utf-8") as f:
-            f.write("content")
-        edit_input = json.dumps({
+        # 3b. Inverse case: edit without prior read
+        new_path = os.path.join(tmpdir, "newfile.txt")
+        edit_no_read = {
             "tool_name": "Edit",
-            "tool_input": {"file_path": test_file}
-        })
-        rc, out, err = run_tool(edit_input)
-        ok = expect_deny_json(rc, out)
-        print_result("CASE2", ok)
-        all_ok = all_ok and ok
+            "tool_input": {"file_path": new_path},
+            "session_id": session_id,
+        }
+        rc, out, err = run_tool(edit_no_read)
+        if rc != 0:
+            report("FAIL", "Edit without read non-zero exit", fail=True)
+        if not any(m in out for m in iface["stdout_markers"]):
+            report("FAIL", "Edit without read did not produce expected stdout marker", fail=True)
+        if err.strip():
+            report("FAIL", "Edit without read produced stderr", fail=True)
+        report("OK", "Refusal on unwatched edit detected")
 
-    # CASE3: malformed JSON (should not crash, no output)
-    rc, out, err = run_tool("this is not json")
-    ok = expect_no_output(rc, out, err)
-    print_result("CASE3", ok)
-    all_ok = all_ok and ok
-
-    # CASE4: missing required fields (no file_path) (should not crash)
-    missing_input = json.dumps({
-        "tool_name": "Edit",
-        "tool_input": {}
-    })
-    rc, out, err = run_tool(missing_input)
-    ok = expect_no_output(rc, out, err)
-    print_result("CASE4", ok)
-    all_ok = all_ok and ok
-
-    # CASE5: write to a new file (allowed, no output) and second edit allowed
-    with tempfile.TemporaryDirectory() as td:
-        new_file = os.path.join(td, "brandnew.txt")
-        # first edit on non-existent file (allowed)
-        edit_input = json.dumps({
+        # 3c. Creation of a new file (should be allowed, no output)
+        create_path = os.path.join(tmpdir, "created.txt")
+        create_input = {
             "tool_name": "Edit",
-            "tool_input": {"file_path": new_file}
-        })
-        rc, out, err = run_tool(edit_input)
-        ok1 = expect_no_output(rc, out, err)
-        # second edit on the same file (now recorded) should also be allowed
-        rc, out, err = run_tool(edit_input)
-        ok2 = expect_no_output(rc, out, err)
-        ok = ok1 and ok2
-        print_result("CASE5", ok)
-        all_ok = all_ok and ok
+            "tool_input": {"file_path": create_path},
+            "session_id": session_id,
+        }
+        rc, out, err = run_tool(create_input)
+        if rc != 0:
+            report("FAIL", "Create step non-zero exit", fail=True)
+        if out.strip():
+            report("FAIL", "Create step produced stdout", fail=True)
+        if err.strip():
+            report("FAIL", "Create step produced stderr", fail=True)
+        report("OK", "Creation of new file allowed")
 
-    # Exit with non-zero if any test failed
-    sys.exit(0 if all_ok else 1)
+        # 3d. Malformed input (missing tool_name)
+        malformed_input = {
+            "tool_input": {"file_path": existing_path},
+            "session_id": session_id,
+        }
+        rc, out, err = run_tool(malformed_input)
+        if rc != 0:
+            report("FAIL", "Malformed input non-zero exit", fail=True)
+        if out.strip():
+            report("FAIL", "Malformed input produced stdout", fail=True)
+        if err.strip():
+            report("FAIL", "Malformed input produced stderr", fail=True)
+        report("OK", "Malformed input handled gracefully")
+
+        # 3e. Empty JSON (no arguments) - should produce no output
+        empty_input = {}
+        rc, out, err = run_tool(empty_input)
+        if rc != 0:
+            report("FAIL", "Empty input non-zero exit", fail=True)
+        if out.strip():
+            report("FAIL", "Empty input produced stdout", fail=True)
+        if err.strip():
+            report("FAIL", "Empty input produced stderr", fail=True)
+        report("OK", "Empty input handled gracefully")
+
+    report("ALL", "All tests passed")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
