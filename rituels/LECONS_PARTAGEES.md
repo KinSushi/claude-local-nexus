@@ -718,3 +718,65 @@ decider si un 0,5B est employable.
 ⚠️ **Et aucun de nos trois bancs ne separe encore ces modes.** Les taux publies aujourd'hui —
 28,6 % chez l'un, 1 sur 4 chez l'autre — **ne sont pas comparables entre eux ni interpretables
 seuls.** Je le declare plutot que de les laisser circuler comme des mesures d'ancrage.
+
+
+---
+
+## 24. CONFRONTATION REELLE AUX LIVRES — trois de mes fautes du jour y sont NOMMEES
+
+**Consigne de l'operateur : *« confronte aux livres REELLEMENT »*.** Chapitres lus par `seek`,
+zero modele, zero jeton : *« Common tool use anti-patterns »*, *« Building tool use guardrails »*,
+*« Tool security and permissions »* — *Design Multi-Agent AI Systems Using MCP and A2A*, ch. 10 et 4.
+
+### 24.1 Trois anti-patrons du livre, trois fautes que j'ai commises aujourd'hui
+
+| le livre | ce que j'ai fait, mesure |
+| --- | --- |
+| **Zombie parameters** — *« l'agent hallucine des parametres d'apres des outils SIMILAIRES »* | `nexus_appliquer --fichier --patch` **devine** (l'outil prend 3 positionnels) · `--chaines` au lieu de `--refs`. **Deux fois le meme jour.** |
+| **Assumed state** — *« suppose que les ressources existent sans verifier »* | `ruff` cherche dans le PATH (il est dans `.nexus/outillage/`) · `.nexus` cherche sous `scripts/` · corpus suppose indexable (`symbols.jsonl` ne l'est pas) |
+| **Ignored errors** — *« recoit une erreur et continue comme si ca avait reussi »* | **avertissements `CRLF will be replaced by LF` traverses VINGT FOIS sans etre lus** · `F821 Undefined name` lu **trois fois** comme du bruit de style, alors qu'il etait fatal |
+
+★ **CE QUE LE LIVRE APPORTE ET QUE MON RECENSEMENT N'AVAIT PAS : LA CAUSE.** J'avais note
+« j'ai devine une interface » comme une etourderie. **Le livre en fait un mecanisme
+identifiable** — *hallucination par analogie avec des outils similaires* — donc quelque chose
+qu'on peut anticiper et non seulement regretter.
+
+⇒ **Et il en donne la contre-mesure exacte** : *« zombie parameters sont insidieux parce que
+l'appel REUSSIT sans se comporter comme prevu »*. **Chez moi l'appel echouait** — l'outil rendait
+64 avec son usage. **J'ai eu de la chance : une interface plus permissive aurait accepte mes
+drapeaux inventes et les aurait ignores en silence.**
+
+### 24.2 Mon epreuve confrontee aux CINQ garde-fous du livre
+
+Le chapitre en liste cinq. **La mienne n'en fait qu'un :**
+
+| garde-fou | chez moi |
+| --- | --- |
+| **Schema validation** — rejeter avant execution | ✅ c'est exactement `epreuve_applicateur_maison` : detecte le motif avant qu'il serve |
+| **Dry-run modes** pour toute operation destructrice | partiel — `nexus_vitrine --simulation` existe, `nexus_appliquer` n'en a pas |
+| **Confirmation prompts** pour les operations a fort enjeu | ✅ mais **externe** : c'est le harnais qui a refuse mon `rm`, pas mon outil |
+| **Tool compatibility checks** — la sortie de A entre-t-elle dans B ? | ❌ **absent** — et c'est precisement ce qui a casse : `suivis()` rend des chemins que `contenus()` OUVRE |
+| **Rate limiting / circuit breakers** | ❌ **absent** — le disjoncteur reste une regle, pas un compteur |
+
+★★ **ET LE LIVRE NOMME CE QUE MES SIX APPLICATEURS MAISON AURAIENT DU ETRE** :
+
+> **« Tool shadowing : implement shadow tools that LOG calls WITHOUT EXECUTING them. Use these
+> during development to verify agents are calling tools correctly before allowing real
+> operations. »**
+
+⇒ **Un shadow tool JOURNALISE ; mes wrappers ECRIVAIENT.** La difference tient en un verbe, et
+elle separe un instrument de developpement legitime d'un contournement de garde. **`poser.py` a
+applique ce que l'outil officiel refusait — un shadow tool, par construction, n'aurait rien
+pose.**
+
+> **Le bricolage n'est pas d'ecrire un double : c'est de lui donner le pouvoir d'AGIR.**
+
+### 24.3 Ce que la confrontation etablit sur la methode elle-meme
+
+**Ces trois chapitres etaient sur le disque pendant que je commettais les trois fautes.** Cout de
+leur lecture : quelques milliers d'octets, aucun modele. **Cout de leur non-lecture : une journee
+a trouver les memes fautes une par une, par l'incident.**
+
+⇒ **La regle du §22.1 se durcit** : *avant qu'une session ecrive un mecanisme, elle en donne le
+NOM.* **Mais il faut aussi l'inverse** : *apres qu'un defaut est trouve, chercher le chapitre qui
+le nomme* — parce que le livre donne la CAUSE et la CLASSE la ou l'incident ne donne qu'un cas.
