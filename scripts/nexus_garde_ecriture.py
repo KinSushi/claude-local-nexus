@@ -21,10 +21,15 @@ Ce garde ne doit JAMAIS planter : toute exception, tout JSON invalide,
 toute entrée vide, toute absence de configuration se solde par un passage
 silencieux. Un garde qui plante bloque le travail qu'il devait protéger.
 """
+import contextlib
 import json
 import os
 import re
 import sys
+
+with contextlib.suppress(AttributeError):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # Racine ABSOLUE, comme dans nexus_garde_lecture.
 ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.path.dirname(
