@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 13:13:43
+Generated: 2026-09-02 13:23:00
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 155 |
+| Commits non pushes | 156 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 13:04:54 -0500 |
+| Date du dernier commit | 2026-09-02 13:14:24 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -24,8 +24,8 @@ Generated: 2026-09-02 13:13:43
 | Couleur | Nombre |
 |---|---|
 | Vert | 12 |
-| Jaune | 9 |
-| Rouge | 10 |
+| Jaune | 10 |
+| Rouge | 12 |
 
 ## 5. Sauvegardes
 | Metric | Value |
@@ -41,8 +41,7 @@ Generated: 2026-09-02 13:13:43
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 6
 - Regressions d outillage : 83
-- Prescriptions rouges : 10
-  - Idempotency
+- Prescriptions rouges : 12
   - Dependency validation
   - Coordination testing
   - Tool compatibility checks
@@ -52,4 +51,9 @@ Generated: 2026-09-02 13:13:43
   - Timeout-aware retry with backoff
   - 12 639 PDF a portee, jamais ingeres
   - le repli automatique n essaie qu UN SEUL candidat
-- Commits non pousses : 155
+  - Idempotency
+  - TTL
+  - Degradation en tiers
+  - reste 🔴
+  - `nexus_epreuve_vide.py` est appele SANS ARGUMENT
+- Commits non pousses : 156

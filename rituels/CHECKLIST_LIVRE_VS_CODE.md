@@ -14,10 +14,10 @@
 | --- | --- | --- | --- |
 | 1 | **Timeout enforcement** — *fail gracefully rather than hanging* | 🟡 partiel | `verrou(attente_s=)` borne · mais `nexus_conformite` a ete TUE par un delai calibre sur un chiffre perime |
 | 2 | **Circuit breakers** — *stop calling an agent that keeps failing* | 🟡 **PARTIEL** | **RETROGRADE le 2026-09-02 : le vert etait FAUX.** `nexus_agent:1023` importait `Disjoncteur`, nom qui N EXISTE PAS (la classe est `CircuitBreaker`) ; l `except Exception: pass` avalait l ImportError, donc le filtrage n avait JAMAIS eu lieu. Corrige et **prouve par effet** : les 5 candidats apparaissent desormais dans `nexus_disjoncteur.py --etat`, ce qui n etait pas le cas avant. Reste JAUNE car `record_failure` n est pas atteint quand TOUS les candidats echouent — mesure : journal a 694 octets avant ET apres un echec total |
-| 3 | **Idempotency** — marquer les operations idempotentes | 🔴 absent | aucune relance n'est marquee |
+| 3 | **Idempotency** — marquer les operations idempotentes | 🟡 **PARTIEL, et le vert reste interdit** | `nexus_appliquer.py:121-123` refuse un rejeu du meme patch — **prouve par execution le 2026-09-02** : 1er appel `APPLIQUE : 1 bloc(s)`, 2e appel `REFUS ... Occurrences trouvees : 0`, exit 1, **fichier inchange**. Mais c'est un EFFET DE BORD de la verification d'ancre unique, pas un marquage idempotent/non-idempotent concu. Le livre demande de **marquer** les operations ; rien ne les marque. `nexus_vitrine`, `nexus_sauvegarde` et `nexus_valide` n'ont aucune detection de doublon. Le tableau disait « absent » : c'etait mesurablement inexact |
 | 4 | **State validation** — invariants verifies en tache de fond | 🟡 partiel | `nexus_conformite` · rien ne verifie les invariants de VERROU |
 | 5 | **Dependency validation** au deploiement | 🔴 absent | — |
-| 6 | **Coordination testing** — *deux agents sur la meme ressource* | 🔴 absent | **c'est l'incident `banc`, vecu trois fois** |
+| 6 | **Coordination testing** — *deux agents sur la meme ressource* | 🟡 **PARTIEL, promu le 2026-09-02** | **1 cas sur 4 du livre** couvert et PROUVE PAR EFFET, re-verifie ici : `epreuve_verrou_banc.py` rend 3/3 (arme, LOCAL refuse code 75, CLOUD non bloque), cable sans condition dans `nexus_test.py:1405`. Les **trois autres cas du livre** — agent lent ou muet, donnees malformees, messages hors d'ordre — restent 🔴 : aucune epreuve trouvee. Le livre exige les quatre, donc le vert reste interdit |
 
 ## 2. Retry et disjoncteur — ch. 10, sept parametres
 
@@ -192,3 +192,118 @@ declarer une anomalie de MESSAGE la ou il n y en avait pas.
 C est la relecture par le fichier `--sortie` qui a tranche, et elle a confirme
 le chiffre : **1**. L anomalie est reelle. Le premier instrument qui l avait
 « montree » ne prouvait rien.
+
+
+## 11. Audit LIVRE VS CODE delegue — trois prescriptions, 2026-09-02
+
+Conduit par un agent en **worktree isole**, puis **audite ici contre le reel**
+(LOI 1, temps 3 : ni le diagnostic ni le correctif ne sont de l'orchestrateur).
+
+**Les trois citations ont ete verifiees dans le corpus, verbatim, avant tout
+verdict** — un modele peut fabriquer une citation, et deux l'ont fait sur ce
+depot aujourd'hui meme :
+
+| prescription | citation retrouvee dans `references/livres/` |
+| --- | --- |
+| Idempotency | *« Idempotency requirements ensure agents can safely retry operations. Mark which operations are idempotent and which aren't. »* |
+| TTL | *« Consider stamping data passed between agents with a TTL so stale data is refreshed »* |
+| Degradation en tiers | *« Tier 2 might disable analytics or logging to reduce load. Tier 3 could switch to simpler, faster models... »* |
+
+Source commune : *Design Multi-Agent AI Systems Using MCP and A2A*, sections
+« Building coordination guardrails », « Timeout and latency issues »,
+« Graceful degradation strategies ». Trouvees dans **deux** corpus independants
+(`epub/` et `packt/`).
+
+### Ce que l'audit a change, et ce qu'il a REFUSE de changer
+
+| ligne | avant | apres | pourquoi |
+| --- | --- | --- | --- |
+| **Idempotency** | 🔴 | 🟡 | une protection existe et est **prouvee par execution** — mais accidentelle, locale a 1 outil sur ~46, et sans marquage |
+| **TTL** | 🔴 | 🔴 **CONFIRMEE** | `git grep -ci "ttl" -- scripts tools` rend **0**, contre-verifie ici. Le seul mecanisme de fraicheur (`controle_config_active`) porte sur un fichier de CONFIGURATION et **ne bloque jamais**, par conception ecrite |
+| **Degradation en tiers** | 🔴 | 🔴 **CONFIRMEE** | `nexus_vitrine.py` est **binaire** : un seul `BLOQUE` arrete tout. `NEXUS_GENERATION_GELEE` et `NEXUS_PRODUCTION_LIBRE` sont des 0/1, pas des paliers. Aucun etat observable « je tourne en Tier 2 » |
+
+### La nuance que l'agent a refuse de transformer en promotion
+
+La chaine de repli de `nexus_agent.py` **est** une degradation progressive de
+capacite. Elle n'est pourtant **ni declaree comme palier, ni observable comme
+etat, ni couplee a une reduction de fonctionnalites** comme le livre le
+prescrit. L'agent l'a nomme et a **maintenu le ROUGE**.
+
+> C'est exactement la mecanique demandee : une ressemblance n'est pas une
+> satisfaction, et un mecanisme qui produit le bon effet **par accident** ne
+> ferme pas une prescription qui demande une INTENTION declaree.
+
+### Ce que l'agent declare n'avoir PAS verifie — recopie sans adoucissement
+
+* le rejeu reel de `nexus_valide.py`, `nexus_sauvegarde.py`, `nexus_batch`,
+  `nexus_ruche`, `nexus_essaim` : cherches par grep, **jamais executes** ;
+* la mesure « 4 chiffres perimes en un jour » citee par le tableau pour TTL :
+  **preuve heritee, non reproduite** ce tour ;
+* `nexus_vitrine.py` **n'a pas ete execute** (effet de publication possible) :
+  le verdict binaire repose sur lecture de code.
+
+
+## 12. LA PRESCRIPTION QUE J AVAIS MAL DECRITE — et l audit faux qu elle a produit
+
+Un agent isole a conclu que « **Tool shadowing** » n existe **nulle part** dans
+le corpus, apres avoir cherche dans les deux rayons (18 075 fragments), et en a
+deduit que les garde-fous du livre sont « exactement cinq, pas six ».
+
+**Verification ici, LOI 1 temps 3 — sa conclusion est FAUSSE.** La prescription
+existe, verbatim :
+
+> *« **Tool shadowing**: Implement shadow tools that log calls without executing
+> them. Use these during development to verify agents are calling tools
+> correctly before allowing real operations. This is especially valuable for
+> destructive operations such as deletions or deployments. »*
+
+### La faute est la MIENNE, et elle vaut plus que la trouvaille
+
+Dans la consigne que je lui ai ecrite, j ai decrit Tool shadowing comme
+« **deux outils exposant le meme nom** ». C est faux. Je l ai ecrit **de
+memoire**, sans ouvrir le livre — alors que le tableau, ligne 43, portait deja
+la bonne definition depuis le debut : « journaliser SANS executer ».
+
+L agent a donc cherche une collision de noms, ne l a evidemment pas trouvee, et
+a conclu correctement **a partir d une premisse fausse**.
+
+> **Une consigne fausse produit un audit faux, et l audit a l air rigoureux.**
+> Le rapport citait ses sources, comptait ses fragments, listait ce qu il n
+> avait pas pu verifier — tout etait juste sauf la question posee.
+
+C est la classe du depot deplacee d un cran : non plus un instrument qui repond
+a la question voisine, mais **un operateur qui pose la question voisine a un
+instrument exact**.
+
+### Ce que cela change pour `nexus_ombre.py`
+
+Rien sur la couleur — la ligne **reste 🔴**, quatre tentatives, arret
+decide. Mais l outil visait la **bonne** prescription : un outil-ombre qui
+journalise sans ecrire, pour les operations **destructrices**. Le nom etait
+juste, la definition du tableau etait juste ; seule ma consigne ne l etait pas.
+
+**Et le livre dit pour quoi il sert en priorite** — *« especially valuable for
+destructive operations such as deletions or deployments »* — ce que ni le
+tableau ni les quatre tentatives n avaient retenu.
+
+## 13. UN FAUX VERT DANS LA SUITE D EPREUVES — 2026-09-02
+
+| fait | etat |
+| --- | --- |
+| **`nexus_epreuve_vide.py` est appele SANS ARGUMENT** | 🔴 **OUVERT** |
+
+`nexus_test.py:1383` fait `jouer_epreuve_python("nexus_epreuve_vide.py", "rendu vide")`.
+Mesure directe :
+
+```
+python scripts/nexus_epreuve_vide.py
+Usage: nexus_epreuve_vide.py <path>...
+```
+
+**Aucun cas n est rendu.** L epreuve du « rendu vide » — celle-la meme qui
+existe pour attraper les rendus vides — est appelee d une facon qui la rend
+muette. Elle figure dans la suite, elle ne prouve rien.
+
+> Trouve par un agent isole qui a **execute** le script au lieu de lire son
+> appel. Aucune lecture ne l aurait montre : la ligne d appel est correcte en
+> syntaxe et fausse en effet.

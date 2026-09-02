@@ -98,9 +98,21 @@ def checklist_vs_code(root):
         return counts
     try:
         text = file_path.read_text(encoding="utf-8")
-        counts["vert"] = text.count("🟢")
-        counts["jaune"] = text.count("🟡")
-        counts["rouge"] = text.count("🔴")
+        # Réinitialise les compteurs
+        counts["vert"] = 0
+        counts["jaune"] = 0
+        counts["rouge"] = 0
+        for line in text.splitlines():
+            present = set()
+            if "🟢" in line:
+                present.add("vert")
+            if "🟡" in line:
+                present.add("jaune")
+            if "🔴" in line:
+                present.add("rouge")
+            if len(present) == 1:
+                color = present.pop()
+                counts[color] += 1
         # extraire les prescriptions rouges
         red_items = []
         for line in text.splitlines():
