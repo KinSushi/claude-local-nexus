@@ -356,3 +356,49 @@ Pour du code source joint intégralement, **la forme est implicite et la règle 
 schémas**. Le jour où un fragment de livre est joint à un modèle sans que sa structure soit
 décrite, l'incident de sovereign se reproduit ici à l'identique. **C'est un chantier ouvert,
 pas un défaut actuel**, et la distinction vaut d'être écrite plutôt que confondue.
+
+
+---
+
+## 15. LE FORMAT DE RENDU N'EST PAS DE LA MISE EN FORME, C'EST UNE GARDE *(origine : EA MT5)*
+
+**Mesuré le 2026-09-02.** Trois patchs demandés au banc **en rendant le FICHIER ENTIER**, chacun
+diffé contre la copie :
+
+    v1  16 ajouts /   4 retraits   chirurgical, mais indice calculé au mauvais endroit
+    v2  17 ajouts /   4 retraits   indice corrigé, mais TITRE de section SUPPRIMÉ
+    v3  27 ajouts / 171 RETRAITS   un FRAGMENT rendu à la place du fichier
+
+**La consigne s'améliorait à chaque tour et le rendu empirait.** Conclusion tentante : *le renvoi
+est structurellement perdant*. **Fausse** — ce n'étaient pas trois fautes du modèle mais **une
+faute de consigne, répétée trois fois**.
+
+★ **Le patch ancré rend ces fautes INEXPRIMABLES :**
+
+| défaut mesuré | pourquoi l'ancre l'interdit |
+| --- | --- |
+| fragment rendu au lieu du fichier | il n'y a **pas de fichier** à rendre, seulement des blocs |
+| propriété correcte supprimée | **ce qui n'est pas dans un triplet n'est pas touché** |
+| fins de ligne réécrites | idem — hors des blocs, rien ne bouge |
+| indice calculé qui dérape | **l'ancre EST le texte** : aucune position à calculer |
+
+> **Choisir le format de rendu, c'est choisir quelles fautes le producteur ne PEUT PAS
+> commettre.** Même principe qu'un schéma JSON avec `additionalProperties: false` : *un contrat
+> qui tolère l'absence ne contraint rien.*
+
+⇒ **Corollaire mesuré ici** : demander « rends le fichier entier » à un modèle dont on a mesuré
+qu'il *« rend le fichier entier en changeant les fins de ligne — 289 lignes annoncées pour 30
+réelles »*, **c'est demander exactement ce qui produit le bruit.**
+
+### 15.1 Une garde qui refuse sans nommer la voie se fait contourner
+
+Le refus de `nexus_appliquer` disait ce qui MANQUE, jamais la FORME attendue. **Mesuré : un
+appelant a dû lire le code source de l'outil pour reconstituer les marqueurs.**
+
+**Corrigé, et prouvé par différentiel — deux causes de refus, deux messages distincts :**
+
+    rendu sans marqueurs   -> REFUS ... + les trois lignes de la forme attendue
+    ancre absente          -> REFUS : le bloc 1 doit etre unique et reel. Occurrences : 0
+
+★ Le second message ne s'affiche pas à tort : **l'instrument discrimine.** Coût du correctif :
+trois lignes. Bénéfice : le premier essai réussit au lieu du troisième.

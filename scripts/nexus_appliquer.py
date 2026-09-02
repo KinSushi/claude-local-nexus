@@ -70,6 +70,10 @@ def main():
         else:
             print("REFUS : le rendu ne porte pas les triplets de marqueurs.")
         print(texte[:400])
+        print()
+        print("<<<AVANT>>> texte exact a remplacer")
+        print("<<<APRES>>> texte de remplacement")
+        print("<<<FIN>>>")
         return 1
 
     # Verification du chemin cible sous la racine du depot
