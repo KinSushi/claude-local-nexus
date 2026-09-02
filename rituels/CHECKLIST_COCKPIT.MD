@@ -13303,3 +13303,99 @@ independants, a confier :
 
 Le second est le plus important des trois, et le moins evident : afficher l'`api_base` sans corriger
 `planOf` laisserait l'affirmation fausse a cote de la preuve qui la contredit.
+
+---
+
+## 120. QUATRE AUDITS, QUATRE CONFIRMATIONS — et deux faux defauts evites de justesse
+
+2026-09-01, 22:00. Le maillon 3 tourne enfin en regime : quatre correctifs produits par d'autres,
+audites ici, aucun ecrit ici. Le resultat est bon — et ce qui a failli le gater deux fois est
+instructif.
+
+### 120.1 LES QUATRE AUDITS
+
+| # | correctif | auteur | verdict |
+| --- | --- | --- | --- |
+| 1 | `cibles_ecrites()`, cas heredoc — `e4ef0ad` | banc, 2 familles | **CONFIRME**, avec reserve mesuree |
+| 2 | `nexus_schema.py`, outil neuf — `e23f9f8` | banc | **CONFIRME** |
+| 3 | les deux defauts de `nexus_appliquer` — `0f7b496` | banc | **CONFIRME** |
+| 4 | la fuite du filtre, 10 porteurs — `adb42ef` | banc | **CONFIRME** |
+
+**Aucun de ces correctifs n'a ete ecrit ici.** Le diagnostic du n°3 l'a ete, ce qui interdisait
+d'en ecrire le remede ; le n°1 avait echoue trois fois avant de reussir a la quatrieme.
+
+**Methode employee dans les quatre cas, et c'est la lecon du §118 mise en pratique :
+REJOUER LE CAS, ne pas lire le patch.** Lire aurait donne, chaque fois, le verdict de l'auteur.
+
+### 120.2 CE QUE CHAQUE AUDIT A AJOUTE QUE L'AUTEUR N'AVAIT PAS
+
+| audit | ce que l'auteur avait | ce que l'audit a ajoute |
+| --- | --- | --- |
+| heredoc | 7 cas, 5 temoins | **11 cas de plus**, dont `echo 'texte avec <<EOF dedans' > vrai.txt` — le symetrique exact de ce qui cassait sa tentative 1, et qu'elle n'avait pas |
+| schema | 3 valeurs + un entier | **18 valeurs**, dont IBAN, cle API, flottant a 8 decimales — et l'**epreuve inverse** : `rc=2` sur malforme, vide, inexistant |
+| appliquer | son propre test | le **libelle** : « impossible d'ouvrir le fichier **JSONL** » prouve que c'est la ligne 26, pas la 62 |
+| fuite | 10 porteurs, 6 temoins | **mes propres temoins**, 10/10 refuses, 5/5 legitimes passent |
+
+Verification de la triche, au n°1 : `git diff` sur le fichier d'epreuve est **vide**. Aucun cas
+retire — le vert vient de la fonction. L'auteur l'avait annonce et c'etait verifiable ; c'est la
+bonne facon de rendre une affirmation auditable.
+
+### 120.3 DEUX FAUX DEFAUTS EVITES DE JUSTESSE — meme cause, meme remede
+
+**(1)** `nexus_schema` semblait rendre `rc=0` sur ses trois chemins d'echec — le defaut historique
+du depot (§0.1.4.1, « un refus qui rend 0 »). C'etait `| head -6` : `$?` capturait le code de
+`head`. Sans pipe : **rc=2**, correct.
+
+**(2)** Le filtre semblait ecarter trois fichiers legitimes. C'etait `--max-tokens 5` : l'appel
+echouait sur « plafond insuffisant », et le grep prenait ce mot pour un refus de securite. Avec un
+plafond suffisant : **5/5 passent**.
+
+> **Le remede est le meme dans les deux cas : etablir la FORME EXACTE du signal avant de le
+> detecter**, au lieu de grepper des mots plausibles. Un detecteur ecrit d'apres ce qu'on suppose
+> que l'outil dit mesure la supposition, pas l'outil.
+
+C'est le piege du `$?` apres un pipe, **troisieme occurrence en deux jours** — apres §112.4
+(nommer), §116.5 (documenter) et §117.1 (citer). La serie est complete : nommer, documenter, citer
+et **mesurer** un piege ne protege pas de lui.
+
+### 120.4 DEUX OBSERVATIONS NEUVES SUR LE REFUS DE PIECE JOINTE
+
+Trouvees en auditant, non en cherchant.
+
+**(1) Le refus s'affiche APRES l'appel modele.** Le fichier est bien ecarte de l'envoi — aucune
+fuite — mais la ligne `[refuse] ... (susceptible de contenir un secret)` n'arrive qu'en fin de
+traitement. Mesure : un `timeout 120` sur un appel qui dure 131 s **tue le processus avant
+l'affichage**. Le refus a lieu et devient invisible. Une session qui borne ses appels ne saurait
+jamais qu'une piece a ete ecartee.
+
+**(2) Un refus de piece jointe ne fait pas echouer la tache.**
+
+```
+[refuse] .../id_rsa (susceptible de contenir un secret)
+1 tache(s) : 1 reussie(s), 0 tronquee(s), 0 echec(s)        rc=0
+```
+
+Defendable — le travail continue sur les autres pieces. Mais qui lit « 1 reussie » peut croire son
+fichier joint. Sur un lot de vingt fichiers dont un est ecarte, **la perte est silencieuse**.
+
+> Meme classe que le « 0 echec » sur troncature ferme au §117.3 : **le bilan ne distingue pas
+> « tout est passe » de « tout est passe sauf ce qui comptait ».**
+
+### 120.5 CE QUE L'AUDIT A CONFIRME AU PASSAGE, sans le chercher
+
+La sortie du chemin script, capturee en entier pour la premiere fois de la soiree :
+
+```
+demande : gpt-oss-120b-cloud
+servi   : ollama_chat/gpt-oss:120b  [cloud]  https://ollama.com
+```
+
+**La preuve de non-fuite du §105.5, affichee en direct** — et l'exact contraire de ce que
+`nexus_ask` rend (§119). Le meme depot porte les deux comportements a quinze lignes de code
+d'ecart.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 55 | Un refus de piece jointe s'affiche apres l'appel, donc un `timeout` le masque | `OUVERT` |
+| 56 | Un refus de piece jointe laisse la tache « reussie » et `rc=0` | `OUVERT` — la perte est silencieuse dans un lot |
+| 51 | `cibles_ecrites()` : 12,9 % de determinees fausses sur 799 entrees | `OUVERT` — heredoc ferme, affirmation fausse non |

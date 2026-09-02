@@ -1398,6 +1398,87 @@ def controle_encodage_sortie() -> None:
         )
 
 
+def controle_filtres_accordes() -> None:
+    """
+    Les deux filtres de confidentialité refusent-ils les mêmes fichiers ?
+
+    Le dépôt possède deux filtres qui décident quels fichiers peuvent être
+    envoyés à un modèle distant : l'un dans scripts/nexus_agent.py, l'autre
+    dans tools/nexus-mcp/server.js. Ils ont divergé sans que rien ne puisse
+    le dire : dix fichiers porteurs de jetons avérés, dont un fichier de
+    compte de service et un fichier de jetons d'interface en ligne de
+    commande, étaient refusés par l'un et acceptés par l'autre. Un
+    commentaire affirmait pourtant que les deux appliquaient les mêmes
+    règles.
+
+    Ce contrôle compare les listes de noms littéraux de fichiers refusés
+    (FICHIERS_SECRETS côté Python, SECRET_FILES côté JavaScript) et signale
+    toute entrée présente dans l'un et absente de l'autre, dans les deux
+    sens. Il ne montre que des noms de fichiers, jamais leur contenu.
+    """
+    chemin_python = os.path.join(ROOT, "scripts", "nexus_agent.py")
+    chemin_js = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
+
+    # Lecture et extraction côté Python
+    try:
+        with io.open(chemin_python, encoding="utf-8", errors="replace") as f:
+            source_py = f.read()
+    except OSError as exc:
+        ignorer("filtres accordes", "scripts/nexus_agent.py illisible : %s" % exc)
+        return
+    try:
+        arbre = ast.parse(source_py, filename="nexus_agent.py")
+    except SyntaxError as exc:
+        ignorer("filtres accordes", "scripts/nexus_agent.py invalide : %s" % exc)
+        return
+    fichiers_py = set()
+    for node in ast.iter_child_nodes(arbre):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "FICHIERS_SECRETS":
+                    try:
+                        valeur = ast.literal_eval(node.value)
+                        if isinstance(valeur, (list, tuple, set)):
+                            fichiers_py = {str(x) for x in valeur}
+                    except Exception:
+                        pass
+                    break
+            if fichiers_py:
+                break
+    if not fichiers_py:
+        ignorer("filtres accordes", "FICHIERS_SECRETS introuvable ou vide dans nexus_agent.py")
+        return
+
+    # Lecture et extraction côté JavaScript
+    try:
+        with io.open(chemin_js, encoding="utf-8", errors="replace") as f:
+            source_js = f.read()
+    except OSError as exc:
+        ignorer("filtres accordes", "tools/nexus-mcp/server.js illisible : %s" % exc)
+        return
+    m = re.search(r"\bSECRET_FILES\s*=\s*\[(.*?)\]", source_js, re.DOTALL)
+    if not m:
+        ignorer("filtres accordes", "SECRET_FILES introuvable dans server.js")
+        return
+    fichiers_js = set()
+    for chaine in re.findall(r"""(['"])(.*?)\1""", m.group(1)):
+        fichiers_js.add(chaine[1])
+
+    # Comparaison
+    seulement_py = fichiers_py - fichiers_js
+    seulement_js = fichiers_js - fichiers_py
+    if seulement_py or seulement_js:
+        detail_parts = []
+        if seulement_py:
+            detail_parts.append("présents dans nexus_agent.py mais absents de server.js : %s" % ", ".join(sorted(seulement_py)))
+        if seulement_js:
+            detail_parts.append("présents dans server.js mais absents de nexus_agent.py : %s" % ", ".join(sorted(seulement_js)))
+        detail = " ; ".join(detail_parts)
+        noter("filtres accordes", False, BLOQUANT, detail)
+    else:
+        noter("filtres accordes", True, BLOQUANT,
+              "les deux filtres refusent les mêmes %d fichiers" % len(fichiers_py))
+
 # ----------------------------------------------------------------------
 # Contrôles runtime — exigent la passerelle en marche
 # ----------------------------------------------------------------------
@@ -2004,6 +2085,7 @@ def main() -> int:
         controle_config_active_wrap,
         controle_commande_nexus_wrap,
         controle_encodage_sortie,
+        controle_filtres_accordes,
     ):
         try:
             controle()

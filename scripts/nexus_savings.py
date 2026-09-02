@@ -448,10 +448,13 @@ def main() -> int:
     if muets:
         print(chr(10) + "  Dont appels sans aucune sortie (echecs avant generation) :")
         for plan, v in muets:
-            print("    %-10s %d requete(s) sur %d" % (plan, v["sans_sortie"],
-                                                      v["requetes"]))
+            taux = (v["sans_sortie"] / v["requetes"] * 100) if v["requetes"] else 0.0
+            print("    %-10s %d requete(s) (%.1f%%) sur %d" % (plan, v["sans_sortie"],
+                                                               taux, v["requetes"]))
         print("    Leur entree reste au denominateur : la retrancher")
         print("    flatterait la mesure au lieu de la corriger.")
+        print("    Un appel sans sortie a consommé son entrée et son temps sans rien rendre ;")
+        print("    la cause la plus fréquente mesurée est un budget de sortie trop serré.")
 
     if chiffrable:
         print("\n  Contrefactuel - ce que le volume delegue aurait coute sur %s :" % REFERENCE)
