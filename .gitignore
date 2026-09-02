@@ -80,3 +80,4 @@ PROGRESS.MD
 # constate trois fois le 2026-09-01. Or la vitrine est la seule sauvegarde.
 # Meme arbitrage que PROGRESS.MD : un etat derive ne se versionne pas.
 rituels/STATE.md
+v15*.json
