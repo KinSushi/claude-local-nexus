@@ -1039,13 +1039,29 @@ def executer(tache: dict, cle: str) -> dict:
             appeler._cache_plans = plans_par_alias(cle)
     except Exception:
         appeler._cache_plans = {}
+    # Ordre d'exposition : local(0) < cloud(1) < anthropic(2).
+    # Mesure du 2026-09-02 : un alias INCONNU (jamais declare a la
+    # passerelle, ou catalogue temporairement indisponible) ecrasait la
+    # liste a lui seul ("candidats = [modele]"), si bien qu'un modele
+    # inexistant epuisait le repli gratuit en UN SEUL candidat au lieu
+    # des quatre REPLIS_GRATUITS attendus -- repli auto qui s'arretait
+    # au premier echec au lieu de parcourir la liste.
+    # Correctif : un rang inconnu vaut le rang le PLUS RESTRICTIF (local,
+    # 0), jamais le plus permissif -- une intention non prouvee ne doit
+    # jamais elargir l'exposition (contrat SS108). Le modele demande
+    # reste tente en premier (sa propre resolution tranchera par un echec
+    # HTTP explicite s'il n'existe pas) ; si le catalogue est totalement
+    # indisponible (cache vide), aucun repli connu ne peut etre prouve
+    # local et le comportement d'avant est conserve a l'identique : le
+    # seul candidat tente reste le modele demande.
+    ordre = {"local": 0, "cloud": 1, "anthropic": 2}
     plan_modele = appeler._cache_plans.get(modele, "inconnu")
     if plan_modele == "inconnu":
-        # Keep only the requested model, no fallback
-        candidats = [modele]
+        candidats = [modele] + [
+            c for c in candidats[1:]
+            if ordre.get(appeler._cache_plans.get(c, "inconnu"), 3) == 0
+        ]
     else:
-        # Order of exposure: local(0) < cloud(1) < anthropic(2); unknown(3) excluded
-        ordre = {"local": 0, "cloud": 1, "anthropic": 2}
         rank_requested = ordre.get(plan_modele, 3)
         candidats = [
             c for c in candidats

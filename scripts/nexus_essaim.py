@@ -670,7 +670,23 @@ def traiter_plan(cibles, args, plan, modele, parallele):
             for cible in cibles
         }
         for future in as_completed(futures):
-            resultats.append(future.result())
+            try:
+                resultats.append(future.result())
+            except Exception as exc:
+                # Mesure du 2026-09-02 : un worker qui meurt EN COURS
+                # (exception non rattrapee par traiter_cible) faisait
+                # remonter l'exception a travers as_completed() et PERDAIT
+                # le resultat de TOUTES les autres cibles du meme plan,
+                # deja terminees ou non -- le plan entier retombait alors
+                # en "echec" dans main() (resultats_ou_echec), y compris
+                # pour les cibles qui avaient reellement reussi.
+                cible_morte = futures[future]
+                nom_cible = str(cible_morte)
+                resultats.append((
+                    "%s,echec,0,0,none,%s,worker mort en cours : %s" % (nom_cible, plan, exc),
+                    False,
+                    False,
+                ))
     return resultats
 
 

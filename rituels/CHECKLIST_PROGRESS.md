@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-02 13:49:59
+Generated: 2026-09-02 13:57:34
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 159 |
+| Commits non pushes | 161 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 13:49:06 -0500 |
+| Date du dernier commit | 2026-09-02 13:54:46 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -57,4 +57,4 @@ Generated: 2026-09-02 13:49:59
   - reste 🔴
   - `nexus_epreuve_vide.py` est appele SANS ARGUMENT
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
-- Commits non pousses : 159
+- Commits non pousses : 161

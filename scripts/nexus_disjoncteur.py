@@ -70,7 +70,18 @@ def echec_transitoire(message):
         return False
     lowered = message.lower()
     signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503"]
-    return any(sig in lowered for sig in signals)
+    if any(sig in lowered for sig in signals):
+        return True
+    # Mesure du 2026-09-02 : seul le code 503 etait reconnu parmi les 5xx.
+    # "HTTP 500" et "HTTP 502" (constates par construction du message dans
+    # nexus_agent.py : "HTTP %s : %s" % (exc.code, detail)) ne correspondaient
+    # a AUCUN signal ci-dessus et etaient donc classes PERMANENTS -- le
+    # disjoncteur bannit alors la cible 300 s des le PREMIER echec, seuil
+    # ignore -- alors qu'un 5xx generique denote par convention une panne
+    # cote fournisseur, transitoire (contrat SS25 de ce depot : "5xx ->
+    # panne fournisseur/serveur"). Reconnait desormais tout code HTTP 5xx.
+    import re as _re
+    return bool(_re.search(r"\bhttp\s*5\d{2}\b", lowered))
 
 
 class CircuitBreaker:
