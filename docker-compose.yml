@@ -69,7 +69,19 @@ services:
       start_period: 15s
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    # Epingle par DIGEST (contrat 78). « main-latest » suit en continu la
+    # branche principale de LiteLLM, sans garantie de compatibilite avec
+    # cette configuration (routeur adaptatif, usage-based-routing-v2).
+    #
+    # QUAND : 2026-09-02. COMMENT : digest lu sur l image DEJA deployee,
+    #   docker image inspect ghcr.io/berriai/litellm:main-latest \n    #     --format '{{index .RepoDigests 0}}'
+    # POURQUOI cette epingle ne change RIEN aujourd hui : elle nomme
+    #   exactement l image qui tourne deja. Elle n arrete que la derive
+    #   silencieuse — un « up » de demain ne ramenera plus une build
+    #   differente sans que personne l ait decide.
+    # POUR AVANCER DELIBEREMENT (contrat 79) : refaire le pull, relire le
+    #   digest par la meme commande, le reporter ici, puis revalider.
+    image: ghcr.io/berriai/litellm@sha256:41d9be75c624d7cfcc9123b74db0f2fbf4a1a3a2a658cf1b27e21a144f8e59ab
     container_name: litellm-proxy
     restart: unless-stopped
     # Ollama n'est plus une dependance de demarrage : LiteLLM ne le
@@ -103,6 +115,26 @@ services:
     volumes:
       - ./litellm_config.yaml:/app/config.yaml:ro   # Lecture seule
     command: ["--config", "/app/config.yaml", "--port", "4000"]
+    # OU : le seul service de la pile qui n avait aucun etat de sante.
+    # QUAND : mesure le 2026-09-02 sur le conteneur de production —
+    #   docker inspect litellm-proxy --format '{{.State.Health}}'
+    #   -> <nil> , alors que db, redis et ollama en portent un.
+    # COMMENT : /health/liveliness ne demande aucune authentification et
+    #   ne teste aucune dependance (endpoint documente par LiteLLM).
+    #   L image runtime, base Chainguard Wolfi, n embarque NI curl NI
+    #   wget — verifie dans l image meme — mais python est sur le PATH.
+    #   D ou la sonde en python et non en curl : une sonde qui appelle un
+    #   binaire absent rend « unhealthy » en permanence, ce qui est pire
+    #   qu absent puisque cela se lit comme une panne du service.
+    # POURQUOI on peut l affirmer : preuve d execution, meme jour —
+    #   docker exec litellm-proxy python -c "...urlopen(...)"
+    #   -> 200 b'"I'm alive!"'
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5).status == 200 else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
 
 volumes:
   pgdata:
