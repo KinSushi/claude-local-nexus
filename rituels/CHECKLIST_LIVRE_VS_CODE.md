@@ -307,3 +307,69 @@ muette. Elle figure dans la suite, elle ne prouve rien.
 > Trouve par un agent isole qui a **execute** le script au lieu de lire son
 > appel. Aucune lecture ne l aurait montre : la ligne d appel est correcte en
 > syntaxe et fausse en effet.
+
+---
+
+## 14. LE FAUX VERT INTER-DEPOTS — 2026-09-02
+
+| fait | etat |
+| --- | --- |
+| **l empreinte annoncee du socle n etait pas celle que git portait** | 🟢 **REPARE, prouve** |
+
+Le commit `fa49224` affirmait *« CONCORDANCE PROUVEE sur les trois depots —
+empreinte cef66586 »*. Mesure par trois instruments, dont un qui n applique
+aucun filtre :
+
+```
+git cat-file blob (aucun filtre)  ->  34828bedf08e14ad ,   0 CR
+git show          (filtres)       ->  34828bedf08e14ad
+fichier sur disque                ->  cef66586c7fbebfb , 216 CR
+```
+
+**L empreinte annoncee decrivait le fichier LOCAL, jamais le blob.** Un depot
+tiers qui clone recevait `34828bed`. La concordance ne survivait pas au
+clone — et elle portait sur le mecanisme meme cense prouver que les trois
+depots partagent un socle identique.
+
+**Cause** : `.gitattributes` declare bien `-text` et l attribut est ACTIF
+(`git check-attr` rend `text: unset`). Mais il a ete pose **apres** que le
+fichier ait ete commis normalise, et **un attribut n agit jamais
+retroactivement sur un blob deja ecrit**.
+
+**Remede** : `git add --renormalize`. Le fichier sur disque ne bouge pas d un
+octet ; seul le blob s aligne. Verifie avant commit puis apres : `cef66586`,
+216 CR. 216 insertions, 216 suppressions, aucune modification de contenu.
+
+> **Un hash annonce dans un commit n est pas une preuve : c est une
+> affirmation.** Celui-ci a survecu parce que personne n avait compare
+> l annonce au blob — seulement au fichier qu on avait sous la main.
+
+## 15. UN DEFAUT DE MON PROPRE DISPOSITIF DE DELEGATION
+
+| fait | etat |
+| --- | --- |
+| **les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point** | 🔴 **OUVERT** |
+
+Un agent a diagnostique, repare et prouve un defaut de `nexus_garde_production.py`
+— declaration `OUTILS_JUGES` manquante, controle a `ALERTE` puis a `OK`, quatre
+epreuves rejouees vertes. Travail impeccable.
+
+**Le defaut n existait plus.** Mesure dans l arbre principal au moment de
+l integration : `OUTILS_JUGES` present, controle deja `OK`.
+
+**Cause, et elle est de l orchestrateur** : sa consigne disait
+`git fetch && git merge --ff-only origin/main`. Or `origin/main` est **157
+commits en arriere** — rien n est pousse. L agent a donc lu « Already up to
+date » et travaille sur du code d avant-hier, en toute bonne foi.
+
+> **Un agent qui se resynchronise sur une reference perimee auditera du code
+> perime, et son rapport sera exact sur un etat qui n existe plus.**
+
+Les cinq consignes suivantes portaient `git merge --ff-only main` — la branche
+LOCALE — et n ont pas eu le probleme. La correction est connue ; ce qui reste
+ouvert, c est qu **aucun controle ne refuse une consigne qui pointe vers
+`origin`** quand `origin` est en retard.
+
+**Et la vraie racine est ailleurs** : ces 157 commits non pousses sont eux-memes
+la cause. Deux sessions voisines l ont dit le meme jour, apres avoir perdu leur
+volume : *« ce qui sauve le travail, ce sont les poussees regulieres »*.
