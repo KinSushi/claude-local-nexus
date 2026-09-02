@@ -46,3 +46,15 @@ rules:
   tool_class: destructive
   require:
   human_approval: true
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Ce fichier est un
+brouillon de schema, pas une configuration active : aucun fichier
+`execution-policy.yaml` (sans le suffixe `.txt`) n'existe ailleurs dans le
+depot (recherche exhaustive), et aucun script ne parse une cle `rules:` de
+cette forme (grep sur `L3`, `human_approval`, `tool_class` dans `scripts/*.py`
+ne trouve qu'un commentaire isole mentionnant L2/L3 dans
+`scripts/nexus_test.py:777`, sans moteur de regles). Les principes qu'il
+enonce (L3 local-only, approbation humaine pour le destructif) concordent
+avec la doctrine deployee (Claude.md §35, §108) mais celle-ci est appliquee
+par des controles distincts (`Test-NexusConfig.ps1`, les hooks
+`.claude/settings.json`) et non par ce schema YAML.

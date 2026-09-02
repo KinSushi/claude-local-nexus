@@ -30,3 +30,20 @@ budget
 output_schema
 
 Cela évite le modèle monolithique qui tente de tout faire.
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Aucune trace de roles
+"RESEARCHER"/"CODER"/"ANALYST"/"FINALIZER" ni de champs
+`allowed_models`/`allowed_providers` dans le depot (recherche exhaustive dans
+`scripts/*.py` et `.claude/agents/*.md` — zero resultat). Le seul agent
+specialise reellement declare est `.claude/agents/nexus-delegue.md` (un seul
+role economique, pas une equipe a plusieurs specialites). CONCORDANCE avec le
+livre "30 Agents Every AI Engineer Must Build", section "The chain-of-agents
+orchestrator" (30-agents-every-ai-engineer-must-b.2bc0f448#246) : le livre
+decrit exactement le meme patron — un "manager agent" qui coordonne une
+equipe de specialistes (`PlannerAgent`, `DataFetcherAgent`, `ValidatorAgent`),
+chacun avec "un role et un jeu d'outils distincts" — ce qui correspond a la
+proposition ORCHESTRATOR -> RESEARCHER/CODER/ANALYST -> VERIFIER ->
+FINALIZER de ce document. Le livre nomme cela un "cooperation protocol" a
+quatre piliers ; ce document n'en propose qu'un sous-ensemble (role, tools,
+allowed_models, allowed_providers, budget, output_schema) sans le protocole
+de communication inter-agents que le livre traite ensuite.

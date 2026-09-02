@@ -31,3 +31,19 @@ timeouts ;
 validation des arguments.
 
 Le jour où tu ajoutes plusieurs agents, cette couche devient extrêmement utile.
+
+[VERIFICATION 2026-09-02, audit E-M] Le serveur MCP REELLEMENT deploye
+(`tools/nexus-mcp/server.js`, invoque via `.mcp.json`) n'est pas cette
+passerelle generique vers filesystem/Docker/GitHub/PostgreSQL/web/browser/
+cloud APIs : c'est un banc de 14 outils "nexus_*" (nexus_ask, nexus_batch,
+nexus_charge, nexus_compare, nexus_context, nexus_index_build, nexus_models,
+nexus_profile, nexus_route, nexus_savings, nexus_search, nexus_summarize,
+nexus_verrou, nexus_vision — enumeres tels quels dans les outils MCP
+disponibles de cette session), au service du banc de modeles local/cloud
+(Claude.md §106). Aucun de ces outils ne wrappe Docker, GitHub ou PostgreSQL.
+La couche decrite ici est une proposition non construite ; le livre "Design
+Multi-Agent AI Systems Using MCP and A2A" couvre un besoin proche sous
+"Building tool use guardrails" (validation de schema, dry-run, confirmation,
+rate limiting/circuit breakers —
+design-multi-agent-ai-systems-usin.c9bfd169#334) mais sans centraliser les
+secrets ni les timeouts au meme endroit que ce document le propose.

@@ -20,3 +20,19 @@ au lieu de :
 
 uncertainty
 → hallucination
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Aucun script du depot
+ne calcule ni ne seuille une "confidence" (recherche exhaustive dans
+`scripts/*.py` — zero resultat) : ni re-run automatique, ni second modele
+arbitre, ni "human review" declenche par un score. Le principe general
+(escalader plutot qu'agir a l'aveugle sous incertitude) CONCORDE avec les
+deux livres du corpus : "Design Multi-Agent AI Systems Using MCP and A2A",
+section "Escalation pattern for restricted operations"
+(design-multi-agent-ai-systems-usin.3cd9f65a#293) decrit un agent ("Fixer")
+qui SAUTE l'execution d'une operation destructive et escalade vers un humain
+via Slack plutot que d'agir seul ; et "Human escalation patterns"
+(packt.design-multi-agent-ai-systems-using-mcp-and-a2a#262) traite le meme
+theme. Mais dans les deux cas, le declencheur du livre est le RISQUE de
+l'operation (destructive/restreinte), pas un score de confiance numerique
+comme le propose ce document — la mecanique "confidence < threshold" reste
+une invention propre a ce fichier, non sourcee dans le corpus.

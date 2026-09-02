@@ -15,3 +15,13 @@ External service
 et non :
 
 Agent → MCP server → anything
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] `tools/nexus-mcp/server.js`
+ne contient aucune occurrence du mot "policy" (grep exhaustif, 0 resultat) :
+aujourd'hui, aucun "Policy Engine" n'intercepte reellement les appels d'outil
+MCP avant qu'ils n'atteignent le service externe. Le principe enonce ici est
+correct et concorde avec la doctrine deployee (Claude.md §64 "A router must
+never silently violate the policy", §108 sur la direction des fallbacks),
+mais ce n'est pas encore un mecanisme code sur le chemin MCP lui-meme — c'est
+une regle a mecaniser (au sens de Claude.md §0.2.1), pas encore un controle
+qui refuse.

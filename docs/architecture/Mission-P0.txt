@@ -745,7 +745,16 @@ Validate:
 ```powershell
 docker compose ps
 docker compose logs litellm --tail 100
-docker exec ollama-server ollama list
+# CORRECTION 2026-09-02 (audit E-M) : le moteur Ollama tourne sur l'HOTE, pas
+# dans Docker. Le service "ollama" du compose est derriere profiles:["embedded"]
+# et n'est pas demarre par defaut (docker-compose.yml:44-45) ; mesure en direct
+# ce jour, 127.0.0.1:11435/api/version ne repond pas tandis que
+# 127.0.0.1:11434/api/version repond ({"version":"0.33.2"}). Utiliser :
+ollama list
+ollama ps
+# et seulement si le profil embedded est deliberement lance :
+#   docker compose --profile embedded up -d
+#   docker exec ollama-server ollama list
 ```
 
 Then test:

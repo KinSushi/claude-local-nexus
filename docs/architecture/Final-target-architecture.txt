@@ -98,6 +98,15 @@ validate_models.ps1
 validate_routing.ps1
 drift_check.ps1
 
+[CORRECTION 2026-09-02, audit E-M] Ces trois scripts n'ont jamais ete crees
+sous ces noms (verifie : aucun fichier scripts/validate_models.ps1,
+scripts/validate_routing.ps1 ni scripts/drift_check.ps1 dans le depot). Le
+role P0 decrit ici est rempli par un mecanisme different : Test-NexusConfig.ps1
+existe (scripts/Test-NexusConfig.ps1) et "echoue avec le code de sortie 1 sur
+toute reference pendante, tout cycle de fallback, toute discordance de
+modalite, tout pool de routeur vide et toute variable d'environnement
+manquante" (Claude.md §18).
+
 P1 — gouvernance
 
 Policy Engine
@@ -139,5 +148,16 @@ self-healing
 continuous evaluation
 
 Le plus urgent, à mon sens, est P0 : tant que model_list.txt, litellm_config.yaml, les fallbacks et les routeurs peuvent diverger, toute couche "adaptive" au-dessus repose sur un registre incohérent. Le cas ultime-recourse-local en est déjà la démonstration concrète.
+
+[CORRECTION 2026-09-02, audit E-M — FAUX / PÉRIMÉ] Vérifié dans le dépôt réel :
+`ultime-recourse-local` EST déclaré, à `litellm_config.yaml:358-361`
+(`model_name: ultime-recourse-local` -> `ollama_chat/llama3.2:1b`), et il sert
+même de source de fallback vers `granite3.3-8b-local` (`litellm_config.yaml:
+1579-1581`). Ce n'est donc plus une démonstration de divergence — le
+correctif est déjà daté et documenté ailleurs : Claude.md §18 note
+explicitement cette même correction le 2026-08-31 (« ultime-recourse-local
+[...] EST déclarée [...] Ce document disait phi3:mini jusque-là »). Le
+paragraphe ci-dessus, resté ici depuis la proposition d'origine, contredit
+l'état réel du dépôt et le reste de la doctrine du projet.
 
 Ollama et LiteLLM fournissent déjà une grande partie des briques d'exécution ; la valeur à construire dans Claude-Local-Nexus est donc de plus en plus dans la gouvernance, le planning, la politique, la vérification et la boucle d'apprentissage, pas dans un énième wrapper d'API. https://docs.ollama.com/integrations/claude-code

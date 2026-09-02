@@ -29,3 +29,19 @@ validation.passed
 task.completed
 
 Tu obtiens progressivement un système event-sourced au niveau agentique.
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Aucun code du depot
+n'emet ces evenements : recherche exhaustive de "task.created", "task.
+classified" et "policy.checked" dans `scripts/*.py` et `tools/nexus-mcp/*.js`
+— zero resultat. Langfuse est bien integre (`litellm_config.yaml`,
+`scripts/nexus_vitrine.py`) mais comme tracing LiteLLM standard, pas comme ce
+flux d'evenements agentiques nomme. CONCORDANCE avec le livre "Design
+Multi-Agent AI Systems Using MCP and A2A", section "Structured logging and
+trace formats" (design-multi-agent-ai-systems-usin.c9bfd169#323) : le livre
+recommande exactement le meme patron — une taxonomie d'evenements
+"noun.verb" (`agent.start`, `agent.complete`, `llm.request`, `llm.response`,
+`tool.invoke`, `tool.complete`, `error.occurred`) plus des ID de correlation
+et un schema JSON versionne — tres proche dans la forme de la liste proposee
+ici (`task.created`, `model.selected`, `tool.called`...), mais le livre insiste
+en plus sur les correlation IDs et le versionnage de schema, absents de ce
+document.

@@ -7,3 +7,14 @@ latency:
   hard_limit_ms: 15000
 
 Le router peut alors exclure un modèle trop lent avant son lancement.
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Aucun fichier du depot
+ne definit un budget par profil de cette forme (target_ms/hard_limit_ms) ;
+grep sur `scripts/*.py` ne trouve ni l'une ni l'autre cle. Le mecanisme
+REELLEMENT deploye est different et plus simple : un seuil UNIQUE et global,
+`SEUIL_POOL_MS` (`scripts/nexus_generate.py:621`), fixe a 60000 ms par defaut
+(`NEXUS_POOL_LATENCE_MAX`), qui decide seulement l'ELIGIBILITE d'un modele au
+pool (fonction `eligible_au_pool`, `scripts/nexus_generate.py:677`) — pas un
+budget par profil consulte a chaque requete. Cette proposition (target/hard
+limit par profil) n'a donc pas d'equivalent operationnel aujourd'hui ; a
+distinguer du seuil de demarrage reellement applique.

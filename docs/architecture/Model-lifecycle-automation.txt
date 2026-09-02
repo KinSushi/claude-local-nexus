@@ -21,3 +21,18 @@ MONITOR
 RETIRE
 
 Chaque transition peut avoir un gate.
+
+[VERIFICATION 2026-09-02, audit E-M — NON IMPLEMENTE] Aucun script `CANARY`,
+`PROMOTE`, `RETIRE`, `MONITOR`, `REGISTER` ou `DISCOVER` n'existe dans
+`scripts/` (recherche par nom : aucun resultat). Le mecanisme REELLEMENT
+deploye pour la promotion au pool (Claude.md §105.2) ne suit pas ce pipeline a
+9 etapes : il compare deux mesures — `.nexus/latences.json`, ecrit par
+`scripts/nexus_bench.py` (demarrage), et `.nexus/epreuves.json`, ecrit par
+`scripts/nexus_releve.py` (capacite reelle) — et promeut un modele si
+ACCEPT-materiel ET sous `SEUIL_POOL_MS`, OU passage complet des epreuves. Le
+livre "30 Agents Every AI Engineer Must Build" couvre une "Governance and
+lifecycle management" comparable en esprit (monitoring, audit des logs,
+retraining, versioning, rollback — 30-agents...b.0ffb7c44#035) mais SANS les
+etapes DISCOVER/REGISTER/CANARY/PROMOTE/RETIRE nommees ici : ce decoupage en
+9 etapes est une proposition de ce document, pas une citation du livre ni un
+mecanisme deploye.

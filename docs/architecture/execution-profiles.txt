@@ -72,4 +72,12 @@ preferred_models:
   - claude-sonnet-5
 ```
 
+[CORRECTION 2026-09-02, audit E-M — FAUX] `llama3.2-vision-90b-local` n'existe
+QUE dans l'inventaire declare (`model_list.txt:14`, `llama3.2-vision:90b`) ;
+il n'a AUCUN alias `model_name` dans `litellm_config.yaml` (grep confirme :
+seul `llama3.2-vision-11b-local` y est expose, `litellm_config.yaml:374`).
+Selon la distinction du contrat (§6, installe/declare/expose) c'est un modele
+DECLARE mais PAS EXPOSE : le nommer dans un profil d'execution comme s'il
+etait routable produirait un alias invalide au premier appel reel.
+
 

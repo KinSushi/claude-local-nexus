@@ -70,6 +70,16 @@ models:
   * qwen2.5-coder-32b-local
   * deepseek-coder-33b-local
 
+  # CORRECTION 2026-09-02 (audit E-M) -- PERIME : la chaine reellement
+  # generee dans litellm_config.yaml (zone AUTOGEN:LOCAL_FALLBACKS,
+  # litellm_config.yaml:1517-1519) est :
+  #   qwen3-coder-30b-local -> qwen2.5-coder-32b-local -> deepseek-coder-33b-local
+  # "qwen2.5-coder-14b-local" et "phi3-mini-local" apparaissent plus loin dans
+  # la chaine reelle (via qwen2.5-32b-local et via llama3.2-3b-local), pas en
+  # position 2 et 3 directement sous qwen3-coder-30b-local. Cette section
+  # decrit un schema propose (ce fichier n'est reference par aucun script du
+  # depot), pas l'etat genere reellement deploye.
+
   validation:
   healthcheck: true
   benchmark_required: true
