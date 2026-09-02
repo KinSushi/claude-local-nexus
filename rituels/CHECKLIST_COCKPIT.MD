@@ -14090,3 +14090,57 @@ aurait laisse passer une mutabilite introduite dans un module de securite.**
 
 ⇒ Comparer les ENSEMBLES : noms, signatures completes, **annotations de type**,
 et imports de niveau module.
+
+### 115.41 CORRECTION IMMEDIATE DE §115.38 — contraindre la longueur NE PROTEGE PAS
+
+**La phrase inscrite en §115.38 est FAUSSE et je la retire.** Elle disait :
+*« contraindre la LONGUEUR dans la consigne agit sur ce que le modele produit, a
+defaut de pouvoir regler ce que la plateforme autorise »*, donnee comme
+contournement utilisable des maintenant.
+
+**Mesure de la vague suivante, six appels, consigne identique portant « 10 lignes
+maximum » :**
+
+    ONT RENDU     gemma4-31b-cloud · gpt-oss-120b-cloud · mistral-large-3-675b-cloud
+    ONT TRONQUE   kimi-k2.7-code-cloud · glm-5.3-cloud · deepseek-v4-flash-0731-cloud
+
+**3 sur 6 tronques MALGRE la contrainte.** Elle n'a rien change.
+
+**CE QUI DECIDE N'EST PAS LA LONGUEUR DEMANDEE, C'EST LE MODELE.** Et le decoupage
+est le meme que celui mesure separement par trois sessions : les memes familles
+rendent, les memes tronquent, sur des taches et des budgets differents.
+
+**L'ERREUR ETAIT UNE CORRELATION PRISE POUR UNE CAUSE.** Les deux relances qui
+avaient « marche » avec la contrainte employaient `gemma4-31b` et `gpt-oss-120b` —
+deux modeles de la liste fiable. Le succes venait du CHOIX DE MODELE, pas de la
+consigne. C'est la classe traquee toute la nuit, commise cette fois dans un
+conseil donne avec assurance, puis retracte par son auteur des la mesure suivante.
+
+**CE QUI TIENT, ET C'EST PLUS SIMPLE.** Tant que `max_tokens` n'est pas expose sur
+`nexus_summarize` et `nexus_context`, le SEUL levier reel est de choisir un modele
+qui rend. Liste convergente de TROIS sessions independantes :
+
+| FIABLES | mesure |
+| --- | --- |
+| `gemma4-31b-cloud` | 12/12 chez EA MT5, 4/4 chez sovereign, **zero echec** |
+| `gpt-oss-120b-cloud` | fiable en redaction longue ; vide seulement a budget tres serre |
+| `mistral-large-3-675b-cloud` | aucun vide observe sur 6 appels |
+
+| A EVITER pour la redaction |
+| --- |
+| `deepseek-v4-pro` et `-flash` · `glm-5.3` · `kimi-k2.7` · `qwen3.5-397b` · `nemotron-3-super` |
+
+**Consequence sur la tache C1.1** : elle reste AUSSI necessaire qu'avant. Le
+contournement qu'on croyait avoir n'existe pas.
+
+**Consequence sur le lot de 15 en vol au moment de cette correction** : il emploie
+plusieurs modeles de la colonne « a eviter » pour des taches de REDACTION —
+`nexus_surface.py`, `nexus_corpus.py`, trois epreuves. Il faut donc s'attendre a
+des rendus tronques, et les relancer sur un modele fiable plutot que de conclure
+que la tache est trop difficile.
+
+**Note de methode** : cette correction arrive DEUX MINUTES apres le commit qui
+inscrivait la phrase fausse. Une session tierce a mesure, s'est retractee, et l'a
+dit immediatement bien que ce fut « mal place dans le temps ». C'est ce qui a
+empeche une affirmation fausse de rester dans le cockpit — et c'est la deuxieme
+retractation croisee de la nuit apres celle du verrou.
