@@ -109,7 +109,7 @@ function Invoke-ClaudeCode {
     )
     # Verifier que l'executable 'claude' est disponible
     if (-not (Get-Command "claude" -ErrorAction SilentlyContinue)) {
-        Write-Error "Executable 'claude' introuvable dans le PATH."
+        [Console]::Error.WriteLine("Executable 'claude' introuvable dans le PATH.")
         return [pscustomobject]@{ Code = 1; Trace = "" }
     }
     if (-not $Arguments) { $Arguments = @() }
@@ -156,7 +156,7 @@ if ($releveDisponible) {
 
 if ($Mode -eq "Local") {
     if (-not $releveDisponible) {
-        Write-Error "Mode Local demande mais 'releve-locale' n'est pas expose."
+        [Console]::Error.WriteLine("Mode Local demande mais 'releve-locale' n'est pas expose.")
         exit 1
     }
     Write-Warn2 "Mode local : l'abonnement n'est pas utilise, la facturation ne s'applique pas."

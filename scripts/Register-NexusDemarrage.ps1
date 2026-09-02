@@ -77,14 +77,14 @@ if ($Remove) {
 # Verifications avant d'inscrire quoi que ce soit
 # ------------------------------------------------------------
 if (-not (Test-Path $Demarreur)) {
-    Write-Error "Introuvable : $Demarreur"
+    [Console]::Error.WriteLine("Introuvable : $Demarreur")
     exit 1
 }
 
 $shell = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
 if (-not $shell) { $shell = (Get-Command powershell -ErrorAction SilentlyContinue).Source }
 if (-not $shell) {
-    Write-Error "Ni pwsh ni powershell dans le PATH."
+    [Console]::Error.WriteLine("Ni pwsh ni powershell dans le PATH.")
     exit 1
 }
 
@@ -133,7 +133,7 @@ try {
         -Description "Monte la pile Claude-Local-Nexus a l'ouverture de session : moteur Ollama, conformite, conteneurs, passerelle, releve." `
         -ErrorAction Stop | Out-Null
 } catch {
-    Write-Error "Echec de l'enregistrement : $($_.Exception.Message)"
+    [Console]::Error.WriteLine("Echec de l'enregistrement : $($_.Exception.Message)")
     exit 1
 }
 
