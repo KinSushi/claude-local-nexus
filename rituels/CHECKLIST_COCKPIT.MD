@@ -17592,3 +17592,54 @@ reseau.**
 automatique tient sans session, et l'indexation a poursuivi pendant la panne — **7 358 fragments
 sur 20 304**. **Le travail continue quand la session s'arrete, et c'est tout ce que je pouvais
 obtenir de mon cote.**
+
+
+### 115.146 QUATRE-VINGT-TROIS POUR CENT DES OUTILS NE SONT PAS DANS LE MCP
+
+**Question de l'operateur : *« nexus_charge.py est un outil bricole par toi ? pas les
+fonctionnalites du MCP A2A IA LLM Orchestration que tu as a la charge ? »*** — **et elle touche
+un defaut d'architecture que je n'avais pas vu.**
+
+    outils EXPOSES par le serveur MCP :  12
+    scripts nexus_* du depot          :  70
+    NON EXPOSES                        :  58   =  83 %
+
+**Les douze exposes** : `ask · batch · compare · context · index_build · models · profile ·
+route · savings · search · summarize · vision`. **Tous des outils d'INFERENCE.**
+
+★ **CE QUI N'EST PAS EXPOSE EST PRECISEMENT CE QUI SERT A PLUSIEURS SESSIONS :**
+
+| outil | ce qu'il fait | qui en a besoin |
+| --- | --- | --- |
+| **`nexus_verrou_machine`** | exclusion mutuelle **ENTRE PROJETS** | **les trois sessions** |
+| **`nexus_charge`** | qui occupe la machine, **par PROJET** | **les trois sessions** |
+| `nexus_doc` | 166 507 symboles ancres | toute session ecrivant du code |
+| `nexus_appliquer` | poser un patch ancre | tout depot tiers |
+| `nexus_agent` | le banc gratuit | tout depot tiers |
+
+⇒ **Le verrou et la charge sont les deux outils les PLUS inter-projets du depot, et ils ne sont
+accessibles a aucun agent.** Pour les employer, il faut connaitre leur chemin et lancer
+`python scripts/...` a la main.
+
+★★ **ET CELA EXPLIQUE UN INCIDENT MESURE CE MATIN.** Trois sessions se sont bloquees une heure
+sur le verrou `banc` : l'une attendait qu'une autre le libere, alors que sa PROPRE passe le
+tenait. **Aucune n'avait de moyen de le demander au systeme** — le diagnostic existait,
+`nexus_charge` l'affiche par projet, mais **il n'etait atteignable par aucun agent.**
+
+> **Une plateforme d'orchestration A2A dont l'outil de coordination n'est pas expose aux agents
+> n'orchestre rien : elle offre de l'inference et laisse la coordination aux humains.**
+
+⇒ **La reponse a la question de l'operateur est donc OUI, et pire que ce qu'il suggerait** :
+`nexus_charge.py` n'est pas un bricolage — c'est un outil correct **au mauvais etage**. Le
+bricolage n'etait pas de l'ecrire, **c'est de l'avoir laisse hors du MCP pendant que trois
+sessions en avaient besoin.**
+
+⚠️ **CE QUE JE NE FAIS PAS, ET POURQUOI** : exposer 58 outils serait faux. Beaucoup gerent CE
+depot (`conformite`, `generate`, `vitrine`, `rituel`) et n'ont aucun sens pour un agent tiers —
+c'est la distinction du §0.5, qui se fait **sur la QUESTION que l'outil pose**, pas sur son
+emplacement. **Le manque porte sur les outils INTER-PROJETS**, et ils se comptent :
+
+    verrou_machine · charge · doc · appliquer · agent · bench · capability
+
+**Sept.** Et deux d'entre eux — le verrou et la charge — ont deja coute une heure a trois
+sessions.
