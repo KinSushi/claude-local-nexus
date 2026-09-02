@@ -993,3 +993,52 @@ worktree complet sur cet arbre tant que ce n est pas tranche.
 
 *Decider sous incertitude est licite ; presenter l hypothese comme la cause ne
 l est pas.*
+
+---
+
+## 28. LES DEUX SESSIONS VOISINES SE SONT ETEINTES — 2026-09-02
+
+`ListAgents` ne les liste plus. `sovereign-ai-system-e0` et
+`ea-mt5-python-rentable-a8` ont perdu le volume `D:`, puis leurs hooks les ont
+verrouilles hors de toute ecriture, puis elles se sont arretees.
+
+**Ce qui reste d elles est ici, et publie** :
+
+| fichier | ce qu il porte |
+| --- | --- |
+| `rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md` | son unite de reprise : 5 commits, 3 lots, les 3 jambes du temoin, 8 mesures, **5 retractations**, 3 regles, 2 defauts de conception, 12 fils ouverts, 3 angles morts de son protocole |
+| `rituels/DECHARGE_EA_MT5_2026-09-02.md` | ses mesures du jour, ses 6 lecons neuves, ses 6 decisions en attente |
+| `LECONS_PARTAGEES.md` §27 | le defaut de conception commun aux trois depots |
+
+**Ils avaient raison, et la demonstration est faite sur eux** :
+
+> *« Ce qui a sauve le travail n est aucune precaution prise dans la minute :
+> ce sont les poussees regulieres faites tout au long de la session. »*
+> — SAS, quelques heures avant de s eteindre
+
+Ils me l ont dit deux fois, EA MT5 une troisieme, alors que je portais **167
+commits non pousses**. Leurs checkpoints ne survivent aujourd hui que parce
+qu ils ont ete graves ICI **et pousses** : `origin/main` = `f51543c`, verifie
+par `git rev-list --count @{u}..HEAD` = 0.
+
+**Un texte sauve dans une session qui meurt n est pas sauve.** Le mien a failli
+l etre : la vitrine a refuse quatre fois, pour de bonnes raisons chaque fois,
+et les 167 commits sont restes en attente une journee entiere pendant que deux
+depots voisins tombaient.
+
+### Le defaut de mon annonce, dit contre moi
+
+J ai ecrit « la vitrine publie en ce moment » et re-arme la boucle. Mesure
+faite ensuite : **167 commits non pousses, `origin/main` toujours a
+`abf6406`**. La tache de fond avait rendu **exit 0 avec ZERO octet de sortie**
+— elle n avait rien fait, et son code de retour disait le contraire.
+
+> Une tache de fond qui rend 0 sans rien produire est un **vide lu comme une
+> reussite** — la classe la plus frequente de ce depot, 19 occurrences
+> mesurees en 24 h. Je l ai commise en ANNONCANT un resultat au lieu de le
+> verifier.
+
+Relancee au premier plan, la meme commande a publie. Le remede n est pas dans
+le script : il est dans la regle que l operateur repete — *ne dis pas que c est
+fait parce que tu penses que c est fait ; verifie que c est fait, puis ecris
+que c est fait.*
