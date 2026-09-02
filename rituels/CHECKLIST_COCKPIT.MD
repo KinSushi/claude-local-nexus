@@ -17531,3 +17531,64 @@ interface a trois positionnels. **Tant que ce sera vrai, la discipline ne tiendr
 ⇒ **Ce qui manque, et c'est le livrable** : *une epreuve qui ECHOUE si un script du depot ou du
 scratchpad lit des marqueurs de patch et ecrit sur le disque sans passer par `nexus_appliquer`.*
 **Un paragraphe ne ferme rien** (§0.2.1) — et celui-ci n'est pas encore ferme.
+
+
+### 115.145 J'AI REECRIT `nexus_charge.py` EN QUINZE LIGNES INLINE — 5e fois du jour
+
+**Reproche de l'operateur : *« et tu bricoles encore »*.** Il a raison, et voici la mesure.
+
+**Pour diagnostiquer les pannes, j'ai ecrit un script inline** : `ctypes.GlobalMemoryStatusEx`,
+un `Get-NetTCPConnection` par PowerShell, un compte de processus, deux sondes reseau. **Quinze
+lignes.**
+
+**`scripts/nexus_charge.py` existe, il est portable (§0.5), et il rend PLUS :**
+
+    PID    CPU(min)  RAM(Mo)   PROJET   COMMAND LINE
+    18416  3,75      42,71     SAS      mirror.py --verify
+    7976   19,51     383,03    EA-MT5   pytest PROTOTYPE_TWIN_FULL_OPTIONS
+
+    RAM libre 28,52 Go · residents 0,90 Go · disponible inference 29,43 Go
+    machine CHARGEE : processus significatifs
+
+★ **Mon script ne voyait PAS l'attribution par PROJET.** L'outil, si — et c'est exactement
+l'information qui manquait ce matin quand trois sessions se bloquaient sur un verrou sans savoir
+qui le tenait. **J'ai reecrit l'outil en perdant sa meilleure colonne.**
+
+### 115.145.1 LE MOTIF, COMPTE SUR LA JOURNEE
+
+| ce que j'ai ecrit inline | ce qui existait |
+| --- | --- |
+| diagnostic memoire + processus | **`nexus_charge.py`** |
+| six applicateurs de patch | **`nexus_appliquer.py`** |
+| mesure de latence des embeddings | `nexus_bench.py` (meme protocole, cache neutralise) |
+| recensement des gardes armees | — legitime, rien ne l'offrait |
+| verification des chemins annonces | — legitime, devenue `epreuve_chemins_annonces.py` |
+
+⇒ **Le partage n'est pas « script inline = bricolage ».** Une SONDE qui mesure un etat que nul
+outil n'offre est legitime — c'est ainsi qu'on decouvre les manques. **Le bricolage commence
+quand un outil du depot fait DEJA la chose, et qu'on la refait moins bien.**
+
+> **La question a se poser AVANT d'ecrire une mesure n'est pas « comment mesurer ? » mais
+> « qu'est-ce qui mesure deja ? »** — et ce depot porte 46 outils `nexus_*`.
+
+⚠️ **Non mecanise, et je le dis** : `epreuve_applicateur_maison` ne detecte que le cas des
+patchs. **Rien ne fait tomber la reecriture d'un outil de diagnostic**, parce que mes commandes
+inline ne sont pas des fichiers du depot. **Le remede est un reflexe, pas un controle** — et
+§0.2.1 dit ce que vaut un reflexe.
+
+### 115.145.2 CE QUE L'OUTIL A REVELE SUR LES PANNES
+
+    machine CHARGEE : deux sessions voisines actives
+      SAS      mirror.py --verify        3,75 min CPU
+      EA-MT5   pytest PROTOTYPE_TWIN     19,51 min CPU
+    33 connexions TCP etablies · 16 processus python
+
+**Ce n'est pas une cause prouvee de la panne** — le classificateur est distant, et une machine
+chargee n'explique pas un `connection failed`. **Mais c'est la premiere fois que je regarde**,
+et le contexte compte : **trois sessions travaillent en parallele sur la meme machine et le meme
+reseau.**
+
+⇒ **Ce qui reste vrai apres seize pannes** : mes cinq gardes rendent 0 en 0,34 s, la sauvegarde
+automatique tient sans session, et l'indexation a poursuivi pendant la panne — **7 358 fragments
+sur 20 304**. **Le travail continue quand la session s'arrete, et c'est tout ce que je pouvais
+obtenir de mon cote.**
