@@ -15753,3 +15753,57 @@ c'est-a-dire dans les OUTILS de ce depot — pas dans le protocole.
 distribue et relance. Il est donc la piece centrale de la survie sans abonnement — ce qui
 rend son absence d'epreuve d'autant plus couteuse, et sa mise a l'epreuve prioritaire sur
 tout le reste.
+
+### 115.94 LE DECOUPAGE IGNORAIT LA CAPACITE LOCALE — et cela invalidait le §115.89
+
+**Trouve en preparant la demonstration que l'operateur voulait tester.** Mesure sur un corpus
+reel de 148 820 caracteres, fenetre locale de 24 371 :
+
+    decoupage ACTUEL (sans taille)   3 fenetres, la plus grande  95 948 car.  -> DEPASSE x4
+    decoupage a la TAILLE LOCALE     8 fenetres, la plus grande  24 359 car.  -> ok
+
+La fonction de decoupage accepte un second parametre donnant la taille voulue. **L'appel ne
+le passait pas.** Consequences opposees selon le mode, et les deux mauvaises :
+
+* en mode ordinaire, le plan local est EXCLU des qu'une fenetre depasse — correct, mais cela
+  prive du seul plan gratuit exactement quand on en a besoin ;
+* en mode local force, il n'est PAS exclu et recoit une fenetre **quatre fois trop grande**,
+  qu'il ne peut pas lire.
+
+**Correctif d'une ligne, applique et verifie :**
+
+    taille = fenetre_locale_caracteres(cle) if local_seul else None
+    fenetres = _decouper_en_fenetres(corpus, taille)
+
+Mode ordinaire strictement inchange. `epreuve_bascule` et `epreuve_secours` restent a 0.
+
+> **Cela invalide la conclusion optimiste du §115.89.** J'y ecrivais que « la fenetre ne borne
+> plus le volume, le decoupage la contourne ». C'etait vrai du MECANISME et faux de son
+> EMPLOI : le decoupage existait, il n'etait simplement pas appele avec la bonne taille. Un
+> mecanisme present mais mal appele se lit comme un mecanisme absent — et je l'avais lu comme
+> present.
+
+### 115.95 `rituels/SURVIE_SANS_ABONNEMENT.md` — les commandes, chacune lancee avant d'etre ecrite
+
+Reproche de l'operateur, et il est juste : *« il manque cruellement de code premium dans ton
+code et les outils clairement listes et expliques »*, puis *« mais sans commande ni rien...
+impossible »*.
+
+**J'avais rendu une liste de 65 noms d'outils sans une seule commande.** Inutilisable.
+
+Le document pose les commandes reelles, et **chacune a ete lancee avant d'y etre inscrite**,
+avec son code de retour observe :
+
+    python scripts/nexus_secours.py                 code 0
+    python scripts/nexus_charge.py                  code 0
+    python scripts/nexus_ruche.py --help            code 0
+    python scripts/nexus_verifie_rendu.py --help    code 0
+    python scripts/nexus_sonde_aveugle.py <cible>   code 1  <- normal : des occurrences trouvees
+
+Le dernier merite son explication dans le document : **un code 1 y signifie "des occurrences
+trouvees", pas "l'outil a echoue"**. Sans cette phrase, un lecteur conclurait a une panne — la
+classe traquee toute la nuit, transposee a la documentation.
+
+Le document dit aussi ce qui N'EST PAS prouve : le protocole repond, l'usage agentique complet
+du client n'a pas ete eprouve ; et le rapport de simulation de l'orchestrateur reste
+indiscernable d'un rapport reel.

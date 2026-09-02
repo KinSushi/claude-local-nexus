@@ -841,7 +841,9 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
     # Le priver de fenetres qu'il ne peut pas lire ne lui retire rien : il y
     # ramerait jusqu'au delai sans rendre ni erreur ni troncature, et la
     # fenetre serait de toute facon rattrapee par l'autre plan.
-    fenetres = _decouper_en_fenetres(corpus)
+    # Taille adaptee au local si force, sinon standard pour permettre l'exclusion
+    taille = fenetre_locale_caracteres(cle) if local_seul else None
+    fenetres = _decouper_en_fenetres(corpus, taille)
     local_exclu = False
     if fenetres and not local_seul:
         if max(len(f) for f in fenetres) > fenetre_locale_caracteres(cle):
