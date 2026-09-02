@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:04.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:09.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -31,8 +31,8 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-08-30 | `df70e850cb65feaf` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-08-29 | `fb1e3d96f893b748` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-08-29 | `abd966bd7f288b94` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 452 Ko | 2026-09-02 | `2f3e9b44f73f2b25` |
-| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 751 Ko | 2026-09-02 | `ad953e1f09d02c45` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 452 Ko | 2026-09-02 | `0fc82013937e58e5` |
+| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 755 Ko | 2026-09-02 | `e43e30aa04fc88ea` |
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
 | Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `a7366afd7c359abd` |
@@ -50,14 +50,14 @@
 | Architecture | `.gitignore` | — | 2 Ko | 2026-09-01 | `7e1071af67117b1f` |
 | Architecture | `.ruff_cache/.gitignore` | — | 35 o | 2026-08-31 | `9e3a60f1e6ec4ae6` |
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-01 | `ae2a9b470d2a5c02` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `8c97b6483de5d8cd` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `197b22aff7bd4880` |
 | Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 156 o | 2026-09-01 | `3aa6f83eb4902b70` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
 | Architecture | `.ruff_cache/0.16.5/10322200571114817051` | — | 164 o | 2026-08-31 | `46d6144c4676d8c5` |
 | Architecture | `.ruff_cache/0.16.5/1040640668841026300` | — | 172 o | 2026-09-01 | `1ef13d460ee43e10` |
 | Architecture | `.ruff_cache/0.16.5/10550273669060046575` | — | 2 Ko | 2026-08-31 | `bc8db856083379bb` |
 | Architecture | `.ruff_cache/0.16.5/11870650972443376488` | — | 268 o | 2026-08-31 | `7e65f846593f3f85` |
-| Architecture | `.ruff_cache/0.16.5/12097943216486239122` | — | 372 o | 2026-09-02 | `18dff7dcc2986e6c` |
+| Architecture | `.ruff_cache/0.16.5/12097943216486239122` | — | 476 o | 2026-09-02 | `6009f04d0f58f68c` |
 | Architecture | `.ruff_cache/0.16.5/12188456645946320487` | — | 3 Ko | 2026-09-01 | `c6a6c1725262cbac` |
 | Architecture | `.ruff_cache/0.16.5/12613474961878029211` | — | 188 o | 2026-09-01 | `f061bbda0997e84e` |
 | Architecture | `.ruff_cache/0.16.5/12906327004623957228` | — | 172 o | 2026-08-31 | `022c18f6490ed378` |
@@ -74,6 +74,7 @@
 | Architecture | `.ruff_cache/0.16.5/15991078781346383157` | — | 244 o | 2026-09-01 | `c99d2a54d31c51fd` |
 | Architecture | `.ruff_cache/0.16.5/16535297596278683755` | — | 172 o | 2026-09-01 | `1a659ab3021b9646` |
 | Architecture | `.ruff_cache/0.16.5/16631133977321131918` | — | 5 Ko | 2026-09-01 | `7dc8a00834515bf7` |
+| Architecture | `.ruff_cache/0.16.5/17018753034727135126` | — | 6 Ko | 2026-09-02 | `0748c7d95ae7eb6b` |
 | Architecture | `.ruff_cache/0.16.5/17378449226791531954` | — | 172 o | 2026-09-01 | `4dbf7e0d22f69d78` |
 | Architecture | `.ruff_cache/0.16.5/17632354879131024054` | — | 148 o | 2026-09-01 | `e0d05a01063a169a` |
 | Architecture | `.ruff_cache/0.16.5/17644524646699821479` | — | 2 Ko | 2026-09-01 | `42e0a43be87bccbc` |
@@ -110,7 +111,7 @@
 | Architecture | `.ruff_cache/0.16.5/9691695313051288092` | — | 164 o | 2026-09-01 | `46a2f9cdd17b71e5` |
 | Architecture | `.ruff_cache/CACHEDIR.TAG` | — | 43 o | 2026-08-31 | `5953156d7e0c564a` |
 | Architecture | `LICENSE` | — | 34 Ko | 2026-08-29 | `0d96a4ff68ad6d4b` |
-| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `dedb0c49a1a9a0d5` |
+| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `862d3461f64226cb` |
 | Architecture | `Set-ClaudeModel.ps1.candidat` | — | 11 Ko | 2026-08-29 | `67a86f7cc9147d54` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-08-29 | `c05c3296a2683b28` |
 | Architecture | `Start-Claude.ps1.candidat` | — | 7 Ko | 2026-08-29 | `981eead31d168b3c` |
@@ -3107,7 +3108,7 @@
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
 | Architecture | `rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-01 | `5a6eb0b606bb975e` |
 | Architecture | `rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-01 | `8a022c08429aaef5` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 389 Ko | 2026-09-02 | `9967739428177703` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 389 Ko | 2026-09-02 | `5729fd4e2833fe5f` |
 | Architecture | `rituels/EVALUATION-LOCALE.md` | — | 12 Ko | 2026-08-29 | `f16830fca4479937` |
 | Architecture | `rituels/PLAN_MAITRE_2026-09-01.md` | — | 19 Ko | 2026-09-01 | `05e63645415c2f0d` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
@@ -3124,7 +3125,7 @@
 | Architecture | `rituels/SOCLE_SECURITE_GLOBAL.json` | — | 17 Ko | 2026-09-01 | `5e107c8aad502c39` |
 | Architecture | `rituels/SOCLE_UNIVERSEL.json` | — | 6 Ko | 2026-09-01 | `cef66586c7fbebfb` |
 | Architecture | `rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md` | — | 18 Ko | 2026-09-01 | `3d8b5b832a915bce` |
-| Architecture | `rituels/cablage_reference.json` | — | 432 o | 2026-09-01 | `90f0e72775045259` |
+| Architecture | `rituels/cablage_reference.json` | — | 359 o | 2026-09-02 | `7d80f1454a19dd73` |
 | Architecture | `rituels/orphelines_reference.json` | — | 19 o | 2026-08-31 | `ea495819ae509cf8` |
 | Architecture | `rituels/outillage_reference.json` | — | 672 o | 2026-08-31 | `0b41323e0eb6e779` |
 | Architecture | `scripts/.ruff_cache/.gitignore` | — | 35 o | 2026-08-31 | `9e3a60f1e6ec4ae6` |
@@ -3182,7 +3183,7 @@
 | Architecture | `scripts/nexus_agent.py` | — | 67 Ko | 2026-09-02 | `ebe91f6c6259d2ca` |
 | Architecture | `scripts/nexus_agent.py.avant-patch` | — | 49 Ko | 2026-08-30 | `310e3bab9ab3d1fb` |
 | Architecture | `scripts/nexus_appliquer.py` | — | 7 Ko | 2026-09-01 | `d3c7355681eef381` |
-| Architecture | `scripts/nexus_armer_garde.py` | — | 12 Ko | 2026-09-02 | `f6a1c3d13503c02f` |
+| Architecture | `scripts/nexus_armer_garde.py` | — | 12 Ko | 2026-09-02 | `e198921d8ad37d4c` |
 | Architecture | `scripts/nexus_armer_hook.py` | — | 8 Ko | 2026-09-01 | `6f3e2b64df18a3bb` |
 | Architecture | `scripts/nexus_avec_verrou.py` | — | 3 Ko | 2026-09-01 | `85f2741bf1deabb2` |
 | Architecture | `scripts/nexus_bench.py` | — | 36 Ko | 2026-08-31 | `d95d1fb66349aca1` |
@@ -3205,7 +3206,7 @@
 | Architecture | `scripts/nexus_libs.py` | — | 3 Ko | 2026-09-02 | `d79c6b8dfcf9c117` |
 | Architecture | `scripts/nexus_loi1.py` | — | 7 Ko | 2026-09-01 | `4bf11b79bc28ca88` |
 | Architecture | `scripts/nexus_maj_modeles.py` | — | 17 Ko | 2026-08-31 | `50f3e9131de6561d` |
-| Architecture | `scripts/nexus_outillage.py` | — | 32 Ko | 2026-08-31 | `2a20f391c08df948` |
+| Architecture | `scripts/nexus_outillage.py` | — | 32 Ko | 2026-09-02 | `ee596ca455132333` |
 | Architecture | `scripts/nexus_patch.py` | — | 19 Ko | 2026-08-31 | `32ecf60876820c2a` |
 | Architecture | `scripts/nexus_portee_import.py` | — | 15 Ko | 2026-08-30 | `853e2d540c6b25fd` |
 | Architecture | `scripts/nexus_poser_socle.py` | — | 10 Ko | 2026-09-01 | `d5a8fe5deca5bddd` |
@@ -3260,7 +3261,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 3201 |
+| Architecture | 3202 |
 | Obsolète | 2 |
 
 ---

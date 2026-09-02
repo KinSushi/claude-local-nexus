@@ -596,7 +596,7 @@ def _print_summary(findings: List[Dict[str, Any]],
             print(f"{lang} : NON MESURE ({outil} : {motif}"
                   + (f" - {detail}" if detail else "") + ")")
             continue
-        unique_rules = sorted(set(r for r in rules if r))
+        unique_rules = sorted({r for r in rules if r})
         print(f"{lang} : {len(rules)} violations, regles : {', '.join(unique_rules)}")
 
 

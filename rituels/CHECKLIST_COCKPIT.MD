@@ -14665,3 +14665,77 @@ casse en silence.
 > « quel defaut a-t-elle trouve ? » mais **« a-t-elle seulement pu lancer ce qu'elle
 > teste ? »**. Ici la reponse etait non, et trois faux echecs ont failli faire corriger
 > un outil sain — exactement le cout que §112.4 attribue a une trouvaille non verifiee.
+
+### 115.57 L'ARMEUR NE REUSSISSAIT QUE LORSQU'IL N'AVAIT RIEN A FAIRE — une egalite au lieu d'une inclusion
+
+Cause du defaut §115.55, trouvee apres diagnostic delegue et ancres VERIFIEES sur le
+disque (`snapshot_hooks` l.118, `verify_hooks_preserved` l.142, `process_armer` l.148 —
+toutes exactes, fichier court, ce qui confirme §115.54).
+
+**LE DEFAUT TIENT EN UNE LIGNE :**
+
+    def verify_hooks_preserved(settings, snapshot):
+        """Verifie que tous les hooks de la snapshot existent toujours."""
+        return set(snapshot) == set(current)
+
+La fonction annonce qu'elle verifie une **PRESERVATION** et teste une **EGALITE**. Or
+l'operation qu'elle surveille consiste a **AJOUTER** un hook : apres un armement reussi,
+l'etat d'apres porte legitimement un element de plus. L'egalite est donc fausse, et la
+fonction annonce une DISPARITION.
+
+> **L'outil ne reussissait que lorsqu'il n'avait rien a faire.** Sur cette machine il
+> paraissait fonctionner uniquement parce que les gardes y etaient DEJA armees : aucun
+> ajout, donc egalite, donc verification satisfaite. Le succes venait de l'inaction.
+
+**Pourquoi personne ne l'avait vu** : le seul chemin jamais emprunte etait le
+re-armement d'une garde deja en place. Le chemin NOMINAL — armer une garde absente —
+n'avait jamais ete essaye sur une configuration autre que celle-ci. C'est le §0.1.4
+dans sa forme la plus pure : **le defaut se voit en s'en servant, pas en le lisant.**
+
+**Correctif : une INCLUSION, pas une egalite.** Tout element present avant doit etre
+present apres ; un element de plus est le resultat normal.
+
+**Les deux epreuves, et la seconde est celle qui compte :**
+
+    armer sur une configuration NEUVE   ->  code 0, garde posee, temoin preserve,
+                                            sauvegarde creee
+    ajout legitime                      ->  preserve = True
+    PERTE REELLE                        ->  preserve = False   <- la garde mord TOUJOURS
+
+Le correctif ne relache donc **aucune** protection : il cesse seulement de confondre un
+ajout avec une perte. Sans la seconde epreuve, une inclusion trop permissive aurait pu
+passer pour une reussite — un controle qui accepte tout produit exactement le meme vert.
+
+**CE QUE CELA DEBLOQUE** : un projet NEUF peut desormais armer ses gardes. C'etait
+impossible, et rien ne le disait — l'outil accusait une perte imaginaire au lieu de
+nommer sa vraie condition. Portabilite au sens du §0.5, obtenue en corrigeant un defaut
+plutot qu'en documentant une limite.
+
+### 115.58 UN AUDIT PEUT AVOIR RAISON PAR ACCIDENT — verifie sur une reecriture automatique
+
+LOI 1 exige qu'une ligne reecrite par un outil de style soit auditee par un tiers : ce
+n'est pas parce que personne ne l'a ecrite a la main que quelqu'un l'a regardee.
+`nexus_loi1.py` l'a compte comme **1 ligne a la main**, et il a eu raison de le faire.
+
+Reecriture soumise a un tiers : deux `if` imbriques fusionnes en un `and`.
+
+**Verdict rendu : EQUIVALENT. Verdict verifie : correct. Justification : FAUSSE.**
+
+    « 1. scan_file() n'a pas d'effet de bord observable hors retour booleen. »
+
+C'est faux : `scan_file()` **imprime** ses detections. L'auditeur a fonde sa conclusion
+sur une propriete que le fichier contredit.
+
+La conclusion tient quand meme, par une raison qu'il n'a pas donnee : le **court-circuit**
+du `and` garantit que `scan_file()` n'est evalue que si l'extension correspond —
+exactement ce que faisait l'imbrication. Les affichages surviennent dans les memes cas.
+
+> Deuxieme occurrence de la journee du meme phenomene, apres celle signalee par une
+> session voisine sur un comptage faux d'un facteur cinq dont la CONCLUSION etait juste.
+> **On retient le MECANISME, on RE-MESURE le chiffre — et on relit la RAISON, pas
+> seulement le verdict.** Un audit dont la conclusion est bonne et la justification
+> fausse est plus dangereux qu'un audit franchement faux : il resiste a la relecture
+> rapide.
+
+Confirmation independante retenue ici : `epreuve_sonde_aveugle` passe 5 cas sur 5 sur la
+version reecrite, et le court-circuit est une garantie du langage, non une opinion.

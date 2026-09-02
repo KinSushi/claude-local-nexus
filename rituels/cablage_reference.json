@@ -1,5 +1,5 @@
 {
-  "mesure_le": "2026-09-02T03:30:27.014651+00:00",
+  "mesure_le": "2026-09-02T06:04:19.767700+00:00",
   "categories": {
     "orphelin": [],
     "preuve_seule": [
@@ -8,9 +8,7 @@
       "scripts/nexus_armer_hook.py",
       "scripts/nexus_boussole.py",
       "scripts/nexus_poser_socle.py",
-      "scripts/nexus_preload.py",
-      "scripts/nexus_schema.py",
-      "scripts/nexus_stats_jsonl.py"
+      "scripts/nexus_preload.py"
     ]
   }
 }

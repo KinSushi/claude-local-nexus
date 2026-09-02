@@ -142,8 +142,8 @@ def snapshot_hooks(settings):
 def verify_hooks_preserved(settings, snapshot):
     """Vérifie que tous les hooks de la snapshot existent toujours."""
     current = snapshot_hooks(settings)
-    # On compare en tant qu'ensembles (l'ordre n'importe pas)
-    return set(snapshot) == set(current)
+    # On vérifie que l'ensemble initial est inclus dans l'ensemble actuel
+    return set(snapshot).issubset(set(current))
 
 def process_armer(guard_script_name, matcher, simulate=False):
     """Arme le garde spécifié comme hook PreToolUse. Retourne (code, messages)."""
@@ -271,8 +271,8 @@ def process_restaurer():
         # Vérification post-restauration
         restored_settings = load_settings()
         restored_guards = find_groups_by_command(restored_settings, "nexus_garde_")
-        if set(g['matcher'] for g in current_guards) != set(g['matcher'] for g in restored_guards):
-            removed = set(g['matcher'] for g in current_guards) - set(g['matcher'] for g in restored_guards)
+        if {g['matcher'] for g in current_guards} != {g['matcher'] for g in restored_guards}:
+            removed = {g['matcher'] for g in current_guards} - {g['matcher'] for g in restored_guards}
             if removed:
                 log_rate("Gardes retirés", f"Attention: {', '.join(removed)}")
         return 0
