@@ -1357,6 +1357,10 @@ def main() -> int:
         jouer_epreuve_python("epreuve_verdicts_rituel.py", "verdicts du rituel")
     if args.only in (None, "registre"):
         jouer_epreuve_python("epreuve_registre_epreuves.py", "coherence du registre")
+    if args.only in (None, "applicateur"):
+        jouer_epreuve_python("epreuve_applicateur_maison.py", "applicateur maison")
+    if args.only in (None, "chemins"):
+        jouer_epreuve_python("epreuve_chemins_annonces.py", "chemins annonces")
     if args.only in (None, "lecture"):
         jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
     if args.only in (None, "shell"):

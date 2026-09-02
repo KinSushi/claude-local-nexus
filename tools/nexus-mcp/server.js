@@ -2377,6 +2377,23 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "nexus_livres",
+    title: "Chercher dans les 24 livres par sens, en local",
+    description:
+      "Recherche semantique dans 20 304 fragments de 24 ouvrages techniques, " +
+      "dont 7 sur les agents IA. L'index est local (nomic-embed-text), rien ne " +
+      "quitte la machine, le cout est nul. Rend le chapitre ET le code source " +
+      "quand il existe : une recherche qui ne rend que de la prose fait reecrire, " +
+      "une recherche qui rend du code fait adapter.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "La question, en langage naturel." },
+      },
+      required: ["question"],
+    },
+  },
+  {
     name: "nexus_verrou",
     title: "Rapporter l etat des verrous de machine partages entre projets",
     description: "Ces verrous sont des mutex nommes, ils servent a eviter que deux projets lancent en meme temps une inference locale ou une copie massive, et cet outil CONSTATE l etat sans prendre ni liberer aucun verrou.",
@@ -3200,6 +3217,13 @@ function runPython(args, timeoutMs = 300000) {
   if (name === "nexus_charge") {
     return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_charge.py")]);
   }
+  if (name === "nexus_livres") {
+    const q = String(args.question || "");
+    if (!q) return { content: [{ type: "text", text: "question requise" }] };
+    return await runPython(
+      [path.join(INSTALL_ROOT, "scripts", "nexus_livres_semantique.py"), "search", q]);
+  }
+
   if (name === "nexus_verrou") {
     return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_verrou_machine.py")]);
   }
