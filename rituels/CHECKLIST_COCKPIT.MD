@@ -15041,3 +15041,59 @@ sont corrects et coherents.
 ete verifiees contre le comportement reel, et cabler une epreuve fausse rendrait la suite
 rouge en permanence — **une suite toujours rouge cesse d'etre lue**, ce qui coute plus
 qu'une suite incomplete.
+
+### 115.69 BILAN DU TOUR — six defauts reels, dont trois dans des gardes jamais eprouvees
+
+**Ce qui est PROUVE par epreuve, et cable :**
+
+    nexus_garde_isolation     5/5   accepte worktree, refuse sans, porte de sortie OK
+    nexus_garde_agent         5/5   refuse un modele facture, degrade sur entree malformee
+    nexus_garde_production    6/6   dont REND_LA_MAIN, non-regression du gel de 8 minutes
+    les trois cablees dans nexus_test.py:2460-2462, et REJOUEES apres la passe de style
+
+**Les six defauts reels du tour :**
+
+| # | defaut | ou | gravite |
+| --- | --- | --- | --- |
+| 1 | une garde GELAIT 8 minutes sur `--help` | `nexus_garde_production` | impossible a eprouver |
+| 2 | seule garde sans `hookEventName` | idem | refus pouvant n'etre jamais applique |
+| 3 | « tokens traites » mesurait le corpus SOUMIS | `server.js` | enveloppe qui affirme la completude |
+| 4 | le validateur cesse de valider au-dela de 16k jetons | `nexus_valide` | LOI 1 s'eteint quand elle sert |
+| 5 | lecture du sous-processus en cp1252 | `nexus_appliquer` | un refus pourra se perdre |
+| 6 | aucune tracabilite des fichiers joints | `nexus_agent` | un fichier absent = un fichier lu |
+
+Les defauts 3 et 6 viennent de signalements de sessions voisines ; les autres de l'usage
+direct. **Aucun d'un audit.**
+
+**Ce qui a ete POSE et mesure :**
+
+    mentions_hors_perimetre  rend 2 sur un rendu citant 2 chemins inventes (176 chez le voisin)
+    fichiers_joints          chemin, octets lus, empreinte courte, par fichier reellement joint
+    refus « introuvable »    distinct de « hors racine » — le remede annonce est desormais juste
+
+**MES PROPRES ERREURS, comptees comme les autres :**
+
+* **une inscription FAUSSE au cockpit** (§115.64), retiree : j'avais lu un `ruff` global comme
+  une attribution, dix lignes apres avoir ecrit qu'il ne fallait pas le faire ;
+* **une garde presque accusee a tort** (§115.65) : j'ai lu son CODE DE SORTIE seul, alors que
+  son refus etait dans stdout, parfaitement forme ;
+* **deux consignes fautives** (§115.68) : une structure JSON decrite sans dire qu'elle etait
+  imbriquee, et un cas de test exigeant un comportement de terminal impossible a reproduire
+  en sous-processus.
+
+> Les trois sont la meme faute que celle traquee toute la nuit : **lire une valeur unique la
+> ou l'information se trouve ailleurs.** Cette fois du cote de l'observateur, ce qui la rend
+> plus difficile a mecaniser — aucun controle ne me relit.
+
+**CE QUI RESTE OUVERT, nomme et non clos :**
+
+* `epreuve_relais`, `epreuve_progres`, `epreuve_outillage` : posees, attentes NON verifiees
+  contre le comportement reel, donc **non cablees** ;
+* `nexus_corpus` et `nexus_libs` : poses, sans appelant ;
+* 5 regressions de style, dont une regle NEUVE (`F841`) que le cliquet vient d'ajouter — un
+  cliquet qui change ses regles fait bouger son propre chiffre, et c'est a savoir avant de
+  lire une hausse comme une degradation ;
+* le conflit structurel des deux cliquets (§115.60), toujours nomme et non resolu ;
+* `nexus_valide` : le decoupage est pose mais n'a PAS ete eprouve sur un diff reellement
+  volumineux — **il est donc annonce, pas prouve**, et cette distinction est le sujet meme du
+  cockpit de cette nuit.
