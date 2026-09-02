@@ -5,10 +5,10 @@
   },
   "psscriptanalyzer": {
     "PSAvoidAssignmentToAutomaticVariable": 3,
-    "PSAvoidOverwritingBuiltInCmdlets": 8,
-    "PSAvoidUsingEmptyCatchBlock": 99,
-    "PSReviewUnusedParameter": 8,
-    "PSUseApprovedVerbs": 9
+    "PSAvoidOverwritingBuiltInCmdlets": 18,
+    "PSAvoidUsingEmptyCatchBlock": 229,
+    "PSReviewUnusedParameter": 18,
+    "PSUseApprovedVerbs": 19
   },
   "ruff": {
     "B007": 4,

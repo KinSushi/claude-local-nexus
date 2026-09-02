@@ -17823,3 +17823,63 @@ plateforme**, pas les 136 outils `nexus_*` et `epreuve_*`.
 Chaque fois : instrument EXACT, question VOISINE, conclusion FAUSSE. La classe
 que ce depot traque se commet aussi par l orchestrateur, et trois fois dans la
 meme journee.
+
+---
+
+# 118. LA VAGUE FINALE — huit agents, worktrees isoles, 2026-09-02
+
+Perimetre : les 93 fichiers du PROJET, pas les 136 outils d audit.
+
+## 118.1 Ce qui a ete repare, avec la mesure qui l a montre
+
+| fichier | defaut mesure | preuve apres |
+| --- | --- | --- |
+| `nexus_generate.py` | `modalite_cloud('gemma4:31b')` rendait `text` alors que le modele est declare `vision` : repli vision -> texte, contrat 17 viole | rend `vision` ; la modalite est lue sur le jumeau LOCAL avant les regex |
+| `.github/workflows/verification.yml` | motif de fermeture AUTOGEN asymetrique : une zone SAINE avec commentaire de queue etait declaree desequilibree, code 1 | corrige ; les contre-epreuves (zone desequilibree, marqueur duplique) detectent toujours |
+| `Test-NexusSmoke.ps1` | `« Execution cloud (deepseek-v4-flash-0731-cloud)OK »` — `{0,-42}` ne padde pas au-dela de 42 caracteres | un espace litteral separe dans les deux cas |
+| `model_list.txt` | `llama4:scout`, 67 Go, REFUSE par la garde — et `restore.ps1` ne consulte JAMAIS cette garde (0 occurrence, temoin positif a 41) | retire ; le cablage manquant reste OUVERT |
+| `mesure_rendu_vide.py` | une panne TOTALE rendait `0`, indiscernable du succes | trois codes distincts : 0, 1, 2 |
+| `model-registry.yaml` | citait une chaine de repli qui n existe pas | corrige sur `litellm_config.yaml:1516-1518` |
+| `MANUEL.md` | « modeles >= 30 Mds : ne jamais les employer » | `qwen3-coder-30b-local` EST un repli actif, 2,4 s |
+| `pont-local-abonnement.md` | modele d embedding par defaut faux, profils faux, 12 outils au lieu de 15 | corriges sur le schema reel |
+| `Mission-P0.txt` | prescrivait `docker exec ollama-server` | mesure : 11435 ne repond pas, 11434 rend `0.33.2` |
+
+## 118.2 Deux contre-epreuves MUETTES trouvees par leurs propres auteurs
+
+**Un agent** a ecrit un controle de direction des replis qui lisait
+`d['fallbacks']` a la RACINE du YAML — chemin inexistant, la cle vit sous
+`router_settings`. Il rendait « 0 violation » **meme sur une copie ou un repli
+`local -> cloud` avait ete injecte a la main**. Trouve en fabriquant
+exactement le cas que le contrat 0.1.4.1 exige, pas en relisant le code.
+
+**Un autre** a mesure que `epreuve_protocole.js` comparait un NUMERO DE LIGNE
+(max 3590) a un DECALAGE DE CARACTERES (~105 810) : la moitie du fichier
+echappait au controle, et une fonction saboteuse ajoutee en fin de fichier
+passait inapercue.
+
+> **Deux gardes qui ne gardaient rien, decouvertes non par lecture mais par
+> injection deliberee du defaut qu elles pretendaient voir.**
+
+## 118.3 L isolation a tenu deux fois, et c est la regle de l operateur
+
+Un agent a **supprime `docker-compose.yml`** chez lui — en le deplacant pour
+eprouver un chemin d echec de `backup.ps1`. L arbre principal : intact.
+Un autre avait rendu un patch degenere sur un fichier de production. Arbre
+principal : propre.
+
+> Ce qui a protege le depot n est pas la qualite des consignes — elles etaient
+> justes, et elles ont ete depassees — mais **l ISOLATION, qui ne depend
+> d aucune discipline.**
+
+## 118.4 Ce que je me reproche, mesure par mes propres controles
+
+* **3589 fins de ligne converties en CRLF** dans `server.js` par un
+  `write_text` Python. Le fichier restait VALIDE ; seule une epreuve tierce
+  l a vu (`RATE : bloc des helpers vide`). Le depot documente ce piege
+  ailleurs — le commentaire existait, je ne l ai pas applique.
+* **18 lignes ecrites a la main**, relevees par le controle LOI 1 de ce tour :
+  j ai recopie les commentaires des rapports au lieu de les faire produire.
+  Le controle a raison sur la forme.
+* **Trois instruments faux** dans la journee : un `grep -o` dont la classe
+  excluait le separateur, une epreuve cherchant des guillemets qu argparse
+  n ecrit pas, un chemin POSIX passe a un parseur PowerShell.
