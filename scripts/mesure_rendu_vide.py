@@ -23,6 +23,7 @@ import argparse
 import json
 import os
 import sys
+from console_tools import forcer_utf8
 import time
 import urllib.error
 import urllib.request
@@ -178,6 +179,8 @@ def afficher_tableau(resultats: dict):
 # ---------------------------------------------------------------------------
 
 def main():
+    # Forcer l’encodage UTF‑8 dès le début afin que l’aide (--help) s’affiche correctement
+    forcer_utf8()
     parser = argparse.ArgumentParser(
         description="Mesure du rendu vide sur de longues requêtes."
     )
@@ -218,11 +221,21 @@ def main():
     afficher_tableau(resultats)
 
     # Déterminer le code de sortie
-    vide_second_pass = any(
-        (data["pass2"]["chars"] == 0) for data in resultats.values()
-        if data["pass2"]["error"] is None
+    # 0 → aucune réponse vide détectée
+    # 1 → au moins une réponse vide au deuxième appel (et aucune mesure totale impossible)
+    # 2 → aucune mesure n’a pu aboutir (toutes les réponses du deuxième appel sont en erreur)
+    toutes_les_erreurs = all(
+        data["pass2"]["error"] is not None for data in resultats.values()
     )
-    sys.exit(1 if vide_second_pass else 0)
+    if toutes_les_erreurs:
+        exit_code = 2
+    else:
+        vide_second_pass = any(
+            data["pass2"]["chars"] == 0 and data["pass2"]["error"] is None
+            for data in resultats.values()
+        )
+        exit_code = 1 if vide_second_pass else 0
+    sys.exit(exit_code)
 
 if __name__ == "__main__":
     main()

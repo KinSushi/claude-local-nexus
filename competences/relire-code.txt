@@ -9,5 +9,5 @@ Distinguer clairement ce qui est verifie de ce qui est deduit.
 Utiliser la formule "je n'ai pas pu verifier" lorsqu'une verification n'est pas possible.
 Ne pas remplir les lacunes par des suppositions non fondees.
 Indiquer chaque observation avec precision et concision.
-Eviter toute affirmation de comportement sans execution ou test effectif.
+Eviter de presenter une deduction statique comme un fait verifie par execution reelle.
 Rester factuel, concis et se limiter aux informations presentes dans le code fourni.
