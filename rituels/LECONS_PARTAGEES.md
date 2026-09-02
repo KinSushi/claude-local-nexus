@@ -536,3 +536,61 @@ du premier coup. *Une garde qui refuse sans dire par ou passer se fait desarmer.
 
 > **La regle etait empirique chez nous ; le livre en fait un COMPOSANT, avec un seuil et un
 > etat.** C'est exactement la difference entre une lecon et un mecanisme.
+
+
+---
+
+## 21. LE DISJONCTEUR, LU DANS LE LIVRE — et il me juge plus severement que ma regle
+
+**Source lue le 2026-09-02** : *Design Multi-Agent AI Systems Using MCP and A2A*, ch. 10,
+« Retry logic and circuit breakers », **2 847 caracteres, un `seek`, aucun modele appele.**
+
+★ **LA PHRASE QUI TRANCHE, et elle m'accuse :**
+
+> *« Retrying a network timeout makes sense. Retrying an invalid API key does not. Design retry
+> logic to identify retryable errors and give up quickly on permanent failures. »*
+
+**Mes renvois au banc echouaient sur des FAUTES DE CONSIGNE** — une periphrase ambigue
+(« point nexus »), une ancre sans indentation, un point de depart faux. **Ce sont des echecs
+PERMANENTS.** Ma regle empirique — *six renvois, six regressions* — comptait les echecs sans les
+CLASSER.
+
+> **Le disjoncteur n'etait meme pas la bonne reponse : il ne fallait pas reessayer, il fallait
+> corriger la consigne.** Compter les echecs sans distinguer transitoire et permanent, c'est
+> traiter une cle invalide comme une coupure reseau.
+
+### 21.1 La specification complete, telle que le livre la donne
+
+| element | valeur du livre | ce que j'avais |
+| --- | --- | --- |
+| **classer l'echec** | transitoire → reessayer · permanent → **abandonner tout de suite** | rien : je comptais |
+| **backoff** | exponentiel 100 → 200 → 400 → 800 ms, **plafonne** (30 s) | rien |
+| **jitter** | aleatoire, contre le *thundering herd* | rien |
+| **plafond d'essais** | cinq | « six renvois » observe, jamais impose |
+| **journal** | *log each retry with context about WHY it failed* | rien : d'ou l'absence de classement |
+| **seuil du disjoncteur** | 50 % d'echec sur 10 requetes | rien |
+| **etats** | OPEN → (timeout 60 s) → HALF-OPEN → CLOSED ou OPEN | rien |
+
+★ **ET LE MOTIF DU DISJONCTEUR EST EXACTEMENT MON INCIDENT `banc`** :
+
+> *« Circuit breakers are essential for multi-agent systems because ONE SLOW OR FAILING SERVICE
+> CAN BLOCK MANY AGENTS waiting for responses. »*
+
+**Trois sessions bloquees une heure par un verrou d'inference tenu.** Le livre decrit le
+mecanisme qui l'aurait evite, et il etait sur le disque pendant l'incident.
+
+### 21.2 Ce que la lecture a coute, et ce qu'elle a rendu
+
+    cout   : 2 847 octets lus par `seek`, zero modele, zero jeton
+    rendu  : une specification a sept parametres, la ou j'avais un comptage
+
+⚠️ **Trois defauts corriges aujourd'hui sont des classiques traites en litterature multi-agents,
+pas des cas particuliers** — le diagnostic est d'un depot voisin et il est juste :
+
+    `projet='nexus'` grave dans un verrou partage  -> identite d'appelant non propagee
+    racine gravee dans `nexus_appliquer`           -> le meme defaut, un etage plus haut
+    message d'erreur a chemin RELATIF              -> frontiere de contexte non declaree
+
+> **Les trois sont la meme faute : un composant partage qui SUPPOSE son appelant au lieu de le
+> RECEVOIR.** Je les ai trouves un par un, par l'incident, en une journee. **Un chapitre les
+> nommait ensemble.**
