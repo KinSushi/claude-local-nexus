@@ -27,6 +27,26 @@ confusion « absent » / « casse » corrigee le meme jour dans nexus_outillage.
 `errors="replace"` est deliberé : une console qui ne sait pas rendre un
 caractere doit afficher un substitut, jamais interrompre le programme. Perdre
 une etoile est sans consequence ; perdre la sortie entiere ne l'est pas.
+
+Verification par execution reelle, le 2026-09-02 : quatre essais dans un
+interprete Python jetable, jamais dans l'arbre du depot. Un audit anterieur
+avait releve deux appelants reels, nexus_doc.py:46 et epreuve_doc_annexe.py:206 ;
+cette verification en ajoute un troisieme que l'audit n'avait pas vu :
+scripts/mesure_rendu_vide.py ligne 26 (from console_tools import forcer_utf8).
+En revanche scripts/nexus_test.py, scripts/nexus_cablage.py et
+scripts/epreuve_cablage.py ne font que mentionner console_tools dans un
+commentaire ou une chaine, sans jamais l'importer : ce ne sont pas de vrais
+appelants. Essai 1 (FORWARD, console reelle cp1252) : premier appel
+reconfigure en utf-8 (change=True), deuxieme appel idempotent (change=False) ;
+etoile, tiret cadratin, coche, guillemets francais et e accent aigu
+s'affichent sans UnicodeEncodeError. Essai 2 (REVERSE, flux degrade sans
+encoding ni reconfigure, cas d'un flux redirige vers un fichier ou un tube) :
+aucune exception, change=False. Essai 3 (REVERSE, flux hostile dont la simple
+lecture de encoding leve, au-dela du AttributeError deja couvert par getattr) :
+absorbe par le try/except, rien ne leve. Essai 4 (import console_tools puis
+from console_tools import forcer_utf8) : le cache sys.modules rend le second
+import un no-op sur le meme objet module, sans reinitialisation ni effet de
+bord. Verdict : comportement sain sur les quatre scenarios, rien a corriger.
 """
 from __future__ import annotations
 
