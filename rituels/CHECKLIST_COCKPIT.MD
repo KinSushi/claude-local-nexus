@@ -11977,3 +11977,57 @@ ici         POSE, non arme
 | 34 | La precedence global/local | **FERME** — elles s'AJOUTENT, mesure deux fois |
 | 38 | Les `Write()` seraient inertes | **REFUTE** — elles mordent, mesure a temoin discriminant |
 | 40 | Nommer un piege ne protege pas de lui | `DECLARE` — commis dix lignes apres l'avoir ecrit |
+
+---
+
+## 113. UN OUTIL QUI POSE DES PERMISSIONS NE DOIT PAS ETRE APPELABLE — la seule regression acceptee du jour
+
+Le cliquet de cablage a refuse de clore le tour :
+
+```
+[MANQUE] cablage tenu : 1 REGRESSION | preuve_seule  scripts/nexus_poser_socle.py
+```
+
+Il dit vrai : ce script n'est appele par rien. Il n'est nomme que dans le cockpit.
+
+### 113.1 POURQUOI CETTE REGRESSION EST ACCEPTEE, et elle est la seule
+
+`nexus_poser_socle.py` ecrit dans `.claude/settings.json` — la configuration de permissions.
+**Le rendre appelable par un script, une tache planifiee ou un hook serait le defaut, pas le
+remede.** Un mecanisme qui pose des permissions doit exiger un geste humain explicite :
+
+| ce qui l'appellerait | ce que cela produirait |
+| --- | --- |
+| une tache planifiee | des permissions posees sans que personne l'ait decide |
+| un hook | des permissions posees a chaque tour, y compris apres une restauration voulue |
+| une epreuve | un test qui modifie la configuration qu'il teste |
+
+C'est la meme raison qui fait que `nexus_vitrine.py` publie sous sept controles bloquants plutot
+qu'a l'appel : **certains gestes ne doivent pas etre automatisables.**
+
+### 113.2 CE QUI DISTINGUE CETTE ACCEPTATION D'UN MASQUAGE
+
+Le cliquet travaille **par NOM, jamais par compte** — sa propre docstring explique pourquoi : *« un
+cliquet par comptage laisserait cabler un script pendant qu'un autre devient orphelin dans le meme
+lot : la somme ne bouge pas, l'echange est invisible. »*
+
+Donc accepter cette reference n'ouvre pas la porte a d'autres : **le jour ou un second script
+devient orphelin, le cliquet le nommera.** L'acceptation porte sur un fichier precis, pas sur un
+seuil.
+
+Et elle est DECLAREE ici avant d'etre faite. Une reference acceptee en silence est un masquage ;
+une reference acceptee avec sa raison ecrite est une decision.
+
+### 113.3 CE QUI RESTE VRAI ET N'EST PAS COUVERT
+
+`nexus_socle.py`, lui, EST cable — dans `nexus_test.py --only socle`. La verification est
+automatisable, la POSE ne l'est pas. **C'est la bonne asymetrie** : on verifie sans cesse, on pose
+une fois, sur decision.
+
+> **Une commande qui change l'etat de la machine se lance ; une commande qui mesure se cable.**
+> Le cliquet ne connait pas cette distinction — il compte des appelants. Elle reste donc a sa
+> charge d'operateur, et c'est pourquoi la declaration ci-dessus lui tient lieu de garde.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 41 | Le cliquet ne distingue pas « outil de mesure » et « outil d'action » | `DECLARE` — un outil d'action non appele est correct ; le cliquet ne peut pas le savoir |

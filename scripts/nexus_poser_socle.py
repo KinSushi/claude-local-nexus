@@ -46,7 +46,7 @@ def backup_file(path):
             shutil.copy2(path, backup_path)
         else:
             # Fichier cible inexistant : on cree une sauvegarde vide
-            with open(backup_path, 'w', encoding='utf-8') as f:
+            with open(backup_path, 'w', encoding='utf-8'):
                 pass
         print(f"[OK  ] sauvegarde : {backup_path}")
         return backup_path
@@ -156,7 +156,7 @@ def process_target(source_path, target_path, mode):
                 print(f"[OK  ] {target_path} : ask a ajouter : {ask_added}")
         return 0
 
-    elif mode == '--poser':
+    if mode == '--poser':
         # Sauvegarde avant ecriture
         backup_path = backup_file(target_path)
         if backup_path is None:
@@ -197,11 +197,10 @@ def process_target(source_path, target_path, mode):
         if actual_deny_count < expected_deny_count:
             print(f"[RATE] verification : {target_path} : deny compte {actual_deny_count} < attendu {expected_deny_count}")
             return 2
-        else:
-            print(f"[OK  ] verification : {target_path} : deny compte {actual_deny_count} (attendu {expected_deny_count})")
+        print(f"[OK  ] verification : {target_path} : deny compte {actual_deny_count} (attendu {expected_deny_count})")
         return 0
 
-    elif mode == '--restaurer':
+    if mode == '--restaurer':
         # Trouver la sauvegarde la plus recente
         latest_backup = find_latest_backup(target_path)
         if latest_backup is None:

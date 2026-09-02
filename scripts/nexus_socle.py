@@ -54,10 +54,7 @@ def sha256_fichier(chemin):
         return None
 
 def motif_present(motif, deny, ask):
-    for regle in deny + ask:
-        if motif in str(regle):
-            return True
-    return False
+    return any(motif in str(regle) for regle in deny + ask)
 
 def main():
     resultats = []  # liste de (ok, libelle, detail)
@@ -106,7 +103,7 @@ def main():
             continue
         deny, ask = regles(data)
         nb_deny = len(deny)
-        nb_ask = len(ask)
+        len(ask)
         for motif in MOTIFS:
             if not motif_present(motif, deny, ask):
                 manquants.append(f"motif '{motif}' manquant dans {nom}")
@@ -168,9 +165,8 @@ def main():
     if tous_ok:
         print("VERDICT: OK")
         return 0
-    else:
-        print("VERDICT: RATE")
-        return 1
+    print("VERDICT: RATE")
+    return 1
 
 if __name__ == '__main__':
     sys.exit(main())
