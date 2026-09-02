@@ -68,6 +68,20 @@ def main():
         print(texte[:400])
         return 1
 
+    # Verification du chemin cible sous la racine du depot
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    racine_depot = os.path.dirname(script_dir)
+    cible_real = os.path.realpath(cible_path)
+    racine_real = os.path.realpath(racine_depot)
+    try:
+        chemin_commun = os.path.commonpath([cible_real, racine_real])
+    except ValueError:
+        print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
+        return 1
+    if chemin_commun != racine_real:
+        print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
+        return 1
+
     # Lecture du fichier cible
     try:
         with io.open(cible_path, encoding="utf-8") as f:
@@ -76,6 +90,12 @@ def main():
         print(f"ERREUR : impossible d'ouvrir le fichier cible '{cible_path}' : {e}")
         print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
         sys.exit(1)
+
+    # Verification qu'aucun bloc APRES n'est vide ou blanc
+    for idx, (_, apres) in enumerate(blocs, start=1):
+        if not apres.strip():
+            print("REFUS : le bloc %d a un texte APRES vide ou blanc ; une suppression pure doit etre demandee explicitement." % idx)
+            return 1
 
     # Verification de chaque bloc AVANT
     for idx, (avant, _) in enumerate(blocs, start=1):
@@ -119,9 +139,16 @@ def main():
         except FileNotFoundError:
             print("L'analyseur n'a PAS PU se prononcer", file=sys.__stderr__)
 
-    # Ecriture du fichier cible
-    with io.open(cible_path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(nouveau_src)
+    # Ecriture atomique du fichier cible
+    temp_path = cible_path + ".tmp"
+    try:
+        with io.open(temp_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(nouveau_src)
+        os.replace(temp_path, cible_path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
     print("APPLIQUE : %d bloc(s) dans %s" % (len(blocs), cible_path))
 
