@@ -58,7 +58,15 @@ $script:Failed = 0
 
 function Invoke-Check {
     param([string]$Name, [scriptblock]$Body)
-    Write-Host -NoNewline ("  {0,-42}" -f $Name)
+    # OU/QUAND : mesure le 2026-09-02 sur la pile REELLE — "Execution cloud
+    # (deepseek-v4-flash-0731-cloud)OK", aucun espace avant le statut.
+    # COMMENT : "{0,-42}" ne PADDE que sous 42 caracteres ; au-dela la chaine
+    # sort telle quelle et "OK" s ecrit -NoNewline juste apres. Un alias cloud
+    # long depasse ce seuil (48 caracteres mesures).
+    # POURQUOI : un espace LITTERAL garantit la separation dans les DEUX cas.
+    # Ecarte : tronquer le nom (perdrait le modele, ce que ce test montre) ;
+    # elargir la largeur (deplace le seuil sans le supprimer).
+    Write-Host -NoNewline ("  {0,-42} " -f $Name)
     try {
         $detail = & $Body
         Write-Host "OK" -ForegroundColor Green -NoNewline

@@ -1077,10 +1077,11 @@ def render_ctx_chain(groups: dict, indent: int) -> list[str]:
     return out
 
 
-def render_cloud_models(cloud: list[str]) -> list[str]:
+def render_cloud_models(cloud: list[str], modalite) -> list[str]:
     out: list[str] = []
     for i, base in enumerate(cloud):
         rank = cloud_rank(base)
+        mode = modalite(base)
         out += [
             "  - model_name: %s" % cloud_alias(base),
             "    litellm_params:",
@@ -1090,6 +1091,10 @@ def render_cloud_models(cloud: list[str]) -> list[str]:
             "      num_ctx: 131072",
             "      num_predict: 8192",
             "    model_info:",
+        ]
+        if mode != "text":
+            out.append("      mode: %s" % mode)
+        out += [
             "      max_input_tokens: 131072",
             '      description: "%s (Ollama Cloud)"' % base,
             "      adaptive_router_preferences:",
@@ -1286,11 +1291,26 @@ def main() -> int:
     anthropic_groups = ranked(entries, "anthropic")
     local_groups = ranked(entries, "local")
 
+    base_modalite_locale: dict[str, str] = {}
+    for m in (config.get("model_list") or []):
+        p = m.get("litellm_params") or {}
+        r = str(p.get("model", ""))
+        ab = str(p.get("api_base", ""))
+        if r.startswith(("ollama/", "ollama_chat/")) and "ollama.com" not in ab:
+            mode = (m.get("model_info") or {}).get("mode")
+            if mode:
+                base_modalite_locale[r.split("/", 1)[1]] = mode
+
     def modalite_cloud(base: str) -> str:
-        # Les memes indices que pour le local. Figer « text » aurait declare
-        # un embedding cloud en ollama_chat/ avec num_ctx 131072, et l'aurait
-        # verse dans les deux pools de routage -- dont la modalite n'est
-        # controlee nulle part.
+        # 1) le jumeau local, deja tranche par le moteur (ollama show) ;
+        # 2) a defaut, les memes indices que pour le local -- REPLI, jamais
+        #    source premiere. Figer « text » aurait declare un embedding
+        #    cloud en ollama_chat/ avec num_ctx 131072, et l'aurait verse
+        #    dans les deux pools de routage -- dont la modalite n'est
+        #    controlee nulle part.
+        connue = base_modalite_locale.get(base)
+        if connue:
+            return connue
         if EMBED_HINT.search(base):
             return "embedding"
         if VISION_HINT.search(base):
@@ -1515,7 +1535,7 @@ def main() -> int:
             "        available_models:",
         ] + ["          - %s" % a for a in pool_local]),
         "LOCAL_MODELS_EXTRA": local_extra,
-        "CLOUD_MODELS": render_cloud_models(cloud),
+        "CLOUD_MODELS": render_cloud_models(cloud, modalite_cloud),
         # Seuls les modeles textuels entrent dans un pool de routage : un
         # embedding ou une vision n'y a pas sa place, et rien d'autre ne
         # verifie la modalite d'un pool.

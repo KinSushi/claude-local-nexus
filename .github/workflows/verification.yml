@@ -62,7 +62,18 @@ jobs:
           ouverts, fermes = {}, {}
           for l in lignes:
               o = re.match(r"^\s*# >>> AUTOGEN:(\S+)", l)
-              f = re.match(r"^\s*# <<< AUTOGEN:(\S+)\s*$", l)
+              # OU/QUAND : repro isole 2026-09-02. Une zone REELLEMENT
+              # equilibree, dont la ligne de fermeture porte un commentaire
+              # de queue — style deja employe sur une OUVERTURE reelle de
+              # litellm_config.yaml — etait annoncee « desequilibre » et
+              # faisait echouer l etape. Code 1 sur un fichier sain.
+              # COMMENT : le motif d OUVERTURE n ancre pas la fin de ligne,
+              # celui de FERMETURE exigeait \s*$ — asymetrie.
+              # POURQUOI : aligner la fermeture sur l ouverture. Seule la
+              # presence du jeton AUTOGEN:<NOM> doit compter, jamais ce qui
+              # le suit. Ecarte : interdire le commentaire de queue, ce qui
+              # durcirait la regle contre un style deja utilise.
+              f = re.match(r"^\s*# <<< AUTOGEN:(\S+)", l)
               if o: ouverts[o.group(1)] = ouverts.get(o.group(1), 0) + 1
               if f: fermes[f.group(1)] = fermes.get(f.group(1), 0) + 1
           probleme = False
