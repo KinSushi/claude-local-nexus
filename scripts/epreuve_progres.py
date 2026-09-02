@@ -1,102 +1,182 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import subprocess
 import tempfile
 import shutil
+import time
 
-def run_tool(exe, args, cwd):
+def verifier_fichier_source():
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nexus_progres.py")
+    if not os.path.exists(script_path):
+        print(f"[ERREUR] Fichier source introuvable: {script_path}")
+        return False
+    return script_path
+
+def lancer_script(script_path, temp_dir):
+    progress_path = os.path.join(temp_dir, "PROGRES.MD")
+    cmd = [sys.executable, script_path]
     try:
-        proc = subprocess.run(
-            [sys.executable, exe] + args,
-            cwd=cwd,
+        result = subprocess.run(
+            cmd,
+            cwd=os.path.dirname(script_path),
+            timeout=10,
             capture_output=True,
-            text=True,
-            timeout=10
+            text=True
         )
-        return proc.returncode, proc.stdout, proc.stderr
+        return result.returncode, result.stdout, result.stderr, progress_path
     except subprocess.TimeoutExpired:
-        return -1, "", "L'outil n'a pas rendu la main"
-    except Exception as e:
-        return -1, "", str(e)
+        return -1, "", "Timeout", progress_path
+
+def verifier_contenu(progress_path):
+    if not os.path.exists(progress_path):
+        return False, "Fichier PROGRES.MD non genere"
+
+    with open(progress_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    required_sections = [
+        "# PROGRESS.MD",
+        "*GENERE AUTOMATIQUEMENT*",
+        "## ETAT DU DEPOT",
+        "## MECANISMES",
+        "## SUJETS OUVERTS",
+        "## TACHES PLANIFIEES",
+        "## CE QUI N'EST PAS MECANISE"
+    ]
+
+    for section in required_sections:
+        if section not in content:
+            return False, f"Section manquante: {section}"
+
+    if "GENERE AUTOMATIQUEMENT le" not in content:
+        return False, "Horodatage manquant"
+
+    return True, "Contenu valide"
+
+def cas_nominal():
+    script_path = verifier_fichier_source()
+    if not script_path:
+        return 1
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        code, stdout, stderr, progress_path = lancer_script(script_path, temp_dir)
+        if code != 0:
+            print(f"[ECHEC_NOMINAL] Code retour: {code}, stderr: {stderr}")
+            return 1
+
+        ok, msg = verifier_contenu(progress_path)
+        if not ok:
+            print(f"[ECHEC_NOMINAL] {msg}")
+            return 1
+
+        print("[OK_NOMINAL] Generation reussie")
+        return 0
+
+def cas_refus_sans_depot():
+    script_path = verifier_fichier_source()
+    if not script_path:
+        return 1
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        os.chdir(temp_dir)
+        code, stdout, stderr, progress_path = lancer_script(script_path, temp_dir)
+        if code == 0:
+            print("[ECHEC_REFUS] Le script a reussi sans depot git")
+            return 1
+
+        if "Git non disponible" not in stderr and "Git non disponible" not in stdout:
+            print("[ECHEC_REFUS] Message d'erreur inattendu")
+            return 1
+
+        print("[OK_REFUS] Refus correct sans depot git")
+        return 0
+
+def cas_entree_malformee():
+    script_path = verifier_fichier_source()
+    if not script_path:
+        return 1
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        checklist_path = os.path.join(temp_dir, "rituels", "CHECKLIST_COCKPIT.MD")
+        os.makedirs(os.path.dirname(checklist_path), exist_ok=True)
+        with open(checklist_path, 'w', encoding='utf-8') as f:
+            f.write("Contenu malformé sans sections")
+
+        code, stdout, stderr, progress_path = lancer_script(script_path, temp_dir)
+        if code != 0:
+            print(f"[ECHEC_MALFORME] Code retour: {code}, stderr: {stderr}")
+            return 1
+
+        with open(progress_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            if "CHECKLIST_COCKPIT.MD introuvable" in content:
+                print("[ECHEC_MALFORME] Fichier non detecte malgre sa presence")
+                return 1
+
+        print("[OK_MALFORME] Gestion correcte de l'entree malformee")
+        return 0
+
+def cas_usage():
+    script_path = verifier_fichier_source()
+    if not script_path:
+        return 1
+
+    cmd = [sys.executable, script_path, "--help"]
+    try:
+        result = subprocess.run(
+            cmd,
+            timeout=10,
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print("[ECHEC_USAGE] Le script accepte --help")
+            return 1
+    except subprocess.TimeoutExpired:
+        print("[ECHEC_USAGE] Timeout")
+        return 1
+
+    cmd = [sys.executable, script_path]
+    try:
+        result = subprocess.run(
+            cmd,
+            timeout=10,
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print("[OK_USAGE] Refus correct sans arguments")
+            return 0
+        else:
+            print("[ECHEC_USAGE] Le script a reussi sans arguments")
+            return 1
+    except subprocess.TimeoutExpired:
+        print("[ECHEC_USAGE] Timeout")
+        return 1
 
 def main():
-    # Analyse du premier fichier : nexus_progres.py
-    # Options : Aucune
-    # Arguments : Aucun
-    # Codes retour : 0 (succes), 1 (erreur ecriture)
-    # Sortie : Rien sur stdout, ecrit PROGRESS.MD a la racine
-    
-    tool_rel_path = os.path.join("scripts", "nexus_progres.py")
-    tool_abs_path = os.path.abspath(tool_rel_path)
-    
-    if not os.path.exists(tool_abs_path):
-        print(f"[FAIL] Fichier introuvable : {tool_abs_path}")
-        sys.exit(127)
+    cas = [
+        ("NOMINAL", cas_nominal),
+        ("REFUS_SANS_DEPOT", cas_refus_sans_depot),
+        ("ENTREE_MALFORMEE", cas_entree_malformee),
+        ("USAGE", cas_usage)
+    ]
 
-    # L'outil utilise os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # pour trouver la racine. On simule donc l'arborescence.
-    with tempfile.TemporaryDirectory() as tmp_root:
-        scripts_dir = os.path.join(tmp_root, "scripts")
-        os.makedirs(scripts_dir)
-        
-        # Copie de l'outil dans le repertoire temporaire pour eviter d'ecrire dans le depot
-        tool_tmp_path = os.path.join(scripts_dir, "nexus_progres.py")
-        shutil.copy2(tool_abs_path, tool_tmp_path)
-        
-        # Cas 1 : Nominal
-        # On cree un faux depot git pour eviter les messages d'erreur git
-        subprocess.run(["git", "init"], cwd=tmp_root, capture_output=True)
-        
-        rc, out, err = run_tool(tool_tmp_path, [], tmp_root)
-        
-        progress_file = os.path.join(tmp_root, "PROGRESS.MD")
-        if os.path.exists(progress_file):
-            with open(progress_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            if "# PROGRESS.MD" in content and rc == 0:
-                print("[OK] Cas nominal : PROGRESS.MD genere avec contenu valide")
-            else:
-                print(f"[FAIL] Cas nominal : Contenu invalide ou RC={rc}")
-                sys.exit(1)
-        else:
-            print("[FAIL] Cas nominal : PROGRESS.MD non cree")
-            sys.exit(1)
-
-        # Cas 2 : Invocation sans arguments (comportement attendu : nominal car pas d'options)
-        rc, out, err = run_tool(tool_tmp_path, [], tmp_root)
-        if rc == 0:
-            print("[OK] Invocation sans arguments : Succes")
-        else:
-            print(f"[FAIL] Invocation sans arguments : RC={rc}")
-            sys.exit(1)
-
-        # Cas 3 : Entree malformee (arguments inattendus)
-        # L'outil n'utilise pas sys.argv, donc il ignore les arguments
-        rc, out, err = run_tool(tool_tmp_path, ["--unknown", "val"], tmp_root)
-        if rc == 0:
-            print("[OK] Entree malformee : Ignore sans plantage")
-        else:
-            print(f"[FAIL] Entree malformee : Plantage RC={rc}")
-            sys.exit(1)
-
-        # Cas 4 : Refus d'ecriture (Lecture seule)
-        # On tente de rendre la racine non ecrivable
+    codes = []
+    for name, func in cas:
         try:
-            os.chmod(tmp_root, 0o555)
-            rc, out, err = run_tool(tool_tmp_path, [], tmp_root)
-            # L'outil doit retourner 1 en cas d'exception lors de l'ecriture
-            if rc == 1:
-                print("[OK] Cas inverse : Refus d'ecriture gere (RC=1)")
-            else:
-                print(f"[FAIL] Cas inverse : RC attendu 1, recu {rc}")
-                sys.exit(1)
+            code = func()
+            codes.append(code)
+            if code != 0:
+                print(f"[ECHEC_GLOBAL] Cas {name} a echoue")
+                return 1
         except Exception as e:
-            print(f"[INFO] Impossible de tester le refus d'ecriture : {e}")
-        finally:
-            os.chmod(tmp_root, 0o755)
+            print(f"[ECHEC_GLOBAL] Exception dans {name}: {str(e)}")
+            return 1
 
-    print("[ALL TESTS PASSED]")
-    sys.exit(0)
+    print("[SUCCES_GLOBAL] Tous les cas passes")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

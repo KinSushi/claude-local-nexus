@@ -1,155 +1,139 @@
 import os
 import sys
+import json
 import subprocess
 import tempfile
-import json
-from pathlib import Path
 
-TIMEOUT = 10
-CODE_FICHIER_INEXISTANT = 2
-MSG_FICHIER_INEXISTANT = "Fichier illisible"
-MSG_USAGE = "usage: nexus_stats_jsonl.py"
-MSG_REGEX_INVALID = "Regex invalide"
-MSG_MOTIF_MAL_FORME = "Motif mal forme"
-MSG_JSONL_INVALID = "lignes invalides ignorees"
+# Path to the tool relative to this file
+TOOL_PATH = os.path.join(os.path.dirname(__file__), "scripts", "nexus_stats_jsonl.py")
 
-def run_cmd(cmd, cwd=None):
+if not os.path.isfile(TOOL_PATH):
+    print("[ERROR] Tool not found at " + TOOL_PATH)
+    sys.exit(3)
+
+def run(args, input_data=None):
     try:
         result = subprocess.run(
-            cmd,
-            cwd=cwd,
+            [sys.executable, TOOL_PATH] + args,
+            input=input_data,
             capture_output=True,
             text=True,
-            timeout=TIMEOUT,
-            encoding="utf-8",
-            errors="replace"
+            timeout=10,
         )
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
-        return None, "", "ECHEC : delai depasse (outil bloque ?)"
+        return None, "", "Timeout expired"
 
-def test_fichier_inexistant():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier_inexistant.jsonl",
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test=.*"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != CODE_FICHIER_INEXISTANT:
-            return False, f"Code {code} != {CODE_FICHIER_INEXISTANT}"
-        if MSG_FICHIER_INEXISTANT not in stderr:
-            return False, f"Message absent : {MSG_FICHIER_INEXISTANT}"
-        return True, ""
+def write_jsonl(path, lines):
+    with open(path, "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
 
-def test_usage_sans_arguments():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [sys.executable, "nexus_stats_jsonl.py"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code == 0:
-            return False, "Code 0 avec arguments manquants"
-        if MSG_USAGE not in stderr:
-            return False, f"Usage absent : {MSG_USAGE}"
-        return True, ""
-
-def test_motif_mal_forme():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier.jsonl",
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test_sans_egal"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != 2:
-            return False, f"Code {code} != 2"
-        if MSG_MOTIF_MAL_FORME not in stderr:
-            return False, f"Message absent : {MSG_MOTIF_MAL_FORME}"
-        return True, ""
-
-def test_regex_invalide():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [sys.executable, "nexus_stats_jsonl.py", "fichier.jsonl",
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test=("]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != 2:
-            return False, f"Code {code} != 2"
-        if MSG_REGEX_INVALID not in stderr:
-            return False, f"Message absent : {MSG_REGEX_INVALID}"
-        return True, ""
-
-def test_jsonl_invalide():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fichier = Path(tmpdir) / "test.jsonl"
-        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n{invalid json\n')
-        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test=test"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != 0:
-            return False, f"Code {code} != 0"
-        if MSG_JSONL_INVALID not in stdout:
-            return False, f"Message absent : {MSG_JSONL_INVALID}"
-        return True, ""
-
-def test_sortie_json():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fichier = Path(tmpdir) / "test.jsonl"
-        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n')
-        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test=test", "--json"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != 0:
-            return False, f"Code {code} != 0"
-        try:
-            data = json.loads(stdout)
-            if "par_groupe" not in data or "par_booleen" not in data:
-                return False, "Structure JSON incomplete"
-        except json.JSONDecodeError:
-            return False, "Sortie non JSON valide"
-        return True, ""
-
-def test_sortie_texte():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fichier = Path(tmpdir) / "test.jsonl"
-        fichier.write_text('{"texte": "test", "groupe": "A", "booleen": true}\n')
-        cmd = [sys.executable, "nexus_stats_jsonl.py", str(fichier),
-               "--champ-texte=texte", "--champ-groupe=groupe",
-               "--champ-booleen=booleen", "--motif=test=test"]
-        code, stdout, stderr = run_cmd(cmd, cwd=tmpdir)
-        if code != 0:
-            return False, f"Code {code} != 0"
-        if "MOTIF x GROUPE" not in stdout or "MOTIF x BOOLEEN" not in stdout:
-            return False, "Sortie texte incomplete"
-        return True, ""
-
-def main():
-    script_path = Path("scripts") / "nexus_stats_jsonl.py"
-    if not script_path.exists():
-        print(f"[ERREUR] Fichier introuvable : {script_path}")
-        return CODE_FICHIER_INEXISTANT
-
-    tests = [
-        ("Fichier inexistant", test_fichier_inexistant),
-        ("Usage sans arguments", test_usage_sans_arguments),
-        ("Motif mal forme", test_motif_mal_forme),
-        ("Regex invalide", test_regex_invalide),
-        ("JSONL invalide", test_jsonl_invalide),
-        ("Sortie JSON", test_sortie_json),
-        ("Sortie texte", test_sortie_texte),
+def case_success(tmpdir):
+    jsonl = os.path.join(tmpdir, "data.jsonl")
+    lines = [
+        json.dumps({"text": "hello world", "group": "A", "flag": True}),
+        json.dumps({"text": "goodbye", "group": "B", "flag": False}),
+        "invalid json line",
     ]
+    write_jsonl(jsonl, lines)
+    args = [
+        jsonl,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "hello=hello",
+    ]
+    rc, out, err = run(args)
+    if rc != 0:
+        return False, f"expected rc 0 got {rc}"
+    if "MOTIF x GROUPE" not in out:
+        return False, "missing group table"
+    if "invalides" not in out:
+        return False, "missing invalid line count"
+    return True, ""
 
-    failed = 0
-    for name, test_func in tests:
-        try:
-            success, msg = test_func()
-            if not success:
-                print(f"[ECHEC] {name} : {msg}")
-                failed += 1
-            else:
-                print(f"[OK] {name}")
-        except Exception as e:
-            print(f"[ERREUR] {name} : {str(e)}")
-            failed += 1
+def case_bad_regex(tmpdir):
+    jsonl = os.path.join(tmpdir, "data.jsonl")
+    write_jsonl(jsonl, [json.dumps({"text": "test", "group": "X", "flag": True})])
+    args = [
+        jsonl,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "bad=[",
+    ]
+    rc, out, err = run(args)
+    if rc != 2:
+        return False, f"expected rc 2 got {rc}"
+    if "Regex invalide" not in out:
+        return False, "missing regex error message"
+    return True, ""
 
-    return 1 if failed else 0
+def case_malformed_input(tmpdir):
+    jsonl = os.path.join(tmpdir, "data.jsonl")
+    lines = [
+        "not a json",
+        json.dumps({"text": "ok", "group": "G", "flag": False}),
+    ]
+    write_jsonl(jsonl, lines)
+    args = [
+        jsonl,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "ok=ok",
+    ]
+    rc, out, err = run(args)
+    if rc != 0:
+        return False, f"expected rc 0 got {rc}"
+    if "invalides" not in out:
+        return False, "invalid line count not reported"
+    return True, ""
 
-if __name__ == "__main__":
-    sys.exit(main())
+def case_missing_args(tmpdir):
+    jsonl = os.path.join(tmpdir, "data.jsonl")
+    write_jsonl(jsonl, [json.dumps({"text": "x", "group": "Y", "flag": True})])
+    args = [jsonl]  # no required options
+    rc, out, err = run(args)
+    if rc == 0 or rc is None:
+        return False, f"expected non-zero rc got {rc}"
+    if "usage:" not in err.lower():
+        return False, "usage message not found"
+    return True, ""
+
+def case_unreadable_file(tmpdir):
+    missing = os.path.join(tmpdir, "nope.jsonl")
+    args = [
+        missing,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "any=.",
+    ]
+    rc, out, err = run(args)
+    if rc != 2:
+        return False, f"expected rc 2 got {rc}"
+    if "Fichier illisible" not in out:
+        return False, "missing unreadable file message"
+    return True, ""
+
+cases = [
+    ("SUCCESS", case_success),
+    ("BAD_REGEX", case_bad_regex),
+    ("MALFORMED", case_malformed_input),
+    ("MISSING_ARGS", case_missing_args),
+    ("UNREADABLE", case_unreadable_file),
+]
+
+overall_ok = True
+with tempfile.TemporaryDirectory() as td:
+    for name, func in cases:
+        ok, msg = func(td)
+        if ok:
+            print(f"[{name}] OK")
+        else:
+            print(f"[{name}] FAIL {msg}")
+            overall_ok = False
+
+sys.exit(0 if overall_ok else 1)

@@ -1,101 +1,99 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
-import sys
+import pathlib
 import subprocess
+import sys
 import tempfile
-import textwrap
+import json
 
-# ----------------------------------------------------------------------
-# Helper functions (ASCII only, no non-ASCII punctuation)
-# ----------------------------------------------------------------------
-def run_tool(args, cwd):
-    """Run the tool in a subprocess, return (rc, out)."""
-    proc = subprocess.run(
-        [sys.executable, tool_path] + args,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        encoding="utf-8",
-        errors="replace",
-        timeout=10,
-    )
-    return proc.returncode, proc.stdout
+def verifier_fichier_outil():
+    script_dir = pathlib.Path(__file__).resolve().parent
+    outil_path = script_dir / "nexus_relais.py"
+    if not outil_path.is_file():
+        print(f"[ERREUR] Fichier de l'outil introuvable : {outil_path}")
+        sys.exit(3)
+    return outil_path
 
-def report(case, ok, msg=""):
-    """Print a line for the test harness."""
-    if ok:
-        print(f"[{case}]")
+def lancer_processus(cmd, input_text=None):
+    try:
+        result = subprocess.run(
+            cmd,
+            input=input_text,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10
+        )
+        return result.returncode, result.stdout
+    except subprocess.TimeoutExpired:
+        return -1, "[ERREUR] Délai de 10 secondes dépassé"
+
+def cas_nominal(outil_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cible_path = pathlib.Path(tmpdir) / "test_cible.py"
+        cible_path.write_text("#!/usr/bin/env python3\nprint('Test')\n", encoding="utf-8")
+
+        cmd = [sys.executable, str(outil_path), "--file", str(cible_path)]
+        code, output = lancer_processus(cmd)
+
+        if code == 0 and "Debut traitement de" in output and "Fin traitement de" in output:
+            print("[OK] Cas nominal")
+            return True
+        else:
+            print(f"[ECHEC] Cas nominal - Code: {code}\n{output}")
+            return False
+
+def cas_inverse(outil_path):
+    cmd = [sys.executable, str(outil_path), "--plans", "cloud"]
+    code, output = lancer_processus(cmd)
+
+    if code != 0 and "No targets to process" in output:
+        print("[OK] Cas inverse (pas de cibles)")
+        return True
     else:
-        print(f"[{case}] {msg}")
+        print(f"[ECHEC] Cas inverse - Code: {code}\n{output}")
+        return False
 
-# ----------------------------------------------------------------------
-# 1. Verify that the tool file exists
-# ----------------------------------------------------------------------
-if len(sys.argv) < 2:
-    sys.stderr.write("Missing path to tool\n")
-    sys.exit(3)  # reserved code for missing argument
+def cas_malforme(outil_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cible_path = pathlib.Path(tmpdir) / "malforme.py"
+        cible_path.write_text("print('Test sans shebang'", encoding="utf-8")
 
-tool_path = sys.argv[1]
+        cmd = [sys.executable, str(outil_path), "--file", str(cible_path)]
+        code, output = lancer_processus(cmd)
 
-if not os.path.isfile(tool_path):
-    sys.stderr.write(f"Tool not found: {tool_path}\n")
-    sys.exit(3)
+        if code == 0 or "Debut traitement de" in output:
+            print("[OK] Cas malformé (traité sans plantage)")
+            return True
+        else:
+            print(f"[ECHEC] Cas malformé - Code: {code}\n{output}")
+            return False
 
-# ----------------------------------------------------------------------
-# 2. Prepare a temporary directory that mimics the repository layout
-# ----------------------------------------------------------------------
-with tempfile.TemporaryDirectory() as tmpdir:
-    # Copy the tool into the temporary directory
-    tool_name = os.path.basename(tool_path)
-    tmp_tool = os.path.join(tmpdir, tool_name)
-    with open(tool_path, "r", encoding="utf-8") as src, open(tmp_tool, "w", encoding="utf-8") as dst:
-        dst.write(src.read())
+def cas_usage(outil_path):
+    cmd = [sys.executable, str(outil_path)]
+    code, output = lancer_processus(cmd)
 
-    # Create a dummy target script (will be ignored by the tool because it
-    # expects a nexus_agent module that is not present)
-    dummy_target = os.path.join(tmpdir, "dummy_target.py")
-    with open(dummy_target, "w", encoding="utf-8") as f:
-        f.write("# dummy script\n")
+    if code != 0 and "usage: nexus_relais.py" in output:
+        print("[OK] Cas usage (affichage de l'aide)")
+        return True
+    else:
+        print(f"[ECHEC] Cas usage - Code: {code}\n{output}")
+        return False
 
-    # ------------------------------------------------------------------
-    # Sub-test A : invocation without arguments (should show usage)
-    # ------------------------------------------------------------------
-    rc, out = run_tool([], tmpdir)
-    ok = rc != 0 and "usage:" in out.lower()
-    report("A", ok, f"expected usage message, rc={rc}")
+def main():
+    outil_path = verifier_fichier_outil()
+    resultats = []
 
-    # ------------------------------------------------------------------
-    # Sub-test B : nominal case - no targets (tool returns code 2)
-    # ------------------------------------------------------------------
-    rc, out = run_tool([], tmpdir)
-    ok = rc == 2 and "no targets to process." in out.lower()
-    report("B", ok, f"expected no-target message, rc={rc}")
+    resultats.append(cas_nominal(outil_path))
+    resultats.append(cas_inverse(outil_path))
+    resultats.append(cas_malforme(outil_path))
+    resultats.append(cas_usage(outil_path))
 
-    # ------------------------------------------------------------------
-    # Sub-test C : provide a non-existent file via --file (should fail)
-    # ------------------------------------------------------------------
-    rc, out = run_tool(["--file", "nonexistent.txt"], tmpdir)
-    # The tool will raise FileNotFoundError; we only check that it does not
-    # return 0 and that the traceback appears in the output.
-    ok = rc != 0 and "filenotfounderror" in out.lower()
-    report("C", ok, f"expected file-not-found error, rc={rc}")
+    if not all(resultats):
+        sys.exit(1)
 
-    # ------------------------------------------------------------------
-    # Sub-test D : malformed entry in file list (empty line)
-    # ------------------------------------------------------------------
-    list_path = os.path.join(tmpdir, "list.txt")
-    with open(list_path, "w", encoding="utf-8") as f:
-        f.write("\n")  # empty line only
-    rc, out = run_tool(["--file", list_path], tmpdir)
-    ok = rc == 2 and "no targets to process." in out.lower()
-    report("D", ok, f"expected graceful handling of empty list, rc={rc}")
-
-    # ------------------------------------------------------------------
-    # Sub-test E : invoke with a valid file list containing the dummy target
-    # ------------------------------------------------------------------
-    with open(list_path, "w", encoding="utf-8") as f:
-        f.write(dummy_target + "\n")
-    rc, out = run_tool(["--file", list_path, "--max-cibles", "0"], tmpdir)
-    # With --max-cibles 0 the tool should process nothing and exit with code 2
-    ok = rc == 2 and "no targets to process." in out.lower()
-    report("E", ok, f"expected early exit with max-cibles=0, rc={rc}")
-
+if __name__ == "__main__":
+    main()

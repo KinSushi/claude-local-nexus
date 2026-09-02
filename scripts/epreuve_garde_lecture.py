@@ -1,183 +1,183 @@
 #!/usr/bin/env python3
-# -*- coding: ascii -*-
-"""
-Test script for scripts/nexus_garde_lecture.py
-
-It extracts the public interface of the guard script and runs a series of
-subprocess checks.  All output lines start with a bracketed tag.  The script
-exits with code 0 if all checks pass, otherwise with a non-zero code.
-"""
+# -*- coding: utf-8 -*-
 
 import json
 import os
-import sys
 import subprocess
+import sys
 import tempfile
+import time
 
-# ----------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------
-TOOL_PATH = os.path.join("scripts", "nexus_garde_lecture.py")
-RESERVED_EXIT = 2          # exit code used when the tool file is missing
-TIMEOUT = 10               # seconds for each subprocess call
+def verifier_fichier_outil():
+    chemin_outil = os.path.join("scripts", "nexus_garde_lecture.py")
+    if not os.path.exists(chemin_outil):
+        print(f"[ERREUR] Fichier de l'outil introuvable : {chemin_outil}")
+        sys.exit(3)
 
-# ----------------------------------------------------------------------
-# Helper functions
-# ----------------------------------------------------------------------
-def report(tag, message="", fail=False):
-    """Print a line with a tag.  If fail is True, exit with non-zero."""
-    line = "[%s] %s" % (tag, message)
-    print(line)
-    if fail:
+def lancer_epreuve(cas, entree, attendu, code_attendu=None):
+    with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8", delete=False) as f_entree:
+        json.dump(entree, f_entree)
+        f_entree.flush()
+
+        try:
+            cmd = [sys.executable, os.path.join("scripts", "nexus_garde_lecture.py")]
+            debut = time.time()
+            resultat = subprocess.run(
+                cmd,
+                stdin=open(f_entree.name, "r", encoding="utf-8"),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            duree = time.time() - debut
+        except subprocess.TimeoutExpired:
+            print(f"[{cas}] ECHEC - Timeout apres {duree:.1f}s")
+            os.unlink(f_entree.name)
+            return False
+        finally:
+            os.unlink(f_entree.name)
+
+    if code_attendu is not None and resultat.returncode != code_attendu:
+        print(f"[{cas}] ECHEC - Code retour {resultat.returncode}, attendu {code_attendu}")
+        return False
+
+    if attendu is None:
+        return True
+
+    try:
+        sortie = json.loads(resultat.stdout)
+    except json.JSONDecodeError:
+        print(f"[{cas}] ECHEC - Sortie non JSON : {resultat.stdout}")
+        return False
+
+    if "hookSpecificOutput" not in sortie:
+        print(f"[{cas}] ECHEC - Structure de sortie inattendue : {resultat.stdout}")
+        return False
+
+    motif = sortie["hookSpecificOutput"].get("permissionDecisionReason", "")
+    if attendu not in motif:
+        print(f"[{cas}] ECHEC - Motif absent : {motif}")
+        return False
+
+    return True
+
+def creer_fichier_test():
+    with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8", delete=False) as f:
+        f.write("contenu test")
+        return f.name
+
+def main():
+    verifier_fichier_outil()
+
+    # Cas 1 : Ecriture legitime (fichier lu puis ecrit)
+    fichier_test = creer_fichier_test()
+    try:
+        entree_lecture = {
+            "tool_name": "Read",
+            "tool_input": {"file_path": fichier_test},
+            "session_id": "session1"
+        }
+        if not lancer_epreuve("LECTURE", entree_lecture, None):
+            print("[LECTURE] ECHEC")
+            sys.exit(1)
+
+        entree_ecriture = {
+            "tool_name": "Write",
+            "tool_input": {"file_path": fichier_test},
+            "session_id": "session1"
+        }
+        if not lancer_epreuve("ECRITURE_LEGITIME", entree_ecriture, None):
+            print("[ECRITURE_LEGITIME] ECHEC")
+            sys.exit(1)
+        print("[ECRITURE_LEGITIME] OK")
+    finally:
+        os.unlink(fichier_test)
+
+    # Cas 2 : Ecriture refusee (fichier non lu)
+    fichier_test = creer_fichier_test()
+    try:
+        entree_refus = {
+            "tool_name": "Write",
+            "tool_input": {"file_path": fichier_test},
+            "session_id": "session2"
+        }
+        if not lancer_epreuve("REFUS", entree_refus, "REFUS -- LIRE AVANT D'ECRIRE"):
+            print("[REFUS] ECHEC")
+            sys.exit(1)
+        print("[REFUS] OK")
+    finally:
+        os.unlink(fichier_test)
+
+    # Cas 3 : Creation de fichier (autorisee sans lecture)
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        fichier_inexistant = f.name
+    try:
+        entree_creation = {
+            "tool_name": "Write",
+            "tool_input": {"file_path": fichier_inexistant},
+            "session_id": "session3"
+        }
+        if not lancer_epreuve("CREATION", entree_creation, None):
+            print("[CREATION] ECHEC")
+            sys.exit(1)
+        print("[CREATION] OK")
+    finally:
+        if os.path.exists(fichier_inexistant):
+            os.unlink(fichier_inexistant)
+
+    # Cas 4 : Outil non gere (ne doit rien faire)
+    entree_inconnu = {
+        "tool_name": "UnknownTool",
+        "tool_input": {"file_path": "dummy.txt"},
+        "session_id": "session4"
+    }
+    if not lancer_epreuve("OUTIL_INCONNU", entree_inconnu, None):
+        print("[OUTIL_INCONNU] ECHEC")
+        sys.exit(1)
+    print("[OUTIL_INCONNU] OK")
+
+    # Cas 5 : Entree malformee (ne doit rien faire)
+    if not lancer_epreuve("ENTREE_MALFORMEE", "texte non json", None):
+        print("[ENTREE_MALFORMEE] ECHEC")
+        sys.exit(1)
+    print("[ENTREE_MALFORMEE] OK")
+
+    # Cas 6 : Appel sans arguments requis (doit rendre usage)
+    try:
+        cmd = [sys.executable, os.path.join("scripts", "nexus_garde_lecture.py")]
+        resultat = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        if resultat.returncode == 0:
+            print("[USAGE] ECHEC - Code retour 0 au lieu de non nul")
+            sys.exit(1)
+        print("[USAGE] OK")
+    except subprocess.TimeoutExpired:
+        print("[USAGE] ECHEC - Timeout")
         sys.exit(1)
 
-def read_interface(path):
-    """
-    Parse the guard script and return a dictionary with:
-    - options: list of command line options (none for this script)
-    - args_order: list of expected JSON fields in order of use
-    - return_codes: set of exit codes that can be produced
-    - stdout_markers: strings that appear on stdout
-    - stderr_markers: strings that appear on stderr
-    """
-    options = []
-    args_order = ["tool_name", "tool_input", "session_id"]
-    return_codes = {0}
-    stdout_markers = ["hookSpecificOutput"]
-    stderr_markers = []   # script never writes to stderr
-    return {
-        "options": options,
-        "args_order": args_order,
-        "return_codes": return_codes,
-        "stdout_markers": stdout_markers,
-        "stderr_markers": stderr_markers,
+    # Cas 7 : Commande shell avec redirection (journalisation)
+    entree_shell = {
+        "tool_name": "Bash",
+        "tool_input": {"command": f"echo test > {tempfile.gettempdir()}/test_shell.txt"},
+        "session_id": "session5"
     }
+    if not lancer_epreuve("SHELL_JOURNAL", entree_shell, None):
+        print("[SHELL_JOURNAL] ECHEC")
+        sys.exit(1)
 
-def run_tool(input_json):
-    """
-    Execute the guard script with the given JSON input.
-    Returns (returncode, stdout, stderr).
-    """
-    try:
-        proc = subprocess.run(
-            [sys.executable, TOOL_PATH],
-            input=json.dumps(input_json).encode("utf-8"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=TIMEOUT,
-        )
-        return proc.returncode, proc.stdout.decode("utf-8"), proc.stderr.decode("utf-8")
-    except subprocess.TimeoutExpired:
-        return None, "", "timeout"
+    # Verifier que le journal a ete ecrit
+    journal_path = os.path.join("scripts", "..", ".nexus", "ecritures_shell.jsonl")
+    if not os.path.exists(journal_path):
+        print("[SHELL_JOURNAL] ECHEC - Fichier journal non cree")
+        sys.exit(1)
 
-def write_temp_file(dir_path, name, content=""):
-    """Create a temporary file in dir_path with the given name and content."""
-    path = os.path.join(dir_path, name)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
-    return path
+    with open(journal_path, "r", encoding="utf-8") as f:
+        lignes = f.readlines()
+        if not any("test_shell.txt" in ligne for ligne in lignes):
+            print("[SHELL_JOURNAL] ECHEC - Commande non journalisee")
+            sys.exit(1)
+    print("[SHELL_JOURNAL] OK")
 
-# ----------------------------------------------------------------------
-# Main test logic
-# ----------------------------------------------------------------------
-def main():
-    # 1. Verify that the tool file exists
-    if not os.path.isfile(TOOL_PATH):
-        report("FAIL", "Tool not found: %s" % TOOL_PATH, fail=True)
-
-    # 2. Extract interface description
-    iface = read_interface(TOOL_PATH)
-    report("INFO", "Interface extracted")
-
-    # 3. Prepare a temporary session directory
-    with tempfile.TemporaryDirectory() as tmpdir:
-        session_id = "testsession"
-
-        # 3a. Nominal case: read then edit an existing file
-        existing_path = write_temp_file(tmpdir, "file.txt", "initial")
-        # Simulate a Read operation to register the file as read
-        read_input = {
-            "tool_name": "Read",
-            "tool_input": {"file_path": existing_path},
-            "session_id": session_id,
-        }
-        rc, out, err = run_tool(read_input)
-        if rc != 0 or out or err:
-            report("FAIL", "Read step unexpected output", fail=True)
-        # Now attempt an Edit operation, which should be allowed (no output)
-        edit_input = {
-            "tool_name": "Edit",
-            "tool_input": {"file_path": existing_path},
-            "session_id": session_id,
-        }
-        rc, out, err = run_tool(edit_input)
-        if rc != 0:
-            report("FAIL", "Edit step non-zero exit", fail=True)
-        if out.strip():
-            report("FAIL", "Edit step produced stdout when none expected", fail=True)
-        if err.strip():
-            report("FAIL", "Edit step produced stderr when none expected", fail=True)
-        report("OK", "Nominal edit allowed")
-
-        # 3b. Inverse case: edit without prior read
-        new_path = os.path.join(tmpdir, "newfile.txt")
-        edit_no_read = {
-            "tool_name": "Edit",
-            "tool_input": {"file_path": new_path},
-            "session_id": session_id,
-        }
-        rc, out, err = run_tool(edit_no_read)
-        if rc != 0:
-            report("FAIL", "Edit without read non-zero exit", fail=True)
-        if not any(m in out for m in iface["stdout_markers"]):
-            report("FAIL", "Edit without read did not produce expected stdout marker", fail=True)
-        if err.strip():
-            report("FAIL", "Edit without read produced stderr", fail=True)
-        report("OK", "Refusal on unwatched edit detected")
-
-        # 3c. Creation of a new file (should be allowed, no output)
-        create_path = os.path.join(tmpdir, "created.txt")
-        create_input = {
-            "tool_name": "Edit",
-            "tool_input": {"file_path": create_path},
-            "session_id": session_id,
-        }
-        rc, out, err = run_tool(create_input)
-        if rc != 0:
-            report("FAIL", "Create step non-zero exit", fail=True)
-        if out.strip():
-            report("FAIL", "Create step produced stdout", fail=True)
-        if err.strip():
-            report("FAIL", "Create step produced stderr", fail=True)
-        report("OK", "Creation of new file allowed")
-
-        # 3d. Malformed input (missing tool_name)
-        malformed_input = {
-            "tool_input": {"file_path": existing_path},
-            "session_id": session_id,
-        }
-        rc, out, err = run_tool(malformed_input)
-        if rc != 0:
-            report("FAIL", "Malformed input non-zero exit", fail=True)
-        if out.strip():
-            report("FAIL", "Malformed input produced stdout", fail=True)
-        if err.strip():
-            report("FAIL", "Malformed input produced stderr", fail=True)
-        report("OK", "Malformed input handled gracefully")
-
-        # 3e. Empty JSON (no arguments) - should produce no output
-        empty_input = {}
-        rc, out, err = run_tool(empty_input)
-        if rc != 0:
-            report("FAIL", "Empty input non-zero exit", fail=True)
-        if out.strip():
-            report("FAIL", "Empty input produced stdout", fail=True)
-        if err.strip():
-            report("FAIL", "Empty input produced stderr", fail=True)
-        report("OK", "Empty input handled gracefully")
-
-    report("ALL", "All tests passed")
-    sys.exit(0)
+    print("[TOUS_CAS_OK]")
 
 if __name__ == "__main__":
     main()

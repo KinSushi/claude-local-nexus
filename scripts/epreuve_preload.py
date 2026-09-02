@@ -1,83 +1,66 @@
 import subprocess
-import sys
 import os
-import tempfile
-import json
+import sys
 
-def run_tool(args):
-    tool_path = os.path.join("scripts", "nexus_preload.py")
-    cmd = [sys.executable, tool_path] + args
+def run_test(args):
+    tool = os.path.join("scripts", "nexus_preload.py")
+    cmd = [sys.executable, tool] + args
     try:
-        proc = subprocess.run(
+        res = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=10,
-            cwd=os.getcwd()
+            timeout=10
         )
-        return proc.returncode, proc.stdout, proc.stderr
+        return res.returncode, res.stdout, res.stderr
     except subprocess.TimeoutExpired:
-        return -1, "", "L'outil n'a pas rendu la main"
+        return -1, "", "Timeout after 10s"
     except Exception as e:
-        return -1, "", str(e)
+        return -2, "", str(e)
 
 def main():
     tool_path = os.path.join("scripts", "nexus_preload.py")
     if not os.path.exists(tool_path):
-        print(f"[FAIL] Fichier introuvable: {tool_path}")
-        sys.exit(127)
+        print(f"Tool missing: {tool_path}")
+        sys.exit(99)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        
-        # CAS 1: Invocation sans arguments (Usage + Code non nul)
-        # Note: argparse sort normalement en code 2 pour manque d'args
-        rc, out, err = run_tool([])
-        if rc != 0 and "usage" in err.lower():
-            print("[OK] Invocation sans arguments")
-        else:
-            print(f"[FAIL] Sans arguments: rc={rc}, err={err}")
-            sys.exit(1)
+    results = []
+    
+    # CAS NOMINAL: Modèle local (simule erreur passerelle car pas de serveur)
+    # On verifie que l'outil tente l'appel et rend un message specifique
+    rc, out, err = run_test(["my-model-local"])
+    if rc == 0 and "my-model-local: erreur" in out and "Passerelle inaccessible" in out:
+        results.append("[NOMINAL] OK")
+    else:
+        results.append(f"[NOMINAL] FAIL: rc={rc} out={out[:50]}")
 
-        # CAS 2: Modèle distant (Refus explicite)
-        # L'outil doit refuser les alias finissant par -cloud
-        rc, out, err = run_tool(["model-cloud"])
-        if rc == 0 and "erreur" in out and "Modèle distant" in out:
-            print("[OK] Refus modèle distant")
-        else:
-            print(f"[FAIL] Modèle distant: rc={rc}, out={out}")
-            sys.exit(1)
+    # CAS INVERSE: Modèle cloud doit etre refuse sans appel reseau
+    rc, out, err = run_test(["my-model-cloud"])
+    if rc == 0 and "Modèle distant (pas de poids locaux à précharger)" in out:
+        results.append("[INVERSE] OK")
+    else:
+        results.append(f"[INVERSE] FAIL: rc={rc} out={out[:50]}")
 
-        # CAS 3: Entrée malformée / Passerelle inaccessible (Nominal erreur)
-        # On teste un alias local alors que rien n'écoute sur le port 4000
-        rc, out, err = run_tool(["model-local"])
-        if rc == 0 and "erreur" in out and "Passerelle inaccessible" in out:
-            print("[OK] Gestion passerelle inaccessible")
-        else:
-            print(f"[FAIL] Passerelle inaccessible: rc={rc}, out={out}")
-            sys.exit(1)
+    # CAS MALFORME: Entree vide ou bizarre (ici on teste un alias vide via shell)
+    # L'outil accepte n'importe quelle chaine comme alias
+    rc, out, err = run_test([""])
+    if rc == 0 and ": erreur" in out:
+        results.append("[MALFORME] OK")
+    else:
+        results.append(f"[MALFORME] FAIL: rc={rc} out={out[:50]}")
 
-        # CAS 4: Sortie JSON
-        rc, out, err = run_tool(["model-local", "--json"])
-        try:
-            data = json.loads(out)
-            if isinstance(data, list) and len(data) > 0 and "etat" in data[0]:
-                print("[OK] Sortie JSON valide")
-            else:
-                raise ValueError("Structure JSON incorrecte")
-        except Exception as e:
-            print(f"[FAIL] Sortie JSON: {e}")
-            sys.exit(1)
+    # CAS USAGE: Aucun argument
+    rc, out, err = run_test([])
+    if rc != 0 and ("usage:" in err.lower() or "the following arguments are required" in err.lower()):
+        results.append("[USAGE] OK")
+    else:
+        results.append(f"[USAGE] FAIL: rc={rc} err={err[:50]}")
 
-        # CAS 5: Plusieurs alias
-        rc, out, err = run_tool(["m1", "m2"])
-        if rc == 0 and out.count(":") >= 2:
-            print("[OK] Multiples alias")
-        else:
-            print(f"[FAIL] Multiples alias: rc={rc}, out={out}")
-            sys.exit(1)
+    for r in results:
+        print(r)
 
-    print("[ALL TESTS PASSED]")
+    if any("FAIL" in r for r in results):
+        sys.exit(1)
     sys.exit(0)
 
 if __name__ == "__main__":

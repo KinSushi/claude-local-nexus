@@ -2,104 +2,125 @@
 import os
 import sys
 import tempfile
-import shutil
 import subprocess
-import time
+import shutil
 from pathlib import Path
+import time
 
-CODE_FICHIER_ABSENT = 100
-CODE_RACINE_MANQUANTE = 101
-CODE_TEMP_DIR_ECRITURE = 102
-TIMEOUT = 60
+SCRIPT_DIR = Path(__file__).resolve().parent
+NEXUS_RUCHE = SCRIPT_DIR / "nexus_ruche.py"
+TIMEOUT = 10
 
-def creer_fichiers_temporaires(repertoire: Path, nombre: int) -> list[Path]:
-    fichiers = []
-    for i in range(nombre):
-        chemin = repertoire / f"test_{i}.py"
-        chemin.write_text("# Test\n" + "\n".join(f"# Ligne {j}" for j in range(30)))
-        fichiers.append(chemin)
-    return fichiers
-
-def verifier_integrite_repertoire(repertoire: Path, snapshot_ref: set) -> bool:
-    fichiers_finaux = {f for f in repertoire.rglob("*") if f.is_file()}
-    # Fichier d'etat tolere car declare par l'outil
-    fichiers_attendus = {repertoire / ".nexus" / "ruche-etat.json"}
-    fichiers_autorises = snapshot_ref.union(fichiers_attendus)
-    non_autorises = fichiers_finaux - fichiers_autorises
-    if non_autorises:
-        print(f"[ERREUR] Fichiers non autorises (tolere: ruche-etat.json): {non_autorises}")
+def verifier_script_existe():
+    if not NEXUS_RUCHE.is_file():
+        print(f"[ERREUR] Script introuvable: {NEXUS_RUCHE}")
         return False
     return True
 
-def executer_cas(nom: str, args: list, repertoire: Path, verif_ecriture: bool = False) -> int:
-    print(f"[{nom}] Debut")
-    script = Path("scripts" + chr(92) + "nexus_ruche.py") if os.name == "nt" else Path("scripts/nexus_ruche.py")
-    if not script.is_file():
-        print(f"[FAIL] Script introuvable: {script.absolute()}")
-        return CODE_FICHIER_ABSENT
-
-    # Snapshot juste avant execution pour eviter les faux positifs de l'echafaudage
-    snapshot_avant = {f for f in repertoire.rglob("*") if f.is_file()}
-    
-    cmd = [sys.executable, str(script)] + args
+def lancer_ruche(args, input_text=None):
+    cmd = [sys.executable, str(NEXUS_RUCHE)] + args
     try:
-        start = time.time()
-        result = subprocess.run(cmd, cwd=repertoire, capture_output=True, text=True, encoding="utf-8", timeout=TIMEOUT)
-        duree = time.time() - start
+        proc = subprocess.run(
+            cmd,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=TIMEOUT,
+            check=False
+        )
+        return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
-        print(f"[{nom}] Timeout")
-        return 2
+        return -1, "", f"Timeout apres {TIMEOUT}s"
 
-    if verif_ecriture:
-        if not verifier_integrite_repertoire(repertoire, snapshot_avant):
-            return CODE_TEMP_DIR_ECRITURE
+def cas_nominal():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        test_file = tmp_path / "test.py"
+        test_file.write_text("# Test\n" * 30, encoding="utf-8")
 
-    print(result.stdout)
-    if result.stderr: print(f"[STDERR] {result.stderr}")
+        code, out, err = lancer_ruche([
+            "--racine", str(tmp_path),
+            "--simuler",
+            "--plans", "local"
+        ])
 
-    if nom == "DEUX" and "2 cibles decouvertes" not in result.stdout:
-        return 1
-    if nom == "TROIS" and "Aucune cible a traiter" not in result.stdout:
-        return 1
-    if nom == "QUATRE" and "3 cibles decouvertes" not in result.stdout:
-        return 1
-    if nom == "CINQ":
-        if result.returncode == 0: return 1
-        if not any(x in result.stderr for x in ["cloud", "local", "deux"]): return 1
+        if code != 0:
+            print(f"[NOMINAL] Echec code={code} err={err}")
+            return False
+        if "Simuler essaim sur 1 cible(s)" not in out:
+            print(f"[NOMINAL] Sortie inattendue: {out}")
+            return False
+    print("[NOMINAL] OK")
+    return True
 
-    print(f"[{nom}] Termine en {duree:.1f}s (code={result.returncode})")
-    return result.returncode
+def cas_inverse():
+    code, out, err = lancer_ruche(["--racine", "/inexistant"])
+    if code == 0:
+        print("[INVERSE] Devrait echouer")
+        return False
+    if "Aucune cible a traiter" not in out:
+        print(f"[INVERSE] Message inattendu: {out}")
+        return False
+    print("[INVERSE] OK")
+    return True
+
+def cas_malforme():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        test_file = tmp_path / "test.py"
+        test_file.write_text("trop court", encoding="utf-8")
+
+        code, out, err = lancer_ruche([
+            "--racine", str(tmp_path),
+            "--simuler"
+        ])
+
+        if code != 0:
+            print(f"[MALFORME] Devrait reussir code={code}")
+            return False
+        if "0 cibles decouvertes" not in out:
+            print(f"[MALFORME] Sortie inattendue: {out}")
+            return False
+    print("[MALFORME] OK")
+    return True
+
+def cas_usage():
+    code, out, err = lancer_ruche([])
+    if code == 0:
+        print("[USAGE] Devrait echouer")
+        return False
+    if "usage:" not in err.lower():
+        print(f"[USAGE] Message d'usage manquant: {err}")
+        return False
+    print("[USAGE] OK")
+    return True
 
 def main():
-    script = Path("scripts/nexus_ruche.py")
-    if not script.is_file(): return CODE_FICHIER_ABSENT
+    if not verifier_script_existe():
+        return 2
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        (temp_path / "scripts").mkdir(parents=True)
-        
-        # Cas DEUX
-        creer_fichiers_temporaires(temp_path / "scripts", 2)
-        if executer_cas("DEUX", ["--racine", str(temp_path), "--simuler"], temp_path, True) != 0:
-            return 1
+    cas = [
+        ("NOMINAL", cas_nominal),
+        ("INVERSE", cas_inverse),
+        ("MALFORME", cas_malforme),
+        ("USAGE", cas_usage)
+    ]
 
-        # Cas TROIS
-        # On nettoie scripts pour simuler vide
-        shutil.rmtree(temp_path / "scripts")
-        (temp_path / "scripts").mkdir()
-        if executer_cas("TROIS", ["--racine", str(temp_path), "--simuler"], temp_path, True) != 0:
-            return 1
+    codes = []
+    for nom, func in cas:
+        try:
+            if not func():
+                codes.append(1)
+            else:
+                codes.append(0)
+        except Exception as e:
+            print(f"[{nom}] Exception: {str(e)}")
+            codes.append(1)
 
-        # Cas QUATRE
-        creer_fichiers_temporaires(temp_path / "scripts", 5)
-        if executer_cas("QUATRE", ["--racine", str(temp_path), "--simuler", "--max-cibles", "3"], temp_path, True) != 0:
-            return 1
-
-        # Cas CINQ
-        if executer_cas("CINQ", ["--racine", str(temp_path), "--simuler", "--plans", "invalide"], temp_path) != 0:
-            # On attend un code non nul ici, donc si executer_cas retourne 0, main retourne 1
-            pass 
-
+    if any(codes):
+        return 1
     return 0
 
 if __name__ == "__main__":

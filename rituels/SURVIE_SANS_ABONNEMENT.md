@@ -207,7 +207,41 @@ python scripts/epreuve_bascule.py          # code 0 attendu
 
 ---
 
-## 6. Le contexte : 8 k par modèle, davantage par découpage
+## 6. ⚠ LE CONTEXTE EST BRIDÉ PAR LE MOTEUR, PAS PAR LES MODÈLES
+
+**Mesuré — c'est la cause la plus probable d'un client qui « répond mais n'appelle pas ses
+outils » :**
+
+| modèle | contexte **natif** | appliqué par défaut |
+| --- | --- | --- |
+| `llama3.2:3b` | **131 072** | 8 192 |
+| `qwen3-coder:30b` | **262 144** | 8 192 |
+| `gemma4:31b` | **262 144** | 8 192 |
+| `qwen3:14b` | 40 960 | 8 192 |
+| `qwen2.5-coder:14b` | 32 768 | 8 192 |
+
+Tous déclarent aussi la capacité `tools`.
+
+**Le remède** — à poser avant de démarrer le moteur :
+
+```powershell
+[Environment]::SetEnvironmentVariable("OLLAMA_CONTEXT_LENGTH", "65536", "User")
+# puis redémarrer Ollama
+```
+
+Le contrat de ce dépôt (§13, §54) fixe **≥ 64 k** pour un client agentique. À 8 192, le prompt
+système et les schémas d'outils saturent la fenêtre avant la question : le modèle tronque et
+perd la structure des appels d'outils — il se met alors à **écrire** `< Write file=... />`
+comme du texte au lieu de l'émettre.
+
+> **RÉSERVE MESURÉE, à lire avant de monter le contexte** : `llama3.2:3b` occupe déjà **16 Go
+> en mémoire pour 2 Go de poids**. Le cache de contexte domine largement le modèle, et monter
+> à 64 k ou 128 k multiplie ce coût. Vérifiez la RAM disponible (`nexus_charge.py`) avant de
+> fixer la valeur globalement.
+
+### Ce qui reste vrai du découpage
+
+
 
 **Mesuré sur cette machine :**
 

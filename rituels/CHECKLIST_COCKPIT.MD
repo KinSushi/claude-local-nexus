@@ -15807,3 +15807,80 @@ classe traquee toute la nuit, transposee a la documentation.
 Le document dit aussi ce qui N'EST PAS prouve : le protocole repond, l'usage agentique complet
 du client n'a pas ete eprouve ; et le rapport de simulation de l'orchestrateur reste
 indiscernable d'un rapport reel.
+
+### 115.96 LE CONTEXTE EST BRIDE PAR LE MOTEUR, PAS PAR LES MODELES — la vraie cause
+
+**Trouve en cherchant pourquoi le client de l'operateur ecrivait ses appels d'outils au lieu
+de les emettre.** La bascule fonctionnait pourtant : banniere `llama3.2:3b`, plus `Claude Max`,
+reponse en 25 s.
+
+**Mesure sur six modeles, tous declarant la capacite `tools` :**
+
+    modele              contexte NATIF   applique par defaut
+    llama3.2:3b            131 072            8 192
+    qwen3-coder:30b        262 144            8 192
+    gemma4:31b             262 144            8 192
+    qwen3:14b               40 960            8 192
+    qwen2.5-coder:14b       32 768            8 192
+
+> **Les modeles ont deja le contexte. Le moteur les bride a 8 192.** Le contrat de ce depot
+> (§13, §54) fixe pourtant **>= 64 k** pour un client agentique. A 8 192, le prompt systeme et
+> les schemas d'outils saturent la fenetre avant la question : le modele tronque, perd la
+> structure des appels, et se met a ECRIRE `< Write file=... />` comme du texte.
+
+Remede : `OLLAMA_CONTEXT_LENGTH=65536` avant demarrage du moteur.
+
+**RESERVE, mesuree** : `llama3.2:3b` occupe deja **16 Go en memoire pour 2 Go de poids**. Le
+cache de contexte domine, et monter a 64 k multiplie ce cout. A verifier contre la RAM
+disponible avant de fixer globalement.
+
+### 115.97 TROIS HYPOTHESES FAUSSES AVANT LA BONNE — et je les compte toutes
+
+Le chemin jusqu'a §115.96 a coute trois hypotheses, toutes **infirmees par la mesure**. Je les
+inscris parce que le contraire — ne garder que celle qui a marche — donnerait l'illusion d'un
+diagnostic direct.
+
+**HYPOTHESE 1 : le modele ne sait pas appeler d'outils.** FAUSSE.
+
+    llama3.2:3b        EMET un vrai tool_use      49.4 s
+    qwen2.5-coder:14b  texte seul                 39.4 s
+    trois autres       TimeoutError a 302 s (machine chargee)
+
+**HYPOTHESE 2 : la capacite declaree suffit a trancher.** FAUSSE, et c'est la classe du depot.
+Les six modeles declarent `tools` via `/api/show`. A l'epreuve, un seul emet. **`capabilities`
+est une declaration, pas une mesure** — deux ensembles confondus, vingt-troisieme occurrence.
+
+**HYPOTHESE 3 : le nombre d'outils sature la fenetre.** FAUSSE aussi :
+
+    1 outil, contexte 8192    TOOL_USE   74.7 s
+    5 outils                  TOOL_USE    4.7 s
+    12 outils                 TOOL_USE    5.4 s
+    12 outils, num_ctx 32768  TOOL_USE    3.2 s
+
+Mes douze faux outils etaient trop petits pour reproduire les schemas reels du client. **Un
+temoin qui ne reproduit pas les conditions ne refute rien** — il m'a seulement empeche de
+conclure trop vite dans le mauvais sens.
+
+C'est la mesure du contexte NATIF qui a tranche, et elle ne portait pas sur le tool calling.
+
+### 115.98 IL NE MANQUE AUCUN MODELE CLOUD — 12 sur 12 repondent
+
+L'operateur transmet une analyse affirmant qu'il manque onze modeles cloud a sa stack, avec
+une retractation de son auteur sur l'un d'eux. **Eprouve un par un, sans en croire aucun :**
+
+    kimi-k3:cloud · glm-5.3:cloud · deepseek-v4-pro:cloud · deepseek-v4-flash:cloud
+    mistral-large-3:675b-cloud · nemotron-3-ultra:cloud · nemotron-3-super:cloud
+    minimax-m3:cloud · gpt-oss:120b-cloud · kimi-k2.7-code:cloud
+    qwen3.5:397b-cloud · glm-5.3-flash:cloud
+
+**12 sur 12 REPONDENT.** Y compris `qwen3.5:397b-cloud`, que l'analyse avait **retracte a
+tort** faute de le trouver au catalogue public.
+
+> **`ollama list` n'est pas un inventaire de ce qui est accessible.** Les modeles cloud sont
+> deportes sans telechargement : ils ne figurent pas dans la liste locale et fonctionnent.
+> Conclure d'une absence dans `ollama list` qu'un modele manque, c'est lire un silence comme
+> une absence — la classe de cette nuit, appliquee a un catalogue.
+
+**Nuance mesuree** : la plupart rendent **(vide)** a `max_tokens: 24`. Ce n'est pas un defaut
+du modele mais un budget trop serre, defaut deja connu de ces familles. Seul
+`mistral-large-3` a rendu du contenu — en italien, sur une consigne francaise.

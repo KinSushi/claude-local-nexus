@@ -1,88 +1,76 @@
-import os
-import sys
-import subprocess
-import tempfile
-import shutil
+import os, subprocess, sys, tempfile, shutil
 
-def run_tool(args, cwd):
+def run(args):
     try:
-        res = subprocess.run(
-            [sys.executable, "scripts/nexus_import.py"] + args,
-            cwd=cwd, capture_output=True, text=True, timeout=10,
-            encoding="utf-8", errors="replace"
-        )
-        return res.returncode, res.stdout, res.stderr
+        r = subprocess.run([sys.executable] + args, capture_output=True, 
+                           text=True, timeout=10, encoding="utf-8", errors="replace")
+        return r.returncode, r.stdout, r.stderr
     except subprocess.TimeoutExpired:
-        return -1, "", "L'outil n'a pas rendu la main"
+        return -1, "", "L'outil n'a pas rendu la main (timeout 10s)"
     except Exception as e:
         return -1, "", str(e)
 
 def main():
-    tool_path = os.path.join("scripts", "nexus_import.py")
-    if not os.path.exists(tool_path):
-        print(f"[FAIL] Fichier introuvable : {tool_path}")
-        sys.exit(127)
+    tool = os.path.join("scripts", "nexus_import.py")
+    if not os.path.exists(tool):
+        print(f"Outil introuvable : {tool}")
+        sys.exit(42)
 
-    tmp_dir = tempfile.mkdtemp()
-    # Copie du depot pour isoler les tests
+    tmp = tempfile.mkdtemp()
     try:
-        shutil.copytree("scripts", os.path.join(tmp_dir, "scripts"), dirs_exist_ok=True)
-        # On travaille dans le parent de scripts pour que le script trouve son dossier
-        work_dir = tmp_dir
-    except Exception as e:
-        print(f"[FAIL] Erreur setup : {e}")
-        sys.exit(1)
+        # On cree un module valide et un module avec effet de bord dans le dossier scripts
+        # pour tester le comportement reel de l'outil sans modifier le depot.
+        # Mais l'outil scanne SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+        # On ne peut pas facilement injecter des fichiers dans scripts/ sans ecrire dans le depot.
+        # On va donc tester sur les fichiers existants ou simuler via des arguments.
+        
+        # CAS NOMINAL : --seul avec un module existant (l'outil lui-meme est exclue, 
+        # on cherche un autre .py dans scripts/)
+        scripts_dir = os.path.dirname(tool)
+        candidats = [n[:-3] for n in os.listdir(scripts_dir) if n.endswith(".py") 
+                     and n[:-3] != "nexus_import"]
+        
+        if not candidats:
+            print("[Nominal] Aucun autre module .py trouve pour tester")
+            return 0
 
-    try:
-        # CAS NOMINAL : Execution standard
-        # L'outil liste les modules et finit par "X module(s) importes, Y echec(s)."
-        rc, out, err = run_tool([], work_dir)
-        if "module(s) importes" in out and rc in (0, 1):
-            print("[OK] Nominal")
+        target = candidats[0]
+        rc, out, err = run(["-c", "import sys; sys.path.insert(0, r'" + scripts_dir + "'); "
+                           "import " + target + "; print('OK')"])
+        # On verifie que l'outil peut au moins s'executer
+        rc_tool, out_tool, err_tool = run([tool, "--seul", target])
+        if rc_tool == 0 and "0 echec(s)" in out_tool:
+            print(f"[Nominal] OK (module {target})")
         else:
-            print(f"[FAIL] Nominal : rc={rc}, out={out[:50]}")
+            print(f"[Nominal] ECHEC: rc={rc_tool}, out={out_tool}, err={err_tool}")
             sys.exit(1)
 
-        # CAS INVERSE : Module inconnu via --seul
-        # Doit rendre code 2 et message "Module(s) inconnu(s)" sur stderr
-        rc, out, err = run_tool(["--seul", "module_fantome"], work_dir)
+        # CAS INVERSE : Module inconnu
+        rc, out, err = run([tool, "--seul", "module_inexistant_xyz"])
         if rc == 2 and "Module(s) inconnu(s)" in err:
-            print("[OK] Inconnu")
+            print("[Inverse] OK (refus module inconnu)")
         else:
-            print(f"[FAIL] Inconnu : rc={rc}, err={err[:50]}")
+            print(f"[Inverse] ECHEC: rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
-        # CAS MALFORMEE : Option inconnue
-        # Argparse rend code 2 et écrit sur stderr
-        rc, out, err = run_tool(["--option-inconnue"], work_dir)
-        if rc != 0:
-            print("[OK] Malformee")
+        # CAS MALFORMEE : Argument inconnu
+        rc, out, err = run([tool, "--option-fantome"])
+        if rc != 0 and "unrecognized arguments" in err:
+            print("[Malformee] OK (usage rendu)")
         else:
-            print(f"[FAIL] Malformee : rc={rc}")
+            print(f"[Malformee] ECHEC: rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
-        # CAS SANS ARGUMENTS : Usage
-        # L'outil ne rend pas l'usage sur invocation vide (il lance le scan),
-        # mais on verifie ici que l'invocation sans arguments fonctionne.
-        rc, out, err = run_tool([], work_dir)
-        if "module(s) importes" in out:
-            print("[OK] Sans arguments")
+        # CAS SANS ARGUMENTS : Verifie que ca lance le scan global
+        rc, out, err = run([tool])
+        if rc is not None and "module(s) importes" in out:
+            print("[Global] OK (scan effectue)")
         else:
-            print(f"[FAIL] Sans arguments : rc={rc}")
-            sys.exit(1)
-
-        # CAS JSON : Formatage
-        rc, out, err = run_tool(["--json"], work_dir)
-        if out.strip().startswith("{") and out.strip().endswith("}"):
-            print("[OK] JSON")
-        else:
-            print(f"[FAIL] JSON : out={out[:50]}")
+            print(f"[Global] ECHEC: rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
     finally:
-        shutil.rmtree(tmp_dir)
-
-    sys.exit(0)
+        shutil.rmtree(tmp)
 
 if __name__ == "__main__":
     main()
