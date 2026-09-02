@@ -2371,6 +2371,18 @@ const TOOLS = [
     },
   },
   {
+    name: "nexus_charge",
+    title: "Rapporter qui occupe la machine",
+    description: "Liste les processus significatifs AVEC LE PROJET auquel ils appartiennent, la memoire libre et la memoire disponible pour l inference, et qu elle sert a savoir si la machine peut accueillir un travail local avant de le lancer.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "nexus_verrou",
+    title: "Rapporter l etat des verrous de machine partages entre projets",
+    description: "Ces verrous sont des mutex nommes, ils servent a eviter que deux projets lancent en meme temps une inference locale ou une copie massive, et cet outil CONSTATE l etat sans prendre ni liberer aucun verrou.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
     name: "nexus_models",
     title: "Lister les modeles disponibles",
     description:
@@ -3184,6 +3196,12 @@ function runPython(args, timeoutMs = 300000) {
     const jours = String(args.jours || 7);
     return await runPython(
       [path.join(INSTALL_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
+  }
+  if (name === "nexus_charge") {
+    return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_charge.py")]);
+  }
+  if (name === "nexus_verrou") {
+    return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_verrou_machine.py")]);
   }
 
   if (name === "nexus_models") {
