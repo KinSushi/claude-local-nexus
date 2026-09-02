@@ -22,7 +22,6 @@ qwen3-coder:30b
 qwen2.5-coder:32b
 qwen3-vl:32b
 qwen3-vl:8b
-llama4:scout
 phi3:medium
 mixtral:8x7b
 mistral:7b
