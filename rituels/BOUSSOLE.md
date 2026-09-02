@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:53.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:55.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -31,7 +31,7 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-08-30 | `df70e850cb65feaf` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-08-29 | `fb1e3d96f893b748` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-08-29 | `abd966bd7f288b94` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 453 Ko | 2026-09-02 | `822d491ea68766f2` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 453 Ko | 2026-09-02 | `f485b9cfa3cf3f60` |
 | Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 772 Ko | 2026-09-02 | `3c3ed0719219ab05` |
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
@@ -50,9 +50,10 @@
 | Architecture | `.gitignore` | — | 2 Ko | 2026-09-01 | `7e1071af67117b1f` |
 | Architecture | `.ruff_cache/.gitignore` | — | 35 o | 2026-08-31 | `9e3a60f1e6ec4ae6` |
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-01 | `ae2a9b470d2a5c02` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `fd09ce788551ab7d` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `b5b1bd96343b7241` |
 | Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 156 o | 2026-09-01 | `3aa6f83eb4902b70` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
+| Architecture | `.ruff_cache/0.16.5/10270260337176019032` | — | 588 o | 2026-09-02 | `39c83b623861f0c1` |
 | Architecture | `.ruff_cache/0.16.5/10322200571114817051` | — | 164 o | 2026-08-31 | `46d6144c4676d8c5` |
 | Architecture | `.ruff_cache/0.16.5/1040640668841026300` | — | 172 o | 2026-09-01 | `1ef13d460ee43e10` |
 | Architecture | `.ruff_cache/0.16.5/10550273669060046575` | — | 2 Ko | 2026-08-31 | `bc8db856083379bb` |
@@ -112,7 +113,7 @@
 | Architecture | `.ruff_cache/0.16.5/9691695313051288092` | — | 164 o | 2026-09-01 | `46a2f9cdd17b71e5` |
 | Architecture | `.ruff_cache/CACHEDIR.TAG` | — | 43 o | 2026-08-31 | `5953156d7e0c564a` |
 | Architecture | `LICENSE` | — | 34 Ko | 2026-08-29 | `0d96a4ff68ad6d4b` |
-| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `547d38eb28ab8f57` |
+| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `a80285e3693b5e70` |
 | Architecture | `Set-ClaudeModel.ps1.candidat` | — | 11 Ko | 2026-08-29 | `67a86f7cc9147d54` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-08-29 | `c05c3296a2683b28` |
 | Architecture | `Start-Claude.ps1.candidat` | — | 7 Ko | 2026-08-29 | `981eead31d168b3c` |
@@ -3109,7 +3110,7 @@
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
 | Architecture | `rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-01 | `5a6eb0b606bb975e` |
 | Architecture | `rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-01 | `8a022c08429aaef5` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 390 Ko | 2026-09-02 | `2a6530156a878c89` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 390 Ko | 2026-09-02 | `bf74a3274014b288` |
 | Architecture | `rituels/EVALUATION-LOCALE.md` | — | 12 Ko | 2026-08-29 | `f16830fca4479937` |
 | Architecture | `rituels/PLAN_MAITRE_2026-09-01.md` | — | 19 Ko | 2026-09-01 | `05e63645415c2f0d` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
@@ -3168,13 +3169,13 @@
 | Architecture | `scripts/epreuve_offsets_annexes.py` | — | 6 Ko | 2026-08-31 | `2042973900a7420c` |
 | Architecture | `scripts/epreuve_options_lot.py` | — | 3 Ko | 2026-09-01 | `53e6b1c143d5eec8` |
 | Architecture | `scripts/epreuve_orphelines.py` | — | 4 Ko | 2026-08-31 | `1f0d61e0c62b828e` |
-| Architecture | `scripts/epreuve_outillage.py` | — | 3 Ko | 2026-09-02 | `305379f5215b09a7` |
+| Architecture | `scripts/epreuve_outillage.py` | — | 3 Ko | 2026-09-02 | `245c8fc0b4024959` |
 | Architecture | `scripts/epreuve_part_raisonnement.py` | — | 4 Ko | 2026-09-01 | `1d747409da5c8f56` |
 | Architecture | `scripts/epreuve_plafond_sortie.py` | — | 5 Ko | 2026-08-31 | `e5be9c18d65dd6a8` |
 | Architecture | `scripts/epreuve_progres.py` | — | 3 Ko | 2026-09-02 | `103f7e0412faee88` |
 | Architecture | `scripts/epreuve_quota_partage.py` | — | 3 Ko | 2026-08-31 | `a76f775f26a7ecd3` |
 | Architecture | `scripts/epreuve_registre_epreuves.py` | — | 3 Ko | 2026-09-01 | `698fe9e52cd31e26` |
-| Architecture | `scripts/epreuve_relais.py` | — | 3 Ko | 2026-09-02 | `19c8bedded79cdf8` |
+| Architecture | `scripts/epreuve_relais.py` | — | 3 Ko | 2026-09-02 | `e395836d6633cf93` |
 | Architecture | `scripts/epreuve_reprise_avant_repli.py` | — | 4 Ko | 2026-09-01 | `de1e3a7e6adc16a4` |
 | Architecture | `scripts/epreuve_resumer.py` | — | 5 Ko | 2026-08-31 | `8c14e5b88a394bd9` |
 | Architecture | `scripts/epreuve_schema.py` | — | 5 Ko | 2026-09-01 | `0ee3a6b450557433` |
@@ -3269,7 +3270,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 3210 |
+| Architecture | 3211 |
 | Obsolète | 2 |
 
 ---
