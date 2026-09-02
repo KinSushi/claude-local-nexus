@@ -2085,6 +2085,11 @@ const TOOLS = [
       type: "object",
       properties: {
         prompt: { type: "string", description: "La demande adressee au modele." },
+        paths: {
+          type: "array",
+          items: { type: "string" },
+          description: "Fichiers a joindre au prompt, relatifs a la racine du depot ou absolus. Le contenu est ajoute au message avec le nom du fichier en tete. Les fichiers susceptibles de contenir des secrets sont exclus par le meme filtre que nexus_summarize et nexus_context."
+        },
         system: { type: "string", description: "Consigne systeme optionnelle." },
         model: {
           type: "string",
@@ -2628,6 +2633,21 @@ function runPython(args, timeoutMs = 300000) {
     exigerTexte(args.prompt, "prompt");
     exigerEntierPositif(args.max_tokens, "max_tokens");
 
+    // Consommation du parametre optionnel paths : joindre le contenu des
+    // fichiers au prompt, avec leur nom en tete. Le filtre de confidentialite
+    // est le meme que celui de nexus_summarize et nexus_context.
+    let contenuFichiers = "";
+    if (args.paths !== undefined) {
+      exigerTableau(args.paths, "paths");
+      for (const raw of args.paths) {
+        const full = requireInsideRepo(resolvePath(raw), "fichier");
+        if (isSecretFile(path.basename(full))) continue;
+        if (!fs.existsSync(full)) throw new Error("fichier introuvable : " + raw);
+        const content = fs.readFileSync(full, "utf8");
+        contenuFichiers += `\n\n===== ${raw} =====\n${content}`;
+      }
+    }
+
     // Un modele explicite l'emporte sur un profil : demander un modele
     // precis est une decision, la laisser deduire n'en est pas une.
     let model = args.model;
@@ -2656,7 +2676,7 @@ function runPython(args, timeoutMs = 300000) {
 
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
-    messages.push({ role: "user", content: args.prompt });
+    messages.push({ role: "user", content: args.prompt + (contenuFichiers ? "\n\n" + contenuFichiers : "") });
     const result = await chat(model, messages, args.max_tokens || 2048, delaiMs,
                               temperature);
 
