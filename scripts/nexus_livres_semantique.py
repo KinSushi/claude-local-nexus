@@ -149,14 +149,16 @@ def build_index(args):
 def write_batch(vectors, metas):
     """Append a batch of results to the output JSONL file."""
     with open(OUTPUT_FILE, "a", encoding="utf-8") as out_f:
-        for vec, meta in zip(vectors, metas):
+        # Un zip sans strict tronque en silence et un index incomplet serait indiscernable d un index complet
+        # Ce correctif ajoute strict=True pour lever une erreur en cas de longueur differente
+        for vec, meta in zip(vectors, metas, strict=True):
             record = meta.copy()
             record["vector"] = vec
             out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def cosine_similarity(v1, v2):
-    dot = sum(a * b for a, b in zip(v1, v2))
+    dot = sum(a * b for a, b in zip(v1, v2, strict=True))
     norm1 = math.sqrt(sum(a * a for a in v1))
     norm2 = math.sqrt(sum(b * b for b in v2))
     if norm1 == 0 or norm2 == 0:
