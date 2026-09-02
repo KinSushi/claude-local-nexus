@@ -119,9 +119,10 @@ def bloc_objectif() -> None:
     print("  MISSION PERMANENTE, jamais achevee : traquer la MOINDRE")
     print("  amelioration possible. Repondre a la demande n'est pas une fin,")
     print("  c'est un element d'une file qui n'est jamais vide.")
-    print("  L'environnement est vaste et sous-employe : 71 modeles mesures,")
-    print("  deux bancs, douze outils voisins reperes, plus de 33 000")
-    print("  fichiers de documentation et de bibliotheques a portee de copie.")
+    # Un hook de demarrage n'affiche que ce qu'il peut deriver sans rien lancer.
+    print("  L'environnement est vaste et sous-employe : des modeles mesures,")
+    print("  des bancs, des outils voisins reperes, et une documentation et")
+    print("  des bibliotheques a portee de copie.")
     print("  Voir « CE DONT JE DISPOSE » dans rituels/CHECKLIST_COCKPIT.MD.")
 
 
@@ -173,20 +174,29 @@ def bloc_taches() -> None:
         ("Claude-Local-Nexus - Mise a jour", "modeles, quotidien",
          "Register-NexusAutoUpdate.ps1"),
     )
-    for nom, role, script in taches:
-        ok, sortie = executer(
-            ["powershell", "-NoProfile", "-Command",
-             "(Get-ScheduledTask -TaskName '%s' -ErrorAction SilentlyContinue)"
-             ".State" % nom], 25)
-        if not ok:
+    # Un hook de démarrage paie le démarrage de PowerShell à chaque appel, pas seulement la requête : un seul appel pour toutes les tâches.
+    noms = ",".join("'%s'" % nom for nom, _, _ in taches)
+    commande = (
+        "Get-ScheduledTask -TaskName %s -ErrorAction SilentlyContinue | "
+        "ForEach-Object { \"$($_.TaskName)|$($_.State)\" }" % noms
+    )
+    ok, sortie = executer(["powershell", "-NoProfile", "-Command", commande], 25)
+    if not ok:
+        for nom, _, _ in taches:
             print("  [ ?      ] %-15s etat illisible" % nom)
-            continue
-        etat = sortie.strip()
-        if etat:
-            print("  [%-8s] %-15s %s" % (etat, nom, role))
-        else:
-            print("  [ABSENTE ] %-15s %s" % (nom, role))
-            print("             -> .\\scripts\\%s" % script)
+    else:
+        etats = {}
+        for ligne in sortie.splitlines():
+            if "|" in ligne:
+                nom_tache, etat = ligne.split("|", 1)
+                etats[nom_tache.strip()] = etat.strip()
+        for nom, role, script in taches:
+            etat = etats.get(nom)
+            if etat:
+                print("  [%-8s] %-15s %s" % (etat, nom, role))
+            else:
+                print("  [ABSENTE ] %-15s %s" % (nom, role))
+                print("             -> .\\scripts\\%s" % script)
 
 
 def bloc_sujets() -> None:
