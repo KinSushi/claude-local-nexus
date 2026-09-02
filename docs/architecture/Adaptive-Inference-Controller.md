@@ -258,3 +258,73 @@ Le point 9 est déjà la doctrine du dépôt (§112.3, MANUEL « Mesurer une dur
 et vient d'être payé **trois fois dans la même journée**. Il devra rester la
 première contrainte de toute implémentation : le banc mesure à température
 fixe, l'adaptation apprend ailleurs.
+
+---
+
+## Vérification — 2026-09-02
+
+Contrôle poste par poste du tableau « État », contre le code réel (worktree
+`agent-a803b8dbb3c35914b`, HEAD `a149320`).
+
+| Poste du tableau | Verdict | Preuve |
+| --- | --- | --- |
+| Profils `coding / reasoning / rapide / multimodal` | **VÉRIFIÉ** | `tools/nexus-mcp/server.js:1463` déclare `const PROFILES = { coding: {...}, reasoning: {...}, rapide: {...}, multimodal: {...} }`. |
+| Température par profil `0.10 / 0.40 / 0.00 / 0.20`, figée, non apprise | **VÉRIFIÉ** | `tools/nexus-mcp/server.js:656-661` : `const TEMPERATURE_PROFIL = { coding: 0.1, rapide: 0.0, reasoning: 0.4, multimodal: 0.2 };` — correspondance exacte, chiffre pour chiffre. |
+| Routage par capacité — lit `ollama show`, pas le nom du modèle | **VÉRIFIÉ** | `grep -rln "ollama show" scripts/` → `scripts/nexus_generate.py`, `scripts/nexus_validate.py`. |
+| Task Classifier / Complexity Estimator / Validator-Critic / Policy Store / Bandit — absents | **VÉRIFIÉ** | `grep -rn "TaskClassifier\|ComplexityEstimator\|Validator.*Critic\|PolicyStore\|policy_store\|bandit\|UCB\|Thompson" --include=*.js --include=*.py .` (hors `docs/architecture`) ne rend qu'une seule occurrence, un commentaire qui CONSTATE leur absence : `server.js:667` « aucun bandit n'a de quoi selectionner ». |
+| **Télémétrie — PÉRIMÉ** | Voir ci-dessous. | |
+
+**Télémétrie, corrigé sans supprimer la ligne d'origine.** Le tableau ne cite
+que LiteLLM et Langfuse et conclut « rien n'est relu ». C'est devenu
+incomplet le jour même : le commit `53d209f`
+(« premiere brique darwinienne », 2026-08-30 12:40:33) a ajouté un
+**troisième** canal, 9 minutes seulement après la création de ce document
+(`95fe479`, 12:31:34) — c'est la brique 8 de ce document lui-même (§8, « Le
+champ de température »).
+
+`observer()` (`tools/nexus-mcp/server.js:682-690`) écrit une ligne JSON par
+appel dans `.nexus/temperature/observations.jsonl` : horodatage, modèle,
+modèle amont, température, durée, attente, tokens entrants/sortants, débit.
+Confirmé par lecture du code (`server.js:859-874`) :
+
+```js
+observer({
+  t: new Date().toISOString(),
+  model: resolved,
+  upstream: headers["x-litellm-model-name"] || "",
+  temperature: t,
+  duree_ms: dureeMs,
+  attente_ms: attenteMs,
+  tokens_in: usage.prompt_tokens || 0,
+  tokens_out: sortie,
+  debit_jps: sortie && dureeMs ? Number((sortie / (dureeMs / 1000)).toFixed(2)) : null,
+```
+
+Le qualificatif « rien n'est relu » reste vrai pour ce canal aussi : les
+trois occurrences de `OBSERVATIONS` dans `server.js` sont une déclaration de
+chemin et deux écritures (`mkdirSync`, `appendFileSync`) — aucune lecture.
+Mais l'omettre du tableau fait passer pour inexistante une mesure qui existe
+déjà, tourne à chaque appel, et qui est PRÉCISÉMENT celle que le point 9 de
+ce document réclame. Le tableau original est laissé intact ci-dessus ; la
+correction est : ajouter une ligne « Magasin d'observations (brique 8) » à
+côté de « Télémétrie », distincte de LiteLLM/Langfuse, à l'état **partiel**
+(écrit, jamais relu — pas encore de bandit pour le consommer).
+
+`posterior.json` et `experiments.jsonl`, également proposés au §8, restent
+absents : seul `observations.jsonl` existe sous `.nexus/temperature/`.
+
+**Confrontation au livre.** Aucun chapitre du corpus ne traite spécifiquement
+d'un contrôleur de température adaptatif par (modèle × tâche) — c'est une
+spécification propre à ce dépôt, pas une reprise. Le principe général
+« observer avant de décider » que le §8 revendique rejoint la doctrine de
+*30 Agents Every AI Engineer Must Build · Architectural recovery strategies*
+sur la télémétrie : *« Comprehensive logging and telemetry: You cannot fix
+what you cannot see. [...] Detailed logs and metrics [...] provide the data
+needed to analyze systemic weaknesses [...] and continuously improve the
+agent's overall resilience over time. »* (citation verbatim,
+`references/livres/epub/symbols.jsonl` offset 434881, longueur 3002).
+
+**Ce que je n'ai pas pu vérifier** : si `.nexus/temperature/observations.jsonl`
+contient déjà des lignes sur cette machine — le répertoire `.nexus/` est
+gitignoré et absent de ce worktree neuf (aucune inférence n'y a encore été
+appelée depuis sa création).

@@ -48,3 +48,60 @@ Planner
     +--> Model Router
     |
     +--> Tool Selector
+
+---
+VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+
+Identifiants d'outils "filesystem.read", "filesystem.write", "shell.execute"
+— FAUX, confirmés absents de tout le dépôt (voir
+docs/architecture/tool-registry.txt, même vérification, même grep, zéro
+correspondance hors documentation).
+
+Identifiants de modèle "qwen3-coder-30b-local", "qwen2.5-coder-32b-local",
+"claude-sonnet-5" — VÉRIFIÉS, déclarés réellement dans litellm_config.yaml :
+  ligne 188 : model_name: qwen3-coder-30b-local
+  ligne 207 : model_name: qwen2.5-coder-32b-local
+  ligne  76 : model_name: claude-sonnet-5   (alias -> anthropic/claude-sonnet-5)
+
+target_tokens: 65536 — VÉRIFIÉ, cohérent avec la configuration réelle :
+  litellm_config.yaml:159 (num_ctx: 65536) et :163 (max_input_tokens: 65536)
+  pour glm-4.7-flash-local, et correspond au profil "coding_standard" du §54
+  de .claude/CLAUDE.md.
+
+privacy: L2 — cohérent avec la classification de souveraineté du §35 de
+.claude/CLAUDE.md (L0-L3), un concept documenté mais qui reste, comme le
+Planner lui-même, PROPOSITIONNEL : aucun champ `privacy` ou `classification`
+n'accompagne une requête dans le code réel (`grep -rn "classification.*L[0-3]\|
+privacy.*:.*L[0-3]" --include=*.py --include=*.js .` -> zéro occurrence hors
+documentation).
+
+Le module "Planner" lui-même — ABSENT, cohérent avec le tableau « État » de
+docs/architecture/Adaptive-Inference-Controller.md (Task Classifier,
+Complexity Estimator, Policy Store tous marqués absents). Aucun fichier du
+dépôt n'assemble task_class + context + model + tools + fallback +
+validation en un seul objet de plan avant l'exécution ; le routage réel
+(tools/nexus-mcp/server.js, fonction resolveProfile) sélectionne directement
+un modèle dans PROFILES[profile].models sans étape de planification
+intermédiaire.
+
+CONFRONTATION AU LIVRE : Context Engineering for Multi-Agent Systems,
+chapitre "Planner" (references/livres/epub/symbols.jsonl, offset 11859084,
+longueur 4952) — citation verbatim :
+  "We start with the planner function, the strategic core of the engine. It
+   acts as an expert project manager, translating a vague, high-level human
+   goal into a precise, step-by-step, machine-readable JSON plan. [...] The
+   plan MUST be a JSON list of objects, where each object is a 'step'. [...]
+   If a step requires input from a previous step, reference it using the
+   syntax $$STEP_X_OUTPUT$$."
+DIVERGENCE NOMMÉE : le planner du livre produit une LISTE de pas
+(potentiellement plusieurs agents, chaînés par leurs sorties), c'est un DAG
+d'exécution. Le "plan:" de ce document est un objet UNIQUE (un modèle, un
+profil de contexte, une liste de secours) — une sélection de ressources pour
+UNE tâche, pas une décomposition en étapes. Les deux portent le nom
+"Planner" mais ne résolvent pas le même problème ; ce document ne doit pas
+être présenté comme une reprise du mécanisme du livre.
+
+CE QUE JE N'AI PAS PU VÉRIFIER : si "kimi-k2.7-code-cloud" ou d'autres
+modèles cités dans PROFILES.coding (server.js) mais absents de ce document
+seraient de meilleurs candidats de fallback que "qwen2.5-coder-32b-local" —
+jugement de qualité hors du périmètre d'une vérification factuelle.

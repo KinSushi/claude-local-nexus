@@ -29,3 +29,66 @@ tools:
     class: external_write
     risk: R3
     approval: required
+
+# ---------------------------------------------------------------------------
+# VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+# ---------------------------------------------------------------------------
+#
+# FAUX confirmé (repris de la consigne, revérifié moi-même) : aucun de ces
+# identifiants pointés (filesystem.read, filesystem.write, shell.execute,
+# docker.restart, docker.volume_delete, internet.search, github.push) n'existe
+# nulle part dans le dépôt réel.
+#   grep -rln "filesystem\.read\|filesystem\.write\|docker\.volume_delete\|
+#              shell\.execute\|github\.push\|internet\.search\|docker\.restart"
+#     --include=*.py --include=*.js --include=*.json --include=*.yaml
+#     --include=*.yml .
+#   -> zéro correspondance hors docs/architecture. Témoin positif que le grep
+#   fonctionne : le même motif trouve bien "docker.volume_delete" DANS ce
+#   fichier (la ligne "docker.volume_delete:" ci-dessus), donc l'absence
+#   ailleurs n'est pas un défaut de recherche.
+#
+# LE MÉCANISME RÉEL, tel qu'il existe :
+#   1. .claude/settings.json, bloc "permissions" :
+#        deny: motifs Read/Edit/Write/NotebookEdit par CHEMIN DE FICHIER
+#              (ex. "Read(**/.env)", "Edit(scripts/nexus_garde_agent.py)")
+#        ask:  motifs Bash/PowerShell par COMMANDE
+#              (ex. "Bash(git push *)", "Bash(docker volume rm *)",
+#                    "Bash(rm -rf *)", "Bash(ollama rm *)")
+#      Confirmé par lecture directe du fichier — aucun schéma "tools:" n'y
+#      figure, seulement ces deux listes de motifs shell/glob.
+#   2. scripts/nexus_garde_*.py, hooks PreToolUse déclarés dans le même
+#      fichier sous "hooks" : nexus_garde_lecture.py (Read/Bash/PowerShell),
+#      nexus_garde_production.py (refuse Edit/Write/NotebookEdit direct sur
+#      du code source — c'est la LOI 1 mécanisée), nexus_garde_shell.py
+#      (garde anti-heredoc), nexus_garde_isolation.py (garde de worktree,
+#      celle qui a bloqué une commande de ce contrôle plus haut dans cette
+#      même session), nexus_garde_agent.py (cap de modèle sur les sous-agents,
+#      §112.2).
+#   3. La classification par RISQUE (R0-R4) que propose ce fichier n'a pas
+#      d'équivalent mécanisé : "docker.restart" (le vrai geste, "docker
+#      compose restart litellm") n'apparaît dans aucune liste ask/deny —
+#      rien ne le distingue aujourd'hui d'une commande R0. Seuls les gestes
+#      les plus destructeurs (down -v, volume rm, system prune, reset --hard,
+#      rm -rf, ollama rm) sont sous "ask".
+#
+# CONFRONTATION AU LIVRE : 30 Agents Every AI Engineer Must Build,
+# chapitre "The tool registry" (references/livres/epub/symbols.jsonl,
+# offset 407441, longueur 790) — citation verbatim :
+#   "To formulate a valid plan, the core consults the tool registry, which
+#    acts as a catalog of the agent's available tools and capabilities. The
+#    registry maintains critical metadata for each tool, including its name,
+#    description, and input/output schemas. These schemas serve as explicit,
+#    reliable contracts..."
+# DIVERGENCE NOMMÉE : le registre du livre porte des CONTRATS DE SCHÉMA
+# (entrée/sortie), pas des CLASSES DE RISQUE avec approbation. La colonne
+# "risk: R0..R4 / approval: required" de ce fichier est une invention propre
+# à ce dépôt (cohérente avec §47 de .claude/CLAUDE.md), pas une reprise du
+# livre — elle ne doit pas être présentée comme telle.
+#
+# CE QUE JE N'AI PAS PU VÉRIFIER : si un futur serveur MCP nexus expose un
+# schéma d'outils nommé selon cette convention (filesystem.*, docker.*) —
+# aucun des 15 outils déclarés dans tools/nexus-mcp/server.js
+# (nexus_ask, nexus_route, nexus_context, nexus_vision, nexus_summarize,
+# nexus_index_build, nexus_search, nexus_batch, nexus_compare, nexus_profile,
+# nexus_savings, nexus_charge, nexus_livres, nexus_verrou, nexus_models)
+# ne suit ce schéma de noms.

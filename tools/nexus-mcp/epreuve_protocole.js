@@ -26,6 +26,13 @@ if (finTexte < debut || bloc.length < 400 || !bloc.includes("function exigerText
   process.exit(1);
 }
 
+// Convert a character offset to a line number (1‑based) by counting '\n' in the slice.
+function offsetToLine(offset) {
+  return source.slice(0, offset).split("\n").length;
+}
+const debutLigne = offsetToLine(debut);
+const finTexteLigne = offsetToLine(finTexte);
+
 const module_ = { exports: {} };
 new Function("module", bloc +
   "\nmodule.exports = { ErreurProtocole, exigerTableau, exigerTexte," +
@@ -112,7 +119,7 @@ function messageDe(fn) {
   const aLaMain = source.split("\n")
     .map((l, i) => ({ n: i + 1, l }))
     .filter(({ n, l }) => /throw new ErreurProtocole\("parametre /.test(l) &&
-                          !(n >= 1862 - 1 && n <= finTexte));
+                          !(n >= debutLigne && n <= finTexteLigne));
   const horsHelpers = aLaMain.filter(({ l }) => !/^\s{4}throw new ErreurProtocole\(\s*$/.test(l));
   const dansHelpers = source.slice(debut, finTexte);
   const restants = horsHelpers.filter(({ l }) => !dansHelpers.includes(l));

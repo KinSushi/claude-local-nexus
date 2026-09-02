@@ -10,3 +10,33 @@ cost:
 Tu transformes ainsi Langfuse / LiteLLM en instrumentation d'un budget manager plutôt qu'en simple dashboard.
 
 LiteLLM documente justement la gestion des dépenses, budgets, clés virtuelles et suivi des coûts. https://docs.litellm.ai/
+
+---
+VÉRIFICATION — 2026-09-02
+
+max_request_usd / max_session_usd / max_day_usd — FAUX (noms de champs
+inventés, ne correspondent pas au schéma réel de LiteLLM)
+  Interrogation de la documentation officielle (docs.litellm.ai/docs/proxy/users,
+  2026-09-02) : les champs RÉELS de LiteLLM pour un budget de dépense sont :
+    max_budget          (USD, sur une clé virtuelle ou une équipe)
+    budget_duration      ("30s" | "30m" | "30h" | "30d", fréquence de reset)
+    budget_limits         (liste de {budget_duration, max_budget} — fenêtres
+                            multiples et concurrentes sur UNE clé)
+    model_max_budget      (plafond par modèle : {"gpt-4o": {"budget_limit": ...,
+                            "time_period": "30d"}})
+    max_budget_per_session (au niveau des `litellm_params` d'un agent)
+  Aucun de ces noms n'est max_request_usd, max_session_usd ni max_day_usd.
+  Le principe général (LiteLLM gère des budgets de dépense) est correct ; le
+  schéma YAML proposé ici ne l'est pas et ne doit pas être copié tel quel
+  dans litellm_config.yaml.
+
+Absence dans le dépôt — VÉRIFIÉ
+  `grep -rn "max_request_usd\|max_session_usd\|max_day_usd\|max_budget\|budget_duration"
+  litellm_config.yaml` ne rend aucune occurrence : aucun budget de dépense
+  n'est configuré aujourd'hui sur ce dépôt, ni sous ces noms ni sous les noms
+  réels de LiteLLM.
+
+CE QUE JE N'AI PAS PU VÉRIFIER : la version exacte de LiteLLM déployée
+(`ghcr.io/berriai/litellm:main-latest`, non figée — §78) contre la version de
+la documentation interrogée ; un champ peut avoir changé de nom entre les
+deux sans que ce contrôle le voie.

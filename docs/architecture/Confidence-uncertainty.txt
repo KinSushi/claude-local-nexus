@@ -14,3 +14,37 @@ model_answer_confidence = 0.78
 verification_confidence = 0.95
 
 Le second peut être supérieur parce qu'un compilateur ou un test vient confirmer le résultat.
+
+---
+VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+
+Implémentation dans le dépôt — ABSENTE, confirmée.
+  `grep -rn "model_confidence\|verification_confidence\|model_answer_confidence\|
+  system_confidence" --include=*.py --include=*.js .` -> zéro occurrence hors
+  documentation. Le §6 de docs/architecture/Adaptive-Inference-Controller.md
+  propose une "estimation composite" I = f(entropy, self-consistency,
+  validation, tool errors, retry, critic score) qui va dans le même sens,
+  mais elle est également marquée absente dans le tableau « État » de ce même
+  document (Validator / Critic : absent). Ce fichier reste donc une
+  proposition, pas une description de l'existant — classement cohérent avec
+  les autres fichiers du lot.
+
+CONFRONTATION AU LIVRE : le corpus (24 ouvrages, `references/livres/`) ne
+porte aucun chapitre formalisant précisément la distinction
+"model confidence" vs "system/verification confidence" avec un compilateur ou
+un test comme source de la seconde. Le chapitre le plus proche est Building
+Agentic AI Systems · "Dealing with uncertainty and biases"
+(references/livres/epub/symbols.jsonl, offset 11372441, longueur 3556) —
+citation verbatim :
+  "the AI system could generate multiple variations and provide confidence
+   scores or uncertainty estimates for each image, allowing the user to
+   understand the model's interpretation and potential limitations."
+DIVERGENCE NOMMÉE : le livre traite la confiance comme une sortie du modèle
+communiquée à l'UTILISATEUR (transparence), jamais comme une comparaison
+avec une confiance dérivée d'une vérification EXTERNE (compilateur, test).
+Cette seconde idée — la plus utile de ce fichier — est une contribution
+propre à ce document, pas une reprise du livre, et ne doit pas être présentée
+comme telle.
+
+NON VÉRIFIABLE : la qualité ou la calibration réelle d'un futur score de
+confiance composite — aucune mesure n'existe puisque rien n'est implémenté.

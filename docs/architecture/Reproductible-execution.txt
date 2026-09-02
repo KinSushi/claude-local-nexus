@@ -21,3 +21,61 @@ benchmark ;
 audit ;
 compliance ;
 recherche.
+
+---
+VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+
+La consigne reçue en tête de tâche affirme que « task_id, git_commit,
+router_version, prompt_version sont absents du code ». Vérifié champ par
+champ : c'est FAUX pour deux des quatre — router_version ET git_commit
+existent réellement, à un niveau différent de celui que ce document propose.
+
+router_version — VÉRIFIÉ, PARTIEL (niveau système, pas par exécution)
+  scripts/nexus_generate.py:1596-1603 calcule une empreinte SHA-256 sur la
+  politique de routage effective (pools cloud, chaînes de secours, budget de
+  pool) :
+      signature = "|".join([...])
+      router_version = "r%s" % hashlib.sha256(signature.encode()).hexdigest()[:10]
+  Elle est écrite dans litellm_config.yaml en commentaire :
+      # NEXUS-ROUTER-VERSION: r19be7650d1        (litellm_config.yaml:26,
+                                                   valeur mesurée ce jour)
+  et relue par scripts/nexus_state.py:384-390 pour l'afficher dans
+  rituels/STATE.md. C'est une version de la POLITIQUE (un hash de ce qui
+  décide), pas un champ attaché à chaque exécution individuelle — la nuance
+  que ce document réclame (un identifiant par tâche) n'est pas couverte.
+
+git_commit — VÉRIFIÉ, PARTIEL (même niveau : rapport d'état, pas par tâche)
+  scripts/nexus_state.py:394 : `commit = run(["git", "rev-parse", "--short",
+  "HEAD"])`, également reporté dans rituels/STATE.md. Réel, mais c'est le
+  commit du DÉPÔT au moment où l'état est généré, jamais associé à une
+  exécution d'agent précise.
+
+Champs partiellement couverts par un TROISIÈME mécanisme, non cité par la
+consigne reçue : tools/nexus-mcp/server.js:682-690 (`observer()`) écrit une
+ligne JSON PAR APPEL dans .nexus/temperature/observations.jsonl, avec :
+  t (timestamp), model (model_id), temperature (un des `parameters`),
+  duree_ms, tokens_in/out, debit_jps.
+Cela couvre reellement, par appel : timestamp, model_id, parameters (partiel :
+température seulement). Voir docs/architecture/Adaptive-Inference-Controller.md,
+section « Vérification — 2026-09-02 », pour le détail de ce canal.
+
+task_id, provider (par appel), policy_version, prompt_version,
+context_profile, tool_versions — confirmés ABSENTS : aucune occurrence hors
+`.claude/CLAUDE.md` et `docs/architecture/*` dans tout le dépôt
+(`grep -rn "task_id\|policy_version\|prompt_version\|context_profile\|tool_versions"
+--include=*.py --include=*.js .`).
+
+CONCLUSION : aucun mécanisme n'assemble ces champs en UN enregistrement par
+exécution comme le propose ce document. Mais l'affirmation reçue selon
+laquelle router_version et git_commit « n'existent pas dans le code » est
+elle-même fausse — ils existent, au niveau du dépôt entier plutôt que par
+tâche. Le remède que ce document appelle serait donc moins un ajout ex nihilo
+qu'un RATTACHEMENT : joindre le router_version et le commit déjà produits par
+nexus_state.py à chaque ligne déjà écrite par observer(), plutôt que
+d'inventer un système de zéro. Décision d'implémentation laissée à
+l'orchestrateur : ce constat n'est qu'une vérification, pas une correction de
+code.
+
+NON VÉRIFIABLE : si un identifiant task_id existe côté client Claude Code
+(hors de ce dépôt) et pourrait être transmis en amont — hors du périmètre
+observable depuis ce worktree.

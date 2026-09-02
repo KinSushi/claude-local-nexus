@@ -46,3 +46,58 @@ Donc :
           │  RECOVER    COMPLETE
           │
           └── REPLAN
+
+---
+VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+
+Implémentation dans le dépôt — ABSENTE en tant que machine à états explicite.
+  `grep -rn "PLAN.*ACT.*OBSERVE\|REPLAN\|def plan\(\|class.*AgentLoop" --include=*.py
+  --include=*.js .` -> zéro occurrence hors documentation. Aucun module du
+  dépôt n'implémente ce cycle sous cette forme.
+  Des ÉLÉMENTS ISOLÉS du cycle existent cependant, sans être assemblés en
+  état-machine :
+    - un "réveil" avant appel (tools/nexus-mcp/server.js:728,
+      reveillerModele) fait office d'ACT préparatoire ;
+    - `_reveilEnCours` / `_modelesReveilles` (server.js:725-726) sont des
+      drapeaux de garde d'auto-appel, pas des états REPLAN/RECOVER nommés ;
+    - `nexus_valide.py` et `nexus_test.py` jouent le rôle de VERIFY, mais en
+      tant que commande séparée invoquée par l'orchestrateur, jamais bouclée
+      automatiquement dans un agent.
+
+CONFRONTATION AU LIVRE, sur deux points distincts de ce fichier :
+
+1. Le cycle lui-même. Design Multi-Agent AI Systems Using MCP and A2A,
+   chapitre "The agent loop phases" (references/livres/epub/symbols.jsonl,
+   offset 15186128, longueur 5550) — citation verbatim :
+     "The agent loop can be divided into three main phases: sensing,
+      thinking, and acting. [...] the thinking phase is not a separate phase
+      in the agent loop. The LLM does all the thinking, whether it is
+      planning, reasoning, analyzing results of earlier tool calls, deciding
+      which tools to invoke, or, of course, formulating a final response.
+      [...] The agentic framework and the agents never perform any thinking
+      on their own."
+   DIVERGENCE NOMMÉE : le livre traite PLAN et VERIFY comme des produits du
+   raisonnement du LLM À L'INTÉRIEUR de chaque échange de message — jamais
+   des états séparés de la boucle elle-même. Ce fichier, au contraire, fait
+   de PLAN et VERIFY des nœuds explicites du diagramme, au même titre
+   qu'ACT/OBSERVE. Les deux modèles ne sont pas incompatibles (un
+   framework peut exposer des points d'ancrage sans faire le raisonnement
+   lui-même — le livre décrit ce "mode hybride" juste après ce passage) mais
+   ce fichier va au-delà de ce que le livre décrit comme le cas standard.
+
+2. RECOVER/ESCALATE. 30 Agents Every AI Engineer Must Build, chapitre
+   "Architectural recovery strategies" (offset 434881, longueur 3002) —
+   citation verbatim :
+     "Safe invocation wrappers [...] Fallback tool chains [...]
+      Confidence-based switching [...] Failure memory [...] Escalation
+      paths: When automated recovery strategies are exhausted, the final
+      fallback is to escalate the task to a human operator. [...]
+      Comprehensive logging and telemetry."
+   Ici la correspondance est directe et nommée : RECOVER de ce fichier
+   recouvre "safe invocation wrappers" + "fallback tool chains" +
+   "failure memory" du livre, et ESCALATE recouvre "escalation paths". C'est
+   la partie de ce fichier la mieux fondée sur le corpus.
+
+NON VÉRIFIABLE : si une future implémentation suivra la forme exacte de ce
+diagramme (états nommés PLAN/ACT/OBSERVE/VERIFY) plutôt que le modèle
+sense-think-act du livre — décision de conception, pas un fait à mesurer.

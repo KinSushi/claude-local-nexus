@@ -11,3 +11,46 @@ et :
 $$ E[utility] = P(success)\cdot V - Cost - LatencyPenalty $$
 
 Ce qui permet de remplacer un simple score arbitraire par une estimation de valeur attendue.
+
+---
+VÉRIFICATION — 2026-09-02 (worktree agent-a803b8dbb3c35914b, HEAD a149320)
+
+Implémentation dans le dépôt — ABSENTE, confirmée.
+  `grep -rn "P(success\|E\[utility\]\|expected_utility\|success_probability"
+  --include=*.py --include=*.js .` -> zéro occurrence hors documentation.
+  Cohérent avec §106.2 de .claude/CLAUDE.md, qui classe explicitement
+  l'apprentissage de température (le terrain le plus proche de ce que ce
+  fichier propose) comme "metaheuristic territory, genuinely" — donc non
+  résolu par du calcul exact, et non implémenté à ce jour : la doctrine du
+  dépôt lui-même reconnaît l'absence, ce document n'invente rien de nouveau
+  ici.
+  Ce qui EXISTE et pourrait alimenter un tel calcul : le magasin
+  d'observations (.nexus/temperature/observations.jsonl, brique 8 — voir
+  docs/architecture/Adaptive-Inference-Controller.md) enregistre modèle,
+  température, durée et tokens par appel, mais aucun signal de SUCCÈS/ÉCHEC
+  n'y figure (`grep -n "success" tools/nexus-mcp/server.js` ne rend rien dans
+  la fonction observer()). Le préalable statistique que ce fichier suppose —
+  P(success | task, model, profile) — n'a donc pas encore les données pour
+  être estimé, même si l'infrastructure d'observation existe partiellement.
+
+CONFRONTATION AU LIVRE : Building Agentic AI Systems, chapitre
+"Utility function" (references/livres/epub/symbols.jsonl, offset 10876565,
+longueur 6055) — citation verbatim :
+  "A utility function quantifies an agent's preferences by mapping outcomes
+   to utility values, enabling the agent to compare and choose actions that
+   maximize expected utility. [...] price_utility = (1000 -
+   travel_option['price']) * 0.05 [...] total_utility = price_utility +
+   comfort_utility + convenience_utility"
+DIVERGENCE NOMMÉE : la fonction d'utilité du livre est une SOMME PONDÉRÉE
+DÉTERMINISTE de caractéristiques observées (prix, confort, commodité) —
+aucune probabilité n'y intervient. La formule de ce fichier,
+E[utility] = P(success)·V - Cost - LatencyPenalty, est une VALEUR ATTENDUE
+au sens probabiliste, structurellement différente : elle suppose un modèle
+de succès/échec stochastique que le livre ne traite pas dans ce chapitre.
+Le principe général (remplacer un score arbitraire par une fonction
+d'objectif explicite) est partagé ; la formalisation probabiliste est propre
+à ce document.
+
+NON VÉRIFIABLE : la valeur des coefficients α, β, γ, δ qu'un tel système
+adopterait — ce fichier ne les propose pas non plus, donc rien à vérifier
+au-delà de la structure de la formule.
