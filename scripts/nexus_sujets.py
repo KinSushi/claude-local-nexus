@@ -15,6 +15,18 @@ import re
 import subprocess
 import sys
 import unicodedata
+
+# La console Windows est en cp1252 : sans cette reconfiguration, tout
+# caractere non representable (espace fine insecable u202f dans le texte
+# d'aide) leve UnicodeEncodeError -- y compris parser.print_help().
+# Place ici, avant tout affichage et avant toute construction d'analyseur.
+# Protege pour ne jamais planter si reconfigure n'existe pas (flux
+# substitue, interpreteur depourvu).
+for _flux in (sys.stdout, sys.stderr):
+    try:
+        _flux.reconfigure(encoding="utf-8", errors="replace")
+    except AttributeError:
+        pass
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple

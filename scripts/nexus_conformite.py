@@ -72,9 +72,12 @@ BLOQUANT, AVERTISSEMENT, IGNORE = "BLOQUANT", "AVERT", "IGNORE"
 # Secrets sans lesquels la passerelle démarre mais ne sert rien d'utile.
 # `ANTHROPIC_API_KEY` n'y figure pas : son absence est un choix de coût
 # légitime, pas un défaut de conformité.
+# `REDIS_PASSWORD` a été retiré volontairement : Redis tourne sans mot de
+# passe par décision de l'opérateur, il n'est publié sur aucun port de
+# l'hôte et n'est joignable que du réseau Docker interne. La variable avait
+# été retirée de .env.example et l'exiger bloquait toute installation neuve.
 SECRETS_REQUIS = [
     "LITELLM_MASTER_KEY",
-    "REDIS_PASSWORD",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
     "POSTGRES_DB",
@@ -962,6 +965,66 @@ def controle_secrets() -> None:
         BLOQUANT,
         "manquants ou vides : %s" % ", ".join(manquants) if manquants else "%d variable(s) renseignees" % len(SECRETS_REQUIS),
     )
+
+
+def controle_secrets_documentes() -> None:
+    """
+    Chaque secret exigé est-il documenté dans `.env.example` ?
+
+    Un secret présent dans `.env` mais absent de l'exemple est un piège pour
+    la prochaine installation : elle démarrera sans lui, et la panne ne se
+    verra qu'à l'usage. Ce contrôle vérifie que chaque nom de SECRETS_REQUIS
+    possède une ligne d'affectation non commentée dans `.env.example`.
+
+    BLOQUANT : un secret non documenté rend toute installation neuve
+    impossible, et l'exiger ici force la mise à jour de l'exemple.
+    """
+    chemin = os.path.join(ROOT, ".env.example")
+    if not os.path.isfile(chemin):
+        ignorer("secrets documentes", ".env.example absent")
+        return
+    try:
+        with io.open(chemin, encoding="utf-8", errors="replace") as f:
+            contenu = f.read()
+    except OSError as exc:
+        ignorer("secrets documentes", ".env.example illisible : %s" % exc)
+        return
+    manquants = []
+    for nom in SECRETS_REQUIS:
+        # Ligne d'affectation non commentée : début de ligne (éventuellement
+        # indenté) suivi du nom, puis '='. Les commentaires commencent par '#'.
+        if not re.search(r"^\s*%s\s*=" % re.escape(nom), contenu, re.M):
+            manquants.append(nom)
+    noter(
+        "secrets documentes",
+        not manquants,
+        BLOQUANT,
+        "manquants dans .env.example : %s" % ", ".join(manquants)
+        if manquants
+        else "%d variable(s) documentee(s)" % len(SECRETS_REQUIS),
+    )
+
+
+def controle_exemple_present() -> None:
+    """
+    `.env.example` existe-t-il a la racine ?
+
+    `controle_secrets_documentes` s'ignore quand l'exemple est absent :
+    defendable en soi, mais cela signifie que SUPPRIMER le fichier desarme
+    ce controle en silence, sur le depot ou il sert le plus. Aucun autre
+    controle ne couvre la presence du fichier ; celui-ci la garde.
+
+    BLOQUANT : sans exemple, une installation neuve n'a pas de modele de
+    configuration a remplir, et le controle des secrets documentes se
+    desarme sans le dire.
+    """
+    chemin = os.path.join(ROOT, ".env.example")
+    if not os.path.isfile(chemin):
+        noter("exemple present", False, BLOQUANT,
+              ".env.example absent — le restaurer (git checkout -- "
+              ".env.example) : sans lui, secrets documentes s'ignore")
+        return
+    noter("exemple present", True, BLOQUANT, ".env.example present a la racine")
 
 
 def controle_env_hors_git() -> None:
@@ -1873,6 +1936,8 @@ def main() -> int:
         controle_verrou_machine,
         controle_mcp_a_jour,
         controle_secrets,
+        controle_secrets_documentes,
+        controle_exemple_present,
         controle_env_hors_git,
         controle_disque,
         controle_pont_mcp,

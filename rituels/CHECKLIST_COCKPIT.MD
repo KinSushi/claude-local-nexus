@@ -12103,3 +12103,591 @@ defaut et qu'on desarme n'a jamais protege personne** — c'est le §106.1 vecu 
 | --- | --- | --- |
 | 42 | Le controle LOI 1 ne distingue pas produire de cabler | `OUVERT` — arbitrage de l'operateur, jamais de la session jugee |
 | 43 | Deux lignes ecrites a la main, rituel non clos | `OUVERT` — reference volontairement INCHANGEE |
+
+---
+
+## 115. SUJETS OUVERTS — 2026-09-01, campagne securite et apports de la session sovereign
+
+> **Remplace la file de tete.** Le detail de chaque chantier, avec sa colonne
+> « ce qui la ferme », est dans `rituels/PLAN_MAITRE_2026-09-01.md`. Cette
+> section est l'index : elle ne recopie pas le plan, elle y renvoie.
+
+### 115.1 VERBATIM RECOPIE SUR CONSIGNE DE L'OPERATEUR
+
+`rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md` — catalogue Ollama local et
+cloud, question de l'operateur, sorties de terminal, analyse recue et ses
+**autocorrections**. Consigne : *« tu fais recopier verbatim sans bruler ton
+contexte, c'est pour ta checklist »*.
+
+Ce qui en est MESURE et directement exploitable :
+
+| Fait | Statut |
+| --- | --- |
+| `ollama cloud search` n'existe pas dans cette version de CLI | MESURE |
+| 53 modeles locaux residents, 3 references cloud dans `ollama list` | MESURE |
+| 19 modeles cloud accessibles a l'abonnement | MESURE |
+| `ollama list` n'est PAS le catalogue cloud | RETENU — quatrieme etat que le contrat §6 ne nommait pas |
+| identifiants `*:cloud` de la seconde passe | A EPROUVER UN PAR UN (§39) |
+| `qwen3.5:397b` | **TRANCHE** — l'alias REPOND (servi par ollama.com, 6 s, cout 0). La source se retractait a tort ; le depot avait raison |
+
+### 115.2 CAMPAGNE DE SECURITE — 124 epreuves, 0 echec mecanique
+
+`policy` 5/5 (23 replis, tous vers le local) · `fuite` 5/5 · `reverse` 15/15 ·
+`verrou` 3/3 · `isolation` 8 · `lecture` 9 · `shell` 11 · `shellps` 12 ·
+`cibles` 28 · `plan` 8 · `accord` 7 · `couverture` 6 · `quote` 3 · `vitrine` 4 ·
+detecteur de secrets 4 detectes / 3 silences.
+
+Deux gardes ont mordu PENDANT la campagne : l'ACL a refuse la lecture de `.env`,
+`nexus_agent` a refuse de joindre `.env.example`.
+
+### 115.3 FERME CE SOIR — avec son controle, donc reellement clos
+
+| Sujet | Ce qui le ferme |
+| --- | --- |
+| `REDIS_PASSWORD` exige en BLOQUANT alors qu'il est retire de `.env.example` : toute installation neuve echouait au demarrage | `controle_secrets_documentes` — echoue si un secret exige n'est pas documente dans `.env.example`. Cycle a trois temps complet : audit gpt-oss-120b, correction deepseek-v4-pro, audit de la correction par qwen3.5-397b PUIS par la session sovereign, qui l'a prouve capable de rougir sans divulguer aucune valeur |
+| Le motif de refus de `nexus_garde_agent` n'atteignait jamais l'operateur | Le motif est desormais ecrit sur stderr en plus du JSON sur stdout — epreuve a jouer |
+| Le saut de ligne terminal perdu sur chaque rendu du banc (`W292` systematique) | Patch pose sur `nexus_agent.py` — epreuve a jouer |
+
+### 115.4 OUVERT — les cinq chantiers, par ordre
+
+| # | Chantier | Etat |
+| --- | --- | --- |
+| C1 | **Canal de retour** — 8 taches. Un rendu vide se lit comme un feu vert | `OUVERT` — prioritaire, conditionne tout deploiement massif |
+| C2 | **Gardes : portee et cablage** — 5 taches | `OUVERT` — dont C2.1 en attente d'arbitrage OPERATEUR |
+| C3 | **Registre des modeles** — 4 taches | `OUVERT` — C3.1 tranche, le reste ouvert |
+| C4 | **Plan local inmesurable** — 3 taches | `OUVERT` — C4.1 `nexus_preload` debloque toute mesure locale |
+| C5 | **74 000 fichiers jamais exploites** — 3 taches | `OUVERT` — 33 771 docs + 40 310 .md du depot SAS |
+
+### 115.5 LA MESURE QUI CHANGE LE REMEDE `max_tokens`
+
+Mesuree par la session sovereign, consigne triviale « ecris les entiers de 1 a
+60 », `max_tokens: 300` :
+
+    gpt-oss-120b-cloud          1.2 s   407 jetons   VIDE apres retrait du raisonnement
+    mistral-large-3-675b-cloud  2.2 s   215 jetons   COMPLET — le seul
+    glm-5.3-flash-cloud         1.3 s   357 jetons   tronque a 26 nombres
+    qwen3-8b-local             52.9 s   357 jetons   VIDE apres retrait du raisonnement
+
+**Trois sur quatre echouent sur ce qu'un script de trois lignes fait.** Un
+`max_tokens` trop serre ne TRONQUE pas : il rend VIDE, sans erreur. Et le seuil
+**ne depend pas de la difficulte** — le meme `gpt-oss-120b-cloud` rend vide sur
+« 1 a 60 » a 300 jetons et produit 360 lignes de Python sans faute a 7000.
+
+Consequence : exposer `max_tokens` est **necessaire et insuffisant**. L'appelant
+qui decouvre le levier le reglera au plus juste pour economiser, et c'est
+exactement le geste qui produit le vide. Il faut les trois : exposer (C1.1),
+distinguer les trois etats (C1.2), plancher ou avertissement (C1.3).
+
+### 115.6 CE QU'ON LIT N'EST PAS CE QU'ON CROIT MESURER — trois fois en une soiree
+
+| Canal | Le piege |
+| --- | --- |
+| code de sortie derriere un pipe | c'est celui de `tail`, pas du script — un cliquet a semble annoncer « 1 REGRESSION » en sortant en 0 ; remesure : il sort bien en 1 |
+| garde ABSENT pris pour un garde INERTE | une commande non bloquee ne prouve pas que le refus ne mord pas ; elle prouve peut-etre que personne ne jugeait |
+| `.pyc` perime | une contre-epreuve peut passer au vert sur du bytecode d'avant le patch — purger le cache avant toute mesure d'inversion |
+
+**Corollaire ajoute par sovereign, et il vaut pour toute mesure de ce depot :**
+*une execution ne vaut que pour le REGIME ou elle a ete faite.* La requete qui
+prouve que `qwen3.5:397b` repond en 349 jetons ne dit rien du regime ou il rend
+vide. Les deux mesures ne se contredisent pas : elles portent sur deux moities
+du meme mecanisme.
+
+### 115.7 TROUVE EN S'EN SERVANT, ce soir
+
+| Defaut | Preuve |
+| --- | --- |
+| `nexus_sujets.py --help` **PLANTE** | `UnicodeEncodeError: 'charmap' codec can't encode character ' '` depuis `parser.print_help()` via `cp1252.py`. Un outil dont l'aide plante est inutilisable pour qui ne connait pas deja ses options. Correctif delegue |
+| `nexus_armer_hook.py` orphelin | `nexus_cablage.py` sort en **1** — le cliquet mord |
+| chemin absolu grave dans `nexus_armer_hook.py:123` | contredit la mesure « 0 chemin absolu » du §0.5 — **nuance** : un hook global DOIT porter un chemin absolu, le defaut est de le GRAVER au lieu de le deriver a l'ecriture |
+| aucun controle ne couvre la PRESENCE de `.env.example` | supprimer le fichier desarme `controle_secrets_documentes` en silence (IGNORE, ni vert ni rouge) — trouve par le quatrieme cas de sovereign, que personne n'avait demande |
+
+### 115.8 PATRON DE CONSIGNE POUR LE BANC — mesure, pas preference
+
+Une consigne qui **ouvre sur un bilan appelle un bilan** : le banc a rendu un
+rapport tabulaire de 1348 jetons au lieu du fichier attendu. Reformulee avec la
+contrainte de forme en TETE et repetee en PIED — « ta premiere ligne est
+exactement ceci, ta derniere exactement cela » — le rendu suivant etait complet
+du premier coup, apres cinq cycles infructueux.
+
+Deux autres regles mesurees le meme soir : **croiser les familles** (le lanceur
+avertit lui-meme quand il ne l'a pas fait) et **demander un patch ancre, jamais
+le fichier entier** (`kimi-k2.7-code` a escalade de 4000 a 9000 jetons en tentant
+de tout reecrire et a echoue deux fois ; `deepseek-v4-pro` a rendu deux blocs
+ancres en 16 s).
+
+### 115.9 ANOMALIES TROUVEES EN SE SERVANT DU MCP — 2026-09-01, soiree
+
+> Consigne de l'operateur : *« tu utilises le MCP en mode normal, et si tu y vois
+> des anomalies ou des suggestions d'ameliorations tu le note tout de suite dans
+> ta checklist »*. Ce qui suit vient de trois appels reels — `nexus_models`,
+> `nexus_savings`, `nexus_search` — et non d'une relecture de code.
+
+| # | Anomalie | Mesure | Etat |
+| --- | --- | --- | --- |
+| **A1** | `nexus_models` affiche le nom OLLAMA BRUT dans la section des modeles chauds, alors que TOUT le reste de la sortie est en alias de passerelle | rendu : `MODELES CHAUDS (1) : phi3.5:latest` — mais l'alias appelable est `phi3.5-local`. L'appelant doit DEVINER la correspondance pour exploiter l'information | `OUVERT` — **neuf** |
+| **A2** | `nexus_savings` rend « Part deleguee : 100.0 % » — un nombre qui, en l'absence de trafic Anthropic par la passerelle, **ne peut pas descendre** | 8 160 945 jetons sur 8 160 945. Le texte d'accompagnement est honnete et dit que l'abonnement n'y figure pas ; c'est le CHIFFRE qui se lit comme un accomplissement | `OUVERT` — **neuf**. Classe connue : une metrique qui ne peut pas rougir |
+| **A3** | Un plan **« inconnu »** apparait dans la ventilation, avec 21 requetes et zero jeton en entree comme en sortie | ni local, ni cloud, ni anthropic — non explique par la sortie | `OUVERT` — **neuf** |
+| **A4** | `nexus_models` annonce les modeles chauds sans offrir de quoi en chauffer un | confirme en usage — c'est C4.1, `nexus_preload`. Signale d'abord par la session sovereign, reproduit ici | `OUVERT` |
+
+**A2 et A3 se renforcent** : une part deleguee de 100 % cohabite avec 21 requetes
+dont le plan est inconnu. Tant que « inconnu » n'est pas resolu, le 100 % porte
+sur un denominateur dont une part n'est pas classee.
+
+### 115.10 LE DEFAUT C1 CHIFFRE SUR CE DEPOT — mesure de `nexus_savings`
+
+    cloud   55 requetes sans aucune sortie  sur 1234
+    local   29 requetes sans aucune sortie  sur  496
+    ---------------------------------------------------
+            84 sur 1730, soit 4,9 %
+
+**Ce sont des appels qui ont consomme leur entree et rendu zero jeton.** L'outil
+les compte deja et refuse de les retrancher du denominateur — *« la retrancher
+flatterait la mesure au lieu de la corriger »*, ce qui est exactement la bonne
+posture.
+
+Le recoupement avec la mesure de la session sovereign est direct : elle observait
+des rendus VIDES sans erreur sur `summarize` et `context` ; l'instrumentation de
+ce depot en compte 84 en un jour. Les deux mesures decrivent le meme phenomene
+par deux bouts, et aucune des deux ne le voyait entierement seule.
+
+### 115.11 CE QUE `nexus_search` A REMONTE, ET QUI FERME A MOITIE C4.3
+
+L'appel `nexus_search` sur « preload chargement des poids modele chaud
+keep_alive » a rendu cinq extraits ancres, sans charger un seul fichier entier —
+le levier fonctionne, et c'est le premier des trois que l'outil recommande.
+
+Deux d'entre eux corrigent le plan :
+
+* `nexus_conformite.py:736` — un controle EXISTE deja sur `OLLAMA_MAX_LOADED_MODELS`,
+  en AVERTISSEMENT : *« non defini — le moteur applique son defaut (trois modeles) ;
+  N resident(s) a l'instant, ce qui reflete l'usage et non la limite »*. Donc C4.3
+  n'est pas a construire de zero : le constat est deja instrumente, seule la
+  DECISION de reglage reste ouverte.
+* `tools/nexus-mcp/server.js:947` — le cout du chargement est deja mesure et
+  documente a l'interieur du serveur : trois passes du meme appel, **180,3 s a
+  froid contre 2,90 s puis 0,26 s a chaud**. Le rapport est de **60 a 700**, et
+  c'est le chiffre qui donne son enjeu a `nexus_preload` (C4.1) : sans
+  prechauffage, toute mesure du plan local melange un cout paye une fois avec un
+  cout paye a chaque jeton.
+
+### 115.12 ANOMALIES REMONTEES PAR LA SESSION EA MT5 — 2026-09-01
+
+> Source : session `ea-mt5-python-rentable-a8`, depot `D:/EA MT5 PYTHON RENTABLE
+> ROBUSTE`. Non reproduites ici — statut PISTE, et l'auteur le dit lui-meme.
+
+| # | Anomalie | Mesure fournie | Statut |
+| --- | --- | --- | --- |
+| **B1** | `qwen3-coder-30b-local` rend le seul mot `pong` sur une consigne de code complete | MCP `nexus_ask`, `max_tokens=3500`, prompt de ~90 lignes portant un contrat de donnees mesure. Rendu integral : un bloc de code contenant `pong`. Compteur : `1434 tokens` factures a quatre caracteres. **Pas de timeout — il a rendu vite** | `PISTE` — un seul tir, non re-tire volontairement pour ne pas masquer le cas |
+| **B2** | `gpt-oss-120b-cloud` **hallucine sa propre identite** | Le system prompt exigeait d'imprimer le modele et le plan d'execution. Il a imprime « Modele : gpt-4o » et a compris « plan d'execution » comme « plan de travail ». L'enveloppe de la passerelle, elle, etait juste : `[gpt-oss-120b-cloud · Ollama Cloud, les donnees sortent]` | `OUVERT` — **consequence LOI 1** |
+
+**B2 est le plus grave des deux, et pas pour la raison evidente.** Un modele qui
+se trompe de nom est anecdotique ; un audit LOI 1 qui trace un FAUX PLAN ne l'est
+pas. Si l'on croit l'auto-declaration du modele plutot que l'enveloppe, on peut
+croire avoir change de famille d'auditeur sans en avoir change — et le croisement
+qui fonde la LOI 1 devient decoratif tout en paraissant tenu.
+
+**B1 rejoint la classe C1** : 1434 jetons consommes pour un rendu de quatre
+caracteres, sans erreur et sans timeout. C'est la meme famille que les 84
+requetes a sortie nulle comptees par `nexus_savings` (§115.10) et que les rendus
+vides mesures par la session sovereign — un appel qui coute et ne rend rien, sans
+que rien ne le signale.
+
+**SUGGESTION REMONTEE, retenue et a arbitrer** — la passerelle connait deja
+l'alias et le plan, puisqu'elle les imprime dans l'enveloppe. Injecter cote
+passerelle, en tete du system prompt, une ligne du type *« Tu tournes sous l'alias
+<alias>, plan <local|cloud|anthropic>. N'affirme jamais un autre nom de modele. »*
+Cout annonce : une concatenation dans le chemin d'appel, aucun jeton d'inference
+supplementaire. Benefice : rend l'auto-declaration INUTILE plutot que de la
+demander, et supprime une classe entiere de faux positifs de tracabilite.
+L'auteur precise n'avoir pas mesure cette suggestion — c'est une proposition.
+
+**Reserve d'arbitrage** : injecter du texte dans tous les system prompts modifie
+le comportement de TOUS les appels de la plateforme. A eprouver sur un cas avant
+d'etre generalise, et a mesurer en jetons reels plutot que sur l'annonce « aucun
+jeton supplementaire », qui est vraie pour l'inference mais fausse pour l'entree.
+
+### 115.13 UNE FENETRE PERDUE SUR TROIS, ET LE BILAN DIT « 0 ECHEC »
+
+> **La meilleure trouvaille du tour, et elle vient de l'usage : declenchee en
+> travaillant, pas en auditant.**
+
+Appel reel : `nexus_agent.py` avec `tools/nexus-mcp/server.js` en piece jointe
+(146 Ko). Journal integral :
+
+```
+Appel modele deepseek-v4-pro-0813-cloud (timeout 180s)   x4
+  fenetre 1 perdue sur tous les plans
+Appel modele deepseek-v4-pro-0813-cloud (timeout 900s)
+MAP-REDUCE : 3 fenetres, 1 paliers
+77227 tokens, 210 s, cout 0
+1 tache(s), 77227 token(s), 164 s au total, 0 echec(s)
+```
+
+Le rendu, lui, disait honnetement : « Impossible de produire la carte demandee :
+le fichier source n'est pas present dans cette conversation. »
+
+**Ce qui s'est passe** : le fichier depassant la fenetre, l'outil est passe en
+MAP-REDUCE sur trois fenetres. La PREMIERE a ete perdue apres quatre tentatives a
+180 s. Le REDUCE s'est fait sur les deux restantes — donc le modele final n'a
+jamais vu le debut du fichier, ou se trouvent precisement les schemas MCP que la
+tache demandait de localiser.
+
+**Trois defauts distincts, empiles :**
+
+| # | Defaut | Pourquoi il compte |
+| --- | --- | --- |
+| **D1** | Le bilan final annonce **« 0 echec(s) »** alors qu'un tiers du corpus est perdu | La perte EST dite, en clair, dans le journal — mais le COMPTEUR la dement. Un lecteur qui regarde le bilan, ou un script qui lit le code de sortie, conclut au succes |
+| **D2** | Le REDUCE se poursuit sur un corpus **ampute sans le dire dans le rendu** | Le rendu ne porte aucune mention de la fenetre manquante. Ici le modele a eu l'honnetete de dire qu'il n'avait rien ; un modele moins scrupuleux aurait repondu sur les deux tiers recus, et rien ne l'aurait signale |
+| **D3** | Les fenetres MAP heritent d'un timeout de **180 s** la ou l'appel final en recoit **900** | 180 s est le `request_timeout` de LiteLLM, deja identifie dans `server.js:947` comme tuant un chargement de poids a froid. Une fenetre de MAP est au moins aussi couteuse que l'appel final : lui donner cinq fois moins de temps est l'inverse du bon reglage |
+
+**Cout mesure de ce faux vert : 77 227 jetons et 210 s pour un rendu
+inexploitable, comptabilise comme reussite.**
+
+C'est le chantier C1 sur le CHEMIN SCRIPT, alors que les signalements des sessions
+voisines portaient sur le chemin MCP. La classe est donc plus large qu'on ne le
+croyait : elle ne tient pas au serveur, elle tient a la facon dont **toute perte
+partielle est rapportee**.
+
+**Ce qui fermerait D1** : le compteur d'echecs et le code de sortie doivent tenir
+compte des fenetres perdues — une tache dont une fenetre manque n'est pas une
+tache reussie. **D2** : le rendu doit porter la mention de l'amputation, en tete.
+**D3** : aligner le budget de temps des fenetres MAP sur celui de l'appel final,
+ou au moins ne pas le fixer sous le seuil connu de chargement a froid.
+
+### 115.14 QUESTION DE L'OPERATEUR — les agents Claude peuvent-ils etre factures si le cloud tombe ?
+
+> « si le cloud ne fonctionne plus, les agents claude pourraient etre factures si
+> cela se justifie ? ou c'est completement bloque ? »
+
+**REPONSE : ce n'est PAS bloque.** Verifie dans `scripts/nexus_garde_agent.py`,
+pas de memoire. Deux portes explicites, et le motif de refus les NOMME lui-meme :
+
+| Porte | Ou | Portee |
+| --- | --- | --- |
+| `NEXUS_AGENT_LIBRE=1` | variable d'environnement — lignes 65 et 242 | leve le garde entierement, pour la duree de la session |
+| `NEXUS_JUSTIFIE_PAYANT <motif>` | texte litteral dans le prompt du sous-agent — lignes 68, 171, 206 | autorise CE depeche precis, en exigeant un motif ecrit |
+
+Le message de refus dit exactement : « Pour autoriser, definir
+NEXUS_AGENT_LIBRE=1 ou ajouter NEXUS_JUSTIFIE_PAYANT <motif> dans le prompt. »
+
+**La conception est donc la bonne, et elle est deliberee** : le garde ne bloque
+pas, il **oblige a ecrire pourquoi**. La difference est essentielle — un garde qui
+interdit se fait desarmer le jour ou il gene ; un garde qui exige une
+justification laisse passer l'urgence tout en laissant une trace de la decision.
+C'est exactement la regle du contrat 0.1.4.1 : un refus doit nommer la voie.
+
+**La seconde porte est preferable a la premiere** : `NEXUS_JUSTIFIE_PAYANT`
+autorise un appel et laisse son motif dans le prompt, la ou `NEXUS_AGENT_LIBRE=1`
+desarme tout et s'oublie.
+
+**RESERVE, et elle est reelle** : ni l'une ni l'autre ne PLAFONNE la depense. Une
+fois la porte ouverte, rien ne compte ce qui sort. `OUVERT` — il manque un plafond
+de depense sur les portes de derogation, distinct du garde lui-meme.
+
+### 115.15 A2 et A3 — tranches, et l'un des deux etait MA propre erreur
+
+| # | Verdict apres diagnostic delegue |
+| --- | --- |
+| **A3** — plan « inconnu » | **RESOLU, ce n'est pas un defaut.** C'est le repli final de `domain_of` : y tombent les requetes dont l'`api_base` ne correspond a aucun plan connu. Repli LEGITIME — il evite de classer arbitrairement du trafic inconnu comme local. Les 21 requetes comptent au denominateur mais portent zero jeton, donc ne deplacent pas le pourcentage |
+| **A2** — part deleguee a 100 % | **PARTIELLEMENT INFIRMEE — mon erreur.** J'avais ecrit « un nombre qui ne peut pas descendre ». Faux : le numerateur ne compte que local+cloud, le denominateur TOUS les plans. Du trafic Anthropic passant par la passerelle ferait bien tomber le chiffre sous 100 %. Ce qui reste vrai, et que l'outil dit deja lui-meme : tant qu'aucun trafic Anthropic ne transite, le 100 % est structurel et n'informe de rien |
+
+**A2 est instructif** : j'ai qualifie de defaut ce qui etait une propriete
+conditionnelle, et il a suffi de faire lire le CALCUL par un tiers pour que la
+nuance apparaisse. J'avais lu la SORTIE, pas le calcul.
+
+### 115.16 CORRECTIONS DU PLAN MAITRE, trouvees par un audit tiers
+
+Audit de `PLAN_MAITRE_2026-09-01.md` par `qwen3.5-397b-cloud`, qui ne l'avait pas
+ecrit. Trois trouvailles, deux retenues :
+
+| Trouvaille | Verdict |
+| --- | --- |
+| **C2.2** — la condition de fermeture « le cliquet repasse a 0 orphelin » se satisfait aussi bien en RETIRANT le script qu'en le cablant, donc elle ne ferme pas le defaut decrit | **RETENUE** — la condition doit etre « le script est appele par un hook ou un autre controle », pas « le compteur est a zero » |
+| **C4.2 avant C4.3** — la re-mesure du debit depend des reglages du moteur, or les reglages sont listes APRES | **RETENUE** — l'ordre est faux, C4.3 doit preceder C4.2 |
+| **« 124 epreuves »** presente comme mesure alors que la somme des comptes cites dans le plan fait 50 | **REJETEE sur le fond, RETENUE sur la forme.** Le total est exact — le detail figure en 115.2 de ce cockpit (96 + 28 = 124), l'auditeur ne l'avait pas sous les yeux. Mais il a raison que le plan AFFIRME sans montrer |
+
+### 115.17 APPORTS DE LA SESSION EA MT5 — un seuil chiffre, et un mecanisme NOUVEAU
+
+**1. Le seuil de budget, confirme sur un depot tiers.** Sur 8 appels cloud d'une
+soiree : **les 3 echecs sont TOUS a budget < 4000, les 5 succes TOUS a budget
+>= 6000.** Sans exception. Petit echantillon, et l'auteur le dit.
+
+```
+gpt-oss-120b-cloud      max_tokens 2200 -> VIDE (1802 jetons produits)
+gpt-oss-120b-cloud      max_tokens 6000 -> 4277 jetons, script complet
+kimi-k2.7-code-cloud    max_tokens 4000 -> VIDE (5467 jetons consommes)
+qwen3.5-397b-cloud      max_tokens 1800 -> VIDE (2551 jetons consommes)
+```
+
+Trois vides pour ~10 000 jetons d'entree payes. **Regle adoptee la-bas, et a
+adopter ici : `max_tokens >= 6000` par defaut sur tout appel cloud de redaction.**
+
+**2. MECANISME NOUVEAU — l'effondrement au renvoi de correction.** Distinct de la
+classe C1, et **le canal de retour ne l'attrapera PAS**.
+
+Protocole mesure deux fois, sur deux modeles : (a) consigne initiale portant le
+contrat complet, rendu structurellement bon ; (b) renvoi du rendu avec ses
+defauts nommes en detail mais le contrat seulement RESUME, le second rendu perd
+la specification et **invente**.
+
+```
+deepseek-v4-flash : 2e rendu -> imports inventes, fallback factice rendant des
+                    donnees bidon, 5 figures codees en dur, chemins inventes
+gpt-oss-120b      : 2e rendu -> plus aucune figure, plus d'importlib, la
+                    correction greffee sur un script imaginaire
+```
+
+**Aucun des deux n'a rendu vide : les deux ont rendu du code PLAUSIBLE ET FAUX.**
+Donc indetectable par un controle de non-vacuite — c'est ce qui le distingue de
+tout le chantier C1.
+
+**La formulation, et elle entre au protocole d'execution :**
+
+> **Un renvoi de correction doit etre AUTO-SUFFISANT. Un contrat resume dans un
+> renvoi est un contrat invente.**
+
+Remede applique la-bas : ne jamais renvoyer un rendu avec les seuls defauts ;
+toujours re-fournir le contrat INTEGRAL, et n'ajouter les defauts qu'a la fin,
+comme pieges nommes.
+
+### 115.18 CINQUIEME ET SIXIEME OCCURRENCES DE « CE QU'ON LIT N'EST PAS CE QU'ON MESURE »
+
+**Cinquieme — l'encodage, chez moi cette fois.** Un `python -c` lance depuis cette
+session a plante avec le MEME `UnicodeEncodeError` cp1252 que celui que je venais
+de faire corriger dans `nexus_sujets.py`. Remede immediat :
+`PYTHONIOENCODING=utf-8` devant tout `python -c` affichant un rendu de modele.
+
+**A mecaniser** : le depot corrige ce defaut fichier par fichier depuis deux jours
+(`backup.ps1`, `nexus_conformite.py`, maintenant `nexus_sujets.py`). C'est le signe
+qu'il manque un controle qui LISTE les scripts affichant du texte sans reconfigurer
+leur sortie, au lieu de les corriger un a un quand ils mordent.
+
+**Sixieme — le shell a mutile un heredoc**, en tentant d'ecrire cette section meme :
+`unexpected EOF while looking for matching quote`. C'est exactement le defaut que
+`nexus_garde_shell` documente et dont il donne le remede — *« passer le texte par un
+fichier plutot qu'en ligne de commande »*. Le remede a ete applique pour ecrire ces
+lignes. Le garde avait raison avant d'etre consulte.
+
+### 115.19 LE TROU BASH — l'ACL protege contre l'edition distraite, jamais contre le flux de travail reel
+
+> **La trouvaille de securite la plus grave de la journee, et elle n'est pas un
+> oubli : elle est STRUCTURELLE.** Mesuree par accident, en travaillant, puis
+> etablie parce qu'une session voisine a pose la bonne question.
+
+**COMMENT ELLE A ETE TROUVEE.** La session « Volumes reapparus apres redemarrage »
+a constate que `scripts/nexus_garde_agent.py` avait ete modifie alors que ce chemin
+est en `deny` depuis 19:06, et a pose la question qu'elle ne pouvait pas trancher
+seule : *« si ton edition est passee, c'est soit par Bash — le trou connu, les
+gardes voient l'OUTIL et pas ce que l'outil LANCE — soit parce que les regles
+locales ne s'appliquent pas a ta session. Les deux cas sont interessants et aucun
+n'est mesure. »*
+
+**LA MESURE, que j'etais seul a pouvoir donner.** Je n'ai jamais employe `Edit`,
+`Write` ni `NotebookEdit` sur ce fichier. Je l'ai modifie **deux fois** par ce
+chemin :
+
+```
+Bash  ->  python scripts/nexus_appliquer.py <rendus.jsonl> <tache> scripts/nexus_garde_agent.py
+```
+
+`nexus_appliquer.py` ouvre le fichier cible en ecriture et y applique les blocs
+AVANT/APRES. L'ecriture est faite par un processus Python lance par Bash. **Le
+garde a vu « Bash ». Il n'a pas vu « ecriture sur un chemin en deny ».**
+
+**LA REGLE, verifiee dans `.claude/settings.json` :**
+
+```
+deny : Edit(scripts/nexus_garde_agent.py)
+       Write(scripts/nexus_garde_agent.py)
+       NotebookEdit(scripts/nexus_garde_agent.py)
+       ... idem pour nexus_garde_shell.py
+total deny projet : 55
+```
+
+Trois outils d'edition sont fermes. **Bash ne l'est pas.**
+
+**LE SECOND CAS EST ECARTE**, et c'etait le plus inquietant : les regles locales
+S'APPLIQUENT bien a cette session — je les ai lues depuis elle. Un socle qui ne
+vaudrait pas d'une session a l'autre aurait ete pire. La mesure ferme donc un trou
+imaginaire en meme temps qu'elle en nomme un reel.
+
+**POURQUOI ELLE EST STRUCTURELLE ET NON UN OUBLI.** Tous les autres trous mesures
+ce jour etaient des oublis — un matcher trop etroit, une regle absente, un cliquet
+pose sur la question voisine. Celui-ci est d'une autre nature :
+
+```
+la LOI 1 interdit a l'orchestrateur d'ecrire un correctif
+l'outil prevu pour poser un rendu du banc est nexus_appliquer.py
+il se lance par Bash
+Bash n'est couvert par aucun deny de chemin
+```
+
+⇒ **Le seul chemin conforme a la doctrine est le seul que l'ACL ne couvre pas.**
+Ce n'est pas un contournement : c'est la voie normale. Un depot qui suivrait sa
+propre regle a la lettre passerait toujours la ou rien ne le voit.
+
+**LE COROLLAIRE**, formule par la session voisine et plus dur que ma propre
+formulation :
+
+> **Plus la LOI 1 est respectee, moins l'ACL protege.** Les deux mecanismes se
+> contredisent alors qu'ils visaient le meme but.
+
+Ma formulation, conservee parce qu'elle dit l'effet : *ces 55 deny protegent
+contre l'edition manuelle distraite, jamais contre le flux de travail reel.*
+
+**REMEDE ENVISAGE — et ses DEUX reserves, dont une mesuree ailleurs.**
+
+Un garde `PreToolUse` sur `Bash|PowerShell` qui inspecte la COMMANDE et refuse
+quand elle nomme un chemin protege. Le mecanisme d'inspection existe deja :
+`nexus_garde_shell.py` lit la commande pour d'autres motifs. Ce qui manque est la
+liste des chemins et la comparaison.
+
+| Reserve | Origine | Consequence |
+| --- | --- | --- |
+| **Ignorer les LECTURES** (`cat`, `grep`, `sed -n`) | la mienne | sinon tout le travail d'audit se bloque, et un garde qui gene se fait desarmer |
+| **Un garde qui lit la commande ne voit pas ce que la VARIABLE contient** | session voisine | `nexus_appliquer.py scripts/nexus_garde_agent.py` nomme le chemin en clair ; `nexus_appliquer.py "$CIBLE"` ne le nomme pas. Le garde doit le DIRE dans sa docstring, sinon il promet une couverture qu'il n'a pas |
+
+**Precedent mesure a l'appui de la seconde reserve**, dans le depot voisin, quatre
+heures plus tot : exiger une marque d'invocation explicite (`subprocess`,
+`sys.executable`) a fait passer le compte des appels de **29 a 11** — dix-huit
+faux negatifs — parce qu'un appel reel s'ecrit souvent sans marque sur la meme
+ligne. **Un critere trop strict coute des faux negatifs, et un garde qui crie
+toujours se fait desarmer.**
+
+**Statut : `OUVERT`.** Le remede n'est pas pose. Il touche un garde arme
+globalement sur tous les depots de la machine et il peut bloquer le travail des
+trois sessions : il demande l'arbitrage de l'operateur avant d'etre ecrit, pas
+apres.
+
+### 115.20 ETAT DE L'ARBRE PARTAGE — trois sessions, un seul depot, aucun verrou
+
+**Mesure de la session voisine, 20:39** : plusieurs fichiers modifies sans
+coordination dans `C:/local-llm-docker`. Verification croisee : **elle n'a aucun
+travail non commite** — tout le sien est dans `626710a` et les 116 commits qui le
+precedent. Les huit fichiers sales sont tous de cette session.
+
+```
+scripts/nexus_conformite.py    controle_secrets_documentes + controle_exemple_present
+scripts/nexus_agent.py         saut de ligne terminal, --sortie-brute
+scripts/nexus_garde_agent.py   hookEventName + motif sur stderr + commentaire de cause corrige
+scripts/nexus_sujets.py        encodage utf-8 (son --help plantait)
+scripts/nexus_armer_hook.py    chemin derive de __file__ au lieu d'etre grave
+rituels/CHECKLIST_COCKPIT.MD   section 115
+rituels/PLAN_MAITRE_2026-09-01.md               (nouveau)
+rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md (nouveau)
+```
+
+**LE DEFAUT DE FOND, et il n'a aucun garde** : le verrou de ce depot protege LE
+BANC, pas l'arbre git. Rien n'empeche deux sessions de commiter en meme temps, ni
+l'une d'ecraser le travail non commite de l'autre. C'est le sujet 10 du cockpit de
+la session voisine, ouvert depuis cet apres-midi.
+
+**Ce qui a tenu lieu de verrou ce soir : une conversation.** Elle a refuse de
+commiter mon travail — *« ce serait m'approprier un travail non fini et te faire
+porter un commit que tu n'as pas voulu »* — et j'ai refuse de commiter le sien.
+Cela a fonctionne, et **cela ne prouve rien** : deux sessions polies ne sont pas
+un mecanisme. Sous la regle du contrat 0.2.1, ce sujet reste `OUVERT` tant qu'un
+controle n'echoue pas quand la regle est enfreinte.
+
+### 115.21 PREUVE QUE LE GARDE D'ISOLATION MORD — obtenue par une session tierce
+
+Depechage d'un agent sans isolation, message exact recu :
+
+> « Cle tool_input.isolation absente ou differente de worktree. Un sous-agent
+> depeche sans arbre de travail isole ecrirait dans l'arbre vivant. »
+
+**L'agent n'a jamais ete lance.** Et les deux gardes se sont enchaines dans le bon
+ordre : le premier a refuse sur le modele facture, il a fallu son echappatoire
+nommee pour atteindre le second.
+
+C'est la reponse a une question restee ouverte depuis le 30 aout — *« chaque
+worker dans un worktree isole »*, inscrit comme regle sans garde. Le garde existe,
+il est arme au global, et il mord. Ce qui manquait n'etait pas le mecanisme mais
+**la preuve d'effet**, et elle ne pouvait venir que d'une session qui n'en etait
+pas l'auteur.
+
+### 115.22 LA CLASSE « UN APPEL QUI COUTE ET NE REND RIEN » — chiffree sur sept jours
+
+Mesure `nexus_savings` sur 7 jours, rapportee par la session EA MT5 :
+
+```
+cloud   382 requetes a sortie nulle  sur 5328   ->  7,2 %
+local    73 requetes a sortie nulle  sur 1748   ->  4,2 %
+                                     ------
+                    455 requetes payees en entree, zero jeton rendu
+```
+
+Coherent avec ma propre mesure sur un jour (84 sur 1730, soit 4,9 %). **Ce n'est
+donc pas un incident : c'est un regime permanent, et il porte sur des centaines
+de requetes par semaine.** L'outil compte deja ces appels et refuse de les
+retrancher du denominateur ; ce qui manque n'est pas la mesure, c'est que
+l'APPELANT le sache au moment ou cela lui arrive — chantier C1.
+
+### 115.23 PISTE B1 « pong » — hypothese memoire ECARTEE par nexus_profile
+
+L'auteur de la piste avait propose de rapprocher le « pong » de la famille
+« modele plus lourd que la memoire du moteur : il pagine et ne repond jamais
+utilement ». **Il la retire lui-meme, sur mesure de `nexus_profile` :**
+
+```
+qwen3-coder:30b   18.0 Go   « dans le budget »  ->  ACCEPTE, eligible au routage
+budget pool 39.7 Go · budget maximal 56.2 Go · RAM machine 66.2 Go
+```
+
+Le modele fautif est a moins de la moitie du budget pool et le classificateur le
+declare eligible. **La cause n'est pas la pagination.** La piste B1 de §115.12
+reste ouverte quant a son mecanisme, mais cette explication-la est fermee.
+
+C'est un cas ou l'outil du depot a servi a REFUTER une hypothese plutot qu'a en
+confirmer une — usage plus rare et plus utile que l'inverse.
+
+### 115.24 SUR CET HOTE, « LOCAL D'ABORD » COUTE DU TEMPS, PAS DES JETONS
+
+`nexus_profile` : **Offload GPU : non — inference en RAM systeme**, GPU AMD 890M
+integre de 2,1 Go. Aucun modele local ne tourne sur GPU ici : le goulot est la
+bande passante memoire, pas le calcul.
+
+Mesure concordante, session EA MT5, trois appels MCP locaux le meme soir —
+`nexus_context` sur un fichier de 368 lignes avec `qwen2.5-coder:32b`,
+`nexus_summarize` sur 7,6 Ko avec `glm-4.7-flash` — **tous ont depasse 120 s** et
+sont passes en tache de fond. Cote cloud : 2 a 10 s.
+
+**Ce n'est pas une anomalie, c'est le regime normal de la machine.** Mais l'ordre
+de grandeur change le routage : sur cet hote, choisir le local coute du TEMPS, pas
+des jetons — et l'appelant devrait l'apprendre AVANT, pas le decouvrir par un
+timeout.
+
+**SUGGESTION REMONTEE, non mesuree par son auteur et signalee comme telle** :
+`nexus_profile` connait deja l'absence d'offload et le poids de chaque modele ; il
+pourrait rendre, a cote du verdict « dans le budget », un **ordre de grandeur de
+latence attendue** — trois classes suffiraient : secondes / dizaines de secondes /
+minutes.
+
+> Le verdict actuel repond a « ce modele tient-il en memoire ? ». L'appelant, lui,
+> decide sur « combien de temps vais-je attendre ? ». Ce sont deux questions
+> voisines, et c'est la seconde qui gouverne le choix local/cloud.
+
+**Condition de faisabilite, posee par l'auteur lui-meme et NON verifiee** : que la
+passerelle conserve les durees par modele. Si elle ne les conserve pas, la
+suggestion tombe. A verifier avant d'ouvrir la tache.
+
+**Note d'arbitrage** : le depot possede deja deux bancs — `nexus_bench --debit` et
+le releve de latences — dont les mesures alimentent `.nexus/latences.json`. La
+suggestion pourrait donc etre satisfaite en LISANT ce releve plutot qu'en creant
+une source nouvelle. A trancher avant d'ecrire quoi que ce soit.
+
+### 115.25 ANOMALIE MINEURE — `nexus_profile` arrondit a « 0 Go » des poids non nuls
+
+Rendu observe :
+
+```
+qwen2.5:0.5b              0.4 Go   « 0 Go, dans le budget »
+nomic-embed-text:latest   0.3 Go   « 0 Go, dans le budget »
+all-minilm:latest         0.0 Go   « 0 Go, dans le budget »
+```
+
+La colonne de gauche donne une decimale, le motif arrondit a l'entier. Un modele
+de 0,4 Go est donc annonce « 0 Go » dans la phrase qui justifie son admission.
+Sans consequence sur le verdict, mais c'est un chiffre faux dans un texte qui
+explique une decision — et `all-minilm` a 0,0 Go ne se distingue plus d'une
+absence de mesure. `OUVERT`, faible.

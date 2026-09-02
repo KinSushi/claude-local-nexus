@@ -115,12 +115,15 @@ def process_armer(simulate=False):
     if isolation_groups:
         messages.append("Hook d'isolation deja present, aucun ajout")
     else:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        isolation_script = os.path.join(script_dir, 'nexus_garde_isolation.py')
+        command = f'python "{isolation_script}"'
         new_group = {
             "matcher": "Agent|Task|Workflow",
             "hooks": [
                 {
                     "type": "command",
-                    "command": 'python "C:/local-llm-docker/scripts/nexus_garde_isolation.py"'
+                    "command": command
                 }
             ]
         }

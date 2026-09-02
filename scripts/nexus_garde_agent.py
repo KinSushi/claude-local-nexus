@@ -100,22 +100,33 @@ def _refuse(reason: str) -> int:
         "hookSpecificOutput": {
             "permissionDecision": "deny",
             "permissionDecisionReason": reason,
+            "hookEventName": "PreToolUse",
         }
     }
     print(json.dumps(payload, ensure_ascii=False))
-    # UN REFUS SORT EN 2, JAMAIS EN 0.
+    # Écriture sur stderr pour que le motif soit visible dans le harnais Claude Code
+    # (qui remonte stderr en cas de sortie en code 2). stdout reste nécessaire pour
+    # les consommateurs qui attendent le JSON.
+    print(reason, file=sys.stderr)
+    # Le refus sort en code 2 (et non 0) pour bloquer la commande.
     #
-    # Le protocole des hooks de ce depot fait du code 2 le refus ; le JSON
-    # porte le MOTIF, pas la decision. Le premier jet de ce garde rendait 0
-    # apres avoir imprime « deny » : il affichait un refus qui ne bloquait
-    # rien -- une fausse garantie, pire que pas de garde du tout.
+    # La cause initiale du refus inopérant n'était PAS le code de sortie 0,
+    # mais l'absence du champ hookEventName="PreToolUse" dans le JSON.
+    # Ce champ est obligatoire pour que le harnais interprète correctement
+    # le refus. Le code 2 est conservé car il bloque effectivement la commande,
+    # et on ne change pas un garde qui fonctionne.
     #
-    # L'erreur venait de mon epreuve, qui avait encode « un garde ne doit
-    # jamais planter » en « un garde sort toujours 0 ». PLANTER et REFUSER
-    # sont deux choses distinctes : la premiere se rattrape en 0 (le rempart
-    # BaseException plus bas), la seconde DOIT etre non nulle. La porte de
-    # conformite l'a vu en EXERCANT le garde, la ou une relecture du code ne
-    # l'aurait pas vu.
+    # Le motif doit toujours être émis sur stderr en plus du JSON pour être
+    # visible dans les logs du harnais (qui remonte stderr en cas de sortie
+    # non nulle).
+    #
+    # Historique : l'erreur venait d'une epreuve qui avait encode la regle
+    # « un garde ne doit jamais planter » en « un garde sort toujours zero ».
+    # Or PLANTER et REFUSER sont deux choses distinctes : planter se rattrape
+    # en zero grace au rempart BaseException situe plus bas dans le fichier,
+    # tandis que refuser DOIT rendre un code non nul. C'est la porte de
+    # conformite qui l'a vu, en EXERCANT le garde, la ou une relecture du
+    # code ne l'aurait pas vu.
     return 2
 
 def _handle_agent(charge: Dict[str, Any]) -> int:

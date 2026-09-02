@@ -377,7 +377,8 @@ def _sans_raisonnement(texte):
                                   flags=re.IGNORECASE))
     if fermetures:
         s = s[fermetures[-1].end():]
-    return s.strip()
+    # Conserver exactement un saut de ligne terminal (W292 ruff) après avoir retiré les blancs parasites
+    return s.rstrip() + "\n"
 
 
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
@@ -1245,6 +1246,11 @@ def main() -> int:
         help="Ecrire une ligne JSON par tache DES QU'ELLE ABOUTIT. Sans "
              "cela, rien ne sort avant la fin du lot et une interruption "
              "perd tout le travail deja paye.")
+    parseur.add_argument(
+        "--sortie-brute", default=None, metavar="FICHIER",
+        help="Ecrire le seul champ texte du rendu, une ligne par tache, "
+             "des qu'elle aboutit. Independant de --sortie : les deux "
+             "peuvent etre demandes ensemble.")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
     parseur.add_argument("--modeles", action="store_true",
@@ -1393,6 +1399,14 @@ def main() -> int:
                 if flux is not None:
                     flux.write(json.dumps(r, ensure_ascii=False) + "\n")
                     flux.flush()
+                if args.sortie_brute:
+                    try:
+                        with io.open(args.sortie_brute, "a", encoding="utf-8",
+                                     newline="\n") as fbrut:
+                            fbrut.write((r.get("texte") or "") + "\n")
+                    except Exception as exc:
+                        print("[!] sortie brute impossible : %s" % exc,
+                              file=sys.stderr)
                 # L'AVANCEMENT VA SUR STDERR, jamais sur stdout : celui-ci porte
                 # le rapport, et le polluer le rendrait illisible a un appelant
                 # qui le parse.
