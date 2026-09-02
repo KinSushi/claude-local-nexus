@@ -16588,3 +16588,43 @@ declare `**kwargs` et relaie a `Popen`. Il faut l'union avec `Popen.__init__`, s
 ⇒ **CRITERE DE REVUE PERMANENT** : partout ou ce depot extrait du sens par `re`, demander si
 `ast`, `inspect` ou `importlib.metadata` repond exactement. Un pari sur la forme du texte est
 une hypothese ; une introspection est une mesure.
+
+
+### 115.123 DEUXIEME PANNE DU CLASSIFICATEUR EN MODE AUTO — mes scripts mis hors de cause, PAR MESURE
+
+**Incident signale par l'operateur, deuxieme occurrence** : en mode auto, des appels `Bash`
+refuses avec *« claude-sonnet-5[1m] is temporarily unavailable (connection failed) »*. Effet :
+**toute ecriture bloquee, et le travail prepare en amont perdu**.
+
+**Hypothese de l'operateur, prise au serieux** : *« du a ton hook ou scripts que tu as
+modifie »*. J'ai modifie aujourd'hui `nexus_reprise.py` (hook SessionStart), plus trois gardes.
+**Mesure plutot qu'ecarter :**
+
+    nexus_garde_agent       0,35 s   exit 0
+    nexus_garde_isolation   0,36 s   exit 0
+    nexus_garde_shell       0,34 s   exit 0
+    nexus_garde_ecriture    0,34 s   exit 0
+    nexus_reprise           3,03 s   exit 0   (SessionStart seulement)
+
+    MA modification du jour (comptage des 20 304 fragments) :  0,01 s  =  0 % des 3,03 s
+
+★ **VERDICT : mes scripts ne sont pas en cause, et voici pourquoi ce n'est pas une question de
+duree mais d'ORDRE.** Le classificateur est un service **distant**, interroge **en amont** de
+tout hook. Les hooks `PreToolUse` s'executent **apres** l'autorisation ; quand le classificateur
+tombe, ils ne sont jamais atteints. **Un composant qui n'est pas atteint ne peut pas etre la
+cause.**
+
+⚠️ **CE QUE CETTE MESURE NE PROUVE PAS**, et je le declare : elle etablit que les cinq hooks
+armes repondent vite et que ma modification coute 0,01 s. **Elle ne prouve pas qu'aucun script
+de ce depot n'a jamais nui** — elle repond a la question posee, pas a toutes.
+
+**LE VRAI REMEDE N'EST PAS UN CORRECTIF, C'EST UNE METHODE** : la panne fait perdre *« le
+travail prepare en amont »*. ⇒ **Ecrire sur le disque TOT, jamais garder un livrable en
+memoire de session.** Verifie apres cette panne : arbre **propre**, **89 commits**, et les trois
+livrables du tour tous presents (`LECONS_PARTAGEES.md` 222 lignes, `_POINTEUR_CORPUS.md` 122
+lignes, matiere stdlib deposee). **Rien de perdu** — parce que chaque livrable avait ete commis
+dans le tour qui l'a produit, et non a la fin.
+
+⇒ **C'est la classe d'EA MT5** : *un echec d'INFRASTRUCTURE lu comme un echec de TRAVAIL.* La
+panne est reelle, elle n'est pas la mienne, et la seule chose qui depend de moi est de n'avoir
+rien en vol quand elle survient.
