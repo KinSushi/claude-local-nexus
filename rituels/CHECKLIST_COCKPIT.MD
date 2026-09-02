@@ -13660,3 +13660,123 @@ Cinq occurrences mesurees dans la nuit, sur trois depots :
 La cinquieme est la mienne, et elle a failli faire poser un correctif sur du code
 sain. Le motif est identique a tous les autres : **un resume qui perd la
 distinction que le detail contenait.**
+
+---
+
+## 121. LE REVERSE TEST QUE PERSONNE D'AUTRE NE POUVAIT ADMINISTRER
+
+2026-09-01, 23:30. `nexus_garde_ecriture.py` ferme le trou Bash etabli plus tot dans la journee :
+les regles `deny` protegent `Edit`, `Write` et `NotebookEdit` sur 21 chemins, **jamais le shell**.
+
+La garde etait ARMEE et **non prouvee mordante** — l'etat exact que ce depot traque.
+
+### 121.1 POURQUOI CE TEST REVENAIT ICI, ET NULLE PART AILLEURS
+
+| session | pourquoi elle ne pouvait pas | |
+| --- | --- | --- |
+| l'autrice | **auteure de la garde** — LOI 1 | ne peut pas valider son propre travail |
+| `sovereign` | son harnais l'a bloque avant que la garde ne soit consultee | ecrire dans le depot d'un tiers est refuse chez lui, ce qui est sain |
+| **ici** | ni auteure de la garde, ni de sa regle | **la seule place restante** |
+
+Sovereign a en outre refuse de tenter l'ecriture sur un chemin protege de SON arbre — noyau gele au
+byte, miroir actif. **Son arbitrage est le bon** : un reverse test ne se joue pas sur ce qu'on ne
+peut pas se permettre de perdre.
+
+Quatre verts sur des cas qui doivent PASSER etaient deja acquis. Or **c'est exactement ce que
+rendrait une garde qui laisse tout passer** — et le depot en a deux exemples le meme jour, dont
+celui-ci avant correction : il compilait, s'installait, et ne faisait rien.
+
+### 121.2 LE PIEGE QUI AURAIT RENDU LE RESULTAT ININTERPRETABLE
+
+La garde a ete armee **apres** le demarrage de cette session, et les hooks ne se chargent qu'au
+demarrage (mesure du §117.1). Un « ca passe » n'aurait donc rien prouve :
+
+> logique defaillante, ou hook simplement pas charge ici ? **Le meme resultat, deux causes
+> incompatibles.**
+
+Les deux questions ont donc ete separees AVANT de tirer :
+
+| question | methode | resultat |
+| --- | --- | --- |
+| la LOGIQUE refuse-t-elle ? | invocation directe avec la charge JSON exacte d'un hook | `deny` rendu |
+| le CABLAGE est-il actif ici ? | le tir reel | **refus effectif** |
+
+Les deux etant vrais, on apprend en outre que **ce hook n'a pas attendu de redemarrage**, contrairement
+au hook d'isolation. Un fait qui ne se deduisait pas.
+
+### 121.3 LES TROIS EPREUVES, SEPAREMENT
+
+```
+REVERSE   echo x > scripts/nexus_garde_agent.py
+          -> REFUS -- CHEMIN PROTEGE. Le fichier ... est protege et toute
+             modification doit passer par une decision explicite.
+
+FORWARD   echo temoin > <hors depot>              PASSE
+          echo temoin > logs/temoin_reverse_*.txt PASSE
+
+FUITE     sha256 avant  61db7506faaf2b098349df272f403759
+          sha256 apres  61db7506faaf2b098349df272f403759   IDENTIQUE
+          taille        9956 -> 9956 octets
+          git status    0 modification
+```
+
+**Aucun effet de bord.** La reversibilite avait ete preparee avant le tir — fichier propre, suivi,
+empreinte relevee — et elle n'a pas servi.
+
+### 121.4 DEFAUT 1 — LE CODE DE SORTIE EST 0, ET C'EST LA SIGNATURE DU DEFAUT HISTORIQUE
+
+```
+nexus_garde_ecriture    deny + rc=0
+nexus_garde_agent       deny + rc=2      <- prouve mordant
+nexus_garde_isolation   deny + rc=2      <- prouve mordant ce soir
+```
+
+Le §0.1.4.1 decrit precisement cette signature : *« un refus a imprime `deny` et rendu 0 : il
+affichait un refus qui ne bloquait rien. 460 sous-agents et 32 millions de jetons factures sont
+passes. »* Et le §112.2 pose le protocole du depot : *JSON sur stdout **puis code de sortie 2***.
+
+**Le test prouve que celle-ci bloque quand meme** — le JSON `deny` suffit sur ce chemin. Ce n'est
+donc pas un defaut de fonctionnement, mais une **divergence de protocole**, et elle est piegeuse :
+
+> quiconque verifiera ce garde par son CODE DE SORTIE, comme le contrat l'y invite, conclura qu'il
+> ne bloque pas — et il aura tort.
+
+Le remede n'est pas evident : **changer un refus qui marche est le meilleur moyen de le casser.**
+Ajouter `sys.exit(2)` impose de **rejouer ce reverse test**, faute de quoi on remplace une
+divergence documentee par un risque non mesure.
+
+### 121.5 DEFAUT 2 — QUATRIEME MOJIBAKE DE LA SOIREE
+
+Le motif sort en `PROT<?>G<?>` au lieu de `PROTEGE`, sur les deux chemins. Quatrieme occurrence
+d'un defaut d'encodage dans la meme soiree :
+
+| # | ou | quand |
+| --- | --- | --- |
+| 1 | `nexus_sujets --help` | corrige plus tot |
+| 2-3 | `nexus_appliquer`, deux chemins | corriges ce soir |
+| 4 | **le motif de refus de cette garde** | ouvert |
+
+Ici c'est **le message qui nomme la voie a suivre**, donc celui qu'on lit au pire moment. La racine
+est constante et connue : sortie non-ASCII sur une console `cp1252`.
+
+### 121.6 CE QUE LE §117.1 DEVIENT — mon incident a desarme DEUX gardes, pas un
+
+Mesure apportee par l'autrice depuis ses sauvegardes horodatees : le `--restaurer` du §117.1 n'a pas
+seulement supprime le hook d'isolation. **Il a aussi desarme `nexus_garde_shell`, et pendant environ
+deux heures, sans que personne le sache** — trois sessions ont travaille en croyant ce garde actif.
+
+Aggravation de ma faute, et precision du remede :
+
+> **Un `--restaurer` qui ne dit pas CE QU'IL RESTAURE ne permet meme pas de mesurer les degats.**
+> Il a fallu des sauvegardes horodatees d'un tiers pour reconstituer ce que ma commande avait
+> defait.
+
+Le sujet 47 se precise : il ne s'agit pas seulement d'exiger une confirmation, mais de **nommer
+l'etat vers lequel on ramene, avant d'y ramener**.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 57 | `nexus_garde_ecriture` rend `rc=0` la ou les trois autres rendent 2 | `OUVERT` — bloque quand meme ; divergence piegeuse pour qui verifie par le code |
+| 58 | Mojibake dans le motif de refus | `OUVERT` — 4e occurrence, meme racine |
+| 47 | `--restaurer` ecrit sans nommer l'etat cible | **AGGRAVE** — a desarme DEUX gardes, dont un pendant 2 h a l'insu de trois sessions |
+| — | Le trou Bash du §116/§118 | **FERME PAR MESURE** — reverse, forward et fuite verts |
