@@ -164,7 +164,7 @@ def _print_state(cb):
             ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(info['last_failure']))
             print(f"  Last failure: {ts}")
         else:
-            print(f"  Last failure: never")
+            print("  Last failure: never")
         print()
 
 
