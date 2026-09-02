@@ -943,8 +943,8 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
     try:
         import re as _re
         _txt = resultat.get("texte") or ""
-        _pats = ["Out-File","Set-Content","Add-Content",">>?","open\\s*\\([^)]*['\"][wa+]","unlink","\\bremove\\b","rmtree","shutil\\.copy","Move-Item","Remove-Item"]
-        _chemins = list(tache.get("fichiers") or []) + _re.findall(r"[\w./\\-]+\.\w+", consigne)
+        _pats = ["Out-File","Set-Content","Add-Content","open\\s*\\([^)]*['\"][wa+]","unlink","\\bremove\\b","rmtree","shutil\\.copy","Move-Item","Remove-Item"]
+        _chemins = list(tache.get("fichiers") or [])
         _chemins_avec_base = []
         for _c in _chemins:
             if _c:
