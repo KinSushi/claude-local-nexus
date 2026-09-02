@@ -23,7 +23,7 @@
 
 | prescription | etat | preuve |
 | --- | --- | --- |
-| **classer transitoire vs permanent** | 🟢 acquis | applique 3 fois ce jour : renvoi abandonne sur faute de consigne |
+| **classer transitoire vs permanent** | 🟢 **MECANISE** | `echec_transitoire()` dans `nexus_disjoncteur` — patron `_is_retryable` du livre · 9 cas eprouves · un echec PERMANENT ouvre le circuit IMMEDIATEMENT |
 | **backoff exponentiel** 100→200→400→800 ms | 🔴 absent | — |
 | **jitter** contre le *thundering herd* | 🔴 absent | — |
 | **plafond d'essais** (5) | 🟡 partiel | regle empirique « six renvois », non imposee |

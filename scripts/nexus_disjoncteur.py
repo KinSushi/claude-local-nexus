@@ -47,6 +47,20 @@ def _save_state(state):
         pass
 
 
+def echec_transitoire(message):
+    """
+    Return True if the given message (case insensitive) contains any of the
+    transient failure signals defined in the original pattern description.
+    Signals: 429, rate limit, timeout, timed out, connection, unavailable, 503.
+    The pattern source is the AI agent literature circuit breaker chapter.
+    """
+    if not isinstance(message, str):
+        return False
+    lowered = message.lower()
+    signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503"]
+    return any(sig in lowered for sig in signals)
+
+
 class CircuitBreaker:
     """Durable circuit breaker for multiple targets.
 
@@ -121,16 +135,29 @@ class CircuitBreaker:
             entry["last_failure"] = 0.0
             self._persist()
 
-    def record_failure(self, target):
+    def record_failure(self, target, motif=""):
         """Record a failed call for the target.
 
-        Increments failure count and opens the circuit if the threshold is reached.
+        If a motif is provided and it is not considered transient, the circuit
+        is opened immediately without consuming the normal failure threshold.
+        Otherwise the original behaviour (increment counter, open on threshold)
+        is preserved.
         """
         with self._lock:
             self._ensure_state()
             if target not in self._state:
                 self._init_target(target)
             entry = self._state[target]
+
+            # Immediate open for permanent failures
+            if motif and not echec_transitoire(motif):
+                entry["state"] = "open"
+                entry["fail_count"] = self.failure_threshold
+                entry["last_failure"] = time.time()
+                self._persist()
+                return
+
+            # Existing behaviour for transient or unspecified failures
             entry["fail_count"] += 1
             entry["last_failure"] = time.time()
             if entry["state"] == "half_open" or entry["fail_count"] >= self.failure_threshold:
