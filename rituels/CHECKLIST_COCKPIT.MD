@@ -15097,3 +15097,112 @@ direct. **Aucun d'un audit.**
 * `nexus_valide` : le decoupage est pose mais n'a PAS ete eprouve sur un diff reellement
   volumineux — **il est donc annonce, pas prouve**, et cette distinction est le sujet meme du
   cockpit de cette nuit.
+
+### 115.70 LOI 1 A MORDU SUR UN CORRECTIF DEJA EPROUVE — et le mecanisme n'etait pas cable
+
+**Le premier cas ou LOI 1 attrape quelque chose que j'avais deja declare prouve.**
+
+Le correctif du §115.57 remplacait une EGALITE par une INCLUSION dans la verification des
+hooks. Deux epreuves posees, toutes deux vertes : ajout legitime -> True, perte reelle ->
+False. Sujet clos, de mon point de vue.
+
+Le validateur, lance sur **113 986 caracteres** de diff, a rendu :
+
+    verify_hooks_preserved : REGRESSION — la logique passe de comparaison stricte a
+    sous-ensemble, pouvant masquer des regressions.
+
+> **Il a raison sur un plan que mes epreuves ne couvraient pas.** Elles testaient toutes deux
+> la PERTE. Aucune ne testait ce que l'inclusion AUTORISE : `issubset` accepte n'importe quel
+> ajout, alors que l'outil sait exactement quel hook il vient d'ajouter.
+> **Deux epreuves vertes ne prouvent que ce qu'elles interrogent.**
+
+**Corrige** — la fonction accepte un troisieme parametre decrivant l'ajout attendu, et exige
+alors l'egalite avec l'etat d'avant AUGMENTE de ce seul element :
+
+    perte reelle       preserve=False    la detection est intacte
+    ajout ATTENDU      preserve=True
+    ajout INATTENDU    preserve=False    <- le manque comble
+    sans le parametre  preserve=True     retro-compatible
+
+**ET LE PIEGE, ATTRAPE JUSTE APRES** : le parametre etant OPTIONNEL, l'unique appelant ne le
+passait pas. **La capacite existait sans jamais servir** — §0.2.1 exactement : *un mecanisme
+a moitie cable est pire que rien, parce qu'il se LIT comme une protection.* Cable, puis
+verifie de bout en bout : armement sur configuration neuve, code 0, garde posee, temoin
+preserve, et les trois epreuves de gardes toujours vertes.
+
+### 115.71 SIXIEME FOIS QUE LA QUEUE ME TROMPE — et j'allais inscrire un faux defaut
+
+En lisant la sortie du validateur derriere un `tail -10` : rien que des `VERDICT_FINAL: RAS`,
+et pourtant `code=1`. J'ai conclu a une incoherence — verdict positif, code d'echec — et
+j'allais l'inscrire au cockpit comme defaut.
+
+**Comptage complet : 25 verdicts, 23 RAS, 2 REGRESSIONS.** Le code 1 etait exact, et l'une
+des deux regressions est celle du §115.70, qui valait la peine d'etre lue.
+
+> Elargissement de la regle du §115.46 : **on ne lit pas un VERDICT AGREGE par un bout.** Ni
+> la tete ni la queue — il faut COMPTER. Un agregat n'a pas de « fin » qui le resume.
+
+### 115.72 LE DECOUPAGE DU VALIDATEUR EST PROUVE — 7 fois le seuil ou il echouait
+
+Il etait « annonce mais pas prouve » au §115.62, et c'est cette epreuve qui a trouve le
+manque du §115.70.
+
+    diff de 113 986 caracteres, contre un plafond de 16 000 jetons ou il echouait
+    -> 25 morceaux juges separement, agregation correcte, code de retour exact
+
+Note de methode : une premiere tentative sur `HEAD~3` portait 15 188 caracteres — **sous le
+seuil**. Le decoupage n'etait donc pas exerce, et l'epreuve n'aurait rien prouve. Il a fallu
+chercher un perimetre assez grand pour que le chemin teste soit reellement emprunte.
+**Une epreuve qui ne declenche pas le code qu'elle teste est un vert sans valeur.**
+
+### 115.73 « MARQUEUR ABSENT » CONTRE « MARQUEUR MAL PLACE » — 20e occurrence
+
+`nexus_appliquer` refusait un patch en annoncant que le rendu **ne porte pas** les marqueurs.
+Verification : les trois marqueurs etaient presents, une fois chacun. Le marqueur du milieu
+etait **COLLE** a la fin d'une ligne de code au lieu d'etre seul sur sa ligne, et le motif
+d'extraction exige un marqueur isole.
+
+**Deux situations distinctes, appelant deux gestes opposes** — ajouter un marqueur absent, ou
+isoler un marqueur mal place — rendues par le meme message. L'appelant cherche un marqueur
+manquant qui est pourtant la.
+
+Corrige, avec ses trois epreuves :
+
+    marqueurs MAL PLACES  ->  « marqueurs mal places (doivent etre seuls sur leur ligne).
+                              Occurrences : {AVANT: 1, APRES: 1, FIN: 1} »
+    AUCUN marqueur        ->  message d'origine, conserve
+    patch VALIDE          ->  applique
+
+**Le defaut du RENDU est reel aussi** : un modele a colle un marqueur en fin de ligne de
+code. C'est un mode d'echec du banc a connaitre, distinct de la troncature et de la
+fabrication.
+
+### 115.74 L'OUTIL PROPOSE PAR UNE SESSION VOISINE ATTRAPE SES DEUX DEFAUTS REELS
+
+`nexus_verifie_rendu` controle un rendu de code par des comparaisons de noms et de nombres,
+sans appeler aucun modele — **un signe egal ne peut pas halluciner**, et c'est sa raison
+d'etre.
+
+Contre-epreuve construite a partir des deux defauts REELS mesures par la session voisine :
+
+    :5: slice start 8 close to length 7 of reference 'figure_'
+    :7: attribute 'max_symboles' and variable 'total_candidats' share no significant word
+        note - some reports may be false positives
+    fichier SAIN -> silence, code 0
+
+Le premier est le `[8:]` pour un prefixe de SEPT caracteres : le code compile, s'importe, et
+ne trouve plus jamais rien. Le second est un seuil exprime en symboles compare a un compte de
+candidats — la classe de l'instrument qui repond a la question voisine, ici rendue
+SYNTAXIQUEMENT visible.
+
+**ET L'OUTIL PLANTAIT LUI-MEME.** Premiere contre-epreuve : `NameError` dans la construction
+du message de signalement. Le chemin du fichier n'existait pas dans la portee ou il etait
+employe. **Le chemin SAIN fonctionnait ; seul le chemin du SIGNALEMENT etait casse** —
+c'est-a-dire tout ce qui fait l'utilite de l'outil, et le silence sur un fichier sain se
+serait lu comme une absence de defaut. Corrige, avec en plus une enveloppe par fichier pour
+qu'une erreur imprevue soit rapportee et que le parcours CONTINUE.
+
+**Note pour moi-meme** : ma premiere contre-epreuve a echoue parce que j'ai ecrit `--chaines`
+au lieu de `--refs`. **J'ai devine un nom d'option au lieu de le lire** — la faute exacte que
+j'impose a chaque consigne d'epreuve d'eviter, et qui a deja fait echouer une epreuve entiere
+de ce depot.

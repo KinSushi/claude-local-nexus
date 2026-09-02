@@ -3,78 +3,95 @@ import subprocess
 import tempfile
 import pathlib
 
-def run_tool(args, tmp_dir):
-    tool_path = pathlib.Path("scripts/nexus_relais.py")
-    if not tool_path.exists():
-        print(f"Outil introuvable: {tool_path}")
-        sys.exit(127)
-    
+def run_tool(args, tool_path, tmp_dir):
     cmd = [sys.executable, str(tool_path)] + args
-    return subprocess.run(
-        cmd,
-        cwd=tmp_dir,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace"
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=tmp_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10
+        )
+    except subprocess.TimeoutExpired:
+        return "TIMEOUT"
+    except Exception as e:
+        return f"ERROR: {str(e)}"
 
 def main():
-    # Setup environnement isole
+    tool_rel_path = pathlib.Path("scripts/nexus_relais.py")
+    if not tool_rel_path.exists():
+        print(f"Outil introuvable: {tool_rel_path}")
+        sys.exit(127)
+
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = pathlib.Path(tmp_dir)
-        # Simulation de la structure du depot
         scripts_dir = tmp_path / "scripts"
         scripts_dir.mkdir()
         nexus_dir = tmp_path / ".nexus"
         nexus_dir.mkdir()
         
-        # Copie de l'outil dans le dossier temporaire pour l'execution
-        tool_src = pathlib.Path("scripts/nexus_relais.py")
         tool_dest = scripts_dir / "nexus_relais.py"
-        tool_dest.write_text(tool_src.read_text(encoding="utf-8"), encoding="utf-8")
+        tool_dest.write_text(tool_rel_path.read_text(encoding="utf-8"), encoding="utf-8")
         
-        # Fichier cible pour les tests
-        cible = scripts_dir / "test_cible.py"
-        cible.write_text("print('hello')", encoding="utf-8")
-        
-        # On ajuste le chemin de l'outil pour le sous-processus
-        # L'outil utilise BASE_DIR = pathlib.Path(__file__).resolve().parent
-        # Donc on lance depuis scripts_dir
+        # L'outil calcule REPO_ROOT = BASE_DIR.parent
+        # BASE_DIR = tool_dest.resolve().parent (scripts_dir)
+        # REPO_ROOT = tmp_path
         
         results = []
         
-        # CAS 1: NOMINAL (Simulation avec --simuler pour eviter dependances agent/git)
-        # On utilise --file pour forcer la cible
+        # CAS 1: NOMINAL
+        # --simuler evite les imports nexus_agent/nexus_patch
+        cible = scripts_dir / "test_ok.py"
+        cible.write_text("print('ok')", encoding="utf-8")
         list_file = tmp_path / "list.txt"
         list_file.write_text(str(cible), encoding="utf-8")
         
-        res1 = run_tool(["--simuler", "--file", str(list_file)], scripts_dir)
-        results.append(("[NOMINAL]", res1.returncode == 0, res1.stdout))
-        
-        # CAS 2: INVERSE (Refus attendu)
-        # L'outil doit refuser si aucune cible n'est trouvee (rend 2)
-        res2 = run_tool(["--simuler", "--file", str(tmp_path / "vide.txt")], scripts_dir)
-        # On cree le fichier vide pour eviter une erreur de lecture Python, 
-        # mais lister_cibles rendra une liste vide.
-        (tmp_path / "vide.txt").write_text("", encoding="utf-8")
-        res2 = run_tool(["--simuler", "--file", str(tmp_path / "vide.txt")], scripts_dir)
-        results.append(("[INVERSE]", res2.returncode != 0 and "No targets" in res2.stdout, res2.stdout))
-        
-        # CAS 3: MALFORMEE (Option invalide)
-        res3 = run_tool(["--option-inexistante"], scripts_dir)
-        results.append(("[MALFORMEE]", res3.returncode != 0, res3.stderr))
-        
-        # CAS 4: ARGUMENTS REQUIS (Usage)
-        # L'outil n'a pas d'args positionnels requis, mais on teste l'invocation
-        # sans options pour verifier qu'il ne plante pas et rend un code selon cibles
-        # Si on est dans un dossier vide de .py (hors relais), il rend 2.
-        res4 = run_tool([], scripts_dir)
-        results.append(("[USAGE]", res4.returncode != 0, res4.stdout))
+        res1 = run_tool(["--simuler", "--file", str(list_file)], tool_dest, tmp_path)
+        if res1 == "TIMEOUT":
+            results.append(("[NOMINAL]", False, "L'outil n'a pas rendu la main"))
+        elif isinstance(res1, str) and res1.startswith("ERROR"):
+            results.append(("[NOMINAL]", False, res1))
+        else:
+            results.append(("[NOMINAL]", res1.returncode == 0, res1.stdout))
 
-        # Affichage et verdict
+        # CAS 2: INVERSE (Aucune cible)
+        # Un fichier vide pour --file doit rendre 2 et "No targets to process."
+        empty_list = tmp_path / "empty.txt"
+        empty_list.write_text("", encoding="utf-8")
+        res2 = run_tool(["--simuler", "--file", str(empty_list)], tool_dest, tmp_path)
+        if res2 == "TIMEOUT":
+            results.append(("[INVERSE]", False, "L'outil n'a pas rendu la main"))
+        elif isinstance(res2, str) and res2.startswith("ERROR"):
+            results.append(("[INVERSE]", False, res2))
+        else:
+            ok = (res2.returncode == 2 and "No targets to process." in res2.stdout)
+            results.append(("[INVERSE]", ok, res2.stdout) if ok else ("[INVERSE]", False, res2.stdout))
+
+        # CAS 3: MALFORMEE (Option invalide)
+        res3 = run_tool(["--invalid-opt"], tool_dest, tmp_path)
+        if res3 == "TIMEOUT":
+            results.append(("[MALFORMEE]", False, "L'outil n'a pas rendu la main"))
+        elif isinstance(res3, str) and res3.startswith("ERROR"):
+            results.append(("[MALFORMEE]", False, res3))
+        else:
+            results.append(("[MALFORMEE]", res3.returncode != 0, res3.stderr))
+
+        # CAS 4: USAGE (Sans arguments, dossier vide)
+        # Sans --file et sans .nexus/relais-file.txt, il cherche *.py dans scripts/
+        # On a seulement nexus_relais.py (exclu), donc 0 cible -> return 2
+        res4 = run_tool([], tool_dest, tmp_path)
+        if res4 == "TIMEOUT":
+            results.append(("[USAGE]", False, "L'outil n'a pas rendu la main"))
+        elif isinstance(res4, str) and res4.startswith("ERROR"):
+            results.append(("[USAGE]", False, res4))
+        else:
+            results.append(("[USAGE]", res4.returncode != 0, res4.stdout))
+
         success = True
-        for label, ok, _out in results:
+        for label, ok, _msg in results:
             print(f"{label} {'OK' if ok else 'FAIL'}")
             if not ok:
                 success = False

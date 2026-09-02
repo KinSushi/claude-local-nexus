@@ -139,11 +139,16 @@ def snapshot_hooks(settings):
         pass
     return snapshot
 
-def verify_hooks_preserved(settings, snapshot):
-    """Vérifie que tous les hooks de la snapshot existent toujours."""
+def verify_hooks_preserved(settings, snapshot, expected_addition=None):
+    """Vérifie que les hooks sont préservés et que seul l'ajout attendu est présent."""
     current = snapshot_hooks(settings)
-    # On vérifie que l'ensemble initial est inclus dans l'ensemble actuel
-    return set(snapshot).issubset(set(current))
+    set_before = set(snapshot)
+    set_after = set(current)
+    if expected_addition is None:
+        # La fonction ne reçoit pas l'élément attendu : on reste sur l'inclusion (comportement actuel)
+        return set_before.issubset(set_after)
+    # L'ensemble d'après doit être exactement l'ensemble d'avant + l'élément attendu
+    return set_after == set_before.union({expected_addition})
 
 def process_armer(guard_script_name, matcher, simulate=False):
     """Arme le garde spécifié comme hook PreToolUse. Retourne (code, messages)."""
@@ -223,8 +228,10 @@ def process_armer(guard_script_name, matcher, simulate=False):
             restore_latest_backup()
             return 2, messages
         # Vérifier que tous les hooks préexistants sont toujours là
-        if not verify_hooks_preserved(verify_settings, hooks_snapshot):
+        expected = (matcher, new_groups[0]['hooks'][0]['command'])
+        if not verify_hooks_preserved(verify_settings, hooks_snapshot, expected):
             log_rate("Vérification", "Des hooks préexistants ont disparu après écriture")
+            log_rate("Vérification", "Un ajout inattendu a été détecté")
             restore_latest_backup()
             return 2, messages
         log_ok("Vérification", "Nouveau hook présent et hooks préexistants conservés")

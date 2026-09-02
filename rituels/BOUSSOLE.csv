@@ -15,7 +15,7 @@ Vérification;scripts/Test-NexusConfig.ps1;Enveloppe du validateur;5048;2026-08-
 Vérification;scripts/Test-NexusSmoke.ps1;Smoke test runtime;8655;2026-08-29;6d85e76be2f337a9
 Vérification;scripts/nexus_capability.py;Profil matériel et verdict par modèle;28461;2026-09-01;bd2721d9413ecf33
 Vérification;scripts/nexus_mcp_probe.py;Sonde les outils du pont MCP;16290;2026-08-31;413c9545c06d6797
-Vérification;scripts/nexus_test.py;Suite forward / reverse / policy / code;169452;2026-09-02;ba4a11264472a8f0
+Vérification;scripts/nexus_test.py;Suite forward / reverse / policy / code;169549;2026-09-02;b89dfa921a826761
 Vérification;scripts/nexus_validate.py;Intégrité — bloque tout redémarrage douteux;33884;2026-08-31;f861fb7f5d50240b
 Migration;scripts/nexus_migration_plan.py;Plan de sortie des modèles hors de Docker;14026;2026-08-31;da63efcaff9face2
 Migration;scripts/nexus_switch_engine.py;Bascule le moteur Docker ↔ hôte;14792;2026-08-31;20eb1ab7c7de95ba
@@ -24,11 +24,11 @@ Exploitation;scripts/backup.ps1;Sauvegarde configuration et volumes;9763;2026-08
 Exploitation;scripts/restore.ps1;Restauration;8153;2026-08-30;df70e850cb65feaf
 Exploitation;scripts/start.ps1;Démarrage de la pile;13048;2026-08-29;fb1e3d96f893b748
 Exploitation;scripts/stop.ps1;Arrêt de la pile;3739;2026-08-29;abd966bd7f288b94
-Rituel;rituels/BOUSSOLE.md;Cet index;463592;2026-09-02;f485b9cfa3cf3f60
-Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;790274;2026-09-02;3c3ed0719219ab05
+Rituel;rituels/BOUSSOLE.md;Cet index;463701;2026-09-02;773bd082ffa266e1
+Rituel;rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;799486;2026-09-02;f1a389035cbec5ca
 Rituel;rituels/PROGRESS.md;Historique des décisions et des erreurs;17296;2026-09-01;242c817f63c2aa2f
 Rituel;rituels/RESUME.ps1;Reprise de session;2848;2026-08-29;7714dfe8b4c7c548
-Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;3151;2026-09-02;56fbb420d3528fd7
+Rituel;rituels/STATE.md;État mesuré — généré, ne pas éditer;3151;2026-09-02;c60ca45ae3b197ff
 Rituel;scripts/nexus_boussole.py;Régénère cette boussole;12137;2026-09-01;b4a0ccc8e23077af
 Rituel;scripts/nexus_state.py;Régénère STATE.md par mesure;23630;2026-08-31;03b74fbf4a5704f0
 Documentation;README.md;Vue d'ensemble et installation;15216;2026-08-31;0e7fe343f0cf4c37
@@ -43,7 +43,7 @@ Architecture;.github/workflows/verification.yml;;3700;2026-08-29;db4a9bf85a4f0b6
 Architecture;.gitignore;;2240;2026-09-01;7e1071af67117b1f
 Architecture;.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
 Architecture;.ruff_cache/0.16.5/10030628807976243294;;3492;2026-09-01;ae2a9b470d2a5c02
-Architecture;.ruff_cache/0.16.5/10108054744112579873;;6636;2026-09-02;b5b1bd96343b7241
+Architecture;.ruff_cache/0.16.5/10108054744112579873;;6636;2026-09-02;27afee173e00ad4f
 Architecture;.ruff_cache/0.16.5/10177341371865747424;;156;2026-09-01;3aa6f83eb4902b70
 Architecture;.ruff_cache/0.16.5/10179678212708851550;;4412;2026-09-01;799d8bfe9a949736
 Architecture;.ruff_cache/0.16.5/10270260337176019032;;588;2026-09-02;39c83b623861f0c1
@@ -87,6 +87,7 @@ Architecture;.ruff_cache/0.16.5/4656405054037113001;;244;2026-09-01;808e1b767730
 Architecture;.ruff_cache/0.16.5/4687559574044939446;;172;2026-09-01;3212974dd4afba24
 Architecture;.ruff_cache/0.16.5/5190098191875683426;;244;2026-09-01;8e3ede246e690f95
 Architecture;.ruff_cache/0.16.5/5341294849655593752;;4252;2026-09-01;6c758aa00ae31604
+Architecture;.ruff_cache/0.16.5/5658851307723113503;;572;2026-09-02;40c090ca6c708a12
 Architecture;.ruff_cache/0.16.5/5785493642906717947;;212;2026-08-31;d44cfba2aed4f7a2
 Architecture;.ruff_cache/0.16.5/5839449063045416517;;2196;2026-08-31;a8fc7443b46a17cd
 Architecture;.ruff_cache/0.16.5/6665543148801511996;;212;2026-09-01;4d742d0bd21283b2
@@ -106,7 +107,7 @@ Architecture;.ruff_cache/0.16.5/9413750576472324194;;164;2026-08-31;0bd32f5301ab
 Architecture;.ruff_cache/0.16.5/9691695313051288092;;164;2026-09-01;46a2f9cdd17b71e5
 Architecture;.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;LICENSE;;34523;2026-08-29;0d96a4ff68ad6d4b
-Architecture;PROGRESS.MD;;1528;2026-09-02;a80285e3693b5e70
+Architecture;PROGRESS.MD;;1454;2026-09-02;f4bb1ed8e23f5ea9
 Architecture;Set-ClaudeModel.ps1.candidat;;11378;2026-08-29;67a86f7cc9147d54
 Architecture;Start-Claude.ps1;;7892;2026-08-29;c05c3296a2683b28
 Architecture;Start-Claude.ps1.candidat;;7051;2026-08-29;981eead31d168b3c
@@ -3103,7 +3104,7 @@ Architecture;releve_tous.txt;Note d'architecture;321;2026-08-30;bae727d59c390c96
 Architecture;requirements.txt;Note d'architecture;12;2026-08-29;71749243f84428fe
 Architecture;rituels/A_POSER_global.json;;7943;2026-09-01;5a6eb0b606bb975e
 Architecture;rituels/A_POSER_local.json;;2248;2026-09-01;8a022c08429aaef5
-Architecture;rituels/BOUSSOLE.csv;;398909;2026-09-02;bf74a3274014b288
+Architecture;rituels/BOUSSOLE.csv;;398996;2026-09-02;010ab9a5dae937c5
 Architecture;rituels/EVALUATION-LOCALE.md;;12079;2026-08-29;f16830fca4479937
 Architecture;rituels/PLAN_MAITRE_2026-09-01.md;;19032;2026-09-01;05e63645415c2f0d
 Architecture;rituels/README.md;;1756;2026-08-29;dac6503c1883887f
@@ -3143,9 +3144,11 @@ Architecture;scripts/epreuve_cibles_shell.py;;7439;2026-09-01;eadb0e0ac966346f
 Architecture;scripts/epreuve_commande_nexus.py;;3283;2026-08-31;2f23daa8b2804041
 Architecture;scripts/epreuve_concentration_routage.py;;4277;2026-09-01;87fbe9d1e0ea6c4f
 Architecture;scripts/epreuve_conformite_sources.py;;11786;2026-08-31;acdd3261cf5605ff
+Architecture;scripts/epreuve_corpus.py;;3975;2026-09-02;935d76f49bfe975a
 Architecture;scripts/epreuve_couverture_gardes.py;;3459;2026-08-31;a29664c7028b706e
 Architecture;scripts/epreuve_dire_troncature.py;;2142;2026-09-01;889e21a138383bc2
 Architecture;scripts/epreuve_doc_annexe.py;;8511;2026-08-31;3cb365702624935d
+Architecture;scripts/epreuve_fonctions.py;;3879;2026-09-02;d7b64e1f3b9ae7b0
 Architecture;scripts/epreuve_fuite_repli.py;;4562;2026-09-01;0f652e8fd7a5f768
 Architecture;scripts/epreuve_garde_agent.py;;2642;2026-09-02;8ff0b0bf513a05e5
 Architecture;scripts/epreuve_garde_ecriture.py;;3159;2026-09-02;be3cd3f61e59c5b1
@@ -3162,13 +3165,14 @@ Architecture;scripts/epreuve_manuel_vivant.py;;4467;2026-09-01;a1c84080b590290c
 Architecture;scripts/epreuve_offsets_annexes.py;;6095;2026-08-31;2042973900a7420c
 Architecture;scripts/epreuve_options_lot.py;;2946;2026-09-01;53e6b1c143d5eec8
 Architecture;scripts/epreuve_orphelines.py;;3677;2026-08-31;1f0d61e0c62b828e
-Architecture;scripts/epreuve_outillage.py;;2578;2026-09-02;245c8fc0b4024959
+Architecture;scripts/epreuve_outillage.py;;3756;2026-09-02;25c99cee1e62c32a
 Architecture;scripts/epreuve_part_raisonnement.py;;4194;2026-09-01;1d747409da5c8f56
 Architecture;scripts/epreuve_plafond_sortie.py;;5526;2026-08-31;e5be9c18d65dd6a8
-Architecture;scripts/epreuve_progres.py;;3298;2026-09-02;103f7e0412faee88
+Architecture;scripts/epreuve_posterior.py;;3750;2026-09-02;13455f4b60b26951
+Architecture;scripts/epreuve_progres.py;;2708;2026-09-02;3ac20eebfefd44b6
 Architecture;scripts/epreuve_quota_partage.py;;3445;2026-08-31;a76f775f26a7ecd3
 Architecture;scripts/epreuve_registre_epreuves.py;;3153;2026-09-01;698fe9e52cd31e26
-Architecture;scripts/epreuve_relais.py;;3420;2026-09-02;e395836d6633cf93
+Architecture;scripts/epreuve_relais.py;;4091;2026-09-02;70c6b5380b110a09
 Architecture;scripts/epreuve_reprise_avant_repli.py;;4159;2026-09-01;de1e3a7e6adc16a4
 Architecture;scripts/epreuve_resumer.py;;5533;2026-08-31;8c14e5b88a394bd9
 Architecture;scripts/epreuve_schema.py;;5041;2026-09-01;0ee3a6b450557433
@@ -3183,8 +3187,8 @@ Architecture;scripts/mesure_rendu_vide.py;;7322;2026-08-31;472da41fa2c80686
 Architecture;scripts/nexus.ps1;;12264;2026-09-01;fd0f13706df494d8
 Architecture;scripts/nexus_agent.py;;69164;2026-09-02;72cfec81f6bd2f03
 Architecture;scripts/nexus_agent.py.avant-patch;;49956;2026-08-30;310e3bab9ab3d1fb
-Architecture;scripts/nexus_appliquer.py;;7215;2026-09-02;44a9355984b7507f
-Architecture;scripts/nexus_armer_garde.py;;12535;2026-09-02;e198921d8ad37d4c
+Architecture;scripts/nexus_appliquer.py;;7467;2026-09-02;ad411d95829f96fc
+Architecture;scripts/nexus_armer_garde.py;;13008;2026-09-02;bc7d7a6ed16ecaf5
 Architecture;scripts/nexus_armer_hook.py;;7711;2026-09-01;6f3e2b64df18a3bb
 Architecture;scripts/nexus_avec_verrou.py;;3137;2026-09-01;85f2741bf1deabb2
 Architecture;scripts/nexus_bench.py;;37139;2026-08-31;d95d1fb66349aca1
@@ -3233,6 +3237,7 @@ Architecture;scripts/nexus_test_outillage.py;;25094;2026-08-29;f81da04dcd695fa2
 Architecture;scripts/nexus_traque.py;;15635;2026-08-31;876e7556473353f8
 Architecture;scripts/nexus_valide.py;;33565;2026-09-02;ddec5ecfb655b2af
 Architecture;scripts/nexus_verbatim.py;;10790;2026-09-01;6ec91fbea334f3ad
+Architecture;scripts/nexus_verifie_rendu.py;;5575;2026-09-02;b78bd8caf948f7a0
 Architecture;scripts/nexus_verrou_machine.py;;15077;2026-09-01;a60f534393dbb2ef
 Architecture;scripts/nexus_verrou_tenir.py;;3734;2026-09-01;ca5efa8bab8c6460
 Architecture;scripts/nexus_vitrine.py;;12857;2026-08-30;9f1a0e03aade7f2f

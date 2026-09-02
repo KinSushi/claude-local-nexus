@@ -2460,6 +2460,7 @@ def test_commande_nexus() -> None:
     jouer_epreuve_python("epreuve_garde_isolation.py", "la garde d'isolation des sous-agents")
     jouer_epreuve_python("epreuve_garde_agent.py", "la garde de modele des sous-agents")
     jouer_epreuve_python("epreuve_garde_production.py", "la garde d'ecriture en production")
+    jouer_epreuve_python("epreuve_corpus.py", "inventaire d'un corpus et detection de doublons")
 
 
 def test_decoupage_emoji() -> None:

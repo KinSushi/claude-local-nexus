@@ -64,7 +64,11 @@ def main():
         blocs.append((avant, apres))
 
     if not blocs:
-        print("REFUS : le rendu ne porte pas les triplets de marqueurs.")
+        counts = {m: texte.count(m) for m in ["<<<AVANT>>>", "<<<APRES>>>", "<<<FIN>>>"]}
+        if any(counts.values()):
+            print(f"REFUS : marqueurs mal places (doivent etre seuls sur leur ligne). Occurrences : {counts}")
+        else:
+            print("REFUS : le rendu ne porte pas les triplets de marqueurs.")
         print(texte[:400])
         return 1
 
