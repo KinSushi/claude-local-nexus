@@ -2778,7 +2778,7 @@ function runPython(args, timeoutMs = 300000) {
 
     return (
       `[${result.model} · ${planOf(result.model)} · ${result.windows} fenetres, ${result.passes} passes · ` +
-      `~${approxTokens} tokens traites en ${contextTokens} de fenetre · ` +
+      `~${approxTokens} tokens soumis (${corpus.length} car.) en ${contextTokens} de fenetre · ` +
       `${result.tokens} tokens factures 0]\n` +
       (sources.length ? `Sources : ${sources.join(", ")}\n` : "") +
       // Le drapeau n'est pas décoratif : sans lui, une concaténation de

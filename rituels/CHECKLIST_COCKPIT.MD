@@ -14439,3 +14439,148 @@ defauts et les suggestions d'ameliorations mais qu'en plus tu en proposes ! »*
 
 **Mesure du tour** : 4 defauts recus, 5 defauts trouves et rendus, dont 3 dans des outils
 que les trois sessions emploient. Aucun n'est venu d'un audit : tous de l'USAGE.
+
+### 115.50 UN COMPTE SE LAISSE RACONTER, UNE APPARTENANCE NON — P0 d'une session tierce
+
+Le defaut le plus dangereux de la nuit, mesure le 2026-09-02 par une session voisine.
+
+**LE FAIT.** Un lot de DOUZE fichiers joints, `mistral-large-3-675b-cloud` :
+
+    11 classements sur les 12 fichiers reels
+    + 176 lignes portant sur des fichiers HORS DU LOT, dont 175 INEXISTANTS
+    le 12e fichier reel n'a JAMAIS ete classe : la fabrication l'a EVINCE
+    les 23 autres lots, memes familles, meme consigne, meme budget : 0 debordement
+
+**CE QUI REND LA CHOSE GRAVE : la fabrication est COHERENTE.** Pas du bruit — une
+FAMILLE de noms plausibles construite autour des vrais (`ab_mock.py`, `ab_fixture.py`,
+`ab_config.py`), classes avec des citations de style credible. Sur l'agregat, une
+categorie passait de 3 a 70 : **67 des 70 etaient imaginaires.**
+
+**POURQUOI LES GARDES N'ONT RIEN VU, et c'est transposable ici :**
+
+* le controle verifiait que chaque lot rendait **AU MOINS** autant de lignes que de
+  fichiers joints — le **PLANCHER** garde, le **PLAFOND** laisse ouvert. Son propre
+  docstring disait pourtant « un rendu troue se lit comme un rendu complet si personne
+  ne compte » : il comptait, mais d'un seul cote ;
+* le controle de citations rendait 100 % de retrouvees, parce qu'il ne confrontait la
+  citation qu'au fichier que le modele DESIGNAIT. Un fichier inexistant sortait en
+  « illisible », compte avec les absents.
+
+> **LA REGLE : un COMPTE se laisse raconter, une APPARTENANCE non.**
+> Ni un compte, ni un taux, ni une citation verifiee n'ont mordu. Le seul controle qui
+> a mordu : *tout chemin cite doit appartenir au lot DEPECHE.*
+
+**CE QUE CELA CHANGE A §115.41 — la famille decide aussi du MODE d'echec :**
+
+| famille | comment elle echoue | ce qui protege |
+| --- | --- | --- |
+| `gpt-oss-120b` · `gemma4-31b` | **TRONQUE** (0 debordement sur 16 lots) | un budget de sortie genereux |
+| `mistral-large-3-675b` | **FABRIQUE** (1 lot sur 8 en debordement massif) | **rien de ce qui precede** |
+
+**Deux defauts OPPOSES qui demandent deux gardes differentes.** Un budget genereux
+protege du premier et pas du second — et la table §115.41, qui les rangeait ensemble
+parmi les « fiables », etait donc incomplete : elle mesurait la troncature seule.
+
+**TROIS AMELIORATIONS RECUES, toutes dans le perimetre de `nexus_agent.py`, en vol :**
+
+1. **`fichiers_joints`** dans le JSONL — chemin, octets lus, empreinte courte. Aujourd'hui
+   un fichier absent, illisible ou refuse produit le MEME enregistrement qu'un fichier lu
+   en entier, et le modele repond quand meme sur un corpus vide. C'est exactement ce qui
+   a coute deux fichiers sur trois en §115.44 : `octets: 0` l'aurait dit d'un coup d'oeil.
+2. **`--perimetre-strict`** — un compteur `mentions_hors_perimetre: N`, jamais un refus.
+   Chez la session tierce il aurait affiche **176** au lieu de rien.
+3. Les deux ensemble ferment **les deux bouts** : ce qui est ENTRE, et ce qui est SORTI.
+
+### 115.51 LE VALIDATEUR CESSE DE VALIDER QUAND LE TRAVAIL GROSSIT
+
+Mesure par execution, 2026-09-02, sur le commit du tour :
+
+    python scripts/nexus_valide.py --base HEAD~1
+    -> Plan gratuit indisponible : Reponse tronquee meme apres double plafond
+       (plafond 16000 tokens, diff 70990 caracteres)
+
+> **Plus le travail a valider est important, moins l'instrument de validation
+> fonctionne.** LOI 1 — la regle la plus importante du depot — cesse de s'appliquer
+> exactement quand elle serait la plus utile.
+
+Il echoue PROPREMENT, en nommant sa cause et son chiffre, ce qui est le bon comportement
+(§0.1.4.1). Mais il n'offre **aucune issue** : pas de decoupage, pas de repli par fichier.
+Un diff de 71 Ko n'est pas une anomalie ici, c'est un tour de travail ordinaire.
+
+Diagnostic en vol pour brancher un decoupage PAR FICHIER, et pour verifier un point qui
+decide de tout : le code de retour distingue-t-il **validation echouee** de **validation
+impossible** ? Si les deux rendent la meme valeur, c'est la classe de §115.44 dans
+l'instrument meme qui est cense l'attraper.
+
+### 115.52 SIXIEME DEFAUT D'OUTIL DU TOUR — `nexus_appliquer` et l'encodage cp1252
+
+Trouve en appliquant le patch de §115.49. L'outil a correctement applique le patch, puis :
+
+    Exception in thread Thread-3 (_readerthread):
+      File "...\encodings\cp1252.py", line 23, in decode
+
+Il lance un sous-processus de verification et lit sa sortie avec l'encodage par defaut de
+Windows au lieu d'UTF-8. Le patch etait pose et valide ; c'est la LECTURE du compte rendu
+qui a casse.
+
+**Sans consequence ici — et c'est precisement ce qui le rend dangereux** : l'exception
+tombe dans un thread, l'outil poursuit, et un jour elle emportera la ligne qui disait
+qu'un patch a ete REFUSE. Meme famille que §115.46 : le message de la garde se perd, la
+garde parait muette, et le silence se lit comme un succes.
+
+### 115.53 LE SCRIPT QUI ARME LES GARDES RENDAIT 0 SANS RIEN ARMER
+
+Trouve par une epreuve neuve, **des sa premiere execution**, et c'est le meilleur
+argument possible pour la regle « toute epreuve se joue avant d'etre crue ».
+
+    python scripts/nexus_armer_garde.py            -> code 0   (!!)
+    python scripts/nexus_armer_garde.py <inexistant> ...  -> code 1   (correct)
+
+Sans argument, il affiche son mode d'emploi et rend **ZERO**.
+
+> **Un mode d'emploi affiche est un ECHEC D'INVOCATION : rien n'a ete arme.** Un
+> appelant qui teste le code de retour conclut que l'armement a REUSSI — et **une garde
+> reste desarmee pendant que tout le monde la croit en place.**
+
+C'est aggrave par la nature du script : c'est celui qui **arme les gardes**. Le depot a
+deja paye ce defaut exact (§0.1.4.1 : *un refus qui imprimait `deny` et rendait 0 n'a
+rien bloque ; 460 sous-agents et 32 millions de jetons factures sont passes*). Et une
+garde a deja ete desarmee deux heures sans que personne le voie.
+
+**Corrige, avec les trois codes verifies separement et l'etat AVANT compare :**
+
+    sans argument       0  ->  64   (convention EX_USAGE, distincte d'un echec de traitement)
+    garde inexistante   1  ->  1    inchange
+    simulation valide   1  ->  1    inchange, motif legitime « deja arme »
+
+Le dernier a ete compare a la version d'avant patch avant d'etre accepte : rendre 1
+n'est pas une regression introduite ici.
+
+### 115.54 MEME MODELE, MEME CONSIGNE : EXACT SUR UN PETIT FICHIER, FABRICATEUR SUR UN GROS
+
+Mesure du 2026-09-02, sur deux diagnostics **du meme modele**, `gpt-oss-120b-cloud`,
+meme nuit, meme forme de consigne, meme interdiction d'inventer un numero de ligne.
+
+| tache | fichier | taille | ancres verifiees |
+| --- | --- | --- | --- |
+| `valide-gros-diff` | `nexus_valide.py` | ~650 lignes | **4 sur 4 EXACTES** |
+| `perimetre-strict` | `nexus_agent.py` | ~1400 lignes | **3 sur 4 FAUSSES** |
+
+Le detail des fausses, verifie ligne a ligne sur le disque :
+
+    annonce l.332 « tache["fichiers"] »      ->  reel : une liste d'extensions
+    annonce l.720 « etiqueter_ecritures »    ->  reel : la fonction est a la ligne 939
+    annonce l.795 « return resultat »        ->  reel : « futurs = {} »
+
+**Le FOND des deux diagnostics etait bon** : `etiqueter_ecritures` existe bien et est
+bien reutilisable ; le point unique existe. Seules les COORDONNEES sont inventees — et
+c'est ce qui les rend dangereuses, puisque le fond credible fait accepter l'ancre.
+
+> **La taille du fichier joint predit la fabrication mieux que le modele.** La table
+> §115.41 classe les familles par leur taux de troncature ; §115.50 y a ajoute le mode
+> d'echec ; il faut y ajouter cette troisieme dimension : **au-dela d'un certain volume,
+> une famille par ailleurs fiable cesse de citer et se met a reconstituer.**
+
+Consequence pratique immediate, appliquee des ce tour : **un diagnostic portant sur un
+gros fichier se verifie ancre par ancre avant tout usage**, et le rendement mesure
+(§115.43, une trouvaille reelle pour douze appels) ne vaut que sous cette condition.

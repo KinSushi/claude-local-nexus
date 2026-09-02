@@ -291,7 +291,7 @@ def usage():
 def main():
     if len(sys.argv) < 4:
         usage()
-        return 0
+        return 64
 
     guard_script_name = sys.argv[1]
     matcher = sys.argv[2]

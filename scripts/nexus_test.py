@@ -2451,6 +2451,9 @@ def test_commande_nexus() -> None:
     print("")
     print("--- COMMANDE NEXUS : servie dans les deux editions ? ---")
     jouer_epreuve_python("epreuve_commande_nexus.py", "commande nexus")
+    jouer_epreuve_python("epreuve_garde_ecriture.py", "garde d'ecriture")
+    jouer_epreuve_python("epreuve_schema.py", "schema")
+    jouer_epreuve_python("epreuve_stats_jsonl.py", "statistiques JSONL")
 
 
 def test_decoupage_emoji() -> None:
