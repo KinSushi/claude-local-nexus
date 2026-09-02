@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 # Path to the tool relative to this file
-TOOL_PATH = os.path.join(os.path.dirname(__file__), "scripts", "nexus_stats_jsonl.py")
+TOOL_PATH = os.path.join(os.path.dirname(__file__), "nexus_stats_jsonl.py")
 
 if not os.path.isfile(TOOL_PATH):
     print("[ERROR] Tool not found at " + TOOL_PATH)
@@ -118,22 +118,26 @@ def case_unreadable_file(tmpdir):
         return False, "missing unreadable file message"
     return True, ""
 
-cases = [
-    ("SUCCESS", case_success),
-    ("BAD_REGEX", case_bad_regex),
-    ("MALFORMED", case_malformed_input),
-    ("MISSING_ARGS", case_missing_args),
-    ("UNREADABLE", case_unreadable_file),
-]
+def main():
+    cases = [
+        ("SUCCESS", case_success),
+        ("BAD_REGEX", case_bad_regex),
+        ("MALFORMED", case_malformed_input),
+        ("MISSING_ARGS", case_missing_args),
+        ("UNREADABLE", case_unreadable_file),
+    ]
 
-overall_ok = True
-with tempfile.TemporaryDirectory() as td:
-    for name, func in cases:
-        ok, msg = func(td)
-        if ok:
-            print(f"[{name}] OK")
-        else:
-            print(f"[{name}] FAIL {msg}")
-            overall_ok = False
+    overall_ok = True
+    with tempfile.TemporaryDirectory() as td:
+        for name, func in cases:
+            ok, msg = func(td)
+            if ok:
+                print(f"[{name}] OK")
+            else:
+                print(f"[{name}] FAIL {msg}")
+                overall_ok = False
 
-sys.exit(0 if overall_ok else 1)
+    sys.exit(0 if overall_ok else 1)
+
+if __name__ == "__main__":
+    main()
