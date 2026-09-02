@@ -13033,3 +13033,156 @@ qu'avant — verifie un par un, ce qui est precisement ce qui a declenche l'inci
 | 49 | Le hook d'isolation est arme mais **pas en vigueur** dans cette session | **OUVERT** — redemarrage requis ; d'ici la, aucun garde d'isolation ne mord |
 | 44 | `nexus_agent.py` « 0 echec » sur troncature | **FERME** — corrige, contre-epreuve a troncature provoquee |
 | 46 | `nexus_armer_hook.py:212` RET505 | **FERME** — chaine aplatie, ruff au vert, quatre chemins verifies |
+
+---
+
+## 118. LE MAILLON 3 A PAYE — un correctif annonce, applique, et qui protege le mauvais `io.open`
+
+2026-09-01, 21:20. C'est la demonstration la plus nette de la journee sur ce que la LOI 1 achete, et
+elle a failli ne pas exister : le defaut avait ete **annonce corrige**, de bonne foi, avec un patch
+qui fonctionne.
+
+### 118.1 LE DEFAUT SIGNALE, ET LE CORRECTIF POSE
+
+Signale au §116.4(2) : `nexus_appliquer.py` echoue par traceback nu sur une ligne de commande mal
+formee.
+
+```
+python scripts/nexus_appliquer.py --patch foo --fichier bar
+  -> FileNotFoundError ... line 26, in main
+     with io.open(jsonl_path, encoding="utf-8") as fh:
+```
+
+Correctif pose par `local-llm-docker-54` dans `1ba0080`, et annonce ainsi :
+*« nexus_appliquer : plus de traceback nu sur ligne de commande mal formee. »*
+
+```python
++    try:
++        with io.open(cible_path, encoding="utf-8") as f:
++            src = f.read()
++    except (FileNotFoundError, PermissionError, OSError) as e:
++        print(f"ERREUR : impossible d'ouvrir le fichier cible '{cible_path}' : {e}")
++        print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
++        sys.exit(1)
+```
+
+**Le patch est reel, utile, et il ferme un trou qui existait.** Il n'a simplement rien a voir avec le
+defaut signale.
+
+### 118.2 IL Y A DEUX `io.open` DANS `main()`
+
+```
+26:    with io.open(jsonl_path, encoding="utf-8") as fh:     <- celui qui plante, RESTE NU
+62:        with io.open(cible_path, encoding="utf-8") as f:  <- celui qui a ete protege
+```
+
+`argv[1]` vaut `--patch`. Le garde `len(sys.argv) < 4` passe — il y a bien quatre arguments — puis la
+**ligne 26** leve. La ligne 62 n'est jamais atteinte.
+
+Mesure sur `1ba0080`, apres le correctif :
+
+```
+python scripts/nexus_appliquer.py --patch foo --fichier bar
+  -> FileNotFoundError ... line 26 ... '--patch'      rc=1
+```
+
+**Identique, au caractere pres.**
+
+### 118.3 POURQUOI AUCUN TEST DE L'AUTEUR NE POUVAIT LE VOIR
+
+C'est la **question voisine** dans sa forme la plus pure, et elle est ici particulierement difficile a
+detecter :
+
+| | |
+| --- | --- |
+| ce que l'auteur a verifie | un `cible_path` invalide echoue proprement — **et c'est vrai** |
+| ce qui etait demande | un `jsonl_path` invalide echoue proprement |
+| ce qui les separe | trente-six lignes, et un nom de variable |
+
+L'instrument etait exact. Le test passait. Le patch marchait. **La question posee n'etait pas
+celle-la** — et rien, dans le travail de l'auteur, ne pouvait le lui dire, puisque son propre critere
+de reussite etait satisfait.
+
+> **SANS LE MAILLON 3, CE DEFAUT ETAIT CLOS.** Annonce corrige, patch en place, sujet raye. Il n'a
+> ete retrouve que parce qu'un tiers, n'ayant ecrit ni le diagnostic ni le correctif, a **relance la
+> commande d'origine** au lieu de lire le patch.
+
+Le §0.7.1 dit : *« le troisieme temps est celui qu'on saute, et il se saute sans se voir. »* Ici il
+n'a pas ete saute, et c'est la seule raison pour laquelle on le sait.
+
+**Le geste qui a paye tient en une phrase** : ne pas lire le correctif, **rejouer le cas**. Lire le
+patch aurait donne le meme verdict que son auteur — le code ajoute est correct.
+
+### 118.4 LE SECOND DEFAUT, MEME FICHIER, MEME RACINE
+
+```
+REFUS : le rendu ne porte pas les triplets de marqueurs.
+Traceback ... line 149 ... print(texte[:400])
+UnicodeEncodeError: 'charmap' codec can't encode character '‑' in position 278
+```
+
+**Le chemin de REFUS meurt en rendant son diagnostic.** Le refus lui-meme est correct — message,
+`rc=1`, fichier intact — puis l'explication tue le processus sur un tiret insecable.
+
+C'est la **troisieme occurrence** du meme defaut d'encodage sur ce depot (`nexus_sujets.py --help`,
+puis ici deux fois). La racine est structurelle et se nomme : **ce script manipule du texte de modele
+de bout en bout, donc de l'Unicode arbitraire par construction, et l'imprime sur une console
+`cp1252`.**
+
+Un `try/except` autour de chaque `print` serait un bricolage au sens du §0.6 : sept contournements
+locaux la ou le flux lui-meme doit etre corrige, une fois, en tete de fichier.
+
+### 118.5 CE QUI A TRES BIEN MARCHE, et qui merite d'etre dit
+
+Trois patches du banc refuses d'affilee sur `nexus_boussole.py`, **zero degat**, et chaque refus
+utile :
+
+| refus | ce qu'il a apporte |
+| --- | --- |
+| `le rendu ne porte pas les triplets de marqueurs` | rendu ferme par `<<<FIN>>` — deux chevrons |
+| `le bloc 2 doit etre unique et reel. Occurrences : 0` | **et il MONTRE l'ancre fantome** : le banc avait invente une indentation de 12 espaces la ou le fichier en a 8 |
+| idem, sur un rendu tronque | le detecteur de troncature neuf a nomme la cause dans la seconde |
+
+> **Un refus qui montre l'ancre inexistante vaut dix messages d'erreur.** Il a donne le diagnostic
+> entier — le banc avait invente, §112.4 — la ou « REFUS » seul aurait envoye chercher un defaut de
+> prompt.
+
+Le contraste, dans un seul fichier, est l'enseignement : **le meme script a un chemin de refus
+exemplaire et deux chemins d'erreur qui plantent.** Ce qui a ete eprouve est bon ; ce qui ne l'a
+jamais ete tombe.
+
+### 118.6 L'ARBRE PARTAGE, TROISIEME OCCURRENCE — et cette fois dans l'autre sens
+
+| # | quand | qui a pris le travail de qui |
+| --- | --- | --- |
+| 1 | 20:56 | moi -> ses 8 fichiers, dans `52f58cb` |
+| 2 | 21:00 | elle a repris l'ecriture 3 min apres son signal de fin |
+| 3 | 21:19 | elle -> mes sections 116 et 117, dans `1ba0080` |
+
+**Trois fois en deux heures, et desormais dans les deux sens.** Le sujet 10 n'a plus besoin
+d'argument : deux sessions attentives, qui se previennent et s'excusent, ont produit trois
+collisions en cent vingt minutes. Le remede n'est pas plus de politesse.
+
+### 118.7 CE QUE `cibles_ecrites()` LAISSE, apres trois tentatives et un retour arriere
+
+`local-llm-docker-54` a **abandonne** le correctif, et c'est le bon geste. La tentative 1 est la plus
+instructive : elle corrigeait sa cible et **cassait** `bash -c 'echo x > f'`, ou la redirection est
+legitimement dans une chaine citee.
+
+> **Un faux negatif sur une ecriture reelle est strictement pire que le faux positif qu'il corrige** —
+> un garde qui laisse passer vaut moins que pas de garde, parce qu'on lui fait confiance.
+
+Le chiffre qui tranche vient d'un chemin independant (session EA MT5, sur ses donnees) :
+**27,3 % des DETERMINEES sont fausses, et c'est un plancher.** Ce n'est pas la politique de refus qui
+tombe, c'est l'instrument : les indeterminees, on peut choisir de les laisser passer ; une determinee
+fausse **affirme**. Aucun seuil ne rattrape cela.
+
+Ce qui reste, et c'est le bon reste : **l'epreuve enrichie, conservee EN ROUGE.** Un controle qui
+rougit tant que la regle est enfreinte vaut mieux qu'un sujet dans une liste — §0.2.1 mot pour mot.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 45 | `nexus_appliquer` : traceback nu sur `jsonl_path` | **ROUVERT** — annonce corrige, le correctif porte sur l'autre `io.open` |
+| 50 | `nexus_appliquer` : le refus plante sur l'Unicode du rendu | `OUVERT` — 3e occurrence d'encodage, racine structurelle nommee |
+| 10 | Arbre git partage sans verrou | **TROIS OCCURRENCES EN 2 H**, dans les deux sens |
+| 51 | `cibles_ecrites()` ne peut porter aucune decision | `MESURE` — 27,3 % de determinees fausses, chemin independant |

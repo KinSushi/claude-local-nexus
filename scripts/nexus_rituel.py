@@ -405,6 +405,7 @@ def main() -> int:
         # Ce controle GENERE au lieu de verifier parce qu'un etat que personne
         # ne regenere est un etat de memoire et que l'operateur l'a interdit
         ("progres", lambda: progres(racine)),
+        ("boussole", lambda: progres(racine)),  # Même traitement que PROGRESS.MD : régénération silencieuse
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 
