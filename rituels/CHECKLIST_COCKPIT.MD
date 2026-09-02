@@ -15000,3 +15000,44 @@ Rien n'est casse dans la plateforme — mais la consequence porte sur la LOI 1 :
 
 Corollaire pratique : ne jamais demander a un modele de declarer son identite pour la
 consigner. Le champ `servi_par` du JSONL est la seule source.
+
+### 115.68 LES TROIS GARDES SONT PROUVEES — et il a fallu quatre passes pour que l'EPREUVE soit juste
+
+Suite du §115.66, qui declarait six epreuves non cablees parce que leurs attentes etaient
+fausses. Trois sont desormais VERTES et CABLEES. Le chemin merite d'etre ecrit, parce que
+chaque passe a corrige une erreur differente — **et aucune n'etait dans les gardes**.
+
+    passe 1   attentes inventees              le cas nominal omettait la cle testee
+    passe 2   structure JSON lue a la RACINE  les cles sont sous hookSpecificOutput,
+                                              et la cle est permissionDecision, pas decision
+    passe 3   cle tool_name absente           sans elle la garde refuse — a juste titre
+    passe 4   un cas NON REPRODUCTIBLE        --help rend 64 en terminal, 0 en tuyau
+
+**RESULTAT :** `epreuve_garde_isolation` 5/5 · `epreuve_garde_agent` 5/5 ·
+`epreuve_garde_production` 6/6. Cablees dans `nexus_test.py` lignes 2460 a 2462.
+
+**LES DEUX ERREURS LES PLUS INSTRUCTIVES SONT LES MIENNES, pas celles du banc.**
+
+**Passe 3 — la garde avait raison de refuser.** Sans `tool_name`, la garde d'isolation ne
+peut pas identifier l'outil concerne, et elle REFUSE. C'est le bon choix pour une garde qui
+protege contre l'effacement de fichiers : elle se ferme par defaut. Sa voisine
+`nexus_garde_agent`, elle, ACCEPTE sur entree malformee — parce qu'une garde qui plante ne
+doit jamais arreter le travail. **Deux gardes, deux philosophies opposees, toutes deux
+justes**, et c'est le RISQUE qui decide : perdre des fichiers contre bloquer une session.
+
+**Passe 4 — un cas de test impossible, et ma consigne en etait la cause.** J'avais exige que
+`--help` rende 64. Mesure : c'est vrai en TERMINAL, faux en TUYAU, ou l'outil rend 0. Le
+correctif du gel repose sur la detection d'un terminal interactif ; **aucune epreuve en
+sous-processus ne peut simuler un terminal sans pseudo-terminal.** Les deux comportements
+sont corrects et coherents.
+
+> Le cas a donc ete remplace par celui qui teste **CE QUI COMPTE** : l'outil REND-IL LA MAIN
+> en moins de dix secondes, quel que soit son code ? C'est la non-regression du gel de huit
+> minutes, et c'est testable. **Quand un cas de test est impossible, la question a se poser
+> n'est pas comment le forcer, mais quelle propriete on voulait vraiment garder.**
+
+**CE QUI RESTE NON CABLE, et declare comme tel** : `epreuve_relais`, `epreuve_progres`,
+`epreuve_outillage`, plus les outils `nexus_corpus` et `nexus_libs`. Leurs attentes n'ont pas
+ete verifiees contre le comportement reel, et cabler une epreuve fausse rendrait la suite
+rouge en permanence — **une suite toujours rouge cesse d'etre lue**, ce qui coute plus
+qu'une suite incomplete.

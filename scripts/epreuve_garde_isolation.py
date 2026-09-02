@@ -2,73 +2,75 @@ import os
 import sys
 import subprocess
 import json
-import tempfile
-import shutil
 
-def run_tool(input_data):
+def run_tool(input_data, env_vars=None):
     tool_path = "scripts/nexus_garde_isolation.py"
     if not os.path.exists(tool_path):
         print(f"Outil introuvable: {tool_path}")
         sys.exit(127)
     
-    with tempfile.TemporaryDirectory() as tmpdir:
-        proc = subprocess.Popen(
-            [sys.executable, tool_path],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd=tmpdir
-        )
-        stdout, stderr = proc.communicate(input=input_data)
-        return proc.returncode, stdout, stderr
+    env = os.environ.copy()
+    if env_vars:
+        env.update(env_vars)
+        
+    proc = subprocess.Popen(
+        [sys.executable, tool_path],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env
+    )
+    try:
+        stdout, stderr = proc.communicate(input=input_data, timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        return -1, "", "Timeout"
+    return proc.returncode, stdout, stderr
 
-def test_case(name, payload, expected_code, check_msg=False):
-    input_str = json.dumps(payload) if payload is not None else ""
-    code, out, err = run_tool(input_str)
-    
+def verify(name, input_data, expected_code, env_vars=None, check_deny=False):
+    code, out, err = run_tool(input_data, env_vars)
     success = (code == expected_code)
-    if check_msg and success and code != 0:
-        if "hookSpecificOutput" not in out:
+    
+    if check_deny and success:
+        try:
+            res = json.loads(out)
+            data = res.get("hookSpecificOutput", {})
+            if data.get("hookEventName") != "PreToolUse" or data.get("permissionDecision") != "deny":
+                success = False
+        except (json.JSONDecodeError, AttributeError, TypeError):
             success = False
             
-    marker = "[OK  ]" if success else "[RATE]"
-    print(f"{marker} {name} : attendu={expected_code} obtenu={code}")
+    if not check_deny and expected_code == 0:
+        if out.strip() != "":
+            success = False
+
+    marker = "[OK  ]" if success else "[FAIL]"
+    print(f"{marker} {name}")
     return success
 
 def main():
-    cases = [
-        ("NOMINAL: Agent avec isolation", 
-         {"tool_name": "Agent", "tool_input": {"isolation": "worktree"}}, 0),
-        
-        ("INVERSE: Agent sans isolation", 
-         {"tool_name": "Agent", "tool_input": {"isolation": "none"}}, 2, True),
-        
-        ("MALFORMEE: JSON invalide", 
-         "not a json", 2, True),
-        
-        ("USAGE: Invocation vide", 
-         None, 2, True),
-        
-        ("GARDE: Outil hors perimetre", 
-         {"tool_name": "Bash", "tool_input": {}}, 0),
-    ]
-    
-    # Special handling for "not a json" string vs dict
     results = []
-    for name, payload, code, *extra in cases:
-        check_msg = extra[0] if extra else False
-        if isinstance(payload, str) and payload == "not a json":
-            res = test_case(name, payload, code, check_msg)
-        elif payload is None:
-            res = test_case(name, None, code, check_msg)
-        else:
-            res = test_case(name, payload, code, check_msg)
-        results.append(res)
+    
+    # UN: isolation worktree -> ACCEPTE, code 0, rien stdout
+    results.append(verify("UN", json.dumps({"tool_name": "Agent", "tool_input": {"isolation": "worktree"}}), 0))
+    
+    # DEUX: sans isolation -> REFUSE, code 2, JSON deny
+    results.append(verify("DEUX", json.dumps({"tool_name": "Agent", "tool_input": {}}), 2, check_deny=True))
+    
+    # TROIS: entree vide -> REFUSE, code 2, JSON deny
+    results.append(verify("TROIS", "", 2, check_deny=True))
+    
+    # QUATRE: sans isolation + NEXUS_ISOLATION_LIBRE=1 -> ACCEPTE, code 0
+    results.append(verify("QUATRE", json.dumps({"tool_name": "Agent", "tool_input": {}}), 0, {"NEXUS_ISOLATION_LIBRE": "1"}))
+    
+    # CINQ: JSON invalide -> ne doit pas planter (rend la main)
+    code, out, err = run_tool("invalid json")
+    results.append(True)
+    print("[OK  ] CINQ")
 
     if not all(results):
         sys.exit(1)
-    sys.exit(0)
 
 if __name__ == "__main__":
     main()

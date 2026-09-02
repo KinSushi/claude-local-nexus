@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:46.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 01:53.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -22,7 +22,7 @@
 | Vérification | `scripts/Test-NexusSmoke.ps1` | Smoke test runtime | 8 Ko | 2026-08-29 | `6d85e76be2f337a9` |
 | Vérification | `scripts/nexus_capability.py` | Profil matériel et verdict par modèle | 28 Ko | 2026-09-01 | `bd2721d9413ecf33` |
 | Vérification | `scripts/nexus_mcp_probe.py` | Sonde les outils du pont MCP | 16 Ko | 2026-08-31 | `413c9545c06d6797` |
-| Vérification | `scripts/nexus_test.py` | Suite forward / reverse / policy / code | 165 Ko | 2026-09-02 | `26ac19f3565a3e31` |
+| Vérification | `scripts/nexus_test.py` | Suite forward / reverse / policy / code | 165 Ko | 2026-09-02 | `ba4a11264472a8f0` |
 | Vérification | `scripts/nexus_validate.py` | Intégrité — bloque tout redémarrage douteux | 33 Ko | 2026-08-31 | `f861fb7f5d50240b` |
 | Migration | `scripts/nexus_migration_plan.py` | Plan de sortie des modèles hors de Docker | 14 Ko | 2026-08-31 | `da63efcaff9face2` |
 | Migration | `scripts/nexus_switch_engine.py` | Bascule le moteur Docker ↔ hôte | 14 Ko | 2026-08-31 | `20eb1ab7c7de95ba` |
@@ -31,11 +31,11 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-08-30 | `df70e850cb65feaf` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-08-29 | `fb1e3d96f893b748` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-08-29 | `abd966bd7f288b94` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 452 Ko | 2026-09-02 | `226bfd4aecfd1a61` |
-| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 769 Ko | 2026-09-02 | `afc794a2666bf362` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 453 Ko | 2026-09-02 | `822d491ea68766f2` |
+| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 772 Ko | 2026-09-02 | `3c3ed0719219ab05` |
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
-| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `85d63786d58d217f` |
+| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `56fbb420d3528fd7` |
 | Rituel | `scripts/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-01 | `b4a0ccc8e23077af` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 23 Ko | 2026-08-31 | `03b74fbf4a5704f0` |
 | Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-08-31 | `0e7fe343f0cf4c37` |
@@ -50,7 +50,7 @@
 | Architecture | `.gitignore` | — | 2 Ko | 2026-09-01 | `7e1071af67117b1f` |
 | Architecture | `.ruff_cache/.gitignore` | — | 35 o | 2026-08-31 | `9e3a60f1e6ec4ae6` |
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-01 | `ae2a9b470d2a5c02` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `ec0b139d785feef7` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 6 Ko | 2026-09-02 | `fd09ce788551ab7d` |
 | Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 156 o | 2026-09-01 | `3aa6f83eb4902b70` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
 | Architecture | `.ruff_cache/0.16.5/10322200571114817051` | — | 164 o | 2026-08-31 | `46d6144c4676d8c5` |
@@ -112,7 +112,7 @@
 | Architecture | `.ruff_cache/0.16.5/9691695313051288092` | — | 164 o | 2026-09-01 | `46a2f9cdd17b71e5` |
 | Architecture | `.ruff_cache/CACHEDIR.TAG` | — | 43 o | 2026-08-31 | `5953156d7e0c564a` |
 | Architecture | `LICENSE` | — | 34 Ko | 2026-08-29 | `0d96a4ff68ad6d4b` |
-| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `53a7c192d2f46825` |
+| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `547d38eb28ab8f57` |
 | Architecture | `Set-ClaudeModel.ps1.candidat` | — | 11 Ko | 2026-08-29 | `67a86f7cc9147d54` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-08-29 | `c05c3296a2683b28` |
 | Architecture | `Start-Claude.ps1.candidat` | — | 7 Ko | 2026-08-29 | `981eead31d168b3c` |
@@ -3109,7 +3109,7 @@
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
 | Architecture | `rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-01 | `5a6eb0b606bb975e` |
 | Architecture | `rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-01 | `8a022c08429aaef5` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 389 Ko | 2026-09-02 | `44f70f83b01e9ff9` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 390 Ko | 2026-09-02 | `2a6530156a878c89` |
 | Architecture | `rituels/EVALUATION-LOCALE.md` | — | 12 Ko | 2026-08-29 | `f16830fca4479937` |
 | Architecture | `rituels/PLAN_MAITRE_2026-09-01.md` | — | 19 Ko | 2026-09-01 | `05e63645415c2f0d` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
@@ -3153,11 +3153,11 @@
 | Architecture | `scripts/epreuve_dire_troncature.py` | — | 2 Ko | 2026-09-01 | `889e21a138383bc2` |
 | Architecture | `scripts/epreuve_doc_annexe.py` | — | 8 Ko | 2026-08-31 | `3cb365702624935d` |
 | Architecture | `scripts/epreuve_fuite_repli.py` | — | 4 Ko | 2026-09-01 | `0f652e8fd7a5f768` |
-| Architecture | `scripts/epreuve_garde_agent.py` | — | 4 Ko | 2026-09-02 | `78d0f9be6fca11f4` |
+| Architecture | `scripts/epreuve_garde_agent.py` | — | 3 Ko | 2026-09-02 | `8ff0b0bf513a05e5` |
 | Architecture | `scripts/epreuve_garde_ecriture.py` | — | 3 Ko | 2026-09-02 | `be3cd3f61e59c5b1` |
-| Architecture | `scripts/epreuve_garde_isolation.py` | — | 2 Ko | 2026-09-02 | `467575f18e700b48` |
+| Architecture | `scripts/epreuve_garde_isolation.py` | — | 2 Ko | 2026-09-02 | `318035fce97eade2` |
 | Architecture | `scripts/epreuve_garde_plan.py` | — | 5 Ko | 2026-09-02 | `e4969f5083797323` |
-| Architecture | `scripts/epreuve_garde_production.py` | — | 4 Ko | 2026-09-02 | `84437c9d7827c522` |
+| Architecture | `scripts/epreuve_garde_production.py` | — | 3 Ko | 2026-09-02 | `e891b763ddc3e68c` |
 | Architecture | `scripts/epreuve_garde_quote.py` | — | 4 Ko | 2026-08-31 | `eda3f6d112c14c27` |
 | Architecture | `scripts/epreuve_garde_shell_ps.py` | — | 6 Ko | 2026-08-31 | `cd2e156840e95a23` |
 | Architecture | `scripts/epreuve_gardes_accordes.py` | — | 6 Ko | 2026-08-31 | `f1c534a9f2640ef0` |

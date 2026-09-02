@@ -2,27 +2,32 @@ import os
 import sys
 import json
 import subprocess
-import tempfile
-import shutil
+from json import JSONDecodeError
 
 TOOL_PATH = "scripts/nexus_garde_agent.py"
 
-def run_tool(input_data, env=None):
-    """Lance l'outil en sous-processus et capture la sortie."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # On ne copie pas l'outil dans le tmpdir pour garder le chemin relatif
-        # mais on execute dans le tmpdir pour isoler l'environnement.
-        process = subprocess.Popen(
+def run_tool(input_str):
+    try:
+        proc = subprocess.Popen(
             [sys.executable, TOOL_PATH],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            env=env if env is not None else os.environ.copy(),
-            cwd=tmpdir
+            text=True
         )
-        stdout, stderr = process.communicate(input=json.dumps(input_data))
-        return process.returncode, stdout, stderr
+        stdout, stderr = proc.communicate(input=input_str, timeout=10)
+        return proc.returncode, stdout, stderr
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        return -1, "", "Timeout"
+
+def check_refusal(output):
+    try:
+        data = json.loads(output)
+        inner = data.get("hookSpecificOutput", {})
+        return inner.get("permissionDecision") == "deny"
+    except (JSONDecodeError, TypeError, AttributeError):
+        return False
 
 def main():
     if not os.path.exists(TOOL_PATH):
@@ -31,80 +36,55 @@ def main():
 
     tests = [
         {
-            "name": "NOMINAL",
-            "input": {"tool_name": "Agent", "tool_input": {"model": "gpt-4o-mini"}},
-            "expected_code": 0,
-            "desc": "Modele gratuit autorisé"
-        },
-        {
-            "name": "REFUS_PAYANT",
-            "input": {"tool_name": "Agent", "tool_input": {"model": "sonnet"}},
+            "id": "UN",
+            "input": json.dumps({
+                "tool_input": {"subagent_type": "general-purpose", "model": "haiku"},
+                "tool_name": "Agent"
+            }),
             "expected_code": 2,
-            "desc": "Refus modele facture sans justification"
+            "check_out": lambda o: check_refusal(o) and ("NEXUS_AGENT_LIBRE" in o or "NEXUS_JUSTIFIE_PAYANT" in o)
         },
         {
-            "name": "MALFORMEE",
-            "input": "ceci n'est pas un json",
-            "expected_code": 0,
-            "desc": "Entree malformee ne fait pas planter l'outil"
-        },
-        {
-            "name": "ARG_MANQUANTS",
-            "input": {}, 
-            "expected_code": 0, # Le code source rend 0 si tool_name absent
-            "desc": "Invocation sans arguments requis"
-        },
-        {
-            "name": "PASSE_JUSTIFIE",
-            "input": {
-                "tool_name": "Agent", 
-                "tool_input": {"model": "opus"},
-                "prompt": "NEXUS_JUSTIFIE_PAYANT besoin de raisonnement"
-            },
-            "expected_code": 0,
-            "desc": "Garde laisse passer avec justification"
-        },
-        {
-            "name": "REFUS_FORK",
-            "input": {"tool_name": "Agent", "tool_input": {"subagent_type": "fork"}},
+            "id": "DEUX",
+            "input": json.dumps({
+                "tool_input": {"subagent_type": "general-purpose"},
+                "tool_name": "Agent"
+            }),
             "expected_code": 2,
-            "desc": "Refus type fork"
+            "check_out": lambda o: check_refusal(o)
+        },
+        {
+            "id": "TROIS",
+            "input": json.dumps({
+                "tool_input": {"subagent_type": "fork"},
+                "tool_name": "Agent"
+            }),
+            "expected_code": 2,
+            "check_out": lambda o: check_refusal(o)
+        },
+        {
+            "id": "QUATRE",
+            "input": "",
+            "expected_code": 0,
+            "check_out": lambda o: True
+        },
+        {
+            "id": "CINQ",
+            "input": "not a json",
+            "expected_code": 0,
+            "check_out": lambda o: True
         }
     ]
 
-    # Cas special pour l'invocation sans arguments (test de l'usage)
-    # Le script actuel ne prend pas d'args sys.argv, il lit stdin.
-    # On teste donc un JSON vide ou invalide.
-
-    failures = 0
+    failed = False
     for t in tests:
-        # Gestion du cas malformee (on envoie une string au lieu d'un dict)
-        input_val = t["input"]
-        if isinstance(input_val, str):
-            # On simule l'envoi brut
-            process = subprocess.Popen(
-                [sys.executable, TOOL_PATH],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, cwd=tempfile.mkdtemp()
-            )
-            code, out, err = process.communicate(input=input_val)
-        else:
-            code, out, err = run_tool(input_val)
-
-        success = (code == t["expected_code"])
-        
-        # Pour les refus, on verifie que le message nomme le probleme
-        if t["expected_code"] != 0 and success:
-            if "refuse" not in out.lower() and "refuse" not in err.lower():
-                success = False
-
-        print(f"[{'OK' if success else 'FAIL'}] {t['name']} : {t['desc']}")
+        code, out, err = run_tool(t["input"])
+        success = (code == t["expected_code"]) and t["check_out"](out)
+        print(f"[{'OK' if success else 'FAIL'}] {t['id']}")
         if not success:
-            failures += 1
+            failed = True
 
-    if failures > 0:
-        sys.exit(1)
-    sys.exit(0)
+    sys.exit(1 if failed else 0)
 
 if __name__ == "__main__":
     main()
