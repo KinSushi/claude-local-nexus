@@ -1251,12 +1251,18 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
-    parser.add_argument("--only", choices=["forward", "reverse", "policy", "routage", "code", "releve", "ruche", "vitrine", "isolation", "lecture",
-                                 "shell", "portee", "semaphore", "reveil", "mentions", "protocole",
-                                 "terminal", "noms", "registre", "atomique", "plan",
-                                 "cablage", "doc", "sonde", "quota", "maj", "sujets", "shellps", "accord",
-                                 "cibles", "ingerer", "resumer", "offsets", "sources", "decoupage", "commande", "perte", "plafond", "quote", "orphelines", "couverture", "troncature", "verdicts", "rassurant", "fuite", "appliquer", "reprise", "budget", "avertir", "options", "verrou", "charge", "manuel", "lanceur", "raisonnement", "socle"],
-                        help="ne joue qu'une famille de tests")
+    # On dérive la liste des choix pour éviter d'écraser le fichier source avec des valeurs manquantes.
+    try:
+        import re
+        from pathlib import Path
+        source_path = Path(__file__)
+        source_text = source_path.read_text(encoding="utf-8")
+        pattern = r'args\.only\s+in\s+\(None,\s*"([^"]+)"\)'
+        found = re.findall(pattern, source_text)
+        _choix = sorted(set(found)) if found else None
+    except Exception:
+        _choix = None
+    parser.add_argument("--only", choices=_choix, help="ne joue qu'une famille de tests")
     args = parser.parse_args()
 
     print("=" * 72)
