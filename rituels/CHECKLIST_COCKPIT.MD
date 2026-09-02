@@ -14739,3 +14739,61 @@ exactement ce que faisait l'imbrication. Les affichages surviennent dans les mem
 
 Confirmation independante retenue ici : `epreuve_sonde_aveugle` passe 5 cas sur 5 sur la
 version reecrite, et le court-circuit est une garantie du langage, non une opinion.
+
+### 115.59 `nexus_loi1.py` MESURE LA PROVENANCE, PAS L'AUDIT — 19e occurrence de la classe
+
+Trouve en tentant de clore le tour, et c'est une limite de l'instrument qui porte la
+regle la plus importante du depot.
+
+**LE FAIT.** Trois lignes ont ete reecrites par l'outil de mise en forme (`set(x for x
+in y)` -> `{x for x in y}`). `nexus_loi1.py` les compte comme **3 lignes a la main** et
+declare une violation. Elles ont pourtant ete **soumises a un tiers**, qui a rendu
+EQUIVALENT avec une raison exacte et verifiee : generateur consomme de la meme facon,
+variable de boucle locale dans les deux formes, source vide rendant `set()` dans les
+deux, elements non hachables levant `TypeError` des deux cotes, tri final inchange.
+
+> **L'instrument mesure D'OU VIENT la ligne, jamais SI QUELQU'UN L'A RELUE.** Or LOI 1
+> ne dit pas « le code doit venir d'un rendu du banc », elle dit **« nul ne valide son
+> propre travail »**. Ce sont deux questions differentes, et une seule valeur les rend.
+
+**Les deux situations confondues, qui appellent des gestes opposes :**
+
+    non delegue ET non audite   ->  violation reelle, il faut faire auditer
+    non delegue MAIS audite     ->  conforme au FOND, rien a faire
+
+**Dix-neuvieme occurrence de la classe en vingt-quatre heures**, et la plus ironique :
+elle est dans l'outil qui applique la loi contre l'auto-validation.
+
+**CE QUE L'INSTRUMENT FAIT BIEN, et qu'il faut garder** : il a SIGNALE une ligne que
+personne n'avait regardee, et il avait raison de le faire. Sans lui, la reecriture
+automatique passait inapercue — un outil de style qui change une semantique la change en
+silence. Le signal est juste ; c'est sa TRADUCTION en violation qui est trop large.
+
+**Piste, non implementee et dite comme telle** : un registre des audits rendus, que
+l'instrument consulterait pour distinguer « jamais regarde » de « regarde par un tiers ».
+Tant qu'il n'existe pas, la ligne reste comptee — et **ce tour se clot avec ce manque
+DECLARE plutot que force au vert**, ce qui est le seul geste honnete : maquiller le
+compteur reviendrait exactement a l'auto-validation que la regle interdit.
+
+### 115.60 DEUX CLIQUETS QUI SE CONTREDISENT — l'outillage et la LOI 1
+
+Constate en fin de tour, et il faut le nommer plutot que de boucler dessus.
+
+    le cliquet d'OUTILLAGE  exige de reduire les violations de style
+    la LOI 1                compte chaque reecriture automatique comme travail a la main
+
+Corriger l'un degrade l'autre, mecaniquement. Une passe de reecriture automatique fait
+tomber des violations et monter le compteur de lignes non deleguees ; s'en abstenir fait
+l'inverse. **Aucune des deux regles n'est fausse ; leur composition n'a jamais ete
+pensee.**
+
+**Et le detail qui evite une conclusion hative** : les six violations restantes ne
+viennent PAS toutes de ce tour. Verifie fichier par fichier — `nexus_relais.py`,
+`nexus_ruche.py`, `epreuve_garde_plan.py` n'ont pas ete touches ici. Le cliquet compare a
+une reference et n'attribue rien : lire son chiffre comme « mes regressions » aurait ete
+la meme faute de lecture que partout ailleurs cette nuit.
+
+**Deux fichiers ont ete deliberement LAISSES en violation** : `nexus_garde_ecriture.py`
+et `nexus_garde_agent.py`, tous deux ARMES au niveau global. Motif ecrit avant le geste :
+une garde armee a deja ete cassee ce soir en voulant l'ameliorer, et la valeur d'une
+garde qui mord depasse celle d'une regle de style.
