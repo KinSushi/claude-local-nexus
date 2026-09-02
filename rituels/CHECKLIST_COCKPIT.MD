@@ -13399,3 +13399,97 @@ d'ecart.
 | 55 | Un refus de piece jointe s'affiche apres l'appel, donc un `timeout` le masque | `OUVERT` |
 | 56 | Un refus de piece jointe laisse la tache « reussie » et `rc=0` | `OUVERT` — la perte est silencieuse dans un lot |
 | 51 | `cibles_ecrites()` : 12,9 % de determinees fausses sur 799 entrees | `OUVERT` — heredoc ferme, affirmation fausse non |
+
+### 115.27 LA SOIREE DU 2026-09-01 — ce qui a ete FERME, avec sa preuve
+
+| Commit | Defaut ferme | Preuve |
+| --- | --- | --- |
+| `adb42ef` | **FUITE REELLE** — 10 porteurs de jetons passaient par le chemin script, refuses par le MCP | 10/10 refuses, 6 temoins legitimes passent |
+| `04e44e7` | `planOf` declarait **local** tout alias inconnu | libelle « plan inconnu », replis sortants conserves |
+| `e4ef0ad` | heredoc, 31 % des commandes reelles | 32 epreuves vertes, `bash -c` et `eval` preserves |
+| `4720836` | `nexus_ask` ne lisait aucun fichier | + `nexus_preload`, `nexus_stats_jsonl` |
+| `0f7b496` | refus muet, chemin de refus mourant en cp1252 | refus affiche en entier sur U+2011 |
+| `e23f9f8` | pas d'outil de contrat de donnees | 18 valeurs piegees, aucune ne sort |
+| `f262395` | 3 instruments qui affirmaient plus qu'ils ne mesuraient | contre-epreuves jointes |
+
+### 115.28 LA CLASSE DE LA SOIREE — l'instrument qui repond a la QUESTION VOISINE
+
+Nommee independamment par un depot voisin, et rencontree QUATRE fois ici :
+
+| Instrument | Question a laquelle il repond | Question qu'on lui posait |
+| --- | --- | --- |
+| `nexus_capability` | le GPU est-il **DEDIE** ? | le GPU **SERT**-il ? |
+| filtre de `nexus_agent` | ce nom ressemble-t-il a un secret ? | ce fichier PORTE-t-il un secret ? |
+| `planOf` en repli | l'alias finit-il par `-cloud` ? | ou les donnees vont-elles REELLEMENT ? |
+| `controle_filtres_accordes` | la constante est-elle a cette forme ? | les deux filtres divergent-ils ? |
+
+**Le geste qui les trouve** : enoncer la question a laquelle l'instrument repond
+REELLEMENT, et la comparer MOT POUR MOT a celle qu'on voulait poser. Puis
+verifier par un chemin INDEPENDANT — c'est ainsi que le GPU a ete pris :
+`nexus_capability` disait « pas d'offload », `ollama ps` disait `100% GPU`.
+
+**Deux fois dans la journee, une grandeur crue causale ne l'etait pas** : le
+budget de sortie (le seuil ne depend pas de la difficulte de la tache) et le
+plafond de latence (il ne depend pas de la taille de l'entree — 16 Ko
+aboutissent deux fois, 12 Ko expirent a 900 s).
+
+### 115.29 `nexus_preload.py` EST UN OUTIL AUTONOME — raison ecrite AVANT le rebaseline
+
+Le cliquet de cablage le declare ORPHELIN. Diagnostic delegue sur
+`nexus_bench.py`, verbatim : *« Le banc n'a pas besoin d'appeler nexus_preload :
+il a deja ses reveils integres [...] nexus_preload ferait doublon s'il etait
+appele par le banc. Il reste utile comme outil autonome pour d'autres
+contextes. »*
+
+Precisions mesurees du meme diagnostic : les reveils du banc existent dans
+`mesurer_debit`, `mesurer_embedding` et `mesurer_binaire`, avec budget separe —
+mais PAS dans `mesurer_latence`, ou le premier appel mesure volontairement le
+chargement. Et ces reveils ne RAPPORTENT pas le temps de chargement, ce que
+`nexus_preload` fait.
+
+**Decision** : `nexus_preload.py` rejoint la categorie des outils d'ACTION
+lances a la main — comme `nexus_poser_socle` et `nexus_armer_hook`. Le cabler
+au banc creerait un doublon, c'est-a-dire un second chemin de reveil qui
+pourrait diverger du premier : exactement la classe de defaut corrigee ce soir
+sur les deux filtres. **On ne cable pas un outil pour satisfaire un cliquet.**
+
+Reste ouvert et declare : `nexus_preload` n'a pas encore servi a une mesure
+reelle, parce que la machine etait CHARGEE chaque fois que l'occasion s'est
+presentee — `nexus_charge.py` l'a dit, et il a ete suivi.
+
+### 115.30 LE MASSIF A UN PLAFOND — mesure en le franchissant
+
+Sept lots lances simultanement, parallelisme 3 a 8 chacun, soit environ
+quarante requetes concurrentes vers la meme passerelle. Mesure :
+
+    24 processus Python vivants
+    un lot bloque 8 minutes sur sa derniere tache
+    m12 : 4 echecs sur 6, tous « plafond insuffisant »
+    m14 : 3 fenetres perdues sur 3 sur le seul gros fichier du lot
+
+**Aucun echec de fond — un engorgement.** La vitesse s'est convertie en attente.
+`nexus_agent` borne la concurrence PAR LOT, pas a l'echelle de la machine :
+lancer N lots multiplie donc la charge par N sans que rien ne le dise.
+
+**Et c'est le correctif de la veille qui l'a rendu visible** : le rendu de m14
+portait en tete `[ATTENTION] 3 fenetre(s) perdue(s) sur 3 : la reponse porte sur
+un corpus ampute.` Sans lui, j'aurais lu « Impossible d'auditer » et cherche un
+defaut de consigne. Contre-epreuve obtenue par l'USAGE, pas par un test.
+
+### 115.31 DEUX TROUVAILLES REJETEES APRES VERIFICATION
+
+Inscrites parce qu'un audit rejete est aussi un resultat.
+
+| Trouvaille du banc | Verdict |
+| --- | --- |
+| « `Update-NexusModels` continue malgre un rapatriement en echec » | **REJETEE** — comportement REEL mais ASSUME, avec sa raison en commentaire : un modele de second rang manquant ne doit pas bloquer le reste, et la conformite tranche ensuite |
+| « le script ne distingue pas un modele absent d'un modele injoignable » | **REJETEE** — la distinction existe, dans `nexus_pull_host.py` lignes 172-178 : un 404 rend « inexistant », une erreur reseau rend autre chose. L'audit visait le mauvais fichier |
+
+### 115.32 OBSERVATIONS D'UNE SESSION TIERCE, non encore traitees
+
+| # | Observation | Etat |
+| --- | --- | --- |
+| 1 | Le `[refuse]` d'une piece jointe s'affiche APRES l'appel modele. Un appelant qui borne son timeout ne verra JAMAIS qu'un fichier a ete ecarte — mesure avec `timeout 120` | `OUVERT` |
+| 2 | Un refus de piece jointe ne fait pas echouer la tache : `1 reussie, 0 echec`, rc=0. Dans un lot de vingt fichiers dont un est ecarte, la perte est silencieuse | `OUVERT` — meme classe que le « 0 echec » sur troncature |
+| 3 | Joindre l'etat de charge a un echec de delai. `nexus_charge.py` rend deja processus lourds, RAM libre et verdict — le remede est un APPEL, pas une conception | `OUVERT` |
+| 4 | `git add -A` a emporte le travail d'une autre session, **cinquieme collision en trois heures** | `OUVERT` — l'attention ne suffit pas, il faut un mecanisme |
