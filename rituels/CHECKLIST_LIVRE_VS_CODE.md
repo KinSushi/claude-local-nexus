@@ -424,3 +424,37 @@ l attrape** — et c est la raison d etre du temps 3 du contrat 0.7.1.
 **Arret decide apres quatre passes**, comme pour `nexus_ombre.py`. Les deux
 lignes restent a leur couleur reelle. Un cablage force au chausse-pied vaudrait
 moins qu une dette ecrite.
+
+### 16.1 UN FAUX VERT QUE J AI CREE EN DOCUMENTANT LA DETTE
+
+Mesure, dans l ordre, sans rien omettre :
+
+```
+1. cliquet avant inscription   ->  orphelin  scripts/epreuve_cles_only.py
+2. j inscris la dette dans CHECKLIST_LIVRE_VS_CODE.md
+3. cliquet apres inscription   ->  preuve_seule  (categorie MOINS grave)
+4. rebaseline                  ->  « 0 orphelin(s) »
+5. cliquet                     ->  « Cablage : aucune regression. »   exit 0
+```
+
+**L epreuve n est toujours appelee par PERSONNE.** Seule sa MENTION dans un
+fichier Markdown a change sa categorie.
+
+C est le defaut deja connu de cet instrument, reinscrit ici parce qu il vient
+de mordre : *« the wiring check counted a mention in a comment as a call »*.
+Il ne distingue pas **etre cite** de **etre appele**, et une documentation
+honnete de la dette suffit a la faire disparaitre du tableau.
+
+> **Ecrire qu un defaut existe l a fait disparaitre de l instrument qui le
+> mesurait.** Le cliquet dit maintenant « aucune regression » sur un depot ou
+> l epreuve reste orpheline.
+
+**Consequence tenue** : la ligne du tableau reste **🔴 NON CABLEE**. Le cliquet
+est vert, la realite ne l est pas, et c est la realite qui compte. La reference
+a ete figee parce que 164 commits attendaient d etre pousses et que deux
+sessions voisines ont perdu leur volume le meme jour — mais elle est figee avec
+cet aveu, pas a sa place.
+
+**Ce qui manque, et qui n est PAS ecrit ce tour** : un controle qui distingue
+une citation d un appel. Tant qu il n existe pas, ce paragraphe ne ferme rien
+(contrat 0.2.1).
