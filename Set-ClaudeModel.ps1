@@ -56,8 +56,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Utilisation du protocole HTTPS pour eviter la transmission en clair
-$BaseUrl = "https://localhost:4000"
+# Utilisation du protocole HTTP en clair sur localhost (pas de TLS, la passerelle n'est pas exposee hors 127.0.0.1)
+$BaseUrl = "http://localhost:4000"
 
 function Write-Section { param($m) Write-Host "`n$m" -ForegroundColor Cyan }
 function Write-Ok      { param($m) Write-Host "  $m" -ForegroundColor Green }
@@ -294,4 +294,3 @@ switch ($Mode) {
 }
 
 Write-Host ""
-</#>

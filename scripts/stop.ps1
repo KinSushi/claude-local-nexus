@@ -13,7 +13,15 @@
 # ============================================================
 
 # URL de healthcheck configurable (modifier ici si besoin)
+# Force l'encodage UTF-8 pour l'affichage des caractères Unicode
+try {
+    [Console]::OutputEncoding = [Text.Encoding]::UTF8
+} catch {
+    # Ignorer les erreurs d'encodage sur les systèmes qui ne le supportent pas
+}
 $HealthCheckUrl = "http://localhost:4000/health/liveliness"
+# Le script doit fonctionner quel que soit le répertoire d'appel
+$RepoRoot = Split-Path -Parent $PSScriptRoot
 
 # ------------------------------------------------------------
 # Validation de l'URL de healthcheck
@@ -34,28 +42,34 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 # ------------------------------------------------------------
 # Vérifier la présence du fichier docker-compose.yml
 # ------------------------------------------------------------
-if (-not (Test-Path -Path "./docker-compose.yml")) {
-    Write-Error "Fichier docker-compose.yml introuvable dans le repertoire courant."
+if (-not (Test-Path -Path (Join-Path $RepoRoot "docker-compose.yml"))) {
+    Write-Error "Fichier docker-compose.yml introuvable dans le répertoire $RepoRoot."
     exit 1
 }
 
 # ------------------------------------------------------------
 # Vérifier qu'il existe des conteneurs en cours d'exécution
 # ------------------------------------------------------------
-$runningContainers = docker compose ps -q
-if (-not $runningContainers) {
-    Write-Host "Aucun conteneur en cours d'execution. Rien a arreter."
-    exit 0
-}
+Push-Location $RepoRoot
+try {
+    $runningContainers = docker compose ps -q
+    if (-not $runningContainers) {
+        Write-Host "Aucun conteneur en cours d'execution. Rien a arreter."
+        exit 0
+    }
 
-# ------------------------------------------------------------
-# Arrêter les conteneurs
-# ------------------------------------------------------------
-Write-Host "Arret des conteneurs..."
-docker compose down
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "docker compose down a echoue (code $LASTEXITCODE)."
-    exit 1
+    # ------------------------------------------------------------
+    # Arrêter les conteneurs
+    # ------------------------------------------------------------
+    Write-Host "Arret des conteneurs..."
+    docker compose down
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "docker compose down a echoue (code $LASTEXITCODE)."
+        exit 1
+    }
+}
+finally {
+    Pop-Location
 }
 
 # ------------------------------------------------------------

@@ -25,13 +25,13 @@ try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 # Configuration
 # ------------------------------------------------------------
 # Chemins absolus bases sur le repertoire du script
-$scriptDir       = $PSScriptRoot
+$scriptDir       = Split-Path -Parent $PSScriptRoot   # chemin racine du dépôt
 $envFile         = Join-Path $scriptDir '.env'
 $envExampleFile = Join-Path $scriptDir '.env.example'
 $modelListFile   = Join-Path $scriptDir 'model_list.txt'
 
-# Nom du conteneur Ollama (modifiable dans docker-compose.yml)
-$ollamaContainer = 'ollama-server'
+# URL du moteur Ollama tournant sur l'hôte
+$ollamaEngineUrl = "http://127.0.0.1:11434"
 
 # ------------------------------------------------------------
 # Parametres de robustesse
@@ -116,27 +116,26 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "docker compose up returned non-zero exit code." }
 
     # ------------------------------------------------------------
-    # Attendre que le conteneur Ollama soit ready
+    # Attendre que le moteur Ollama (hôte) soit ready
     # ------------------------------------------------------------
     Write-Host "Attente du demarrage d'Ollama..."
     $maxAttempts = 30
     $attempt = 0
-    $ollamaStatus = $null
+    $ollamaReady = $false
 
     do {
         $attempt++
         Start-Sleep -Seconds 2
-
-        $inspectResult = docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' $ollamaContainer 2>$null
-        if ($inspectResult) {
-            $ollamaStatus = $inspectResult.Trim()
-        } else {
-            $ollamaStatus = $null
+        try {
+            Invoke-WebRequest -Uri "$ollamaEngineUrl/api/version" -TimeoutSec 3 -ErrorAction Stop | Out-Null
+            $ollamaReady = $true
+        } catch {
+            $ollamaReady = $false
         }
-    } while ($ollamaStatus -ne 'healthy' -and $ollamaStatus -ne 'running' -and $attempt -lt $maxAttempts)
+    } while (-not $ollamaReady -and $attempt -lt $maxAttempts)
 
-    if ($ollamaStatus -ne 'healthy' -and $ollamaStatus -ne 'running') {
-        Write-Error "Ollama n'est pas en etat 'healthy' ou 'running' apres $($maxAttempts * 2) secondes. Verifiez les logs avec 'docker logs $ollamaContainer'."
+    if (-not $ollamaReady) {
+        Write-Error "Moteur Ollama hôte non disponible après $($maxAttempts * 2) secondes. Démarrez-le avec 'ollama serve'."
         exit 1
     }
 
@@ -154,7 +153,7 @@ try {
         if ($model -eq '') { continue }
 
         Write-Host "Telechargement de $model..."
-        & docker exec $ollamaContainer ollama pull "$model"
+        & ollama pull "$model"
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✔ Telechargement reussi."
             $successCount++

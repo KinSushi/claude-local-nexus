@@ -46,14 +46,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# ------------------------------------------------------------
-# Verification des droits administrateur (defaut de robustesse)
-# ------------------------------------------------------------
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Stop "Droits administrateur requis."
-    exit 1
-}
-
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Scripts  = $PSScriptRoot
 
@@ -63,6 +55,14 @@ function Write-Etape { param($m) Write-Host "`n=== $m ===" -ForegroundColor Cyan
 function Write-Ok    { param($m) Write-Host "  [ok]   $m" -ForegroundColor Green }
 function Write-Manque{ param($m) Write-Host "  [!]    $m" -ForegroundColor Yellow; $script:Problemes++ }
 function Write-Stop  { param($m) Write-Host "  [stop] $m" -ForegroundColor Red; $script:Problemes++ }
+
+# ------------------------------------------------------------
+# Verification des droits administrateur (defaut de robustesse)
+# ------------------------------------------------------------
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Stop "Droits administrateur requis."
+    exit 1
+}
 
 # Helper to invoke docker compose with fallback to docker-compose
 function Invoke-DockerCompose {
@@ -284,4 +284,3 @@ Write-Host "  Sujets ouverts  : rituels\CHECKLIST_COCKPIT.MD"
 Write-Host "  Suite de tests  : python scripts\nexus_test.py"
 Write-Host ""
 exit ([int]($script:Problemes -gt 0))
-</#>
