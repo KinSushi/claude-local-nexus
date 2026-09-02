@@ -17,11 +17,9 @@ The script:
 
 import argparse
 import datetime
-import os
 import pathlib
 import subprocess
 import sys
-import traceback
 
 def run_git_command(args, cwd, timeout):
     """Run a git command with given arguments, cwd and timeout."""

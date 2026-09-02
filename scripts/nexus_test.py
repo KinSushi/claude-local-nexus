@@ -1357,6 +1357,30 @@ def main() -> int:
         jouer_epreuve_python("epreuve_verdicts_rituel.py", "verdicts du rituel")
     if args.only in (None, "registre"):
         jouer_epreuve_python("epreuve_registre_epreuves.py", "coherence du registre")
+    if args.only in (None, "lecture"):
+        jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
+    if args.only in (None, "shell"):
+        jouer_epreuve_python("epreuve_garde_shell.py", "garde shell")
+    if args.only in (None, "import"):
+        jouer_epreuve_python("epreuve_import.py", "imports")
+    if args.only in (None, "outillage"):
+        jouer_epreuve_python("epreuve_outillage.py", "outillage")
+    if args.only in (None, "progres"):
+        jouer_epreuve_python("epreuve_progres.py", "progres")
+    if args.only in (None, "relais"):
+        jouer_epreuve_python("epreuve_relais.py", "relais local")
+    if args.only in (None, "reprise"):
+        jouer_epreuve_python("epreuve_reprise.py", "hook de reprise")
+    if args.only in (None, "ruche"):
+        jouer_epreuve_python("epreuve_ruche.py", "ruche")
+    if args.only in (None, "vide"):
+        jouer_epreuve_python("nexus_epreuve_vide.py", "rendu vide")
+    if args.only in (None, "index_livres"):
+        jouer_epreuve_python("nexus_index_livres.py", "index des livres")
+    if args.only in (None, "livres"):
+        jouer_epreuve_python("nexus_livres.py", "corpus de livres")
+    if args.only in (None, "sauvegarde"):
+        jouer_epreuve_python("nexus_sauvegarde.py", "sauvegarde locale")
     if args.only in (None, "rassurant"):
         jouer_epreuve_python("epreuve_verdict_rassurant.py", "verdict rassurant")
     if args.only in (None, "fuite"):

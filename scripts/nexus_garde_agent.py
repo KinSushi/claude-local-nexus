@@ -40,7 +40,7 @@ import json
 import os
 import re
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 # Modeles factures connus. Leur presence doit etre justifiee.
 MODELES_FACTURES = {"haiku", "sonnet", "opus", "fable"}
