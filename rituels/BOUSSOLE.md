@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 04:41.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 04:46.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -31,8 +31,8 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-08-30 | `df70e850cb65feaf` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-08-29 | `fb1e3d96f893b748` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-08-29 | `abd966bd7f288b94` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 454 Ko | 2026-09-02 | `81bc7206bcc38a4d` |
-| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 806 Ko | 2026-09-02 | `a215cb4608189afa` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 454 Ko | 2026-09-02 | `2adb99a7591d523e` |
+| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 809 Ko | 2026-09-02 | `b4a95d409bb10bfb` |
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
 | Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `c923c7ddb4b561ab` |
@@ -114,7 +114,7 @@
 | Architecture | `.ruff_cache/0.16.5/9691695313051288092` | — | 164 o | 2026-09-01 | `46a2f9cdd17b71e5` |
 | Architecture | `.ruff_cache/CACHEDIR.TAG` | — | 43 o | 2026-08-31 | `5953156d7e0c564a` |
 | Architecture | `LICENSE` | — | 34 Ko | 2026-08-29 | `0d96a4ff68ad6d4b` |
-| Architecture | `PROGRESS.MD` | — | 2 Ko | 2026-09-02 | `edd36dfa7dd468d8` |
+| Architecture | `PROGRESS.MD` | — | 2 Ko | 2026-09-02 | `e842e00e272b4ca8` |
 | Architecture | `Set-ClaudeModel.ps1.candidat` | — | 11 Ko | 2026-08-29 | `67a86f7cc9147d54` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-08-29 | `c05c3296a2683b28` |
 | Architecture | `Start-Claude.ps1.candidat` | — | 7 Ko | 2026-08-29 | `981eead31d168b3c` |
@@ -3111,7 +3111,7 @@
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
 | Architecture | `rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-01 | `5a6eb0b606bb975e` |
 | Architecture | `rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-01 | `8a022c08429aaef5` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 391 Ko | 2026-09-02 | `0793bb2bae21bf90` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 391 Ko | 2026-09-02 | `d3903aa6e8c3dac3` |
 | Architecture | `rituels/EVALUATION-LOCALE.md` | — | 12 Ko | 2026-08-29 | `f16830fca4479937` |
 | Architecture | `rituels/PLAN_MAITRE_2026-09-01.md` | — | 19 Ko | 2026-09-01 | `05e63645415c2f0d` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
@@ -3189,6 +3189,7 @@
 | Architecture | `scripts/epreuve_reprise.py` | — | 1 Ko | 2026-09-02 | `90e14540cda66543` |
 | Architecture | `scripts/epreuve_reprise_avant_repli.py` | — | 4 Ko | 2026-09-01 | `de1e3a7e6adc16a4` |
 | Architecture | `scripts/epreuve_resumer.py` | — | 5 Ko | 2026-08-31 | `8c14e5b88a394bd9` |
+| Architecture | `scripts/epreuve_ruche.py` | — | 6 Ko | 2026-09-02 | `79dc1a89da4f354a` |
 | Architecture | `scripts/epreuve_schema.py` | — | 11 Ko | 2026-09-02 | `c787a28a16de5bf8` |
 | Architecture | `scripts/epreuve_secours.py` | — | 5 Ko | 2026-09-02 | `8a3c59efbfa2ba92` |
 | Architecture | `scripts/epreuve_sonde_aveugle.py` | — | 5 Ko | 2026-09-02 | `5cefe6eed50622c8` |
@@ -3286,7 +3287,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 3227 |
+| Architecture | 3228 |
 | Obsolète | 2 |
 
 ---

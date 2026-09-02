@@ -15677,3 +15677,79 @@ lecture restaient possibles, les ecritures non. Deux consequences mesurees :
 ⇒ **Ce n'est pas une hypothese sur ce qui arriverait si les abonnements tombaient : c'est
 arrive, brievement, et le travail s'est arrete.** La voie de secours n'est donc pas une
 precaution theorique.
+
+### 115.91 L'ORCHESTRATEUR EXISTE DEJA — le manque n'etait pas celui qu'on croyait
+
+L'operateur signale que *« le modele orchestrateur mis en place n'est pas encore resolu »*.
+**La verification donne un resultat different de ce que nous pensions tous les deux.**
+
+`scripts/nexus_ruche.py`, **516 lignes**, fait exactement ce que decrit la demande :
+
+    decouvrir_cibles   prioriser   decouper_lots
+    lancer_essaim      traiter_lots (avec relance sur echec)   rapport_final
+    option --plans {cloud,local,deux}   option --essaims (max 4)
+
+**Il TOURNE, mesure a l'instant :**
+
+    153 cibles decouvertes
+    2 essaims concurrents lances sur des lots de 3
+    rapport rendu, avec compteurs et liste des cibles en echec
+
+Et il est REFERENCE par `nexus_conformite`, `nexus_test`, `nexus_import`, `nexus_worktree`.
+Ce n'est donc ni un orphelin ni un projet.
+
+> **Le manque n'est pas « l'orchestrateur n'existe pas », c'est « il n'a AUCUNE epreuve ».**
+> Un orchestrateur qui decouvre 153 cibles, les distribue a des essaims et relance sur echec,
+> sans qu'aucun controle ne verifie qu'il fait bien cela, est exactement le genre de piece
+> dont on decouvre le defaut le jour ou l'on en depend.
+
+`scripts/epreuve_ruche.py` est pose. Ses cas : decouverte coherente sur un repertoire
+temporaire fabrique, repertoire vide sans plantage, respect de la limite de cibles, refus
+motive sur un plan invalide, et **verification qu'une execution simulee n'ecrit rien**.
+
+### 115.92 UN RAPPORT DE SIMULATION INDISCERNABLE D'UN RAPPORT REEL
+
+Defaut mesure sur l'orchestrateur, en mode simulation :
+
+    Simuler essaim sur 3 cible(s).
+    Simuler essaim sur 3 cible(s).
+    --- Rapport ---
+    Cibles traitees cette execution : 6
+    Echecs                          : 5
+    Cibles en echec (a corriger) :
+    - scripts/nexus_conformite.py : Erreur: aucun bloc @@FONCTION@@ trouve dans la reponse
+
+**Un operateur qui lit ce rapport conclut que cinq cibles ont echoue.** Le titre, les
+compteurs et les libelles sont identiques a ceux d'une execution reelle. Seules deux lignes
+« Simuler essaim » en tete distinguent les deux — et elles sont au-dessus du rapport, donc
+perdues des qu'on lit la fin.
+
+**C'est la classe traquee toute la nuit, appliquee au rapport lui-meme** : simule et reel
+rendent la meme forme. Et c'est la vingt-et-unieme occurrence.
+
+**CE QUI N'EST PAS TRANCHE, et je le dis plutot que de l'affirmer** : l'origine exacte de ces
+cinq echecs. Le diagnostic delegue affirme qu'en simulation aucun appel n'est emis — ce qui
+contredit l'existence meme d'echecs de parsing. Un fichier d'etat persistant existe,
+`.nexus/ruche-etat.json` date du 30 aout, relu au demarrage ; mon inspection de son contenu
+n'a pas confirme l'hypothese, ma lecture ne correspondant pas a sa structure. **La question
+reste OUVERTE.**
+
+**Et les ancres du diagnostic etaient FAUSSES**, verifiees sur le disque : la ligne 135 citee
+comme `lancer_essaim` porte en realite `fichier_valide`. **Vingt-deuxieme confirmation du
+§115.54** — sur un fichier de 516 lignes, le modele reconstitue les coordonnees. Le FOND du
+diagnostic — le rapport ne distingue pas les deux modes — est juste et verifie ; ses CHIFFRES
+ne valaient rien.
+
+### 115.93 CE QUE L'ESSAIM NE SAUVE PAS — la limite a dire
+
+Rediriger le client vers le moteur local donne **un modele a 8 192 jetons**, pas un essaim.
+Le decoupage MAP-REDUCE qui porte le volume a 1 M vit dans `nexus_agent` et `nexus_context`,
+c'est-a-dire dans les OUTILS de ce depot — pas dans le protocole.
+
+    ce que la redirection sauve      la CAPACITE de repondre, sans abonnement
+    ce qu'elle ne sauve PAS          le traitement d'un gros corpus d'un seul tenant
+
+**L'orchestrateur `nexus_ruche` est precisement ce qui comble cet ecart** : il decoupe,
+distribue et relance. Il est donc la piece centrale de la survie sans abonnement — ce qui
+rend son absence d'epreuve d'autant plus couteuse, et sa mise a l'epreuve prioritaire sur
+tout le reste.
