@@ -1,18 +1,18 @@
 # Checklist Progress
-Generated: 2026-09-02 12:48:12
+Generated: 2026-09-02 13:04:30
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 153 |
+| Commits non pushes | 154 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 12:45:56 -0500 |
+| Date du dernier commit | 2026-09-02 12:48:12 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
 | nexus_cablage.py | 6 |
-| nexus_outillage.py | 87 |
+| nexus_outillage.py | 83 |
 
 ## 3. Outils
 | Description | Value |
@@ -40,7 +40,7 @@ Generated: 2026-09-02 12:48:12
 
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 6
-- Regressions d outillage : 87
+- Regressions d outillage : 83
 - Prescriptions rouges : 10
   - Idempotency
   - Dependency validation
@@ -52,4 +52,4 @@ Generated: 2026-09-02 12:48:12
   - Timeout-aware retry with backoff
   - `record_failure` n est pas atteint quand TOUS les candidats echouent
   - 12 639 PDF a portee, jamais ingeres
-- Commits non pousses : 153
+- Commits non pousses : 154

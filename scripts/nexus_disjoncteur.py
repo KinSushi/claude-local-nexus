@@ -13,7 +13,6 @@ import os
 import json
 import time
 import argparse
-import sys
 from threading import RLock
 
 _STATE_DIR = ".nexus"

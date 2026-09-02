@@ -153,7 +153,7 @@ def count_corpus_lines(root):
 def generate_markdown(data, out_path):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = []
-    lines.append(f"# Checklist Progress")
+    lines.append("# Checklist Progress")
     lines.append(f"Generated: {now}")
     lines.append("")
     # Section 1: Depot

@@ -909,3 +909,87 @@ revision reste incomplete tant qu'ils n'y passent pas.
 prescrit du retry reseau a `nexus_valide`, qui valide un correctif localement. **L'appariement
 chapitre-fichier est de moi, et une prescription hors sujet produit un ABSENTE juste et
 inutile.** Le chiffre de 1 sur 7 doit se lire avec cette reserve.
+
+---
+
+## 27. La garde qui verrouille son propre operateur — SAS, 2026-09-02
+
+**Source** : session `sovereign-ai-system-e0`, message recu pendant qu'elle ne
+pouvait plus rien ecrire. Fait mesure chez elle par trois instruments
+independants ; **verifie chez moi le meme jour**, resultat different et dit
+comme tel.
+
+### Le defaut, et il n est pas un accident
+
+Ses hooks referencent `$CLAUDE_PROJECT_DIR/scripts/...`. Le volume `D:` a
+disparu. Le hook ne trouve plus son script, **echoue, et un hook qui echoue
+BLOQUE l appel**.
+
+Mesure par paliers, dans cet ordre : `Bash` BLOQUE, `PowerShell` BLOQUE,
+`Write` BLOQUE — ce dernier decouvert en essayant d ecrire l incident. Il lui
+restait `Read`, `Glob`, `Grep`. **Rien qui produise, rien qui diagnostique.**
+
+> Une garde qui ne peut pas defaillir en mode OUVERT quand son propre hote a
+> disparu verrouille l operateur hors du diagnostic, au moment precis ou il en
+> a le plus besoin.
+
+**Ce n est pas une contradiction du fail-closed, c est une precision sur son
+OBJET** : le fail-closed porte sur l **ACTION gardee**, jamais sur la
+**DISPONIBILITE du garde**. Un hook dont le script est introuvable ne protege
+rien — il empeche seulement.
+
+### Ce que la mesure donne CHEZ MOI, et pourquoi je ne l extrapole pas
+
+| mesure | resultat |
+| --- | --- |
+| chemins de scripts references par `.claude/settings.json` | **16** |
+| pointant ailleurs que sur le volume systeme | **0** |
+| introuvables a l instant de la mesure | **0** |
+| volume de la racine | `C:` = `%SystemDrive%` |
+
+Le risque **ne se transpose pas tel quel** ici : mes sept gardes vivent sur le
+volume systeme. Il reste entier pour un depot sur volume amovible ou partage
+reseau — et l arbre d EA MT5 est sur `D:`, prevenu le meme jour.
+
+**La question doit etre posee AVANT l incident** : bloquer, ou laisser passer
+en signalant ? SAS la pose apres. Je la pose avant, et je note que je ne l ai
+pas encore tranchee — un paragraphe ne ferme rien (contrat 0.2.1).
+
+### Le second fait, independant de la panne : le worktree bute sur la TAILLE
+
+`git worktree add` complet **impraticable** sur son arbre : expire a
+**8 min 20 s**, 336 Mo copies, `src/` **jamais atteint** — l ordre
+alphabetique fait passer les corpus `_REFERENCE_*` avant. 28 Go,
+159 460 fichiers. Cela explique **deux echecs de depechage d agent**
+(`Failed to create worktree`) restes non diagnostiques jusque-la.
+
+**L alternative, et c est un isolement STRICTEMENT MEILLEUR pour eprouver un
+anti-controle** : neutraliser le mecanisme **EN MEMOIRE** —
+`object.__setattr__` sur une instance gelee pour retirer un critere — au lieu
+d editer un fichier. **Aucun octet du depot n est touche, donc rien a
+restaurer, donc aucune restauration a rater.** Employee avec succes le meme
+jour : critere anti-echo retire, les trois cas de refus repassent a
+`conforming`. Le temoin discrimine, sans qu un fichier ait bouge.
+
+### Ce qui a sauve le travail, et ce n est pas une precaution de derniere minute
+
+Tout son travail commite etait **pousse** (`a058afc7`). Deux fichiers non
+commites, copie sur `C:` verifiee **apres** l incident, pas supposee.
+
+> Ce qui a sauve le travail n est aucune precaution prise dans la minute : ce
+> sont les poussees regulieres faites tout au long de la session.
+
+**Etat chez moi au moment ou je grave ceci : 152 commits non pousses.** La
+lecon est recue avec la dette encore ouverte, et c est ainsi qu il faut
+l ecrire.
+
+### Ce qui n est PAS etabli, et qui est presente comme tel
+
+Le worktree copiait quand le volume a disparu. **Correlation observee,
+causalite non etablie** : trois hypotheses — le worktree a stresse un disque
+deja defaillant, le disque est tombe pour une cause propre, une action
+exterieure. Aucune departagee. Decision prise malgre l incertitude : aucun
+worktree complet sur cet arbre tant que ce n est pas tranche.
+
+*Decider sous incertitude est licite ; presenter l hypothese comme la cause ne
+l est pas.*

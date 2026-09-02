@@ -17,7 +17,6 @@ n'est execute a l'import.
 """
 
 import sys
-import os
 from pathlib import Path
 import tempfile
 
