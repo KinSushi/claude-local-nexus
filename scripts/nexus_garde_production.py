@@ -25,9 +25,13 @@ TARGET_TOOLS = {"Edit", "Write", "NotebookEdit"}
 
 
 def _is_temp_path(path: str) -> bool:
-    """Retourne True si le chemin contient un des substrings temporaires."""
-    lower = path.lower()
-    return any(sub in lower for sub in TEMP_SUBSTRINGS)
+    """Retourne True si le chemin contient un des segments temporaires."""
+    segments = path.replace('\\', '/').split('/')
+    for seg in segments:
+        name = os.path.splitext(seg)[0].lower()
+        if any(sub.lower() == name for sub in TEMP_SUBSTRINGS):
+            return True
+    return False
 
 
 def refuse(chemin: str) -> bool:
