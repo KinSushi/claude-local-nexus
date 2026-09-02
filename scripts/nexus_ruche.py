@@ -148,8 +148,7 @@ def decouvrir_cibles(racine: Path) -> list[Path]:
     cibles.update(racine_path.glob("scripts/*.ps1"))
     cibles.update(racine_path.glob("*.ps1"))
     cibles.update(racine_path.glob("tools/nexus-mcp/*.js"))
-    valides = [p for p in cibles if fichier_valide(p)]
-    return valides
+    return [p for p in cibles if fichier_valide(p)]
 
 
 def prioriser(cibles: list[Path]) -> list[Path]:

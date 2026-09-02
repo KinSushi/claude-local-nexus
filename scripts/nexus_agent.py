@@ -296,7 +296,7 @@ def dans_depot(chemin: str) -> bool:
     return sous_racine(chemin, ROOT)
 
 
-def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str, List[str]]:
+def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str, List[str], List[Dict[str, Any]]]:
     """Assemble le corpus et rend aussi la liste de ce qui a ete refuse.
 
     Le parametre `racine` designant la racine de travail. S'il n'est pas fourni,
@@ -305,7 +305,7 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
     """
     if racine is None:
         racine = racine_travail()
-    morceaux, refus = [], []
+    morceaux, refus, joints = [], [], []
     for brut in chemins:
         complet = brut if os.path.isabs(brut) else os.path.join(racine, brut)
         if not sous_racine(complet, racine):
@@ -347,11 +347,17 @@ def charger_fichiers(chemins: List[str], racine: str | None = None) -> tuple[str
             # des octets non UTF‑8.
             chemin_norm = os.fsdecode(complet)
             contenu = io.open(chemin_norm, encoding="utf-8", errors="replace").read()
+            import hashlib
+            joints.append({
+                "chemin": brut,
+                "taille": len(contenu.encode("utf-8")),
+                "empreinte": hashlib.sha256(contenu.encode("utf-8")).hexdigest()[:8]
+            })
         except (OSError, UnicodeDecodeError) as exc:
             refus.append("%s (illisible : %s)" % (brut, exc))
             continue
         morceaux.append("--- %s ---\n%s" % (brut, contenu))
-    return "\n\n".join(morceaux), refus
+    return "\n\n".join(morceaux), refus, joints
 
 
 def _sans_raisonnement(texte):
@@ -973,7 +979,7 @@ def executer(tache: dict, cle: str) -> dict:
     if not consigne:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
     racine_tache = tache.get("racine")
-    corpus, refus = charger_fichiers(tache.get("fichiers") or [], racine=racine_tache)
+    corpus, refus, joints = charger_fichiers(tache.get("fichiers") or [], racine=racine_tache)
     systeme = tache.get("systeme") or (
         "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
         "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
@@ -992,6 +998,7 @@ def executer(tache: dict, cle: str) -> dict:
             "nom": nom,
             "modele": modele,
             "refus": refus,
+            "fichiers_joints": joints,
             "plan": plan_de(resultat.get("adresse", "?")),
         })
         if local_seul and resultat.get("plan") != "local":
@@ -999,8 +1006,7 @@ def executer(tache: dict, cle: str) -> dict:
                     "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
         if local_seul:
             resultat["local_seul"] = True
-        resultat = etiqueter_ecritures(resultat, tache, consigne)
-        return resultat
+        return etiqueter_ecritures(resultat, tache, consigne)
 
     essais, echecs = [], []
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
@@ -1074,6 +1080,7 @@ def executer(tache: dict, cle: str) -> dict:
 
         # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
+                         "fichiers_joints": joints,
                          "plan": plan_de(resultat["adresse"]), "demande_initiale": modele})
         if local_seul and resultat.get("plan") != "local":
             return {"nom": nom, "modele": candidat,
@@ -1088,8 +1095,7 @@ def executer(tache: dict, cle: str) -> dict:
             if not motif and echecs:
                 motif = echecs[-1]
             resultat["motif_bascule"] = motif
-        resultat = etiqueter_ecritures(resultat, tache, consigne)
-        return resultat
+        return etiqueter_ecritures(resultat, tache, consigne)
 
     # Aucun candidat n'a produit de texte.
     if trunc_failure:

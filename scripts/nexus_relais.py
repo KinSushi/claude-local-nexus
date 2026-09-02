@@ -57,14 +57,12 @@ def lister_cibles(depuis_fichier=None):
     # Si un fichier de liste est fourni (option --file), on le lit tel quel.
     if depuis_fichier:
         with open(depuis_fichier, encoding="utf-8") as f:
-            cibles = [pathlib.Path(l.strip()) for l in f if l.strip()]
-        return cibles
+            return [pathlib.Path(l.strip()) for l in f if l.strip()]
 
     # Sinon, si le fichier de relais existe déjà, on le réutilise.
     if RELAIS_FILE.is_file():
         with RELAIS_FILE.open(encoding="utf-8") as f:
-            cibles = [pathlib.Path(l.strip()) for l in f if l.strip()]
-        return cibles
+            return [pathlib.Path(l.strip()) for l in f if l.strip()]
 
     # Recherche des scripts dans le répertoire de base.
     # Pourquoi *.py et non scripts/*.py ?

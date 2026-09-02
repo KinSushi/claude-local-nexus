@@ -14797,3 +14797,67 @@ la meme faute de lecture que partout ailleurs cette nuit.
 et `nexus_garde_agent.py`, tous deux ARMES au niveau global. Motif ecrit avant le geste :
 une garde armee a deja ete cassee ce soir en voulant l'ameliorer, et la valeur d'une
 garde qui mord depasse celle d'une regle de style.
+
+### 115.61 TROISIEME AUDIT DU JOUR : CONCLUSION JUSTE, DETAIL FABRIQUE
+
+Trois fois le 2026-09-02, sur trois modeles differents, la meme forme :
+
+| audit | conclusion | detail |
+| --- | --- | --- |
+| comptage d'un diff (session tierce) | juste (`RESTE_VALABLE`) | **34 lignes annoncees, 181 reelles** |
+| reecriture d'un `if` imbrique | juste (`EQUIVALENT`) | **« pas d'effet de bord » — la fonction IMPRIME** |
+| six reecritures de style | juste (`EQUIVALENT`) | **« import nexus_agent supprime dans nexus_ruche.py »** |
+
+Le dernier, verifie : ruff a supprime `io` dans `epreuve_garde_plan.py`. Et `nexus_agent`
+apparait **quatre fois** dans `nexus_ruche.py`, ou rien n'a ete touche. L'auditeur a
+invente le fichier ET le nom de l'import, dans la meme phrase qui portait la bonne
+conclusion.
+
+**La verification independante, elle, tranche sans ambiguite** : `io.` n'apparait plus
+nulle part dans le fichier concerne — `grep -c` rend 0. La suppression est sure, mais
+c'est le `grep` qui le prouve, jamais l'audit.
+
+> **Un audit dont la conclusion est bonne et le detail faux est plus dangereux qu'un
+> audit franchement faux** : il resiste a la relecture rapide, et son detail fabrique
+> devient un fait qu'on cite ensuite. Trois occurrences en un jour, sur trois familles
+> distinctes — ce n'est pas un accident de modele, c'est le regime normal.
+
+⇒ **Regle de lecture, desormais appliquee sans exception** : on retient le MECANISME, on
+RE-MESURE le chiffre, **et on verifie chaque NOM PROPRE cite** — fichier, fonction,
+variable, numero de ligne. Un audit fournit une piste, jamais un fait (§112.4).
+
+### 115.62 ETAT A LA CLOTURE DU TOUR — ce qui est prouve, ce qui reste
+
+**Le rituel est au vert sur onze controles**, dont le cablage (aucune regression) et
+LOI 1 (conformite avec la reference).
+
+**Ce qui a ete prouve par epreuve, jamais par relecture :**
+
+    nexus_charge          3 etats distincts, le 3e contre un vrai serveur rendant {"models":[]}
+    sous_racine           3 cas, aucun refus relache : transmis / introuvable / hors racine
+    nexus_armer_garde     config NEUVE armee (code 0) ET perte reelle toujours detectee
+    epreuve_libs          6 cas sur 6
+    epreuve_sonde_aveugle 5 cas sur 5, cas NEGATIF inclus
+    nexus_agent           epreuve de fumee apres patch : refus « introuvable » + fichiers_joints
+
+**Les deux ameliorations d'une session voisine, posees et mesurees ensemble :**
+
+    refus           : ['scripts/fichier_qui_n_existe_pas.py (introuvable)']
+    fichiers_joints : [{"chemin": "...", "taille": 3231, "empreinte": "d2512ab9"}]
+
+Les deux bouts se repondent : ce qui est ENTRE est desormais chiffre, et ce qui manque est
+NOMME pour ce qu'il est. Un fichier absent, illisible ou refuse ne produit plus le meme
+enregistrement qu'un fichier lu en entier.
+
+**CE QUI RESTE OUVERT, et il faut le dire plutot que le clore :**
+
+* `--perimetre-strict` — le compteur `mentions_hors_perimetre` reste a brancher ; le
+  diagnostic est rendu mais ses ancres sont FAUSSES (§115.54) et sont a refaire sur un
+  perimetre plus etroit ;
+* `nexus_valide.py` cesse de valider au-dela d'environ 16 000 jetons de diff (§115.51) —
+  diagnostic rendu, ancres VERIFIEES exactes, decoupage par fichier a poser ;
+* `nexus_appliquer` lit la sortie de son sous-processus en cp1252 (§115.52) — sans
+  consequence aujourd'hui, et c'est ce qui le rend dangereux ;
+* le conflit entre les deux cliquets (§115.60) n'est pas resolu, seulement nomme ;
+* `nexus_loi1.py` mesure la provenance et non l'audit (§115.59) — le registre d'audits
+  n'existe pas.
