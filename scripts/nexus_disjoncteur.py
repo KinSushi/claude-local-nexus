@@ -168,6 +168,10 @@ class CircuitBreaker:
                 entry["fail_count"] = self.failure_threshold
                 entry["last_failure"] = time.time()
                 self._persist()
+                # Un echec PERMANENT ouvre le circuit immediatement : c est
+                # justement celui qu il faut tracer. Sans cette ligne, le
+                # journal ne portait que les transitoires.
+                self._journal(target, motif, entry["fail_count"], entry["state"])
                 return
 
             # Existing behaviour for transient or unspecified failures
@@ -176,6 +180,38 @@ class CircuitBreaker:
             if entry["state"] == "half_open" or entry["fail_count"] >= self.failure_threshold:
                 entry["state"] = "open"
             self._persist()
+            self._journal(target, motif, entry["fail_count"], entry["state"])
+
+    def _journal(self, target, motif, count, etat):
+        """Log each retry attempt with context about why it failed.
+
+        Prescription du livre, verbatim : Log each retry attempt with context
+        about why it failed so you can identify patterns. Sans le POURQUOI,
+        aucun motif recurrent ne peut etre identifie.
+
+        Toute erreur d ecriture est ignoree : un journal ne doit JAMAIS
+        empecher le disjoncteur de fonctionner.
+        """
+        try:
+            import datetime
+            if motif:
+                classe = "transitoire" if echec_transitoire(motif) else "permanent"
+            else:
+                classe = "inconnue"
+            ligne = {
+                "le": datetime.datetime.now().isoformat(timespec="seconds"),
+                "cible": target,
+                "motif": motif or "(non fourni)",
+                "classe": classe,
+                "echecs": count,
+                "etat": etat,
+            }
+            chemin = os.path.join(os.path.dirname(_state_path()),
+                                  "circuit_journal.jsonl")
+            with open(chemin, "a", encoding="utf-8") as f:
+                f.write(json.dumps(ligne, ensure_ascii=False) + chr(10))
+        except Exception:
+            pass
 
     def get_state(self):
         """Return a copy of the full circuit state dictionary."""

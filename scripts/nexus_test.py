@@ -1367,6 +1367,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_garde_shell.py", "garde shell")
     if args.only in (None, "import"):
         jouer_epreuve_python("epreuve_import.py", "imports")
+        jouer_epreuve_python("epreuve_journal_disjoncteur.py",
+                             "journal du disjoncteur")
     if args.only in (None, "outillage"):
         jouer_epreuve_python("epreuve_outillage.py", "outillage")
     if args.only in (None, "progres"):

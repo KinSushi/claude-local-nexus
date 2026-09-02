@@ -1019,13 +1019,16 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs = [], []
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+    _dj = None
     try:
-        from nexus_disjoncteur import Disjoncteur
-        _dj = Disjoncteur(seuil=3, delai=0)
+        from nexus_disjoncteur import CircuitBreaker
+        _dj = CircuitBreaker(failure_threshold=3)
         _c = [c for c in candidats if _dj.is_available(c)]
-        if _c: candidats = _c
-    except Exception:
-        pass
+        if _c:
+            candidats = _c
+    except Exception as e:
+        sys.stderr.write(f"Warning: circuit breaker initialization failed: {e}\\n")
+        _dj = None
     # la direction local vers cloud est interdite par le contrat et non pas deconseillee
     # auparavant la protection dependait d'une option de l'appelant, ce qui la rendait facultative
     # incident du 2026-09-01 avec les six modules de securite
@@ -1107,6 +1110,16 @@ def executer(tache: dict, cle: str) -> dict:
             continue
 
         # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
+        try:
+            if _dj is not None:
+                _dj.record_success(candidat)
+                for e in echecs:
+                    parts = e.split(" : ", 1)
+                    if len(parts) == 2:
+                        cible, motif = parts
+                        _dj.record_failure(cible, motif)
+        except Exception:
+            pass
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "fichiers_joints": joints,
                          "plan": plan_de(resultat["adresse"]), "demande_initiale": modele})

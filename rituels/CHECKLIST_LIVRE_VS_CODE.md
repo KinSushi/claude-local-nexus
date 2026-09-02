@@ -13,7 +13,7 @@
 | # | prescription du livre | etat | ou / preuve |
 | --- | --- | --- | --- |
 | 1 | **Timeout enforcement** — *fail gracefully rather than hanging* | 🟡 partiel | `verrou(attente_s=)` borne · mais `nexus_conformite` a ete TUE par un delai calibre sur un chiffre perime |
-| 2 | **Circuit breakers** — *stop calling an agent that keeps failing* | 🟢 **POSE** | `nexus_disjoncteur.py`, seuil 3, etat DURABLE, cable dans `nexus_agent` |
+| 2 | **Circuit breakers** — *stop calling an agent that keeps failing* | 🟡 **PARTIEL** | **RETROGRADE le 2026-09-02 : le vert etait FAUX.** `nexus_agent:1023` importait `Disjoncteur`, nom qui N EXISTE PAS (la classe est `CircuitBreaker`) ; l `except Exception: pass` avalait l ImportError, donc le filtrage n avait JAMAIS eu lieu. Corrige et **prouve par effet** : les 5 candidats apparaissent desormais dans `nexus_disjoncteur.py --etat`, ce qui n etait pas le cas avant. Reste JAUNE car `record_failure` n est pas atteint quand TOUS les candidats echouent — mesure : journal a 694 octets avant ET apres un echec total |
 | 3 | **Idempotency** — marquer les operations idempotentes | 🔴 absent | aucune relance n'est marquee |
 | 4 | **State validation** — invariants verifies en tache de fond | 🟡 partiel | `nexus_conformite` · rien ne verifie les invariants de VERROU |
 | 5 | **Dependency validation** au deploiement | 🔴 absent | — |
@@ -27,7 +27,7 @@
 | **backoff exponentiel** 100→200→400→800 ms | 🟢 **CABLE** | `_retry_delay()` appele dans `nexus_agent` entre deux tentatives · valeurs eprouvees 0.1/0.2/0.4/0.8/1.6, plafond 30 s · **aucun delai avant le premier candidat**, verifie : 1 reussie, 0 tronquee |
 | **jitter** contre le *thundering herd* | 🟢 **CABLE** | tirage uniforme prouve — deux appels identiques rendent 1.5052 et 1.0678 · meme fonction, desormais appelee |
 | **plafond d'essais** (5) | 🟡 **CONSTANTE DECLAREE, NON EMPLOYEE** | `MAX_RETRIES = 5` — la valeur du livre, mais **aucun code ne la lit** |
-| **journal du POURQUOI de chaque echec** | 🔴 absent | c'est ce qui empechait de CLASSER |
+| **journal du POURQUOI de chaque echec** | 🟡 **ECRIT ET EPROUVE, NOURRI A MOITIE** | `_journal()` ecrit `.nexus/circuit_journal.jsonl` : horodatage, cible, motif, classe, compteur, etat. **Preuve de fonctionnement** : `epreuve_journal_disjoncteur.py` rend 3/3 classes, exit 0. **Preuve de DETECTION** : rejouee sur la version d avant correctif, elle rend exit 1 en nommant `cible-permanente`. **Cablee** : `nexus_test.py:1370`. Le defaut trouve par la mesure et non par la lecture : le chemin PERMANENT sortait par `return` avant le journal, la classe la plus importante etait perdue en silence. **Reste JAUNE** : aucun appelant ne l alimente quand tous les candidats echouent |
 | **seuil du disjoncteur** (50 % sur 10) | 🟢 pose | seuil 3 echecs consecutifs |
 | **etats OPEN / HALF-OPEN / CLOSED** | 🟢 pose | prouve sur 6 cas + persistance entre processus |
 
