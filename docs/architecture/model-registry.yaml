@@ -1,5 +1,26 @@
 # Model Registry Schema
 
+# CORRECTION MESUREE, 2026-09-02 (audit N-Z, session agent-a7a78c2da71438fd9) :
+# ce fichier est un exemple de schema (docs/architecture/README.md le classe
+# comme plan, pas comme etat deploye). Deux champs concrets ci-dessous ne
+# correspondaient plus a litellm_config.yaml et ont ete corriges pour ne pas
+# se lire comme un extrait reel :
+#   - fallback de qwen3-coder-30b-local : la chaine reelle generee
+#     (AUTOGEN:LOCAL_FALLBACKS, litellm_config.yaml:1516-1518) est
+#     [qwen2.5-coder-32b-local, deepseek-coder-33b-local], pas
+#     [qwen2.5-coder-14b-local, phi3-mini-local].
+#   - source_model de gpt-oss-20b-cloud : litellm_config.yaml:1246 declare
+#     `ollama_chat/gpt-oss:20b`, le meme tag que la version locale ; le
+#     cloud se distingue par api_base (https://ollama.com) et api_key, pas
+#     par un tag `:cloud`. `gpt-oss:20b:cloud` n'existe nulle part.
+# Plus largement : depuis §105.2 (CLAUDE.md), les chaines de repli locales
+# ne sont plus ecrites a la main du tout — elles sont derivees et placees
+# entre marqueurs AUTOGEN. Un `fallback:` hand-code comme celui-ci est donc
+# perime dans son principe, pas seulement dans ses valeurs. Le schema de
+# capacites ci-dessous (scores 0.00-1.00) n'a pas non plus d'equivalent
+# reel : litellm_config.yaml utilise `quality_tier` (entier) + `strengths`
+# (liste), jamais de score numerique par capacite (0 occurrence mesuree).
+
 version: 1
 
 models:
@@ -43,10 +64,11 @@ models:
   - agentic
 
   fallback:
+  # Corrige : chaine reellement generee (litellm_config.yaml:1516-1518,
+  # marqueur AUTOGEN:LOCAL_FALLBACKS), au lieu d'une liste inventee.
 
   * qwen2.5-coder-32b-local
-  * qwen2.5-coder-14b-local
-  * phi3-mini-local
+  * deepseek-coder-33b-local
 
   validation:
   healthcheck: true
@@ -57,7 +79,10 @@ models:
 
   provider: ollama-cloud
 
-  source_model: gpt-oss:20b:cloud
+  source_model: gpt-oss:20b
+  # Corrige : litellm_config.yaml:1246 declare le meme tag que le local ;
+  # le plan cloud se distingue par api_base/api_key, pas par un suffixe
+  # ":cloud" sur le tag (qui n'existe dans aucun fichier du depot).
 
   lifecycle: production
 

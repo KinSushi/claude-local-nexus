@@ -14,3 +14,23 @@ Tu peux ainsi répondre à :
 Pourquoi cette requête a-t-elle été envoyée à ce modèle ?
 
 avec une réponse reproductible.
+
+VÉRIFIÉ, 2026-09-02 (audit N-Z, session agent-a7a78c2da71438fd9) : le principe
+est bien implémenté (docs/architecture/README.md le marque « implémenté »),
+mais sous une forme différente de l'exemple ci-dessus. Ce n'est pas un champ
+YAML `routing_policy: version: 7` maintenu à la main : c'est une empreinte
+SHA-256 (10 caractères) du contenu qui décide réellement du modèle servi
+(pools cloud, chaîne de repli du routeur, budget mémoire), calculée et
+réinjectée dans un marqueur de commentaire à chaque génération.
+
+Code : scripts/nexus_generate.py:1573-1592 (calcule `router_version` et
+réécrit la ligne `# NEXUS-ROUTER-VERSION: <version>`).
+État réel observé : litellm_config.yaml:26 porte
+`# NEXUS-ROUTER-VERSION: r19be7650d1`.
+Lecture : scripts/nexus_state.py:384-420 relit ce marqueur pour le rapport.
+
+Ce que cette note ne dit pas et qui reste NON VÉRIFIÉ : aucune trace de
+requête individuelle (Langfuse ou autre) n'a été trouvée portant ce
+`router_version` comme métadonnée — la question « pourquoi CETTE requête
+a-t-elle été envoyée à ce modèle » reste répondable pour la CONFIGURATION
+active, pas encore requête par requête.
