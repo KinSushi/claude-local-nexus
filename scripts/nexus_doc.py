@@ -773,6 +773,18 @@ def main(argv=None) -> int:
         print(f"\n--- {len(trouves) - 1} autre(s) correspondance(s) ---")
         for s, f, _o, _l in trouves[1:8]:
             print(f"  {s:<52} {f}")
+    # log consultation
+    try:
+        import datetime
+        root = Path(__file__).resolve().parent.parent
+        journal_dir = root / ".nexus"
+        journal_dir.mkdir(parents=True, exist_ok=True)
+        journal_file = journal_dir / "consultations.jsonl"
+        entry = {"timestamp": datetime.datetime.now().isoformat(), "request": args.symbole}
+        with open(journal_file, "a", encoding="utf-8", newline="") as jf:
+            jf.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
     return 0
 
 
