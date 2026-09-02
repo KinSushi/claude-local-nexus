@@ -312,3 +312,47 @@ conclu **« déclare son PLAN : OUI »**.
 respecter la règle, dans le tour où elle était écrite.** ⇒ *Une leçon écrite ne protège pas son
 auteur le jour même* : constaté le matin dans un dépôt, vérifié le soir dans l'autre, une heure
 après avoir été citée.
+
+
+---
+
+## 14. DÉCRIRE LA FORME DU MATÉRIEL FAIT PARTIE DE LA CONSIGNE *(origine : sovereign)*
+
+**Mesuré le 2026-09-02.** Six rendus vides sur dix, attribués d'abord à un budget serré, puis au
+dispositif. **La cause était la consigne.**
+
+    ligne 1 de l'extrait :  == python · subprocess.run · function     <- nom QUALIFIÉ
+    ligne 5 de l'extrait :     run(*popenargs, input=None, ...)       <- nom COURT seul
+
+    occurrences de « subprocess.run( » dans le fichier :  **0**
+
+La consigne disait *« recopie la signature de `subprocess.run` mot pour mot »*. Le modèle a
+cherché `subprocess.run(`, ne l'a pas trouvé, et a répondu **`ABSENT DE L'EXTRAIT`**.
+
+★ **Il avait raison. Zéro invention — et l'« absent » était de l'auteur de la consigne.**
+
+> **Un modèle qui ne sait pas comment son extrait est structuré cherche la bonne chose au
+> mauvais endroit, et rend un ABSENT honnête que l'on prend pour une incompétence.**
+
+⇒ **Pendant exact du piège `texte` / `implementation`** : deux schémas, un lecteur qui n'en
+connaît qu'un, et « 2 232 fragments illisibles » qui n'existaient pas. **Ici le lecteur est le
+modèle ; là c'était l'orchestrateur. Même faute, deux sièges.**
+
+### 14.1 Ce que cela déplace dans la thèse de l'opérateur — sans la réfuter
+
+*« La doc en main empêche d'inventer »* — **tient** : zéro invention sur toutes les passes des
+deux dépôts. **Mais la doc en main ne suffit pas à PRODUIRE** : il faut encore que la consigne
+dise **où regarder**.
+
+> *Consulter la doc n'est pas la fin du geste, c'est le début.* **La fourniture est nécessaire ;
+> la description de sa forme la rend utilisable.**
+
+### 14.2 Où cette règle mord, et où elle ne mord pas — mesuré ici
+
+`nexus_agent` assemble ses pièces sous la forme `--- <chemin> ---` suivie du **fichier entier**.
+Pour du code source joint intégralement, **la forme est implicite et la règle ne mord pas**.
+
+⚠️ **Elle mordra dès qu'on joindra des FRAGMENTS** — et ce dépôt en a 20 304, sous **deux
+schémas**. Le jour où un fragment de livre est joint à un modèle sans que sa structure soit
+décrite, l'incident de sovereign se reproduit ici à l'identique. **C'est un chantier ouvert,
+pas un défaut actuel**, et la distinction vaut d'être écrite plutôt que confondue.
