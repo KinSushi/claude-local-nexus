@@ -1,4 +1,9 @@
-r"""verrou_machine.py — exclusion mutuelle entre PROJETS, sur la même machine.
+r"""verrou_machine.py — exclusion mutuelle entre PROJETS, sur la MEME SESSION Windows.
+
+Ce module crée un mutex nommé Windows, dont la portée est limitée à la session Windows courante.
+Un mutex créé sans le préfixe global `Global\` vit dans l'espace de noms de la session active :
+il ne sera pas visible depuis un service, une tâche planifiée, une seconde session ouverte,
+ou un bureau distant. L'exclusion ne vaut donc que pour les processus lancés dans la même session.
 
 ═══════════════════════════════════════════════════════════════════════════════════════════════════
 LE BESOIN
@@ -249,7 +254,8 @@ def main(argv=None) -> int:
     ap.parse_args(argv)
 
     horodatage = datetime.now().astimezone().replace(microsecond=0).isoformat()
-    print(f"VERROUS MACHINE — {horodatage}")
+    print(f"VERROUS DE SESSION — {horodatage}")
+    print("  exclusion limitée à la session Windows courante")
     print(f"  contrat entre projets : le NOM du mutex ({PREFIXE}<CLASSE>)")
     for classe, quoi in CLASSES.items():
         with verrou(classe, projet="sonde", attente_s=0.0, bavard=False) as v:

@@ -2011,7 +2011,7 @@ ${windows[i]}`,
   const mapped = slots.filter((s) => s !== undefined);
 
   if (!mapped.length) {
-    return { text: "Aucun fragment pertinent.", windows: windows.length,
+    return { text: "Le modele n'a rien rendu : ce n'est pas un verdict sur le contenu. Augmenter le budget de sortie ou changer de modele.", windows: windows.length,
              passes: 1, tokens, model, converge: true, tronquee };
   }
 

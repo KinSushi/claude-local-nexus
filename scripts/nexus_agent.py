@@ -961,6 +961,7 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
         if _marques and _chemins_presents:
             _avert = "[!] ECRITURE DETECTEE : marque '%s' et chemin '%s'. Un test lit et n'ecrit que dans un repertoire temporaire ; un rendu ne doit jamais ecrire sur un fichier donne a analyser.\n" % (_marques[0], _chemins_presents[0])
             resultat["texte"] = _avert + resultat["texte"]
+            resultat["etiquete"] = True
     except Exception:
         pass
     return resultat
@@ -1476,12 +1477,14 @@ def main() -> int:
 
     echecs = [r for r in resultats if r.get("erreur")]
     tronquees = [r for r in resultats if r.get("tronque") and not r.get("erreur")]
+    etiquetees = [r for r in resultats if r.get("etiquete")]
+    reussies = [r for r in resultats if not r.get("erreur") and not r.get("tronque") and not r.get("etiquete")]
     factures = [r for r in resultats if r.get("plan") == "anthropic"]
     total = sum(r.get("tokens", 0) for r in resultats)
-    print("  %d tache(s) : %d reussie(s), %d tronquee(s), %d echec(s), "
+    print("  %d tache(s) : %d reussie(s), %d etiquetee(s), %d tronquee(s), %d echec(s), "
           "%d token(s), %.0f s au total"
-          % (len(resultats), len(resultats) - len(echecs) - len(tronquees),
-             len(tronquees), len(echecs), total, time.time() - depart))
+          % (len(resultats), len(reussies), len(etiquetees), len(tronquees), len(echecs),
+             total, time.time() - depart))
     # question par tache et la question par vague sont differentes
     # comptage des familles distinctes
     resultats_sans_erreur = [r for r in resultats if not r.get("erreur")]

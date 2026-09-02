@@ -236,7 +236,7 @@ def detecter_format(chemin):
             return "jsonl"
         except ValueError:
             break
-    return "csv"
+    raise ValueError("format non reconnu : ni JSON, ni JSONL, ni CSV")
 
 
 def resume(noeud):
@@ -339,6 +339,11 @@ def main():
             entree = {"chemin": chemin}
             entree.update(info)
             resultats.append(entree)
+        except RecursionError:
+            # Imbriquement trop profond : nommer le fichier et la profondeur atteinte
+            resultats.append({"chemin": chemin, "erreur":
+                "RecursionError : structure trop profondement imbriquee "
+                "(profondeur atteinte : %d)" % sys.getrecursionlimit()})
         except Exception as e:
             # Un fichier illisible ne doit pas empecher de decrire les autres
             resultats.append({"chemin": chemin, "erreur": "%s: %s" % (type(e).__name__, e)})
