@@ -12031,3 +12031,75 @@ une fois, sur decision.
 | # | Sujet | Etat |
 | --- | --- | --- |
 | 41 | Le cliquet ne distingue pas « outil de mesure » et « outil d'action » | `DECLARE` — un outil d'action non appele est correct ; le cliquet ne peut pas le savoir |
+
+---
+
+## 114. LE CONTROLE LOI 1 MORD SUR SON ORCHESTRATEUR — et le manque reste ouvert
+
+Fin de tour du 2026-09-01. Le rituel refuse de clore :
+
+```
+[MANQUE] loi1 tenue : Violation : 2 lignes a la main en plus que la reference (0).
+```
+
+### 114.1 LES DEUX LIGNES, NOMMEES
+
+| fichier | ce que j'ai ecrit | pourquoi |
+| --- | --- | --- |
+| `.gitattributes` | `rituels/SOCLE_UNIVERSEL.json -text` | empecher que la conversion CRLF/LF detruise l'empreinte qui prouve la convergence des trois depots |
+| `scripts/nexus_test.py` | l'appel a `nexus_socle.py` et l'option `socle` | cabler la commande de verification |
+
+Aucune des deux n'est de la logique. Ce sont des lignes de CABLAGE et de configuration — le geste
+que le contrat §0.1.5 range explicitement du cote de l'orchestrateur : *« l'orchestrateur verifie
+que le bloc AVANT est unique et reel, APPLIQUE, et lance l'epreuve. Il ne retape pas. »*
+
+### 114.2 POURQUOI JE NE TOUCHE PAS A LA REFERENCE
+
+Le remede evident serait `reference: 2`. **Il est refuse, et pour une raison qui n'a rien de
+cosmetique :**
+
+> **Modifier la reference d'un controle qui vient de me prendre en defaut, c'est de
+> l'auto-validation — precisement ce que la LOI 1 existe pour interdire.**
+
+C'est la faute que le §0.7 nomme : *« le piege n'est pas de mal corriger, c'est de corriger PUIS de
+juger »*. Ici ce serait pire : juger sa propre infraction en deplacant la barre.
+
+J'ai accepte une reference il y a dix minutes — celle du cliquet de cablage, §113. La difference
+tient en une phrase : **ce cliquet ne me jugeait pas.** Il constatait qu'un outil de pose n'est
+appele par rien, ce qui est vrai et voulu. Celui-ci constate que j'ai ecrit deux lignes, ce qui est
+vrai et me concerne.
+
+### 114.3 CE QUE LE CONTROLE NE SAIT PAS DISTINGUER, et ce n'est pas a moi d'en decider
+
+Le contrat separe trois gestes :
+
+| geste | qui | le controle le voit |
+| --- | --- | --- |
+| ECRIRE la logique | le banc | comme une ligne a la main |
+| APPLIQUER un rendu | l'orchestrateur | comme une ligne a la main |
+| CABLER un mecanisme | l'orchestrateur | comme une ligne a la main |
+
+**Le controle compte des lignes, il ne lit pas leur nature.** C'est exactement la meme limite que le
+cliquet de cablage du §113, qui compte des appelants sans distinguer un outil de mesure d'un outil
+d'action.
+
+⇒ Deux lectures possibles, et **je n'ai pas qualite pour trancher entre elles** :
+* le controle est trop large et devrait exempter cablage et configuration ;
+* le controle est juste et ces deux lignes auraient du partir au banc, meme triviales.
+
+La seconde a un argument fort : *« trop delicat ou trop petit pour etre delegue »* est presque
+toujours faux, et c'est testable. Deux lignes rendues par le banc auraient coute onze secondes.
+
+### 114.4 LE MANQUE RESTE OUVERT — c'est le seul geste juste
+
+Le tour n'est pas clos, et il ne le sera pas par ma main. **Un controle qui prend son auteur en
+defaut et qu'on desarme n'a jamais protege personne** — c'est le §106.1 vecu de l'interieur.
+
+> La question n'est pas « ai-je bien fait ? » mais **« qui, n'ayant pas ecrit ces deux lignes, juge
+> qu'elles sont de l'application et non de la production ? »** Tant que personne n'a repondu, le
+> manque tient.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 42 | Le controle LOI 1 ne distingue pas produire de cabler | `OUVERT` — arbitrage de l'operateur, jamais de la session jugee |
+| 43 | Deux lignes ecrites a la main, rituel non clos | `OUVERT` — reference volontairement INCHANGEE |
