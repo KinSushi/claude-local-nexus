@@ -244,8 +244,37 @@ def process_armer(guard_script_name, matcher, simulate=False):
 
 def process_restaurer():
     try:
-        backup_path = restore_latest_backup()
-        log_ok("Restauration", f"Sauvegarde restaurée : {backup_path}")
+        backups = sorted(glob.glob(BACKUP_PATTERN))
+        if not backups:
+            raise Exception("Aucune sauvegarde trouvée")
+        latest = backups[-1]
+
+        # Lecture et affichage du contenu de la sauvegarde
+        try:
+            with open(latest, 'r', encoding='utf-8') as f:
+                backup_settings = json.load(f)
+            log_ok("Sauvegarde à restaurer", f"{latest}")
+            guards = find_groups_by_command(backup_settings, "nexus_garde_")
+            if guards:
+                log_ok("Gardes dans la sauvegarde", ", ".join(g['matcher'] for g in guards))
+            else:
+                log_ok("Gardes dans la sauvegarde", "Aucun garde actif")
+        except Exception as e:
+            log_rate("Lecture sauvegarde", f"Impossible de lire le contenu: {e}")
+
+        # Restauration
+        current_settings = load_settings()
+        current_guards = find_groups_by_command(current_settings, "nexus_garde_")
+        shutil.copy2(latest, TARGET_PATH)
+        log_ok("Restauration", f"Sauvegarde restaurée : {latest}")
+
+        # Vérification post-restauration
+        restored_settings = load_settings()
+        restored_guards = find_groups_by_command(restored_settings, "nexus_garde_")
+        if set(g['matcher'] for g in current_guards) != set(g['matcher'] for g in restored_guards):
+            removed = set(g['matcher'] for g in current_guards) - set(g['matcher'] for g in restored_guards)
+            if removed:
+                log_rate("Gardes retirés", f"Attention: {', '.join(removed)}")
         return 0
     except Exception as e:
         log_rate("Restauration", str(e))
@@ -267,6 +296,24 @@ def main():
     guard_script_name = sys.argv[1]
     matcher = sys.argv[2]
     mode = sys.argv[3]
+
+    if mode in ('--simulation', '--armer'):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        guard_path = os.path.join(script_dir, guard_script_name)
+        if not os.path.isfile(guard_path):
+            log_rate("Existence", f"Script de garde introuvable : {guard_path}")
+            return 1
+        guard_filename = os.path.basename(guard_script_name)
+        try:
+            settings = load_settings()
+            existing_groups = find_groups_by_command(settings, guard_filename)
+            if existing_groups:
+                existing_matcher = existing_groups[0].get('matcher', 'inconnu')
+                log_rate("Déjà armé", f"Le garde {guard_filename} est déjà armé avec le matcher '{existing_matcher}'")
+                return 1
+        except Exception as e:
+            log_rate("Chargement", str(e))
+            return 1
 
     if mode == '--simulation':
         code, _ = process_armer(guard_script_name, matcher, simulate=True)

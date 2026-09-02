@@ -22,6 +22,7 @@ import sys
 import subprocess
 import json
 import argparse
+import urllib.request
 
 def main():
     parser = argparse.ArgumentParser()
@@ -60,6 +61,30 @@ def main():
         )
         res_ram = subprocess.check_output(cmd_ram, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8', errors='replace')
         ram_data = json.loads(res_ram)
+
+        # Interroger les modèles résidents du moteur d'inférence
+        ram_modeles_residents_go = 0.0
+        etat_moteur = "injoignable"
+        inference_url = os.environ.get("NEXUS_INFERENCE_URL", "http://localhost:11434/api/ps")
+        try:
+            with urllib.request.urlopen(inference_url, timeout=8) as response:
+                modeles_data = json.loads(response.read().decode('utf-8'))
+            # Normaliser en liste
+            if isinstance(modeles_data, dict):
+                modeles_data = modeles_data.get('models', [modeles_data] if 'models' not in modeles_data else [])
+            elif modeles_data is None:
+                modeles_data = []
+            
+            if not modeles_data:
+                etat_moteur = "joignable_vide"
+            else:
+                etat_moteur = "joignable_avec_modeles"
+                for m in modeles_data:
+                    taille = m.get('size', 0) if isinstance(m, dict) else 0
+                    ram_modeles_residents_go += taille / (1024**3)
+        except Exception:
+            etat_moteur = "injoignable"
+            ram_modeles_residents_go = 0.0
 
         # Filtrage et calculs
         pid_courant = os.getpid()
@@ -102,17 +127,24 @@ def main():
         # RAM (valeurs en Ko)
         ram_libre_go = ram_data.get("FreePhysicalMemory", 0) / (1024 * 1024)
         ram_totale_go = ram_data.get("TotalVisibleMemorySize", 0) / (1024 * 1024)
+        ram_disponible_inference_go = ram_libre_go + ram_modeles_residents_go
 
         # Verdict
         raison = []
         if significatifs:
             raison.append("processus significatifs")
-        if ram_libre_go < ram_seuil_go:
-            raison.append("RAM insuffisante")
+        if ram_disponible_inference_go < ram_seuil_go:
+            raison.append("RAM insuffisante pour l'inférence")
 
         est_au_repos = len(raison) == 0
         etat = 'repos' if est_au_repos else 'chargee'
-        verdict = "machine AU REPOS" if est_au_repos else "machine CHARGEE : " + ", ".join(raison)
+        if etat_moteur == "injoignable":
+            info_modeles = "modèles résidents: inconnu (moteur injoignable)"
+        elif etat_moteur == "joignable_vide":
+            info_modeles = "modèles résidents: 0.00 Go (moteur joignable, aucun modèle)"
+        else:
+            info_modeles = "modèles résidents: %.2f Go" % ram_modeles_residents_go
+        verdict = "machine AU REPOS (%s)" % info_modeles if est_au_repos else "machine CHARGEE : " + ", ".join(raison) + " (%s)" % info_modeles
 
         if args.json:
             print(json.dumps({
@@ -121,13 +153,19 @@ def main():
                 "verdict": verdict,
                 "processus_significatifs": significatifs,
                 "ram_libre_go": ram_libre_go,
-                "ram_totale_go": ram_totale_go
+                "ram_totale_go": ram_totale_go,
+                "ram_modeles_residents_go": ram_modeles_residents_go,
+                "ram_disponible_inference_go": ram_disponible_inference_go,
+                "etat_moteur": etat_moteur
             }))
         else:
             print("%-10s %-15s %-15s %-10s %-60s" % ("PID", "CPU (min)", "RAM (Mo)", "PROJET", "COMMAND LINE"))
             for s in significatifs:
                 print("%-10d %-15.2f %-15.2f %-10s %-60s" % (s["pid"], s["cpu_min"], s["mem_mo"], s["projet"], s["command_line"]))
-            print("\nRAM Libre: %.2f Go / Totale: %.2f Go" % (ram_libre_go, ram_totale_go))
+            if etat_moteur == "injoignable":
+                print("\nRAM Libre: %.2f Go / Modèles résidents: inconnu / Disponible pour inference: %.2f Go / Totale: %.2f Go" % (ram_libre_go, ram_disponible_inference_go, ram_totale_go))
+            else:
+                print("\nRAM Libre: %.2f Go / Modèles résidents: %.2f Go / Disponible pour inference: %.2f Go / Totale: %.2f Go" % (ram_libre_go, ram_modeles_residents_go, ram_disponible_inference_go, ram_totale_go))
             print(verdict)
 
         return 0 if est_au_repos else 1

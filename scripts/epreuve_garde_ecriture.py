@@ -4,7 +4,6 @@ import sys
 import json
 import tempfile
 import subprocess
-import shutil
 
 GARDE_PATH = os.path.join(os.path.dirname(__file__), "scripts", "nexus_garde_ecriture.py")
 PROTECTED_PATHS = ["/protected/file.txt", "/var/nexus/hook.json"]

@@ -283,9 +283,6 @@ def sous_racine(chemin: str, racine: str) -> bool:
     C:\\local-llm-docker-prive). En cas de lecteurs differents sous Windows,
     `commonpath` lève `ValueError` qui est interprete comme un refus.
     """
-    # Vérification d'existence avant la résolution du chemin réel.
-    if not os.path.exists(chemin):
-        return False
     try:
         return os.path.commonpath([os.path.realpath(chemin), os.path.realpath(racine)]) == \
             os.path.realpath(racine)

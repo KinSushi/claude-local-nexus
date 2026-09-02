@@ -14144,3 +14144,298 @@ inscrivait la phrase fausse. Une session tierce a mesure, s'est retractee, et l'
 dit immediatement bien que ce fut « mal place dans le temps ». C'est ce qui a
 empeche une affirmation fausse de rester dans le cockpit — et c'est la deuxieme
 retractation croisee de la nuit apres celle du verrou.
+
+### 115.42 CALIBRER SANS BRIDER — pool de redaction DERIVE, et auto-upgrade
+
+Decision de l'operateur, 2026-09-02 : *« il faut bien calibrer l'outil, mais sans
+creer de bride non plus »*, puis *« rendre selectionnable je dirais meme »*,
+*« si un jour la stack cloud evolue on est pas piege »*, *« auto upgrade »*.
+
+**LE PIEGE A EVITER, nomme d'emblee** : graver dans le code une liste de modeles
+fiables. Ce serait un chiffre fige, et un chiffre fige ment le lendemain — ce
+depot l'a paye trois fois : le « 61,8 s » de glm-4.7-flash, le « 42 » simultanees,
+le seuil RAM a 30 Go.
+
+**LE MECANISME EXISTE DEJA POUR LE LOCAL** et il suffit de l'etendre :
+`nexus_generate.py` DERIVE l'appartenance aux pools de `.nexus/epreuves.json` et
+`.nexus/latences.json`. Un modele entre **par PREUVE, jamais par reputation**
+(§105.2). Le releve porte 44 modeles, avec par alias : `reussies`, `total`,
+`complet`, `concluante`, `plan`, `servi`, et surtout **`date`**.
+
+**LES QUATRE PROPRIETES DEMANDEES, et comment chacune se realise :**
+
+| Propriete | Realisation |
+| --- | --- |
+| **calibre** | une epreuve `rendu_non_vide` mesure, par modele, s'il rend du contenu a budget serre |
+| **pas bride** | le resultat produit une MENTION dans l'enveloppe, jamais un refus — meme regle que la garde d'ecriture : etiqueter, pas bloquer |
+| **selectionnable** | un pool « redaction » derive du releve, choisissable par profil |
+| **auto-upgrade** | un modele cloud NOUVEAU est eprouve puis admis seul ; un modele qui se degrade en sort seul. Aucune liste a maintenir |
+
+**LA QUESTION QUI DECIDE SI LE CALIBRAGE DEVIENT UNE BRIDE**, et elle est
+deleguee plutot que tranchee seul : **un modele JAMAIS MESURE est-il admis ou
+exclu par defaut ?**
+
+Pour le pool LOCAL, la regle du depot est « jamais mesure = jamais promu » —
+l'absence de preuve n'est pas une preuve d'absence, et le cout d'un modele qui
+pagine est eleve. Pour le CLOUD, exclure par defaut SERAIT une bride : un modele
+neuf resterait invisible jusqu'a sa premiere mesure, et la stack evolue plus vite
+que le releve. Les deux couts ne sont pas symetriques, et c'est pourquoi la
+reponse ne peut pas etre la meme des deux cotes.
+
+**CE QUI EST EN VOL** (lot `calibre`, quatre diagnostics, tous confies a des
+modeles FIABLES puisque ce sont des taches de redaction) :
+
+1. `nexus_releve` — ou declarer l'epreuve `rendu_non_vide`, et le releve
+   distingue-t-il deja REUSSIE de NON MESUREE ;
+2. `server.js` — le point unique ou poser la mention, avec la DATE de la mesure
+   pour que l'appelant voie son age ;
+3. `nexus_generate` — ou brancher le critere pour constituer le pool de redaction
+   sans toucher au reste, et **ce que le script fait aujourd'hui d'un modele
+   jamais mesure** ;
+4. arbitrage documente des trois options : liste gravee, epreuve derivee, ou
+   simple exposition du levier.
+
+**MESURE QUI FONDE TOUT CECI**, convergente sur trois sessions independantes et
+DATEE du 2026-09-02 — a ne jamais graver, seulement a re-mesurer :
+
+    rendent      gemma4-31b (16/16, zero echec) · gpt-oss-120b · mistral-large-3
+    tronquent    deepseek-v4-pro et -flash · glm-5.3 · kimi-k2.7 · qwen3.5-397b · nemotron-3-super
+
+**Et le contournement qu'on croyait avoir n'existe pas** : contraindre la longueur
+dans la consigne ne protege pas — 3 tronques sur 6 malgre « 10 lignes maximum »
+(§115.41). Le seul levier reel aujourd'hui est le CHOIX DU MODELE ; d'ou l'urgence
+de C1.1, exposer `max_tokens`, et de ce pool derive.
+
+### 115.43 LA LIGNE DE PARTAGE DU DELEGABLE — 7 faux positifs sur 8
+
+Suite mesuree par une session tierce, apres application de sa propre formulation
+corrective (§115.39). Elle AMELIORE mais NE SUFFIT PAS.
+
+**Ce qui s'ameliore reellement** : un modele a lui-meme SIGNALE que sa trouvaille
+venait de la section declaree — « FONDE SUR : le texte du docstring sous la
+section CE QUE CE GARDE NE VOIT PAS ». Le temps 1 l'a force a citer sa source, et
+la source l'a trahi.
+
+**Deux modes d'echec NOUVEAUX que le temps 1 n'attrape pas :**
+
+1. **Le modele COUPE une declaration en deux et en met une moitie dans chaque
+   temps.** Le temps 1 cite la limite, le temps 2 cite l'EXEMPLE que la docstring
+   donne pour l'illustrer, cinq lignes plus bas. Formellement il n'a pas repete la
+   meme phrase — il a repete la meme LIMITE.
+2. **Le modele declare « aucune limite declaree » alors qu'il y en a**, puis
+   produit cinq manques dont un recoupe exactement une declaration qu'il vient de
+   nier.
+
+    total verifie : 7 faux positifs sur 8
+
+> **LA LIGNE DE PARTAGE, et c'est la lecon generale :**
+>
+>     DELEGABLE      lire, extraire, classer, confronter DEUX documents FOURNIS
+>     NON DELEGABLE  etablir ce qui MANQUE a un ensemble que le modele doit
+>                    d'abord RECONSTITUER lui-meme
+>
+> La question « quelles limites ne sont pas declarees » demande de tenir DEUX
+> ensembles a la fois — ce que le fichier DIT, ce que le code FAIT — et d'en
+> calculer la difference. Le modele produit des elements plausibles de chacun,
+> **mais il ne fait pas la soustraction.**
+
+**Ce qui marche a la place** : un outil qui CALCULE la difference d'ensembles au
+lieu de la demander. `nexus_surface.py` compare deux surfaces publiques par AST et
+ne se trompe pas — c'est la meme tache, rendue au bon executant.
+
+**Consequence pour les audits de ce depot** : garder la formulation en deux temps,
+elle reduit le bruit et fait parfois avouer la source ; mais **verifier chaque
+MANQUE sur le disque avant de l'inscrire**. Rendement mesure : une trouvaille
+reelle pour douze appels.
+
+### 115.49 UNE ENVELOPPE QUI AFFIRME LA COMPLETUDE — la variante la plus couteuse
+
+Signale par une session tierce le 2026-09-02, verifie ici dans le code avant d'etre cru.
+
+**LE CAS.** `nexus_context`, un fichier de diff de 201 lignes. Enveloppe rendue :
+
+    1 fenetres, 1 passes · ~4104 tokens traites en 8192 de fenetre
+
+Elle affirme donc, de son propre aveu, que l'entree tenait LARGEMENT et qu'une passe a
+suffi. Le rendu annoncait **34 lignes ajoutees**. La mesure par `grep`, arithmetique
+pure : **181**. Facteur cinq. Le modele avait decrit le DEBUT du diff — les imports sont
+en tete — et n'avait pas traite le reste.
+
+**POURQUOI C'EST PIRE QU'UNE TRONCATURE :**
+
+| forme | se voit ? |
+| --- | --- |
+| reponse VIDE | oui, immediatement |
+| reponse TRONQUEE | oui, l'enveloppe le dit |
+| **ce cas** | **non — l'enveloppe AFFIRME que tout a ete traite** |
+
+Structure, chiffre, confiant, et faux. Invisible a tout controle automatique : ni
+vacuite, ni troncature, ni erreur.
+
+**LA CAUSE, verifiee dans `tools/nexus-mcp/server.js:2775` :**
+
+    const approxTokens = Math.round(corpus.length / CHARS_PER_TOKEN);
+    ... `~${approxTokens} tokens traites en ${contextTokens} de fenetre`
+
+Le nombre mesure la longueur du corpus **SOUMIS**. Il ne dit rien de ce que le modele a
+LU. **Le mot « traites » est le defaut** : il transforme une mesure d'envoi en garantie
+de lecture.
+
+⇒ Correctif en vol : dire **soumis**, et joindre la taille reelle du corpus pour que
+l'appelant puisse comparer et voir l'ecart.
+
+**CE QUI A SAUVE LA SESSION TIERCE** n'etait pas un controle de la plateforme, mais une
+regle de son propre depot : *« un audit qui n'est pas re-mesure devient une rumeur
+autorisee »*. Un `grep -c` a suffi.
+
+**ET LE POINT DE METHODE, qui vaut au-dela du cas** : sa CONCLUSION etait juste, par un
+chemin qu'il n'avait pas mesure. La question qui decidait n'etait pas COMBIEN de lignes
+mais Y A-T-IL UNE SUPPRESSION — reel : zero, donc l'audit anterieur restait valable.
+
+> **Un rendu peut avoir raison par accident.** On retient le MECANISME, on RE-MESURE le
+> chiffre. Ici le mecanisme decrit valait ; le chiffre ne valait rien.
+
+**RETOUR MESURE DE LA CORRECTION PRECEDENTE** : `nexus_charge` rend desormais
+« residents 18,04 Go / **disponible pour inference 38,84 Go** » la ou il disait « RAM
+insuffisante ». La session tierce a **route local** sur ce lot en consequence. Une
+correction de sonde a directement produit du travail, et epargne du quota cloud.
+
+### 115.44 LA CLASSE EST DANS `sous_racine()` — l'outil que les TROIS sessions emploient
+
+Trouve par l'usage, pas par un audit, et reproduit avant d'etre cru.
+
+**LE CODE, `scripts/nexus_agent.py:287` avant correctif :**
+
+    def sous_racine(chemin, racine):
+        """Le fichier est-il sous la racine specifie ?"""
+        if not os.path.exists(chemin):
+            return False          # <- « n'existe pas » rendu par la valeur de « hors racine »
+
+**Reproduction, avant de croire quoi que ce soit :**
+
+    scripts/nexus_agent.py     existe=1   sous_racine=True
+    scripts/nexus_surface.py   existe=0   sous_racine=False
+
+La fonction repond « est-ce SOUS LA RACINE ? » et retourne `False` **aussi** quand le
+fichier est simplement ABSENT. L'appelant, qui ne voit qu'un booleen, annonce alors :
+
+    scripts/nexus_surface.py (hors de la racine de travail C:\local-llm-docker ;
+    --racine pour en designer une autre, ou copier le fichier sous la racine)
+
+> **LE REMEDE PROPOSE NE PEUT PAS MARCHER.** Aucune `--racine` ne fera apparaitre un
+> fichier qui n'existe pas. Ce n'est pas seulement un message imprecis : c'est un
+> diagnostic qui ENVOIE CHERCHER AU MAUVAIS ENDROIT.
+
+**COUT MESURE, le jour meme** : deux fichiers sur trois d'une vague ont ete rediges
+**sans leur modele de style**, parce que le refus a ete lu comme un probleme de
+perimetre. Le fichier de style n'existait pas encore ; rien ne le disait.
+
+**Correctif applique, et ses TROIS epreuves** — le refus n'est RELACHE dans aucun cas :
+
+    FORWARD  present, sous racine   TRANSMIS (68 422 car)
+    REVERSE1 absent                 REFUS -> « (introuvable) »
+    REVERSE2 hors racine            REFUS -> message d'origine AVEC son remede
+
+### 115.45 LE CORRECTIF D'UN MASQUAGE A REPRODUIT LE MASQUAGE — et seul le reverse l'a vu
+
+Le patch des trois etats de `nexus_charge.py` a ete applique, la syntaxe validee, ruff
+passe. Puis l'epreuve :
+
+    FORWARD  moteur vivant     ->  « moteur injoignable »
+    REVERSE  adresse morte     ->  « moteur injoignable »
+
+**Sortie IDENTIQUE au caractere pres pour deux situations opposees.** Sans le reverse
+test, la conclusion etait « corrige » : patch applique, syntaxe bonne, outil qui repond.
+
+La cause, revelee en desarmant le masque sur une COPIE en scratchpad :
+
+    CAUSE REELLE: NameError name 'urllib' is not defined
+
+> Le `except Exception:` ne masquait pas seulement la liste vide. Il maquillait une
+> **faute de programmation pure** en diagnostic metier. **Le remede du defaut
+> reproduisait le defaut**, et il a fallu la meme epreuve pour l'attraper deux fois.
+
+Trois etats, desormais mesures **separement**, le troisieme contre un vrai serveur HTTP
+jetable rendant `{"models": []}` — jamais contre une supposition :
+
+    moteur vivant, 1 modele resident  ->  joignable_avec_modeles   18.04 Go
+    moteur vivant, liste VIDE         ->  joignable_vide
+    adresse morte                     ->  injoignable
+
+### 115.46 NE JAMAIS LIRE UNE GARDE DERRIERE UN `tail` — cinquieme fois cette nuit
+
+Faute de METHODE, la mienne, et elle a coute vingt minutes de diagnostic sur un code
+qui n'etait pas en place.
+
+`nexus_appliquer.py` a REFUSE un patch. Sa sortie, entiere :
+
+    REFUS : le rendu ne porte pas les triplets de marqueurs.
+    <<<AVANT>>>
+    ...
+    <<<APRES>>>
+    ...
+    import urllib.request
+
+Lue derriere `| tail -4`, il ne reste que les dernieres lignes du bloc `APRES` — soit
+exactement le texte qu'on esperait voir appliquer. **J'ai lu un refus comme une
+confirmation**, puis diagnostique pendant vingt minutes un patch jamais ecrit.
+
+> **Un refus s'imprime en TETE. Un succes aussi. Seule la QUEUE leur est commune.**
+> `tail` conserve donc precisement la partie qui ne discrimine pas.
+
+**L'outil n'avait aucun tort** : refus net, motif nomme, code de retour 1. Le code 1
+etait d'ailleurs lui aussi perdu — derriere un pipe, `$?` rend le code de `tail`.
+C'est la **cinquieme** occurrence du meme geste en une nuit.
+
+⇒ Regle : la sortie d'une garde se lit ENTIERE, et son code se lit hors pipe.
+
+### 115.47 `nexus_sonde_aveugle` — LE CONTROLE POSE MUET, ET SA CONTRE-EPREUVE
+
+Le controle ecrit pour attraper la classe des §115.44/45 a ete pose, syntaxe validee.
+Lance sur le fichier portant le defaut qu'il devait trouver :
+
+    code=0, aucune sortie
+
+**Un controle muet se lit comme une protection.** C'est le cas que §0.1.4.1 exige de
+verifier, et c'est la seule raison pour laquelle il a ete vu.
+
+Deux causes, toutes deux corrigees par le banc :
+
+* il jugeait sur le **NOM** de la variable, alors que dans le cas reel le nom est
+  anodin — `etat_moteur` — et que le mot revelateur est dans la **VALEUR**,
+  `"injoignable"` ;
+* sa methode d'examen des valeurs existait et **n'etait jamais appelee** : du code mort
+  donnant l'illusion que le cas etait couvert.
+
+Apres correction, les deux contre-epreuves :
+
+    cas REEL connu   ->  2 detections, code 1
+    fichier SAIN     ->  silence,      code 0
+
+**AMPLEUR MESUREE, et lue honnetement** : 41 occurrences sur 22 fichiers — mais
+plusieurs sont FAUSSES a la lecture (`duration = int(...)`, `journal_path =
+os.environ.get(...)`, et les `code = 1` d'epreuves, qui sont le comportement voulu).
+
+> ⇒ **Pose en SIGNAL, jamais en garde bloquante.** Etiqueter, pas bloquer : un controle
+> a fort taux de faux positifs qui REFUSE se fait desarmer dans la semaine. Le taux
+> exact reste a mesurer avant tout cablage, et **41 trouvailles ne sont pas 41
+> defauts** — c'est la lecon de §115.43 appliquee a son propre outil.
+
+### 115.48 CE QUE JE RECOIS ET CE QUE JE PROPOSE — consigne de l'operateur
+
+Enoncee le 2026-09-02 : *« desormais partout tu marques que non seulement tu recois les
+defauts et les suggestions d'ameliorations mais qu'en plus tu en proposes ! »*
+
+**Le flux n'est pas a sens unique, et le noter est la moitie du travail.**
+
+| RECU d'une session voisine | PROPOSE en retour |
+| --- | --- |
+| faux positif « moteur injoignable » | `nexus_sonde_aveugle` : le controle de la CLASSE, pas du cas |
+| les trois etats plutot que deux | la meme classe trouvee dans `sous_racine()`, qui la concerne |
+| `nexus_libs` (documente / importable / utilisable) | pose ici, rejouable par les trois sessions |
+| « importable n'est pas utilisable » | « ne jamais lire une garde derriere un `tail` » |
+| la ligne de partage du delegable | son inscription en donnee DERIVEE : rendement par categorie |
+| « un manque se CALCULE » | un audit en vol pour brancher ce calcul dans le releve |
+
+**Mesure du tour** : 4 defauts recus, 5 defauts trouves et rendus, dont 3 dans des outils
+que les trois sessions emploient. Aucun n'est venu d'un audit : tous de l'USAGE.
