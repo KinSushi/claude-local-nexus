@@ -16875,3 +16875,79 @@ succes**, et confondre les deux serait refaire la faute qu'elle corrige.
 l'usage de QUELQU'UN D'AUTRE.** C'est la demonstration la plus nette du §0.1.4 : *le defaut
 trouve par l'usage est celui qu'aucun audit ne voit*, et il se trouve encore mieux quand
 l'utilisateur n'est pas l'auteur.
+
+
+### 115.132 « TOUT EST SUR DISQUE MAIS VOUS FONCEZ TETE BAISSEE » — demontre en trois gestes
+
+**Consigne de l'operateur, repetee quotidiennement** : *« consulter le local, l'existant, tout
+est sur disque »*. **Illustree ce tour par mes propres gestes, dans l'ordre.**
+
+**GESTE 1 — j'ai fonce.** Cherchant des PDF, j'ai lance un `find` recursif sur un disque entier :
+**expiration a 120 s**, aucun resultat. L'index existait.
+
+**GESTE 2 — j'ai mesure ce que je croyais savoir, et je me suis trompe deux fois.**
+
+    ma 1re mesure  profondeur des fiches :   0,0 % sur 5 bibliotheques
+    la verite      profondeur des fiches :  91,8 % a 99,9 %
+
+Un **0,0 % parfait sur cinq** est un signal d'INSTRUMENT, jamais de corpus : mon test cherchait
+`Classe.methode` quand les fiches portent le nom **pleinement qualifie**
+(`polars.api.NameSpace.__init__`). ⇒ **La doc locale couvre le PROFOND, pas seulement le premier
+niveau** — 3 045/3 049 pour `numpy`, 7 913/7 927 pour `torch`.
+
+**Et une erreur d'instrument dans la meme passe** : `stat().st_size` sur un REPERTOIRE mesure
+l'entree de repertoire, pas le contenu. J'ai affiche **« torch : 57 413 entrees, 16 Ko »**, ce
+qui est arithmetiquement impossible. Reel : **29 908 Ko**.
+
+**GESTE 3 — la consultation a rendu la trouvaille, et elle est de nature nouvelle.**
+
+    python scripts/nexus_doc.py pymupdf.open  ->  aucun symbole
+    ls references/python_libs_docs/pymupdf/   ->  2 fichiers, 8 Ko, doc officielle verbatim
+
+★ **La fiche documente EXACTEMENT l'ingestion PDF** — `get_toc`, `metadata`, `extract_image`,
+`page_count`, `get_text`, `get_images`, `get_pixmap` — **et l'outil ne la voit pas**, parce
+qu'elle ne porte aucun entete `###`, le format qu'il indexe.
+
+> **DOCUMENTEE, PRESENTE, LISIBLE PAR `cat`, ET INATTEIGNABLE PAR L'OUTIL CENSE LA SERVIR.**
+> Un cinquieme etage de la tetrade : **INDEXEE**.
+
+### 115.132.1 UN TROISIEME TYPE DE FICHE, que ni ce depot ni le voisin n'avait distingue
+
+La fiche `pymupdf` declare sa provenance :
+
+    Source : https://pymupdf.readthedocs.io/... (documentation officielle)
+    Recupere via : WebFetch, 2026-07-18
+    Version locale installee verifiee : PyMuPDF 1.26.4 / MuPDF 1.26.7
+
+★ **Elle est « infidele » au sens du controle VERBATIM du depot voisin** — elle ne correspond pas
+a `inspect.getdoc()` — **et pourtant elle est parfaitement fidele a la doc officielle.** Ce sont
+deux fidelites differentes, et les confondre condamne une fiche correcte.
+
+| type | source | fidelite a mesurer |
+| --- | --- | --- |
+| introspectee | `inspect` sur l'objet installe | `== inspect.getdoc()` |
+| **scrapee et DECLAREE** | doc officielle du vendeur | conformite a la source citee |
+| non declaree | inconnue | **aucune garantie** |
+
+⇒ **`inspect` ne rend que ce que le CODE porte** ; guides, exemples et prose officielle lui
+echappent par construction. **Une fiche scrapee n'est pas une fiche degradee : elle repond a une
+autre question.** Ce qui la rend fiable ou non, c'est **la declaration de sa provenance**, pas sa
+methode.
+
+### 115.132.2 CE QUE 63 BIBLIOTHEQUES DEBLOQUENT, ET QUE JE N'AVAIS PAS VU
+
+Mesure : **63 fiches, 5 paquets installes, 0 appele par le code.** J'avais lu ce chiffre comme
+« doc excedentaire ». **C'est l'inverse : c'est un inventaire d'outils non employes**, et trois
+repondent a des problemes que j'ai declares insolubles AUJOURD'HUI :
+
+| bibliotheque | ce qu'elle ferme |
+| --- | --- |
+| `mutmut` | **le differentiel mecanise** — casser le code et prouver que l'epreuve rougit |
+| `hypothesis` | **generer** les temoins positifs et negatifs, au lieu de les ecrire |
+| `optuna` | le chantier temperature du §106.2 : optimisation bruitee sous budget d'evaluations |
+| `pymupdf` | **l'ingestion PDF**, donc des corpus que ce depot n'a pas |
+| `shap` / `interpret` | expliquer une decision de routage — le §89 « governed routing » |
+| `structlog` · `pydantic` · `typer` | journal structure, validation de config, CLI coherente |
+
+⚠️ **`mutmut` refuse Windows natif et renvoie a WSL — et ce depot heberge Docker.** Le trou
+permanent du voisin est un chantier possible ici.
