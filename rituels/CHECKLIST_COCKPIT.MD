@@ -14861,3 +14861,39 @@ enregistrement qu'un fichier lu en entier.
 * le conflit entre les deux cliquets (§115.60) n'est pas resolu, seulement nomme ;
 * `nexus_loi1.py` mesure la provenance et non l'audit (§115.59) — le registre d'audits
   n'existe pas.
+
+### 115.63 LE TOUR SE CLOT AVEC DEUX MANQUES DECLARES — et voici pourquoi c'est le bon geste
+
+Le rituel rend **2 manques sur 13 controles**. Ils ne sont ni oublies ni maquilles.
+
+**MANQUE 1 — outillage, 4 regressions de style.** Motifs, verifies un par un :
+
+    ruff ne sait PAS les corriger automatiquement    3 erreurs, 0 corrigee, diff vide
+    3 des violations sont dans nexus_garde_ecriture.py       GARDE ARMEE, non touchee
+    les corriger a la main relance un cycle audit/epreuve    et fait monter le compteur LOI 1
+    aucune n'a d'effet sur le COMPORTEMENT                   ce sont des regles de style
+
+**MANQUE 2 — LOI 1, 5 lignes a la main.** Ce sont des reecritures de l'outil de style,
+**toutes soumises a un tiers** qui a rendu EQUIVALENT avec des raisons verifiees. Le
+compteur mesure la PROVENANCE, pas l'AUDIT (§115.59).
+
+**LE PIEGE STRUCTUREL, mesure et non suppose (§115.60)** : les deux cliquets se
+contredisent mecaniquement. Une passe de reecriture fait tomber les violations et monter
+les lignes non deleguees ; s'en abstenir fait l'inverse. Observe deux fois ce tour, avec
+des chiffres qui oscillent dans les deux sens.
+
+> **Forcer le vert serait exactement l'auto-validation que LOI 1 interdit.** Un rituel qui
+> rapporte un manque reel fait son travail ; un rituel vert obtenu en desarmant ses regles
+> ne protege plus rien. Le manque DECLARE, avec sa raison ecrite avant le geste, vaut mieux
+> qu'un vert obtenu.
+
+**Ce qui a ete refuse deliberement, et il faut que ce soit lisible :** toucher a
+`nexus_garde_ecriture.py` et `nexus_garde_agent.py`, tous deux ARMES au niveau global.
+Motif ecrit avant le geste : une garde armee a deja ete cassee ce soir en voulant
+l'ameliorer, et une autre est restee desarmee deux heures sans que personne le voie. **La
+valeur d'une garde qui mord depasse celle d'une regle de style.**
+
+**Les deux contre-epreuves du controle rejouees apres tentative de reecriture, et vertes :**
+
+    epreuve complete      -> code 0     5 cas sur 5
+    detecte le cas REEL   -> code 1     il mord toujours
