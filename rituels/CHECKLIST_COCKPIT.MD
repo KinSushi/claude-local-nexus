@@ -17771,3 +17771,55 @@ ne le mentionne meme pas : 0 occurrence).
 Il a **refuse de corriger l instrument**, ce qui aurait masque le manque. C est
 le geste juste, et il merite d etre note : *un controle qu on adoucit parce
 qu il derange cesse d etre un controle.*
+
+---
+
+# 117. LE PROJET, FICHIER PAR FICHIER — 2026-09-02
+
+Perimetre tranche par l operateur : **les 97 fichiers qui composent la
+plateforme**, pas les 136 outils `nexus_*` et `epreuve_*`.
+
+## 117.1 Repare et prouve, sur le produit lui-meme
+
+| fichier | defaut mesure AVANT | preuve APRES |
+| --- | --- | --- |
+| `docker-compose.yml` | `docker inspect litellm-proxy` rendait `Health: <nil>` — le seul service sans etat de sante | `healthy`, et **prouve par un cycle d arret/relance complet non planifie** |
+| `docker-compose.yml` | image `main-latest`, flottante (contrat 78) | epinglee par digest, verifie comme etant celui de l image DEJA deployee |
+| `requirements.txt` | `PyYAML>=6.0`, borne flottante | `==6.0.3`, la version reellement installee |
+| `tools/nexus-mcp/server.js` | `nexus_compare` declarait un tableau de CHAINES et ne verifiait que la LONGUEUR ; `models:[42,...]` rendait `model.padEnd is not a function`, annulant TOUTE la comparaison | `code -32602 : parametre 'models', element 1 : une chaine non vide est attendue, recu number` — refus nomme, AVANT tout appel reseau |
+| `tools/nexus-mcp/server.js` | l en-tete annoncait « Douze outils » | QUINZE, comptes deux fois : extraction du bloc TOOLS, puis serveur lance et interroge par `tools/list` |
+| `Set-ClaudeModel.ps1` | `https://localhost:4000` — SSL echoue, la passerelle ne sert que du HTTP. Annonçait « Proxy injoignable » sur une passerelle SAINE | `81 modeles exposes : 54 local, 19 cloud, 4 Claude` |
+| `Set-ClaudeModel.ps1`, `Initialize-Nexus.ps1` | une ligne `</#>` LITTERALE en derniere ligne, syntaxiquement invalide | retiree ; trouvee a l inspection binaire, pas a la lecture |
+| `stop.ps1` | `Test-Path "./docker-compose.yml"`, relatif au repertoire COURANT : `nexus stop` echouait depuis un autre projet | racine derivee de `$PSScriptRoot` |
+| `restore.ps1` | `$PSScriptRoot` pointait sur `scripts/` alors que les fichiers sont a la RACINE ; et `docker exec ollama-server` -> « No such container » | chemins corriges, sonde HTTP sur `127.0.0.1:11434` qui rend `200 {"version":"0.33.2"}` |
+| `README.md` | annonçait 12 outils MCP | 15 |
+| `UTILISER_NEXUS.md` | « `nexus_ask` ne prend PAS de fichiers » (faux, il a `paths`) et un exemple avec `question=` la ou le schema exige `prompt` | corriges sur mesure du schema reel |
+| `rituels/SOCLE_UNIVERSEL.json` | empreinte annoncee `cef66586`, blob reel `34828bed` | renormalise, blob = `cef66586`, 216 CR |
+
+## 117.2 Ce qui reste OUVERT, mesure et non maquille
+
+* **les trois lanceurs ne prennent jamais le verrou machine** — mesure en
+  direct : `APPELS_AU_VERROU pendant executer() : 0`. Le verrou ne vit que dans
+  `main()`, qu aucun n appelle. Decision de conception, laissee a l arbitrage.
+* **`epreuve_cles_only.py` orpheline**, et le cliquet ne le voit plus depuis
+  que la dette est ECRITE (voir CHECKLIST_LIVRE_VS_CODE §16.1).
+* **`epreuve_journal_disjoncteur` mal cablee** — imbriquee, sans cle propre.
+* **`nexus_worktree.py:356`** — `subprocess.run` sans timeout, constat statique.
+* **outillage** : 84 violations Python, 8 JS, 127 PowerShell. Les regressions
+  annoncees (`F841 0->3`, `SIM102 2->7`) sont des **regles NEUVES** du cliquet,
+  pas des degradations de ce tour : les violations sont preexistantes, dans
+  `nexus_ombre.py` (l outil abandonne, dont les deux variables mortes sont le
+  symptome de son etat) et `nexus_sonde_aveugle.py`.
+
+## 117.3 Trois fois, mon propre instrument a menti
+
+1. `grep -o "ECHEC : [^|]*"` — la classe excluait le separateur ` | ` du
+   message ; j ai lu « un seul echec » sur une liste qui en portait plusieurs.
+2. une epreuve cherchait les cles entre GUILLEMETS ; argparse ecrit `{a,b,c}`
+   sans guillemets. Elle a declare 66 cles inatteignables, toutes accessibles.
+3. un chemin POSIX (`$PWD` de bash) passe a un parseur PowerShell : quatre
+   fichiers sains declares INVALIDES.
+
+Chaque fois : instrument EXACT, question VOISINE, conclusion FAUSSE. La classe
+que ce depot traque se commet aussi par l orchestrateur, et trois fois dans la
+meme journee.
