@@ -17232,3 +17232,37 @@ moi et il est ouvert.
 **NON CABLE, et je le dis** : rien n'appelle encore `nexus_sauvegarde.py`. Il sera detecte comme
 orphelin par le cliquet, a raison. **Un script qu'aucun appelant n'invoque n'est pas un
 mecanisme.**
+
+
+### 115.139 DIXIEME PANNE — la sauvegarde tourne desormais SANS SESSION
+
+**Dixieme panne. Zero perte, dixieme fois — et pour la premiere fois le mecanisme a agi seul :**
+
+    python scripts/nexus_sauvegarde.py
+    -> EXIT 0 · 3 699 331 octets · 638 commits · bundle VERIFIE · rotation active (2 conserves)
+
+★ **CABLE PAR LA SEULE VOIE QUI SURVIT AUX PANNES : une tache planifiee.**
+
+    NexusSauvegarde · Ready · toutes les 30 min · plafond 5 min · demarre si manquee
+
+⇒ **Le raisonnement, et il est dicte par les dix pannes** : cabler la sauvegarde au rituel de fin
+de tour l'aurait rendue dependante d'une session vivante — **or c'est precisement la session que
+la panne interrompt.** Une protection qui exige que tout aille bien ne protege de rien.
+
+**C'est le meme motif que `NexusTraque`**, deja en service : *ce qui doit survivre a la session
+ne doit pas vivre dans la session.*
+
+⚠️ **ET CELA FERME LE MANQUE DECLARE AU TOUR PRECEDENT** : *« rien n'appelle encore
+nexus_sauvegarde.py, le cliquet le detectera comme orphelin, a raison »*. Il a desormais un
+appelant, et cet appelant ne depend d'aucune session.
+
+**CE QUE CELA NE RESOUT TOUJOURS PAS, et je le repete plutot que de le laisser filer** :
+
+| protege contre | ne protege pas contre |
+| --- | --- |
+| corruption du depot, reset accidentel, perte de session | **panne du disque** — meme support |
+| interruption brutale en pleine ecriture | l'absence de depot distant : **112 commits toujours non pousses** |
+
+⇒ **La publication reste fermee par la dette de cablage (11 epreuves orphelines).** Le bundle est
+un pis-aller mesure, jamais un remplacement. **La vraie sauvegarde reste le `push`, et il attend
+que le rituel soit clos.**
