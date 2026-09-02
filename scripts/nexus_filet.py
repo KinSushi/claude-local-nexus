@@ -141,10 +141,16 @@ def main():
 
         # appliquer() renvoie maintenant (etat, message, appliquable)
         etat_check, msg_check, _ = appliquer(RACINE, diff_txt, verifier_seulement=True)
-        if etat_check == 'conflit':
-            echec_check += 1
-            print(f'{name}: {lignes} lignes - echec check [{msg_check}]')
+        # POURQUOI la distinction compte : un lot deja integre a la main se lisait comme un echec, et un vrai conflit se noyait dans le meme total
+        if etat_check == 'deja-applique':
+            deja_appliques += 1
+            print(f'{name}: {lignes} lignes - deja applique [{msg_check}]')
             continue
+        if etat_check == 'conflit':
+            conflits += 1
+            print(f'{name}: {lignes} lignes - conflit [{msg_check}]')
+            continue
+        # etat_check == 'applicable' : laisser le reste du code s'executer
 
         if args.appliquer:
             etat_apply, msg_apply, _ = appliquer(RACINE, diff_txt, verifier_seulement=False)
