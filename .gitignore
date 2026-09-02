@@ -81,3 +81,10 @@ PROGRESS.MD
 # Meme arbitrage que PROGRESS.MD : un etat derive ne se versionne pas.
 rituels/STATE.md
 v15*.json
+
+# Les corpus pesent 59 Mo et n'ont rien a faire dans l'historique.
+# Mais leur POINTEUR pese 5 Ko et c'est le seul artefact qui dit a un
+# autre projet CE QUI EXISTE et CE QUI MANQUE. L'ignorer rendait le
+# partage impossible : mesure du 2026-09-02, aucun des deux pointeurs
+# n'etait suivi, y compris celui que la session voisine nous citait.
+!references/*/_POINTEUR_CORPUS.md
