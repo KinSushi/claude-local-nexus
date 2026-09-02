@@ -35,7 +35,7 @@ lui donner les modèles **comme outils**.
 ```
    Claude Code  ·  abonnement claude.ai, natif  ·  orchestre
         │
-        │  MCP (stdio, 12 outils, zéro dépendance npm)
+        │  MCP (stdio, 15 outils, zéro dépendance npm)
         ▼
    nexus-local
         │
