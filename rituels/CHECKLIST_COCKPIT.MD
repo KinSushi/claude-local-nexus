@@ -16628,3 +16628,37 @@ dans le tour qui l'a produit, et non a la fin.
 ⇒ **C'est la classe d'EA MT5** : *un echec d'INFRASTRUCTURE lu comme un echec de TRAVAIL.* La
 panne est reelle, elle n'est pas la mienne, et la seule chose qui depend de moi est de n'avoir
 rien en vol quand elle survient.
+
+
+### 115.124 LA GARDE NON ARMEE ETAIT UNE FAUSSE PROTECTION — trouve AVANT de l'armer
+
+**Chantier ouvert declare au tour precedent** : `nexus_garde_production.py`, corrigee trois fois
+ce jour et **armee dans aucun hook**. En voulant l'armer, contre-epreuve **avant** l'armement :
+
+    charge : Write sur scripts/nexus_agent.py
+    sortie : {"permissionDecision": "deny", "hookEventName": "PreToolUse", ...}
+    EXIT   : **0**
+
+★ **UN REFUS QUI REND ZERO AFFICHE UN REFUS ET NE BLOQUE RIEN.** Et ce depot a deja paye
+exactement ce defaut : *« un refus imprimait `deny` et sortait 0 : il affichait un refus qui ne
+bloquait rien. 460 sous-agents et 32 millions de jetons factures sont passes. »*
+
+**La garde de reference, `nexus_garde_agent.py`, rend 2** — et son commentaire porte la lecon en
+toutes lettres : *« PLANTER et REFUSER sont deux choses distinctes : planter se rattrape en zero
+grace au rempart, refuser DOIT rendre un code non nul. »* **La meme lecon, ecrite dans le fichier
+d'a cote, n'avait pas voyage de deux fichiers.**
+
+⇒ **NE PAS L'AVOIR ARMEE M'A PROTEGE D'UNE PROTECTION ILLUSOIRE.** Armee, elle aurait affiche
+des refus impeccables et laisse tout passer — **pire que rien, puisqu'elle se serait LUE comme
+une garde.**
+
+**SECOND DEFAUT, trouve dans le meme geste** : `TARGET_TOOLS = {"Edit", "Write", "NotebookEdit"}`
+et j'allais armer avec le matcher `Edit|Write`. **`NotebookEdit` serait reste decouvert** — une
+garde au perimetre plus etroit que ce qu'elle croit juger.
+
+> **La contre-epreuve AVANT l'armement, pas apres.** Un armement est irreversible dans ses
+> effets : entre le moment ou l'on arme et celui ou l'on teste, on croit protege. **L'ordre juste
+> est : prouver que la garde REFUSE, puis l'armer.**
+
+**ETAT EXACT, et la formulation compte** : la garde est **corrigee, non armee, et desormais
+connue defectueuse**. Elle ne sera armee qu'apres que son refus aura ete mesure non nul.
