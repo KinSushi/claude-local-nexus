@@ -108,3 +108,24 @@ essaye, le patch a ete pose sans effet, et je l'ai RETIRE plutot que de laisser 
 chemin, pour qu'une source d'appelant non-fichier soit representable. **C'est une refonte, pas un
 patch** — et le dire vaut mieux que le bricoler.
 
+---
+
+## 8. VS Code — etat des sources, mesure le 2026-09-02
+
+**Consigne : consulter les livres et la documentation VS Code AVANT de conclure, et distinguer
+documente / constate / non verifie / inconnu.** Mesure faite, resultats bruts :
+
+| question | verdict | mesure |
+| --- | --- | --- |
+| corpus VS Code sous `references/` | **INCONNU** | 9 corpus presents, **aucun** ne porte VS Code |
+| VS Code dans les 24 livres | **INCONNU** | recherche semantique -> « Microsoft Visual Studio » (IDE C++) et « Selecting the workspace folder », **rien sur VS Code** |
+| ce depot est-il un projet VS Code | **CONSTATE : non** | ni `.vscode/`, ni `*.code-workspace` |
+
+⇒ **Aucune affirmation sur VS Code — architecture, extensions, agents, workspaces, modeles — ne
+peut etre faite depuis ce depot.** Les sources n'y sont pas. **L'absence d'information n'est pas
+une validation**, et elle n'est pas non plus une infirmation : c'est INCONNU.
+
+**Ce qui EST constate**, sans interpretation : le travail de ce depot est livre par commits git,
+donc lisible depuis n'importe quel editeur. **Aucune integration VS Code n'existe et aucune n'a
+ete demandee de facon verifiable.**
+
