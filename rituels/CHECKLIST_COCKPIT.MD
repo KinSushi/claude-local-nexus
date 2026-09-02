@@ -17643,3 +17643,57 @@ emplacement. **Le manque porte sur les outils INTER-PROJETS**, et ils se compten
 
 **Sept.** Et deux d'entre eux — le verrou et la charge — ont deja coute une heure a trois
 sessions.
+
+
+### 115.147 LA RECHERCHE SEMANTIQUE LOCALE EST RESOLUE — et elle rend du CODE, pas de la prose
+
+**Index construit : 20 304 fragments, ZERO echec, 216 Mo, `nomic-embed-text` local, cout nul,
+rien n'a quitte la machine.**
+
+**LA MEME REQUETE QUI RENDAIT DES PROCESSUS STOCHASTIQUES CE MATIN :**
+
+    « exponential backoff with jitter, circuit breaker half-open state »
+
+    0.6819  CircuitBreaker · closed -> open -> half_open state transitions   <- une CLASSE
+    0.6604  Retry logic and circuit breakers                                 <- le chapitre
+    0.6522  Circuit breaker pattern
+
+★★ **LE PREMIER RESULTAT EST UNE IMPLEMENTATION REELLE**, dans le code source de *30 Agents
+Every AI Engineer Must Build* — le disjoncteur que je cherche depuis ce matin **existe, ecrit,
+teste, dans mon propre corpus** :
+
+    failure_threshold : int = 3      recovery_timeout : float = 5.0
+    etats closed / open / half_open, transition automatique par timeout ecoule
+    call() bloque immediatement en open et rend un statut, au lieu de tenter
+
+⇒ **La difference avec le chapitre est decisive** : le chapitre DECRIT le patron, le code le
+DONNE — avec ses valeurs par defaut, sa gestion du temps, et sa forme de repli. **Une recherche
+qui ne rend que de la prose fait reecrire ; une recherche qui rend du code fait adapter.**
+
+### 115.147.1 CE QUI A ETE CORRIGE POUR Y ARRIVER, ET CHACUN ETAIT UN FAUX VERT
+
+| defaut | symptome | ce qu'il aurait coute |
+| --- | --- | --- |
+| `references/books` au lieu de `livres` | 0 fragment indexe | corpus jamais atteint |
+| `Indexed 0 fragments` **avec EXIT 0** | succes annonce sur echec | croire l'index construit |
+| `OUTPUT_DIR = "nexus"` sans le point | 3 198 lignes dans un commit | **4e perte du meme point** |
+| index construit dans l'ancien chemin | *« Embedding file does not exist »* | croire l'index perdu |
+| `UnicodeEncodeError` a l'affichage | plante APRES avoir calcule le bon score | **indiscernable d'un outil qui ne trouve rien** |
+
+★ **Le dernier est le plus instructif** : l'outil trouvait la bonne reponse — `Score: 0.6819` —
+puis plantait en l'imprimant. **Un outil qui reussit et casse a l'affichage se lit comme un outil
+qui echoue.** Corrige en reconfigurant la sortie en UTF-8, jamais par une variable
+d'environnement au moment de l'appel — **un contournement a l'invocation n'aurait protege que
+moi.**
+
+### 115.147.2 CE QUE LA VOIE CHOISIE A EVITE
+
+**J'allais extraire 20 304 fichiers `.txt`** pour contourner un indexeur qui ne lit pas
+`symbols.jsonl`. **L'operateur a tranche : un appel Ollama pour une stack LOCALE.**
+
+    POST /api/embed  ·  lots de 32  ·  35,8 fragments/s mesures
+    -> 20 304 fragments en ~10 min, sans un seul fichier intermediaire
+
+⇒ **L'extraction aurait produit 20 304 fichiers a maintenir, a ignorer dans git, a resynchroniser
+a chaque changement du corpus.** L'API prend le texte directement. **Le contournement etait
+l'extraction ; la solution etait de lire la doc de l'API.**

@@ -18,6 +18,13 @@ Only the Python standard library, urllib and json are used.
 
 import os
 import sys
+# console Windows is cp1252 and book summaries contain Unicode
+if hasattr(sys, "stdout"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 import csv
 import json
 import math
