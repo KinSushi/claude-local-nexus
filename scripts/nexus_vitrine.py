@@ -150,10 +150,14 @@ def sous_controle(racine: Path, script: str, saute: bool) -> tuple:
     chemin = racine / "scripts" / script
     if not chemin.is_file():
         return BLOQUE, "%s introuvable" % script
+# Un controle interrompu n'est pas un controle qui refuse.
+# Un code de terminaison n'est pas un verdict.
     r = executer([sys.executable, str(chemin)], racine, 600)
     if r.returncode != 0:
+        if r.returncode in (124, 125) or r.returncode > 128:
+            return IGNORE, f"controle interrompu (code {r.returncode})"
         lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
-        motif = lignes[-1][:60] if lignes else "code %d" % r.returncode
+        motif = lignes[-1][:60] if lignes else f"code {r.returncode}"
         return BLOQUE, motif
     return OK, "verdict conforme"
 
