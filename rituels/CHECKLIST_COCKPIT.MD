@@ -16662,3 +16662,50 @@ garde au perimetre plus etroit que ce qu'elle croit juger.
 
 **ETAT EXACT, et la formulation compte** : la garde est **corrigee, non armee, et desormais
 connue defectueuse**. Elle ne sera armee qu'apres que son refus aura ete mesure non nul.
+
+
+### 115.125 LA GARDE EST ARMEE — et l'armement a revele un ECART DE PERIMETRE
+
+**Chantier clos, dans l'ordre juste : prouver le refus, PUIS armer.**
+
+    POSITIF  code en production   -> EXIT 2   attendu 2
+    NEGATIF  un .md               -> EXIT 0   attendu 0
+    NEGATIF  scratchpad .py       -> EXIT 0   attendu 0
+    NEGATIF  outil non juge       -> EXIT 0   attendu 0
+
+**Le differentiel discrimine sur quatre temoins**, donc la garde mesure quelque chose. Armee
+ensuite avec le matcher COMPLET `Edit|Write|NotebookEdit` — et non `Edit|Write`, qui aurait
+laisse `NotebookEdit` decouvert alors que `TARGET_TOOLS` le contient.
+
+⚠️ **L'outil dit une chose qu'il faut repeter** : *« REDEMARRER LA SESSION : les permissions
+mordent tout de suite, les hooks non. »* ⇒ **La garde est armee et n'agit pas encore dans CETTE
+session.** L'etat exact est *« armee, effet a la prochaine session »*, pas *« protege »*.
+
+**DEUX RENVOIS AU BANC, ET LE PREMIER A ETE REFUSE** : il rendait le fichier ENTIER (~120
+lignes) pour une ancre demandee a 8, avec un commentaire **en anglais** dans un fichier
+francais. Le second tient en 13 lignes et change **un caractere**. ⇒ *« Un patch ancre, jamais
+une reecriture »* n'est pas une preference de style : une reecriture peut effacer des correctifs
+qu'on ne relit pas.
+
+### 115.125.1 ECART DE PERIMETRE REVELE PAR L'ARMEMENT
+
+L'inventaire des hooks, lu apres armement, montre :
+
+    matcher declare  Agent|Task|Workflow
+    code juge        if tool_name == "Agent" ... elif tool_name == "Workflow"
+
+★ **`Task` declenche le hook et n'est juge par RIEN.** Le hook s'execute, parcourt son dispatch,
+ne reconnait pas l'outil, et rend 0 — silencieusement.
+
+⇒ **C'est l'inverse du defaut de ce matin** : ce matin mon TEST envoyait `Task` a une garde qui
+juge `Agent`, et j'ai cru la garde aveugle. **Ce soir je decouvre que le MATCHER, lui, laisse
+vraiment passer `Task`.** Le meme mot, deux roles opposes — mon erreur de test etait fausse, le
+defaut de perimetre est vrai.
+
+> **Le perimetre DECLARE dans le matcher et le perimetre JUGE dans le code sont deux choses, et
+> rien ne verifie leur accord.** Un matcher plus large que le dispatch cree un trou muet ; un
+> matcher plus etroit cree un angle mort. **Les deux se lisent comme une protection.**
+
+**NON TRANCHE, et je le declare** : je ne sais pas si le harnais emet encore `Task` pour l'outil
+Agent. Si oui, le trou est actif ; si non, le matcher porte un nom mort. **Les deux appellent le
+meme geste — aligner le dispatch sur le matcher — mais pas la meme urgence.**

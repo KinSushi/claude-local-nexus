@@ -79,7 +79,9 @@ def _handle_tool(charge: dict) -> int:
             }
         }
         print(json.dumps(sortie, ensure_ascii=False))
-        return 0
+        # PLANTER et REFUSER sont distincts.
+        # Refuser doit renvoyer un code non nul (2 ici), planter se rattrape avec 0.
+        return 2
 
     # Aucun refus, laisser passer silencieusement.
     return 0
