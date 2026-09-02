@@ -780,3 +780,68 @@ a trouver les memes fautes une par une, par l'incident.**
 ⇒ **La regle du §22.1 se durcit** : *avant qu'une session ecrive un mecanisme, elle en donne le
 NOM.* **Mais il faut aussi l'inverse** : *apres qu'un defaut est trouve, chercher le chapitre qui
 le nomme* — parce que le livre donne la CAUSE et la CLASSE la ou l'incident ne donne qu'un cas.
+
+
+---
+
+## 25. LIVRE CONTRE CODE, SUR LES PANNES — il nomme ce que j'ai fait, et ce qui me manque
+
+**Chapitres lus par `seek`, zero modele** : *« Common failure modes »*, *« Timeout and latency
+issues »*, *« Graceful degradation strategies »*, *« Checkpointing and state recovery »* —
+*Design Multi-Agent AI Systems Using MCP and A2A*, ch. 10.
+
+### 25.1 Ce que j'ai fait sans le nommer : du CHECKPOINTING
+
+> *« If an agent crashes mid-workflow, the system needs to recover without starting from
+> scratch. Store checkpoints in DURABLE STORAGE, such as a database, NOT IN AGENT MEMORY. »*
+
+**Mon geste depuis douze pannes** — *commiter chaque livrable dans le tour qui l'a produit, jamais
+a la fin* — **est du checkpointing**, et le livre en donne la regle que j'appliquais sans la
+formuler : **le stockage durable, jamais la memoire de l'agent.**
+
+★ **Il donne aussi le critere qui dit QUAND c'est necessaire** : *« not required for fast
+workflows that complete in seconds, but for workflows that take minutes or longer, checkpointing
+is often essential »*. **Mes tours durent des minutes. Le checkpoint n'etait pas un exces de
+prudence, c'etait la reponse standard.**
+
+⇒ **Et la tache planifiee est le second etage** : *« store in durable storage, not in agent
+memory »* — une tache Windows survit a la session, un rituel de fin de tour non. **Le livre
+justifie a posteriori le choix que douze pannes m'avaient impose.**
+
+### 25.2 Ce que le livre nomme et que je n'ai PAS
+
+| le livre | chez moi |
+| --- | --- |
+| **Set REALISTIC timeouts** | ❌ mon `timeout 120` venait d'un chiffre de contrat **perime** — la conformite prend **186 s**. **Un delai calibre sur une doctrine non re-mesuree est un delai irrealiste.** |
+| **Graceful degradation, en TIERS** | ❌ **aucun tier.** Ma vitrine est binaire : publication ou refus total. Le livre propose 4 niveaux — fonctionnalite pleine, puis moins d'analyse, puis modeles plus simples, puis diagnostic seul. |
+| **Feature flags / kill switches** | partiel — `NEXUS_PRODUCTION_LIBRE`, `NEXUS_AGENT_LIBRE` existent, **mais aucun interrupteur global** |
+| **Timeout-aware retry with backoff** | ❌ le disjoncteur reste une regle, pas un compteur |
+| **TTL sur les donnees passees entre agents** | ❌ **et c'est exactement notre probleme de chiffres perimes** — plafond mypy clos depuis 11 jours, conformite annoncee a 1 min pour 186 s, matrice de couverture de 5 semaines |
+
+★★ **LE POINT QUI ME JUGE LE PLUS DUREMENT** :
+
+> *« Stuck agents: an agent may be waiting for a response that WILL NEVER COME. »*
+
+**Mes douze pannes sont exactement cela**, cote classificateur. **Et le remede du livre est celui
+que je n'ai pas** : *« design for GRACEFUL DEGRADATION when operations time out »*. **Je n'ai pas
+degrade : j'ai encaisse douze fois et sauvegarde.** Sauvegarder protege le travail ; **degrader
+aurait permis de continuer a travailler.**
+
+### 25.3 Le TTL est la piece qui manque aux trois depots
+
+> *« Consider stamping data passed between agents with a TTL so stale data is refreshed. »*
+
+**Applique a nos echanges, c'est notre defaut commun**, mesure quatre fois aujourd'hui :
+
+    plafond mypy annonce 749, reel 392 depuis onze jours          (sovereign)
+    matrice de couverture datant de cinq semaines                  (EA MT5)
+    conformite annoncee ~1 min, mesuree 186 s                      (moi)
+    docs/mypy_ceilings.json : 494 erreurs annoncees, 159 reelles   (sovereign)
+
+⇒ **Un nombre sans sa date de mesure est une croyance** — nous l'avions formule ; **le livre en
+fait un champ de donnee, le TTL.** C'est la difference entre une regle qu'on se rappelle et un
+attribut que le systeme porte.
+
+> **Ce que je retiens du focus livre-contre-code : le livre ne m'a pas appris ce que je faisais
+> mal. Il a NOMME ce que je faisais bien sans le savoir — donc reproductible — et il a liste ce
+> que je n'avais pas cherche, donc invisible a l'incident.**
