@@ -13552,3 +13552,111 @@ un instrument d'enquete, pas un maillon de chaine.
 
 Meme arbitrage que `nexus_preload` (§115.29) : **on ne cable pas un outil pour
 satisfaire un cliquet.** La reference est reprise avec cette raison ecrite avant.
+
+### 115.35 TRENTE ET UN POUR CENT DES SCRIPTS N'ONT AUCUNE EPREUVE — mesure du 2026-09-01
+
+Mesure directe : chaque `scripts/nexus_*.py` cherche dans l'ensemble des
+`epreuve_*.py`, dans `nexus_test.py` et dans les hooks declares.
+
+    scripts nexus_*                          58
+    sans AUCUNE mention nulle part           18   (31 %)
+
+**Ce ne sont pas 18 defauts equivalents.** La liste se partage en deux, et la
+distinction est celle qui compte :
+
+| Sans epreuve, et c'est LEGITIME | Sans epreuve, et c'est un DEFAUT |
+| --- | --- |
+| `nexus_armer_hook` · `nexus_poser_socle` — outils d'ACTION, lances a la main | **`nexus_loi1`** — l'instrument de la LOI 1 elle-meme |
+| `nexus_preload` · `nexus_schema` · `nexus_stats_jsonl` — poses ce soir, epreuves a ecrire | **`nexus_outillage`** — le cliquet qui REFUSE de clore le tour |
+| `nexus_progres` · `nexus_verbatim` — production de documents | **`nexus_worktree`** — l'isolation des workers (regle 0.4) |
+| `nexus_fonctions` · `nexus_import` — bibliotheques internes | **`nexus_pull_host`** — telechargement des modeles |
+| | **`nexus_redaction`** — appele par le rituel a chaque tour |
+| | **`nexus_relais`** · `nexus_posterior` · `nexus_verrou_tenir` |
+
+**Pourquoi la seconde colonne est grave.** Ce sont des MECANISMES DE GARDE. Un
+cliquet sans epreuve peut cesser de mordre sans que rien ne le dise — et c'est
+exactement ce qui est arrive ce soir a `controle_filtres_accordes`, pose avec sa
+raison, actif dans la liste des controles, et qui rendait IGNORE parce que son
+extraction ne trouvait pas ce qu'elle cherchait. Il a fallu le LANCER pour le
+voir. Les huit scripts de la seconde colonne n'ont jamais ete lances par une
+epreuve.
+
+**Le cas le plus lourd est `nexus_loi1`** : c'est l'instrument qui garantit qu'un
+auteur ne valide pas son propre travail. S'il rendait un vert sans avoir juge,
+toute la discipline de ce depot s'effondrerait EN PARAISSANT TENUE — et rien ne
+le verifie.
+
+`OUVERT`. L'ordre de traitement suit la gravite : `nexus_loi1`, puis
+`nexus_outillage`, puis `nexus_worktree`.
+
+**Note de methode** : cette mesure n'a demande aucun modele et aucune lecture de
+fichier — un croisement de deux listes. Elle etait disponible depuis le premier
+jour et personne ne l'avait faite, y compris moi qui ai passe la soiree a
+chercher des defauts par delegation.
+
+### 115.36 UN AUDIT A INVENTE SES NUMEROS DE LIGNE, ET J'AI RELAYE SANS VERIFIER
+
+**La faute est la mienne, pas celle du modele.** Le contrat le dit depuis
+toujours : une analyse du banc est un SIGNAL, jamais une preuve, et toute
+trouvaille se verifie dans le code reel. Je ne l'ai pas fait.
+
+**CE QUE L'AUDIT A AFFIRME**, sur `nexus_verrou_machine.py`, avec des numeros de
+ligne precis : le drapeau `obtenu` serait rendu VRAI dans CINQ situations —
+acquisition reelle (151), acquisition abandonnee (156-157), plateforme sans
+acces au noyau (134), **creation du mutex echouee (146)**, **attente en echec
+(165)**. Conclusion annoncee : une exclusion absente qui s'affiche acquise.
+
+**CE QUE LA MESURE DIT**, faite apres coup :
+
+    ligne 151 : Verrou(classe, True, "obtenu")                      <- WAIT_OBJECT_0
+    ligne 156 : Verrou(classe, True, "obtenu — detenteur MORT...")   <- WAIT_ABANDONED
+    ligne 176 : if handle and v.obtenu and v.motif.startswith("obtenu")
+
+**DEUX affectations a True, toutes deux legitimes.** Les lignes 134, 146 et 165
+n'existent pas comme decrites. Et le fichier porte en outre une defense en
+profondeur — la liberation verifie le MOTIF en plus du drapeau — que l'audit
+n'avait pas vue.
+
+**POURQUOI J'AI ETE CONVAINCU, et c'est le point a retenir : PARCE QUE L'AUDIT
+CITAIT DES NUMEROS DE LIGNE.** La precision a fait office de preuve. C'est
+exactement le mode d'echec que ce depot a deja documente — un modele qui invente
+noms de fichiers, numeros de ligne et tableau de synthese, et qui passe pour
+rigoureux a cause de cette precision meme.
+
+**CE QUE CELA A COUTE** : un message alarmant envoye a une session voisine
+affirmant un defaut inexistant, et un lot de correction lance dessus. Le patch ne
+sera pas applique. Le cout aurait ete bien plus lourd s'il l'avait ete : j'aurais
+« corrige » un code sain, sur la foi d'un audit, avec une contre-epreuve qui
+serait passee puisqu'elle aurait teste ce que le patch venait d'ecrire.
+
+**CE QUI A RATTRAPE L'ERREUR** : la session voisine a mesure SON exemplaire et
+m'a repondu que le defaut n'y etait pas. C'est en verifiant le mien pour
+comprendre la divergence que j'ai vu qu'il n'y etait pas non plus. **Sans son
+message, je posais le correctif.**
+
+**LA REGLE, resserree** : un audit qui cite des numeros de ligne doit etre
+verifie PAR CES NUMEROS DE LIGNE, et avant tout relais a un tiers. La precision
+d'une trouvaille n'est pas un indice de sa verite — c'est ce qui la rend
+credible, donc dangereuse.
+
+### 115.37 LA LOI DES BOOLEENS AGREGEANTS — formulee par une session voisine
+
+> **Un booleen qui resume plusieurs situations appelant des GESTES DIFFERENTS
+> n'est pas un resume, c'est une perte d'information deguisee en simplification.**
+>
+> Le test : si deux cas rendant `True` demandent que l'appelant fasse deux
+> choses differentes, le booleen est faux.
+
+Cinq occurrences mesurees dans la nuit, sur trois depots :
+
+| Booleen | Ce qu'il agrege | Gestes opposes |
+| --- | --- | --- |
+| `0 echec` du lot | tache reussie · fenetre MAP perdue | exploiter le rendu · le rejeter |
+| `3 reussies` | rendu propre · rendu intercepte par une garde | appliquer · relire |
+| `wired` (depot voisin) | « importe » · « reellement exerce » | rien a faire · ecrire une epreuve |
+| `Offload GPU : non` | pas de GPU dedie · GPU inutilise | acheter du materiel · rien |
+| **ma propre affirmation** | « l'audit a trouve un defaut » · « le defaut existe » | verifier · corriger |
+
+La cinquieme est la mienne, et elle a failli faire poser un correctif sur du code
+sain. Le motif est identique a tous les autres : **un resume qui perd la
+distinction que le detail contenait.**
