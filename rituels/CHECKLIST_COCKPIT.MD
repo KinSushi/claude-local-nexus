@@ -13780,3 +13780,109 @@ l'etat vers lequel on ramene, avant d'y ramener**.
 | 58 | Mojibake dans le motif de refus | `OUVERT` — 4e occurrence, meme racine |
 | 47 | `--restaurer` ecrit sans nommer l'etat cible | **AGGRAVE** — a desarme DEUX gardes, dont un pendant 2 h a l'insu de trois sessions |
 | — | Le trou Bash du §116/§118 | **FERME PAR MESURE** — reverse, forward et fuite verts |
+
+---
+
+## 122. CONSIGNES DE L'ARCHITECTE, 2026-09-01 au soir — et ce que la mesure y ajoute
+
+Relayees par `sovereign` a la demande de l'operateur. Trois points, dont un **incident de
+destruction**. Inscrites ici parce qu'une consigne relayee de vive voix ne survit pas au prochain
+redemarrage.
+
+### 122.1 ⚠️ UN SOUS-AGENT HAIKU A TOUT EFFACE — depot `ea-mt5`
+
+Ses mots : *« un haiku avait perdu les pedales et avait **tout effacer**, incident de ea mt5 ! »*
+
+**La regle qui en decoule, repetee deux fois par lui :**
+
+> **L'abonnement Claude n'est utilisable que pour des Sonnet et Haiku EN WORKTREE ISOLE.**
+> Jamais dans l'arbre vivant. Sans exception.
+
+Et la forme importe : `isolation: "worktree"` **dans l'appel d'outil**, jamais dans le prompt.
+*« Une consigne d'isolement ecrite dans un prompt est de la prose — elle est obeie ou non, et rien
+ne le sait. »*
+
+**DEUXIEME INCIDENT, MEME CAUSE, AUTRE DEPOT.** Une branche d'agent non moissonnee depuis huit
+jours, greffee par `cherry-pick`, a **supprime 28 456 fichiers en silence**. Deux depots, deux
+incidents : **du travail d'agent qui atteint un arbre vivant.** Ce n'est plus une classe
+theorique.
+
+#### La borne du garde, nommee par `sovereign` et CONFIRMEE PAR MESURE ici
+
+Mesure sur `scripts/nexus_garde_isolation.py` :
+
+```
+occurrences de  os.path | isdir | "git worktree list" | subprocess  ->  0
+```
+
+**Zero.** Le garde lit une cle dans un dictionnaire JSON et rend un verdict. Il n'a aucun moyen
+d'aller voir.
+
+Et la raison est **structurelle, pas un oubli** : `PreToolUse` s'execute AVANT la creation du
+worktree. Meme en ajoutant la verification, elle porterait sur un arbre qui n'existe pas encore.
+
+> **Le garde prouve que le PARAMETRE etait present. Jamais que le WORKTREE existe.**
+> Il protege de l'oubli ; **rien, aujourd'hui, ne protege d'une defaillance du harnais.**
+
+Un garde dont on croit qu'il couvre les deux est plus dangereux qu'un garde dont on connait la
+borne. La couverture manquante demanderait un `PostToolUse` ou une verification cote harnais —
+elle n'est pas deplacable a cet endroit du cycle.
+
+Etat mesure ici : `git worktree list` ne rend que l'arbre principal, **zero branche d'agent**.
+L'incident des 28 456 fichiers ne peut pas se rejouer en l'etat — mais c'est un ETAT, pas une
+garantie.
+
+### 122.2 QUOTA CLOUD HEBDOMADAIRE A 46 % — mode degrade au-dela
+
+Consigne : rationner les vagues massives, **se concerter AVANT un envoi massif**, et
+*« workers locaux dispo aussi, ne pas s'en priver »*. La limite de 42 envois simultanes reste,
+mais **le quota HEBDOMADAIRE est la vraie contrainte**, et lui se consomme.
+
+Mesure a travers la passerelle, 7 jours :
+
+| plan | requetes | entree | sortie |
+| --- | --- | --- | --- |
+| cloud | **5258** | 22 145 928 | 8 884 675 |
+| local | 1762 | 2 647 587 | 360 421 |
+| | | part deleguee | **100 %** |
+
+Ordre de grandeur utile pour arbitrer : **~115 requetes cloud par point de quota**. Un envoi de 42
+simultanees coute donc ~0,4 point — negligeable une fois, couteux en vagues.
+
+#### LE PREMIER LEVIER N'EST PAS DE RATIONNER, C'EST D'ARRETER DE GASPILLER
+
+```
+appels cloud SANS AUCUNE SORTIE : 158  (3,0 %)
+cause la plus frequente mesuree : budget de sortie trop serre
+```
+
+**3 % du quota cloud part en appels qui ne rendent rien.** L'entree est consommee, le temps aussi,
+et rien n'est produit. Mes propres essais de la soiree a `--max-tokens 5` et `--max-tokens 20` en
+font partie — c'est du quota brule pour mesurer un plafond que le script sait deja annoncer.
+
+A 46 % de quota, ce levier vient **avant** le rationnement : il ne coute aucune capacite.
+
+### 122.3 `nexus_charge.py` AVANT TOUT APPEL LOCAL — jamais apres l'echec
+
+> *« Machine CHARGEE » interdit le plan local **entier** : un appel local sur machine chargee n'est
+> pas lent, il EXPIRE a 900 s.*
+
+Mesure prise a l'instant de la consigne :
+
+```
+RAM Libre: 20.85 Go / Totale: 61.62 Go
+machine CHARGEE : RAM insuffisante
+```
+
+La cause est connue et legitime : la copie miroir de `sovereign` hache 38,8 Go. **Le plan local est
+donc interdit tant que ce verrou tient**, et l'outil a attrape exactement le cas pour lequel il
+existe.
+
+C'est la difference entre un diagnostic et une prevention : appele apres l'echec, `nexus_charge`
+explique une attente de 900 s ; appele avant, il l'evite.
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 59 | Rien ne verifie que le worktree EXISTE, seulement que le parametre est present | `OUVERT` — borne structurelle de `PreToolUse`, confirmee par mesure |
+| 60 | 158 appels cloud (3 %) sans sortie, plafond trop serre | `OUVERT` — premier levier de quota, sans perte de capacite |
+| 61 | `nexus_charge` n'est appele par aucun garde avant un appel local | `OUVERT` — la consigne existe, le mecanisme non |
