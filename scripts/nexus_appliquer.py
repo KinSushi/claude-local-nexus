@@ -77,8 +77,19 @@ def main():
         return 1
 
     # Verification du chemin cible sous la racine du depot
+    # La racine du depot se decouvre depuis le fichier cible, car un outil partage sert le depot appelant.
+    # On part du repertoire du fichier cible, on remonte jusqu'a .git ou CLAUDE.md, sinon on utilise le parent de script_dir.
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    racine_depot = os.path.dirname(script_dir)
+    start_dir = os.path.dirname(os.path.realpath(cible_path))
+    racine_depot = start_dir
+    while True:
+        if any(os.path.exists(os.path.join(racine_depot, marker)) for marker in (".git", "CLAUDE.md")):
+            break
+        parent = os.path.dirname(racine_depot)
+        if parent == racine_depot:
+            racine_depot = os.path.dirname(script_dir)
+            break
+        racine_depot = parent
     cible_real = os.path.realpath(cible_path)
     racine_real = os.path.realpath(racine_depot)
     try:
