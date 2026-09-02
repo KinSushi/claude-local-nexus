@@ -1562,7 +1562,9 @@ const OLLAMA_URL = process.env.NEXUS_OLLAMA_URL || 'http://127.0.0.1:11434';
  * @returns {Promise<string[]>}
  */
 async function modelesResidents() {
-  return new Promise((resolve) => {
+  // Defaut mesure le 2026-09-02: zero reject dans la fonction, catch mort chez l appelant.
+  // Pourquoi ce remede: sans rejet, une panne et un silence rendent la meme valeur, et l appelant ne peut plus les distinguer.
+  return new Promise((resolve, reject) => {
     const url = new URL('/api/ps', OLLAMA_URL);
     const options = {
       hostname: url.hostname,
@@ -1585,20 +1587,21 @@ async function modelesResidents() {
           resolve(models);
         } catch (err) {
           console.error('Erreur de parsing de la réponse Ollama :', err.message);
-          resolve([]);
+          reject(err);
         }
       });
     });
 
     req.on('error', (err) => {
-      console.error('Echec de la requête Ollama :', err.message);
-      resolve([]);
+      console.error('Echec de la requete Ollama :', err.message);
+      reject(err);
     });
 
     req.on('timeout', () => {
       req.destroy();
-      console.error('Timeout (5 s) lors de l\'appel à Ollama /api/ps');
-      resolve([]);
+      const err = new Error('moteur injoignable : delai depasse sur ' + OLLAMA_URL);
+      console.error(err.message);
+      reject(err);
     });
 
     req.end();
