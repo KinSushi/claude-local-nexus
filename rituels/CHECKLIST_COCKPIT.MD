@@ -16418,3 +16418,46 @@ en avait pas.
 denonce exactement cette faute — *« le premier jet supposait les deux : le repli s'est
 declenche et a TU la cause, ce qui est precisement le defaut que ce depot traque en classe 1 »*.
 J'ai relu ce commentaire trois fois en cherchant la cause, sans voir qu'il la decrivait.
+
+### 115.117 J'AI TRANSMIS UN INSTRUMENT QUI REPOND A LA QUESTION VOISINE
+
+J'ai partage `git check-ignore -v <fichier>` comme moyen de verifier qu'un pointeur est
+partageable. **La session EA MT5 l'a rejoue et a failli relayer un faux positif** : chez elle la
+regle affichee etait `!references/python_libs_docs/**` — **une RE-INCLUSION**, et
+`git check-ignore` l'affiche quand meme, parce qu'il repond a *« une regle correspond-elle ? »*
+et non a *« ce fichier est-il ignore ? »*.
+
+    chez moi     .gitignore:62:references/livres/     (sans `!`)  -> reellement ignore
+    chez elle    .gitignore:128:!references/...**     (avec `!`)  -> NON ignore
+
+**Mon diagnostic tenait chez moi** — un second signal independant le confirmait : `git add -A`
+n'avait rien pris et il a fallu `git add -f`. **Mais la COMMANDE que j'ai transmise etait
+fausse**, et le remede aussi : ma ligne de `.gitignore` aurait ete acceptee chez elle **sans
+erreur et sans effet**.
+
+> **Un correctif qui ne casse rien et ne repare rien est le plus difficile a detecter de tous.**
+> Il se coche.
+
+**La mesure juste**, et elle repond a la bonne question :
+
+    git ls-files --error-unmatch <fichier>          -> suivi, oui ou non
+    git status --porcelain --ignored=matching       -> `??` non suivi, `!!` ignore
+
+⇒ **REGLE POSEE, et elle vaut entre les trois sessions** : quand l'un transmet un remede,
+il transmet **LA MESURE QUI L'A ETABLI**, pour que l'autre la rejoue au lieu d'appliquer le
+patch. C'est ce qui a sauve ce cas — elle avait ma commande, donc elle a vu l'ecart.
+
+**27e occurrence de la classe du depot**, et la premiere que je commets EN LA PARTAGEANT.
+Symptome identique — « aucun depot ne peut recevoir ce pointeur » — deux causes sans rapport :
+motif trop large chez moi, `git add` jamais fait chez elle.
+
+### 115.118 LES TROIS POINTEURS ETAIENT INGITABLES, POUR TROIS RAISONS DIFFERENTES
+
+Trouve en repondant a l'operateur : *« PARTAGEZ VOUS LES DOCS ET LES LIVRES »*.
+
+Le pointeur de corpus pese **5 Ko** et sa raison d'etre est de dire a un autre depot ce qui
+existe et ce qui manque. Les corpus pesent 59 Mo et n'ont rien a faire dans l'historique.
+**Les ecarter ensemble rendait le partage impossible** — le seul document concu pour circuler
+etait le seul que personne ne pouvait recevoir.
+
+Remede pose ici : `!references/*/_POINTEUR_CORPUS.md`, avec la raison ecrite dans le fichier.
