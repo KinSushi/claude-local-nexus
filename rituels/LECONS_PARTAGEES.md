@@ -651,3 +651,70 @@ angle mort.
    sont averes partiellement faux — verrou dit invisible alors qu'il rend 75, PID dits morts,
    patch condamne pour des accents intacts, « zero invention ». **Chacun rectifie par la mesure,
    aucun par l'autorite de l'emetteur.**
+
+
+---
+
+## 23. INVENTION *AVEC* LA DOC ET INVENTION *SANS* LA DOC — deux fautes que nos bancs comptaient ensemble
+
+**Precision de l'operateur, 2026-09-02** : *« INVENTION SANS LES DOCS EN MAIN »*. Elle separe
+deux phenomenes que les trois depots additionnaient sous un seul taux.
+
+### 23.1 Les deux cas, relus dans les mesures deja faites
+
+| cas | ce que le modele fait | ce que ca prouve |
+| --- | --- | --- |
+| **A — la reponse EST dans l'extrait, il l'ignore et invente** | il contredit un texte qu'il a sous les yeux | **grave** : l'ancrage echoue meme fourni |
+| **B — la reponse N'EST PAS dans l'extrait, il comble** | il repond a une question sans reponse disponible | **autre faute** : il ne sait pas s'abstenir |
+
+**Relecture des mesures des deux sessions, a la lumiere de cette separation :**
+
+    EA MT5, qwen2.5-0.5b :
+      `returns` et `factor_returns` N ONT PAS de defaut ecrit dans l extrait
+      -> le modele fabrique `pd.Series(dtype='float64')`
+      => CAS B : il comble un vide. La doc ne DISAIT rien a inventer.
+
+    sovereign, Mercer :
+      l extrait porte LITTERALEMENT « positive definite »
+      -> le modele rend « il n y a pas de condition speciale dans l extrait »
+      => CAS A : il contredit un texte present. **Invention AVEC la doc en main.**
+
+    sovereign, Seeger :
+      l extrait porte « i.i.d. samples drawn from... »
+      -> le modele rend ABSENT
+      => ABSTENTION FAUSSE : ni A ni B, un troisieme mode.
+
+★ **LE TAUX DE 28,6 % ANNONCE ETAIT DONC UN CAS B PUR.** Il ne refute pas la these de
+l'operateur : **le modele n'a contredit aucun texte fourni, il a repondu a une question dont la
+reponse n'etait pas dans l'extrait.**
+
+⇒ **La these tient sous sa forme exacte** : *avec la doc en main, le modele n'invente pas CE QUE
+LA DOC DIT.* **Ce qu'il fait quand la doc ne dit rien est une question distincte** — et c'est
+celle qu'une consigne doit fermer.
+
+### 23.2 Ce que cela change dans un banc, et c'est mecanisable
+
+**Un banc qui rend un taux d'invention unique melange trois modes qui appellent trois remedes
+opposes :**
+
+    CAS A  contredit un texte present   -> remede : changer de modele, ou reduire le fragment
+    CAS B  comble un vide               -> remede : FERMER LA BRANCHE dans la consigne
+    ABST.  se tait alors que c est ecrit -> remede : nommer OU regarder dans l extrait
+
+★ **Le remede du cas B est un FORMAT, pas une consigne** — et c'est la regle §15 appliquee :
+
+    exiger      `nom = defaut`   OU   `nom = (aucun defaut ecrit)`
+    et refuser  toute troisieme forme
+
+**Une consigne qui dit « n'invente pas » ne ferme pas la branche : elle interdit sans donner
+d'issue.** *Un format qui rend la faute inexprimable la rend impossible meme quand le modele
+echoue* — mesure croisee : 171 lignes detruites par un rendu « fichier entier », **zero octet**
+par un rendu ancre refuse.
+
+⇒ **Consequence pour l'armee de petits modeles** : **le cas B se ferme par le format, donc il se
+ferme a cout nul.** Ce qui resterait apres est le cas A — et c'est LUI, et lui seul, qui doit
+decider si un 0,5B est employable.
+
+⚠️ **Et aucun de nos trois bancs ne separe encore ces modes.** Les taux publies aujourd'hui —
+28,6 % chez l'un, 1 sur 4 chez l'autre — **ne sont pas comparables entre eux ni interpretables
+seuls.** Je le declare plutot que de les laisser circuler comme des mesures d'ancrage.
