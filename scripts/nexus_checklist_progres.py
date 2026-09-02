@@ -101,8 +101,30 @@ def checklist_vs_code(root):
         counts["vert"] = text.count("🟢")
         counts["jaune"] = text.count("🟡")
         counts["rouge"] = text.count("🔴")
+        # extraire les prescriptions rouges
+        red_items = []
+        for line in text.splitlines():
+            if "🔴" not in line:
+                continue
+            # premier fragment en gras
+            bold_match = re.search(r"\*\*(.+?)\*\*", line)
+            if bold_match:
+                red_items.append(bold_match.group(1).strip())
+                continue
+            # sinon, première cellule non vide qui n'est ni un numéro ni le cercle
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            for cell in cells:
+                if not cell:
+                    continue
+                if cell == "🔴":
+                    continue
+                if cell.isdigit():
+                    continue
+                red_items.append(cell)
+                break
+        counts["rouge_items"] = red_items
     except Exception:
-        pass
+        counts["rouge_items"] = []
     return counts
 
 def count_backups(root):
@@ -187,6 +209,9 @@ def generate_markdown(data, out_path):
     rouge = data['checklist']['rouge']
     if isinstance(rouge, int) and rouge > 0:
         open_items.append(f"- Prescriptions rouges : {rouge}")
+        # ajouter chaque prescription rouge en sous‑liste
+        for item in data['checklist'].get('rouge_items', []):
+            open_items.append(f"  - {item}")
     commits = data['git']['commits_non_pousses']
     if isinstance(commits, int) and commits > 0:
         open_items.append(f"- Commits non pousses : {commits}")

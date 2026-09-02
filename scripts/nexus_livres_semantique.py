@@ -36,7 +36,9 @@ import heapq
 API_URL_DEFAULT = "http://127.0.0.1:11434/api/embed"
 MODEL_DEFAULT = "nomic-embed-text"
 BATCH_SIZE = 32
-OUTPUT_DIR = ".nexus"   # le point compte : sans lui l index entre dans l historique git
+# le point compte : sans lui l index entre dans l historique git
+# Un chemin relatif depend du repertoire courant, donc casse des qu un appelant lance le script d ailleurs.
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".nexus")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "fragments_embeddings.jsonl")
 
 
