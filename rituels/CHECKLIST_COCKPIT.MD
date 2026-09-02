@@ -13994,3 +13994,99 @@ voie ».
 | 62 | Le verrou `banc` est LIBRE quand `nexus_charge` interdit le local | `OUVERT` — deux grammaires, un chemin ouvert pour qui obeit |
 | 60 | 158 appels cloud sans sortie | **CAUSE ETABLIE** — le raisonnement consomme le budget puis est retire ; serrer `max_tokens` coute l'appel entier |
 | 57 | `rc=0` du garde d'ecriture | **RECOMMANDATION CORRIGEE** — ne pas aligner ; un alignement a deja rendu un autre garde muet |
+
+### 115.38 UN RENDU TRONQUE PEUT AFFIRMER LE CONTRAIRE DE SA CONCLUSION
+
+Mesure d'une session tierce, 2026-09-02. Un audit rendu par le banc, tronque :
+
+    LIMITE NON DECLAREE TROUVEE :
+    `if examinees == 0 and not refus:`
+    `    refus
+    [1 resume(s) ont ete tronque(s) a max_tokens]
+
+Le code REEL, verifie sur le disque :
+
+    if examinees == 0 and not refus:
+        # Un garde qui n'a rien examine refuse : « 0 regle » est la forme d'une panne.
+        refus.append("aucune regle de permission examinee : le garde refuse de rendre un succes")
+
+**Ce n'est pas une limite non declaree : c'est une PROTECTION EXPLICITE**, avec son
+commentaire. La troncature a coupe juste apres l'etiquette, avant la nuance qui
+l'aurait renversee.
+
+> **Un rendu tronque n'est PAS le meme rendu en plus court.** L'ETIQUETTE survit,
+> la NUANCE qui l'aurait renversee disparait. Il peut donc AFFIRMER LE CONTRAIRE
+> de ce qu'il allait conclure.
+
+**Et la citation de code etait AUTHENTIQUE.** C'est ce qui l'aurait rendue
+croyable. **Une preuve vraie au service d'une conclusion fausse est plus
+dangereuse qu'une preuve inventee.**
+
+Rapprochement avec §115.36, ou le modele INVENTAIT ses numeros de ligne : ici la
+plateforme MUTILE. Pour l'appelant, resultat identique — une affirmation fausse,
+credible, indistinguable d'une vraie sans aller au disque.
+
+**Ce que cela change a la tache C1.2** : distinguer les trois etats ne sert pas
+seulement a savoir qu'on a perdu quelque chose. **Sans cette distinction, un
+rendu tronque se lit comme un rendu complet.**
+
+**Contournement utilisable DES MAINTENANT, a defaut de `max_tokens`** : contraindre
+la LONGUEUR dans la consigne — « douze lignes maximum ». Mesure : deux relances
+ainsi contraintes ont rendu juste. Cela agit sur ce que le modele PRODUIT, a
+defaut de pouvoir regler ce que la plateforme AUTORISE.
+
+### 115.39 DEMANDER UNE LIMITE « NON DECLAREE » PRODUIT 5 FAUX POSITIFS SUR 6
+
+Mesure d'une session tierce sur six audits de gardes, meme consigne : *« trouve ce
+que ce garde NE PEUT PAS voir, et QU'IL NE DECLARE PAS »*.
+
+    garde_append_only  -> 3 limites annoncees non declarees
+                          les 3 sont DECLAREES : deux en docstring, et la troisieme
+                          est IMPRIMEE PAR LE GARDE LUI-MEME a l'execution
+    garde_cardinal     -> 3 limites annoncees non declarees
+                          2 sont declarees ; UNE SEULE est reelle
+    ----------------------------------------------------------------
+                          5 faux positifs sur 6
+
+**La cause n'est pas la malhonnetete du modele, c'est la question.** Il lit la
+section « ce que ce garde ne couvre pas », la trouve pertinente — elle l'est — et
+la restitue comme une decouverte. **Il repond a « quelles sont les limites »
+quand on lui demande « quelles limites sont TUES ».** Neuvieme occurrence de
+l'instrument qui repond a la question voisine, et cette fois c'est la CONSIGNE
+qui pose la mauvaise question.
+
+Deux raisons de fond : le modele n'a aucun moyen de savoir ce qui est declare
+AILLEURS que dans le fichier qu'il lit ; et meme dans ce fichier, il ne distingue
+pas une docstring d'un constat.
+
+> **Formulation corrigee** : *« cite d'abord la section ou le fichier declare ses
+> limites, PUIS dis ce qui MANQUE a cette liste »*. On lui fait produire la
+> REFERENCE avant l'ECART.
+
+**A appliquer a toutes les consignes d'audit de ce depot**, y compris aux sept
+audits en vol au moment ou ceci s'ecrit : leurs trouvailles sont a verifier une
+par une contre le fichier, et une trouvaille deja declaree dans le fichier ne
+compte pas.
+
+**La seule trouvaille REELLE des six** vaut d'etre citee, parce qu'elle montre que
+la vague n'etait pas vaine : un garde ne jugeait que l'egalite —
+`if len(noeud.ops) != 1 or not isinstance(noeud.ops[0], ast.Eq)` — de sorte qu'un
+`assert len(x) >= 5` figeait un cardinal et passait. Un defaut sur six rendus,
+introuvable autrement.
+
+### 115.40 COMPARER DES ENSEMBLES, PAS DES NOMS — precision sur `nexus_surface`
+
+L'outil demande compare la surface publique de deux fichiers Python par AST, pour
+attraper une fonction SUPPRIMEE qu'un controle par presence ne peut pas voir.
+
+**Precision d'une session tierce, tiree de son propre echec** : comparer les NOMS
+ne suffit pas. Son rendu fautif avait aussi remplace, dans un module de securite :
+
+    frozenset[str]            ->  un set MUTABLE
+    tuple[re.Pattern, ...]    ->  une liste
+
+Les noms de fonctions etaient intacts. **Un controle qui ne verifie que les noms
+aurait laisse passer une mutabilite introduite dans un module de securite.**
+
+⇒ Comparer les ENSEMBLES : noms, signatures completes, **annotations de type**,
+et imports de niveau module.
