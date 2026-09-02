@@ -17266,3 +17266,56 @@ appelant, et cet appelant ne depend d'aucune session.
 ⇒ **La publication reste fermee par la dette de cablage (11 epreuves orphelines).** Le bundle est
 un pis-aller mesure, jamais un remplacement. **La vraie sauvegarde reste le `push`, et il attend
 que le rituel soit clos.**
+
+
+### 115.140 LES EMBEDDINGS LOCAUX : L'OUTIL MARCHE, LE CORPUS N'EST PAS LE BON
+
+**Reproche de l'operateur, et il est fonde** : *« il y a des agents specialises embeddings dedies
+pour cela, tu es sur-arme et sur-outille mais tu exploites mal ce que tu as entre les mains »*.
+**Mesure faite dans le tour, plutot qu'acquiescement.**
+
+**CE QUI EXISTE ET QUE JE N'EMPLOYAIS PAS :**
+
+    trois modeles d'embedding LOCAUX : all-minilm · nomic-embed-text · bge-m3   cout 0
+    deux outils MCP dedies : nexus_index_build · nexus_search (hybride semantique + lexicale)
+
+★ **ET J'AVAIS FAIT DU `grep`** pour trouver un chapitre, alors que l'index existait et
+fonctionnait.
+
+**CE QUE LA MESURE ETABLIT, dans l'ordre :**
+
+**1. L'index accumule, il n'ecrase pas.** J'avais inscrit qu'« en construire un autre ecrase le
+precedent ». **Faux avec le meme modele** : la cle `roots` porte deja deux racines, et apres
+indexation des livres le code repond toujours. ⇒ **Inscription corrigee.**
+
+**2. L'outil refuse proprement l'index vide.** Sur `references/livres/epub` :
+
+    « aucun fichier indexable ... : index inchange. Ecraser l'index existant par un index vide
+      serait une perte, pas un resultat. »
+
+**C'est exactement le comportement voulu**, et c'est le contraire du defaut que je lui pretais.
+
+**3. L'indexation a reussi sur le corpus absorbe** : `references/livres_texte`, **127 fichiers,
+3 832 extraits**, `all-minilm-local`, stocke localement.
+
+**4. ET LA RECHERCHE A RENDU DU BRUIT — la cause est le CORPUS, pas l'outil.** Requete
+*« exponential backoff with jitter, thundering herd, half-open state »* → **quatre extraits de
+processus stochastiques**. Le mot `exponential` a domine.
+
+⇒ **Le corpus absorbe est celui du depot voisin — maths, finance, probabilites.** **Les sept
+livres sur les agents IA vivent dans `references/livres/`, au format `symbols.jsonl`, que
+l'indexeur ne sait pas lire** : il accepte `.md .txt .yaml .json .ps1 .py .js .ts`.
+
+> **J'ai indexe le corpus que je POUVAIS indexer, pas celui qui portait la reponse.** Un index
+> construit sur la mauvaise matiere repond a la question voisine — la classe du depot, appliquee
+> a un moteur de recherche.
+
+**LE MANQUE EXACT, et il est petit** : un extracteur qui deverse les 20 304 fragments de
+`symbols.jsonl` en fichiers texte indexables. **Alors seulement la recherche semantique portera
+sur les livres d'agents.** Sans lui, `grep` sur les resumes reste le seul acces — ce qui explique
+pourquoi je l'employais.
+
+⚠️ **ET UNE LIMITE MESUREE DU MODELE, a ne pas confondre avec le manque ci-dessus** :
+`all-minilm` sur du texte OCR de mathematiques rend du bruit sur une requete d'ingenierie
+anglaise. **Un meilleur corpus ne corrigera pas tout ; le choix du modele d'embedding est une
+seconde variable**, et `bge-m3` est disponible localement sans avoir jamais ete compare.
