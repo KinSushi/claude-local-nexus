@@ -1059,6 +1059,18 @@ def executer(tache: dict, cle: str) -> dict:
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
+        # BACKOFF EXPONENTIEL AVEC JITTER entre deux tentatives, patron du livre :
+        # start 100 ms, double a chaque essai, plafonne a 30 s, plus un tirage
+        # aleatoire qui evite que plusieurs agents reessaient au meme instant.
+        # Aucune attente avant le PREMIER candidat : on ne paie le delai que
+        # lorsqu'on rejoue apres un echec.
+        if essais:
+            try:
+                import time as _t
+                from nexus_disjoncteur import _retry_delay as _rd
+                _t.sleep(min(_rd(len(essais) - 1), 5.0))
+            except Exception:
+                pass
         essais.append(candidat)
         try:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
