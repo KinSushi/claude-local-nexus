@@ -1417,7 +1417,7 @@ def main() -> int:
         from nexus_verrou_machine import verrou
         try: attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
         except ValueError: attente_verrou = 120 # une valeur gravee ment le lendemain, et surtout une epreuve ne peut pas solliciter le REFUS du verrou si elle doit le tenir plus de deux minutes — un verrou qu'on n'a jamais vu refuser n'est pas mesure.
-        ctx = pile_verrou.enter_context(verrou('banc', projet='nexus', attente_s=attente_verrou, bavard=True))
+        ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True))
         if not ctx.obtenu:
             # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
             pile_verrou.close()

@@ -16770,3 +16770,61 @@ un patch.** Ses vrais defauts, eux, tenaient.
 ⇒ **Arret des renvois** : la regle mesuree d'une session voisine — *six renvois, six
 regressions* — vaut plus qu'un quatrieme essai. Le local etant refuse par le verrou d'autrui,
 le chantier reprend quand `banc` sera rendu.
+
+
+### 115.127 LE VERROU NOMME ENFIN SON APPELANT — cause racine fermee, preuve par differentiel
+
+    depuis Nexus     verrou machine [banc] OBTENU (local-llm-docker)
+    depuis le voisin verrou machine [banc] OBTENU (sovereign-ai-system)
+
+**Le meme binaire, deux appelants, deux noms.** `projet='nexus'` en dur est remplace par
+`os.path.basename(racine_travail()) or 'nexus'` — la fonction existait deja et resolvait la
+racine du projet APPELANT ; personne ne l'avait branchee sur le verrou.
+
+★ **Le differentiel est la preuve** : un seul essai aurait montre `(local-llm-docker)` et
+n'aurait rien prouve — c'est aussi ce qu'aurait affiche une constante mal lue. **Deux appelants,
+deux resultats distincts : l'instrument discrimine.**
+
+**Ce que ce defaut avait coute** : une heure, trois sessions, et une session voisine attendant
+que Nexus libere un verrou que sa PROPRE passe tenait.
+
+### 115.128 J'AI FAILLI FAIRE TUER UNE PASSE QUI TRAVAILLAIT
+
+La session voisine s'appretait a faire tuer ses deux processus, ayant ecrit a l'operateur qu'ils
+« n'ont plus rien a produire ». **J'ai mesure avant de confirmer, et j'ai failli confirmer :**
+
+    T0    27980 cpu=468750   29864 cpu=3593750
+    T+6s  identiques                          -> « processus inactif »
+
+    MAIS  rendu_dix2.md ecrit il y a **4 secondes**
+          modeles residents : llama3.2:3b (expire 08:36:49), qwen2.5-coder:32b
+
+★ **LE CPU FIGE NE DIT PAS « MORT », IL DIT « EN ATTENTE ».** Un processus qui attend une
+inference ne consomme aucun CPU pendant des minutes — **c'est l'etat NORMAL d'un lot local.**
+**Douzieme occurrence de la classe, et elle aurait coute une passe entiere de trente-quatre
+minutes.**
+
+> **Trois indicateurs d'ETAT concordants — PID vivant, CPU fige, memoire stable — tous
+> trompeurs. Un seul indicateur d'EFFET — le fichier grossit — decisif.**
+> **Toujours l'effet, jamais l'etat.** C'est la meme regle que « prouver par l'effet observable,
+> non par la presence du code », appliquee a un processus au lieu d'un patch.
+
+⇒ **Et cela reecrit son incident** : ses « 8 taches sans trace » n'avaient pas disparu, **elles
+n'etaient pas encore arrivees**. Elle lisait le JSONL d'une passe EN COURS. `--sortie` ecrit
+chaque resultat des qu'il tombe — c'est voulu, **mais rien ne le DIT**.
+
+⚠️ **DEFAUT RESTANT, a moi** : un fichier de rendu sans marque de completude est indiscernable
+d'un fichier tronque. `--sortie` devrait dire s'il est COMPLET ou EN COURS.
+
+### 115.129 LES TROIS CORRECTIFS DU JOUR SE PROUVENT ENSEMBLE
+
+Un appel volontairement sous-dote — 30 jetons — rend desormais :
+
+    ECHEC : plafond insuffisant : demande 60 jetons, augmenter le plafond
+    TRACABILITE: ollama_chat/glm-4.7-flash [local] http://host.docker.internal:11434
+    1 tache(s) : 0 reussie(s), 0 rendues vides, ... 1 echec(s)
+
+**C'est exactement l'incident de la session voisine — six rendus vides sur dix a `max_tokens:
+600` — desormais diagnostique en UNE LIGNE au lieu d'une heure et de trois hypotheses.** Le
+chemin d'echec porte sa tracabilite, le plafond est nomme avec le chiffre requis, et le compteur
+des vides existe.
