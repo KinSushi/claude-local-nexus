@@ -88,3 +88,9 @@ v15*.json
 # partage impossible : mesure du 2026-09-02, aucun des deux pointeurs
 # n'etait suivi, y compris celui que la session voisine nous citait.
 !references/*/_POINTEUR_CORPUS.md
+
+# Corpus pre-mache absorbe depuis le depot voisin : 118 Mo, et des noms de
+# fichiers qui depassent la limite de git (erreur << Filename too long >>).
+# Meme regle que references/livres/ : la matiere reste hors historique, seul
+# son pointeur est suivi par l exception plus bas.
+references/livres_texte/

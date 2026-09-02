@@ -69,8 +69,8 @@ def _handle_tool(charge: dict) -> int:
         raison = (
             f"Le chemin '{chemin}' est refuse car il s'agit d'un fichier code source en production. "
             "Regle: tu ne produis pas, tu orchestres et tu audites.\n"
-            "Faire produire le patch avec scripts/nexus_agent.py --tache <tache> --fichiers <fichiers>\n"
-            "Appliquer le patch avec scripts/nexus_appliquer.py\n"
+            f"Faire produire le patch avec {os.path.abspath(os.path.join(os.path.dirname(__file__), 'scripts', 'nexus_agent.py'))} --tache <tache> --fichiers <fichiers>\n"
+            f"Appliquer le patch avec {os.path.abspath(os.path.join(os.path.dirname(__file__), 'scripts', 'nexus_appliquer.py'))}\n"
             "Si la production directe est vraiment voulue, definir NEXUS_PRODUCTION_LIBRE=1 avant l'appel."
         )
         sortie = {

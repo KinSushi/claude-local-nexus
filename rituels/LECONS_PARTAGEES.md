@@ -457,3 +457,82 @@ pourquoi la mesure distingue les deux au lieu de rejouer sa commande telle quell
 dépôt héberge Docker** (`litellm-proxy`, `litellm-db`, `litellm-redis` tournent). La fiche
 `mutmut` peut donc naître ici, pas chez le voisin — **un trou permanent chez l'un est un chantier
 possible chez l'autre**, et c'est un argument de plus pour la mise en commun des corpus.
+
+
+---
+
+## 19. ⛔ RETRACTATION — « LA DOC EN MAIN EMPECHE D'INVENTER » EST FAUX
+
+**Ce fichier a affirme, aux §13 et §14, que la these tenait sur l'invention : « zero invention
+sur douze rendus », « zero invention sur toutes les passes ». C'EST FAUX, et il faut le lire
+comme retracte.**
+
+**La troisieme passe du depot sovereign, meme extrait, meme modele, meme budget :**
+
+| passe | consigne | COMPLETUDE | INVENTION |
+| --- | --- | --- | --- |
+| 1 | budget 600 | 0 % | 0 % |
+| 2 | budget 4000, consigne d'origine | 10 % | 0 % |
+| 3 | budget 4000, **FORME de l'extrait decrite** | **90 %** | **67 %** |
+
+**La preuve, sur `json.loads` :**
+
+    extrait FOURNI :  loads(s, *, cls=None, object_hook=None, parse_float=None, ...)
+    rendu du modele : loads(s, encoding=None, cls=None, object_hook=None, ...)
+
+**`encoding` a ete RETIRE de Python en 3.9 et n'est PAS dans l'extrait.** Le modele l'a ajoute
+**de memoire, avec la vraie signature sous les yeux**.
+
+★ **CE QUI EMPECHAIT L'INVENTION AUX PASSES 1 ET 2 ETAIT L'ABSTENTION, PAS L'ANCRAGE.** Les
+modeles repondaient `ABSENT DE L EXTRAIT` : ils ne trouvaient pas ce que la consigne nommait,
+donc ils se taisaient. **Un modele qui se tait n'invente pas ; cela ne prouve pas qu'il est
+ancre.**
+
+> **Une consigne qui dit au modele QUOI CHERCHER leve son inhibition. Elle augmente la
+> COMPLETUDE et l'INVENTION ENSEMBLE, parce qu'elle ne fournit rien de plus — elle autorise
+> seulement a repondre.**
+
+⇒ **La distinction INVENTION / COMPLETUDE n'etait pas un raffinement : c'etait la condition pour
+voir ce couplage.** Un taux unique aurait montre « ca marche mieux » aux deux passes.
+
+⇒ **La these n'est pas detruite, elle est redressee** : la doc en main est **NECESSAIRE**, elle
+n'est **pas SUFFISANTE**. Ce qui manque est la **verification MECANIQUE du rendu** — un `==`
+entre chaque symbole cite et l'extrait fourni. **Sans lui, 90 % de completude aurait ete publie
+comme un succes.**
+
+⚠️ **ET C'EST UNE LECON SUR CE FICHIER LUI-MEME** : j'ai inscrit « zero invention » comme un
+fait etabli parce que deux depots l'avaient mesure. **Notre critere de l'echo dit qu'un accord
+vaut trois observations — il ne dit pas qu'il vaut une PREUVE.** Deux mesures concordantes sur
+un protocole qui ne pouvait pas voir le phenomene concordent sur un angle mort.
+
+---
+
+## 20. LE DISJONCTEUR — le garde-fou que nous avons tous les trois RE-MESURE sans le poser
+
+**Source : `epub.design-multi-agent-ai-systems-usin.c9bfd169#342`, « Building coordination
+guardrails », 2 914 octets, lu par `seek`, aucun modele appele.** Le chapitre etait sur le disque
+depuis le debut ; nous avons passe la nuit a reinventer empiriquement cinq de ses six garde-fous.
+
+| le livre | notre etat mesure |
+| --- | --- |
+| **Timeout enforcement** — *fail gracefully rather than hanging* | partiel : verrou borne, mais une garde voisine GELE sur stdin ouvert |
+| **Idempotency** — marquer les operations idempotentes | **absent des deux cotes** |
+| **State validation** — invariants verifies en tache de fond | partiel : rien ne verifie les invariants de VERROU |
+| **Circuit breakers** — *stop calling an agent that keeps failing* | **ABSENT — et c'est notre manque le plus cher** |
+| **Coordination testing** — *deux agents sur la meme ressource* | **absent : c'est l'incident `banc`, mot pour mot, vecu trois fois** |
+
+★★ **LE DISJONCTEUR EST CHIFFRE DES DEUX COTES, ET AUCUN DE NOUS NE L'A POSE :**
+
+    Nexus      : « six renvois donnent six regressions »  — regle empirique, jamais mecanisee
+    sovereign  : 4 tours sur mirror.py · 4 sur garde_production · 4 sur declarer_les_gardes
+
+**Et je viens de le vivre en l'ecrivant** : deux renvois echoues sur `nexus_appliquer.py`, arret
+decide *a la main*. **La regle existe chez moi depuis ce matin et rien ne la fait respecter.**
+
+⇒ **MECANISABLE, et la forme est connue** : un compteur de renvois **par cible** dans
+`nexus_agent`. Au-dela du seuil, le renvoi est **refuse**, avec le message qui nomme la voie —
+changer de famille de modele, ou **commander a NEUF sans montrer l'existant**, mesure comme juste
+du premier coup. *Une garde qui refuse sans dire par ou passer se fait desarmer.*
+
+> **La regle etait empirique chez nous ; le livre en fait un COMPOSANT, avec un seuil et un
+> etat.** C'est exactement la difference entre une lecon et un mecanisme.
