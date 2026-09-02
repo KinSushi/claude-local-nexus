@@ -966,7 +966,7 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
             resultat["texte"] = _avert + resultat["texte"]
             resultat["etiquete"] = True
         try:
-            _all_paths = _re.findall(r"[\w./\\_-]+\.[a-zA-Z0-9]+", _txt)
+            _all_paths = _re.findall(r"(?:[A-Za-z]:)?[\w./\\_-]+\.[a-zA-Z0-9]+", _txt)
             _hors = [p for p in _all_paths if p not in _chemins]
             resultat["mentions_hors_perimetre"] = len(_hors)
         except Exception:

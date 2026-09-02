@@ -15206,3 +15206,81 @@ qu'une erreur imprevue soit rapportee et que le parcours CONTINUE.
 au lieu de `--refs`. **J'ai devine un nom d'option au lieu de le lire** — la faute exacte que
 j'impose a chaque consigne d'epreuve d'eviter, et qui a deja fait echouer une epreuve entiere
 de ce depot.
+
+### 115.75 UN TEST RESTE VERT APRES MUTILATION DE SON MOTIF — 4e controle, et je l'ai vecu en le testant
+
+Signale par une session voisine, 2026-09-02, et **reproduit chez moi dans la demi-heure
+suivante, en essayant de le verifier**.
+
+**LE DEFAUT.** Un fichier de test transporte par un interpreteur de commandes se fait manger
+un antislash. Une classe de caracteres censee accepter la barre oblique ET l'antislash
+n'accepte plus que la barre oblique. Le test qui devait interdire les chemins de lecteur
+Windows ne voyait donc plus AUCUN chemin ecrit en antislashes.
+
+> **Il est reste VERT — par hasard**, parce que les cas fautifs qu'il rencontrait portaient
+> des barres obliques. **Un test qui reste vert apres mutilation de son motif est
+> indiscernable d'un test qui passe.** La protection disparait sans bruit.
+
+**ET LE DEFAUT S'EST PRODUIT PENDANT QUE JE LE TESTAIS.** Ma premiere verification passait la
+regex en argument de shell ; le shell a mange les antislashes et Python a rendu
+`SyntaxError: truncated \xXX escape`. J'ai du appliquer le remede que la session voisine
+venait d'enoncer — **entree par FICHIER, jamais par argument de shell** — pour pouvoir
+mesurer le defaut dont il s'agissait.
+
+**LE 4e CONTROLE, pose dans `nexus_verifie_rendu` et contre-eprouve :**
+
+    classe MUTILEE (un seul antislash)   -> code 1, signalee
+    classe SAINE   (deux antislashes)    -> code 0, aucun faux positif
+
+Il analyse les chaines litterales par AST, repere les classes entre crochets, et signale tout
+antislash simple suivi d'un caractere qui n'est pas une sequence d'echappement reconnue.
+**Signal, jamais refus** — l'option existe pour le desactiver seul.
+
+### 115.76 MON TEMOIN NE POUVAIT PAS DISTINGUER — le volet 2 d'une session voisine
+
+**La mesure qui devait prouver que ma regex etait saine a rendu le MEME chiffre pour la
+version saine et pour la version mutilee :**
+
+    celle du depot     attrape 1/3 chemins ENTIERS
+    version MUTILEE    attrape 1/3 chemins ENTIERS
+
+**Un temoin incapable de separer les deux ne prouve rien.** Il a fallu regarder le DETAIL pour
+voir la difference reelle, qui est enorme :
+
+    sain   -> ['\projet\src\a.py']
+    mutile -> ['a.py']
+
+C'est la formulation qu'une session voisine m'a envoyee le meme soir : *« avant de croire un
+vert, prouver que le temoin existe reellement »*, et son volet 2 — **une garde qui refuse TOUT
+parait parfaite tant qu'on ne lui presente pas un temoin legitime.** Ici mon agregat
+melangeait les deux cotes.
+
+**ET LE DETAIL A REVELE UN DEFAUT REEL** que le chiffre agrege cachait : la regex de
+`nexus_agent` **ne capturait pas le prefixe de lecteur Windows**. Un chemin `C:\...` revenait
+ampute de sa lettre, donc impossible a apparier avec la liste des fichiers joints — le
+compteur `mentions_hors_perimetre` etait aveugle des qu'un chemin absolu Windows etait en jeu.
+
+Corrige, et les trois cas capturent desormais le chemin ENTIER :
+
+    'C:\projet\src\a.py'       -> ['C:\projet\src\a.py']
+    'src/b.py'                 -> ['src/b.py']
+    'scripts/nexus_libs.py'    -> ['scripts/nexus_libs.py']
+    et l'usage reel : mentions_hors_perimetre = 2, fichiers_joints = 1, inchange
+
+### 115.77 DEUX ENTREES DU MEME DEFAUT — la quantite de reperes, pas la taille
+
+Rapprochement fait par une session voisine, et il corrige ma formulation du §115.54.
+
+    moi   : UN fichier trop long   -> le modele perd les COORDONNEES
+    elle  : TROP de fichiers       -> le modele perd le PERIMETRE
+
+Son lot fabricateur joignait **douze fichiers**, pas un gros. Les deux regles ne se
+contredisent donc pas : elles nomment deux entrees d'un meme defaut.
+
+> **La variable commune n'est ni le modele ni le nombre de lignes : c'est la quantite de
+> reperes que le modele doit tenir a la fois.** Dans les deux cas le FOND reste juste et
+> seule la LOCALISATION est fabriquee — ce qui la rend credible, donc dangereuse.
+
+Et les deux remedes sont **le meme geste** : fournir soi-meme les ancres verifiees au grep,
+et verifier l'appartenance au lot depeche. Autrement dit : **ne pas demander au modele ce que
+le disque sait deja.**

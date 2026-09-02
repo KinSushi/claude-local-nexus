@@ -36,7 +36,6 @@ def check_slice(node, refs, issues, path):
     lower = node.slice.lower
     if isinstance(lower, ast.Constant) and isinstance(lower.value, int):
         start = lower.value
-        # find closest reference length
         distances = [(abs(start - len(r)), r) for r in refs]
         if not distances:
             return
@@ -77,29 +76,68 @@ def check_compare(node, issues, path):
         )
 
 # ----------------------------------------------------------------------
+# Check 4 : detect potentially eaten backslash in regex character classes
+def check_backslash(node, issues, path):
+    if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+        return
+    val = node.value
+    # Look for character classes [ ... ]
+    start = 0
+    while True:
+        start = val.find('[', start)
+        if start == -1: break
+        end = val.find(']', start)
+        if end == -1: break
+        
+        content = val[start+1:end]
+        i = 0
+        while i < len(content):
+            if content[i] == '\\':
+                if i + 1 < len(content):
+                    nxt = content[i+1]
+                    if nxt == '\\':
+                        i += 2
+                        continue
+                    # Valid escape sequences
+                    if nxt.lower() in ('w', 's', 'd', 'n', 't', 'r') or nxt == '.':
+                        i += 2
+                        continue
+                    # Suspect: single backslash followed by non-escape char
+                    issues.append(
+                        f"{path}:{node.lineno}: class [{content}] - a backslash may have been eaten during transport"
+                    )
+                    i += 2
+                else:
+                    i += 1
+            else:
+                i += 1
+        start = end + 1
+
+# ----------------------------------------------------------------------
 # Visitor that runs all checks on a single file
 class FileChecker(ast.NodeVisitor):
-    def __init__(self, path, refs):
+    def __init__(self, path, refs, args):
         self.path = path
         self.refs = refs
+        self.args = args
         self.issues = []
 
     def generic_visit(self, node):
         check_slice(node, self.refs, self.issues, self.path)
         check_compare(node, self.issues, self.path)
+        if not self.args.disable_check4:
+            check_backslash(node, self.issues, self.path)
         super().generic_visit(node)
 
 # ----------------------------------------------------------------------
 def process_file(path, args):
     reported = False
-    # Check 1 : execution with --help
     if not args.disable_check1:
         ok, msg = run_help(path, 10)
         if not ok:
             print(f"{path}: execution failed or hung ({msg})", file=sys.stderr)
             reported = True
 
-    # Parse file
     try:
         with open(path, 'r', encoding='utf-8') as f:
             source = f.read()
@@ -108,14 +146,13 @@ def process_file(path, args):
         print(f"{path}: read/parse error - {e}", file=sys.stderr)
         return True
 
-    checker = FileChecker(path, args.refs)
+    checker = FileChecker(path, args.refs, args)
     checker.visit(tree)
 
     if checker.issues:
         for issue in checker.issues:
             print(issue)
         reported = True
-        # indicate possible false positives for checks 2 and 3
         print(f"{path}: note - some reports may be false positives", file=sys.stderr)
 
     return reported
@@ -134,12 +171,10 @@ def main():
     parser.add_argument('paths', nargs='+', help='files or directories')
     parser.add_argument('--refs', default='', help='comma separated reference strings for slice check')
     parser.add_argument('--disable-check1', action='store_true', help='skip execution check')
+    parser.add_argument('--disable-check4', action='store_true', help='skip backslash check')
     args = parser.parse_args()
 
-    # configure stdout to utf-8
     sys.stdout.reconfigure(encoding='utf-8')
-
-    # prepare reference list
     args.refs = [s for s in args.refs.split(',') if s]
 
     any_issue = False
