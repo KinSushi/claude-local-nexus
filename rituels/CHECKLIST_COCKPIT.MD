@@ -16709,3 +16709,64 @@ defaut de perimetre est vrai.
 **NON TRANCHE, et je le declare** : je ne sais pas si le harnais emet encore `Task` pour l'outil
 Agent. Si oui, le trou est actif ; si non, le matcher porte un nom mort. **Les deux appellent le
 meme geste — aligner le dispatch sur le matcher — mais pas la meme urgence.**
+
+
+### 115.126 LE VERROU ACCUSE TOUJOURS LE MEME — et c'est celui qui HEBERGE l'outil
+
+**Cause racine trouvee le 2026-09-02, apres que TROIS sessions se soient bloquees mutuellement
+pendant une heure sans pouvoir attribuer le verrou.**
+
+    ligne de commande reelle du detenteur :
+    27980 | python C:/local-llm-docker/scripts/nexus_agent.py
+              --lot C:/.../D--SAS-sovereign-ai-system-.../lot_dix.json --parallele 10
+
+★ **Le chemin du SCRIPT dit `local-llm-docker`. Le chemin du TRAVAIL dit `sovereign`.** Le
+diagnostic attribuait au script. Pire : `nexus_agent.py` passe **`projet='nexus'` EN DUR** au
+verrou, ligne 1416. ⇒ **Quel que soit le projet appelant, le refus affiche `REFUSE (nexus)`.**
+
+> **Un outil PARTAGE qui s'attribue tout travail fait sous son nom rend l'attribution
+> impossible — et il accuse toujours le meme : celui qui l'heberge.**
+
+**Ce que ca a coute, mesure** : la session voisine a lu `REFUSE (nexus)`, a conclu tres
+raisonnablement que Nexus tenait le verrou, me l'a ecrit avec ses PID a l'appui — **et c'etait
+SA PROPRE passe, lancee 31 minutes plus tot.** Elle a attendu que je « rende `banc` » pendant
+que sa passe le tenait.
+
+⇒ **Cette cause est plus profonde que l'indice PID que nous instruisions.** Un indice sans le
+PROJET aurait affiche `tenu par PID 27980` — vrai, et **toujours inexploitable**, puisque le PID
+seul ne dit pas quelle session doit le liberer. **Le projet doit venir de l'APPELANT, jamais
+d'une constante.**
+
+**ORDRE DES CORRECTIFS, revu** : (1) `projet` derive du lot ou de `--racine` ; (2) l'indice PID
+et horodatage, qui ne devient utile qu'apres (1) ; (3) le diagnostic lit `--lot`/`--racine` et
+non le chemin du script.
+
+### 115.126.1 J'AI TRANSMIS UN « ILS SONT MORTS » QUI ETAIT FAUX
+
+Avant de trouver la cause, j'ai ecrit a la session voisine que ses PID etaient morts. **Ils
+etaient vivants.** Mon test cherchait `local-llm` dans `CommandLine` via `Get-CimInstance` filtre
+sur `Name="python.exe"` ; il a rendu vide, et **j'ai lu ce vide comme une absence de processus**
+au lieu d'une defaillance de la requete.
+
+**Onzieme occurrence de la classe dans la journee, et la seconde que je TRANSMETS.** ⇒ La regle
+« transmettre la mesure, pas le remede » ne suffit pas : **il faut aussi que la mesure soit
+verifiee par un second chemin avant d'etre transmise.** Un `Get-Process` simple montrait les deux
+PID vivants ; ma requete filtree ne les voyait pas.
+
+### 115.126.2 TROIS RENVOIS ECHOUES — et l'arret est la bonne decision
+
+`nexus_verrou_machine.py` a resiste a trois renvois au banc :
+
+    renvoi 1  marqueurs a DEUX chevrons, pas de <<<FIN>>>, ecriture dans scripts/ (suivi par git)
+    renvoi 2  chemin `nexus` au lieu de `.nexus`, indice a NOM FIXE -> banc et hachage
+              s ecraseraient, rendant l indice MENTEUR
+    renvoi 3  refuse avant application
+
+⚠️ **ET J'AI CONDAMNE LE RENVOI 2 POUR UNE RAISON FAUSSE** : « accents mutiles ». Mesure :
+**zero caractere U+FFFD dans le rendu, et l'extrait est IDENTIQUE a la source** — ce sont des
+tirets cadratins que mon terminal cp1252 affiche mal. **Dixieme occurrence, commise en JUGEANT
+un patch.** Ses vrais defauts, eux, tenaient.
+
+⇒ **Arret des renvois** : la regle mesuree d'une session voisine — *six renvois, six
+regressions* — vaut plus qu'un quatrieme essai. Le local etant refuse par le verrou d'autrui,
+le chantier reprend quand `banc` sera rendu.
