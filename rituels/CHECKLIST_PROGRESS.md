@@ -1,23 +1,23 @@
 # Checklist Progress
-Generated: 2026-09-02 11:57:36
+Generated: 2026-09-02 12:07:41
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 145 |
+| Commits non pushes | 146 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 11:55:24 -0500 |
+| Date du dernier commit | 2026-09-02 11:58:27 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
 | nexus_cablage.py | 5 |
-| nexus_outillage.py | 83 |
+| nexus_outillage.py | 84 |
 
 ## 3. Outils
 | Description | Value |
 |---|---|
-| Scripts nexus dans scripts/ | 72 |
+| Scripts nexus dans scripts/ | 73 |
 | Occurrences name:"nexus_" dans server.js | 15 |
 
 ## 4. Checklist VS Code
@@ -40,7 +40,7 @@ Generated: 2026-09-02 11:57:36
 
 ## CE QUI RESTE OUVERT
 - Regressions de cablage : 5
-- Regressions d outillage : 83
+- Regressions d outillage : 84
 - Prescriptions rouges : 11
   - Idempotency
   - Dependency validation
@@ -53,4 +53,4 @@ Generated: 2026-09-02 11:57:36
   - Graceful degradation EN TIERS
   - TTL sur les donnees echangees
   - Timeout-aware retry with backoff
-- Commits non pousses : 145
+- Commits non pousses : 146
