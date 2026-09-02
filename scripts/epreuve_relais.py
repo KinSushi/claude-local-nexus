@@ -1,4 +1,3 @@
-import os
 import sys
 import subprocess
 import tempfile
@@ -11,7 +10,7 @@ def run_tool(args, tmp_dir):
         sys.exit(127)
     
     cmd = [sys.executable, str(tool_path)] + args
-    result = subprocess.run(
+    return subprocess.run(
         cmd,
         cwd=tmp_dir,
         capture_output=True,
@@ -19,7 +18,6 @@ def run_tool(args, tmp_dir):
         encoding="utf-8",
         errors="replace"
     )
-    return result
 
 def main():
     # Setup environnement isole
@@ -76,7 +74,7 @@ def main():
 
         # Affichage et verdict
         success = True
-        for label, ok, out in results:
+        for label, ok, _out in results:
             print(f"{label} {'OK' if ok else 'FAIL'}")
             if not ok:
                 success = False
