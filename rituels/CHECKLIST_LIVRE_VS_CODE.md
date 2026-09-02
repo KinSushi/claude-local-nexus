@@ -40,7 +40,7 @@
 | **Confirmation prompts** | 🟡 **externe** | c'est le harnais qui refuse, pas mes outils |
 | **Tool compatibility checks** — sortie de A vers entree de B | 🔴 absent | **a casse** : `suivis()` rend des chemins que `contenus()` OUVRE |
 | **Rate limiting / circuit breakers** | 🟢 pose | voir §2 |
-| **Tool shadowing** — journaliser SANS executer | 🔴 **TOUJOURS ROUGE** | `nexus_ombre.py` pose et **NON FONCTIONNEL** : l'extraction des blocs echoue, et il rend **0 sur un echec**. Il n'ecrit rien — cible verifiee INTACTE par hash — mais un outil qui ne fait rien correctement n'est pas un outil. **Deux renvois echoues, arret decide.** |
+| **Tool shadowing** — journaliser SANS executer | 🔴 **TOUJOURS ROUGE** | `nexus_ombre.py` pose et **NON FONCTIONNEL** : l'extraction des blocs echoue, et il rend **0 sur un echec**. Il n'ecrit rien — cible verifiee INTACTE par hash — mais un outil qui ne fait rien correctement n'est pas un outil. **TROIS tentatives echouees** — deux patchs et une commande a neuf. L'outil traite les MARQUEURS comme des ancres et rend 0 sur REFUSE. Acquis : aucune ecriture, cibles INTACTES par hash. Arret decide. |
 
 ## 4. Modes de defaillance — ch. 10
 
