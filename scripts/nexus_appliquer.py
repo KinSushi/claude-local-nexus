@@ -13,6 +13,11 @@ import sys
 import ast
 import os
 import subprocess
+import contextlib
+
+with contextlib.suppress(Exception):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 def main():
     if len(sys.argv) < 4:
@@ -23,7 +28,13 @@ def main():
 
     # Lecture du JSONL
     texte = None
-    with io.open(jsonl_path, encoding="utf-8") as fh:
+    try:
+        fh_jsonl = io.open(jsonl_path, encoding="utf-8")
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        print(f"ERREUR : impossible d'ouvrir le fichier JSONL '{jsonl_path}' : {e}")
+        print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
+        return 1
+    with fh_jsonl as fh:
         for ligne in fh:
             ligne = ligne.strip()
             if not ligne:

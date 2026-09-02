@@ -3026,7 +3026,14 @@ function runPython(args, timeoutMs = 300000) {
         `ne produirait que de l'invention.`;
     }
 
+    const refusSecret = parts
+      .filter(p => p.includes("(refuse : fichier susceptible de contenir des secrets)"))
+      .map(p => p.split("\n")[0].replace("### ", ""));
+    const avertissement = refusSecret.length > 0
+      ? `ATTENTION : ${refusSecret.length} fichier(s) écarté(s) par le filtre de confidentialité et NON analysé(s) : ${refusSecret.join(", ")}\n\n`
+      : "";
     return (
+      avertissement +
       `[${model} · ${planOf(model)} · ${totalTokens} tokens]\n\n` +
       `## Par fichier\n\n` +
       parts.join("\n\n") +

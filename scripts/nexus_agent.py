@@ -220,8 +220,11 @@ TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 # decide.
 REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
 
-# Mêmes règles que le serveur MCP : ce qui ne doit pas remonter vers un
-# modèle ne doit pas davantage remonter parce que le canal a changé.
+# Règles de filtrage des fichiers secrets. Le serveur MCP emploie quatre motifs, dont un qui reconnaît
+# le mot "secret" ou "credential" entouré de points, tirets ou soulignés n'importe où dans le nom — donc
+# il refuse un fichier nommé secrets_vault.py. Ce filtre-ci, lui, ne reconnaît le mot "secrets" que suivi
+# d'une extension yaml, yml, json ou toml — donc il accepte le même secrets_vault.py. Les deux étages
+# du même garde divergent donc aujourd'hui, et le serveur MCP est le plus strict des deux.
 FICHIERS_SECRETS = {
     ".env", ".env.local", ".env.production", ".npmrc", ".netrc",
     "credentials", "credentials.json", "id_rsa", "id_ed25519",
