@@ -17022,3 +17022,61 @@ desormais chaque consultation REUSSIE dans `.nexus/consultations.jsonl`, et **un
 infructueuse n'est pas journalisee** — sans quoi la garde serait contournable par une requete
 quelconque. **Aucune garde de consultation n'etait possible avant ce journal ; elle l'est
 maintenant.**
+
+
+### 115.135 LE RISQUE ANNONCE S'EST REALISE — 104 commits sur un seul disque
+
+**Signale par l'operateur : *« le risque de la perte du travail en question annoncee »*.** Il
+avait raison, et la mesure le chiffre :
+
+    104 commits non pousses
+     86 fichiers, 16 622 insertions, 182 suppressions
+    origin joignable, mais RIEN n'est parti depuis le debut de la journee
+
+**Tout le travail de cette journee n'existait qu'a un seul endroit.**
+
+**GESTE IMMEDIAT, non destructif et sans rien envoyer dehors** :
+
+    git bundle create <scratchpad>/nexus-<horodatage>.bundle --all
+    git bundle verify  ->  « The bundle records a complete history. »
+    3 677 905 octets
+
+★ **Un bundle n'est pas une publication** : rien ne quitte la machine, aucune garde n'est
+contournee, et l'historique complet est restaurable d'un fichier. **C'est la seule protection
+disponible quand la voie de publication est fermee** — et elle l'etait.
+
+### 115.135.1 LA VITRINE A BLOQUE SUR UN TIMEOUT LU COMME UN ECHEC
+
+    [OK    ] arbre propre
+    [OK    ] .env hors de git
+    [OK    ] aucun secret        263 fichiers scrutes
+    [BLOQUE] conformite          code 143
+    VERDICT : publication REFUSEE.
+
+★ **`143` = 128 + 15 = SIGTERM. La conformite a ete TUEE, pas mise en echec.** Et c'est **mon
+propre `timeout`** qui l'a tuee, en la lancant sous une limite plus courte que sa duree.
+
+> **« Bloque » et « expire » sont deux etats differents qui appellent des gestes opposes** — l'un
+> demande de corriger le depot, l'autre d'attendre. **La vitrine les affiche identiquement.**
+
+⇒ **DEFAUT A CORRIGER, et il est a moi** : le rapport doit distinguer un controle qui **REFUSE**
+d'un controle **INTERROMPU**. Un code 143 ou 124 n'est pas un verdict de conformite : c'est
+l'absence de verdict. **Publier serait faux ; refuser en disant « conformite bloquee » l'est
+aussi.**
+
+⚠️ **Et la conformite, lancee sans limite, depasse largement la « ~1 min » annoncee par le
+contrat §105.4.** Un chiffre de duree fige dans la doctrine, jamais re-mesure : la meme classe
+que le plafond mypy du depot voisin, clos depuis onze jours et toujours declare ouvert.
+
+### 115.135.2 LES 11 REGRESSIONS DE CABLAGE SONT TOUTES DE MEME NATURE
+
+    preuve_seule   epreuve_garde_lecture · garde_shell · import · outillage · progres
+                   relais · reprise · ruche · nexus_epreuve_vide · nexus_index_livres
+                   · nexus_livres          <- tous cites par rituels/BOUSSOLE.md seulement
+
+**Aucune n'est un defaut de code** : ce sont onze scripts **prouves mais jamais appeles** — des
+epreuves ecrites, documentees dans la boussole, et que rien n'execute. ⇒ **Un script qu'aucun
+appelant n'invoque n'est pas un mecanisme, c'est un fichier** (§0.2.1, le maillon « appelant »).
+
+**Le cliquet fait donc exactement son travail** : il refuse que la liste des orphelins grandisse.
+**Ce n'est pas lui qui bloque la sauvegarde — c'est la dette qu'il mesure.**
