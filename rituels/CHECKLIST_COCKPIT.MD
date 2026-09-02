@@ -13186,3 +13186,120 @@ rougit tant que la regle est enfreinte vaut mieux qu'un sujet dans une liste —
 | 50 | `nexus_appliquer` : le refus plante sur l'Unicode du rendu | `OUVERT` — 3e occurrence d'encodage, racine structurelle nommee |
 | 10 | Arbre git partage sans verrou | **TROIS OCCURRENCES EN 2 H**, dans les deux sens |
 | 51 | `cibles_ecrites()` ne peut porter aucune decision | `MESURE` — 27,3 % de determinees fausses, chemin independant |
+
+---
+
+## 119. `nexus_ask` AFFIRME UNE CONFIDENTIALITE QU'IL N'A PAS MESUREE
+
+2026-09-01, 21:45. Signale par une session tierce, verifie ici par **deux chemins independants** —
+lecture du code, puis appel reel. C'est la trouvaille la plus lourde du tour, parce qu'elle touche la
+souverainete, qui est au sommet de la hierarchie du §102.
+
+### 119.1 LA CASCADE, ET SON DERNIER TERME
+
+`tools/nexus-mcp/server.js` :
+
+```js
+const resolved = headers["x-litellm-adaptive-router-model"]
+              || headers["x-litellm-model-group"]
+              || body.model
+              || model;          // <- LE MODELE DEMANDE
+```
+
+Le dernier terme est le defaut. **En l'absence d'en-tete de tracabilite, `resolved` vaut le modele
+DEMANDE** — et rien, dans ce qui est rendu, ne distingue :
+
+| ce qui est affiche | ce que cela peut vouloir dire |
+| --- | --- |
+| `gpt-oss-120b-cloud` | le routeur a confirme ce modele — **mesure** |
+| `gpt-oss-120b-cloud` | aucun en-tete n'est revenu, on repete la demande — **suppose** |
+
+Le champ qui trancherait est calcule et **jete** : `upstream: headers["x-litellm-model-name"] || ""`
+n'a, lui, aucun repli — il serait vide si la tracabilite manquait, ce qui est exactement
+l'information voulue. Le handler ne l'affiche jamais.
+
+### 119.2 LE CONTRASTE ENTRE TROIS CHEMINS DU MEME DEPOT
+
+```
+nexus_agent.py    demande : gpt-oss-120b-cloud
+                  servi   : ollama_chat/gpt-oss:120b  [cloud]  https://ollama.com
+nexus_route       `${router} -> ${result.model}`                    les deux
+nexus_ask         `[${result.model} · ${planOf(result.model)} ...]` UN SEUL
+```
+
+Le script affiche la demande, le service **et l'URL contactee**. `nexus_route` affiche les deux
+bouts. `nexus_ask` n'affiche qu'un nom, celui qui peut etre suppose.
+
+### 119.3 CE QUI REND LE DEFAUT GRAVE, ET NON MERELY COSMETIQUE
+
+Appel reel, `nexus_ask(model: "gpt-oss-120b-cloud")` :
+
+```
+[gpt-oss-120b-cloud · Ollama Cloud, les donnees sortent · T=0.2 · 99 tokens · TRONQUEE]
+```
+
+**« Ollama Cloud, les donnees sortent » vient de `planOf(result.model)`** — donc du NOM affiche, qui
+peut etre le demande. **C'est une affirmation de souverainete deduite d'une chaine de caracteres.**
+
+Dans ce sens-ci, la consequence est nulle : annoncer une sortie de donnees qui a bien eu lieu ne
+trompe personne. **Dans l'autre sens, elle est maximale :**
+
+> un alias `*-local` demande et servi par un modele cloud afficherait
+> **« aucune donnee ne quitte la machine »** pendant que les donnees sortent.
+
+Le §34 l'interdit mot pour mot — *« ne jamais affirmer qu'une requete est locale sans verifier le
+point de terminaison reellement contacte »* — et le §105.5 nomme deja la preuve :
+
+> `x-litellm-model-api-base` **est la preuve directe de non-fuite** : il montre si une requete a
+> quitte la machine, quel que soit l'alias choisi.
+
+**Le remede est ecrit dans le contrat depuis le 30 aout, et il n'est pas cable sur ce chemin.** Le
+script l'affiche, le MCP le jette. Ce n'est pas un defaut a concevoir : c'est le maillon *appelant*
+du §0.2.1, manquant sur un seul des trois chemins.
+
+### 119.4 CE QUE CELA FAIT AUX AUDITS CROISES — ni rien, ni tout
+
+Une session tierce a formule le risque ainsi : un audit croise peut n'avoir croise personne tout en
+paraissant tenu. La portee exacte, mesuree :
+
+| chemin | un audit passe par la peut-il prouver QUI a repondu ? |
+| --- | --- |
+| `nexus_agent.py` | **oui** — demande, servi et URL affiches |
+| `nexus_route` | oui — les deux bouts affiches |
+| `nexus_ask` (MCP) | **non** — le nom rendu peut etre le demande |
+
+Les audits croises de la journee passes par le SCRIPT restent valides ; ceux passes par `nexus_ask`
+sont **invérifiables**, ce qui n'est pas la meme chose que faux. Le dire ainsi, sans dramatiser ni
+minimiser, fait partie du travail.
+
+Mesure de corroboration obtenue par `local-llm-docker-54` sur son propre chemin : **37 appels du
+chemin script ce soir, `demande` et `servi` concordent a chaque fois.** Aucune substitution
+constatee — le defaut est une CECITE, pas une tromperie averee.
+
+### 119.5 UN FAIT NON EXPLIQUE, verse sans conclusion
+
+Le meme appel — meme modele, meme prompt, meme plafond de 20 jetons :
+
+| chemin | duree |
+| --- | --- |
+| `nexus_ask` (MCP) | **4 min 51 s** |
+| `nexus_agent.py` | **8 s** |
+
+J'ai d'abord lu cet ecart comme la preuve d'un repli local silencieux. **J'avais tort** : un premier
+essai par script avait pris 128 s, mais c'etait un reessai sur plafond insuffisant ; refait
+proprement, 8 s. L'ecart 291 s / 8 s est donc reel et **non explique**. Il n'est pas une preuve de
+repli, et il est verse comme fait, pas comme argument.
+
+### 119.6 CE QUI RESTE A FAIRE, et par qui
+
+Le diagnostic ci-dessus a ete produit ici : le correctif ne peut donc pas l'etre. Deux travaux
+independants, a confier :
+
+| # | travail | pourquoi il est distinct |
+| --- | --- | --- |
+| 52 | afficher `upstream` et `api_base` dans le retour de `nexus_ask` | le maillon appelant manquant ; l'information existe deja |
+| 53 | `planOf` doit REFUSER de se prononcer sans tracabilite | un « plan inconnu » honnete vaut mieux qu'une confidentialite supposee |
+| 54 | l'ecart 291 s / 8 s entre MCP et script | non explique, non reproduit ailleurs |
+
+Le second est le plus important des trois, et le moins evident : afficher l'`api_base` sans corriger
+`planOf` laisserait l'affirmation fausse a cote de la preuve qui la contredit.
