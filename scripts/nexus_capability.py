@@ -564,9 +564,16 @@ def main() -> int:
     print("  GPU              : %s (%.1f Go%s)"
           % (profile["gpu"]["name"] or "inconnu", profile["gpu"]["vram_gb"],
              ", integre" if profile["gpu"]["integrated"] else ""))
-    print("  Offload GPU      : %s"
-          % ("possible" if profile["gpu_usable_for_offload"]
-             else "non — inference en RAM systeme"))
+    # La question posée ici est « y a-t-il un GPU dédié avec mémoire propre ? »,
+    # pas « le moteur utilise-t-il le GPU ? ». Un GPU intégré partage la RAM
+    # système et peut être utilisé par le moteur ; l'usage réel se lit ailleurs.
+    print("  GPU dédié        : %s"
+          % ("oui" if profile["gpu_usable_for_offload"] else "non"))
+    if not profile["gpu_usable_for_offload"]:
+        print("                     (GPU intégré : le moteur peut l'employer en"
+              " partageant la mémoire système ;")
+        print("                      l'usage réel se lit auprès du moteur"
+              " d'inférence.)")
     # Le rappel en gibioctets n'est pas decoratif : Windows affiche 61,6
     # la ou ce module compte 66,2, et sans cette equivalence le lecteur
     # conclut a une erreur de mesure au lieu d'un changement d'unite.

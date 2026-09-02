@@ -1456,13 +1456,17 @@ def controle_filtres_accordes() -> None:
     except OSError as exc:
         ignorer("filtres accordes", "tools/nexus-mcp/server.js illisible : %s" % exc)
         return
-    m = re.search(r"\bSECRET_FILES\s*=\s*\[(.*?)\]", source_js, re.DOTALL)
+    m = re.search(r"\bSECRET_FILES\s*=\s*(?:new\s+Set\s*\(\s*)?\[(.*?)\]", source_js, re.DOTALL)
     if not m:
         ignorer("filtres accordes", "SECRET_FILES introuvable dans server.js")
         return
     fichiers_js = set()
-    for chaine in re.findall(r"""(['"])(.*?)\1""", m.group(1)):
-        fichiers_js.add(chaine[1])
+    for ligne in m.group(1).splitlines():
+        nue = ligne.strip()
+        if nue.startswith("//"):
+            continue
+        for chaine in re.findall(r"""(['"])(.*?)\1""", nue):
+            fichiers_js.add(chaine[1])
 
     # Comparaison
     seulement_py = fichiers_py - fichiers_js

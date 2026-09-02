@@ -80,7 +80,7 @@ def afficher_table(titre, totaux, hits, noms):
     cles = sorted(totaux)
     w0 = max([len(c) for c in cles] + [3])
     larg = [max(len(n), 14) for n in noms]
-    entete = "  ".join("%-*s" % (w, n) for n, w in zip(noms, larg))
+    entete = "  ".join("%-*s" % (w, n) for n, w in zip(noms, larg, strict=True))
     print("%-*s %6s  %s" % (w0, "CLE", "N", entete))
     for c in cles:
         t = totaux[c]
