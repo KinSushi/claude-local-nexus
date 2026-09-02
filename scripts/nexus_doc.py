@@ -70,9 +70,17 @@ PREFERE = "__LOCALFIRST"
 
 
 def trouver_racine(depart: Path):
-    """Racine = premier ancêtre portant le marqueur. Aucune lettre de lecteur, aucun niveau figé."""
+    """Racine = premier ancetre portant le marqueur. Aucune lettre de lecteur, aucun niveau fige."""
+    # Defaut mesure le 2026-09-02 depuis un worktree : trouver_racine rendait .claude comme racine.
+    # Le marqueur seul (CLAUDE.md) est present dans le dossier de configuration .claude,
+    # ce qui faisait que tout repertoire contenant ce fichier etait accepte comme depot.
+    # Le correctif exige la presence du dossier DOSSIER_DOC ou d'un .git, et exclut le dossier .claude.
     for candidat in [depart, *depart.parents]:
-        if (candidat / MARQUEUR_RACINE).is_file():
+        if candidat.name == ".claude":
+            continue
+        if (candidat / MARQUEUR_RACINE).is_file() and (
+            (candidat / DOSSIER_DOC).is_dir() or (candidat / ".git").is_dir()
+        ):
             return candidat
     # Repli sur la racine deduite du fichier : ce depot porte son CLAUDE.md
     # dans .claude/, et la remontee ne trouverait donc rien.

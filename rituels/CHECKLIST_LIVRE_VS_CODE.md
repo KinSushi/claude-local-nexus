@@ -532,3 +532,48 @@ Verifie : 4 entrees chacun.
 **Ce qui reste OUVERT** : aucun controle ne verifie qu un worktree d agent
 porte les ressources que sa consigne lui demande de consulter. Tant qu il
 n existe pas, ce paragraphe ne ferme rien (contrat 0.2.1).
+
+### 17.2 LA DOC PYTHON NE MARCHAIT PAS DANS LES WORKTREES — cause trouvee et reparee
+
+Apres avoir copie la doc (2 181 fichiers, 136 Mo) et son index (18,7 Mo) dans
+les cinq worktrees, `nexus_doc.py` rendait toujours **« index absent »**. Les
+livres, eux, repondaient. Mesure :
+
+```
+depuis un worktree, trouver_racine rend  C:\local-llm-docker\.claude
+RACINE_FIXE vaut                          ...\.claude\worktrees\agent-xxx
+index cherche a la racine trouvee         ABSENT
+doc reellement presente dans le worktree  OUI, 1 684 fichiers
+```
+
+**Cause** : le marqueur de racine est la chaine `CLAUDE.md`. Ce depot porte son
+contrat dans `.claude/CLAUDE.md` — donc **le repertoire `.claude` contient un
+fichier nomme `CLAUDE.md`**. La remontee depuis `scripts/` d un worktree
+traverse `.claude/worktrees/agent-xxx`, puis `.claude/worktrees`, puis
+`.claude`, ou le marqueur EST trouve. La fonction **croit avoir reussi**, rend
+une fausse racine, et le repli qui aurait sauve la situation n est jamais
+atteint.
+
+**Pourquoi personne ne l avait vu** : dans l arbre principal, la remontee ne
+passe pas par `.claude`, echoue proprement, et le repli fonctionne. **Le defaut
+n existe QUE dans un worktree — c est-a-dire exactement la ou tous les agents
+travaillent.**
+
+> Un marqueur seul ne suffit pas a identifier une racine quand ce marqueur vit
+> AUSSI dans un sous-dossier de configuration. Le candidat doit ressembler au
+> depot, pas seulement en porter le nom.
+
+**Correctif** : un candidat n est retenu que s il porte le marqueur **ET** le
+dossier de doc ou un `.git` ; le repertoire `.claude` est ecarte explicitement.
+
+**Les deux epreuves, jouees :**
+
+| epreuve | resultat |
+| --- | --- |
+| FORWARD, arbre principal | la doc repond — **aucune regression** |
+| REVERSE, worktree ou elle echouait | la doc repond **desormais** |
+
+C est le meme motif que tout le reste de la journee : **un instrument exact
+qui repond a la question voisine**. `trouver_racine` cherchait bien un fichier
+nomme `CLAUDE.md`, et le trouvait — mais la question etait « ou est le depot »,
+pas « ou est un fichier de ce nom ».
