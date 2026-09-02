@@ -101,3 +101,7 @@ references/python_libs_docs_eamt5/
 # au-dela de ~10 Ko : deux calibres sont necessaires, pas un.
 references/CODE_ENZO/
 references/CODE_LIVRES/
+
+# Index d embeddings : sortie de calcul, jamais du code. Ecrit par erreur dans
+# nexus/ sans le point le 2026-09-02 — QUATRIEME fois que ce point se perd.
+nexus/

@@ -29,7 +29,7 @@ import heapq
 API_URL_DEFAULT = "http://127.0.0.1:11434/api/embed"
 MODEL_DEFAULT = "nomic-embed-text"
 BATCH_SIZE = 32
-OUTPUT_DIR = "nexus"
+OUTPUT_DIR = ".nexus"   # le point compte : sans lui l index entre dans l historique git
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "fragments_embeddings.jsonl")
 
 
