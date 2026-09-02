@@ -13,3 +13,57 @@ max_tool_calls: 30
 max_context_tokens: 131072
 
 max_fallbacks: 3
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+AUCUN DE CES SIX CHAMPS N'EST IMPLEMENTE AUJOURD'HUI. Recherche exhaustive
+dans le code et les agents declares :
+
+    $ grep -rn "max_cost_usd\|max_latency_seconds\|max_iterations\|max_tool_calls\|max_context_tokens\|max_fallbacks" scripts/*.py .claude/agents/*.md
+    (aucun resultat)
+
+`max_context_tokens: 131072` reprend une valeur reellement utilisee ailleurs
+(`litellm_config.yaml`, `num_ctx: 131072`, plusieurs occurrences ; §54
+`.claude/CLAUDE.md`), mais comme PLAFOND DE BUDGET D'EXECUTION -- distinct
+du `num_ctx` d'un modele -- ce champ precis n'existe pas. Coherent avec le
+classement de `docs/architecture/README.md` : ce fichier n'a pas de colonne
+"État", donc n'est PAS revendique comme implemente. Rien de faux ici, mais
+rien de deploye non plus.
+
+MECANISME PROCHE DEJA REEL, A NOTER : `.claude/agents/nexus-delegue.md`
+impose deja des plafonds analogues en prose ("moins de 25 appels d'outils,
+et un rapport de moins de 60 lignes"), sans les 6 champs nommes ici et sans
+mecanisme de refus automatique -- une discipline ecrite, pas une garde.
+
+CONFRONTATION AU LIVRE CIBLE - CONCORDANCE FORTE ET CITATION VERBATIM. *30
+Agents Every AI Engineer Must Build*, chapitre 4, classe `CostTracker`
+(`references/livres/code`, fragment offset 2805999, 5201 o, lu par
+`seek`+`read` puis verifie par parsing JSON) :
+
+    class CostTracker:
+        """Tracks simulated inference costs and enforces a budget ceiling.
+
+        When cumulative cost exceeds *budget_ceiling*, ``check_budget()``
+        returns ``"degraded"`` ... modelling the graceful-degradation
+        strategy described in Section 4.2 (p. 8).
+        """
+        def __init__(self, budget_ceiling: float = 1.00) -> None: ...
+        def check_budget(self) -> str:
+            if self._total_cost >= self.budget_ceiling:
+                ...
+                return "degraded"
+            return "ok"
+
+DIVERGENCE UTILE : le livre cible degrade explicitement ("degraded") plutot
+que d'arreter net, et son plafond par defaut est 1,00 $ -- la moitie des
+2,00 $ de ce fichier. Surtout, ce fichier ne dit NULLE PART ce qui doit se
+passer quand un des six plafonds est franchi (arret ? degradation ?
+avertissement ?) : le livre cible, lui, tranche explicitement pour la
+degradation. C'est un manque reel de ce fichier, pas une hypothese --
+`check_budget()` prouve qu'une reponse concrete a cette question existe et
+est implementable, et que ce fichier ne l'a pas prise.
+
+`max_tool_calls` recoupe egalement "Rate limiting and circuit breakers"
+dans *Design Multi-Agent AI Systems Using MCP and A2A* (meme citation
+verbatim que dans `Agent-Contracts.txt`, fragment offset 15646148).

@@ -16,3 +16,40 @@ test_context_profile_matches_model
 test_destructive_tool_requires_approval
 
 C'est ici que la plateforme commence réellement à devenir robuste.
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+STATUT GLOBAL - CE FICHIER EST MARQUE "implémenté" DANS
+`docs/architecture/README.md`, ET C'EST EXACT SUR LE FOND MAIS PAS SUR LA
+FORME : aucun des dix noms de fonction ci-dessus n'existe verbatim dans le
+depot (`grep -c "^def test_" scripts/nexus_test.py` en rend 37, aucune ne
+s'appelle `test_L3_never_reaches_cloud` ni les neuf autres). Les CONCEPTS,
+en revanche, sont bien testes, ailleurs et sous d'autres noms :
+
+| exemple de ce fichier | ou c'est reellement teste | verdict |
+|---|---|---|
+| `test_L3_never_reaches_cloud` | `scripts/nexus_test.py:769 test_policy()`, verifications "routeur local ne sort jamais de la machine" (ligne 778-812) et "aucun repli ne reduit la confidentialite" (ligne 855) | VERIFIE (concept), FAUX (nom) |
+| `test_vision_never_routes_to_text_only` | `scripts/nexus_validate.py` (modalite vision, ligne ~463) et `scripts/Test-NexusConfig.ps1:10` ("compatibilité de modalité des fallbacks (embedding, vision)") | VERIFIE (concept), FAUX (nom) |
+| `test_embedding_fallback_stays_embedding` | `scripts/nexus_validate.py:280-286` ("un embedding ne retombe que sur un embedding", ligne 463) | VERIFIE (concept), FAUX (nom) |
+| `test_missing_model_alias_is_rejected` | `.claude/CLAUDE.md` §18 : `Test-NexusConfig.ps1` echoue sur toute reference pendante | VERIFIE (concept), FAUX (nom) |
+| `test_fallback_graph_has_no_cycles` | detection de cycles presente dans `nexus_validate.py`, `nexus_conformite.py`, `Test-NexusConfig.ps1` (grep "cycle") | VERIFIE (concept), FAUX (nom) |
+| `test_router_candidates_exist` | couvert par le meme `Test-NexusConfig.ps1` (§18 CLAUDE.md) | VERIFIE (concept), FAUX (nom) |
+| `test_cloud_route_requires_api_key` | `grep -rn "OLLAMA_CLOUD_API_KEY" scripts/nexus_validate.py scripts/Test-NexusConfig.ps1` : AUCUNE occurrence | **MANQUANT, PAS SEULEMENT MAL NOMME** |
+| `test_anthropic_route_requires_anthropic_key` | meme recherche pour `ANTHROPIC_API_KEY` : AUCUNE occurrence dans ces deux fichiers | **MANQUANT** |
+| `test_context_profile_matches_model` | valeurs 65536 / 131072 bien presentes dans `litellm_config.yaml` (lignes 159, 989, etc.) et `.claude/CLAUDE.md` §54, mais aucun test automatique ne les confronte au profil declare | PARTIEL : donnees reelles, verification absente |
+| `test_destructive_tool_requires_approval` | pas un test pytest, mais un mecanisme different et reel : `.claude/settings.json`, bloc `permissions.ask`, liste `git reset --hard *`, `docker compose down -v*`, `docker volume rm *`, `rm -rf *`, `ollama rm *` | VERIFIE (mecanisme different, meme effet) |
+
+DEUX GAPS REELS (pas des renommages a faire, des tests a ecrire) :
+`test_cloud_route_requires_api_key` et `test_anthropic_route_requires_
+anthropic_key` n'ont AUCUN equivalent trouve dans `nexus_validate.py` ni
+`Test-NexusConfig.ps1`. C'est precisement le genre d'ecart que
+`docs/architecture/README.md` demande de reperer : "verifie surtout ce qui
+n'a PAS ete repris".
+
+CONFRONTATION AU LIVRE - CONCORDANCE. *Design Multi-Agent AI Systems Using
+MCP and A2A*, section "Building tool use guardrails" (fragment verifie
+verbatim, voir la meme citation dans `Agent-Contracts.txt`) recommande
+precisement des "confirmation prompts" pour les operations a fort enjeu --
+ce que `permissions.ask` implemente reellement, meme si ce n'est pas un test
+de conformite au sens de ce fichier.

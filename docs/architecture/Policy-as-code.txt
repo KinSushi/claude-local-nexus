@@ -19,3 +19,40 @@ tool permissions
 budgets
 fallbacks
 contexts
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+MECANISME PROPOSE - NON DEPLOYE TEL QUEL. Aucun fichier YAML de ce depot ne
+porte de bloc `deny:` structure comme l'exemple (`classification: L3`,
+`provider: external`) :
+
+    $ grep -rln "^deny:" . --include="*.yaml" --include="*.yml"
+    (aucun resultat)
+
+La regle qu'il illustre ("les donnees L3 ne sortent jamais") EST bel et bien
+appliquee -- mais en Python imperatif, pas en YAML declaratif : voir
+`scripts/nexus_test.py:769 test_policy()` (verification "aucun repli ne
+reduit la confidentialite", ligne 855) et §108 de `.claude/CLAUDE.md`
+("Fallback direction"). Le SEUL bloc `deny:` reellement present dans le
+depot est `.claude/settings.json` (`permissions.deny`, un seul match), et il
+gouverne les permissions d'outils de l'agent Claude Code (lecture de
+`.env`, edition des gardes) -- pas le routage L3/provider decrit ici. Les
+deux mecanismes existent, mais aucun ne correspond exactement a l'exemple
+donne.
+
+CONFRONTATION AUX DEUX OUVRAGES CIBLES - DIVERGENCE. Recherche lexicale sur
+les resumes des 20 304 fragments du corpus copie pour cet audit :
+
+    $ grep -ihE "policy.as.code|policy engine" references/livres/*/index.tsv
+    (aucun resultat)
+
+Ni *30 Agents Every AI Engineer Must Build* ni *Design Multi-Agent AI
+Systems Using MCP and A2A* ne traitent ce terme sous ce nom exact. Ce n'est
+pas une preuve que le PRINCIPE est absent de la litterature (la
+recherche lexicale de ce corpus est fonctionnelle mais ne couvre que les
+resumes, jamais le texte integral -- voir `references/livres/_POINTEUR_
+CORPUS.md`), seulement que ces deux ouvrages precis, sur ce terme precis,
+ne rendent rien. A traiter comme un terme importe d'ailleurs (SRE / infra
+generale), pas comme une notion documentee par les deux ouvrages de
+reference de cet audit.

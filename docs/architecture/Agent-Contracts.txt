@@ -31,3 +31,51 @@ agent:
       - result
 
 Ça permet ensuite d'empêcher un agent spécialisé de devenir un agent omnipotent.
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+MODELES CITES - VERIFIES DECLARES. Les deux alias de `preferred_models` sont
+reellement declares dans `litellm_config.yaml` sur ce depot :
+
+    $ grep -n "model_name: qwen3-coder-30b-local" litellm_config.yaml
+    188:  - model_name: qwen3-coder-30b-local
+    $ grep -n "model_name: claude-sonnet-5" litellm_config.yaml
+    76:  - model_name: claude-sonnet-5
+
+DIVERGENCE MESUREE, hors perimetre de ce fichier mais qui le concerne
+directement : `.claude/agents/nexus-delegue.md` (non modifie ici, hors des 9
+fichiers confies) interdit categoriquement `qwen3-coder-30b-local` pour la
+delegation ("JAMAIS un modele local de 30B ou plus ... ils expirent a 900 s"),
+alors que `.claude/CLAUDE.md` §112.3 a lui-meme corrige cette affirmation :
+mesure sur ce meme hote, `qwen3-coder-30b-local` repond en **2,4 s** en regime
+etabli, le chiffre de 900 s etant une mesure de tache (pas de modele) laissee
+en cache. Ce fichier (`Agent-Contracts.txt`) recommande donc un modele que
+`nexus-delegue.md` bannit encore sur la foi d'une mesure perimee. Signale a
+l'orchestrateur ; la correction de `nexus-delegue.md` n'appartient pas au
+lot de cet agent.
+
+SCHEMA `allowed_tools`/`forbidden_tools` - PROPOSITION, NON DEPLOYEE.
+`grep -rn "forbidden_tools\|allowed_tools" scripts/*.py .claude/settings.json`
+ne rend aucune occurrence : aucun registre d'outils de ce type n'existe
+aujourd'hui dans le code. Conforme au classement de
+`docs/architecture/README.md` ("matiere premiere, pas l'etat deploye").
+
+CONFRONTATION AUX DEUX OUVRAGES - CONCORDANCE. *Design Multi-Agent AI Systems
+Using MCP and A2A*, section "Building tool use guardrails"
+(references/livres/epub, fragment offset 15646148, 1955 o) recommande
+exactement les mecanismes qu'un contrat d'agent devrait exposer et que ce
+fichier ne detaille pas : validation de schema, mode dry-run pour toute
+operation destructive, confirmation explicite pour les operations a fort
+enjeu, et limitation du nombre d'appels a un meme outil. Citation VERIFIEE
+verbatim par lecture directe du fragment (`seek`+`read`) :
+
+    "Rate limiting and circuit breakers: Prevent runaway tool use by
+    limiting how many times a tool can be called within a time window.
+    If an agent calls the same tool 50 times in a minute, something is
+    wrong. It should halt execution and alert the human who will
+    investigate."
+
+DIVERGENCE : le YAML de ce fichier declare `forbidden_tools` mais ne dit rien
+du COMMENT (schema, dry-run, confirmation, seuil de repetition) -- une liste
+d'interdits sans mecanisme d'application est un voeu, pas une garde.

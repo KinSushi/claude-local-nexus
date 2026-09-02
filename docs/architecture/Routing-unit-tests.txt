@@ -35,3 +35,43 @@ Autre :
 
   expected:
     context_profile: coding-large
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+VALEURS DE CONTEXTE - VERIFIEES REELLES. `65536` et `131072` (implique par
+120000 tokens) ne sont pas des chiffres inventes pour l'exemple : ils
+figurent reellement dans `litellm_config.yaml` --
+
+    $ grep -n "num_ctx: 65536\|num_ctx: 131072" litellm_config.yaml
+    159:      num_ctx: 65536
+    989:      num_ctx: 131072
+    (+ plusieurs autres occurrences de 131072)
+
+-- et dans `.claude/CLAUDE.md` §54 (`coding_standard: context: 65536`,
+`coding_large_repo: context: 131072`).
+
+NOMS D'ETIQUETTE - NON VERIFIABLES TELS QUELS. Ni `context_profile:
+coding-large` ni `provider: ollama-local` n'existent litteralement dans le
+depot :
+
+    $ grep -rn "coding-large\|coding_large" litellm_config.yaml scripts/*.py
+    (aucun resultat -- le nom reel est `coding_large_repo`, avec underscore,
+    voir CLAUDE.md §54)
+    $ grep -rn "ollama-local\|ollama_local" litellm_config.yaml scripts/*.py
+    (aucun resultat -- le prefixe reel est `ollama_chat/`, ex. ligne 190 :
+    "model: ollama_chat/qwen3-coder:30b")
+
+Ce ne sont pas des inventions de mesure (§112.4) puisqu'aucun de ces deux
+noms n'est presente comme une donnee mesuree -- ce sont des identifiants
+d'exemple dans un jeu de tests propose, non encore ecrit. Mais un futur
+auteur de ces tests devra utiliser `coding_large_repo` et `ollama_chat/...`,
+pas les noms de cet exemple, sous peine d'ecrire un test qui ne correspond
+a rien de reel.
+
+CAPACITE VISION - CONCEPT DEJA APPLIQUE AILLEURS. La regle "vision: true"
+attendue pour une tache image est deja mise en oeuvre, hors de tout jeu de
+tests unitaires nomme : `scripts/nexus_validate.py` (autour de la ligne 463,
+"un embedding ne retombe que sur un embedding" et son pendant vision) et
+`scripts/Test-NexusConfig.ps1:10` ("compatibilité de modalité des fallbacks
+(embedding, vision)").
