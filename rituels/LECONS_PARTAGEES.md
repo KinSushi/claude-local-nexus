@@ -845,3 +845,67 @@ attribut que le systeme porte.
 > **Ce que je retiens du focus livre-contre-code : le livre ne m'a pas appris ce que je faisais
 > mal. Il a NOMME ce que je faisais bien sans le savoir — donc reproductible — et il a liste ce
 > que je n'avais pas cherche, donc invisible a l'incident.**
+
+
+---
+
+## 26. AUDIT CODE VS LIVRE — quatorze fichiers, et le verdict est chiffre
+
+**Mission de l'operateur : *« audit complet de tout CODE VS LIVRE, non negociable »*.**
+Quatorze fichiers de production confrontes aux chapitres qui traitent de leur sujet, en deux
+lots, **26 821 octets de chapitres lus par `seek`, aucun modele pour les extraire**.
+
+    lot 1, huit fichiers   TENUE  6  ·  PARTIELLE  5  ·  ABSENTE 55
+    lot 2, six fichiers    TENUE  6  ·  PARTIELLE  2  ·  ABSENTE 37
+
+⇒ **Environ UNE prescription tenue sur SEPT.**
+
+### 26.1 Le manque le plus couteux, par fichier — et ils sont tous distincts
+
+| fichier | manque le plus couteux, selon l'audit |
+| --- | --- |
+| `nexus_bench` | **Define strict message schemas with validation** |
+| `nexus_valide` | **Exponential backoff with jitter** — echecs repetes et surcharge |
+| `nexus_releve` | **Store checkpoints in durable storage** |
+| `nexus_generate` | **Feature flags / kill switches** — aucun n'est code |
+| `nexus_validate` | **Tool shadowing** — pas de verification sans execution |
+| `nexus_doc` | **Zombie parameters** — appels silencieusement errones |
+
+★ **Le second est deja ferme** : `nexus_disjoncteur.py` a ete pose ce tour, d'apres le CODE du
+livre, avec l'etat durable en plus. **L'audit a valide un manque que je venais de combler** —
+ce qui prouve au passage que l'instrument voit juste.
+
+⚠️ **`Zombie parameters` sur `nexus_doc` est le plus ironique** : c'est l'anti-patron que J'AI
+COMMIS trois fois aujourd'hui — `--fichier --patch` devine, `--chaines` au lieu de `--refs`,
+`controle_script` au lieu de `sous_controle`. **L'audit le trouve dans le code d'un outil de
+consultation ; je l'avais dans ma conduite.**
+
+### 26.2 Ce que le premier lot a rate, et pourquoi
+
+**Le second lot a d'abord rendu 44 verdicts ILLISIBLES** : `ABSENTE` nu, sans nom de
+prescription, quinze fois de suite. **Ma consigne disait *« si tu ne trouves pas de preuve,
+ecris ABSENTE et rien d'autre »* — et le modele a obei LITTERALEMENT**, supprimant jusqu'au nom.
+
+> **« Rien d'autre » etait ambigu et j'en suis l'auteur.** Le remede n'est pas une consigne plus
+> severe : c'est un FORMAT qui rend l'omission inexprimable.
+
+**Format impose au second essai, trois champs separes par des barres :**
+
+    VERDICT | NOM DE LA PRESCRIPTION, toujours present | PREUVE tiree du code, ou « neant »
+
+⇒ **Le nom est TOUJOURS requis ; c'est la PREUVE qui peut manquer.** Meme lot, meme modele,
+meme extrait — **et l'information passe de nulle a exploitable.** C'est la regle §15 appliquee a
+un rapport d'audit : *choisir le format, c'est choisir quelles fautes le producteur ne PEUT PAS
+commettre.*
+
+### 26.3 Ce que l'audit ne dit pas, et je le declare
+
+⛔ **Deux fichiers du coeur restent hors audit** : `nexus_test.py` (3 610 lignes) et
+`tools/nexus-mcp/server.js` (3 556 lignes — **le serveur MCP lui-meme**). Ils depassent le
+calibre d'un appel unique. **Je les ai ecartes en le disant, et non en le taisant** — mais la
+revision reste incomplete tant qu'ils n'y passent pas.
+
+⚠️ **Et une prescription ABSENTE n'est pas toujours un defaut** : le chapitre *circuit breakers*
+prescrit du retry reseau a `nexus_valide`, qui valide un correctif localement. **L'appariement
+chapitre-fichier est de moi, et une prescription hors sujet produit un ABSENTE juste et
+inutile.** Le chiffre de 1 sur 7 doit se lire avec cette reserve.
