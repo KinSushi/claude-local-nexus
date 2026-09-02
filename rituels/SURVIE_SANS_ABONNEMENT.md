@@ -79,6 +79,65 @@ Voie équivalente, packagée par le fournisseur du moteur, présente sur la vers
 ollama launch claude
 ```
 
+### ⚠ LE NOM DU MODÈLE N'EST PAS L'ALIAS — mesuré, et c'est l'erreur la plus coûteuse
+
+Le moteur ne connaît **pas** les alias de la passerelle. Mesuré :
+
+```
+glm-4.7-flash-local    ->  HTTP 404   "model 'glm-4.7-flash-local' not found"
+glm-4.7-flash:latest   ->  HTTP 200 en 36.3 s
+```
+
+`-local` et `-cloud` sont des **alias LiteLLM**. Une fois `ANTHROPIC_BASE_URL` pointé sur le
+moteur, il faut employer le **nom Ollama**, avec son tag : `glm-4.7-flash:latest`,
+`qwen3-coder:30b`, `llama3.2:3b`.
+
+La liste exacte des noms acceptés :
+
+```powershell
+ollama list
+```
+
+### La séquence complète, dans l'ordre
+
+```powershell
+$env:ANTHROPIC_BASE_URL  = "http://localhost:11434"
+$env:ANTHROPIC_AUTH_TOKEN = "local"
+claude --model qwen3-coder:30b
+```
+
+Les deux variables doivent être posées **avant** de lancer le client, dans **la même**
+fenêtre. `$env:` ne persiste que dans la session PowerShell courante : ouvrir un nouveau
+terminal les perd. Pour les rendre durables :
+
+```powershell
+[Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "http://localhost:11434", "User")
+[Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "local", "User")
+```
+
+**Comment savoir que la redirection a pris** : la bannière du client n'affiche plus
+`Claude Max`. Tant qu'elle l'affiche, le client parle encore à l'API distante et **aucun
+modèle local ne sera trouvé**, quel que soit le nom choisi.
+
+### Quel modèle choisir — mesuré, protocole Anthropic, `max_tokens=200`
+
+| modèle | première réponse | rendu |
+| --- | --- | --- |
+| **`llama3.2:3b`** | **15,2 s** | 121 car. — **le seul confortable en interactif** |
+| `qwen2.5-coder:14b` | 45,0 s | 72 car. |
+| `qwen3-coder:30b` | 113,4 s | 126 car. — le meilleur en code, mais lent |
+| `glm-4.7-flash:latest` | 51,3 s | **VIDE** |
+
+**`glm-4.7-flash` rend VIDE et ne convient pas** : son raisonnement consomme tout le budget de
+sortie avant la livraison. C'est un défaut connu de cette famille — un budget serré y produit
+du vide, pas du tronqué. Ne le choisissez pas pour un client interactif.
+
+**Pour un premier essai, employez `llama3.2:3b`** : il répond en 15 s avec du contenu.
+
+```powershell
+claude --model llama3.2:3b
+```
+
 ### Le piège à connaître avant de choisir un modèle
 
 **Être résident en mémoire n'est pas être capable de dialoguer.** Un modèle d'*embedding*
