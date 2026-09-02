@@ -16828,3 +16828,50 @@ Un appel volontairement sous-dote — 30 jetons — rend desormais :
 600` — desormais diagnostique en UNE LIGNE au lieu d'une heure et de trois hypotheses.** Le
 chemin d'echec porte sa tracabilite, le plafond est nomme avec le chiffre requis, et le compteur
 des vides existe.
+
+
+### 115.130 `--sortie` PORTE ENFIN SA MARQUE DE FIN — et je declare ce qu'elle ne prouve pas
+
+**Dernier defaut declare de la journee sur `nexus_agent`, et il avait coute une heure a un
+tiers.** Le fichier de rendu incremental ne portait aucune marque disant s'il etait COMPLET ou
+EN COURS.
+
+**Ce que ca a produit** : une session voisine a ouvert le fichier pendant l'execution, y a trouve
+**deux lignes pour dix taches**, et a conclu que huit avaient DISPARU sans laisser de trace.
+**Elles n'avaient pas disparu : elles n'etaient pas encore arrivees.**
+
+> **Un fichier de rendu sans marque de fin est indiscernable d'un fichier tronque — et les deux
+> appellent des gestes opposes.** Vingt-huitieme instance de la classe du depot.
+
+**Pose et prouve :**
+
+    ligne 1 : rendu a, 5 car
+    ligne 2 : MARQUE DE FIN, taches_ecrites=1
+
+⚠️ **CE QUE CETTE MARQUE NE PROUVE PAS, et je le declare plutot que de laisser croire** : elle
+est ecrite dans le `finally`, donc **un lot interrompu par une EXCEPTION la portera quand
+meme**. Elle atteste que *le processus a atteint sa fin de vie normale*, **jamais** que toutes
+les taches ont reussi. Seul l'ecart entre `taches_ecrites` et le nombre depeche revele le cas.
+
+⇒ **Elle protege exactement le cas qui a coute** : un processus TUE — shell mort, machine
+arretee — n'execute pas son `finally`, donc **l'absence de marque signale bien l'interruption
+brutale**. C'est le cas de la session voisine, et il est couvert.
+
+⇒ **Elle ne protege PAS** le lot qui leve au milieu. **Une marque de fin n'est pas une marque de
+succes**, et confondre les deux serait refaire la faute qu'elle corrige.
+
+### 115.131 BILAN DES DEFAUTS DE `nexus_agent` FERMES CE JOUR — tous trouves par l'USAGE d'AUTRUI
+
+| defaut | trouve par | prouve par |
+| --- | --- | --- |
+| rendu VIDE compte comme reussite | sovereign, 6 vides sur 10 annonces reussis | `0 rendues vides` au recapitulatif |
+| chemin d'ECHEC sans tracabilite | mon audit du patch precedent | reverse test, `TRACABILITE: ? [?] ?` |
+| tracabilite seulement en TETE | EA MT5, rendu declarant `gpt-4o` | `TRACABILITE:` en pied |
+| `projet='nexus'` ECRIT EN DUR | trois sessions bloquees une heure | differentiel deux appelants, deux noms |
+| `--sortie` sans marque de fin | sovereign, « 8 taches disparues » | `taches_ecrites=N` en derniere ligne |
+| refus sans la FORME attendue | EA MT5, contraint de lire le source | differentiel, deux refus deux messages |
+
+★ **Aucun de ces six defauts n'a ete trouve par relecture. Tous par l'usage — et cinq sur six par
+l'usage de QUELQU'UN D'AUTRE.** C'est la demonstration la plus nette du §0.1.4 : *le defaut
+trouve par l'usage est celui qu'aucun audit ne voit*, et il se trouve encore mieux quand
+l'utilisateur n'est pas l'auteur.

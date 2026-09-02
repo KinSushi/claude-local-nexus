@@ -1482,6 +1482,15 @@ def main() -> int:
                                         r.get("nom") or r.get("modele") or "?"),
                       file=sys.stderr)
     finally:
+        # Un fichier sans marque de fin est indiscernable d'un fichier tronque.
+        # L'absence de cette ligne signifie EN COURS ou INTERROMPU.
+        if flux is not None:
+            try:
+                flux.write(json.dumps({"fin": True, "taches_ecrites": faits}, ensure_ascii=False) + "\n")
+                flux.flush()
+            except Exception:
+                pass
+            flux.close()
         if flux is not None:
             flux.close()
         # Une erreur a la fermeture ne doit pas masquer l'erreur d'origine
