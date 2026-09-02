@@ -17126,3 +17126,56 @@ commis dans le tour qui l'a produit, jamais a la fin.**
 ⚠️ **Ce que je ne peux PAS faire, et qui doit remonter a l'editeur** : le rapport de la panne.
 Les brouillons sont en file locale ; **seul l'operateur peut les envoyer** (`/feedback`). Je le
 redis parce qu'a sept occurrences, le signalement vaut plus que le contournement.
+
+
+### 115.137 HUITIEME PANNE — et le DISJONCTEUR applique a moi-meme, pour la premiere fois
+
+**Huitieme panne d'infrastructure en une journee, signalee en pleine production.**
+
+**GESTE IMMEDIAT, avant tout diagnostic** : bundle refait.
+
+    110 commits captures · 3 691 147 octets · verifie
+    arbre PROPRE · deux sauvegardes horodatees disponibles
+
+★ **Le travail est protege AVANT que la cause soit connue.** C'est l'ordre juste : une panne
+d'infrastructure ne se diagnostique pas depuis la session qu'elle menace.
+
+### 115.137.1 J'AI ARRETE APRES DEUX RENVOIS, ET C'EST LA PREMIERE FOIS
+
+Voulant MECANISER cette sauvegarde dans le rituel, deux renvois au banc :
+
+    renvoi 1  cree « point/nexus » — DEUX repertoires imbriques au lieu de « .nexus »
+    renvoi 2  ancre sur une signature approximative, non presente dans le fichier
+
+⇒ **ARRET DECIDE, et cette fois par la regle et non par lassitude.** Le disjoncteur lu ce soir
+dans *Building coordination guardrails* : *detect failure rates and temporarily halt
+communication when one agent is unhealthy*.
+
+★ **ET LA CAUSE DU PREMIER ECHEC EST MA CONSIGNE, PAS LE MODELE.** J'ecrivais *« le
+sous-repertoire point nexus »* comme peripherase de `.nexus` — le modele a cree `point/nexus`.
+**Troisieme fois aujourd'hui que le point initial de `.nexus` se perd dans un rendu.**
+
+> **Une peripherase n'est pas une specification.** Trois modeles differents ont fait la meme
+> lecture ; ce n'est plus une erreur de modele, c'est un defaut de consigne. **Nommer un
+> caractere par son nom francais le rend ambigu ; il faut le montrer.**
+
+**CE QUE LE DISJONCTEUR PRESCRIT A LA PLACE**, et je l'inscris sans l'avoir fait, faute de
+temps de session : *changer de famille, ou commander a NEUF sans montrer l'existant*. Ici, la
+forme juste serait un **script separe** que le rituel appelle — un fichier neuf se produit sans
+ancre, donc sans les deux modes d'echec ci-dessus.
+
+**ETAT EXACT** : la sauvegarde est **faite a la main et verifiee**, elle n'est **pas mecanisee**.
+La distinction compte : *un geste tenu de tete n'est pas un mecanisme*, et le prochain tour
+devra le refaire.
+
+### 115.137.2 CE QUE HUIT PANNES ETABLISSENT
+
+| ce qui a tenu | ce qui a manque |
+| --- | --- |
+| **rien de perdu, huit fois** — chaque livrable commis dans le tour qui l'a produit | la publication reste fermee par la dette de cablage |
+| le bundle, refait a la demande | il n'est pas automatique |
+| les cinq gardes, mesurees hors de cause a la 2e et a la 7e panne | — |
+
+> **La panne n'est pas mienne. Ce qui est mien, c'est de n'avoir rien en vol quand elle
+> survient** — et huit occurrences en ont fait une contrainte de methode : **ecrire au disque
+> tot, un livrable par tour, jamais de travail en memoire de session.**
