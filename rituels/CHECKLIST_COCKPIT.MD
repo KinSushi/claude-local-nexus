@@ -13886,3 +13886,111 @@ explique une attente de 900 s ; appele avant, il l'evite.
 | 59 | Rien ne verifie que le worktree EXISTE, seulement que le parametre est present | `OUVERT` — borne structurelle de `PreToolUse`, confirmee par mesure |
 | 60 | 158 appels cloud (3 %) sans sortie, plafond trop serre | `OUVERT` — premier levier de quota, sans perte de capacite |
 | 61 | `nexus_charge` n'est appele par aucun garde avant un appel local | `OUVERT` — la consigne existe, le mecanisme non |
+
+---
+
+## 123. LE VERROU DIT LIBRE, LA CHARGE DIT INTERDIT — deux gardes, deux grammaires
+
+2026-09-01, minuit. Trouve en verifiant les consignes du §122, non en le cherchant. C'est **la meme
+classe que le trou Bash** ferme le meme jour, et personne ne l'avait vue parce que les deux
+mecanismes fonctionnent — separement.
+
+### 123.1 LA MESURE, PRISE AU MEME INSTANT
+
+```
+python scripts/nexus_verrou_machine.py --etat
+    LIBRE  pytest
+    TENU   hachage        <- la copie miroir de sovereign, 38,8 Go
+    LIBRE  banc           <- « une inference locale sur le banc de modeles »
+
+python scripts/nexus_charge.py
+    RAM Libre: 20.85 Go / Totale: 61.62 Go
+    machine CHARGEE : RAM insuffisante
+```
+
+**Le verrou `banc` est disponible pendant que la charge interdit le plan local entier.**
+
+### 123.2 LE CHEMIN OUVERT, ET IL EST EMPRUNTE PAR CELUI QUI OBEIT
+
+Une session qui suit la discipline — prendre `banc` avant une inference locale — le prendrait **sans
+obstacle**, et lancerait un appel qui, d'apres la consigne de l'architecte, *« n'est pas lent : il
+EXPIRE a 900 s »*.
+
+> **Elle aurait respecte le mecanisme prevu et viole la consigne, dans le meme geste.**
+
+C'est exactement la forme du trou Bash (§116.4, §118) : le chemin conforme a la discipline est celui
+que la protection ne couvre pas.
+
+### 123.3 POURQUOI AUCUN DES DEUX NE MENT
+
+| mecanisme | ce qu'il mesure | ce qu'il ignore |
+| --- | --- | --- |
+| `nexus_verrou_machine` | une RESSOURCE NOMMEE est-elle reservee ? | l'etat physique de la machine |
+| `nexus_charge` | la RAM disponible suffit-elle ? | qu'un tiers ait reserve quoi que ce soit |
+
+Ni l'un ni l'autre n'est defectueux. **Ils repondent a deux questions differentes, et le travail
+reel exige les deux reponses.** C'est le « desaccord de granularite » de `sovereign` sous une
+troisieme forme : deux protections visant le meme but, exprimees dans des grammaires qui ne se
+recoupent pas.
+
+Le remede naturel — que la prise du verrou `banc` consulte `nexus_charge` et refuse — n'est pas pose
+ici : le diagnostic ayant ete produit ici, le correctif ne peut pas l'etre, et `nexus_verrou_machine`
+est un outil PORTABLE appele par trois depots (§0.5).
+
+### 123.4 CE QUE `sovereign` APPORTE SUR LES APPELS VIDES — la cause, contre l'intuition
+
+Le §122.2 constatait : 158 appels cloud sans sortie, « budget de sortie trop serre ». Il en donne la
+**cause**, et elle retourne le reflexe :
+
+> Le raisonnement consomme le budget de sortie, **puis est retire a la livraison**. L'appelant
+> recoit une chaine vide **sans erreur**.
+
+Mesure comparee, meme prompt, meme instant, meme modele :
+
+| `max_tokens` | rendu de `gpt-oss-120b` |
+| --- | --- |
+| 300 | **VIDE** |
+| 7000 | 360 lignes de Python irreprochables |
+
+**Le seuil ne mesure pas la difficulte de la tache. Il mesure ce qui reste au-dela du
+raisonnement** — une propriete du modele, pas du travail demande, et donc impossible a deviner.
+
+⇒ **Serrer `max_tokens` pour economiser coute un appel ENTIER, entree comprise.** C'est l'inverse
+exact de l'economie recherchee, et c'est la faute que mes essais a `--max-tokens 5` et `20` ont
+commise toute la soiree.
+
+Trois consequences, verifiees ici a cout nul :
+
+| point | verification | etat |
+| --- | --- | --- |
+| `nexus_summarize` / `nexus_context` n'exposent pas `max_tokens` | lecture des schemas | **confirme** — seul levier : changer de modele |
+| `gemma4-31b-cloud` fiable | declare, 4 occurrences ; 12/12 chez `ea-mt5`, une correction juste chez `sovereign` | deux sources independantes |
+| `deepseek-v4-pro-0813` rend vide meme a 7000 | rapporte, non re-mesure | raisonneur lourd : arbitrage court, jamais redaction |
+
+**Le seuil n'a PAS ete re-mesure ici, deliberement.** Deux sessions l'ont etabli independamment ;
+tirer un troisieme appel pour confirmer des mesures concordantes serait exactement le gaspillage
+qu'on vient de chiffrer. **A 46 % de quota, la concertation remplace la mesure.**
+
+### 123.5 CORRECTION DE MA RECOMMANDATION DU §121.4 — ne pas aligner le `rc`
+
+Le §121.4 signalait que `nexus_garde_ecriture` rend `deny + rc=0` la ou les trois autres rendent 2,
+et suggerait d'ajouter `sys.exit(2)` puis de rejouer le reverse test.
+
+**`sovereign` apporte le fait qui change la recommandation** : le mainteneur a tente cet alignement
+il y a une heure sur un autre garde et **l'a rendu entierement muet** — code 2, aucune sortie, aucun
+motif. Retour arriere immediat.
+
+> **Un garde muet est pire qu'un garde au mauvais code.** Le second bloque en se trompant de
+> convention ; le premier bloque sans dire pourquoi, et personne ne peut suivre la voie qu'il ne
+> nomme pas.
+
+⇒ Recommandation corrigee : **ne pas aligner, documenter la divergence.** Si l'alignement est fait
+malgre tout, le reverse test doit etre rejoue **et la presence du MOTIF verifiee** — pas seulement
+le refus. Verifier qu'il bloque encore ne suffit pas ; c'est ce que le §0.1.4.1 appelle « nommer la
+voie ».
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 62 | Le verrou `banc` est LIBRE quand `nexus_charge` interdit le local | `OUVERT` — deux grammaires, un chemin ouvert pour qui obeit |
+| 60 | 158 appels cloud sans sortie | **CAUSE ETABLIE** — le raisonnement consomme le budget puis est retire ; serrer `max_tokens` coute l'appel entier |
+| 57 | `rc=0` du garde d'ecriture | **RECOMMANDATION CORRIGEE** — ne pas aligner ; un alignement a deja rendu un autre garde muet |
