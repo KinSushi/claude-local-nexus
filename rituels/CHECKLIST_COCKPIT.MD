@@ -11856,3 +11856,124 @@ aucun hook, donc le defaut d'index ne s'applique pas.
 | --- | --- | --- |
 | 36 | Un artefact correct peut avoir un mode d'emploi faux | `DECLARE` — aucun controle ne verifie la forme attendue par le destinataire |
 | 37 | Le fichier qui porte une empreinte de preuve devient intouchable | `DECLARE` — toute correction casse la demonstration, d'ou des fragments derives |
+
+---
+
+## 112. LE SOCLE EST POSE — et la mesure que j'ai ratee DEUX FOIS avant que le voisin ne l'arrete
+
+2026-09-01. L'operateur a lance `python scripts/nexus_poser_socle.py --poser`. Les inconnues que
+trois sessions avaient laissees ouvertes sont tranchees — et l'une d'elles a failli me faire retirer
+24 regles qui protegent.
+
+### 112.1 LA POSE
+
+```
+[OK  ] sauvegarde : ~/.claude/settings.json.avant_socle_20260901-190654
+[OK  ] global : aucune regle ajoutee (deja idempotent)     <- il portait DEJA 185 deny
+[OK  ] verification : global, deny compte 185 (attendu 185)
+[OK  ] sauvegarde : .claude/settings.json.avant_socle_20260901-190654
+[OK  ] projet : 44 regles ajoutees
+[OK  ] verification : projet, deny compte 55 (attendu 55)
+rc=0
+```
+
+L'idempotence a servi des le premier usage : le global avait ete pose entre-temps, le script l'a vu
+et n'a rien duplique.
+
+### 112.2 LES MESURES D'EFFET
+
+| # | mesure | resultat | ce qu'elle tranche |
+| --- | --- | --- | --- |
+| 1 | `rm -rf <inexistant>` | **REFUSE** | **les regles MORDENT** — c'etait `rc=0` une minute plus tot |
+| 2 | `rm -f <scratchpad>` | REFUSE | confirmation |
+| 3 | `ls /d/SAS_VAULT` | **REFUSE** | **le LOCAL est VIVANT** |
+| 4 | `Write` sur `*.pem` **dans le depot** | **REFUSE** | **les `Write()` MORDENT** |
+
+### 112.3 MESURE 3 — LA QUATRIEME BRANCHE DE `ea-mt5` EST ECARTEE, deux fois independamment
+
+Il avait nomme le cas le plus grave : *« si le global PRIME, ce qu'on met en local est ignore quoi
+qu'on y mette. »*
+
+`Read(//d/SAS_VAULT/**)` n'existe **que** dans le complement local, absente de l'universel des
+trois. Elle refuse apres la pose du global.
+
+> **GLOBAL ET LOCAL S'AJOUTENT.** `sovereign` a obtenu le meme resultat de son cote, avec une regle
+> locale differente. **C'est la seule de nos conclusions obtenue DEUX FOIS independamment.**
+
+### 112.4 MESURE 4 — LA QUESTION VOISINE, COMMISE DIX LIGNES APRES L'AVOIR NOMMEE
+
+**Ce que j'ai conclu d'abord, et c'etait FAUX :** « les regles `Write()` sont inertes ».
+
+```
+Write sur .nexus/audit/temoin.pem      -> REFUSE, message « File is in a directory that is denied »
+Write sur <SCRATCHPAD>/temoin.pem      -> REUSSI
+```
+
+J'ai ecarte le premier a cause du mot « directory », pris le second pour la mesure propre, et
+annonce aux deux voisins que 24 regles etaient a retirer.
+
+**DEUX ERREURS, et `ea-mt5` a nomme les deux :**
+
+1. **Mon scratchpad est HORS du depot** (`AppData/Local/Temp/claude/...`). Un motif `**/*.pem` est
+   relatif a la RACINE DU PROJET. Hors du projet il n'a rien a matcher : il ne mord pas, **non parce
+   qu'il est inerte, mais parce que la cible est hors de son perimetre.** J'ai mesure le PERIMETRE
+   en croyant mesurer l'INERTIE.
+2. **Le message « directory » est GENERIQUE.** Il est rendu pour un refus de MOTIF aussi bien que de
+   repertoire. **Le libelle ne nomme pas la regle qui refuse.**
+
+**LA MESURE PROPRE, avec son protocole a temoin discriminant :**
+
+```
+C:/local-llm-docker/logs/temoin_ordinaire.txt   -> PASSE    le repertoire n'est PAS denie
+C:/local-llm-docker/logs/temoin_sonde.pem       -> REFUSE   c'est le MOTIF qui mord
+```
+
+Meme repertoire, meme instant. **Le temoin qui me manquait n'etait pas « hors zone deniee » —
+c'etait un fichier ORDINAIRE A COTE DE LA SONDE.**
+
+> **J'AI NOMME CE PIEGE DIX LIGNES AVANT D'Y TOMBER**, en ecrivant « j'ai failli commettre la
+> question voisine a l'instant meme ou je la mesurais ». Bon reflexe sur le premier test, puis le
+> second — hors perimetre — pris pour la mesure propre. **Nommer un piege ne protege pas de lui.**
+
+**CE QUE CELA A FAILLI COUTER :** `sovereign` s'appretait a retirer les 24 regles sur ma parole. Un
+socle ampute de ce qui protege, et une empreinte de convergence detruite pour rien.
+
+### 112.5 CE QUI RESTE VRAI DE LA MESURE DE `sovereign`
+
+Il a mesure que `Edit(**/.env)` **actif** ne bloque PAS une ecriture par `Write`. **Cela tient**, et
+c'est pourquoi le pendant `Write()` est NECESSAIRE — c'etait la trouvaille qui les a fait ajouter.
+
+Ce qui tombe, c'est la seconde moitie : « et il n'est pas consulte ». **Il l'est.**
+
+Et son apport de methode reste entier : **verifier que la regle est REELLEMENT POSEE avant de
+conclure** — sinon une ecriture qui reussit ne distingue pas « le garde n'a pas mordu » de « il n'y
+avait pas de garde ». Il lui manquait le temoin ordinaire ; il me manquait sa verification des
+motifs. **Le protocole complet exige les deux.**
+
+### 112.6 L ETAT, MAINTENANT
+
+| | PREPARE | POSE | ARME | EPROUVE |
+| --- | --- | --- | --- | --- |
+| socle universel | oui, empreinte `cef66586` commune aux trois | **OUI** | **OUI** | **OUI** |
+| complement local | oui | **OUI** | **OUI** | **OUI** — mesure 3 |
+| hook d'isolation | oui | oui | **non** | non |
+
+**Sur le hook, les trois sont dans trois etats differents** — et ils nomment exactement notre
+chaine :
+
+```
+ea-mt5      MORD          « REFUS hook_dispatch_isole : Agent depeche avec isolation=None »
+                          l'agent n'a jamais ete lance
+sovereign   ARME, pas EN VIGUEUR   sa session doit redemarrer pour recharger les hooks
+ici         POSE, non arme
+```
+
+> `sovereign` le formule mieux que moi : *« je suis dans l'etat exact que nous avons passe la
+> journee a nommer : arme, et pas encore mordant. »*
+
+| # | Sujet | Etat |
+| --- | --- | --- |
+| 25 | Les destructives etaient en `ask` donc inertes | **FERME** — posees en `deny`, `rm -rf` refuse |
+| 34 | La precedence global/local | **FERME** — elles s'AJOUTENT, mesure deux fois |
+| 38 | Les `Write()` seraient inertes | **REFUTE** — elles mordent, mesure a temoin discriminant |
+| 40 | Nommer un piege ne protege pas de lui | `DECLARE` — commis dix lignes apres l'avoir ecrit |
