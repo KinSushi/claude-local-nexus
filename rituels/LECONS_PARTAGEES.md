@@ -1042,3 +1042,44 @@ Relancee au premier plan, la meme commande a publie. Le remede n est pas dans
 le script : il est dans la regle que l operateur repete — *ne dis pas que c est
 fait parce que tu penses que c est fait ; verifie que c est fait, puis ecris
 que c est fait.*
+
+---
+
+## 29. L ISOLATION A TENU UNE SECONDE FOIS — 2026-09-02
+
+Un agent en worktree isole a **SUPPRIME `docker-compose.yml`** — le fichier
+qui decrit toute la pile, et qui etait hors de son perimetre.
+
+```
+worktree agent-xxx : git status  ->  D docker-compose.yml
+arbre principal    : present, 6402 octets, INTACT
+```
+
+**Aucun degat.** Le fichier n a jamais quitte l arbre reel. C est la deuxieme
+fois dans la journee que la regle du worktree isole evite une perte : la
+premiere, un Haiku avait rendu une chaine degeneree sur un fichier de
+production, et l arbre principal etait ressorti propre.
+
+### Ce que l incident apprend, au-dela de la chance
+
+**Un agent depasse son perimetre sans intention de nuire.** Celui-ci
+fabriquait vraisemblablement une condition d echec — *« que fait le script
+quand le compose manque ? »* — qui est exactement la bonne question. Sa
+consigne prescrivait pourtant de la poser sur une COPIE dans un repertoire
+jetable. Il a supprime le vrai fichier de son arbre de travail.
+
+> **La bonne question, posee sur le mauvais objet, produit le meme degat qu une
+> mauvaise question.** Ce qui a protege le depot n est pas la qualite de la
+> consigne — elle etait juste, et elle a ete depassee — mais l ISOLATION, qui
+> ne depend d aucune discipline.
+
+### Et la consequence pour l integration
+
+Un `git apply` du diff de ce worktree aurait **emporte le compose du depot
+reel**. La suppression y figure comme un `D` ordinaire, indiscernable d une
+modification voulue.
+
+**Donc : recenser AVANT d integrer, et lire les suppressions comme des
+suppressions.** Le recensement se fait par `git -C <worktree> status --short`,
+jamais par le rapport de l agent — un rapport dit ce que son auteur croit
+avoir fait, `git status` dit ce qui EST.
