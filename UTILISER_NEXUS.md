@@ -11,7 +11,7 @@ Outils disponibles :
 
 **Exemple :**
 ❌ Mauvais : `shell_execute("python C:/local-llm-docker/scripts/nexus_search.py --query 'gestion des verrous'")`
-✅ Bon : `nexus_search(query="Où se trouve la gestion des verrous dans le dépôt ?")` $\rightarrow$ `nexus_ask(question="Comment fonctionne ce verrou ?")`
+✅ Bon : `nexus_search(query="Où se trouve la gestion des verrous dans le dépôt ?")` $\rightarrow$ `nexus_ask(prompt="Comment fonctionne ce verrou ?")`
 
 ## 3. LA CARTE
 
@@ -20,7 +20,7 @@ Outils disponibles :
 | Localiser un élément dans le dépôt | `nexus_search` | **Priorité :** a trouvé en 30s deux fichiers via rapprochement sémantique là où des heures de grep ont échoué. |
 | Analyser un corpus plus large que la fenêtre | `nexus_context` | Injection de contexte étendu. |
 | Réduire l'information avant de raisonner | `nexus_summarize` | Synthèse de documents. |
-| Poser une question | `nexus_ask` | Question directe. **Ne prend PAS de fichiers** (conception volontaire : passez par search, context ou summarize). |
+| Poser une question | `nexus_ask` | Question directe. Le parametre requis est **`prompt`**, jamais `question`. Il **accepte** un tableau `paths` pour joindre des fichiers — corrige le 2026-09-02 : ce tableau affirmait le contraire, et le schema reel capture par `tools/list` le dementait. Pour un gros corpus, preferer tout de meme `search`, `context` ou `summarize`, qui reduisent le contexte au lieu de le charger. |
 | Comparer plusieurs modèles sur une question | `nexus_compare` | Analyse comparative. |
 | Traiter un lot de requêtes | `nexus_batch` | Exécution en série. |
 

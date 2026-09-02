@@ -17,11 +17,13 @@
  * quand sa spécificité le justifie. L'arbitrage cout / confidentialité /
  * capacité redevient une décision explicite, prise appel par appel.
  *
- * Douze outils, organisés en quatre familles :
+ * Quinze outils, organisés en cinq familles :
+ *   Vérifié le 2026-09-02 par extraction du bloc const TOOLS et interrogation du serveur via tools/list.
  *   exécution    nexus_ask, nexus_route, nexus_batch, nexus_compare
- *   contexte     nexus_context, nexus_summarize, nexus_index_build, nexus_search
+ *   contexte     nexus_context, nexus_summarize, nexus_index_build, nexus_search, nexus_livres
  *   modalité     nexus_vision
  *   inspection   nexus_models, nexus_profile, nexus_savings
+ *   machine      nexus_charge, nexus_verrou
  *
  * Aucune dépendance npm : uniquement la bibliothèque standard de Node.
  * Le transport stdio MCP est du JSON-RPC délimité par des sauts de ligne,
@@ -3183,6 +3185,13 @@ function runPython(args, timeoutMs = 300000) {
   if (name === "nexus_compare") {
     exigerTexte(args.prompt, "prompt");
     const models = exigerTableauNonVide(args.models, "models", 2, "modeles");
+  // pourquoi ce controle existe: un type invalide faisait perdre la comparaison entiere au lieu d'une seule ligne
+  for (let i = 0; i < models.length; i++) {
+    const element = models[i];
+    if (typeof element !== 'string' || element.length === 0) {
+      throw new ErreurProtocole(`parametre 'models', element ${i + 1} : une chaine non vide est attendue, recu ${typeof element}`);
+    }
+  }
     exigerEntierPositif(args.max_tokens, "max_tokens");
     const messages = [];
     if (args.system) messages.push({ role: "system", content: args.system });
