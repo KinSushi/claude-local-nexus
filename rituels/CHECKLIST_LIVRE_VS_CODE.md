@@ -82,3 +82,29 @@ de moi. Un chapitre hors sujet produit un ABSENTE juste et inutile.
 
 ⚠️ **14 fichiers audites sur 71.** Le ratio mesure — **~1 prescription tenue sur 7** — porte sur
 ces 14 seulement.
+
+---
+
+## 7. Ce que le CLIQUET DE CABLAGE ne sait pas voir — defaut connu, non corrige
+
+**Mesure du 2026-09-02, repetee trois fois dans la journee** : `nexus_cablage.py` declare
+orphelin tout script qu'aucun **FICHIER SUIVI PAR GIT** n'invoque.
+
+    nexus_sauvegarde.py        tache planifiee NexusSauvegarde, resultat 0   -> declare ORPHELIN
+    nexus_checklist_progres.py tache planifiee NexusProgress,   Ready        -> declare ORPHELIN
+
+⇒ **Ces deux scripts ont un appelant REEL, qui tourne sans session — et c'est precisement pour
+cela qu'il est invisible au cliquet.** Une tache planifiee Windows n'est pas un fichier du depot.
+
+★ **Un controle aveugle a une classe entiere d'appelants produit de FAUX orphelins, et de faux
+orphelins font desarmer le controle.** C'est le risque reel : a force de voir des orphelins qui
+n'en sont pas, on cesse de lire la liste.
+
+**CAUSE, lue dans le code** : `suivis()` rend des CHEMINS, `contenus()` les OUVRE et filtre sur
+l'extension. **Y injecter une ligne de commande de tache planifiee ne peut pas marcher** — j'ai
+essaye, le patch a ete pose sans effet, et je l'ai RETIRE plutot que de laisser du code mort.
+
+**REMEDE JUSTE, nomme et NON FAIT** : `contenus()` doit accepter un couple nom-texte plutot qu'un
+chemin, pour qu'une source d'appelant non-fichier soit representable. **C'est une refonte, pas un
+patch** — et le dire vaut mieux que le bricoler.
+
