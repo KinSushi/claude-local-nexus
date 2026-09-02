@@ -17319,3 +17319,44 @@ pourquoi je l'employais.
 `all-minilm` sur du texte OCR de mathematiques rend du bruit sur une requete d'ingenierie
 anglaise. **Un meilleur corpus ne corrigera pas tout ; le choix du modele d'embedding est une
 seconde variable**, et `bge-m3` est disponible localement sans avoir jamais ete compare.
+
+
+### 115.141 ONZIEME PANNE — la protection a tenu SANS SESSION, et voici le seul levier restant
+
+**Onzieme panne. Zero perte — et pour la premiere fois SANS INTERVENTION DE MA PART :**
+
+    NexusSauvegarde   derniere execution OK, resultat 0, prochaine planifiee
+    trois bundles horodates, 3 700 673 / 3 699 331 / 3 694 159 octets
+    116 commits, arbre PROPRE
+
+★ **C'est la preuve que le geste d'hier etait le bon** : cabler la sauvegarde a une tache
+planifiee plutot qu'au rituel de fin de tour. **Le rituel vit dans la session ; c'est la session
+que la panne interrompt.** Une protection qui exige que tout aille bien ne protege de rien.
+
+### 115.141.1 CE QUE JE PEUX ENCORE, ET CE QUE JE NE PEUX PAS
+
+**Onze occurrences etablissent que la cause n'est pas ici.** Mesuree deux fois — a la 2e et a la
+7e panne — les cinq gardes rendent 0 en 0,34 s, et le classificateur est un service **distant**
+interroge **en amont** de tout hook : quand il tombe, aucun hook n'est atteint.
+
+**LE SEUL LEVIER QUI RESTE DE MON COTE EST LE NOMBRE D'APPELS.**
+
+    le classificateur du mode auto est interrogé  UNE FOIS PAR APPEL D'OUTIL
+    -> deux commandes fusionnees = une exposition au lieu de deux
+
+**Mesure de ma propre conduite, et elle est mauvaise** : ce tour a compte plus de vingt appels
+Bash la ou dix auraient suffi — un `find` recursif lance a l'aveugle, quatre commandes pour
+localiser `ruff` que le fichier documentait, deux tests de garde separes. **Chaque appel evitable
+est une exposition evitable.**
+
+⇒ **Regle de conduite, desormais contrainte et non preference** : *un geste par appel, dense ;
+jamais une commande pour chercher ce qu'un fichier declare deja.*
+
+**LE LEVIER QUI N'EST PAS LE MIEN, et je le nomme plutot que de le taire** : le message constant
+est `claude-sonnet-5[1m] is temporarily unavailable`, et il vient du **classificateur du mode
+auto**. **Un mode d'approbation qui n'interroge pas ce service ne subit pas cette panne.** C'est
+une decision de l'operateur, pas la mienne — mais a onze occurrences, elle merite d'etre posee.
+
+⚠️ **Et les brouillons de signalement restent en file locale.** Je ne peux pas les envoyer ;
+seul l'operateur le peut. **A onze pannes, le signalement vaut plus que tout contournement que je
+pourrais ecrire.**
