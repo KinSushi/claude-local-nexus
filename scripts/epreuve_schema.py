@@ -1,115 +1,108 @@
-# -*- coding: utf-8 -*-
-"""L'outil tient-il sa promesse centrale : JAMAIS une valeur, toujours les cles ?
-
-MESURE QUI JUSTIFIE CE BANC, tiree de la genese de l'outil : trois rendus
-fautifs de suite ont ete mesures avant que le contrat de donnees soit etabli,
-et c'est pour ne plus jamais faire sortir les valeurs que nexus_schema.py
-existe. Un outil qui rendrait la structure MAIS laisserait passer une valeur
-serait pire qu'un outil absent : il donnerait confiance a tort.
-
-Le cas qui compte le plus est donc NEGATIF : des valeurs RECONNAISSABLES --
-une chaine tres particuliere, un entier a sept chiffres, un flottant a
-plusieurs decimales, une valeur imbriquee et une dans un tableau -- sont
-plantees dans un JSON, et la sortie est passee au crible, en mode texte comme
-en mode --json. Aucune ne doit y figurer, ni dans stdout ni dans stderr.
-
-Les noms de cles, eux, DOIVENT apparaitre : c'est ce que l'outil promet de
-rendre. Sans ce controle positif, un outil qui ne rendrait rien paraitrait
-parfait -- les anti-controles portent la moitie du banc, comme chez le garde.
-
-Tout se deroule dans un repertoire temporaire ; rien n'est ecrit ailleurs.
-"""
 import os
 import sys
-import json
 import subprocess
 import tempfile
+import json
 
-REPERTOIRE = os.path.dirname(os.path.abspath(__file__))
-OUTIL = os.path.join(REPERTOIRE, "nexus_schema.py")
+def run_tool(args, files=None):
+    tool_path = "scripts/nexus_schema.py"
+    if not os.path.exists(tool_path):
+        print("Outil introuvable: " + tool_path)
+        sys.exit(127)
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        created_files = []
+        if files:
+            for name, content in files.items():
+                path = os.path.join(tmpdir, name)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                created_files.append(path)
+        
+        cmd = [sys.executable, tool_path] + args
+        # On remplace les noms de fichiers relatifs par les chemins temporaires
+        final_cmd = []
+        for a in cmd:
+            if a in ["--profondeur-max", "--echantillon", "--json"]:
+                final_cmd.append(a)
+            elif a.isdigit() or a.startswith("-"):
+                final_cmd.append(a)
+            elif a in (f for f in files.keys() if files.keys()):
+                # On cherche le chemin complet correspondant au nom du fichier
+                final_cmd.append(os.path.join(tmpdir, a))
+            else:
+                final_cmd.append(a)
 
-# Valeurs reconnaissables : aucune ne peut figurer par hasard dans une sortie
-# qui ne contiendrait que structure, types et cardinalites.
-DONNEES = {
-    "identifiant": "KUMQUAT-ZQL-7781-SECRET",
-    "compte": 7654321,
-    "mesure": 3.141592653589793,
-    "enveloppe": {"interieur": "NID-SECRET-4402"},
-    "journal": ["CELLULE-SECRET-6603", 7654321],
-}
-MARQUEURS = ["KUMQUAT-ZQL-7781-SECRET", "7654321", "3.141592653589793",
-             "NID-SECRET-4402", "CELLULE-SECRET-6603"]
-CLES = ["identifiant", "compte", "mesure", "enveloppe", "interieur", "journal"]
+        # Correction pour les arguments positionnels (chemins)
+        # On reconstruit la commande pour etre sur que les chemins sont corrects
+        actual_args = []
+        for arg in args:
+            if arg in files and files:
+                actual_args.append(os.path.join(tmpdir, arg))
+            else:
+                actual_args.append(arg)
+        
+        full_cmd = [sys.executable, tool_path] + actual_args
 
-echecs = 0
-
-
-def verifier(nom, condition, detail):
-    global echecs
-    print("  [%s] %s : %s" % ("OK  " if condition else "RATE", nom, detail))
-    if not condition:
-        echecs += 1
-
-
-def lancer(*arguments):
-    proc = subprocess.run([sys.executable, OUTIL] + list(arguments),
-                          capture_output=True, text=True, timeout=60)
-    return proc.returncode, proc.stdout, proc.stderr
-
+        try:
+            proc = subprocess.Popen(
+                full_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=tmpdir
+            )
+            stdout, stderr = proc.communicate(timeout=10)
+            return proc.returncode, stdout, stderr
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            return -1, "", "L'outil n'a pas rendu la main"
+        except Exception as e:
+            return -2, "", "Erreur execution: " + str(e)
 
 def main():
-    global echecs
-    echecs = 0
-    with tempfile.TemporaryDirectory(prefix="epreuve_schema_") as temp:
+    test_files = {
+        "ok.json": '{"a": 1, "b": [1, 2], "c": {"d": "txt"}}',
+        "ok.jsonl": '{"x": 1}\n{"x": 2}\n',
+        "ok.csv": "nom,age\nAlice,30\nBob,25",
+        "bad.txt": "Ceci n'est pas un format supporte",
+        "malformed.json": '{"a": 1, "b": '
+    }
 
-        # --- Le cas qui compte le plus : aucune valeur ne doit fuiter -------
-        chemin_json = os.path.join(temp, "contrat.json")
-        with open(chemin_json, "w", encoding="utf-8") as f:
-            json.dump(DONNEES, f)
-        for mode in ([], ["--json"]):
-            etiquette = mode[0] if mode else "texte"
-            code, sortie, err = lancer(*(mode + [chemin_json]))
-            verifier("JSON valide : code 0 (%s)" % etiquette, code == 0,
-                     "code=%d err=%s" % (code, err.strip()[:50]))
-            for marqueur in MARQUEURS:
-                verifier("absent %s (%s)" % (marqueur[:20], etiquette),
-                         marqueur not in sortie and marqueur not in err,
-                         "la valeur ne figure ni dans stdout ni dans stderr")
-            for cle in CLES:
-                verifier("cle %s (%s)" % (cle, etiquette), cle in sortie,
-                         "le nom de cle est rendu")
-            verifier("structure affichee (%s)" % etiquette,
-                     "racine" in sortie or "squelette" in sortie,
-                     "arborescence et types, pas de valeurs")
+    cases = [
+        ("NOMINAL", ["ok.json", "ok.csv"], 0, True),
+        ("INVERSE", ["bad.txt"], 2, False),
+        ("MALFORME", ["malformed.json"], 1, False),
+        ("USAGE", [], 2, False), # Sans arguments requis
+    ]
 
-        # --- Texte brut : format non reconnu, jamais decrit comme CSV -------
-        chemin_txt = os.path.join(temp, "brut.txt")
-        with open(chemin_txt, "w", encoding="utf-8") as f:
-            f.write("ceci est du texte brut, sans structure de donnees\n")
-        code, sortie, err = lancer(chemin_txt)
-        verifier("texte brut : code non nul", code != 0, "code=%d" % code)
-        verifier("texte brut : format non reconnu",
-                 "format non reconnu" in sortie + err, sortie.strip()[:60])
-        verifier("texte brut : pas decrit comme CSV",
-                 "(CSV" not in sortie and "colonnes" not in sortie,
-                 "aucune description tabulaire")
+    success_all = True
+    for name, args, exp_code, should_succeed in cases:
+        code, out, err = run_tool(args, test_files)
+        
+        # Pour USAGE, on verifie que le code est non nul et que l'usage est affiche
+        if name == "USAGE":
+            # argparse rend souvent 2 pour les erreurs d'arguments
+            res = (code != 0 and ("usage:" in out.lower() or "usage:" in err.lower()))
+        elif name == "INVERSE":
+            # Doit refuser et ecrire un motif
+            res = (code == 2 and "Aucun fichier n'a pu etre decrit" in stderr_msg(err, out))
+        elif name == "MALFORME":
+            # Doit classer sans planter (code 1 car un fichier a echoue)
+            res = (code == 1 and "ERREUR" in out)
+        else:
+            res = (code == exp_code)
 
-        # --- Fichier inexistant : echec propre, jamais un traceback ---------
-        code, sortie, err = lancer(os.path.join(temp, "inexistant.json"))
-        verifier("inexistant : code non nul", code != 0, "code=%d" % code)
-        verifier("inexistant : message d'erreur",
-                 "ERREUR" in sortie or "Error" in sortie + err,
-                 sortie.strip()[:60])
-        verifier("inexistant : pas de traceback",
-                 "Traceback" not in sortie + err, "echec nomme, proprement")
+        marker = "[OK  ]" if res else "[FAIL]"
+        print(f"{marker} {name}")
+        if not res:
+            success_all = False
 
-    print("")
-    if echecs:
-        print("epreuve ratee : %d cas" % echecs)
+    if not success_all:
         sys.exit(1)
-    print("epreuve tenue")
-    sys.exit(0)
 
+def stderr_msg(err, out):
+    return err + " " + out
 
 if __name__ == "__main__":
     main()

@@ -217,8 +217,9 @@ TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 # Ordre de repli entre plans GRATUITS uniquement. Aucun alias Claude n'y
 # figure et aucun ne doit y figurer : retomber sur le paye reviendrait a
 # facturer au jeton ce qui devait etre gratuit, sans que personne l'ait
-# decide.
-REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
+# decide. Plusieurs candidats locaux y figurent deliberement, afin que la
+# coupure des deux abonnements laisse toujours une voie ouverte.
+REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local", "qwen3-coder-30b-local", "llama3.2-3b-local"]
 
 # Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
 # sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier

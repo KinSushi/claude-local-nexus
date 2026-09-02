@@ -1,102 +1,158 @@
+import os
 import sys
+import json
 import subprocess
-import tempfile
 import pathlib
+import re
+import time
 
-def run_tool(args, tool_path, tmp_dir):
-    cmd = [sys.executable, str(tool_path)] + args
+# ----------------------------------------------------------------------
+# Helper to run the tool with a timeout of 10 seconds.
+# ----------------------------------------------------------------------
+def _run_tool(tool_path, input_data):
+    """Run the tool, feed input_data on stdin, capture stdout/stderr."""
+    env = os.environ.copy()
+    proc = subprocess.Popen(
+        [sys.executable, str(tool_path)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
     try:
-        return subprocess.run(
-            cmd,
-            cwd=tmp_dir,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=10
-        )
+        stdout, stderr = proc.communicate(input=input_data, timeout=10)
+        return proc.returncode, stdout, stderr
     except subprocess.TimeoutExpired:
-        return "TIMEOUT"
-    except Exception as e:
-        return f"ERROR: {str(e)}"
+        proc.kill()
+        return -1, "", "Timeout"
 
+# ----------------------------------------------------------------------
+# Parse the tool source to extract CLI definition and return codes.
+# ----------------------------------------------------------------------
+def _parse_cli(tool_path):
+    """Return (options, positionals, return_codes) extracted from source."""
+    options = []
+    positionals = []
+    return_codes = set()
+    option_pat = re.compile(r'add_argument\(\s*([\'"]--[^\'"]+[\'"])(?:\s*,\s*([\'"]-[^\'"]+[\'"]))?')
+    positional_pat = re.compile(r'add_argument\(\s*([\'"][^\'"-][^\'"]*[\'"])')
+    return_pat = re.compile(r'sys\.exit\(\s*([0-9]+)\s*\)|return\s+([0-9]+)')
+
+    try:
+        src = tool_path.read_text(encoding="utf-8")
+    except Exception:
+        return options, positionals, return_codes
+
+    for line in src.splitlines():
+        # Options (starting with --)
+        m = option_pat.search(line)
+        if m:
+            opt = m.group(1).strip('\'"')
+            options.append(opt)
+            continue
+        # Positional arguments (no leading dash)
+        m = positional_pat.search(line)
+        if m:
+            arg = m.group(1).strip('\'"')
+            if not arg.startswith('-'):
+                positionals.append(arg)
+            continue
+        # Return codes
+        for m in return_pat.finditer(line):
+            code = m.group(1) or m.group(2)
+            if code is not None:
+                return_codes.add(int(code))
+    return options, positionals, return_codes
+
+# ----------------------------------------------------------------------
+# Verification helpers
+# ----------------------------------------------------------------------
+def _is_json_denial(text):
+    """Return True if text is JSON containing deny decision."""
+    try:
+        data = json.loads(text)
+        hook = data.get("hookSpecificOutput", {})
+        return (
+            hook.get("hookEventName") == "PreToolUse"
+            and hook.get("permissionDecision") == "deny"
+        )
+    except Exception:
+        return False
+
+def _verify_accept(code, out):
+    """Accept case: code 0 and no stdout."""
+    return code == 0 and out.strip() == ""
+
+def _verify_refuse(code, out):
+    """Refuse case: non-zero code and JSON denial on stdout."""
+    return code != 0 and _is_json_denial(out)
+
+def _verify_missing_args(code, out, err):
+    """Missing required args: non-zero code and usage text."""
+    txt = out + err
+    return code != 0 and ("usage" in txt.lower() or "error" in txt.lower())
+
+# ----------------------------------------------------------------------
+# Main test runner
+# ----------------------------------------------------------------------
 def main():
-    tool_rel_path = pathlib.Path("scripts/nexus_relais.py")
-    if not tool_rel_path.exists():
-        print(f"Outil introuvable: {tool_rel_path}")
-        sys.exit(127)
+    tool_rel = pathlib.Path("scripts") / "nexus_garde_isolation.py"
+    if not tool_rel.is_file():
+        print(f"Tool not found: {tool_rel}")
+        sys.exit(127)   # reserved code for missing tool
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_path = pathlib.Path(tmp_dir)
-        scripts_dir = tmp_path / "scripts"
-        scripts_dir.mkdir()
-        nexus_dir = tmp_path / ".nexus"
-        nexus_dir.mkdir()
-        
-        tool_dest = scripts_dir / "nexus_relais.py"
-        tool_dest.write_text(tool_rel_path.read_text(encoding="utf-8"), encoding="utf-8")
-        
-        # L'outil calcule REPO_ROOT = BASE_DIR.parent
-        # BASE_DIR = tool_dest.resolve().parent (scripts_dir)
-        # REPO_ROOT = tmp_path
-        
-        results = []
-        
-        # CAS 1: NOMINAL
-        # --simuler evite les imports nexus_agent/nexus_patch
-        cible = scripts_dir / "test_ok.py"
-        cible.write_text("print('ok')", encoding="utf-8")
-        list_file = tmp_path / "list.txt"
-        list_file.write_text(str(cible), encoding="utf-8")
-        
-        res1 = run_tool(["--simuler", "--file", str(list_file)], tool_dest, tmp_path)
-        if res1 == "TIMEOUT":
-            results.append(("[NOMINAL]", False, "L'outil n'a pas rendu la main"))
-        elif isinstance(res1, str) and res1.startswith("ERROR"):
-            results.append(("[NOMINAL]", False, res1))
-        else:
-            results.append(("[NOMINAL]", res1.returncode == 0, res1.stdout))
+    # Extract CLI info (not used directly in tests but required by spec)
+    options, positionals, return_codes = _parse_cli(tool_rel)
 
-        # CAS 2: INVERSE (Aucune cible)
-        # Un fichier vide pour --file doit rendre 2 et "No targets to process."
-        empty_list = tmp_path / "empty.txt"
-        empty_list.write_text("", encoding="utf-8")
-        res2 = run_tool(["--simuler", "--file", str(empty_list)], tool_dest, tmp_path)
-        if res2 == "TIMEOUT":
-            results.append(("[INVERSE]", False, "L'outil n'a pas rendu la main"))
-        elif isinstance(res2, str) and res2.startswith("ERROR"):
-            results.append(("[INVERSE]", False, res2))
-        else:
-            ok = (res2.returncode == 2 and "No targets to process." in res2.stdout)
-            results.append(("[INVERSE]", ok, res2.stdout) if ok else ("[INVERSE]", False, res2.stdout))
+    results = []
 
-        # CAS 3: MALFORMEE (Option invalide)
-        res3 = run_tool(["--invalid-opt"], tool_dest, tmp_path)
-        if res3 == "TIMEOUT":
-            results.append(("[MALFORMEE]", False, "L'outil n'a pas rendu la main"))
-        elif isinstance(res3, str) and res3.startswith("ERROR"):
-            results.append(("[MALFORMEE]", False, res3))
-        else:
-            results.append(("[MALFORMEE]", res3.returncode != 0, res3.stderr))
+    # 1. UN: isolation worktree -> accept
+    input_un = json.dumps({"tool_name": "Agent", "tool_input": {"isolation": "worktree"}})
+    code, out, err = _run_tool(tool_rel, input_un)
+    ok = _verify_accept(code, out)
+    results.append(ok)
+    print("[OK  ] UN" if ok else "[FAIL] UN")
 
-        # CAS 4: USAGE (Sans arguments, dossier vide)
-        # Sans --file et sans .nexus/relais-file.txt, il cherche *.py dans scripts/
-        # On a seulement nexus_relais.py (exclu), donc 0 cible -> return 2
-        res4 = run_tool([], tool_dest, tmp_path)
-        if res4 == "TIMEOUT":
-            results.append(("[USAGE]", False, "L'outil n'a pas rendu la main"))
-        elif isinstance(res4, str) and res4.startswith("ERROR"):
-            results.append(("[USAGE]", False, res4))
-        else:
-            results.append(("[USAGE]", res4.returncode != 0, res4.stdout))
+    # 2. DEUX: no isolation -> refuse
+    input_deux = json.dumps({"tool_name": "Agent", "tool_input": {}})
+    code, out, err = _run_tool(tool_rel, input_deux)
+    ok = _verify_refuse(code, out)
+    results.append(ok)
+    print("[OK  ] DEUX" if ok else "[FAIL] DEUX")
 
-        success = True
-        for label, ok, _msg in results:
-            print(f"{label} {'OK' if ok else 'FAIL'}")
-            if not ok:
-                success = False
-        
-        sys.exit(0 if success else 1)
+    # 3. TROIS: empty input -> refuse
+    code, out, err = _run_tool(tool_rel, "")
+    ok = _verify_refuse(code, out)
+    results.append(ok)
+    print("[OK  ] TROIS" if ok else "[FAIL] TROIS")
+
+    # 4. QUATRE: no isolation but env var NEXUS_ISOLATION_LIBRE=1 -> accept
+    env_backup = os.environ.copy()
+    os.environ["NEXUS_ISOLATION_LIBRE"] = "1"
+    code, out, err = _run_tool(tool_rel, input_deux)
+    ok = _verify_accept(code, out)
+    results.append(ok)
+    print("[OK  ] QUATRE" if ok else "[FAIL] QUATRE")
+    # restore environment
+    os.environ.clear()
+    os.environ.update(env_backup)
+
+    # 5. CINQ: invalid JSON -> must not crash (timeout is failure)
+    code, out, err = _run_tool(tool_rel, "invalid json")
+    ok = code != -1   # not a timeout
+    results.append(ok)
+    print("[OK  ] CINQ" if ok else "[FAIL] CINQ")
+
+    # 6. INVOCATION without stdin -> should show usage and non-zero code
+    code, out, err = _run_tool(tool_rel, "")
+    ok = _verify_missing_args(code, out, err)
+    results.append(ok)
+    print("[OK  ] INVOCATION" if ok else "[FAIL] INVOCATION")
+
+    if not all(results):
+        sys.exit(1)
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

@@ -4,71 +4,100 @@ import subprocess
 import tempfile
 import shutil
 
-def run_tool(tool_path, args, cwd):
+def run_tool(cwd, args=[]):
+    tool_path = os.path.join(cwd, "scripts", "nexus_progres.py")
+    if not os.path.exists(tool_path):
+        return None, f"Outil introuvable: {tool_path}"
+    
     try:
-        res = subprocess.run(
+        proc = subprocess.Popen(
             [sys.executable, tool_path] + args,
             cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=10
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
         )
-        return res.returncode, res.stdout, res.stderr
+        stdout, stderr = proc.communicate(timeout=10)
+        return (proc.returncode, stdout, stderr), None
     except subprocess.TimeoutExpired:
-        return -1, "", "L'outil n'a pas rendu la main"
+        proc.kill()
+        return None, "L'outil n'a pas rendu la main"
     except Exception as e:
-        return -2, "", str(e)
+        return None, f"Erreur execution: {str(e)}"
 
 def main():
-    tool_rel_path = os.path.join("scripts", "nexus_progres.py")
-    if not os.path.exists(tool_rel_path):
-        print(f"Outil introuvable : {tool_rel_path}")
-        sys.exit(127)
-
-    tmp_dir = tempfile.mkdtemp()
+    # L'outil ne permet pas de designer une racine ou une sortie differente.
+    # Il utilise os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # et ecrit PROGRESS.MD a la racine.
+    # On cree donc un faux depot pour eviter d'ecrire dans le reel.
+    
+    base_tmp = tempfile.mkdtemp()
     try:
-        # Structure minimale requise par l'outil
-        os.makedirs(os.path.join(tmp_dir, "scripts"))
-        os.makedirs(os.path.join(tmp_dir, "rituels"))
+        # Structure minimale pour que l'outil fonctionne
+        root = base_tmp
+        scripts_dir = os.path.join(root, "scripts")
+        os.makedirs(scripts_dir)
         
-        tool_dst = os.path.join(tmp_dir, "scripts", "nexus_progres.py")
-        shutil.copy(tool_rel_path, tool_dst)
+        # Copie de l'outil original vers le dossier temporaire
+        # On suppose que le script est lance depuis la racine du depot reel
+        real_tool = "scripts" + chr(92) + "nexus_progres.py" if os.name == 'nt' else "scripts/nexus_progres.py"
+        if not os.path.exists(real_tool):
+            print(f"Outil source introuvable: {real_tool}")
+            sys.exit(127)
+        shutil.copy(real_tool, os.path.join(scripts_dir, "nexus_progres.py"))
+        
+        # Simulation d'un depot git
+        subprocess.run(["git", "init"], cwd=root, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=root, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "test"], cwd=root, capture_output=True)
+        with open(os.path.join(root, "README.md"), "w") as f: f.write("test")
+        subprocess.run(["git", "add", "."], cwd=root, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=root, capture_output=True)
 
-        # L'outil ne permet pas de designer un fichier de sortie.
-        # Il ecrit PROGRESS.MD a la racine derivee de __file__.
-        # L'execution dans tmp_dir isole donc l'ecriture.
+        cases = []
+        
+        # CAS 1: Nominal
+        res, err = run_tool(root)
+        if res and res[0] == 0 and os.path.exists(os.path.join(root, "PROGRESS.MD")):
+            cases.append(True)
+        else:
+            cases.append(False)
+        print(f"[{'OK  ' if cases[-1] else 'FAIL'}] NOMINAL")
 
-        # CAS 1: NOMINAL
-        # L'outil n'a pas d'options en ligne de commande.
-        rc, out, err = run_tool(tool_dst, [], tmp_dir)
-        prog_file = os.path.join(tmp_dir, "PROGRESS.MD")
-        success_1 = (rc == 0 and os.path.exists(prog_file))
-        print(f"[{'OK' if success_1 else 'RATE'}] Nominal : rc={rc}")
-        if not success_1: sys.exit(1)
+        # CAS 2: Inverse (Echec ecriture)
+        # On rend la racine en lecture seule pour forcer l'echec de l'ecriture atomique
+        # Note: Sur Windows, os.chmod est limite, mais on tente de verrouiller le fichier
+        prog_file = os.path.join(root, "PROGRESS.MD")
+        with open(prog_file, "w") as f: f.write("lock")
+        # On tente de simuler un echec en rendant le dossier non-ecrivable si possible
+        # Sinon on verifie que l'outil rend 1 si l'ecriture echoue
+        # Pour ce test, on simule un environnement dove l'outil ne peut pas ecrire
+        # en changeant les permissions du dossier racine
+        os.chmod(root, 0o555) 
+        res, err = run_tool(root)
+        # L'outil rend 1 en cas d'exception lors de l'ecriture
+        cases.append(res is not None and res[0] == 1)
+        print(f"[{'OK  ' if cases[-1] else 'FAIL'}] REFUS_ECRITURE")
+        os.chmod(root, 0o755)
 
-        # CAS 2: INVERSE (Refus ecriture)
-        # On retire les droits d'ecriture sur le dossier racine du tmp
-        os.chmod(tmp_dir, 0o555)
-        rc, out, err = run_tool(tool_dst, [], tmp_dir)
-        # L'outil doit rendre 1 via son bloc try/except final
-        print(f"[{'OK' if rc == 1 else 'RATE'}] Refus ecriture : rc={rc}")
-        os.chmod(tmp_dir, 0o755)
-        if rc != 1: sys.exit(1)
+        # CAS 3: Entree malformee (Arguments inconnus)
+        # L'outil n'utilise pas argparse, il ignore les arguments sys.argv[1:]
+        # Il ne doit pas planter.
+        res, err = run_tool(root, ["--unknown", "val"])
+        cases.append(res is not None and res[0] == 0)
+        print(f"[{'OK  ' if cases[-1] else 'FAIL'}] ARGUMENTS_INCONNUS")
 
-        # CAS 3: ENTREE MALFORMEE
-        # L'outil ignore sys.argv, il ne doit pas planter
-        rc, out, err = run_tool(tool_dst, ["--unknown", "val"], tmp_dir)
-        print(f"[{'OK' if rc == 0 else 'RATE'}] Entree malformee : rc={rc}")
-        if rc != 0: sys.exit(1)
+        # CAS 4: Invocation sans arguments (Normal pour cet outil)
+        # L'outil n'a pas d'arguments requis.
+        res, err = run_tool(root)
+        cases.append(res is not None and res[0] == 0)
+        print(f"[{'OK  ' if cases[-1] else 'FAIL'}] SANS_ARGUMENTS")
 
-        # CAS 4: INVOCATION SANS ARGUMENTS REQUIS
-        # L'outil n'a aucun argument requis. L'absence est le mode nominal.
-        rc, out, err = run_tool(tool_dst, [], tmp_dir)
-        print(f"[{'OK' if rc == 0 else 'RATE'}] Invocation vide : rc={rc}")
-        if rc != 0: sys.exit(1)
+        if not all(cases):
+            sys.exit(1)
 
     finally:
-        shutil.rmtree(tmp_dir)
+        shutil.rmtree(base_tmp)
 
 if __name__ == "__main__":
     main()

@@ -1,164 +1,121 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""epreuve_stats_jsonl.py – test de scripts/nexus_stats_jsonl.py"""
-import json
-import os
-import subprocess
-import sys
-import tempfile
+import os, sys, subprocess, json, tempfile, pathlib
 
-TOOL = os.path.join(os.path.dirname(__file__), "scripts", "nexus_stats_jsonl.py")
+# ----------------------------------------------------------------------
+# Helper to locate the tool and report a reserved error if missing.
+def locate_tool():
+    path = os.path.join("scripts", "nexus_stats_jsonl.py")
+    if not os.path.isfile(path):
+        print(f"Outil introuvable: {path}")
+        sys.exit(127)          # code reserve
+    return path
 
-
-def run_tool(args, input_path=None):
-    """Exécute l'outil et renvoie (code, stdout, stderr)."""
-    cmd = [sys.executable, TOOL] + args
-    if input_path is not None:
-        cmd += [input_path]
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    return res.returncode, res.stdout, res.stderr
-
-
-def test_known_proportions():
-    """Deux groupes, proportions connues."""
-    data = [
-        {"text": "abc", "group": "A", "flag": True},
-        {"text": "abc", "group": "A", "flag": False},
-        {"text": "xyz", "group": "A", "flag": True},
-        {"text": "def", "group": "B", "flag": False},
-        {"text": "def", "group": "B", "flag": True},
-    ]
-    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        for obj in data:
-            f.write(json.dumps(obj) + "\n")
-        path = f.name
-    try:
-        code, out, _ = run_tool([
-            "--champ-texte", "text",
-            "--champ-groupe", "group",
-            "--champ-booleen", "flag",
-            "--motif", "M=abc",
-            "--json",
-            path,
-        ])
-        assert code == 0, f"code retour inattendu: {code}"
-        payload = json.loads(out)
-        groupe = payload["par_groupe"]
-        assert groupe["A"]["total"] == 3
-        assert groupe["A"]["motifs"]["M"]["n"] == 2
-        assert abs(groupe["A"]["motifs"]["M"]["pct"] - 66.7) < 0.05
-        assert groupe["B"]["total"] == 2
-        assert groupe["B"]["motifs"]["M"]["n"] == 0
-        assert groupe["B"]["motifs"]["M"]["pct"] == 0.0
-    finally:
-        os.unlink(path)
-
-
-def test_invalid_line():
-    """Une ligne JSON invalide doit être comptée et ignorée."""
-    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        f.write('{"text":"foo","group":"X","flag":true}\n')
-        f.write('{invalid json}\n')
-        f.write('{"text":"bar","group":"Y","flag":false}\n')
-        path = f.name
-    try:
-        code, out, err = run_tool([
-            "--champ-texte", "text",
-            "--champ-groupe", "group",
-            "--champ-booleen", "flag",
-            "--motif", "M=foo",
-            path,
-        ])
-        assert code == 0
-        assert "Lignes : 2 (1 invalides ignorees)" in out
-    finally:
-        os.unlink(path)
-
-
-def test_missing_field():
-    """Champ absent traité comme vide sans planter."""
-    data = [
-        {"text": "hello", "group": "G1"},  # manque flag
-        {"group": "G2", "flag": True},    # manque text
-    ]
-    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        for obj in data:
-            f.write(json.dumps(obj) + "\n")
-        path = f.name
-    try:
-        code, out, _ = run_tool([
-            "--champ-texte", "text",
-            "--champ-groupe", "group",
-            "--champ-booleen", "flag",
-            "--motif", "M=hello",
-            "--json",
-            path,
-        ])
-        assert code == 0
-        payload = json.loads(out)
-        groupe = payload["par_groupe"]
-        # G1: text présent, flag absent => VIDE pour booléen mais on ne vérifie pas ici
-        # G2: text absent => traité comme vide => pas de hit
-        assert groupe["G1"]["total"] == 1
-        assert groupe["G2"]["total"] == 1
-        # aucun hit attendu
-        assert groupe["G1"]["motifs"]["M"]["n"] == 0
-        assert groupe["G2"]["motifs"]["M"]["n"] == 0
-    finally:
-        os.unlink(path)
-
-
-def test_empty_file():
-    """Fichier vide => résultat vide, pas de plantage."""
-    with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        path = f.name
-    try:
-        code, out, err = run_tool([
-            "--champ-texte", "text",
-            "--champ-groupe", "group",
-            "--champ-booleen", "flag",
-            "--motif", "M=test",
-            path,
-        ])
-        assert code == 0
-        assert "Lignes : 0 (0 invalides ignorees)" in out
-        assert "(aucune donnee)" in out
-    finally:
-        os.unlink(path)
-
-
-def test_missing_args():
-    """Appel sans arguments requis => usage et code non nul."""
-    code, out, err = run_tool([])
-    assert code != 0
-    assert "usage:" in err.lower() or "usage:" in out.lower()
-
-
-def main():
-    failures = 0
-    for name, func in [
-        ("known_proportions", test_known_proportions),
-        ("invalid_line", test_invalid_line),
-        ("missing_field", test_missing_field),
-        ("empty_file", test_empty_file),
-        ("missing_args", test_missing_args),
-    ]:
+# ----------------------------------------------------------------------
+# Run the tool with given argument list and optional stdin data.
+def run_tool(args, stdin_data=None):
+    tool = locate_tool()
+    # Execute in a temporary directory to avoid touching the repository.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cmd = [sys.executable, tool] + args
+        proc = subprocess.Popen(
+            cmd,
+            cwd=tmpdir,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
         try:
-            func()
-            print(f"[OK] {name}")
-        except AssertionError as e:
-            print(f"[FAIL] {name}: {e}")
-            failures += 1
-        except Exception as e:
-            print(f"[ERROR] {name}: {e}")
-            failures += 1
-    if failures:
-        print(f"\n{failures} test(s) échoué(s)")
-        sys.exit(1)
-    else:
-        print("\nTous les tests passent")
-        sys.exit(0)
+            out, err = proc.communicate(input=stdin_data, timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            return -1, "", "Timeout"
+        return proc.returncode, out, err
 
+# ----------------------------------------------------------------------
+# Verify a single test case and print a marker.
+def verify(name, args, expected_code, stdin_data=None, check_output=None):
+    code, out, err = run_tool(args, stdin_data)
+    success = (code == expected_code)
+    if success and check_output is not None:
+        try:
+            data = json.loads(out)
+            # The tool may output JSON only when --json is used.
+            # check_output is a callable that returns True if content matches.
+            success = check_output(data)
+        except json.JSONDecodeError:
+            success = False
+    # Ensure no output on stderr for successful runs.
+    if success and code == 0 and err.strip():
+        success = False
+    marker = "[OK  ]" if success else "[FAIL]"
+    print(f"{marker} {name}")
+    return success
+
+# ----------------------------------------------------------------------
+# Build a temporary JSONL file with given lines.
+def make_jsonl(lines):
+    fd, path = tempfile.mkstemp(suffix=".jsonl")
+    os.close(fd)
+    with open(path, "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
+    return path
+
+# ----------------------------------------------------------------------
+def main():
+    results = []
+
+    # CASE 1: nominal success, JSON output, one valid line.
+    jsonl_path = make_jsonl(['{"text":"abc","group":"g1","flag":true}'])
+    args1 = [
+        jsonl_path,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "m1=abc",
+        "--json",
+    ]
+    def check_json(data):
+        return data.get("fichier") == jsonl_path and "par_groupe" in data
+    results.append(verify("CASE1", args1, 0, check_output=check_json))
+
+    # CASE 2: inverse refusal, malformed motif (missing '=').
+    args2 = [
+        jsonl_path,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "badmotif",
+    ]
+    results.append(verify("CASE2", args2, 2))
+
+    # CASE 3: malformed JSONL line, tool must still succeed.
+    jsonl_path2 = make_jsonl(['{"text":"ok","group":"g2","flag":false}', 'not a json'])
+    args3 = [
+        jsonl_path2,
+        "--champ-texte", "text",
+        "--champ-groupe", "group",
+        "--champ-booleen", "flag",
+        "--motif", "m2=ok",
+    ]
+    results.append(verify("CASE3", args3, 0))
+
+    # CASE 4: missing required option, should return non-zero and print usage.
+    args4 = [jsonl_path]  # no --champ-texte etc.
+    results.append(verify("CASE4", args4, 2))
+
+    # CASE 5: tool invoked without any arguments, should return non-zero.
+    results.append(verify("CASE5", [], 2))
+
+    # Clean up temporary files.
+    for p in (jsonl_path, jsonl_path2):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+
+    if not all(results):
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

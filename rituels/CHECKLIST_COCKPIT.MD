@@ -15384,3 +15384,110 @@ sans rien verifier (§115.75).
 
 `epreuve_fonctions.py` est cablee aussi, ligne 2464 : son premier patch avait ete REFUSE pour
 marqueur colle en fin de ligne, et je ne l'avais pas revu.
+
+### 115.81 LA TRANSITION AUTOMATIQUE EXISTE, ELLE EST BORNEE, ET ELLE EST DESORMAIS PROUVEE
+
+Demande de l'operateur le 2026-09-02 : *« ideallement que cela passe en transition
+automatique si abonnements OFF »*.
+
+**Elle existait deja**, et sa borne etait la bonne — `nexus_agent.py`, liste `REPLIS_GRATUITS` :
+
+    # Aucun alias Claude n'y figure et aucun ne doit y figurer : retomber sur le paye
+    # reviendrait a facturer au jeton ce qui devait etre gratuit, sans que personne l'ait decide.
+
+**Ce qui manquait : elle n'avait AUCUNE epreuve, et un seul candidat local.** Si ce modele
+tombait, il ne restait plus rien.
+
+**Etat apres correctif :**
+
+    1. gpt-oss-120b-cloud      cloud
+    2. glm-4.7-flash-local     local
+    3. qwen3-coder-30b-local   local
+    4. llama3.2-3b-local       local
+
+**Contre-epreuve integrale** — la garde mord quand on casse la regle, sur une COPIE du depot,
+jamais sur le depot reel :
+
+    alias FACTURE ajoute aux replis   -> l'epreuve MORD, code 1
+    AUCUN candidat local              -> l'epreuve MORD, code 1
+    depot reel inchange               -> vert, code 0
+
+Le cas de securite le plus important passe : **un modele LOCAL ne propose AUCUN candidat
+distant.** La bascule `cloud -> local` est autorisee, elle ne coute que de la capacite ; la
+bascule `local -> cloud` ferait sortir les donnees et reste fermee (§108).
+
+### 115.82 POURQUOI `/model glm-4.7-flash-local` NE PEUT PAS FONCTIONNER — mesure, pas supposition
+
+Test en direct de l'operateur : Claude Code refuse le modele local avec *« There's an issue
+with the selected model »*.
+
+**Ce que la mesure etablit, dans l'ordre :**
+
+    variables ANTHROPIC_* actives      AUCUNE  -> abonnement claude.ai standard
+    passerelle LiteLLM                 vivante (HTTP 401 = authentification requise)
+    glm-4.7-flash-local expose ?       OUI, parmi 81 modeles
+
+**Le modele existe et il est servi. Le client ne sait simplement pas ou le chercher** : Claude
+Code interroge l'API Anthropic officielle, pas `localhost:4000`. C'est exactement le §106 —
+*Anthropic ne prend pas en charge le routage de Claude Code vers des modeles non-Claude a
+travers une passerelle*, et le selecteur `/model` n'y change rien.
+
+**LA VOIE DOCUMENTEE reste `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` vers la passerelle.**
+Elle n'a PAS ete validee ici, et il faut le dire : mes deux tentatives ont expire.
+
+### 115.83 UN TIMEOUT SOUS CHARGE NE PROUVE RIEN — j'ai failli accuser la passerelle
+
+**Ce que j'ai mesure, et la conclusion que j'ai FAILLI en tirer :**
+
+    OpenAI /v1/chat/completions   TimeoutError apres 152 s
+    Anthropic /v1/messages        TimeoutError apres 152 s
+
+Deux endpoints, meme modele, meme expiration. La conclusion tentante etait « la passerelle
+bloque les modeles locaux ». **Elle aurait ete fausse.**
+
+Appel DIRECT au moteur, sans passerelle, au meme instant :
+
+    qwen3-coder:30b (resident)   95.7 s   -> 'PRET'
+    llama3.2:3b     (2 Go)      126.5 s   -> repond
+
+**La machine etait saturee.** `nexus_charge` — l'outil repare cette nuit meme (§115.45) — le
+dit exactement :
+
+    RAM libre         3.8 Go / 61.6 Go
+    modeles residents 35.45 Go
+    etat_moteur       joignable_avec_modeles
+
+Verifie contre `/api/ps` : **35.45 Go des deux cotes, ecart de 0.00 Go.** L'outil est exact.
+
+> **Un timeout mesure sous charge ne dit rien de l'instrument teste.** Les trois plans
+> partagent la meme memoire, et mes propres vagues cloud avaient charge deux modeles
+> supplementaires entre deux mesures. La question « la passerelle bloque-t-elle ? » reste
+> OUVERTE et devra etre reposee machine au repos — c'est la regle du §112.3 sur les mesures
+> contaminees, appliquee a moi-meme.
+
+**DONNEE NEUVE, notee au passage** : `llama3.2:3b` occupe **16 Go en memoire pour 2 Go de
+poids**. Le cache de contexte domine largement la taille du modele, et un budget calcule sur
+le poids seul se trompe d'un facteur huit sur les petits modeles.
+
+### 115.84 CE QUI SURVIT VRAIMENT A LA COUPURE DES DEUX ABONNEMENTS
+
+Mesure a la demande de l'operateur.
+
+| plan | depend de | si les deux abonnements tombent |
+| --- | --- | --- |
+| Claude | abonnement claude.ai | mort, et les sessions voisines avec |
+| Ollama Cloud | abonnement Ollama | mort |
+| **Local** | **rien** | **intact : 55 modeles, moteur 0.33.2** |
+
+**Le local PRODUIT, il n'ARBITRE pas.** Epreuve reelle : `qwen3-coder:30b`, 37.9 s, cout 0,
+adresse `host.docker.internal` — la donnee ne sort pas. Mais le rendu a **invente son exemple**
+et n'a **cite aucune ligne reelle** malgre une consigne explicite.
+
+> **Ce qui nous remplace n'est pas un modele, c'est l'outillage mecanique.** 44 epreuves
+> cablees plus les gardes et les cliquets : ~7 200 lignes qui n'appellent AUCUN modele et ne
+> peuvent donc pas halluciner. `nexus_verifie_rendu` rend 4 detections sur 4 temoins
+> defectueux et **0 faux positif sur 100+ scripts sains**, sans jamais interroger quoi que ce
+> soit.
+
+**Chaque epreuve cablee est un morceau d'arbitrage qui survit a la coupure, definitivement et
+gratuitement.** C'est ce qui rend le cablage des epreuves prioritaire sur les audits.
