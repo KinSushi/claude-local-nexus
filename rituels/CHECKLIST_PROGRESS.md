@@ -109,3 +109,36 @@ Ses sept fichiers ont ete repeches par `git diff`.
 C est la meme famille que le reste de la journee : **un instrument exact — le
 `.output` existe bien, sa taille est bien 0 — qui repond a la question
 voisine.**
+
+## 11. DEUX AGENTS TOURNENT DANS LE VIDE — constate, non force
+
+Consigne de l operateur : *« si cela tourne dans le vide ne pas insister »*.
+
+Mesure, en deux temps parce que le premier instrument etait FAUX :
+
+```
+1er essai, en excluant references/  ->  0 fichier touche  =>  « morts »
+2e essai, SANS exclusion            ->  0 fichier touche  ET  references/ deja
+                                        copiees (207 Mo et 195 Mo)
+```
+
+**Le premier essai ne prouvait rien** : les agents copient 130 Mo de doc au
+demarrage, precisement dans le repertoire que mon filtre excluait. « Aucun
+fichier touche » pouvait signifier « en train de copier ». Seul le second
+essai — qui montre les ressources DEJA en place et zero activite malgre tout —
+tranche.
+
+| agent | etat mesure | perimetre en suspens |
+| --- | --- | --- |
+| trois agents | **EN VOL**, fichiers touches dans les 3 dernieres minutes | epreuves JS + `server.js`, configuration, docs A-M |
+| **deux agents** | **VIDE** — 0 fichier touche, ressources deja copiees | **16 PowerShell**, **9 fichiers de racine** |
+
+**Non relances**, conformement a la consigne. Leurs deux perimetres restent
+donc **NON COUVERTS** par cette vague, et c est inscrit ici plutot que passe
+sous silence.
+
+> **Un troisieme instrument faux dans le meme tour** — apres le `.output` a
+> zero octet et le tableau de bord perime. Chaque fois : l instrument
+> fonctionne exactement comme ecrit, et repond a une question voisine de celle
+> qu on pose. Ici : « ce worktree a-t-il ete touche, hors ressources ? » au
+> lieu de « ce worktree vit-il ? »
