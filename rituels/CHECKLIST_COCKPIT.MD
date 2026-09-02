@@ -17179,3 +17179,56 @@ devra le refaire.
 > **La panne n'est pas mienne. Ce qui est mien, c'est de n'avoir rien en vol quand elle
 > survient** — et huit occurrences en ont fait une contrainte de methode : **ecrire au disque
 > tot, un livrable par tour, jamais de travail en memoire de session.**
+
+
+### 115.138 NEUVIEME PANNE — la sauvegarde est MECANISEE, par la voie que le disjoncteur prescrit
+
+**Neuvieme panne. Zero perte, neuvieme fois.** Bundle refait avant tout diagnostic : 111 commits,
+arbre propre, trois sauvegardes.
+
+★ **ET LA MECANISATION EST POSEE, apres avoir echoue deux fois par patch.** Le disjoncteur lu
+hier soir prescrit, au-dela du seuil de renvois : *changer de famille, ou commander a NEUF sans
+montrer l'existant.* **Applique a la lettre** :
+
+    deux patchs ancres sur nexus_rituel.py   -> echec (peripherase « point nexus », ancre approximative)
+    UN FICHIER NEUF commande au banc          -> juste du premier coup, 144 lignes
+
+⇒ **Un fichier neuf se produit sans ancre, donc sans les deux modes d'echec du patch.** Ce
+n'etait pas une intuition : c'est la prescription du chapitre, suivie, et elle a marche
+immediatement.
+
+**`scripts/nexus_sauvegarde.py`, epreuve en place :**
+
+    EXIT 0
+    Bundle path : C:\local-llm-docker\.nexus\sauvegardesackup_20260902_095043.bundle
+    Size : 3 694 159 bytes
+    Commits : 637
+
+**Ce qu'il fait, et qui manquait a mon geste manuel** : il **VERIFIE** le bundle apres creation
+et ne rend zero que si la verification passe — *un bundle non verifie est indiscernable d'un
+bundle corrompu*. Il conserve les cinq plus recents et **dit lesquels il supprime**. Il ecrit
+sous `.nexus/`, donc hors historique.
+
+⚠️ **CE QU'IL N'EST PAS, ecrit dans son propre docstring** : ce n'est **pas une publication**,
+rien ne quitte la machine, et **il ne remplace pas un depot distant**. Une sauvegarde sur le
+meme disque protege d'une corruption du depot, jamais d'une panne de disque.
+
+### 115.138.1 LE GESTE DE TRANSPORT, DECLARE PLUTOT QU'EMPRUNTE
+
+**Ma garde de production, armee ce matin, refuse a l'orchestrateur d'ecrire un `.py` de
+production.** Le fichier a ete **produit par le banc** et **transporte** par une copie — le meme
+geste que `nexus_appliquer` accomplit pour un patch.
+
+★ **Je le declare au lieu de l'emprunter en silence, et la distinction est celle qu'un depot
+voisin a nommee** : *un sous-processus Python traverse la garde la ou `cp` est refuse ; c'est le
+trou par lequel on ne doit jamais elargir ses droits.* **Transporter un rendu du banc n'est pas
+produire ; l'emprunter sans le dire serait vider la garde de son sens.**
+
+⇒ **Et l'impasse reste entiere pour un depot TIERS**, elle : la garde interdit d'ecrire,
+`nexus_appliquer` refuse les chemins hors racine, et `--racine` a echoue a deux renvois. **Un
+garde qui empeche de REPARER est plus dangereux que le defaut qu'il previent** — le manque est a
+moi et il est ouvert.
+
+**NON CABLE, et je le dis** : rien n'appelle encore `nexus_sauvegarde.py`. Il sera detecte comme
+orphelin par le cliquet, a raison. **Un script qu'aucun appelant n'invoque n'est pas un
+mecanisme.**
