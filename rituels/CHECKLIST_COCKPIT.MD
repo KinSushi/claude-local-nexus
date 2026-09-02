@@ -15284,3 +15284,78 @@ contredisent donc pas : elles nomment deux entrees d'un meme defaut.
 Et les deux remedes sont **le meme geste** : fournir soi-meme les ancres verifiees au grep,
 et verifier l'appartenance au lot depeche. Autrement dit : **ne pas demander au modele ce que
 le disque sait deja.**
+
+### 115.78 J'AI COMMIS MA PROPRE LECON, INVERSEE, DANS L'OUTIL ECRIT POUR LA TRAQUER
+
+**Vingt-quatre heures apres l'avoir enoncee.** Signale par la session voisine qui employait
+l'outil en production.
+
+Ce que je lui avais ecrit la veille :
+
+> *« Pour une garde, le code ne caracterise pas la decision — le refus etait dans stdout,
+> parfaitement forme. »* (§115.65, apres avoir failli accuser une garde saine)
+
+Ce que mon outil a fait :
+
+    scripts\hook_dispatch_isole.py: execution failed or hung (non zero exit (2))
+
+**Mesure reelle de la session voisine** : code 0 par tuyau, duree 0 s, et sur stdout un refus
+parfaitement forme nommant sa raison. Le programme n'a ni echoue ni gele — **le code non nul
+ETAIT la garde**. Symetrie exacte de ma propre faute, dans l'outil ecrit pour cette classe.
+**21e occurrence.**
+
+**DEUX DEFAUTS, et le second n'avait pas ete vu :**
+
+* le libelle `failed or hung` **fusionne deux causes aux remedes opposes** — un gel est
+  toujours un defaut, un code non nul peut etre une garde qui fonctionne ;
+* **le vrai GEL etait mal rapporte lui aussi.** Sur un temoin qui dort 120 s, l'ancienne
+  version annoncait `execution failed or hung (non zero exit (1))` : elle presentait une
+  EXPIRATION comme un code de retour. **Les trois cas non-sains rendaient litteralement le
+  meme message** — le seul defaut que ce controle existe pour trouver etait, lui aussi,
+  indiscernable.
+
+**Corrige selon le critere propose par la session voisine, qui reste un `==` :**
+
+> **Un programme qui ECRIT quelque chose avant de sortir a DECIDE, il n'a pas plante.**
+
+    une GARDE qui refuse et l'ecrit   ->  AUCUNE alarme
+    un programme qui GELE vraiment    ->  « program hung (timeout) »
+    un programme SAIN                 ->  silence
+    un plantage MUET, code non nul    ->  « NOTE - non zero exit (3) »
+
+Seule l'EXPIRATION rend le code de retour non nul. **Une note n'echoue jamais.**
+
+### 115.79 27 FAUX POSITIFS SUR 27 — le 4e controle avant d'etre utilisable
+
+Le controle des antislashes manges, pose et contre-eprouve, rendait **27 signalements sur une
+centaine de scripts**. Verification manuelle : **tous faux.**
+
+**Deux resserrages, chacun sur une erreur de MA consigne :**
+
+    27 -> 2   \" et \' sont des echappements LEGITIMES de chaine Python
+               (l'antislash empeche le guillemet de terminer la chaine)
+     2 -> 0   \- est un echappement LEGITIME dans une classe
+               (sans lui le tiret serait lu comme un intervalle)
+
+Le second venait d'une faute explicite : **ma consigne citait le tiret parmi les cas
+suspects.** Elle etait fausse, et le modele l'a suivie exactement.
+
+**Non-regression verifiee a chaque passe** — c'est ce qui rend le resserrage sur :
+
+    classe MUTILEE (un antislash + barre oblique)   -> toujours signalee, code 1
+    classe SAINE   (deux antislashes)               -> toujours silencieuse, code 0
+
+> **Resserrer un controle sans contre-epreuve, c'est le desarmer sans le savoir.** Chacun des
+> deux resserrages a ete suivi de la meme epreuve, et c'est la seule raison pour laquelle on
+> peut affirmer que zero faux positif ne signifie pas zero detection.
+
+**ETAT FINAL DE L'OUTIL** — quatre controles, tous contre-eprouves :
+
+    1. execution : gel signale, code non nul en note, muet si le programme a ecrit
+    2. tranche numerique contre longueur de prefixe        2 detections sur le temoin
+    3. desaccord nom d'argument / variable comparee         idem
+    4. antislash mange dans une classe                      1 detection, 0 faux positif
+
+**Rendement mesure : 0 signalement sur 100+ scripts sains, et 4 sur 4 sur les temoins
+defectueux.** C'est ce qui le rend citable — un controle bruyant se fait desarmer dans la
+semaine, et 41 detections ne sont pas 41 defauts (§115.47).

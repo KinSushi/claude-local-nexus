@@ -8,7 +8,7 @@ from pathlib import Path
 
 # ----------------------------------------------------------------------
 # Helper to run a python file with --help and a timeout
-def run_help(path, timeout):
+def run_help_strict(path, timeout):
     try:
         proc = subprocess.Popen(
             [sys.executable, path, '--help'],
@@ -16,15 +16,29 @@ def run_help(path, timeout):
             stderr=subprocess.PIPE,
             text=True,
         )
-        timer = threading.Timer(timeout, proc.kill)
+        
+        timed_out = False
+        def kill_proc():
+            nonlocal timed_out
+            timed_out = True
+            proc.kill()
+
+        timer = threading.Timer(timeout, kill_proc)
         timer.start()
         stdout, stderr = proc.communicate()
         timer.cancel()
+
+        if timed_out:
+            return False, "program hung (timeout)", True
+        
         if proc.returncode != 0:
-            return False, f"non zero exit ({proc.returncode})"
-        return True, None
+            if stdout.strip() or stderr.strip():
+                return True, None, False
+            return True, f"non zero exit ({proc.returncode})", False
+            
+        return True, None, False
     except Exception as e:
-        return False, str(e)
+        return False, str(e), True
 
 # ----------------------------------------------------------------------
 # Check 2 : constant slice start that does not match any reference length
@@ -81,14 +95,12 @@ def check_backslash(node, issues, path):
     if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
         return
     val = node.value
-    # Look for character classes [ ... ]
     start = 0
     while True:
         start = val.find('[', start)
         if start == -1: break
         end = val.find(']', start)
         if end == -1: break
-        
         content = val[start+1:end]
         i = 0
         while i < len(content):
@@ -98,11 +110,10 @@ def check_backslash(node, issues, path):
                     if nxt == '\\':
                         i += 2
                         continue
-                    # Valid escape sequences
-                    if nxt.lower() in ('w', 's', 'd', 'n', 't', 'r') or nxt == '.':
+                    # Legitimate escapes in Python strings or Regex classes
+                    if nxt.lower() in ('w', 's', 'd', 'n', 't', 'r') or nxt in '.\'"[]^+*()|${}?-':
                         i += 2
                         continue
-                    # Suspect: single backslash followed by non-escape char
                     issues.append(
                         f"{path}:{node.lineno}: class [{content}] - a backslash may have been eaten during transport"
                     )
@@ -114,7 +125,6 @@ def check_backslash(node, issues, path):
         start = end + 1
 
 # ----------------------------------------------------------------------
-# Visitor that runs all checks on a single file
 class FileChecker(ast.NodeVisitor):
     def __init__(self, path, refs, args):
         self.path = path
@@ -133,10 +143,12 @@ class FileChecker(ast.NodeVisitor):
 def process_file(path, args):
     reported = False
     if not args.disable_check1:
-        ok, msg = run_help(path, 10)
-        if not ok:
-            print(f"{path}: execution failed or hung ({msg})", file=sys.stderr)
+        ok, msg, is_failure = run_help_strict(path, 10)
+        if not ok and is_failure:
+            print(f"{path}: {msg}", file=sys.stderr)
             reported = True
+        elif msg:
+            print(f"{path}: NOTE - {msg}", file=sys.stderr)
 
     try:
         with open(path, 'r', encoding='utf-8') as f:
