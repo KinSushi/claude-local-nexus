@@ -1,18 +1,18 @@
 # Checklist Progress
-Generated: 2026-09-02 12:07:41
+Generated: 2026-09-02 12:17:45
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 146 |
+| Commits non pushes | 148 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 11:58:27 -0500 |
+| Date du dernier commit | 2026-09-02 12:12:19 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
-| nexus_cablage.py | 5 |
-| nexus_outillage.py | 84 |
+| nexus_cablage.py | 6 |
+| nexus_outillage.py | 85 |
 
 ## 3. Outils
 | Description | Value |
@@ -39,8 +39,8 @@ Generated: 2026-09-02 12:07:41
 | Lignes dans fragments_embeddings.jsonl | 20366 |
 
 ## CE QUI RESTE OUVERT
-- Regressions de cablage : 5
-- Regressions d outillage : 84
+- Regressions de cablage : 6
+- Regressions d outillage : 85
 - Prescriptions rouges : 11
   - Idempotency
   - Dependency validation
@@ -53,4 +53,4 @@ Generated: 2026-09-02 12:07:41
   - Graceful degradation EN TIERS
   - TTL sur les donnees echangees
   - Timeout-aware retry with backoff
-- Commits non pousses : 146
+- Commits non pousses : 148
