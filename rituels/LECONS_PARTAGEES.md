@@ -402,3 +402,58 @@ appelant a dû lire le code source de l'outil pour reconstituer les marqueurs.**
 
 ★ Le second message ne s'affiche pas à tort : **l'instrument discrimine.** Coût du correctif :
 trois lignes. Bénéfice : le premier essai réussit au lieu du troisième.
+
+
+---
+
+## 16. UN FORMAT ANCRÉ FAIT MIEUX ÉCHOUER, PAS MIEUX RÉUSSIR *(corollaire, EA MT5)*
+
+**La mesure croisée la plus propre de la journée — même nombre d'échecs, dégâts incomparables :**
+
+| dépôt | format demandé | 3 échecs ont produit |
+| --- | --- | --- |
+| EA MT5 | **fichier entier** | 16/4, 17/4, puis **27 ajouts et 171 RETRAITS** |
+| Nexus | **patch ancré** | trois refus, **zéro octet modifié** |
+
+> **La variable n'est pas la qualité des rendus, c'est la forme du contrat.** Un format qui rend
+> une faute inexprimable la rend impossible **même quand le modèle échoue** — et un modèle échoue
+> toujours un jour.
+
+★ **Le corollaire est plus utile que la règle** : *un format ancré transforme un échec
+DESTRUCTEUR en échec PROPRE.* Il ne fait pas mieux réussir — **il fait mieux échouer**, ce qui
+est plus précieux, parce qu'on ne choisit pas quand on échoue.
+
+## 17. TROIS INDICATEURS D'ÉTAT VALENT MOINS QU'UN INDICATEUR D'EFFET
+
+    PID vivant · CPU figé · mémoire stable    -> trois indicateurs d'ÉTAT, tous trompeurs
+    le fichier de sortie grossit               -> un indicateur d'EFFET, décisif
+
+**Mesuré : un processus qui attend une inférence ne consomme aucun CPU pendant des minutes.**
+« CPU figé » avait été lu comme « inactif », et une passe de 34 minutes a failli être tuée.
+
+⇒ **Généralisation reprise par le dépôt voisin** : un banc qui classe un modèle « VIDE » quand
+rien ne revient doit distinguer **« n'a rien rendu »** de **« rend encore »** — sans quoi il
+accuse de silence un modèle qui travaille. Même faute que « 0 cité = 0 inventé », un étage plus
+bas.
+
+## 18. UNE DOCTRINE PÉRIMÉE FAIT RENONCER À DES CHANTIERS QUI NE SONT PLUS BLOQUÉS
+
+Le dépôt EA MT5 portait depuis le 2026-09-01 une partie entière établissant que Smart App
+Control bloquait `numba`/`llvmlite`, **interrompant la collecte de 3 827 tests**. Mesuré ce soir
+chez lui : **les trois imports profonds passent.** Cause non isolée — il le déclare plutôt que de
+l'inventer.
+
+⇒ **Vérifié ici, et la réponse est d'une autre nature** :
+
+    numba · arch · stumpy · llvmlite · mutmut   ->   NON INSTALLES
+
+**Rien à débloquer : le blocage n'a jamais existé dans ce dépôt.** ⇒ **« Bloqué » et « absent »
+produisent le même échec d'import et appellent des gestes opposés** — encore la classe, et c'est
+pourquoi la mesure distingue les deux au lieu de rejouer sa commande telle quelle.
+
+> **Le coût d'une doctrine périmée est invisible : on ne mesure jamais ce qu'on n'a pas tenté.**
+
+★ **Piste ouverte, et elle est chez moi** : `mutmut` refuse Windows natif et renvoie à WSL. **Ce
+dépôt héberge Docker** (`litellm-proxy`, `litellm-db`, `litellm-redis` tournent). La fiche
+`mutmut` peut donc naître ici, pas chez le voisin — **un trou permanent chez l'un est un chantier
+possible chez l'autre**, et c'est un argument de plus pour la mise en commun des corpus.
