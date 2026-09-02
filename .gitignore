@@ -95,3 +95,9 @@ v15*.json
 # son pointeur est suivi par l exception plus bas.
 references/livres_texte/
 references/python_libs_docs_eamt5/
+
+# Doc pre-machee CALIBREE pour petits modeles locaux : fragment moyen ~6 000
+# octets, contre ~24 Ko pour le calibre cloud. Un 0,5B tronque en silence
+# au-dela de ~10 Ko : deux calibres sont necessaires, pas un.
+references/CODE_ENZO/
+references/CODE_LIVRES/

@@ -17402,3 +17402,80 @@ tri.
 **LE REMEDE JUSTE, nomme et non fait** : `contenus()` doit accepter un couple nom-texte plutot
 qu'un chemin, pour qu'une source d'appelant non-fichier soit representable. **C'est une refonte,
 pas un patch** — et la dire est plus utile que de la bricoler.
+
+
+### 115.143 UN FAUX VERT TROUVE PAR LA QUESTION D'UN TIERS — garde EPROUVEE, JAMAIS ARMEE
+
+**Question posee par la session sovereign** : *« un test inverse vert sur un composant non cable
+certifie un refus qui ne se declenche JAMAIS. Regarde si un de tes gardes est dans ce cas. »*
+**Mesure croisant les hooks armes et les epreuves ecrites :**
+
+    garde                    ARMEE   EPROUVEE   verdict
+    nexus_garde_agent         oui      oui      OK
+    nexus_garde_ecriture      oui      oui      OK
+    nexus_garde_isolation     oui      oui      OK
+    nexus_garde_production    oui      oui      OK
+    nexus_garde_shell         oui      oui      OK
+    **nexus_garde_lecture      NON      oui      FAUX VERT**
+    nexus_garde_edition       NON      NON      ni armee ni eprouvee
+
+★ **`nexus_garde_lecture` a une epreuve qui passe et n'est armee dans AUCUN hook.** Son epreuve
+certifie donc un refus qui ne s'execute jamais — **la jambe 2 verte, la jambe 3 absente**, mot
+pour mot le motif signale.
+
+⇒ **Et c'est pire qu'une garde absente** : une garde absente se voit, une garde eprouvee-non-armee
+**se lit comme une protection** dans le registre des epreuves.
+
+**NON CORRIGE, et deliberement** : armer une garde de LECTURE change le comportement de toutes
+les sessions de l'operateur. **La contre-epreuve avant l'armement, pas apres** — regle payee ce
+matin sur `nexus_garde_production`, qui imprimait un refus parfait en rendant zero. **Il faut
+d'abord prouver que celle-ci REFUSE.**
+
+### 115.143.1 CE QUE LES DEUX SESSIONS ONT MESURE SUR L'ARMEE DE PETITS MODELES
+
+**Chiffres recus, avec leurs limites DECLAREES par leurs auteurs — ce qui vaut plus que les
+chiffres :**
+
+| | duree | completude | invention |
+| --- | --- | --- | --- |
+| `qwen2.5-0.5b-local` | **1,9 s** · 0,1-1,0 s a chaud | 7/7 | **2 inventes (28,6 %)** |
+| `gpt-oss-120b-cloud` | 2,0 s · 19-92 s par tache en lot | 5/7 | **0** |
+| `qwen3-1.7b-local` | 11,0 s | **rendu VIDE** | — |
+
+★ **LE LOCAL GAGNE EN VITESSE ET IL INVENTE.** Il *complete* la ou le texte ne dit rien —
+`returns = pd.Series(dtype='float64')` fabrique de toutes pieces. **Le cloud s'abstient sur les
+memes cas, et son abstention est la BONNE reponse.**
+
+⇒ **Aucun des deux n'est meilleur dans l'absolu** : le petit rend tout et se trompe, le grand
+rend moins et ne se trompe pas. **Le choix depend de ce qui coute le plus cher en aval** — pour
+de la doc servant a ne PAS halluciner dans du code, **une invention coute plus qu'une omission**.
+
+⚠️ **LE 1,7B EST LE PLUS INSTRUCTIF** : plus lent que les deux autres ET sans rendu, son
+raisonnement ayant consomme le budget. **La courbe taille/qualite n'est pas monotone**, et un
+banc qui ne mesure que le plus petit et le plus gros ne le verrait pas.
+
+★ **CE QUI REND L'ARMEE VIABLE MALGRE L'INVENTION** : *a 0,35 s par tache, poser dix fois la
+meme question et ne garder que les rendus VERIFIES coute moins qu'un seul appel cloud.*
+**Redondance plus verification, jamais confiance.**
+
+**ET LA BORNE DURE QUI REND CE MODELE POSSIBLE** : les 29 300 unites atomiques absorbees ont un
+**maximum de 2 276 caracteres**, 100 % sous 6 000. **Il n'y a pas de queue longue** : aucun
+decoupage, aucun MAP/REDUCE, le goulot du contexte disparait par construction.
+
+### 115.143.2 DEUX DEFAUTS DE MES OUTILS, SIGNALES PAR L'USAGE D'AUTRUI
+
+**1. `nexus_appliquer` reecrit les fins de ligne.** Mesure du voisin : **229 insertions / 229
+suppressions pour un changement d'UNE ligne**, `git diff --ignore-cr-at-eol` rendant 1/1. **Mes
+propres commits n'en souffrent pas** — 42 annoncees, 42 reelles, mes fichiers etant deja en LF —
+**mais les siens sont en CRLF.** Les avertissements `CRLF will be replaced by LF` defilaient
+dans mes sorties depuis ce matin et **je ne les ai jamais lus**. ⇒ Ecrire en preservant les EOL
+de la cible.
+
+**2. La verification de citation appartient au MCP, pas a un script prive.** Le voisin l'a
+mesuree et **la regle qui compte n'est pas devinable** : normaliser sur `[-\s]+`. Un `==` naif
+declare FABRIQUEE une citation fidele, parce que le PDF porte `complex-
+valued` la ou le modele
+rend `complex-valued`. **Score : naif 3/4, de-cesure 3/4, sans-tiret 4/4.**
+
+⇒ **Sa conduite est la bonne et je la note** : il a REPORTE le manque au lieu d'ecrire le
+normalisateur chez lui. *« Sans quoi chacun refera les trois memes erreurs. »*
