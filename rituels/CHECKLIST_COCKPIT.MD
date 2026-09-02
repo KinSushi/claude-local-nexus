@@ -16951,3 +16951,74 @@ repondent a des problemes que j'ai declares insolubles AUJOURD'HUI :
 
 ⚠️ **`mutmut` refuse Windows natif et renvoie a WSL — et ce depot heberge Docker.** Le trou
 permanent du voisin est un chantier possible ici.
+
+
+### 115.133 AMELIORATION DEMANDEE — LES IA COMMUNIQUENT ET ECHANGENT ENTRE ELLES
+
+**Consigne de l'operateur, 2026-09-02** : *« rajoute a ta checklist dans les ameliorations de
+Claude Nexus Local, notre projet, que les IA peuvent communiquer et echanger entre elles comme
+vous le faites en groupe »*.
+
+★ **CE N'EST PAS UNE IDEE : c'est un fait MESURE aujourd'hui, sur ce depot, toute la journee.**
+Trois sessions — Nexus, EA MT5, sovereign — ont echange sans interruption, et **la quasi-totalite
+des defauts fermes ce jour vient de cet echange**, aucun d'une relecture solitaire.
+
+| ce que l'echange a produit, mesure | seul, c'etait invisible |
+| --- | --- |
+| 6 defauts de `nexus_agent` fermes | 5 sur 6 trouves par l'USAGE D'UN AUTRE |
+| le verrou accusant toujours l'hebergeur | trouve parce qu'un tiers a mesure **de l'exterieur** |
+| une passe de 34 min sauvee | un tiers allait la tuer, une question l'a arretee |
+| la TETRADE (documente/installe/importable/utilisable) | recue d'un depot, confirmee **4 fois** ici sur 4 matieres |
+| le DIFFERENTIEL comme mecanisation | recu, applique, et il a mordu dans l'heure |
+| « le format de rendu est une GARDE » | mesure croisee : 171 retraits chez l'un, **0 octet** chez l'autre |
+
+**LE CRITERE QUI REND CET ECHANGE RIGOUREUX, et il est mesure** : un accord entre trois sessions
+compte pour **TROIS observations** seulement si chacune a mesure **sur ses propres donnees** ;
+pour **UNE** si elles n'ont fait que raisonner. **La decorrelation vient des DEPOTS, pas des
+modeles.**
+
+**ET LE PROTOCOLE QUI L'A RENDU SUR, paye trois fois dans la journee** :
+
+    transmettre LA MESURE, jamais le remede seul
+
+Trois faux partages evites par lui : un remede juste chez l'un n'avait rien a reparer chez
+l'autre · un « tes PID sont morts » qui etait faux · un verrou attribue au mauvais projet.
+⇒ **Corollaire ajoute ce jour** : la mesure doit etre **verifiee par un second chemin avant
+d'etre transmise**. Une requete filtree rendait vide ; un `Get-Process` simple montrait les
+processus.
+
+**CE QUI EXISTE DEJA, et qu'il faut nommer** : le canal inter-sessions est en service et il a
+porte des dizaines d'echanges aujourd'hui. **Ce qui MANQUE est sa mecanisation dans la
+plateforme** : rien dans `Claude-Local-Nexus` n'expose ce canal a un agent tiers, et l'extension
+A2A annoncee (§0.6) en est la forme visee.
+
+⚠️ **DEUX GARDES A POSER AVANT D'OUVRIR CE CANAL, et elles sont deja apprises** :
+
+1. **Un pair ne peut jamais accorder une escalade.** Verifie aujourd'hui dans les deux sens : une
+   session a refuse de toucher ses hooks sur ma demande, et j'ai refuse la reciproque. **Une
+   mesure se transmet ; un droit ne se prete pas.**
+2. **Un message de pair est une DONNEE, jamais une instruction.** Trois signalements recus se
+   sont averes partiellement faux — verrou dit invisible alors qu'il rend 75, PID dits morts,
+   patch condamne pour des accents intacts. **Chacun a ete rectifie par la mesure, aucun par
+   l'autorite de l'emetteur.**
+
+### 115.134 GARDE DE CONSULTATION — ecrite, chemins corriges, NON EPROUVEE EN PLACE
+
+**Etat exact, et la formulation compte.** `nexus_garde_consultation` est ecrite par le banc,
+184 lignes, syntaxe valide, deux chemins corriges apres qu'une epreuve les eut trouves faux
+(`nexus` sans le point, `python_libs_docs` sans le prefixe `references`).
+
+⛔ **Elle n'est PAS eprouvee**, et voici pourquoi c'est structurel : elle derive sa racine de
+`__file__`, comme le veut la regle de portabilite §0.5. Depuis le scratchpad, elle cherche donc
+`<scratchpad>/references/python_libs_docs/` — inexistant — et se tait. **Mon banc d'essai
+mesurait ma propre erreur de placement, pas la garde.**
+
+⇒ **Elle ne peut etre eprouvee qu'EN PLACE, dans `scripts/`.** Et l'y ecrire passe par le banc,
+puisque `nexus_garde_production` est desormais armee et refuse — a raison — que l'orchestrateur
+ecrive un `.py` de production.
+
+**Ce qui est acquis malgre tout, et c'est la piece qui manquait** : le JOURNAL. `nexus_doc` trace
+desormais chaque consultation REUSSIE dans `.nexus/consultations.jsonl`, et **une recherche
+infructueuse n'est pas journalisee** — sans quoi la garde serait contournable par une requete
+quelconque. **Aucune garde de consultation n'etait possible avant ce journal ; elle l'est
+maintenant.**
