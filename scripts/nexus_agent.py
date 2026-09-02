@@ -220,18 +220,22 @@ TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 # decide.
 REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local"]
 
-# Règles de filtrage des fichiers secrets. Le serveur MCP emploie quatre motifs, dont un qui reconnaît
-# le mot "secret" ou "credential" entouré de points, tirets ou soulignés n'importe où dans le nom — donc
-# il refuse un fichier nommé secrets_vault.py. Ce filtre-ci, lui, ne reconnaît le mot "secrets" que suivi
-# d'une extension yaml, yml, json ou toml — donc il accepte le même secrets_vault.py. Les deux étages
-# du même garde divergent donc aujourd'hui, et le serveur MCP est le plus strict des deux.
+# Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
+# sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier
+# ne doit pas être accepté ici puis refusé là-bas, ou inversement, car les deux canaux
+# aboutissent au même fournisseur distant : toute divergence créerait une fuite ou un blocage
+# selon le chemin emprunté.
 FICHIERS_SECRETS = {
     ".env", ".env.local", ".env.production", ".npmrc", ".netrc",
     "credentials", "credentials.json", "id_rsa", "id_ed25519",
+    ".htpasswd", "hosts.yml", "known_hosts", "config.json", "auth.json",
+    "service-account.json", ".dockercfg",
 }
 MOTIFS_SECRETS = re.compile(
     r"(^\.env($|\.)|\.pem$|\.key$|\.pfx$|\.p12$|_rsa$|_ed25519$|"
-    r"secrets?\.(ya?ml|json|toml)$)",
+    r"secrets?\.(ya?ml|json|toml)$|"
+    r"\.keystore$|\.jks$|\.ppk$|"
+    r"(^|[._-])(secret|secrets|credential|credentials)(?=$|[._-]))",
     re.IGNORECASE,
 )
 
