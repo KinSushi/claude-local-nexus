@@ -939,6 +939,32 @@ def carte_reduction(corpus: str, consigne: str, modele: str,
 
 import os
 
+def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
+    try:
+        import re as _re
+        _txt = resultat.get("texte") or ""
+        _pats = ["Out-File","Set-Content","Add-Content",">>?","open\\s*\\([^)]*['\"][wa+]","unlink","\\bremove\\b","rmtree","shutil\\.copy","Move-Item","Remove-Item"]
+        _chemins = list(tache.get("fichiers") or []) + _re.findall(r"[\w./\\-]+\.\w+", consigne)
+        _chemins_avec_base = []
+        for _c in _chemins:
+            if _c:
+                _chemins_avec_base.append(_c)
+                _base = _c.replace('\\', '/').rsplit('/', 1)[-1]
+                if len(_base) >= 5:
+                    _chemins_avec_base.append(_base)
+        _chemins = _chemins_avec_base
+        _marques = []
+        for _p in _pats:
+            for _m in _re.finditer(_p, _txt, _re.I):
+                _marques.append(_m.group(0))
+        _chemins_presents = [_c for _c in _chemins if _c and _c in _txt]
+        if _marques and _chemins_presents:
+            _avert = "[!] ECRITURE DETECTEE : marque '%s' et chemin '%s'. Un test lit et n'ecrit que dans un repertoire temporaire ; un rendu ne doit jamais ecrire sur un fichier donne a analyser.\n" % (_marques[0], _chemins_presents[0])
+            resultat["texte"] = _avert + resultat["texte"]
+    except Exception:
+        pass
+    return resultat
+
 def executer(tache: dict, cle: str) -> dict:
     # Trois etats: preparation en cours, appel reseau parti, attente de reponse
     print(f"PREPARATION commence pour {tache.get('modele') or 'modele inconnu'}: lecture des pieces jointes et resolution du plan", file=sys.stderr, flush=True)
@@ -975,6 +1001,7 @@ def executer(tache: dict, cle: str) -> dict:
                     "erreur": f"plan {resultat.get('plan')} servi alors que local_seul exigé"}
         if local_seul:
             resultat["local_seul"] = True
+        resultat = etiqueter_ecritures(resultat, tache, consigne)
         return resultat
 
     essais, echecs = [], []
@@ -1063,6 +1090,7 @@ def executer(tache: dict, cle: str) -> dict:
             if not motif and echecs:
                 motif = echecs[-1]
             resultat["motif_bascule"] = motif
+        resultat = etiqueter_ecritures(resultat, tache, consigne)
         return resultat
 
     # Aucun candidat n'a produit de texte.
