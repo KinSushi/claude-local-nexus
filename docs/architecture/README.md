@@ -41,6 +41,7 @@ aujourd'hui implémentés.
 | [`Escalation-policy.txt`](Escalation-policy.txt) | Sous un seuil de confiance : rejouer, changer de modèle, ou demander un humain |
 | [`model-registry.yaml`](model-registry.yaml) | Registre de modèles et de leurs capacités déclarées |
 | [`Bayesian-routing-evolution-future.txt`](Bayesian-routing-evolution-future.txt) | Piste d'évolution : un routage qui apprend de ses résultats |
+| [`Adaptive-Inference-Controller.md`](Adaptive-Inference-Controller.md) | Contrôleur de température adaptatif par modèle × tâche, avec sa propre table d'état honnête ("rien n'est implémenté à ce jour") |
 
 ## Observabilité et évaluation
 
@@ -92,4 +93,4 @@ aujourd'hui implémentés.
 | [`Final-target-architecture.txt`](Final-target-architecture.txt) | L'architecture cible complète, composants et plan par phases |
 | [`Mission-P0.txt`](Mission-P0.txt) | Transcription de travail sur l'ingestion et la normalisation des artefacts |
 | [`Architecture_documentaire.md`](Architecture_documentaire.md) | L'organisation documentaire du projet |
-| [`missions/`](missions/) | Missions d'ingestion et de migration |
+| [`missions/INGEST-001-platform-integration.md`](missions/INGEST-001-platform-integration.md) | Mission d'ingestion des artefacts d'architecture en un registre canonique unique (spécification, jamais exécutée : `_registry/` n'existe pas dans le dépôt) |

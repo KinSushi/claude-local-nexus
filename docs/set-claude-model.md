@@ -59,13 +59,14 @@ connexion claude.ai.
 ```
 
 Sans `-Model`, le script retient le premier disponible par ordre de
-préférence : `glm-4.7-flash-local` (MoE, peu de paramètres actifs — le plus
-utilisable des gros modèles sur un hôte CPU), puis les Qwen Coder, puis des
-modèles plus légers.
+préférence (vérifié dans `Set-ClaudeModel.ps1`) : `releve-locale` (le même
+MoE `glm-4.7-flash`, à 64K de contexte) en tête, puis `glm-4.7-flash-local`
+(32K), puis les Qwen Coder, puis des modèles plus légers.
 
-> Réserve : les fenêtres locales sont à 8K/32K alors que Claude Code est
-> gourmand en contexte. Les sessions longues risquent de saturer. C'est un
-> mode de dépannage, pas un remplacement.
+> Réserve : hors `releve-locale`, les autres fenêtres locales de la liste
+> sont à 8K/32K alors que Claude Code est gourmand en contexte. Les sessions
+> longues risquent de saturer. C'est un mode de dépannage, pas un
+> remplacement.
 
 ### Basculer sur Claude via la passerelle
 

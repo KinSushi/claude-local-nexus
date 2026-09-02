@@ -25,4 +25,19 @@ model alias "ultime-recourse-local"
 referenced by fallback graph
 but absent from model registry.
 
-C'est exactement l'anomalie déjà visible dans la configuration actuelle.
+C'était exactement l'anomalie visible dans la configuration au moment où
+cette note a été écrite. PÉRIMÉ au 2026-09-02 : vérifié par
+`grep -n "ultime-recourse-local" litellm_config.yaml`, l'alias est
+aujourd'hui déclaré (`model: ollama_chat/llama3.2:1b`, ligne 358) — la
+correction est documentée dans Claude.md §18. Le mécanisme proposé ici a
+par ailleurs été largement repris : `scripts/nexus_validate.py`, appelé par
+`scripts/Test-NexusConfig.ps1`, vérifie déjà l'unicité des alias, l'existence
+de tout candidat de routeur et de tout fallback, l'absence de cycle, la
+compatibilité de modalité et la présence des variables d'environnement
+référencées — vérifié le 2026-09-02 par une lecture de
+`scripts/Test-NexusConfig.ps1` (lignes 6-12) et une exécution de
+`python scripts/nexus_validate.py` sur ce dépôt. Ce qui n'a PAS été repris :
+le verdict ternaire OK/WARNING/ERROR proposé ici — `nexus_validate.py` rend
+un verdict binaire (configuration valide ou invalide, code de sortie 0/1),
+vérifié par `grep -n "\"OK\"\|WARNING\|ERROR" scripts/nexus_validate.py`, qui
+ne rend rien.

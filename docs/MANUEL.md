@@ -3,11 +3,11 @@
 ## Contexte rapide
 - **Installation** : `C:\local-llm-docker`  
 - **Passerelle LiteLLM** : `http://localhost:4000`  
-- **60 alias de modèles** répartis en trois catégories  
+- **77 alias de modèles mesurés le 2026-09-02** (compte généré, `grep -c "model_name:" litellm_config.yaml` moins les routeurs -- il varie à chaque mise à jour du pool cloud) répartis en trois catégories  
 
 | Catégorie | Exemple d’alias | Coût | Particularités |
 |-----------|-----------------|------|-----------------|
-| **LOCAL** | `codestral-22b-local`, `glm-4.7-flash-local`, `gpt-oss-20b-local` | Gratuit, **tout** reste sur la machine | Modèles ≥ 30 Mds param → expire après 900 s ; ne jamais les employer |
+| **LOCAL** | `codestral-22b-local`, `glm-4.7-flash-local`, `gpt-oss-20b-local` | Gratuit, **tout** reste sur la machine | Le nombre de paramètres ne prédit ni le démarrage ni le débit (mesuré, voir Claude.md §112.3/§107.3) : `qwen3-coder-30b-local` (30 Mds) répond en 2,4 s et sert de repli gratuit dans `nexus_agent.py` -- ne pas écarter un modèle sur son seul nombre de paramètres |
 | **CLOUD** | `ollama-claude-2-cloud`, `ollama-gpt-4-cloud` | Gratuit sous abonnement | Les données **sortent** vers `ollama.com` ; OK pour code public, jamais pour secrets |
 | **PAYE**  | `claude-*` | Facturation au jeton | **Jamais** utilisé ; la plateforme existe pour l’éviter |
 
@@ -77,7 +77,7 @@ python "C:/local-llm-docker/scripts/nexus_agent.py" `
 `--modele` est facultatif. Sans lui, la requête part sur `adaptive-router`,
 qui arbitre entre le local et le cloud Ollama — gratuits tous les deux, et
 sans jamais atteindre un alias facturé. Son pool compte **4 candidats
-locaux et 19 cloud**, et son modèle par défaut est `qwen3-coder-30b-local`.
+locaux et 19 cloud**, et son modèle par défaut est `codestral-local` (vérifié dans `litellm_config.yaml`, clé `adaptive_router_default_model` du routeur global).
 
 Ce pool n'est plus tenu à la main : il est **calculé**, et **borné par la
 mémoire** plutôt que par un compte. La raison tient en une mesure. Ouvert à

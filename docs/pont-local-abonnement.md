@@ -62,7 +62,9 @@ doit pas passer par le plan d'authentification.
     +---------+-----------+------------------+
     v                     v                  v
   LOCAL                OLLAMA CLOUD       ANTHROPIC
-  40 alias             6 alias            4 alias
+  54 alias             19 alias           4 alias
+  (mesuré 2026-09-02 dans litellm_config.yaml -- le pool cloud est
+   régénéré quotidiennement, ce compte varie)
   coût 0               abonnement Ollama  crédits API
   rien ne sort         sort vers          facturé au token
                        ollama.com
@@ -91,6 +93,12 @@ Base volontairement réduite, vouée à s'étendre :
 | Inspection | `nexus_models` | Inventaire annoté par plan, coût et confidentialité |
 | | `nexus_profile` | Limites réelles de la machine, verdict par modèle |
 | | `nexus_savings` | Ce que la délégation fait économiser |
+| | `nexus_charge` | Qui occupe la machine, mémoire libre pour l'inférence |
+| | `nexus_verrou` | État des verrous partagés entre projets, sans les prendre |
+| Corpus | `nexus_livres` | Recherche sémantique dans le corpus technique local |
+
+Quinze outils au total (`tools/nexus-mcp/server.js`), pas douze : la base
+s'est déjà étendue depuis l'écriture de ce tableau.
 
 ### Demander une classe de tâche, pas un modèle
 
@@ -100,14 +108,21 @@ local :
 
 | Profil | Pour | Retenu sur cette machine |
 |---|---|---|
-| `coding` | implémentation, débogage, refactorisation | `releve-locale` (64K) |
-| `reasoning` | architecture, arbitrages | `glm-4.7-flash-local` |
+| `coding` | implémentation, débogage, refactorisation | `qwen3-coder-30b-local` |
+| `reasoning` | architecture, arbitrages | `qwen3-coder-30b-local` |
 | `rapide` | classification, extraction, transformation | `llama3.2-3b-local` |
 | `multimodal` | image, capture d'écran, OCR | `llava-7b-local` |
 
-Demander `coding` plutôt que `qwen3-coder-30b-local` laisse la plateforme
-arbitrer selon ce qui est réellement disponible **et exécutable** : le
-verdict matériel s'applique aussi ici.
+Ordre corrigé le 2026-08-30 dans `tools/nexus-mcp/server.js` (`PROFILES`) :
+`releve-locale` puis `glm-4.7-flash-local` figuraient en tête sur la seule
+mesure de démarrage, alors que ce sont le même modèle sous deux alias, le
+plus lent du banc. Sur la mesure de débit qui manquait, `qwen3-coder-30b-local`
+l'emporte sur les deux profils (2,4 s au démarrage, 20,22 jetons/s).
+
+Demander `coding` ou `reasoning` plutôt qu'un nom de modèle laisse la
+plateforme arbitrer selon ce qui est réellement disponible **et
+exécutable** : le verdict matériel s'applique aussi ici, et l'ordre
+ci-dessus n'est qu'une préférence, pas une garantie.
 
 Chaque réponse est préfixée du modèle réellement retenu, du plan et du mode
 de facturation — une décision de routage qui ne s'explique pas est
@@ -121,23 +136,28 @@ l'abonnement. `nexus_summarize` distille un fichier volumineux localement et
 ne fait remonter que la synthèse. Le volume est absorbé gratuitement ; les
 tokens de l'abonnement ne paient que le raisonnement.
 
-**Choix du modèle d'embedding — mesuré, pas supposé.** Le défaut est
-`qwen3-embedding-8b-local`. `nomic-embed-text`, plus léger et longtemps
-retenu par défaut dans la plateforme, a été écarté après mesure : sur une
-paire française, il classe la phrase **sans rapport au-dessus de la
-paraphrase**.
+**Choix du modèle d'embedding — mesuré, pas supposé, et corrigé une seconde
+fois.** Le défaut actuel (`DEFAULT_EMBED_MODEL` dans
+`tools/nexus-mcp/server.js`) est `all-minilm-local`, pas
+`qwen3-embedding-8b-local`. Ce dernier avait d'abord remplacé
+`nomic-embed-text` sur une mesure de séparation sémantique, mais huit
+milliards de paramètres pour produire des vecteurs faisait expirer
+`nexus_index_build` et `nexus_search` à 600 s sur le seul dossier
+`scripts/` — la lenteur n'était pas assumée, elle était bloquante.
 
-| Modèle | paraphrase | phrase sans rapport | verdict |
+Remesuré le 2026-08-30 sur la **marge discriminante** (cos(ancre, proche)
+moins cos(ancre, éloigné)) plutôt que sur deux scores bruts :
+
+| Modèle | Poids | Latence | Marge |
 |---|---|---|---|
-| `nomic-embed-text` | 0,520 | 0,555 | incohérent |
-| `nomic-embed-text` + préfixes | 0,623 | 0,640 | incohérent |
-| `all-minilm` | 0,527 | 0,434 | faible marge |
-| `qwen3-embedding:8b` | 0,875 | 0,417 | net |
+| `all-minilm-local` | 46 Mo | 2341 ms | **0,289** |
+| `nomic-embed-text-local` | 274 Mo | 2122 ms | 0,210 |
+| `bge-m3-local` | 1,2 Go | 2187 ms | 0,204 |
 
-Un index construit sur un modèle incohérent ne serait pas seulement
-médiocre : il serait **trompeur**, en remontant avec assurance des extraits
-hors sujet. Le prix est la lenteur — 8 milliards de paramètres sur CPU —, et
-il est assumé.
+Le plus petit discrimine le mieux : la taille ne prédisait ni le délai de
+démarrage, ni le débit, ni la qualité des vecteurs. La marge prime sur la
+latence à dessein — un embedding rapide qui ne sépare pas rend la recherche
+inutile — et ici les deux vont dans le même sens.
 
 La recherche impose d'utiliser le modèle qui a construit l'index : deux
 modèles ne partagent pas d'espace vectoriel, et comparer leurs vecteurs
