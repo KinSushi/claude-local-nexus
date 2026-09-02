@@ -6,7 +6,7 @@ import glob
 import datetime
 import tempfile
 
-TARGET_PATH = os.path.join(os.environ['USERPROFILE'], '.claude', 'settings.json')
+TARGET_PATH = os.environ.get('NEXUS_SETTINGS_PATH', os.path.join(os.environ['USERPROFILE'], '.claude', 'settings.json'))
 BACKUP_PATTERN = TARGET_PATH + '.avant_hook_*'
 
 def log_ok(label, detail):

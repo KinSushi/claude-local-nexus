@@ -4,7 +4,6 @@ import json
 import tempfile
 import shutil
 import subprocess
-from pathlib import Path
 
 def log_status(prefix, message):
     print(f"[{prefix}] {message}")
@@ -65,7 +64,7 @@ def main():
     cleanup(temp_dir)
 
     # Exécution des tests
-    for name, test_func in tests:
+    for _name, test_func in tests:
         if not test_func():
             all_passed = False
 

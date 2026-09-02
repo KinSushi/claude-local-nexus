@@ -2454,6 +2454,9 @@ def test_commande_nexus() -> None:
     jouer_epreuve_python("epreuve_garde_ecriture.py", "garde d'ecriture")
     jouer_epreuve_python("epreuve_schema.py", "schema")
     jouer_epreuve_python("epreuve_stats_jsonl.py", "statistiques JSONL")
+    jouer_epreuve_python("epreuve_sonde_aveugle.py", "sonde aveugle")
+    jouer_epreuve_python("epreuve_armer_garde.py", "armement des gardes")
+    jouer_epreuve_python("epreuve_libs.py", "ecart entre bibliotheques documentees et installees")
 
 
 def test_decoupage_emoji() -> None:

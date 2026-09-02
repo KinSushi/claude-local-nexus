@@ -14584,3 +14584,84 @@ c'est ce qui les rend dangereuses, puisque le fond credible fait accepter l'ancr
 Consequence pratique immediate, appliquee des ce tour : **un diagnostic portant sur un
 gros fichier se verifie ancre par ancre avant tout usage**, et le rendement mesure
 (§115.43, une trouvaille reelle pour douze appels) ne vaut que sous cette condition.
+
+### 115.55 `nexus_armer_garde --armer` NE MARCHE QUE SUR CETTE MACHINE — defaut PREEXISTANT, revele par une epreuve
+
+Le rendre testable l'a rendu FAUX-testable, et c'est ainsi que le defaut est sorti.
+
+**L'ENCHAINEMENT, qui vaut autant que la trouvaille :**
+
+1. Une epreuve neuve a REFUSE de s'executer plutot que d'ecrire dans la configuration
+   reelle de l'utilisateur — exactement le comportement exige, et elle a rendu un code
+   distinct au lieu d'un faux vert ;
+2. le refus a mis au jour que `TARGET_PATH` etait **grave** sur la variable de profil,
+   sans surcharge possible : **un outil non testable est un outil non prouvable** ;
+3. la surcharge posee (`NEXUS_SETTINGS_PATH`, defaut STRICTEMENT inchange), l'epreuve a
+   pu tourner — et l'armement a echoue.
+
+**LES DEUX MESURES QUI ENCADRENT LE DEFAUT :**
+
+    configuration {"hooks":{}}            -> code 2, « des hooks preexistants ont DISPARU »
+                                             alors qu'il n'y avait RIEN a perdre
+    configuration avec 1 groupe temoin    -> code 2, meme message ; le temoin est INTACT
+    dans les deux cas                     -> la garde demandee n'est PAS posee
+
+**ET LA VERIFICATION QUI COMPTE LE PLUS** : rejoue avec la version d'AVANT le patch, sur
+un profil bidon, elle rend **exactement la meme chose**. Le defaut est **preexistant** ;
+la surcharge ne l'a pas cree, elle l'a **rendu visible**. Sans cette comparaison, le
+correctif de portabilite passait pour la cause.
+
+> **Le script qui ARME LES GARDES ne fonctionne que sur une configuration deja riche.**
+> Un projet NEUF ne peut pas armer ses gardes — et l'outil accuse une perte au lieu de
+> nommer la vraie cause. C'est un defaut de portabilite (§0.5) double de la classe du
+> vide-lu-comme-perte : **seizieme occurrence en vingt-quatre heures.**
+
+**CE QUI FONCTIONNE CORRECTEMENT et merite d'etre dit** : il refuse, rend un code non nul,
+et **n'ecrit rien** — le fichier jetable est intact apres coup. L'epreuve de fuite le
+confirme : le vrai `settings.json` n'a pas ete touche (23:36 contre 00:55). Le geste est
+sur ; c'est le DIAGNOSTIC qui est faux, et il envoie chercher une disparition qui n'a pas
+eu lieu.
+
+Diagnostic en vol sur la fonction de verification.
+
+### 115.56 QUATRE CHAINONS, UNE SEULE CLASSE — de §115.44 jusqu'a l'epreuve qui la cherchait
+
+La suite la plus instructive du tour, parce qu'elle est CAUSALE : chaque defaut a
+ENGENDRE le suivant, et tous sont la meme confusion.
+
+    §115.44  sous_racine() rend « absent » par la valeur de « hors racine »
+        |
+        v    le modele de style n'est pas transmis, et le refus dit le contraire
+    nexus_libs.py est redige SANS son modele de style
+        |
+        v    il ignore donc la reconfiguration de sortie du depot
+    il plante sur un U+202F, espace fine insecable posee par le modele
+        |
+        v    corrige, il tourne — et rend « json : CASSE en profondeur »
+    alors qu'aucun sous-module profond n'etait declare : NON MESURE lu comme CASSE
+        |
+        v    corrige, l'epreuve echoue toujours 3 fois sur 6
+    TOOL_PATH = SCRIPT_DIR / "scripts" / ... depuis scripts/ : l'outil est INTROUVABLE
+        |
+        v    et l'epreuve affiche [FAIL], pas « outil introuvable »
+    trois « echecs » qui n'etaient pas des echecs
+
+**Quatre maillons, la meme faute a chaque fois** : une valeur unique pour deux situations
+qui appellent des gestes opposes. **Dix-huitieme occurrence en vingt-quatre heures**, et
+la derniere se trouve dans l'epreuve d'un outil ecrit pour detecter cette classe.
+
+**Un cinquieme maillon, et c'est l'ATTENTE qui etait fausse** : le cas « profondeur »
+exigeait `returncode == 0` alors que l'outil venait de detecter un vrai defaut et rendait
+donc, correctement, un code non nul. **L'epreuve demandait a l'outil de se taire sur ce
+qu'il avait trouve.** Tranche par la mesure a la main, pas par preference : l'outil avait
+raison, l'epreuve avait tort.
+
+**ETAT FINAL, mesure :** `epreuve_libs` **6 cas sur 6**, code 0, et cablee dans
+`nexus_test.py:2459`. `epreuve_sonde_aveugle` 5 sur 5. Les deux rejouees APRES la
+reecriture automatique du style, parce qu'un outil de reecriture qui casse un test le
+casse en silence.
+
+> **La lecon transposable** : quand une epreuve echoue, la premiere question n'est pas
+> « quel defaut a-t-elle trouve ? » mais **« a-t-elle seulement pu lancer ce qu'elle
+> teste ? »**. Ici la reponse etait non, et trois faux echecs ont failli faire corriger
+> un outil sain — exactement le cout que §112.4 attribue a une trouvaille non verifiee.

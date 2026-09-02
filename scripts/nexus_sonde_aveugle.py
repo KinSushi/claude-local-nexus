@@ -84,9 +84,8 @@ def scan_path(path):
                 if file.endswith('.py'):
                     if scan_file(os.path.join(root, file)):
                         found = True
-    elif path.endswith('.py'):
-        if scan_file(path):
-            found = True
+    elif path.endswith('.py') and scan_file(path):
+        found = True
     return found
 
 if __name__ == '__main__':

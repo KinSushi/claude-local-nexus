@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-nexus_libs – Outil de comparaison d’ensembles de bibliothèques Python.
+nexus_libs - Outil de comparaison d'ensembles de bibliotheques Python.
 
-Usage :
+Usage:
     python nexus_libs.py --doc-dir <chemin_doc> --config <fichier_json>
 
-Le fichier JSON doit contenir :
+Le fichier JSON doit contenir:
 {
     "name_map":   {"doc_folder": "module.name", ...},   # optionnel
     "deep_modules": {"module.name": "submodule.path", ...}
@@ -17,21 +17,17 @@ import os
 import argparse
 import json
 import importlib
-import traceback
 
-def _root_path():
-    """Chemin absolu du répertoire contenant ce script."""
-    return os.path.abspath(os.path.dirname(__file__))
+# Reconfiguration du flux de sortie pour eviter les erreurs d'encodage console
+sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', errors='replace')
 
 def _load_config(path):
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    name_map = data.get("name_map", {})
-    deep_modules = data.get("deep_modules", {})
-    return name_map, deep_modules
+    return data.get("name_map", {}), data.get("deep_modules", {})
 
 def _list_doc_modules(doc_dir, name_map):
-    """Retourne l’ensemble des noms de modules documentés."""
+    """Retourne l'ensemble des noms de modules documentes."""
     modules = set()
     for entry in os.listdir(doc_dir):
         full = os.path.join(doc_dir, entry)
@@ -42,7 +38,7 @@ def _list_doc_modules(doc_dir, name_map):
     return modules
 
 def _test_import(module_name):
-    """Essaye d’importer le module de premier niveau."""
+    """Essaye d'importer le module de premier niveau."""
     try:
         importlib.import_module(module_name)
         return True
@@ -50,7 +46,7 @@ def _test_import(module_name):
         return False
 
 def _test_deep_import(deep_path):
-    """Essaye d’importer le sous‑module indiqué."""
+    """Essaye d'importer le sous-module indique."""
     try:
         importlib.import_module(deep_path)
         return True
@@ -60,46 +56,51 @@ def _test_deep_import(deep_path):
 def main():
     parser = argparse.ArgumentParser(prog="nexus_libs")
     parser.add_argument("--doc-dir", required=True,
-                        help="Répertoire contenant les dossiers de documentation.")
+                        help="Repertoire contenant les dossiers de documentation.")
     parser.add_argument("--config", required=True,
                         help="Fichier JSON de configuration (name_map, deep_modules).")
     args = parser.parse_args()
 
-    # Affichage de l’interpréteur réellement utilisé
-    print(f"Interpréteur : {sys.executable}")
+    print(f"Interpreteur : {sys.executable}")
 
-    # Chargement de la configuration
     name_map, deep_modules = _load_config(args.config)
-
-    # Ensemble 1 – Documentées
     documented = _list_doc_modules(args.doc_dir, name_map)
-
-    # Ensemble 2 – Importables
     importable = {m for m in documented if _test_import(m)}
 
-    # Ensemble 3 – Utilisables (import profond)
-    usable = set()
+    broken_deep = set()
+    not_measured_deep = set()
+
     for mod in importable:
         deep_path = deep_modules.get(mod)
-        if deep_path and _test_deep_import(deep_path):
-            usable.add(mod)
+        if deep_path:
+            if _test_deep_import(deep_path):
+                pass # Utilisable
+            else:
+                broken_deep.add(mod)
+        else:
+            not_measured_deep.add(mod)
 
-    # Différences demandées
     doc_absentes = sorted(documented - importable)
-    importables_cassees = sorted(importable - usable)
+    broken_deep_sorted = sorted(broken_deep)
+    not_measured_sorted = sorted(not_measured_deep)
 
     if doc_absentes:
-        print("\nDocumentées mais absentes :")
+        print("\nDocumentees mais absentes :")
         for name in doc_absentes:
             print(f"  - {name}")
 
-    if importables_cassees:
-        print("\nImportables mais non utilisables en profondeur :")
-        for name in importables_cassees:
+    if broken_deep_sorted:
+        print("\nImportables mais non utilisables en profondeur :")
+        for name in broken_deep_sorted:
             print(f"  - {name}")
 
-    # Code de retour
-    sys.exit(1 if doc_absentes else 0)
+    if not_measured_sorted:
+        print("\nNon mesurees en profondeur :")
+        for name in not_measured_sorted:
+            print(f"  - {name}")
+
+    # Code de retour: documentees absentes OU reellement cassees en profondeur
+    sys.exit(1 if (doc_absentes or broken_deep_sorted) else 0)
 
 if __name__ == "__main__":
     main()
