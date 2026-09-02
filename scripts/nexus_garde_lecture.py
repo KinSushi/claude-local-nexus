@@ -184,6 +184,10 @@ def _analyse_target(tok):
         return None, False
     if any(ch in _PROHIBITED for ch in t):
         return None, True
+    # Rejet des chaines manifestement impossibles comme noms de fichiers :
+    # moins de trois caracteres, ou aucun caractere alphanumerique.
+    if len(t) < 3 or not any(c.isalnum() for c in t):
+        return None, True
     return t, False
 
 def _split_segments(cmd):
