@@ -17080,3 +17080,49 @@ appelant n'invoque n'est pas un mecanisme, c'est un fichier** (§0.2.1, le maill
 
 **Le cliquet fait donc exactement son travail** : il refuse que la liste des orphelins grandisse.
 **Ce n'est pas lui qui bloque la sauvegarde — c'est la dette qu'il mesure.**
+
+
+### 115.136 SEPTIEME PANNE DU CLASSIFICATEUR — ce n'est plus un incident, c'est un ETAT
+
+**Compte tenu par l'operateur : SEPT occurrences.** Message constant :
+
+    claude-sonnet-5[1m] is temporarily unavailable (connection failed)
+
+**Effet : toute ecriture bloquee, et le travail prepare en amont perdu.**
+
+**MES GARDES SONT HORS DE CAUSE, re-mesure a la septieme :**
+
+    nexus_garde_agent      exit 0   0,35 s
+    nexus_garde_isolation  exit 0   0,35 s
+    nexus_garde_shell      exit 0   0,34 s
+    nexus_garde_ecriture   exit 0   0,34 s
+    nexus_garde_production exit 0   0,35 s
+    ecriture .md           passe    ecriture .py scratchpad  passe
+
+★ **Et ce n'est pas une question de duree mais d'ORDRE** : le classificateur est un service
+DISTANT interroge EN AMONT de tout hook. Quand il tombe, les hooks ne sont jamais atteints.
+**Un composant non atteint ne peut pas etre la cause** — verifie deux fois, a la deuxieme et a
+la septieme panne.
+
+### 115.136.1 CE QUI DEPEND DE MOI, ET RIEN D'AUTRE
+
+**Je ne peux pas reparer un service distant. Je peux reduire ce qu'il me coute.**
+
+| levier | pourquoi il mord |
+| --- | --- |
+| **moins d'appels, plus denses** | le classificateur est interroge PAR APPEL ; deux commandes fusionnees = une exposition au lieu de deux |
+| **ecrire sur le disque TOT** | ce qui est commis avant la panne survit ; ce qui est en memoire de session ne survit pas |
+| **`git bundle` regulier** | protege meme quand la publication est fermee par une dette |
+| **rendre l'etat lisible sans moi** | le cockpit et les commits portent la mesure, donc une session neuve reprend sans reconstituer |
+
+**Mesure de ce jour, et elle valide le levier 2** : apres la panne, arbre propre, **105 commits**,
+et les trois livrables du tour tous presents. **Rien de perdu — parce que chaque livrable a ete
+commis dans le tour qui l'a produit, jamais a la fin.**
+
+> **La panne n'est pas mienne. Ce qui est mien, c'est de n'avoir rien en vol quand elle
+> survient.** Sept occurrences ont fait de cette regle une contrainte de methode, pas une
+> precaution.
+
+⚠️ **Ce que je ne peux PAS faire, et qui doit remonter a l'editeur** : le rapport de la panne.
+Les brouillons sont en file locale ; **seul l'operateur peut les envoyer** (`/feedback`). Je le
+redis parce qu'a sept occurrences, le signalement vaut plus que le contournement.
