@@ -371,6 +371,23 @@ def cibles_ecrites(commande):
             commande.count('"') % 2 or commande.count("'") % 2):
         return [], True
 
+    # Détection de heredoc : un double chevron ouvrant hors guillemets rend
+    # la commande indécoupable. Le corps entier du heredoc reste dans un
+    # segment et ses mots seraient pris pour des chemins. On refuse de
+    # deviner : mesure impossible => indeterminé.
+    if isinstance(commande, str):
+        in_sgl = False
+        in_dbl = False
+        i = 0
+        while i < len(commande) - 1:
+            c = commande[i]
+            if c == "'" and not in_dbl:
+                in_sgl = not in_sgl
+            elif c == '"' and not in_sgl:
+                in_dbl = not in_dbl
+            elif not in_sgl and not in_dbl and c == '<' and commande[i+1] == '<':
+                return [], True
+            i += 1
     try:
         segments = _split_segments(commande)
         all_targets = []
