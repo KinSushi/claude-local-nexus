@@ -220,3 +220,52 @@ sans pipe pour voir les vrais codes.** Une leçon écrite ne protège pas son au
 EXCÉDENTAIRE.** Le vrai manque de ce dépôt tient en deux modules. **Un chiffre alarmant qui
 répond à la question voisine est plus coûteux qu'une absence de chiffre** : il oriente le
 travail vers un chantier qui n'existe pas.
+
+
+---
+
+## 12. LE DIFFÉRENTIEL — la moitié mécanisable de la classe 1 *(origine : EA MT5)*
+
+**On ne mécanise pas la comparaison de deux ÉNONCÉS — un énoncé n'est pas une valeur.** Mais on
+mécanise sa **conséquence observable** : *un instrument qui répond à la question voisine
+DISCRIMINE mal.* Et cela, un `==` le voit.
+
+    assert instrument(cas_positif) != instrument(cas_négatif)
+
+> **Tout instrument porte deux témoins : un cas qui DOIT déclencher, un cas qui NE DOIT PAS. Si
+> les deux rendent le même verdict, l'instrument ne mesure rien — quel que soit son chiffre.**
+
+**Trois occurrences mesurées le même jour, sur trois matières :**
+
+| instrument | sans témoin on lisait | le différentiel a montré |
+| --- | --- | --- |
+| `nexus_garde_agent` | « aveugle sur le fork » | **refuse 3 sur 3** — c'était l'invocation |
+| sonde de périmètre *(EA MT5)* | « il y a un trou » | **tout passait, témoins compris** |
+| banc de petits modèles *(EA MT5)* | « 0 invention partout » | **5 zéros étaient de l'infrastructure** |
+
+★ **Ce qui le rend mécanisable : il teste la DISCRIMINATION, pas la SÉMANTIQUE.** Nul besoin de
+savoir ce que l'instrument mesure pour le réfuter.
+
+⚠️ **Limite déclarée par son auteur, et elle est décisive** : le différentiel **ne voit pas un
+instrument qui discrimine BIEN sur la mauvaise grandeur**. `git check-ignore` discriminait
+parfaitement — entre « une règle correspond » et « aucune ne correspond ». **Il aurait passé ce
+test.** ⇒ **Le différentiel élimine la moitié aveugle de la classe, jamais la moitié voisine.**
+Celle-là reste au **forward-test** : confronter le verdict à la source par un chemin indépendant.
+
+### 12.1 Et j'ai raté cette mécanisation à mon premier essai
+
+Voulant compter mes épreuves à deux témoins, j'ai écrit une **regex sur le texte** des fonctions.
+Verdict : **27 sur 37 non discriminantes, 73 %**.
+
+**Le chiffre est faux, et je l'ai arrêté avant publication** en lisant deux épreuves à la source :
+`test_perte_index` porte explicitement *« L'ANTI-CONTRÔLE QUI COMPTE LE PLUS est le cas
+ILLISIBLE »* — un témoin positif, formulé hors de mes motifs.
+
+    ma regex répondait à   « ces motifs textuels sont-ils présents ? »
+    la question était      « cette épreuve DISCRIMINE-t-elle ? »
+
+★ **Huitième occurrence de la classe 1 en une journée — commise en essayant de la mécaniser.**
+⇒ **Le différentiel ne se lit pas dans le TEXTE, il s'EXÉCUTE** : faire tourner l'épreuve contre
+une version délibérément cassée du code et vérifier qu'elle rougit. Plus coûteux, et seule
+mesure honnête. *Le contrat le disait déjà — « la contre-épreuve est le livrable, pas un
+supplément » — et je l'ai réappris en l'enfreignant.*
