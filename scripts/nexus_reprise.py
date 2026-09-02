@@ -298,6 +298,19 @@ def bloc_gestes() -> None:
         print("    %d symboles Python + %d annexes (PowerShell, bash, lecons),"
               % (_p, _a))
         print("    ancres sur les versions INSTALLEES ici.")
+        try:
+            _corpus = _ici.parent / "references" / "livres"
+            _n = 0
+            for _index in _corpus.rglob("index.tsv"):
+                with _index.open(encoding="utf-8") as f:
+                    _n += sum(1 for _ in f) - 1
+            if _n > 0:
+                print("    Le depot porte un corpus de livres (%s), %d fragments."
+                      % (_corpus, _n))
+                print("    REGLE : avant de concevoir un mecanisme, chercher dans")
+                print("    l'index le chapitre qui porte SON NOM (voir rituels/CORPUS_LIVRES.md).")
+        except Exception as e:
+            print("    [!] corpus illisible : %s" % str(e)[:50])
     except Exception:
         # Un compteur en panne ne doit pas priver la reprise du reste : la
         # regle vaut meme sans son chiffre.

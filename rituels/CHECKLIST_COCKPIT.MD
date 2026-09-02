@@ -16366,3 +16366,55 @@ DIAGNOSTIC importe legitimement une bibliotheque tierce sans avoir a lire sa doc
 n'aurait rien evite. **Le declencheur devrait porter sur les bibliotheques dont on emploie une
 API METIER, pas sur celles dont on emploie une primitive.** La distinction est difficile a
 mecaniser, et c'est peut-etre la raison de commencer en SIGNAL des deux cotes.
+
+### 115.117 « L'OUTIL EXISTE, MAIS EST-IL MECANISE ? » — la question de l'operateur, mesuree
+
+Reponse : **non**, et la mesure est nette.
+
+    nexus_doc            3 appelants   epreuve : AUCUNE
+    nexus_livres         0 appelant    epreuve : aucune
+    nexus_index_livres   0 appelant    epreuve : aucune
+    nexus_corpus         0 appelant    epreuve : oui
+
+**Et RIEN n'obligeait a consulter les livres** — seul le cockpit les mentionnait, c'est-a-dire
+un document qu'il faut penser a ouvrir.
+
+> C'est le §0.2.1 dans sa forme la plus directe : **un script que personne n'appelle n'est pas
+> un mecanisme, c'est un fichier.** Et la regle d'une session voisine : *les outils qui
+> s'imposent protegent, les outils disponibles ne protegent pas.*
+
+**MECANISE** : le hook de reprise — instrument PASSIF, execute a chaque session sans qu'on
+l'invoque — rappelle desormais le corpus, son emplacement, son volume, et la regle :
+
+    Le depot porte un corpus de livres (...\references\livres), 20304 fragments.
+    REGLE : avant de concevoir un mecanisme, chercher dans
+    l'index le chapitre qui porte SON NOM (voir rituels/CORPUS_LIVRES.md).
+
+**Le nombre est DERIVE, jamais grave** : il se compte en parcourant les `index.tsv`. Un chiffre
+fige ment le lendemain, et ce depot l'a paye trois fois.
+
+### 115.118 QUATRE HYPOTHESES FAUSSES POUR UN BLOC QUI NE S'AFFICHAIT PAS
+
+Le chemin jusqu'a ce rappel a coute quatre diagnostics, dont trois faux. Je les inscris tous,
+parce que ne garder que le bon donnerait l'illusion d'une trouvaille directe.
+
+    1. « le patch n'a pas ete applique »        FAUX, il l'etait
+    2. « ROOT n'existe pas dans cette portee »  FAUX, il est defini ligne 83
+    3. « une exception est capturee »           FAUX, aucune n'etait levee
+    4. le chemin cherchait references/livres/index.tsv
+       alors que les index sont dans les SOUS-REPERTOIRES epub, packt, code   <- VRAI
+
+**Le quatrieme n'etait pas une exception : c'etait un `if` faux sans branche `else`.** Le bloc
+ne s'affichait jamais, **sans message, sans erreur, en silence complet.** Aucun des trois
+premiers diagnostics ne pouvait le trouver, puisqu'ils cherchaient tous une erreur — et il n'y
+en avait pas.
+
+> **Un `if` sans `else` est un silence, et un silence ne se diagnostique pas en cherchant une
+> erreur.** Vingt-sixieme occurrence de la classe, sous une forme que je n'avais pas encore
+> rencontree : non pas deux situations confondues, mais **une situation qui ne produit aucun
+> signal du tout.**
+
+**ET L'IRONIE, mesuree** : le commentaire situe six lignes plus haut dans ce meme fichier
+denonce exactement cette faute — *« le premier jet supposait les deux : le repli s'est
+declenche et a TU la cause, ce qui est precisement le defaut que ce depot traque en classe 1 »*.
+J'ai relu ce commentaire trois fois en cherchant la cause, sans voir qu'il la decrivait.

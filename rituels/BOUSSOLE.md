@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 06:34.
+> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-02 07:21.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -31,11 +31,11 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-08-30 | `df70e850cb65feaf` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-08-29 | `fb1e3d96f893b748` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-08-29 | `abd966bd7f288b94` |
-| Rituel | `rituels/BOUSSOLE.md` | Cet index | 455 Ko | 2026-09-02 | `e6223449ccb59001` |
-| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 827 Ko | 2026-09-02 | `c7f63197f61db0ba` |
+| Rituel | `rituels/BOUSSOLE.md` | Cet index | 455 Ko | 2026-09-02 | `3ed5b32f6e5e161f` |
+| Rituel | `rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 846 Ko | 2026-09-02 | `ceb3c47f601dc42e` |
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
-| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `de255c8054cfa6be` |
+| Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-02 | `bf99c7505ebbb2ab` |
 | Rituel | `scripts/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-01 | `b4a0ccc8e23077af` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 23 Ko | 2026-08-31 | `03b74fbf4a5704f0` |
 | Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-08-31 | `0e7fe343f0cf4c37` |
@@ -50,7 +50,7 @@
 | Architecture | `.gitignore` | — | 2 Ko | 2026-09-02 | `7e38d5da7b4676bb` |
 | Architecture | `.ruff_cache/.gitignore` | — | 35 o | 2026-08-31 | `9e3a60f1e6ec4ae6` |
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-01 | `ae2a9b470d2a5c02` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 7 Ko | 2026-09-02 | `44fb3a7582ad1f0f` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 7 Ko | 2026-09-02 | `f6d6fb1c750248aa` |
 | Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 156 o | 2026-09-01 | `3aa6f83eb4902b70` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
 | Architecture | `.ruff_cache/0.16.5/10270260337176019032` | — | 588 o | 2026-09-02 | `39c83b623861f0c1` |
@@ -115,7 +115,7 @@
 | Architecture | `.ruff_cache/0.16.5/9691695313051288092` | — | 164 o | 2026-09-01 | `46a2f9cdd17b71e5` |
 | Architecture | `.ruff_cache/CACHEDIR.TAG` | — | 43 o | 2026-08-31 | `5953156d7e0c564a` |
 | Architecture | `LICENSE` | — | 34 Ko | 2026-08-29 | `0d96a4ff68ad6d4b` |
-| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `de514a1dfb88147a` |
+| Architecture | `PROGRESS.MD` | — | 1 Ko | 2026-09-02 | `8944224ad4e3cfb2` |
 | Architecture | `Set-ClaudeModel.ps1.candidat` | — | 11 Ko | 2026-08-29 | `67a86f7cc9147d54` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-08-29 | `c05c3296a2683b28` |
 | Architecture | `Start-Claude.ps1.candidat` | — | 7 Ko | 2026-08-29 | `981eead31d168b3c` |
@@ -3112,7 +3112,8 @@
 | Architecture | `requirements.txt` | Note d'architecture | 12 o | 2026-08-29 | `71749243f84428fe` |
 | Architecture | `rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-01 | `5a6eb0b606bb975e` |
 | Architecture | `rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-01 | `8a022c08429aaef5` |
-| Architecture | `rituels/BOUSSOLE.csv` | — | 391 Ko | 2026-09-02 | `0a30e7525f9dca50` |
+| Architecture | `rituels/BOUSSOLE.csv` | — | 391 Ko | 2026-09-02 | `1ebc77fe7bec699b` |
+| Architecture | `rituels/CORPUS_LIVRES.md` | — | 6 Ko | 2026-09-02 | `cd9fbd0f73f6e932` |
 | Architecture | `rituels/EVALUATION-LOCALE.md` | — | 12 Ko | 2026-08-29 | `f16830fca4479937` |
 | Architecture | `rituels/PLAN_MAITRE_2026-09-01.md` | — | 19 Ko | 2026-09-01 | `05e63645415c2f0d` |
 | Architecture | `rituels/README.md` | — | 2 Ko | 2026-08-29 | `dac6503c1883887f` |
@@ -3225,11 +3226,13 @@
 | Architecture | `scripts/nexus_garde_edition.py` | — | 5 Ko | 2026-08-31 | `a8c5480c1edcf1e5` |
 | Architecture | `scripts/nexus_garde_isolation.py` | — | 6 Ko | 2026-09-01 | `a9f07e624e220f1a` |
 | Architecture | `scripts/nexus_garde_lecture.py` | — | 21 Ko | 2026-09-01 | `f5388622cfdd5ff1` |
-| Architecture | `scripts/nexus_garde_production.py` | — | 4 Ko | 2026-09-02 | `990a72050e6e56d0` |
+| Architecture | `scripts/nexus_garde_production.py` | — | 4 Ko | 2026-09-02 | `9ba3aff2d8100774` |
 | Architecture | `scripts/nexus_garde_shell.py` | — | 11 Ko | 2026-08-31 | `ce92eec3641bcf8d` |
 | Architecture | `scripts/nexus_import.py` | — | 6 Ko | 2026-08-30 | `e6477fe5ccdc7993` |
+| Architecture | `scripts/nexus_index_livres.py` | — | 7 Ko | 2026-09-02 | `daa97c03e76a27fe` |
 | Architecture | `scripts/nexus_ingerer.py` | — | 18 Ko | 2026-08-31 | `979b50e85a6a8d88` |
 | Architecture | `scripts/nexus_libs.py` | — | 3 Ko | 2026-09-02 | `d79c6b8dfcf9c117` |
+| Architecture | `scripts/nexus_livres.py` | — | 3 Ko | 2026-09-02 | `aad2b2a26c42c3fd` |
 | Architecture | `scripts/nexus_loi1.py` | — | 7 Ko | 2026-09-01 | `4bf11b79bc28ca88` |
 | Architecture | `scripts/nexus_maj_modeles.py` | — | 17 Ko | 2026-08-31 | `50f3e9131de6561d` |
 | Architecture | `scripts/nexus_outillage.py` | — | 32 Ko | 2026-09-02 | `ee596ca455132333` |
@@ -3244,7 +3247,7 @@
 | Architecture | `scripts/nexus_redaction.py` | — | 15 Ko | 2026-08-31 | `6132113c50bbc4c7` |
 | Architecture | `scripts/nexus_relais.py` | — | 12 Ko | 2026-09-02 | `39b806a14c628861` |
 | Architecture | `scripts/nexus_releve.py` | — | 37 Ko | 2026-08-31 | `e61eccc3add7eb69` |
-| Architecture | `scripts/nexus_reprise.py` | — | 17 Ko | 2026-09-01 | `9f6f584ec2dc45af` |
+| Architecture | `scripts/nexus_reprise.py` | — | 17 Ko | 2026-09-02 | `f0e62b5922cafcca` |
 | Architecture | `scripts/nexus_rituel.py` | — | 18 Ko | 2026-09-01 | `911153bbc4716c57` |
 | Architecture | `scripts/nexus_ruche.py` | — | 22 Ko | 2026-09-02 | `a425d4a7efa1faba` |
 | Architecture | `scripts/nexus_savings.py` | — | 21 Ko | 2026-09-01 | `9404f626f1ef705c` |
@@ -3290,7 +3293,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 3231 |
+| Architecture | 3234 |
 | Obsolète | 2 |
 
 ---
