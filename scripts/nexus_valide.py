@@ -492,7 +492,62 @@ def free_plan_judgment(diff_text, callers, modele=None):
     Gère les cas de troncature (clé `tronque`) en relançant une fois avec
     un plafond de tokens doublé. Si la réponse est vide sans troncature,
     lève une erreur explicite.
+    Si le diff dépasse le plafond de tokens, il est découpé par fichier
+    et chaque morceau est jugé séparément. Le verdict global est négatif
+    dès qu’un seul morceau rend une régression.
     """
+    # -----------------------------------------------------------------------
+    # Découpage du diff si nécessaire (approx. 4 caractères ≈ 1 token)
+    # -----------------------------------------------------------------------
+    def _split_diff_by_file(text):
+        """Retourne une liste de sous‑diffs, chacun commençant par 'diff --git'."""
+        parts = []
+        current = []
+        for line in text.splitlines(keepends=True):
+            if line.startswith("diff --git"):
+                if current:
+                    parts.append("".join(current))
+                current = [line]
+            else:
+                current.append(line)
+        if current:
+            parts.append("".join(current))
+        return parts
+
+    # Estimation très simple du nombre de tokens requis
+    def _exceeds_token_limit(text, limit):
+        return len(text) // 4 > limit  # 4 caractères ≈ 1 token
+
+    # Si le diff complet dépasse le plafond, on le découpe et on traite chaque morceau.
+    if _exceeds_token_limit(diff_text, DEFAULT_MAX_TOKENS):
+        morceaux = _split_diff_by_file(diff_text)
+        # Si aucun morceau n’est trouvé (diff ne suit pas le format attendu), on garde le texte entier.
+        if not morceaux:
+            morceaux = [diff_text]
+
+        regression_global = False
+        bascule_global = None
+        textes = []
+
+        for morceau in morceaux:
+            # On applique la logique existante sur chaque morceau.
+            try:
+                reg, bas, txt = free_plan_judgment(morceau, callers, modele)  # appel récursif contrôlé
+            except RuntimeError as e:
+                # Propagation de l’erreur si un morceau ne peut être jugé.
+                raise
+            regression_global = regression_global or reg
+            # Conserver la première bascule rencontrée (si plusieurs, la première suffit).
+            if bascule_global is None and bas is not None:
+                bascule_global = bas
+            textes.append(txt)
+
+        # Retourner le verdict agrégé.
+        return regression_global, bascule_global, "\n".join(textes)
+
+    # -----------------------------------------------------------------------
+    # Traitement du diff qui tient dans le plafond (comportement original)
+    # -----------------------------------------------------------------------
     plafond = DEFAULT_MAX_TOKENS  # plafond minimal requis
     for attempt in range(2):  # première tentative + une relance éventuelle
         tache = build_task(diff_text, callers, max_tokens=plafond, modele=modele)
@@ -500,11 +555,6 @@ def free_plan_judgment(diff_text, callers, modele=None):
         try:
             reponse = agent.executer(tache, cle)
         except Exception as e:
-            # `from e` et non `from None` : ici la trace d'origine est
-            # precisement ce qui manque. Le message dit QUE l'appel a echoue ;
-            # seule la trace dit OU -- reseau, passerelle, decodage. Sans
-            # elle, Python affiche « During handling of the above exception »
-            # et rien ne signale que la premiere EST la cause.
             raise RuntimeError(
                 f"Erreur lors de l'appel à l'agent gratuit : {e}") from e
 

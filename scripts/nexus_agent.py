@@ -965,6 +965,12 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
             _avert = "[!] ECRITURE DETECTEE : marque '%s' et chemin '%s'. Un test lit et n'ecrit que dans un repertoire temporaire ; un rendu ne doit jamais ecrire sur un fichier donne a analyser.\n" % (_marques[0], _chemins_presents[0])
             resultat["texte"] = _avert + resultat["texte"]
             resultat["etiquete"] = True
+        try:
+            _all_paths = _re.findall(r"[\w./\\_-]+\.[a-zA-Z0-9]+", _txt)
+            _hors = [p for p in _all_paths if p not in _chemins]
+            resultat["mentions_hors_perimetre"] = len(_hors)
+        except Exception:
+            resultat["mentions_hors_perimetre"] = 0
     except Exception:
         pass
     return resultat

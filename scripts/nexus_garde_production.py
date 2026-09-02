@@ -69,6 +69,7 @@ def _handle_tool(charge: dict) -> int:
         )
         sortie = {
             "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
                 "permissionDecisionReason": raison,
             }
@@ -86,6 +87,9 @@ def main() -> int:
     Toute anomalie de forme (JSON illisible, champs manquants, etc.) rend 0.
     Le garde ne doit jamais planter.
     """
+    if sys.stdin.isatty():
+        sys.stderr.write("Usage: nexus_garde_production.py < JSON_CHARGE\n")
+        return 64
     try:
         charge = json.load(sys.stdin)
     except Exception:

@@ -14897,3 +14897,106 @@ valeur d'une garde qui mord depasse celle d'une regle de style.**
 
     epreuve complete      -> code 0     5 cas sur 5
     detecte le cas REEL   -> code 1     il mord toujours
+
+### 115.64 CORRECTION D'UNE INSCRIPTION FAUSSE — un compte global lu comme une attribution
+
+**Le §115.63 affirme que « 3 des violations sont dans nexus_garde_ecriture.py, GARDE ARMEE ».
+C'est FAUX, et je le retire.** Mesure ciblee : les trois violations en REGRESSION sont dans
+`nexus_sonde_aveugle.py`, un fichier NEUF de ce tour. Celles de `nexus_garde_ecriture.py`
+sont PREEXISTANTES et ne comptent pas comme regression.
+
+L'erreur vient d'un `ruff check scripts/ tools/` global montrant trois occurrences dans
+chacun des deux fichiers, lu comme si les regressions etaient celles de la garde.
+
+> **C'est exactement la faute que le §115.60 nommait dix lignes plus haut** : « lire son
+> chiffre comme *mes regressions* aurait ete la meme faute de lecture que partout ailleurs
+> cette nuit ». Ecrite, puis commise, dans le meme tour, par la meme main — la demonstration
+> du §106.1 : une regle non mecanisee ne protege pas meme son auteur, le jour meme.
+
+Le motif de ne pas toucher aux gardes armees reste valable ; c'est l'attribution qui etait
+fausse.
+
+### 115.65 TROIS GARDES EPROUVEES POUR LA PREMIERE FOIS — deux saines, une qui GELAIT
+
+Dix-huit scripts de ce depot n'avaient AUCUNE epreuve, dont **trois gardes**. Une garde sans
+epreuve peut etre muette sans que personne le voie.
+
+**`nexus_garde_isolation` — SAINE**, les quatre chemins mesures :
+
+    isolation=worktree          -> code 0, passe
+    NEXUS_ISOLATION_LIBRE=1     -> code 0, porte de sortie
+    sans isolation              -> code 2, refus motive nommant l'issue
+    entree vide                 -> code 2, refus motive
+
+**`nexus_garde_agent` — SAINE, et c'est MON attente qui etait fausse.** Elle refuse
+`model: haiku` parce qu'il est FACTURE, en nommant ses deux portes de sortie
+(`NEXUS_AGENT_LIBRE=1`, `NEXUS_JUSTIFIE_PAYANT`). J'avais pris ce refus pour un defaut.
+
+**`nexus_garde_production` — DEUX DEFAUTS REELS, et le second est le pire du tour.**
+
+**DEFAUT 1 : elle GELAIT.** Lancee avec `--help`, elle ne rendait jamais la main : mesure
+interrompue apres **huit minutes**, puis confirmee a `code 124` avec un delai de dix
+secondes. Elle lisait l'entree standard sans verifier sa disponibilite.
+
+> **Une garde qui BLOQUE est pire qu'une garde absente** : elle ne refuse pas, ne laisse pas
+> passer, elle GELE le travail qu'elle protegeait. Et elle etait **impossible a eprouver** :
+> toute epreuve qui l'invoque sans entree se bloque au lieu d'echouer. C'est precisement
+> pourquoi elle ne l'avait jamais ete.
+
+Corrige : `--help` rend desormais **64** et affiche son usage ; les deux chemins nominaux
+sont inchanges — entree fournie, meme decision, memes codes.
+
+**DEFAUT 2 : elle etait la SEULE des cinq gardes sans `hookEventName`.**
+
+    nexus_garde_production   hookEventName x0   <<< ABSENT
+    nexus_garde_isolation    x1
+    nexus_garde_agent        x2
+    nexus_garde_ecriture     x1
+    nexus_garde_shell        x1
+
+Le protocole reconnait un refus par la conjonction `deny` + `hookEventName: PreToolUse` +
+code 0. **Sans cette cle, elle IMPRIMAIT un refus qui pouvait n'etre jamais applique.** C'est
+le scenario que le contrat §0.1.4.1 chiffre : un refus affiche qui ne bloquait rien a laisse
+passer 460 sous-agents et 32 millions de jetons factures.
+
+Aggravant : cette garde **n'est pas dans les quatre armees**. Elle n'a donc jamais protege
+personne, et son defaut serait apparu au moment de l'armer — trop tard.
+
+**ET J'AI FAILLI L'ACCUSER A TORT.** Mes premieres mesures lisaient le CODE DE SORTIE seul,
+qui vaut 0 y compris sur un refus : j'ai conclu « garde muette » sur cinq cas. Le refus etait
+dans **stdout**, parfaitement forme. Troisieme fois cette nuit qu'une valeur unique est lue
+la ou l'information se trouve ailleurs — cette fois par l'observateur, pas par le code.
+
+    reverse, Write sur .py en production  ->  JSON deny motive, avec voie de sortie
+    forward, Write sur .md                ->  silence total
+
+### 115.66 CE QUI N'EST PAS CABLE, ET POURQUOI ON LE DIT
+
+Six epreuves neuves ont ete posees et JOUEES. **Toutes echouent, et pas pour la raison qu'on
+croit** : leurs ATTENTES sont fausses, verifie a la main sur chaque garde. Exemple type, le
+cas nominal de `epreuve_garde_isolation` omet la cle `isolation` — la garde refuse donc,
+correctement, et l'epreuve compte un echec.
+
+> **Elles ne sont donc PAS cablees dans `nexus_test.py`.** Cabler six epreuves fausses
+> rendrait la suite rouge en permanence, et **une suite toujours rouge cesse d'etre lue** —
+> ce qui coute plus qu'une suite incomplete. Elles sont sur le disque et attendent leurs
+> attentes corrigees avec les cas REELS desormais mesures.
+
+Meme discipline qu'au §115.63 : **le manque declare vaut mieux que le vert obtenu.**
+
+### 115.67 L'ENVELOPPE FAIT FOI, JAMAIS L'AUTO-DECLARATION DU MODELE
+
+Signale par une session voisine, 2026-09-02. `gpt-oss-120b-cloud`, somme d'imprimer son nom
+et son plan, a rendu **deux fois une identite FAUSSE** : `# model: gpt-4o-mini` sur un
+rendu, `**Modele : GPT-4**` sur l'autre. L'enveloppe, elle, disait correctement
+`gpt-oss-120b-cloud`.
+
+Rien n'est casse dans la plateforme — mais la consequence porte sur la LOI 1 :
+
+> **Un rendu qui declare lui-meme sur quel plan il a tourne n'est pas une source fiable.
+> Seule l'enveloppe l'est.** Un audit qui citerait le modele d'apres l'en-tete du rendu
+> attribuerait un verdict a la mauvaise famille — et toutes les mesures par famille de ce
+> cockpit (§115.41, §115.50, §115.54) s'appuient sur cette attribution.
+
+Corollaire pratique : ne jamais demander a un modele de declarer son identite pour la
+consigner. Le champ `servi_par` du JSONL est la seule source.

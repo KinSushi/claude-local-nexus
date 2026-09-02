@@ -172,7 +172,7 @@ def main():
 
         if ruff_exe:
             args = [ruff_exe, "check", "--select", "E9,F,B,C4,SIM,RET", cible_path]
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
             stdout, stderr = proc.communicate()
             if stdout:
                 print("[!] Violations detectees :\n%s" % stdout)
