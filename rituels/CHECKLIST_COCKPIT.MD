@@ -17360,3 +17360,45 @@ une decision de l'operateur, pas la mienne — mais a onze occurrences, elle mer
 ⚠️ **Et les brouillons de signalement restent en file locale.** Je ne peux pas les envoyer ;
 seul l'operateur le peut. **A onze pannes, le signalement vaut plus que tout contournement que je
 pourrais ecrire.**
+
+
+### 115.142 ACTION : DE 12 ORPHELINES A 4 — et un patch RETIRE plutot que laisse mort
+
+**Dette reelle attaquee, celle qui fermait la publication depuis le matin.**
+
+    huit epreuves cablees dans nexus_test.py -> Cablage : 12 REGRESSIONS -> 4
+    trois violations de style corrigees par ruff --fix, 0 fichier casse sur 131
+    ruff : 97 -> 86 violations
+
+★ **LES QUATRE RESTANTES NE SONT PAS DES EPREUVES, CE SONT DES OUTILS** —
+`nexus_epreuve_vide`, `nexus_index_livres`, `nexus_livres`, `nexus_sauvegarde`. **Le cliquet a
+raison de les distinguer** : un outil se cable a un appelant de PRODUCTION, pas a une suite de
+tests.
+
+### 115.142.1 LE FAUX ORPHELIN QUI N'EN EST PAS UN, et pourquoi je n'ai pas insiste
+
+**`nexus_sauvegarde.py` A un appelant reel** : la tache planifiee `NexusSauvegarde`, qui tourne
+toutes les trente minutes, resultat 0, mesure ce tour. **Le cliquet le declare orphelin parce
+qu'il ne lit que les fichiers SUIVIS PAR GIT.**
+
+⇒ **Un controle qui ignore une classe entiere d'appelants produit de FAUX orphelins — et de faux
+orphelins font desarmer le controle.**
+
+**J'ai fait produire un patch qui ajoutait les lignes de commande des taches a la liste des
+appelants. Il a ete applique et n'a rien change. J'ai ALORS lu la cause au lieu de renvoyer :**
+
+    suivis()   rend des CHEMINS de fichiers
+    contenus() les OUVRE et filtre sur l'extension
+
+**Y injecter du texte ne peut pas marcher : c'est un echec PERMANENT de conception, pas une
+faute de rendu.** ⇒ **Le chapitre lu ce tour le dit** : *identify retryable errors and give up
+quickly on permanent failures.* **Je n'ai pas renvoye, et j'ai RETIRE le patch** plutot que de
+laisser du code mort qui aurait fait croire au probleme resolu.
+
+★ **C'est la premiere fois de la journee que je classe l'echec AVANT de decider de reessayer.**
+Les deux renvois de `nexus_appliquer` et les deux de `nexus_rituel` ont ete depenses sans ce
+tri.
+
+**LE REMEDE JUSTE, nomme et non fait** : `contenus()` doit accepter un couple nom-texte plutot
+qu'un chemin, pour qu'une source d'appelant non-fichier soit representable. **C'est une refonte,
+pas un patch** — et la dire est plus utile que de la bricoler.
