@@ -9,9 +9,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='repla
 import argparse
 import os
 import json
-import time
-import uuid
 import re
+import time
 
 # SEUIL_CORPS est le nombre minimal de caractères qu'un chapitre doit contenir pour qu'un titre candidat soit retenu, ce qui élimine les étiquettes de schémas rendues par pdftotext.
 SEUIL_CORPS = 1500
@@ -40,8 +39,6 @@ def is_title(lines, i):
     Détecte un titre de chapitre de façon stricte.
     Retourne True si la ligne i de `lines` correspond à un titre.
     """
-    import re
-
     line = lines[i]
     stripped = line.strip()
     if not stripped:
@@ -83,10 +80,7 @@ def is_title(lines, i):
     # 4. ligne courte isolée entre deux lignes vides
     prev_blank = (i == 0) or not lines[i - 1].strip()
     next_blank = (i + 1 == len(lines)) or not lines[i + 1].strip()
-    if prev_blank and next_blank and len(stripped) <= 30:
-        return True
-
-    return False
+    return prev_blank and next_blank and len(stripped) <= 30
 
 def split_chapters(text):
     lines = text.splitlines()
@@ -124,24 +118,6 @@ def split_chapters(text):
         chapters.append((title, chap_text))
 
     return chapters
-    cur = []
-    titles = []
-    cur_title = ''
-    for i, line in enumerate(lines):
-        if is_title(lines, i):
-            if cur:
-                chapters.append(('\n'.join(cur)).strip())
-                titles.append(cur_title)
-            cur = [line]
-            cur_title = line.strip()
-        else:
-            cur.append(line)
-    if cur:
-        chapters.append(('\n'.join(cur)).strip())
-        titles.append(cur_title)
-    if not titles:
-        titles = ['']
-    return list(zip(titles, chapters))
 
 def cut_menu(chap_text, calibre):
     if not chap_text:
@@ -185,37 +161,6 @@ def cut_menu(chap_text, calibre):
             next_start = start + 1
         start = next_start
     return fragments
-    fragments = []
-    start = 0
-    length = len(chap_text)
-    while start < length:
-        end = min(start + calibre, length)
-        # try to backtrack to sentence end
-        cut_point = end
-        while cut_point > start and chap_text[cut_point-1] not in '.!?':
-            cut_point -= 1
-        if cut_point == start:
-            # fallback to paragraph break
-            cut_point = chap_text.find('\n\n', start, end)
-            if cut_point == -1:
-                cut_point = end
-        fragment = chap_text[start:cut_point].strip()
-        if fragment:
-            fragments.append(fragment)
-        # overlap 200 chars, but guarantee forward progress
-        old_start = start
-        new_start = cut_point - 200
-        if new_start < old_start + 1:
-            new_start = old_start + 1
-        if new_start < 0:
-            new_start = 0
-        start = new_start
-        # safety: if fragment empty and start did not move forward, jump ahead by calibre
-        if not fragment and start <= old_start:
-            start = min(old_start + calibre, length)
-        if start >= length:
-            break
-    return fragments
 
 def main():
     args = parse_args()
@@ -242,68 +187,62 @@ def main():
     frag_menu = 0
     total_bytes = 0
 
-    # open files
-    sym_file = open(symbols_path, 'ab')
-    idx_file = open(index_path, 'a', encoding='utf-8')
+    with open(symbols_path, 'ab') as sym_file,          open(index_path, 'a', encoding='utf-8') as idx_file:
+        for root, _, files in os.walk(src):
+            for fname in files:
+                if not fname.lower().endswith('.txt'):
+                    continue
+                book_name = os.path.splitext(fname)[0]
+                if book_name in processed_books:
+                    continue
 
-    for root, _, files in os.walk(src):
-        for fname in files:
-            if not fname.lower().endswith('.txt'):
-                continue
-            book_name = os.path.splitext(fname)[0]
-            if book_name in processed_books:
-                continue
+                if time_limit and (time.time() - start_time) > time_limit:
+                    break
 
-            if time_limit and (time.time() - start_time) > time_limit:
-                break
+                total_books += 1
+                fpath = os.path.join(root, fname)
+                with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
 
-            total_books += 1
-            fpath = os.path.join(root, fname)
-            with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-
-            chapters = split_chapters(content)
-            for chap_idx, (chap_title, chap_text) in enumerate(chapters):
-                # chapitre fragment
-                frag_id = f"{book_name}_chap_{chap_idx}"
-                record = {
-                    "id": frag_id,
-                    "livre": book_name,
-                    "chapitre": chap_title,
-                    "niveau": "chapitre",
-                    "rang": chap_idx,
-                    "caracteres": len(chap_text),
-                    "texte": chap_text
-                }
-                line = json.dumps(record, ensure_ascii=False) + "\n"
-                offset = sym_file.tell()
-                sym_file.write(line.encode('utf-8'))
-                idx_file.write(f"{frag_id}\t{book_name}\tchapitre\t{offset}\t{len(line.encode('utf-8'))}\n")
-                total_bytes += len(line.encode('utf-8'))
-                frag_chap += 1
-
-                # menu fragments
-                menu_frags = cut_menu(chap_text, calibre)
-                for men_idx, men_text in enumerate(menu_frags):
-                    frag_id = f"{book_name}_menu_{chap_idx}_{men_idx}"
+                chapters = split_chapters(content)
+                for chap_idx, (chap_title, chap_text) in enumerate(chapters):
+                    # chapitre fragment
+                    frag_id = f"{book_name}_chap_{chap_idx}"
                     record = {
                         "id": frag_id,
                         "livre": book_name,
                         "chapitre": chap_title,
-                        "niveau": "menu",
-                        "rang": men_idx,
-                        "caracteres": len(men_text),
-                        "texte": men_text
+                        "niveau": "chapitre",
+                        "rang": chap_idx,
+                        "caracteres": len(chap_text),
+                        "texte": chap_text
                     }
                     line = json.dumps(record, ensure_ascii=False) + "\n"
                     offset = sym_file.tell()
                     sym_file.write(line.encode('utf-8'))
-                    idx_file.write(f"{frag_id}\t{book_name}\tmenu\t{offset}\t{len(line.encode('utf-8'))}\n")
+                    idx_file.write(f"{frag_id}\t{book_name}\tchapitre\t{offset}\t{len(line.encode('utf-8'))}\n")
                     total_bytes += len(line.encode('utf-8'))
-                    frag_menu += 1
+                    frag_chap += 1
 
-    sym_file.close()
-    idx_file.close()
+                    # menu fragments
+                    menu_frags = cut_menu(chap_text, calibre)
+                    for men_idx, men_text in enumerate(menu_frags):
+                        frag_id = f"{book_name}_menu_{chap_idx}_{men_idx}"
+                        record = {
+                            "id": frag_id,
+                            "livre": book_name,
+                            "chapitre": chap_title,
+                            "niveau": "menu",
+                            "rang": men_idx,
+                            "caracteres": len(men_text),
+                            "texte": men_text
+                        }
+                        line = json.dumps(record, ensure_ascii=False) + "\n"
+                        offset = sym_file.tell()
+                        sym_file.write(line.encode('utf-8'))
+                        idx_file.write(f"{frag_id}\t{book_name}\tmenu\t{offset}\t{len(line.encode('utf-8'))}\n")
+                        total_bytes += len(line.encode('utf-8'))
+                        frag_menu += 1
 
     elapsed = time.time() - start_time
     summary = {
