@@ -4,7 +4,7 @@
 **Agent:** `agent-a415cd08dccd3fd97`
 **Modèle:** `claude-sonnet-5` (Sonnet 5, mandat explicite de l'opérateur — voir rubrique 2)
 **Branche:** `worktree-agent-a415cd08dccd3fd97`
-**Tête:** `ebee376`
+**Tête:** `f95ad33` (corrige apres audit ; premiere passe a ebee376)
 **État:** commité (dans ce worktree isolé ; jamais écrit sur l'arbre principal)
 
 ---
