@@ -1018,29 +1018,29 @@ def executer(tache: dict, cle: str) -> dict:
         return etiqueter_ecritures(resultat, tache, consigne)
 
     essais, echecs, ecartes = [], [], []
+    troncatures = set()
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
     _dj = None
     try:
         from nexus_disjoncteur import CircuitBreaker
         _dj = CircuitBreaker(failure_threshold=3)
         _c = [c for c in candidats if _dj.is_available(c)]
-        if _c:
-            # Un candidat ecarte ici ne doit JAMAIS finir dans `echecs` : les
-            # deux boucles plus bas rejouent `echecs` dans _dj.record_failure,
-            # et cela ferait echouer une SECONDE fois une cible qui n a meme
-            # pas ete appelee, repoussant sans fin son recovery_timeout.
-            # Trace separee : mesure du 2026-09-02, une cible ecartee parce
-            # que son circuit etait deja ouvert ne laissait AUCUNE trace --
-            # ni dans echecs, ni dans le message de bascule, ni dans l erreur
-            # finale -- alors que c est exactement le cas ou le disjoncteur a
-            # fait son travail et ou l appelant a le plus besoin du pourquoi.
-            etat_dj = _dj.get_state()
-            for c in candidats:
-                if c not in _c:
-                    info = etat_dj.get(c, {})
-                    ecartes.append("%s : circuit %s (echecs=%s)" % (
-                        c, info.get("state", "open"), info.get("fail_count", "?")))
-            candidats = _c
+        # Un candidat ecarte ici ne doit JAMAIS finir dans `echecs` : les
+        # deux boucles plus bas rejouent `echecs` dans _dj.record_failure,
+        # et cela ferait echouer une SECONDE fois une cible qui n a meme
+        # pas ete appelee, repoussant sans fin son recovery_timeout.
+        # Trace separee : mesure du 2026-09-02, une cible ecartee parce
+        # que son circuit etait deja ouvert ne laissait AUCUNE trace --
+        # ni dans echecs, ni dans le message de bascule, ni dans l erreur
+        # finale -- alors que c est exactement le cas ou le disjoncteur a
+        # fait son travail et ou l appelant a le plus besoin du pourquoi.
+        etat_dj = _dj.get_state()
+        for c in candidats:
+            if c not in _c:
+                info = etat_dj.get(c, {})
+                ecartes.append("%s : circuit %s (echecs=%s)" % (
+                    c, info.get("state", "open"), info.get("fail_count", "?")))
+        candidats = _c
     except Exception as e:
         sys.stderr.write(f"Warning: circuit breaker initialization failed: {e}\\n")
         _dj = None
@@ -1132,8 +1132,9 @@ def executer(tache: dict, cle: str) -> dict:
                 # Le modèle a consommé tout son budget sans produire de texte.
                 # On consigne l'échec et on sort de la boucle pour reprendre le plafond immédiatement.
                 trunc_failure = resultat
-                echecs.append("%s : reponse vide tronquee (demande %d jetons)" %
-                              (candidat, plafond))
+                motif_troncature = "%s : reponse vide tronquee (demande %d jetons)" % (candidat, plafond)
+                echecs.append(motif_troncature)
+                troncatures.add(motif_troncature)
                 print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien")
                 break
             echecs.append("%s : reponse vide (%d jetons consommes)"
@@ -1145,6 +1146,8 @@ def executer(tache: dict, cle: str) -> dict:
             if _dj is not None:
                 _dj.record_success(candidat)
                 for e in echecs:
+                    if e in troncatures:
+                        continue
                     parts = e.split(" : ", 1)
                     if len(parts) == 2:
                         cible, motif = parts
@@ -1174,6 +1177,8 @@ def executer(tache: dict, cle: str) -> dict:
     if _dj is not None:
         try:
             for e in echecs:
+                if e in troncatures:
+                    continue
                 parts = e.split(" : ", 1)
                 if len(parts) == 2:
                     cible, motif = parts

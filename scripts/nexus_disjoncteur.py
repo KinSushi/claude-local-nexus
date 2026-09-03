@@ -13,6 +13,7 @@ import os
 import json
 import time
 import argparse
+import tempfile
 from threading import RLock
 
 _STATE_DIR = ".nexus"
@@ -52,9 +53,27 @@ def _save_state(state):
     """Write state to json file. Silently ignore any error."""
     path = _state_path()
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(state, f)
+        dir_path = os.path.dirname(path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        fd, temp_path = tempfile.mkstemp(dir=dir_path, suffix='.tmp')
+        try:
+            # Write JSON to temporary file
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(state, f)
+
+            # Validate written JSON
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                json.load(f)
+
+            # Atomic replace
+            os.replace(temp_path, path)
+        except Exception:
+            # Cleanup temporary file on any failure
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
     except Exception:
         pass
 
