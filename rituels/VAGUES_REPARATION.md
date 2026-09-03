@@ -2644,3 +2644,77 @@ base change le résultat d'un facteur trois.**
 
 Transmis à l'agent en vol comme une affirmation à rejouer, jamais comme un
 acquis, avec les commandes exactes et le piège de la base nommé.
+
+### 31.3 J'AI TRANSMIS UNE COMMANDE FAUSSE, ET ELLE A ÉTÉ REPRISE
+
+Le 2026-09-03, trouvé en auditant la correction du filet.
+
+Pour un `log`, deux points signifient « les commits propres à HEAD ». Pour un
+`diff`, **deux points signifient tout autre chose** : la différence entre les
+deux commits, dans les deux sens — donc y compris les fichiers où c'est `main`
+qui a avancé.
+
+```
+git log  --oneline   main..HEAD     <- juste
+git diff --name-only main..HEAD     <- FAUX pour « qu'a contribue ce worktree »
+git diff --name-only main...HEAD    <- juste : part de la base commune
+```
+
+Mesure des deux formes, côte à côte :
+
+| worktree | commits | `diff ..` | `diff ...` |
+| --- | --- | --- | --- |
+| `a084add6` | 0 | 46 | **0** |
+| `a0b2638a` | 0 | 75 | **0** |
+| `a0bb278a` | 2 | 25 | **9** |
+| `a3a373ce` | 0 | 90 | **0** |
+| `a96910bc` | 1 | 46 | **1** |
+
+Les worktrees à zéro commit ne contribuent **rien** : les 46, 75 et 90 étaient
+entièrement la dérive de `main`, douze commits en avance sur ces bases.
+
+**Mon chiffre publié au §31.1 — « 3 commits, 71 fichiers » — vaut en réalité
+3 commits, 10 fichiers.** Facteur sept.
+
+Et il n'est pas resté chez moi : je l'ai transmis à l'agent avec la commande,
+il l'a inscrit **dans la docstring de sa correction**. Une docstring qui porte
+une mesure fausse est pire qu'une sans mesure : elle sera recopiée.
+
+> **Le chiffre d'un donneur d'ordre se rejoue comme le reste.** C'est
+> exactement ce que je demandais aux agents de faire avec mes affirmations, et
+> celui-ci a eu tort de me croire.
+
+### 31.4 Ce qui est PROUVÉ réparé, et ce qui ne l'est pas
+
+Piloté par import contre la flotte réelle, cache bytecode neutralisé :
+
+```
+worktrees vus         : 43
+diffs lus sans mourir : 43        (avant : 2 fils morts)
+erreurs de decodage   : 0
+```
+
+**L'encodage est réparé.** L'agent a en outre nommé deux worktrees perdus que
+je n'avais pas vus — `a13026bc` (52 lignes) et `aec47b54` (311 lignes) — et
+trouvé par sa propre reverse-test un **troisième défaut** : le refus de
+suppression rendait **code 0**. Un refus affiché qui ne bloquait rien, motif
+que le §0.1.4.1 nomme explicitement.
+
+**Non vérifié par moi** : ce troisième défaut, faute de pouvoir lancer l'outil
+depuis un worktree.
+
+### 31.5 L'outil est intestable depuis un worktree — trouvaille de l'audit
+
+```python
+RACINE = Path(__file__).resolve().parent.parent
+```
+
+Aucune surcharge. Lancé depuis le worktree de son auteur, il affiche
+`Total worktrees: 0` et se tait — un zéro qui ressemble à un succès. J'ai dû
+importer le module et appeler ses fonctions avec la racine réelle pour
+l'éprouver.
+
+Le §0.5 est explicite : *une racine de travail explicite (`--racine`)
+l'emporte ; l'appelant décide où il travaille, pas l'outil.* C'est le même
+défaut que celui déjà corrigé dans `nexus_conformite.py` cette nuit — la racine
+dérivée de `__file__` sans échappatoire.
