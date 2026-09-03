@@ -61,16 +61,19 @@ def main():
         print("Le banc declare AUCUN DEFAUT SUR -- rien a appliquer.")
         return 2
 
-    # Extraction de tous les blocs AVANT/APRES/FIN
+    # Extraction de tous les blocs AVANT/APRES/FIN avec marqueur FICHIER optionnel
     pattern = re.compile(
-        r'^<<<AVANT>>>[ \t]*\r?$(.*?)^<<<APRES>>>[ \t]*\r?$(.*?)^<<<FIN>>>[ \t]*\r?$',
+        r'^(?:<<<FICHIER>>>[ \t]*([^\r\n]+)\r?\n)?^<<<AVANT>>>[ \t]*\r?$(.*?)^<<<APRES>>>[ \t]*\r?$(.*?)^<<<FIN>>>[ \t]*\r?$',
         re.MULTILINE | re.DOTALL
     )
     blocs = []
     for m in pattern.finditer(texte):
-        avant = m.group(1).strip("\r\n")
-        apres = m.group(2).strip("\r\n")
-        blocs.append((avant, apres))
+        fichier_cible_bloc = m.group(1)
+        avant = m.group(2).strip("\r\n")
+        apres = m.group(3).strip("\r\n")
+        # Un bloc avec marqueur FICHIER ne s'applique que si le chemin correspond
+        if fichier_cible_bloc is None or fichier_cible_bloc.strip() == cible_path:
+            blocs.append((avant, apres))
 
     if not blocs:
         counts = {m: texte.count(m) for m in ["<<<AVANT>>>", "<<<APRES>>>", "<<<FIN>>>"]}
@@ -225,7 +228,7 @@ def main():
             args = [ruff_exe, "check", "--select", "E9,F,B,C4,SIM,RET", cible_path]
             proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
             stdout, stderr = proc.communicate()
-            if stdout:
+            if proc.returncode != 0 and stdout:
                 print("[!] Violations detectees :\n%s" % stdout)
             if stderr:
                 print("[!] L'analyseur n'a PAS PU se prononcer :\n%s" % stderr)

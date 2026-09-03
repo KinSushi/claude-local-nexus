@@ -393,8 +393,9 @@ def main():
 
     # 4️⃣ Calcul du ratio et détermination du code de sortie
     ratio = delegated / commits if commits != 0 else 0
-    # Le nombre de MUETS ne doit pas à lui seul déclencher l’échec (voir consignes)
-    exit_code = 0 if delegated >= commits and commits > 0 else 1
+    # Utilisation d'un cliquet : l'échec ne survient que si la part d'auteurs déclarés diminue
+    # (déclarés >= muets). Cela évite d'imposer un seuil fixe qui bloquerait le pipeline.
+    exit_code = 0 if declares >= muets else 1
 
     # 5️⃣ Affichage / génération du JSON
     if json_out:

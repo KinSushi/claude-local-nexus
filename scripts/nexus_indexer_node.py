@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Reconfiguration early
-import sys, codecs
-sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'replace')
-sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'replace')
+import sys
 
 import argparse
 import json
@@ -89,6 +86,10 @@ def walk(node, ancestors, symbols, counters):
             walk(item, ancestors, symbols, counters)
 
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser(description="Node.js documentation indexer for nexus_doc")
     parser.add_argument("--source", required=True, help="Path to all.json")
     parser.add_argument("--cible", required=True, help="Output directory")

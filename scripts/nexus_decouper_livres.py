@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
 import argparse
 import os
 import json
@@ -260,4 +256,8 @@ def main():
     sys.exit(0 if total_books > 0 else 1)
 
 if __name__ == '__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     main()
