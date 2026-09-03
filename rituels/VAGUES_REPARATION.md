@@ -2957,3 +2957,58 @@ Ce qui l'a rendu visible n'est ni une relecture ni une épreuve : c'est d'avoir
 gardé la **sortie d'avant** et de l'avoir comparée à celle d'après. Sans les
 deux passes côte à côte, la correction aurait été jugée sur ses deux fils morts
 et le reste serait passé pour normal.
+
+### 31.15 RECTIFICATION DE MON PROPRE TITRE — quatorze diagnostics faux, six travaux en péril
+
+Le troisième temps a validé l'affirmation des quatorze **et corrigé la façon de
+la dire**. La correction est contre moi et elle compte.
+
+Vérifié par l'auditeur tiers, par deux chemins indépendants :
+
+* capture des deux versions **au même instant**, `main` prouvé inchangé entre
+  les deux : `Conflits 20 → 6` ;
+* l'hypothèse concurrente — « c'est `main` qui a absorbé cinq fichiers cette
+  nuit » — est **mesurée et rejetée** : tous les commits de `main` touchant un
+  worktree basculé sont antérieurs à la session.
+
+**Puis ma propre mesure de la répartition :**
+
+| bascule | nombre | ce que cela signifie |
+| --- | --- | --- |
+| `conflit → ok` | **6** | travail réellement récupérable, pas encore dans `main` |
+| `conflit → déjà appliqué` | **9** | déjà intégré : le « conflit » était un faux diagnostic sur du travail déjà en sûreté |
+
+L'auditeur ajoute une nuance que je n'avais pas vue : le solde net de 14 est en
+réalité **15 conflits levés moins 1 conflit neuf correctement révélé** —
+`a13026bc`, un **vrai** conflit que le même défaut d'encodage cachait
+entièrement sous le mot `vide`.
+
+**Ce que mon titre disait de faux.** « Quatorze travaux d'agents condamnés à
+tort » confond deux choses : un **diagnostic faux** et un **travail en péril**.
+Les diagnostics faux étaient quinze ; les travaux réellement menacés, six. Un
+faux « conflit » sur du travail déjà intégré coûte de la confiance dans
+l'outil, pas du travail.
+
+> C'est exactement la surenchère que je reprends chez les autres, et elle a
+> tenu trois commits avant qu'un tiers ne la mesure.
+
+**Ce que le fond garde.** Le défaut d'encodage produisait bien des diagnostics
+faux en silence, dans les deux sens : il déclarait « conflit » sur des patches
+valides, et cachait sous `vide` un conflit réel. La leçon tient, seul le
+chiffre change.
+
+### 31.16 Verdict du tiers, et deux réserves qu'il nomme
+
+**🟡 JAUNE — FUSIONNABLE.** Aucune régression, aucun effet de bord non
+déclaré, l'affirmation à fort enjeu tient. Les cinq défauts ont été
+reconstitués sur des dépôts jetables **construits par lui**, jamais repris de
+l'auteur, y compris un dépôt minimal isolant une branche que la fiche ne
+forçait pas.
+
+Deux réserves, qui ne bloquent pas mais restent ouvertes :
+
+1. **L'outil demeure orphelin**, appelé par personne.
+2. **Le chemin d'écriture du correctif a contourné la garde de production**,
+   par un angle mort documenté — la garde protège `Edit`/`Write`, non un
+   sous-processus. C'est le « trou Bash » déjà connu, et il vient d'être
+   emprunté une fois de plus, cette fois par un agent qui le signale lui-même.
