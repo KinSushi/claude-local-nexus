@@ -452,11 +452,26 @@ def _run_psscriptanalyzer() -> Dict[str, Any]:
         # Select-Object aplatit aux quatre champs que le parseur lit
         # reellement. Plus d'imbrication, donc plus d'avertissement, et un
         # document plus petit d'un ordre de grandeur.
+        # LE MEME PERIMETRE QUE RUFF ET ESLINT : scripts/, tools/ et les
+        # .ps1 de la racine -- jamais « . -Recurse ».
+        #
+        # CE QUI ETAIT FAUX, mesure le 2026-09-02 : depuis la racine du
+        # depot principal, « -Path . -Recurse » descendait dans
+        # .claude/worktrees/, ou chaque agent en vol porte une COPIE de
+        # scripts/. La reference portait 229 PSAvoidUsingEmptyCatchBlock la
+        # ou les fichiers du depot en comptent 13 (mesure dans un arbre sans
+        # sous-arbres) : dix-sept copies. Deux effets : un arbre d'agent
+        # cree faisait « regresser » le depot, et une vraie aggravation --
+        # sonde jouee, +1 catch vide -- etait annoncee AMELIORATION
+        # « 229 -> 14 ». Le cliquet ne refusait plus rien.
         ps_cmd = (
             "$ErrorActionPreference='Stop'; "
             "Import-Module PSScriptAnalyzer; "
-            "Invoke-ScriptAnalyzer -Path . -Recurse "
-            f"-IncludeRule {','.join(PS_ANALYZER_RULES)} "
+            "$cibles = @(Get-ChildItem -Path . -File -Filter *.ps1) + "
+            "@(Get-ChildItem -Path scripts, tools -Recurse -File "
+            "-Include *.ps1, *.psm1, *.psd1 -ErrorAction SilentlyContinue); "
+            "$cibles | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName "
+            f"-IncludeRule {','.join(PS_ANALYZER_RULES)} }} "
             "| Select-Object RuleName, Severity, ScriptPath, Line, Message "
             "| ConvertTo-Json -Depth 3 -Compress -AsArray"
         )
@@ -758,6 +773,18 @@ def _jouer_cliquet(tool_results: List[Dict[str, Any]],
         print("  %d amelioration(s) :" % len(ameliorations))
         for ligne in ameliorations:
             print("    " + ligne)
+    # UN PROGRES CONSTATE ET NON RETENU laisse repasser le retour en arriere
+    # en silence -- c'est la regle du cliquet de cablage (nexus_cablage.py,
+    # « le resserrement est ce qui distingue un cliquet d'un simple
+    # rapport »), et elle manquait ici. Mesure du 2026-09-02 : la reference
+    # portait 229 catch vides, le depot en avait 13, et une sonde qui en
+    # ajoutait un (14) etait annoncee comme une AMELIORATION. Tant que la
+    # reference n'est pas resserree, toute aggravation sous l'ancien plafond
+    # passe. Elle est donc resserree des qu'aucune regression ne s'y oppose,
+    # pour les seuls outils qui ont JOUE -- un outil absent garde la sienne.
+    if ameliorations and not regressions:
+        _ecrire_reference(comptes_joues, ancienne=reference)
+        print("  Reference resserree automatiquement.")
     if regressions:
         print("\nLe passe n'a pas a etre repare pour passer : seule")
         print("l'AGGRAVATION est refusee. Si elle est voulue, l'assumer")

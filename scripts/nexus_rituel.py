@@ -79,10 +79,19 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
     cockpit au moins aussi récent que celui du code (les deux partis
     ensemble).
     """
+    return _frais(racine, "rituels/CHECKLIST_COCKPIT.MD", "pas de cockpit dans ce depot")
+
+
+def _frais(racine: Path, rel: str, absent: str) -> tuple[str, str]:
+    """
+    Un fichier derive est-il au moins aussi recent que le dernier changement
+    de code ? Les deux criteres de cockpit_frais, factorises pour servir
+    aussi a la boussole -- une seule horloge, une seule regle.
+    """
     try:
-        fichier = racine / "rituels" / "CHECKLIST_COCKPIT.MD"
+        fichier = racine / Path(rel)
         if not fichier.is_file():
-            return IGNORE, "pas de cockpit dans ce depot"
+            return IGNORE, absent
         r = subprocess.run(["git", "log", "-1", "--format=%ct", "--",
                             "scripts/", "tools/"], cwd=racine,
                            capture_output=True, text=True, timeout=60)
@@ -90,16 +99,16 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
             return OK, "aucun changement de code a suivre"
         dernier = int(r.stdout.strip())
 
-        # Critère 1 — le cockpit a été retouché depuis, sans être commité.
+        # Critère 1 — le fichier a été retouché depuis, sans être commité.
         if fichier.stat().st_mtime > dernier:
             return OK, "posterieur au dernier changement de code"
 
-        # Critère 2 — cockpit et code sont partis dans le même commit, ou le
-        # cockpit dans un commit plus récent. Ici les deux dates viennent de
+        # Critère 2 — fichier et code sont partis dans le même commit, ou le
+        # fichier dans un commit plus récent. Ici les deux dates viennent de
         # la MEME horloge, celle de git, et sont donc comparables.
-        rc = subprocess.run(["git", "log", "-1", "--format=%ct", "--",
-                             "rituels/CHECKLIST_COCKPIT.MD"], cwd=racine,
-                            capture_output=True, text=True, timeout=60)
+        rc = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
+                            cwd=racine, capture_output=True, text=True,
+                            timeout=60)
         if rc.returncode == 0 and rc.stdout.strip():
             if int(rc.stdout.strip()) >= dernier:
                 return OK, "commite avec le code, ou apres lui"
@@ -107,6 +116,32 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
         return MANQUE, "plus ancien que le dernier changement de code"
     except Exception as exc:
         return IGNORE, str(exc).splitlines()[0][:60]
+
+
+def boussole_fraiche(racine: Path) -> tuple[str, str]:
+    """
+    La boussole decrit-elle encore le depot ?
+
+    CE QUI ETAIT FAUX, mesure le 2026-09-02 en jouant le rituel : le controle
+    nomme « boussole » appelait progres() -- il regenerait PROGRESS.MD une
+    seconde fois et rendait OK avec le detail « PROGRESS.MD regenere ». La
+    boussole n'etait ni regeneree ni verifiee, et le cockpit (§105.3) le
+    disait deja : « personne ne regenere la boussole ». Un controle dont le
+    nom et l'effet divergent est pire qu'un controle absent : il se lit
+    comme fait.
+
+    La boussole n'est PAS regeneree ici : rituels/BOUSSOLE.md est versionne,
+    et la regenerer a chaque tour salirait l'arbre -- le conflit deja mesure
+    sur PROGRESS.MD (cockpit §75.8), resolu la-bas en l'ignorant de git. Le
+    rituel VERIFIE donc, comme pour le cockpit, et nomme le geste (cockpit
+    §105.3, ligne « un controle qui echoue si l'index est plus ancien que le
+    dernier commit »).
+    """
+    statut, detail = _frais(racine, "rituels/BOUSSOLE.md",
+                            "pas de boussole dans ce depot")
+    if statut == MANQUE:
+        detail += " : python scripts/nexus_boussole.py"
+    return statut, detail
 
 
 def boucle_armee() -> tuple[str, str]:
@@ -180,7 +215,14 @@ def progres(racine: Path) -> tuple[str, str]:
             [sys.executable, "scripts/nexus_progres.py"],
             cwd=racine,
             capture_output=True,
-            text=True
+            text=True,
+            # Comme les autres controles : encodage DIT -- sans lui, un
+            # stderr accentue decode en cp1252 tue le controle -- et un
+            # delai. Le hook Stop qui lance ce rituel est borne a 180 s
+            # (.claude/settings.json) ; une generation complete est mesuree
+            # a 13,7 s (commit f364f40). Sans borne ici, un planificateur
+            # lent aurait emporte le rituel entier, et son verdict avec.
+            encoding="utf-8", errors="replace", timeout=120,
         )
         if res.returncode == 0:
             return OK, "PROGRESS.MD regenere"
@@ -236,15 +278,29 @@ def arbres_en_attente(racine: Path) -> tuple[str, str]:
                 continue
             if "aucun" in texte.lower():
                 continue
-            if "[agent/" not in texte:
+            # DEUX CONVENTIONS, et la seconde etait invisible. Mesure du
+            # 2026-09-02 en jouant le rituel : 29 arbres d'agent existaient,
+            # nommes « worktree-agent-<id> » par le harnais Claude Code
+            # (isolation worktree), et ce controle rendait « aucun arbre en
+            # attente » parce qu'il ne connaissait que « agent/<tache> », la
+            # convention de creer_arbre(). Un faux OK sur le geste meme que
+            # le rituel existe pour reclamer.
+            #
+            # Un arbre VERROUILLE (« locked », pose par le harnais sur un
+            # agent en vol) est en cours d'usage : il n'est pas en attente,
+            # et le compter ferait crier a chaque tour.
+            if "[agent/" not in texte and "[worktree-agent-" not in texte:
+                continue
+            if "locked" in texte.rsplit("]", 1)[-1]:
                 continue
             compteur += 1
 
         if compteur == 0:
             return (OK, "aucun arbre en attente")
         return (MANQUE,
-                "%d arbre(s) en attente : fusionner ou jeter "
-                "(nexus_worktree.py --fusionner|--jeter)" % compteur)
+                "%d arbre(s) d'agent non verrouille(s) en attente : fusionner "
+                "ou jeter (nexus_worktree.py --fusionner|--jeter, ou git "
+                "worktree remove pour un arbre du harnais)" % compteur)
 
     except subprocess.TimeoutExpired:
         return (IGNORE, "nexus_worktree n'a pas repondu en 120 s")
@@ -405,7 +461,7 @@ def main() -> int:
         # Ce controle GENERE au lieu de verifier parce qu'un etat que personne
         # ne regenere est un etat de memoire et que l'operateur l'a interdit
         ("progres", lambda: progres(racine)),
-        ("boussole", lambda: progres(racine)),  # Même traitement que PROGRESS.MD : régénération silencieuse
+        ("boussole", lambda: boussole_fraiche(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
     ]
 

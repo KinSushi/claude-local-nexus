@@ -24,6 +24,23 @@ def collect_references(tree: ast.AST) -> set:
             refs.add(node.attr)
             self.generic_visit(node)
 
+        def visit_ImportFrom(self, node: ast.ImportFrom):
+            # UN NOM IMPORTE EST UN NOM EMPLOYE, meme sous alias.
+            #
+            # Mesure du 2026-09-02, par EXECUTION de cette epreuve :
+            # `_retry_delay`, defini dans nexus_disjoncteur et importe par
+            # nexus_agent sous la forme `from nexus_disjoncteur import
+            # _retry_delay as _rd`, etait declare ORPHELIN. Le corps
+            # n'emploie que `_rd` (un Name) ; `_retry_delay` n'apparait que
+            # dans l'instruction d'import, champ `name` d'un ast.alias --
+            # `alias(identifier name, identifier? asname)` d'apres nexus_doc.
+            # Ni visit_Name ni visit_Attribute ne le voyaient : le cliquet
+            # rougissait sur une fonction reellement appelee, et un faux
+            # orphelin apprend a ne plus lire la liste.
+            for alias in node.names:
+                refs.add(alias.name)
+            self.generic_visit(node)
+
     RefVisitor().visit(tree)
     return refs
 
