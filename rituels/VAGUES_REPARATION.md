@@ -2388,3 +2388,81 @@ Intégré : `nexus_disjoncteur.py`, `nexus_agent.py`, `nexus_capability.py`,
    concurrent ; préexistant, non éprouvé.
 4. **Le `.env` réel lu depuis un worktree** — nécessaire, mais à déclarer.
 5. **Sept autres fiches de quarantaine** attendent encore leur rubrique 8.
+
+---
+
+## 29. TROIS DÉFAUTS D'OUTILLAGE TROUVÉS EN S'EN SERVANT
+
+Le 2026-09-03, en faisant corriger dix violations ruff par le banc gratuit.
+Aucun de ces trois n'aurait été trouvé par une relecture : ils ne se voient
+qu'en conduisant l'outil.
+
+### 29.1 `nexus_appliquer.py` ne lit pas le marqueur `<<<FICHIER>>>`
+
+Le mot n'apparaît **nulle part** dans le script. Il applique tous les blocs au
+seul fichier passé en argument, donc un patch multi-fichiers vise à côté.
+
+Il **échoue proprement** — la vérification d'unicité l'a rattrapé :
+`REFUS : le bloc 6 doit etre unique et reel. Occurrences trouvees : 0`.
+Défaut d'ergonomie, jamais de correction.
+
+Conséquence pratique : un patch se demande **un fichier à la fois**. Ce n'est
+pas un contournement, c'est le contrat réel de l'outil.
+
+### 29.2 `nexus_appliquer.py:229` annonce un faux positif
+
+```python
+if stdout:
+    print("[!] Violations detectees :\n%s" % stdout)
+```
+
+Ruff écrit `All checks passed!` sur `stdout` **même quand il ne trouve rien**.
+Observé mot pour mot :
+
+```
+APPLIQUE : 2 bloc(s) dans scripts/nexus_extraire_livres.py
+[!] Violations detectees :
+All checks passed!
+```
+
+Le contrôle porte sur la **présence** d'une sortie au lieu de son **sens** —
+la classe la plus fréquente de ce dépôt. Et le coût réel n'est pas le faux
+positif : c'est que celui qui voit la bannière sur un cas propre apprend à
+l'ignorer, et manquera la vraie.
+
+### 29.3 Le banc perd le marqueur de PIED sur les rendus longs
+
+`8 <<<AVANT>>>, 8 <<<APRES>>>, ZERO <<<FIN>>>`. Déjà consigné en mémoire,
+reconfirmé. Un rendu long se demande découpé.
+
+### 29.4 Résultat mesuré du lot
+
+| fichier | avant | après |
+| --- | --- | --- |
+| `nexus_extraire_livres.py` | 1 | **0** |
+| `nexus_indexer_node.py` | 2 | **0** |
+| `nexus_decouper_livres.py` | 7 | **7** — OUVERT |
+
+Les sept restantes tiennent dans un seul fichier, et une seule n'est pas
+cosmétique : `SIM115`, deux `open()` sans gestionnaire de contexte qu'une
+exception pendant `os.walk` laisserait ouverts.
+
+### 29.5 DEUX ERREURS DE MESURE DE MA PART
+
+**J'ai lu deux fois un résultat derrière un `tail` qui tronquait**, et accusé
+le cache de ruff de mentir. Les deux passes donnaient le même nombre ; c'est ma
+commande qui coupait la première ligne. La mémoire du dépôt porte exactement
+cet avertissement — *« jamais derrière un tail »* — et je l'ai enfreint deux
+fois dans la même heure.
+
+**Et l'origine de la coupure du banc, c'était moi.** Le journal :
+
+```
+cible: gpt-oss-120b-cloud   classe: permanent  motif: reponse vide tronquee (demande 20 jetons)
+cible: glm-4.7-flash-local  classe: permanent  motif: reponse vide tronquee (demande 40 jetons)
+```
+
+Mes propres appels d'épreuve à `--max-tokens 20` ont banni les deux chevaux de
+trait en « panne permanente ». Un défaut de **budget** classé comme panne du
+**modèle** — c'est-à-dire précisément le §27.2, dont je détenais la preuve
+depuis le début de la vague sans l'avoir lue.
