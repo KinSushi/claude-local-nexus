@@ -3928,3 +3928,106 @@ quand il se trompe : du plausible.
 n'est pas fait : le **câbler** — un juge qu'on n'appelle pas est un modèle de
 plus, pas un capteur. Le §0.2.1 est explicite là-dessus, et la nuit vient de
 montrer ce que coûte un outil orphelin.
+
+---
+
+## 45. DEUX FOIS LE MÊME MODÈLE — mesuré, et ce n'est pas ce qu'on croit
+
+Question de l'opérateur : *peut-on charger deux fois le même modèle en local
+pour augmenter le contexte ou la charge, même idée que dix qwen 0,5B ?*
+
+### La première mesure était CONTAMINÉE, et je l'ai vue avant de publier
+
+```
+deux appels CONCURRENTS : 17,7 s
+les memes en SEQUENCE   :  8,4 s
+```
+
+Le parallèle paraissait deux fois plus lent. Mais `/api/ps` montrait **zéro
+entrée** pour le modèle : il n'était pas résident. Les appels concurrents ont
+payé le chargement, les séquentiels ont tourné à chaud juste après. C'est le
+piège du §112.3 — *une lecture en une seule phase attribue au modèle le coût du
+chargement* — et il a failli me faire publier l'inverse de la vérité.
+
+### La mesure propre, réveil séparé
+
+```
+reveil (hors mesure)   : 4,4 s
+resident               : 5,86 Go   ctx=131072
+SEQUENTIEL a chaud     : 4,3 + 4,6 = 9,0 s
+PENDANT le parallele   : UNE SEULE entree, 5,86 Go
+PARALLELE a chaud      : 3,7 et 7,2, mur = 7,3 s
+gain                   : 1,24x
+```
+
+### Trois réponses, et aucune n'était celle attendue
+
+**1. Il n'y a jamais deux copies.** Pendant les deux appels concurrents,
+`/api/ps` ne montre qu'**une entrée, 5,86 Go** — la taille d'une seule
+instance. Ollama sert les deux requêtes depuis **un seul jeu de poids**, avec
+des emplacements de cache KV séparés. La mémoire ne double pas.
+
+**2. Le contexte ne s'additionne pas.** Chaque requête reçoit sa propre
+fenêtre, de la même taille. Deux instances ne donnent pas 2 × 131 072 : elles
+donnent deux fois 131 072, ce qui n'est pas la même chose. **Pour un contexte
+d'un million, la voie reste le découpage MAP-REDUCE (§110), jamais la
+duplication.**
+
+**3. Le gain de charge est de 1,24x, pas de 2x.** Réel, mais modeste, et payé
+en latence par requête : 3,7 s et 7,2 s au lieu de 4,3 et 4,6.
+
+**Et l'idée des dix qwen 0,5B est DIFFÉRENTE** : ce sont des modèles
+**distincts**, donc des poids distincts, donc de la vraie mémoire en plus. La
+duplication du même modèle, elle, ne coûte que des caches KV — et ne rapporte
+presque rien.
+
+## 46. LE CONTEXTE EST DÉRIVÉ DU MATÉRIEL — mais d'un TYPE, pas d'une MESURE
+
+### J'allais accuser à tort, et c'est la troisième fois de la nuit
+
+Constat de départ : `qwen3-coder:30b` et `codestral:22b` tournaient à
+**ctx=8192** alors qu'ils déclarent bien davantage. J'ai cru à un bridage en
+dur, et j'allais l'écrire.
+
+Vérifié : `litellm_config.yaml` porte **70** valeurs de `num_ctx`, et
+`scripts/nexus_generate.py:local_context()` les produit. Sa docstring dit
+exactement le contraire de ce que je m'apprêtais à affirmer :
+
+> *« Elle suit le matériel plutôt qu'une constante. […] Avec une VRAM dédiée,
+> le cache KV cesse d'être le facteur limitant et les fenêtres s'élargissent
+> d'elles-mêmes. C'est ce qui permet d'ajouter une carte graphique plus tard
+> sans réécrire quoi que ce soit : les seuils suivent la mesure. »*
+
+**La dérivation existe, elle est raisonnée, et elle est auto-évolutive pour le
+GPU.** Mon accusation était fausse.
+
+### Ce qui reste vrai, et qui est plus fin
+
+```python
+if gpu_usable_for_offload:
+    vram >= 24 : 131072 / 65536
+    vram >= 12 :  65536 / 32768
+    sinon      :  32768 / 16384
+return 16384 if petit else 8192          # <- branche CPU, paire FIXE
+```
+
+La branche CPU rend **une paire fixe**. Une machine à 16 Go et la nôtre à
+**66,2 Go de mémoire moteur** reçoivent le même `8192`. Elle s'adapte au *type*
+de matériel — GPU ou non — **jamais à sa mesure**.
+
+Et la mesure la contredit : `llama3.2:1b` a tourné à **ctx=131 072**, 5,86 Go
+résidents, avec 42 Go libres. L'hôte soutient largement plus que 16 384 pour un
+petit modèle.
+
+### Le chantier, formulé comme l'opérateur le demande
+
+> *« il a bridé le système au lieu de le rendre darwin, auto-évolutif. »*
+
+Sur le GPU, il ne l'a pas bridé. Sur le CPU, la branche ne consulte pas les
+deux nombres que la plateforme mesure déjà : **66,2 Go de mémoire moteur,
+39,7 Go de budget de pool**. Les faire entrer dans `local_context()` rendrait
+la fenêtre auto-adaptative sur les deux axes, sans rien casser du raisonnement
+existant.
+
+**OUVERT.** Non délégué : le contrôle LOI 1 est rouge, et je viens d'établir
+que je ne peux pas auditer ce que je pose.
