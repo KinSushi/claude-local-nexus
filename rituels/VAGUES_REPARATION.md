@@ -2845,3 +2845,66 @@ Le §31 annonçait « 3 récoltables proprement ». Après examen du contenu :
 « Récoltable » ne veut pas dire « porteur de travail ». C'est une leçon sur
 l'outil autant que sur la vague : il mesure l'applicabilité d'un patch, jamais
 sa valeur.
+
+### 31.11 Le quatrième correctif, vérifié — et un cinquième cas trouvé par l'auteur
+
+Rejoué par l'audit, avec `--racine`, contre la flotte réelle :
+
+```
+a50cbf7c : vide (1 fichier genere ecarte : rituels/CHECKLIST_PROGRESS.md)
+a697c9b3 : 13 lignes - ok
+a9bae5bc : vide en modifications non indexees (1 fichier genere ecarte),
+           MAIS 1 commit(s) non recoltes (3 fichiers, main...HEAD)
+```
+
+**Le cas difficile passe.** Vérifié par un chemin indépendant — un `git diff`
+avec les mêmes exclusions en `:(exclude)`, sans employer le code de l'outil —
+les 13 lignes de `a697c9b3` sont exactement ses deux vraies lignes :
+
+```python
++    if args.only in (None, "cles"):
++        jouer_epreuve_python("epreuve_cles_only.py", "cles atteignables par --only")
+```
+
+Une exclusion trop large aurait fait disparaître ce travail. Elle ne l'a pas
+fait.
+
+**Cinquième cas, trouvé par l'auteur et non par moi** : `a50cbf7c`, que le
+filet annonçait `50 lignes - deja applique`, est à 100 % un
+`rituels/CHECKLIST_PROGRESS.md` — un rapport dont l'en-tête porte littéralement
+`Generated:` — avec zéro commit d'avance. **Un worktree vide présenté comme du
+travail intégré.**
+
+Il a cherché les autres fichiers générés sur les 43 worktrees plutôt que de
+supposer, en a confirmé deux de plus par lecture de leur script écrivain
+(`outillage_reference.json`, `orphelines_reference.json`), et a **refusé
+d'exclure** `PROGRESS.md` et `BOUSSOLE.md` faute d'avoir pu confirmer leur
+chemin d'écriture. Exclure par ressemblance aurait été une supposition ; il l'a
+classé ouvert.
+
+### 31.12 CINQ DÉFAUTS SUR UN FICHIER, AUCUN TROUVÉ PAR LES ÉPREUVES DE SON AUTEUR
+
+Le constat est de l'auteur lui-même, inscrit dans sa propre rubrique 5 : les
+défauts trouvés sur ce fichier viennent tous de l'audit externe et de l'usage
+réel, **jamais de ses trois épreuves**.
+
+| # | défaut | trouvé par |
+| --- | --- | --- |
+| 1 | encodage `cp1252`, deux fils morts | l'usage (orchestrateur), symptôme seul |
+| 2 | travail commité invisible | l'audit (orchestrateur) |
+| 3 | refus rendant code 0 | **sa propre reverse-test** |
+| 4 | rebasement silencieux du cliquet | l'audit (orchestrateur) |
+| 5 | worktree vide annoncé « déjà appliqué » | l'auteur, en cherchant sur la flotte |
+
+Trois sur cinq sont venus de l'extérieur. Deux de lui — dont un par sa
+reverse-test, qui est exactement ce à quoi elle sert.
+
+**Ce que cela dit des épreuves, et ce que cela n'en dit pas.** Ses trois
+épreuves n'étaient pas inutiles : elles ont prouvé que ce qui était réparé
+l'était, et la reverse-test a trouvé le défaut 3 toute seule. Mais une épreuve
+valide **ce que son auteur a pensé à éprouver** ; elle ne découvre pas ce qu'il
+n'a pas imaginé. C'est l'usage qui le fait — et c'est la raison d'être du
+troisième temps.
+
+Il l'écrit lui-même comme une réserve **contre son propre VERT**, ce qui est la
+bonne façon de s'en servir.
