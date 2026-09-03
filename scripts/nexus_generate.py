@@ -440,7 +440,34 @@ def local_context(base: str, profile: dict | None = None) -> int:
             return 65536 if petit else 32768
         return 32768 if petit else 16384
 
-    return 16384 if petit else 8192
+    # Branche CPU : la fenêtre dérive de la mémoire moteur mesurée.
+    # Si le profil est absent ou ne porte pas la mesure, on garde
+    # l'ancienne paire fixe (dégradation propre, jamais d'exception).
+    mem_moteur = profile.get("inference_memory_gb") if profile else None
+    if mem_moteur is None:
+        return 16384 if petit else 8192
+
+    # Paliers nommés et commentés. Chaque nombre est justifié par une
+    # mesure de ce dépôt, pas laissé nu.
+    #
+    # SEUIL_MEMOIRE_LARGE = 64 Go : la machine de référence (66.2 Go) a
+    # fait tourner llama3.2:1b à ctx=131072 avec 5,86 Go résidents et
+    # 42 Go libres. On reste volontairement en deçà de la capacité
+    # annoncée pour limiter la latence du cache KV.
+    SEUIL_MEMOIRE_LARGE = 64
+    # Fenêtres pour mémoire large, toujours en dessous des capacités
+    # annoncées des modèles.
+    FENETRE_PETIT_LARGE = 32768
+    FENETRE_GROS_LARGE = 16384
+    # Fenêtres par défaut (mémoire insuffisante ou profil absent).
+    FENETRE_PETIT_DEFAUT = 16384
+    FENETRE_GROS_DEFAUT = 8192
+
+    # Sur cette machine (mémoire moteur 66.2 Go, pas de GPU dédié) :
+    #   petit modèle -> 32768, gros modèle -> 16384.
+    if mem_moteur >= SEUIL_MEMOIRE_LARGE:
+        return FENETRE_PETIT_LARGE if petit else FENETRE_GROS_LARGE
+    return FENETRE_PETIT_DEFAUT if petit else FENETRE_GROS_DEFAUT
 
 
 def render_local_extra(installed: list[str], declared: set[str],

@@ -4031,3 +4031,86 @@ existant.
 
 **OUVERT.** Non délégué : le contrôle LOI 1 est rouge, et je viens d'établir
 que je ne peux pas auditer ce que je pose.
+
+---
+
+## 47. LE CONTEXTE DEVIENT AUTO-ADAPTATIF — et révèle un angle mort documenté
+
+### L'arbitrage, sur cinq propositions concurrentes
+
+Cinq familles cloud ont reçu le même mandat : rendre la branche CPU de
+`local_context()` dérivée de la mémoire **mesurée**, comme la branche GPU l'est
+déjà. Coût zéro, quatre rendus exploitables.
+
+| modèle | ≥ 64 Go, petit / gros | verdict |
+| --- | --- | --- |
+| `gpt-oss-120b` | 131072 / 65536 | **rejeté** — donne à un hôte CPU la fenêtre d'un GPU 24 Go, ce que la contrainte 1 interdisait explicitement |
+| `qwen3.5-397b` | 65536 / 32768 | agressif, seuils nommés |
+| `mistral-large-3` | 32768 / 16384 | conservateur, seuils non nommés |
+| **`deepseek-v4-pro`** | 32768 / 16384 | **retenu** — conservateur, **cinq constantes nommées**, dégradation propre si le profil est absent |
+
+**Le contrôle qui a décidé avant tout jugement de style** : la clé lue par les
+quatre existe-t-elle ? `build_profile()` rend
+`inference_memory_gb = 66.2`. Oui. Aucune n'était inopérante par construction
+— contrairement au correctif LOI 1 retiré la veille, qui lisait un fichier
+gitignoré.
+
+**Pourquoi le conservateur plutôt que l'agressif.** `llama3.2:1b` a tourné à
+131 072 avec 42 Go libres : la **mémoire** suit. Mais je n'ai **aucune mesure
+de latence en fonction du contexte** sur cet hôte, et le contrat (§26) dit
+qu'une fenêtre se paie aussi en temps. Choisir l'agressif aurait été spéculer.
+
+### Ce que la formule rend, mesuré
+
+```
+memoire moteur mesuree : 66.2 Go, GPU dedie : False
+   llama3.2:1b      ->  32768     (avant : 16384)
+   qwen3-coder:30b  ->  16384     (avant :  8192)
+sans profil (degradation propre) :
+   llama3.2:1b      ->  16384
+   qwen3-coder:30b  ->   8192
+```
+
+### 47.1 L'angle mort que l'élargissement a révélé
+
+```
+bge-m3   AVANT -> 8192      APRES -> 16384
+EMBED_HINT = re.compile(r"embed|minilm")     <- ne reconnait PAS « bge-m3 »
+```
+
+**Le patch n'a rien cassé.** La branche des plongements n'a **jamais** attrapé
+`bge-m3` : il obtenait 8192 **par accident**, parce que son nom ne porte pas de
+« Nb », donc `petit` était faux, donc il tombait dans la branche « gros ».
+Élargir la fenêtre a rendu le hasard visible.
+
+Et le fichier le **documente lui-même**, ligne 280 :
+
+> *« EMBED_HINT « embed|minilm » ne voyait pas bge-m3 — angle mort corrigé
+> **deux fois ailleurs sans jamais l'être à sa source**. »*
+
+La ligne 139 porte toujours `re.compile(r"embed|minilm")`. **Le défaut est
+connu, écrit dans le fichier, et vivant.** C'est le treizième cas de la nuit
+d'un mécanisme qui donne la bonne réponse pour la mauvaise raison — et le
+premier où la documentation avertissait déjà.
+
+### 47.2 Dette : zéro ajoutée
+
+```
+ruff sur nexus_generate.py   AVANT : 3   APRES : 3
+```
+
+La bannière de `nexus_appliquer.py` s'est déclenchée, et elle avait **raison**
+— trois violations réelles, toutes préexistantes. Le correctif de la bannière,
+posé la veille, fait ce qu'il annonce.
+
+### 47.3 Statut, et ma place dans le cycle
+
+**POSÉ, NON AUDITÉ.** Je l'ai appliqué, donc je ne peux pas l'auditer (§42).
+Trois questions attendent un tiers :
+
+1. `32768 / 16384` est-il le bon palier, ou trop conservateur au vu des
+   131 072 mesurés ? Il manque une mesure **latence contre contexte**.
+2. `EMBED_HINT` doit-il être corrigé à sa source, et qu'est-ce que cela change
+   ailleurs — le fichier dit qu'il a déjà été rapiécé deux fois.
+3. Le seuil unique à 64 Go suffit-il, ou faut-il un palier intermédiaire comme
+   la branche GPU en a trois ?
