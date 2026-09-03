@@ -3671,3 +3671,62 @@ d'une ligne chacun.
 
 > **Un silence ne prouve rien.** Un contrôle qui voit et un contrôle qui ne
 > voit plus rendent exactement la même sortie.
+
+---
+
+## 41. RECTIFICATION DE MON PROPRE BILAN — cinq aveugles au rituel, pas huit
+
+Troisième fois cette nuit que je gonfle un compte et qu'une mesure me reprend.
+
+J'ai écrit « **huit contrôles sur douze du rituel** ». C'est faux : sur les huit
+mécanismes aveugles trouvés, **trois n'appartiennent pas au rituel** — la garde
+de production (§35), la bannière de `nexus_appliquer` (§29.2) et le témoin du
+relevé (§22) vivent ailleurs.
+
+### Les douze contrôles du rituel, un par un, avec la preuve
+
+| contrôle | verdict | comment je le sais |
+| --- | --- | --- |
+| `travail commite` | **voit** | rouge en ce moment sur `CLAUDE.md` |
+| `cockpit frais` | **voit** | observé rouge, puis vert après mise à jour réelle |
+| `boucle armee` | IGNORE par nature | non vérifiable hors session, déclaré tel quel |
+| `part deleguee` | **AVEUGLE** | §40 — `if total:`, une requête suffit |
+| `releves lisibles` | **voit** | contre-épreuve : 3 cas défectueux sur 3 rendent MANQUE |
+| `cablage tenu` | **voit** | rouge en ce moment, 5 régressions |
+| `outillage tenu` | **voit** | a rougi quand j'ai ajouté 10 violations, vert quand je les ai levées |
+| `redaction declaree` | **AVEUGLE** | §39 — compare 976 appels à 56 commits |
+| `loi1 tenue` | **AVEUGLE** | §37 — ne regarde que `HEAD~1` |
+| `progres` | **voit** | régénère et rapporte le code de sortie réel |
+| `boussole` | **AVEUGLE** | §38 — appelle la fonction de `progres` |
+| `arbres recoltes` | **AVEUGLE** | §36 — filtre `[agent/`, 0 sur 45 |
+
+**Cinq aveugles, six qui voient, un IGNORE assumé.**
+
+### Ce que la rectification change, et ce qu'elle ne change pas
+
+Elle change l'ampleur : le rituel n'est pas majoritairement aveugle, il l'est à
+**cinq douzièmes**. Six de ses contrôles ont démontré cette nuit qu'ils savent
+rougir — et deux d'entre eux, `cablage tenu` et `outillage tenu`, m'ont
+explicitement repris quand j'ai introduit de la dette. Ils fonctionnent.
+
+Elle ne change pas le fond. Les cinq aveugles gardent :
+la **part déléguée** — la raison d'être économique du dépôt ;
+la **LOI 1** — la règle centrale de l'opérateur ;
+la **récolte des arbres** — 45 worktrees ignorés ;
+l'**auteur des commits** — 52 sur 56 muets ;
+et la **boussole**, qui n'était jamais régénérée.
+
+Ce ne sont pas les cinq moins importants.
+
+### Et la leçon sur moi-même, la troisième de la nuit
+
+| ce que j'ai annoncé | ce que la mesure a rendu |
+| --- | --- |
+| « 14 travaux condamnés » | 15 diagnostics faux, **6** travaux en péril |
+| « 3 commits, 71 fichiers » invisibles | 3 commits, **10** fichiers |
+| « 8 contrôles sur 12 du rituel » | **5** sur 12 ; les 3 autres sont ailleurs |
+
+Trois fois, le chiffre annoncé était plus gros que le chiffre vrai, et trois
+fois c'est une vérification qui l'a ramené — deux fois la mienne, une fois
+celle d'un tiers. **Le sens de l'erreur est constant, et c'est ce qui doit
+inquiéter** : une exagération n'est pas un hasard de calcul, c'est une pente.
