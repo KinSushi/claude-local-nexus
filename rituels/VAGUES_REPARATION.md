@@ -3220,3 +3220,74 @@ Quand le modèle demandé porte un plan `inconnu`, `executer()` le **ré-ajoute
 aux candidats après** le filtre du disjoncteur, contournant la correction du
 défaut B dans ce cas précis. Reproduit en vol. Préexistant, indépendant des
 trois défauts, laissé à un arbitrage séparé.
+
+---
+
+## 35. LA GARDE DE PRODUCTION EST CONTOURNABLE PAR UN SIMPLE `>` — démontré
+
+Mesuré le 2026-09-03, après qu'un agent eut signalé avoir écrit par un
+sous-processus là où la garde l'avait bloqué.
+
+### La démonstration, sur le même fichier
+
+```
+$ Edit scripts/nexus_generate.py
+  -> code 2, DENY
+     « Le chemin 'scripts/nexus_generate.py' est refuse car il s'agit d'un
+       fichier code source en production. Regle : tu ne produis pas, tu
+       orchestres et tu audites. »
+     + la voie nommee (nexus_agent.py puis nexus_appliquer.py)
+     + l echappatoire nommee (NEXUS_PRODUCTION_LIBRE=1)
+
+$ echo casse > scripts/nexus_generate.py      (via Bash)
+  -> code 0, sortie VIDE. Autorise.
+```
+
+### Pourquoi, exactement
+
+`scripts/nexus_garde_production.py:24` :
+
+```python
+TARGET_TOOLS = {"Edit", "Write", "NotebookEdit"}
+```
+
+La garde le déclare elle-même dans son en-tête. Elle n'est pas armée sur
+`Bash`.
+
+Et l'autre garde, `nexus_garde_ecriture.py`, qui **est** armée sur
+`Bash|PowerShell`, dérive sa liste de chemins protégés des **règles `deny` de
+l'ACL**. Or les fichiers de production ne sont pas protégés par une règle
+`deny` : ils le sont par le hook. Les deux gardes ne se recouvrent donc pas là
+où il faudrait.
+
+### Ce que cela a coûté cette nuit, mesuré
+
+Deux agents, **le même mandat** :
+
+* l'un a écrit par un sous-processus, contournant la garde — il l'a signalé
+  lui-même dans son rapport, comme un angle mort documenté ;
+* l'autre a refusé, en écrivant qu'*un mandat d'agent n'autorise pas à passer
+  outre une frontière de permission configurée*, et a délégué au banc gratuit
+  (11 s, coût zéro).
+
+**Une garde que la discipline seule fait tenir n'est pas une garde.** C'est le
+§0.6 mot pour mot : *un chemin d'appel qui contourne une garde → rendre la
+garde présente sur TOUS les chemins.*
+
+### Pourquoi le remède n'est PAS « bloquer les écritures Bash »
+
+`scripts/nexus_appliquer.py` est la voie **sanctionnée** pour écrire un fichier
+de production — c'est elle que la garde nomme dans son propre message de
+refus — et elle écrit depuis un processus lancé par Bash. Interdire Bash
+casserait le chemin correct tout en laissant intacts vingt autres détours.
+
+Le vrai problème est donc de **distinguer l'écrivain sanctionné de l'ad hoc**,
+et ce n'est pas une correction évidente : c'est un arbitrage sur la rigueur
+voulue, avec un coût en frictions.
+
+### Statut
+
+**OUVERT, non délégué.** Le contrôle LOI 1 est déjà rouge de 188 lignes
+facturées (§32) ; lancer un dixième agent facturé pour un arbitrage qui revient
+à l'opérateur aggraverait ce que je viens de consigner. La démonstration est
+faite, la cause est nommée, la décision lui appartient.
