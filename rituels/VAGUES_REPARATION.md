@@ -2525,3 +2525,77 @@ aurait produit un fichier syntaxiquement invalide.
 
 Le corollaire tient en une phrase : **une garde qui refuse proprement vaut plus
 qu'un audit qui lit bien.**
+
+---
+
+## 31. L'OUTIL DE RÉCOLTE EXISTAIT, ET SON ORPHELINAGE L'A RENDU INVISIBLE
+
+Trouvé le 2026-09-03, en cherchant pourquoi le cliquet de câblage restait rouge.
+
+### Ce que `scripts/nexus_filet.py` fait
+
+Il récolte le travail des agents depuis leurs worktrees et l'applique à l'arbre
+principal. Ses garde-fous sont écrits après un incident réel :
+
+* **dry-run par défaut** ; l'application exige `--appliquer` ;
+* **refus de tout diff supprimant un fichier suivi**, sauf `--avec-suppressions`
+  — *« un agent a supprimé `docker-compose.yml` dans son worktree ; un
+  `git apply` aveugle aurait emporté le fichier du dépôt réel »* ;
+* `git apply --check` **avant** toute écriture ;
+* il n'affiche que des comptes et des noms, **jamais le contenu d'un diff**.
+
+### Le coût exact de son orphelinage
+
+**Cette nuit, j'ai fait son travail à la main.** J'ai copié des fichiers depuis
+trois worktrees, sans aucun de ces garde-fous, parce que je ne savais pas qu'il
+existait. Il n'était appelé par rien, donc rien ne me l'a montré.
+
+C'est la démonstration littérale du §0.2.1 : *un script que personne n'appelle
+n'est pas un mécanisme, c'est un fichier.* Le contrat §0 liste d'ailleurs « la
+récolte automatique des worktrees » comme encore ouverte — alors que l'outil
+était là.
+
+### Le défaut, mesuré en s'en servant
+
+```
+$ python scripts/nexus_filet.py
+code de sortie : 1
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x9d in position 2142
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 7297
+```
+
+Deux fils de lecture meurent : la sortie de `git diff` est lue avec le `cp1252`
+par défaut de Windows, dans un dépôt **écrit en français**. L'outil rend malgré
+tout son tableau — et **on ignore ce qu'il a perdu en route**. Un outil de
+récolte qui perd une entrée en silence est le pire défaut possible pour ce
+qu'il fait.
+
+### Ce que le dry-run révèle de la flotte — 43 worktrees
+
+| état | nombre |
+| --- | --- |
+| vide (aucun diff sur fichier suivi) | 17 |
+| conflit (base trop ancienne) | 20 |
+| déjà appliqué | 4 |
+| **récoltable proprement** | **3** |
+
+Les trois récoltables : `a697c9b3` (30 lignes), `a6d8fb73` (405),
+`a9bae5bc` (19).
+
+**Ils ne sont PAS récoltés.** Aucun n'a de rubrique 8 remplie, et la discipline
+tenue toute la nuit ne se relâche pas parce qu'un outil affiche « ok ».
+
+Les 20 conflits sont un fait structurel, pas vingt défauts : les worktrees ont
+été créés sur `a149320`, **12 commits en retard**, et leurs patches ne
+s'appliquent plus. Le filet vérifie et refuse — ce qui est exactement son
+travail.
+
+Il confirme aussi mon intégration de cette nuit :
+`agent-a11923e0 : 94 lignes - deja applique`.
+
+### Statut
+
+**DÉLÉGUÉ.** Diagnostic et correctif confiés à un tiers, avec deux exigences :
+que la lecture ne meure plus, et que toute perte se **dise** — message nommant
+le worktree, et code de sortie qui la reflète. Le `RET505:91` et la question du
+câblage sont dans le même mandat, la décision restant à l'orchestrateur.
