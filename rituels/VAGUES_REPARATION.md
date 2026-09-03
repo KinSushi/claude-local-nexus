@@ -3012,3 +3012,61 @@ Deux réserves, qui ne bloquent pas mais restent ouvertes :
    par un angle mort documenté — la garde protège `Edit`/`Write`, non un
    sous-processus. C'est le « trou Bash » déjà connu, et il vient d'être
    emprunté une fois de plus, cette fois par un agent qui le signale lui-même.
+
+---
+
+## 32. LE CONTRÔLE LOI 1 M'ACCUSE, ET IL A RAISON
+
+Après intégration du filet, `python scripts/nexus_loi1.py` :
+
+```
+Fichier                        Retenues Deleguees Manuel
+scripts/nexus_filet.py              194         6    188
+
+Violation : 188 lignes a la main en plus que la reference (0).
+```
+
+### Ce que « manuel » veut dire ici, et pourquoi l'accusation porte
+
+Ces 188 lignes n'ont pas été tapées par l'orchestrateur : elles ont été
+écrites par un agent **Sonnet**, donc par un modèle **facturé**. Au sens du
+§112, c'est bien du manuel — le contrat ne demande pas « que quelqu'un d'autre
+écrive », il demande que **le volume vienne du plan gratuit**.
+
+L'auteur l'avait d'ailleurs signalé de lui-même : il a tenté
+`qwen3-coder-30b-local`, qui a ignoré la consigne de transcription et rendu un
+correctif incomplet — cause racine intacte, classe d'exception définie mais
+jamais levée, balise de fermeture malformée. Il a conservé cette tentative
+**comme preuve mesurée** plutôt que de l'effacer, puis écrit sous le mandat
+explicite de l'opérateur.
+
+### Pourquoi je ne rebaseline pas
+
+`nexus_loi1.py --reference` existe : c'est la voie sanctionnée pour assumer,
+de la même forme que `--rebaseline` pour le câblage. Je ne l'emploie pas.
+
+Ce contrôle mesure **exactement ce que la plateforme existe pour surveiller** :
+combien de jetons facturés ont servi à piloter des jetons gratuits. Le taire
+reviendrait à supprimer l'instrument parce que sa lecture déplaît.
+
+### Le fait économique de la nuit, énoncé sans le maquiller
+
+Cette vague a employé **huit agents facturés**. Chacun a produit du diagnostic,
+du correctif et des épreuves que le banc gratuit n'a pas su rendre — la
+tentative de délégation ci-dessus est la seule mesurée, et elle a échoué. Mais
+une tentative échouée n'établit pas une impossibilité, et l'inverse du but du
+projet reste l'inverse du but du projet.
+
+> Le contrôle reste **ROUGE**, et c'est l'état honnête. À l'opérateur de
+> trancher : assumer par `--reference`, ou exiger que la prochaine vague
+> mesure sérieusement ce que le banc gratuit peut faire de ce travail.
+
+### 32.1 Ce qui reste rouge au rituel, et à qui cela revient
+
+| manque | à qui |
+| --- | --- |
+| `CLAUDE.md` vide à la racine | antérieur, à trancher par l'opérateur |
+| cockpit plus ancien que le code | à moi, se régénère |
+| câblage : 5 `preuve_seule` | 4 sur 5 sont les miens |
+| outillage : 4 régressions | reste PowerShell, non touché cette nuit |
+| **LOI 1 : 188 lignes** | **à l'opérateur, ci-dessus** |
