@@ -3070,3 +3070,76 @@ projet reste l'inverse du but du projet.
 | câblage : 5 `preuve_seule` | 4 sur 5 sont les miens |
 | outillage : 4 régressions | reste PowerShell, non touché cette nuit |
 | **LOI 1 : 188 lignes** | **à l'opérateur, ci-dessus** |
+
+---
+
+## 33. LE BANC GRATUIT SUR UNE QUESTION DE JUGEMENT — mesuré, pas supposé
+
+Répondant à ma propre exigence du §32 : mesurer ce que le banc gratuit sait
+faire au lieu de l'affirmer. Question posée — les cinq scripts `preuve_seule`
+doivent-ils être câblés, et quel critère général tranche ? Rendu en **19 s**,
+1 781 jetons, coût zéro.
+
+### Ce qu'il rend de bon, et c'est réel
+
+Un critère général utilisable par quelqu'un d'autre sans le lui redemander :
+
+> *Un script est un **outil manuel légitime** lorsqu'il n'est jamais requis
+> pour la continuité fonctionnelle du système. Il constitue un **mécanisme**
+> dès que l'absence d'appel entraîne une défaillance observable.*
+
+Et une proposition juste : que le cliquet **distingue les deux catégories**
+plutôt que de les confondre sous `preuve_seule`.
+
+### Ce qu'il invente, vérifié un par un dans le dépôt réel
+
+| artefact cité | occurrences réelles |
+| --- | --- |
+| répertoire `incoming` | **0** |
+| job Jenkins | **0** |
+| règle `make`/`ruffus` | **0** |
+| `node_index` | **0** |
+| `quarantine.json` | **0** — le vrai nom est `MANIFESTE.json` |
+| option `--apply` | **0** — la vraie est `--appliquer` |
+| répertoire `src/` | **absent** |
+
+Six ancrages sur sept sont fabriqués. Chaque « critère vérifiable » qu'il
+propose est vérifiable **contre un dépôt qui n'existe pas**.
+
+### Ce qu'il contredit — de lui-même, puis contre la mesure
+
+**Contre lui-même** : son critère général dit qu'un outil est manuel si aucune
+fonction de production n'en dépend. Il ordonne pourtant de **câbler**
+`nexus_decouper_livres.py` et `nexus_extraire_livres.py`, deux constructeurs de
+corpus lancés une fois par arrivée de livres, dont rien en production ne
+dépend. Ils tombent dans sa propre définition d'outil manuel.
+
+**Contre la mesure** : il classe `nexus_filet.py` en « dégradation assumée ».
+C'est le seul des cinq sur lequel je détiens une preuve, et elle dit l'inverse.
+Son orphelinage a produit une défaillance observable **cette nuit même** : j'ai
+fait son travail à la main, sans ses garde-fous, faute de savoir qu'il
+existait. Par son propre critère, c'est un **mécanisme**.
+
+### Mon arbitrage, en appliquant SON critère correctement
+
+| script | verdict | motif |
+| --- | --- | --- |
+| `nexus_decouper_livres.py` | **outil manuel** | une fois par corpus, rien n'en dépend |
+| `nexus_extraire_livres.py` | **outil manuel** | idem |
+| `nexus_indexer_node.py` | **outil manuel** | une fois par version de Node |
+| `nexus_quarantaine.py` | **à trancher** | rien ne consomme sa sortie, mais la question se repose à chaque vague — le critère ne couvre pas la gouvernance récurrente |
+| `nexus_filet.py` | **mécanisme, à câbler** | défaillance observée, mesurée cette nuit |
+
+### La leçon, et c'est la troisième fois cette nuit
+
+> **L'abstraction est bonne, l'ancrage est inventé.**
+
+Le banc a produit en 19 secondes et pour zéro un critère que je n'avais pas
+formulé, et qui tient. Il a aussi produit sept faits dont six sont faux, et il
+s'est trompé sur le seul cas prouvé. Les deux moitiés étaient nécessaires :
+sans lui, pas de critère ; sans arbitrage, un rapport entièrement crédible et
+faux aux quatre cinquièmes.
+
+C'est exactement ce que le §112.4 énonce — *l'analyse est un signal, jamais une
+preuve* — et c'est la réponse mesurée à la question du §32 : le banc gratuit
+peut porter le **raisonnement**, jamais les **faits**.
