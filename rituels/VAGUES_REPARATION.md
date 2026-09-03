@@ -2599,3 +2599,48 @@ Il confirme aussi mon intégration de cette nuit :
 que la lecture ne meure plus, et que toute perte se **dise** — message nommant
 le worktree, et code de sortie qui la reflète. Le `RET505:91` et la question du
 câblage sont dans le même mandat, la décision restant à l'orchestrateur.
+
+### 31.1 Le filet ignore le travail COMMITÉ — et l'incitation en est inversée
+
+Mesuré le 2026-09-03, en croisant son tableau avec l'état git réel.
+
+`scripts/nexus_filet.py:41` :
+
+```python
+cmd = ['git', '-C', str(wt), 'diff', '--', '.'] + excl_args
+```
+
+Le diff des modifications **non indexées**, rien d'autre. Ni l'index
+(`--cached`), ni les commits (`main..HEAD`).
+
+| | |
+| --- | --- |
+| worktrees dits « vide » par le filet | 15 |
+| parmi eux, portant du travail COMMITÉ | **2** |
+| `agent-a0bb278a` | 2 commits propres, 25 fichiers |
+| `agent-a96910bc` | 1 commit propre, 46 fichiers |
+| **total invisible** | **3 commits, 71 fichiers** |
+
+**Deux raisons pour lesquelles c'est grave, et la seconde est la pire :**
+
+1. **Le silence.** Le filet affiche `vide` — mot pour mot ce qu'il affiche pour
+   un worktree réellement sans travail. Rien ne distingue les deux cas.
+2. **L'incitation est inversée.** Un agent qui **commite** son travail — le
+   comportement discipliné, celui que le cockpit reproche justement aux autres
+   de ne pas avoir — devient invisible à la récolte. **L'outil récompense le
+   plus négligent.**
+
+### 31.2 Une mesure que j'ai failli publier fausse
+
+Mon premier comptage donnait « 4 worktrees, 14 commits, 44 fichiers ». Il
+mesurait contre `a149320` au lieu de `main` : les commits de `main` y entraient
+aussi, puisque `a149320` est douze commits en arrière.
+
+Contre `main`, qui isole le travail propre à chaque worktree : **2 worktrees,
+3 commits, 71 fichiers.** Deux des quatre ne portaient aucun travail propre.
+
+Corrigé avant publication, et inscrit ici plutôt qu'effacé : **le choix de la
+base change le résultat d'un facteur trois.**
+
+Transmis à l'agent en vol comme une affirmation à rejouer, jamais comme un
+acquis, avec les commandes exactes et le piège de la base nommé.
