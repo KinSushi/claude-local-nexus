@@ -3369,3 +3369,84 @@ reconnaître les deux conventions, ou faire appeler `nexus_filet.py` par ce
 contrôle — ce que l'auditeur tiers avait proposé de son côté, sans connaître ce
 défaut. Le second câblerait l'outil orphelin et donnerait au contrôle un regard
 réel, d'une seule pierre. Non délégué : le contrôle LOI 1 est rouge (§32).
+
+---
+
+## 37. LE CLIQUET DE LA LOI 1 OUBLIE SES PROPRES VIOLATIONS
+
+Trouvé le 2026-09-03, en constatant qu'un contrôle rouge deux heures plus tôt
+était devenu vert **sans que rien n'ait été corrigé**.
+
+### La mesure
+
+```
+$ python scripts/nexus_loi1.py --base <X>
+
+  base HEAD~1      code 0   violation :   0     <- ce que le rituel appelle
+  base HEAD~5      code 0   violation :   0
+  base HEAD~12     code 1   violation : 188
+  base f364f40     code 1   violation : 853     <- debut de la session
+```
+
+`scripts/nexus_loi1.py:98` :
+
+```python
+parser.add_argument("--base", default="HEAD~1", help="Commit de base")
+```
+
+Et `nexus_rituel.py`, dans `loi1_tenue()`, l'appelle **sans `--base`**.
+
+### Ce que cela veut dire
+
+**Le contrôle ne regarde que le dernier commit.** Il était rouge quand ce
+dernier commit intégrait le filet ; il est vert depuis que mes commits sont de
+la documentation. Les 188 lignes sont toujours là, et le contrôle a cessé de
+les voir.
+
+Sur la session entière : **853 lignes écrites par des modèles facturés, sur 10
+fichiers.** Le rituel annonce `[OK] loi1 tenue — Conformite avec la reference.`
+
+### Pourquoi c'est la trouvaille la plus lourde de la nuit
+
+Sa propre docstring dit :
+
+> *« C'est un CLIQUET, pas une porte : il refuse l'aggravation sans réparer le
+> passé. »*
+
+**Un cliquet accumule.** Celui-ci se remet à zéro à chaque commit — et il
+suffit d'un commit de documentation, geste le plus fréquent de ce dépôt, pour
+effacer l'ardoise. L'intention est exacte ; la fenêtre la défait.
+
+Et il ne garde pas n'importe quelle règle : il garde **la LOI 1**, la règle
+centrale de l'opérateur, celle dont le contrat dit qu'elle *« évite les erreurs
+à répétition »*.
+
+### Le cinquième contrôle de la nuit avec le même défaut de nature
+
+| contrôle | ce qu'il mesure | ce qu'on voulait savoir |
+| --- | --- | --- |
+| garde de production (§35) | l'outil employé (`Edit`/`Write`) | le fichier écrit |
+| bannière de `nexus_appliquer` (§29.2) | la présence d'une sortie | son sens |
+| témoin du relevé (§22) | un fichier suivi par git | un fichier gitignoré |
+| arbres en attente (§36) | une convention de nommage | les arbres réels |
+| **cliquet LOI 1** | **le dernier commit** | **la dette accumulée** |
+
+> **On a mesuré ce qui était facile à mesurer, pas ce qu'on voulait savoir.**
+> Cinq fois, dans cinq mécanismes écrits par des mains différentes.
+
+### Ce qui rend ce défaut invisible
+
+Aucun des cinq ne se voit en lisant le code : chacun est correct **par rapport
+à ce qu'il mesure**. Ils ne se voient qu'en confrontant leur verdict au monde —
+un `echo >` qui passe, un `--base` qu'on élargit, un `grep` qui compte 45 là où
+le contrôle compte 0. C'est le **forward-test**, et c'est exactement pourquoi
+le §70.5 le nomme la troisième jambe : *les deux premières épreuves valident
+l'INSTRUMENT, seule la troisième valide le RÉSULTAT.*
+
+### Statut
+
+**OUVERT, non délégué** (LOI 1 est rouge — §32). Le remède demande un
+arbitrage : quelle base un cliquet doit-il employer ? `HEAD~1` ne garde rien ;
+une base fixe vieillit ; une référence versionnée, comme celle du câblage et de
+l'outillage, est le patron déjà en usage dans ce dépôt pour exactement ce
+problème.
