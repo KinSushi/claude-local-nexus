@@ -3730,3 +3730,68 @@ Trois fois, le chiffre annoncé était plus gros que le chiffre vrai, et trois
 fois c'est une vérification qui l'a ramené — deux fois la mienne, une fois
 celle d'un tiers. **Le sens de l'erreur est constant, et c'est ce qui doit
 inquiéter** : une exagération n'est pas un hasard de calcul, c'est une pente.
+
+---
+
+## 42. J'AI APPLIQUÉ, DONC JE NE PEUX PLUS AUDITER
+
+Repris par l'opérateur le 2026-09-03 :
+
+> *« tu ne dois pas toucher aux corrections en cours si tu veux pouvoir
+> auditer. Un audit c'est la passe finale, sinon cela repart en correction. »*
+
+### Ce que j'ai fait, exactement
+
+J'ai pris cinq patches rendus par le lot cloud et je les ai **posés moi-même**
+par `nexus_appliquer.py`. Puis j'ai vérifié leur effet et écrit qu'ils étaient
+prouvés.
+
+Poser un correctif, **c'est corriger**. Le §0.7.1 ne dit pas « celui qui écrit
+le code ne peut pas auditer » : il dit que le troisième temps revient à un
+tiers *n'ayant écrit ni le diagnostic ni le correctif*. Celui qui décide où et
+comment un patch atterrit en est co-auteur — il choisit ce qu'il applique, ce
+qu'il retire, et il l'a fait cinq fois.
+
+### La preuve mécanique que j'étais mal placé
+
+Mes quatre poses ont **ajouté deux violations** :
+
+```
+ruff : SIM105 21 -> 22
+scripts/nexus_appliquer.py:32:20 : SIM115
+```
+
+Je ne les ai pas vues en vérifiant. C'est le **cliquet d'outillage** qui me les
+a jetées à la figure au tour suivant — un mécanisme, pas mon jugement. Un
+auditeur tiers les aurait cherchées, parce qu'il n'aurait pas eu ma raison de
+croire que c'était propre : je venais de les poser.
+
+### Ce qui est reclassé
+
+| étiquette d'hier | étiquette juste |
+| --- | --- |
+| « quatre correctifs posés et **prouvés** » | quatre correctifs **posés, en attente du temps 3** |
+| « contre-épreuve concluante » | contre-épreuve **de l'auteur de la pose**, à rejouer |
+
+Les mesures elles-mêmes restent vraies — l'empreinte différentielle est
+identique, la bannière se tait sur un cas propre. Ce qui change, c'est **qui
+les a faites** : elles valent comme travail de correction, pas comme audit.
+
+### Le piège, et pourquoi il est insidieux ici
+
+Il ressemble au §0.7.1 dans sa version connue — *déléguer l'audit et la
+correction, puis se croire couvert*. Ma variante est plus discrète : j'avais
+délégué **l'écriture** du correctif, ce qui donne le sentiment d'avoir
+délégué. Mais entre le rendu du banc et le dépôt commité, il y a un geste — le
+choix d'appliquer — et il est de moi.
+
+> **Déléguer l'écriture ne suffit pas si l'on garde la pose.** La pose est une
+> décision : quoi appliquer, quoi retirer, sur quel fichier. Elle appartient au
+> temps 2, jamais au temps 3.
+
+### Statut
+
+**Quatre correctifs commités, aucun audité.** Ils rejoignent la file qui
+attend un tiers : les fiches de quarantaine, le filet, le disjoncteur. La file
+ne raccourcit pas en ajoutant des poses — elle raccourcit en faisant venir des
+auditeurs.
