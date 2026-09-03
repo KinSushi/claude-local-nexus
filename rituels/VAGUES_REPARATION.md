@@ -2908,3 +2908,52 @@ troisième temps.
 
 Il l'écrit lui-même comme une réserve **contre son propre VERT**, ce qui est la
 bonne façon de s'en servir.
+
+### 31.13 L'ENCODAGE NE PERDAIT PAS DEUX WORKTREES — IL EN CONDAMNAIT QUATORZE
+
+Trouvé le 2026-09-03, en comparant la sortie du filet réparé à celle du filet
+cassé. C'est la trouvaille la plus large de la vague, et elle n'apparaît qu'en
+mettant les deux passes côte à côte.
+
+```
+conflits, filet CASSE    : 20
+conflits, filet CORRIGE  :  6
+```
+
+**Quatorze worktrees passent de « conflit » à « ok », à nombre de lignes
+identique.** `a1f14f97` par exemple : « 340 lignes - conflit » devient
+« 340 lignes - ok ».
+
+**Ce n'est pas une dérive de `main`.** Vérifié sur `a1f14f97` : aucun des
+quatre fichiers qu'il touche n'a bougé depuis `a149320` — zéro commit chacun.
+
+**Vérifié par un chemin indépendant**, un `git apply --check` réel sur l'arbre
+courant :
+
+| worktree | patch | `git apply --check` |
+| --- | --- | --- |
+| `a1f14f97` | 340 lignes | **PASSE** |
+| `a925f543` | 453 lignes | **PASSE** |
+| `a3666d88` | 260 lignes | **PASSE** |
+
+`a925f543` touche `nexus_agent.py`, que j'ai modifié cette nuit — ses hunks
+s'appliquent quand même, portant sur d'autres régions.
+
+### 31.14 Ce que cela change, et pourquoi c'était invisible
+
+Le défaut d'encodage ne se contentait pas de tuer deux fils de lecture. Là où
+il ne tuait pas, il **corrompait le texte du diff** — `cp1252` remplaçant des
+octets UTF-8 — et `git apply --check` refusait alors un patch parfaitement
+valide. L'outil rendait « conflit », mot qui désigne d'ordinaire un vrai
+désaccord de contenu.
+
+> **Un diagnostic faux est plus coûteux qu'une panne.** Une panne se voit ;
+> « conflit » se croit, et l'on renonce au travail qu'il désigne.
+
+Quatorze travaux d'agents ont ainsi été tenus pour irrécupérables. Ils sont
+applicables.
+
+Ce qui l'a rendu visible n'est ni une relecture ni une épreuve : c'est d'avoir
+gardé la **sortie d'avant** et de l'avoir comparée à celle d'après. Sans les
+deux passes côte à côte, la correction aurait été jugée sur ses deux fils morts
+et le reste serait passé pour normal.
