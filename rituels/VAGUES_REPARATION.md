@@ -2466,3 +2466,62 @@ Mes propres appels d'épreuve à `--max-tokens 20` ont banni les deux chevaux de
 trait en « panne permanente ». Un défaut de **budget** classé comme panne du
 **modèle** — c'est-à-dire précisément le §27.2, dont je détenais la preuve
 depuis le début de la vague sans l'avoir lue.
+
+---
+
+## 30. ÉTAT À LA FIN DE LA VAGUE — ce qui est clos, ce qui ne l'est pas
+
+### Clos, avec preuve
+
+| | preuve |
+| --- | --- |
+| trois correctifs audités par un TIERS | 3 JAUNE, 3 FUSIONNABLE, aucune régression |
+| intégrés sur `main` | conformité code 0, 143 modules, relevés 71 et 44 |
+| substitution silencieuse du banc | `BASCULE` nomme les écartés et leur raison |
+| compteur d'échecs fabriqué | `echecs=4` — impossible sous l'ancien code |
+| modèle demandé perdu | `demande : gpt-oss-120b-cloud`, contre la passerelle réelle |
+| verdict tiers en worktree | code 0 là où quatre bloquants refusaient |
+| faux vert du collecteur | `PREUVE_COMPLETE` de 2 (faux) à 0 sur 42 worktrees |
+| 7 violations ruff | 7 → 0, empreinte différentielle IDENTIQUE |
+| corpus de livres | 226 livres, 119 977 fragments, seek 50/50 |
+
+### Le rituel de fin de tour dit encore trois manques — et il a raison
+
+**1. `CLAUDE.md` à la racine, non commité.** Fichier de **0 octet**, antérieur à
+cette session. Sans effet : le contrat chargé est `.claude/CLAUDE.md`. Laissé
+en l'état — ce n'est pas mon fichier et l'opérateur est absent. À trancher en
+une seconde à son retour.
+
+**2. Câblage : `nexus_decouper_livres.py` est `preuve_seule`.** Seul un document
+le référence ; aucun appelant en production. **Celui-là est le mien.** Le
+§0.2.1 est explicite : *un script que personne n'appelle n'est pas un
+mécanisme, c'est un fichier.* Les trois outils de corpus demandent un vrai
+point d'entrée — une commande de rafraîchissement du corpus — et non un
+raccourci posé à la hâte.
+
+**3. Outillage : `RET505 0 -> 1` et les alertes PowerShell.** Le `RET505` est
+dans `scripts/nexus_filet.py:91`, fichier jamais touché cette nuit et qui porte
+**aussi** l'orphelin de câblage. Ni diagnostiqué ni corrigé ici : il revient à
+un tiers.
+
+### Ce qui reste ouvert au-delà du rituel
+
+* une **troncature** bannit un modèle sain — confirmé deux fois, préexistant ;
+* `ecartes` inopérant quand **tous** les candidats sont coupés — trouvé par le
+  tiers ;
+* **écriture non atomique** de `circuit_state.json` ;
+* le **`.env` réel** lu depuis un worktree, à déclarer ;
+* **sept fiches** de quarantaine attendent encore leur rubrique 8 ;
+* `nexus_appliquer.py` : la fausse bannière, et `<<<FICHIER>>>` jamais lu ;
+* les scripts de corpus ont un **effet de bord à l'import** (§0.5).
+
+### La leçon de la nuit, et elle est mesurée
+
+Sur les défauts trouvés cette nuit, **aucun ne venait d'une relecture**. Tous
+sont venus de l'usage : un appel réel contre la passerelle, un patch qu'on
+essaie de poser, une contre-épreuve qu'on construit mal. Et trois gardes ont
+arrêté **mes** fautes avant qu'elles n'écrivent — dont une spécification qui
+aurait produit un fichier syntaxiquement invalide.
+
+Le corollaire tient en une phrase : **une garde qui refuse proprement vaut plus
+qu'un audit qui lit bien.**
