@@ -8,8 +8,13 @@ Contraintes de conception :
 - Il refuse tout diff contenant une suppression de fichier suivi, sauf si --avec-suppressions est passe.
   Pourquoi : un agent a supprime docker-compose.yml dans son worktree en fabriquant une condition d echec ;
   un git apply aveugle aurait emporte le fichier du depot reel, la suppression figurant comme un D ordinaire.
-- Il exclut par defaut les fichiers listes dans --exclure (defaut : scripts/nexus_doc.py), qui sont des copies posees
-  par l orchestrateur et non du travail d agent.
+- Il exclut par defaut les fichiers listes dans --exclure : scripts/nexus_doc.py (copie posee par
+  l orchestrateur, pas du travail d agent) et quatre fichiers REGENERES par l outillage du depot lui-meme
+  -- rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json,
+  rituels/CHECKLIST_PROGRESS.md. Trouve en se servant de l outil corrige : deux worktrees dont TOUT le diff
+  non indexe n etait qu un horodatage regenere par une passe de validation -- l un des deux n avait RIEN
+  d autre a recolter, et le disait "ok". Un diff devenu vide par cette exclusion ne se lit plus "ok" ;
+  voir fichiers_diff() et la branche "vide" de main().
 - Chaque patch est teste par git apply --check AVANT toute ecriture ; un patch qui ne s applique pas proprement
   est signale et saute, il n interrompt pas les autres.
 - Il n'affiche que des comptes et des noms de fichiers, jamais le contenu des diffs.
@@ -49,6 +54,41 @@ def worktrees(racine: Path):
     if not base.is_dir():
         return []
     return [p for p in base.iterdir() if p.is_dir() and p.name.startswith('agent-')]
+
+def fichiers_diff(wt: Path, exclure=()):
+    """
+    Noms de fichiers touches par le diff NON INDEXE de wt, apres application
+    des exclusions donnees (aucune exclusion si le parametre est omis).
+
+    Sert a distinguer un worktree GENUINEMENT sans rien d'un worktree dont
+    le seul contenu etait un artefact ECARTE par --exclure : appelee SANS
+    exclusion alors que diff_de() (AVEC exclusion) a deja rendu '', un
+    resultat non vide ici prouve que l'exclusion est la SEULE raison du
+    vide -- ce qui doit se dire, jamais se lire comme un simple "vide"
+    indiscernable d'un worktree reellement inactif, et surtout jamais comme
+    "ok". Trouve en se servant de l'outil corrige : un worktree dont le
+    diff entier n'etait qu'un fichier de mesure regenere par une passe de
+    validation etait annonce "ok, 19 lignes" -- une reussite de recolte qui
+    n'aurait recolte qu'un artefact, et dont l'application aurait rebase le
+    cliquet de cablage en silence.
+
+    Degrade a [] sur tout echec : c'est une information de diagnostic
+    complementaire, jamais une raison d'arreter la recolte.
+    """
+    excl_args = [f':!{e}' for e in exclure]
+    cmd = ['git', '-C', str(wt), 'diff', '--name-only', '--', '.'] + excl_args
+    try:
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        return []
+    if result.returncode != 0:
+        return []
+    brut = result.stdout or b''
+    try:
+        texte = brut.decode('utf-8')
+    except UnicodeDecodeError:
+        texte = brut.decode('utf-8', errors='replace')
+    return [l for l in texte.splitlines() if l.strip()]
 
 def diff_de(wt: Path, exclure):
     """
@@ -225,8 +265,21 @@ def main():
     parser = argparse.ArgumentParser(description='Recuperer les diffs des worktrees agents et les appliquer.')
     parser.add_argument('--appliquer', action='store_true', help='Appliquer les patches valides.')
     parser.add_argument('--avec-suppressions', action='store_true', help='Autoriser les suppressions de fichiers.')
-    parser.add_argument('--exclure', nargs='*', default=['scripts/nexus_doc.py'],
-                        help='Chemins a exclure du diff.')
+    parser.add_argument('--exclure', nargs='*', default=[
+                            'scripts/nexus_doc.py',
+                            # Les quatre lignes suivantes sont des fichiers REGENERES par l'outillage du
+                            # depot (ecrits par nexus_cablage.py, nexus_outillage.py, epreuve_orphelines.py,
+                            # nexus_checklist_progres.py) -- jamais du travail d'agent, meme categorie que
+                            # nexus_doc.py ci-dessus. Mesure sur la flotte reelle du 2026-09-03 :
+                            # rituels/cablage_reference.json etait le SEUL contenu du diff de 2 worktrees
+                            # sur 43, un horodatage regenere par une passe de validation lancee dans le
+                            # worktree -- l'un d'eux n'avait RIEN d'autre a recolter, et etait annonce "ok".
+                            'rituels/cablage_reference.json',
+                            'rituels/outillage_reference.json',
+                            'rituels/orphelines_reference.json',
+                            'rituels/CHECKLIST_PROGRESS.md',
+                        ],
+                        help='Chemins a exclure du diff (fichiers generes exclus par defaut).')
     parser.add_argument("--racine", type=Path, default=None,
                         help="Racine explicite (contrat 0.5) : remplace la racine derivee de "
                              "__file__. Sans elle, lance depuis un worktree agent, l'outil se "
@@ -271,15 +324,20 @@ def main():
             print(f'{name}: ERREUR DE LECTURE (non compte comme vide) - {exc}')
             continue
         if not diff_txt:
+            # SANS exclusion : si ceci rend des noms, l'exclusion est la SEULE raison pour
+            # laquelle diff_txt est vide -- un artefact regenere, jamais un "ok" silencieux.
+            ecartes = fichiers_diff(wt)
+            detail_ecartes = (f' ({len(ecartes)} fichier(s) genere(s) ecarte(s) : '
+                               f'{", ".join(ecartes)})') if ecartes else ''
             nb_commits, nb_fichiers = commits_non_vus(wt)
             if nb_commits > 0:
                 commits_masques += 1
-                print(f'{name}: vide en modifications non indexees, MAIS {nb_commits} '
-                      f'commit(s) non recoltes par ce dry-run ({nb_fichiers} fichier(s) '
-                      f'touches, main...HEAD)')
+                print(f'{name}: vide en modifications non indexees{detail_ecartes}, MAIS '
+                      f'{nb_commits} commit(s) non recoltes par ce dry-run ({nb_fichiers} '
+                      f'fichier(s) touches, main...HEAD)')
             else:
                 vides += 1
-                print(f'{name}: vide')
+                print(f'{name}: vide{detail_ecartes}')
             continue
 
         lignes = len(diff_txt.splitlines())
