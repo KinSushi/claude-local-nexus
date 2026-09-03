@@ -2718,3 +2718,66 @@ Le §0.5 est explicite : *une racine de travail explicite (`--racine`)
 l'emporte ; l'appelant décide où il travaille, pas l'outil.* C'est le même
 défaut que celui déjà corrigé dans `nexus_conformite.py` cette nuit — la racine
 dérivée de `__file__` sans échappatoire.
+
+### 31.6 AUDIT DE LA CORRECTION DU FILET — ce qui est prouvé, et par qui
+
+Rejoué le 2026-09-03 par l'orchestrateur, contre la flotte réelle, avec la
+`--racine` explicite que l'auteur a ajoutée après l'audit.
+
+| exigence | résultat |
+| --- | --- |
+| plus aucun fil de lecture ne meurt | **43 worktrees, 43 diffs lus, 0 mort** (avant : 2) |
+| les worktrees perdus réapparaissent | `a13026bc` (52 lignes) revient au tableau |
+| comptes des commits non récoltés | `a0bb278a` → **9** fichiers (25 avant), `a96910bc` → **1** (46 avant) |
+| les faux positifs disparaissent | `a084add6`, `a0b2638a`, `a3a373ce` redeviennent de simples `vide` |
+| l'outil dit sa propre provenance | la sortie porte « 9 fichier(s) touchés, `main...HEAD` » |
+
+**Reverse-test, fabriqué et lancé par l'audit** — un dépôt jetable dont le diff
+non indexé supprime un fichier suivi :
+
+```
+CODE DE SORTIE : 1
+agent-atest…: 7 lignes - refuse suppression [fichier_suivi.txt]
+              (repasser avec --avec-suppressions pour autoriser)
+empreinte de la racine AVANT : 400c1dd5414c551a
+empreinte de la racine APRES : 400c1dd5414c551a
+```
+
+Les trois exigences du §0.1.4.1 sont tenues : **code non nul**, **message
+nommant la voie**, **aucun effet de bord**.
+
+**Contre-épreuve sur le code d'AVANT, lue dans le fichier réel :**
+
+```python
+sys.exit(1 if conflits > 0 else 0)                    # ligne 181
+print(f'{name}: {lignes} lignes - refuse suppression [{suppr_str}]')   # ligne 139
+```
+
+`refuses` était compté (l. 137), affiché (l. 175), et **n'entrait pas dans le
+code de sortie**. Un lancement dont le seul effet était de refuser une
+suppression rendait **0**. Et le message ne nommait aucune voie de passage.
+Deux des trois exigences manquaient — motif que le §0.1.4.1 nomme mot pour
+mot : *un refus qui affichait `deny` et sortait 0 ne bloquait rien.*
+
+### 31.7 Ce que l'auteur a écrit en rubrique 6, et qui vaut doctrine
+
+> *« matching a source proves fidelity of copying, not validity of method »*
+
+Il avait vérifié que ses chiffres correspondaient à mon brief. Ils
+correspondaient — parce que nous employions la **même commande fausse**.
+Concorder avec sa source prouve la fidélité de la copie, jamais la validité de
+la méthode.
+
+### 31.8 Où en est mon indépendance sur cette pièce
+
+| défaut | l'ai-je diagnostiqué ? | puis-je l'auditer ? |
+| --- | --- | --- |
+| encodage `cp1252` | non — j'ai donné le symptôme seul | **oui** |
+| refus rendant code 0 | non — trouvé par sa reverse-test | **oui** |
+| travail commité invisible | **oui, et avec une commande fausse** | non |
+
+Les deux premiers sont audités proprement. Le troisième ne l'est pas : j'en
+suis le diagnosticien, et de surcroît la source de l'erreur. Il faut un tiers.
+
+**Rien n'est intégré.** La rubrique 8 reste vide, et huit fiches attendent
+désormais le même tiers.
