@@ -3450,3 +3450,80 @@ arbitrage : quelle base un cliquet doit-il employer ? `HEAD~1` ne garde rien ;
 une base fixe vieillit ; une référence versionnée, comme celle du câblage et de
 l'outillage, est le patron déjà en usage dans ce dépôt pour exactement ce
 problème.
+
+---
+
+## 38. LE CONTRÔLE « BOUSSOLE » NE REGARDE PAS LA BOUSSOLE
+
+Sixième du même genre, et le plus nu : il ne mesure pas la mauvaise chose, il
+**ne mesure rien**.
+
+### La preuve, en trois lignes
+
+`scripts/nexus_rituel.py`, liste des contrôles :
+
+```python
+("progres",  lambda: progres(racine)),
+("boussole", lambda: progres(racine)),   # <- la MEME fonction
+```
+
+`progres()` — sa propre docstring, première ligne : *« Régénère PROGRESS.MD. »*
+Elle ne connaît pas la boussole. Les deux contrôles rendent donc, mot pour
+mot, `PROGRESS.MD regenere`.
+
+Et les horodatages :
+
+```
+PROGRESS.MD              2026-09-03 07:17    regeneree cette nuit
+rituels/BOUSSOLE.md      2026-09-02 07:21    24 heures
+rituels/BOUSSOLE.csv     2026-09-02 07:21    24 heures
+```
+
+Le contrôle a rendu `[OK] boussole` à **chaque tour**, pendant que le fichier
+qu'il prétend garder n'était pas touché de la journée.
+
+### Un commentaire qui explique, et qui ne tient pas
+
+La ligne porte : *« Même traitement que PROGRESS.MD : régénération
+silencieuse. »* L'intention est lisible — traiter la boussole comme le
+progrès. Mais « même traitement » a été écrit comme « même appel », et la
+boussole n'est jamais régénérée. Le commentaire décrit ce qu'on voulait ; le
+code fait autre chose ; et rien ne les confronte.
+
+### Le tableau des six, complet
+
+| contrôle | ce qu'il mesure | ce qu'on voulait savoir |
+| --- | --- | --- |
+| garde de production (§35) | l'outil employé | le fichier écrit |
+| bannière `nexus_appliquer` (§29.2) | la présence d'une sortie | son sens |
+| témoin du relevé (§22) | un fichier suivi par git | un fichier gitignoré |
+| arbres en attente (§36) | une convention de nommage | les arbres réels |
+| cliquet LOI 1 (§37) | le dernier commit | la dette accumulée |
+| **boussole** | **PROGRESS.MD** | **la boussole** |
+
+Six mécanismes, écrits par des mains différentes, à des jours différents. Aucun
+n'est faux en soi : chacun fait correctement ce qu'il fait. Tous répondent à
+côté de la question.
+
+### Ce qui les aurait tous attrapés
+
+Un seul geste : **exécuter le contrôle contre un cas qui doit le faire
+rougir.** Pas relire son code — le confronter.
+
+* `echo casse > un_fichier_de_production` → la garde aurait dû refuser ;
+* `--base f364f40` → le cliquet aurait dû compter 853 ;
+* `grep -c "[worktree-agent-"` → 45 là où le contrôle compte 0 ;
+* `date -r rituels/BOUSSOLE.md` → 24 heures là où il dit « régénéré ».
+
+Chacune de ces commandes tient sur une ligne. Aucune ne demande de lire le
+code. C'est la **contre-épreuve**, et le contrat la déclare obligatoire depuis
+le §0.1.4.1 : *« la contre-épreuve est le livrable, pas un supplément ».*
+
+Elle n'a été écrite pour aucun de ces six.
+
+### Statut
+
+**OUVERT.** Les six sont consignés, aucun n'est corrigé, et le remède commun
+n'est pas six correctifs : c'est **une contre-épreuve par contrôle**, qui
+échoue si le contrôle cesse de voir. Non délégué (LOI 1 rouge, §32) ; c'est un
+chantier à part entière et il revient à l'opérateur de l'ouvrir.
