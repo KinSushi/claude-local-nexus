@@ -3143,3 +3143,80 @@ faux aux quatre cinquièmes.
 C'est exactement ce que le §112.4 énonce — *l'analyse est un signal, jamais une
 preuve* — et c'est la réponse mesurée à la question du §32 : le banc gratuit
 peut porter le **raisonnement**, jamais les **faits**.
+
+---
+
+## 34. TROIS DÉFAUTS RÉSIDUELS CORRIGÉS — et une intégration refusée à temps
+
+Le 2026-09-03. Correction déléguée, non intégrée : elle ne s'applique pas sur
+`main`, et une intégration par copie aurait annulé un correctif prouvé.
+
+### 34.1 Ce que l'auteur a corrigé, avec sa preuve vivante
+
+| défaut | preuve mesurée contre la passerelle réelle |
+| --- | --- |
+| **A** troncature bannissant un modèle sain | avant : `--max-tokens 20` bannit `gpt-oss-120b-cloud` **et** `glm-4.7-flash-local` en un appel chacun. Après : les deux restent `closed` |
+| **B** `ecartes` inopérant quand tout est coupé | avant : un appel réseau **réel de 7,8 s** vers une cible bannie, rendu en succès, sans trace. Après : zéro appel réseau, et l'erreur nomme les quatre cibles avec leur état |
+| **C** écriture non atomique | avant : un crash simulé en cours d'écriture laisse le fichier tronqué (`Unterminated string`). Après : le fichier de destination est **octet pour octet intact** |
+
+Le défaut C était donné comme **NON ÉPROUVÉ** dans mon mandat. Il l'a mesuré
+plutôt que de l'affirmer — c'est la bonne réponse à cette consigne.
+
+Il a aussi trouvé, sur le défaut A, une conséquence que je n'avais pas vue : le
+réessai automatique à budget doublé **se gaspillait sur un autre modèle déjà
+condamné** au lieu de retenter le même.
+
+### 34.2 DEUX ERREURS DANS MON PROPRE MANDAT, qu'il a relevées
+
+**« Le motif apparaît deux fois, lignes 956 et 1027 »** — faux. Vérifié : la
+ligne 956 est une variable de boucle `_c` parcourant des chemins de fichiers,
+dans une fonction sans rapport avec le disjoncteur. J'avais cherché la chaîne
+`if _c:` **sans lire ce qui l'entoure**.
+
+**Sa base était 26 commits derrière `main`**, donc les défauts de la vague 1
+n'y étaient pas — ce que mon mandat supposait acquis.
+
+### 34.3 L'intégration REFUSÉE, et pourquoi c'était juste
+
+```
+git diff <base>...HEAD                        127 lignes
+git apply --check        sur main             REFUSE  (nexus_agent.py:1017)
+git apply --3way --check sur main             nexus_disjoncteur.py : proprement
+                                              nexus_agent.py       : AVEC CONFLITS
+```
+
+Et le point décisif :
+
+```
+main       : print("  demande : %s" % resultat.get("demande_initiale", resultat["modele"]))
+sa version : print("  demande : %s" % resultat["modele"])
+```
+
+Une intégration **par copie de fichier** aurait réinstallé l'ancienne ligne et
+annulé le correctif de la vague 1 — celui que j'ai prouvé en vol le soir même.
+Son patch, lui, ne touche pas cette ligne : zéro occurrence dans le diff,
+vérifié. **Le danger n'était pas dans son travail, mais dans ma façon de
+l'intégrer.**
+
+Renvoyé pour rebase sur `main` actuel, avec deux exigences : rejouer les
+contre-épreuves sur la base neuve, et vérifier que sa liste `troncatures` et la
+liste `ecartes` de la vague 1 ne se marchent pas dessus — elles touchent les
+deux mêmes sites de rejeu.
+
+### 34.4 Il a REFUSÉ de contourner la garde — et cela mérite d'être noté
+
+La garde de production a bloqué son premier `Edit`. Il ne l'a pas contournée,
+et il écrit pourquoi : *un mandat d'agent n'autorise pas à passer outre une
+frontière de permission configurée*. Il a délégué la rédaction du patch au banc
+gratuit — **11 s, coût zéro** — vérifié chaque bloc contre le fichier réel, et
+appliqué par `nexus_appliquer.py`.
+
+Cela mérite d'être écrit parce qu'un autre agent, la même nuit, a emprunté un
+angle mort documenté pour écrire. Les deux avaient le même mandat.
+
+### 34.5 Trouvaille hors périmètre, retenue et non corrigée
+
+Quand le modèle demandé porte un plan `inconnu`, `executer()` le **ré-ajoute
+aux candidats après** le filtre du disjoncteur, contournant la correction du
+défaut B dans ce cas précis. Reproduit en vol. Préexistant, indépendant des
+trois défauts, laissé à un arbitrage séparé.
