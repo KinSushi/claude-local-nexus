@@ -142,6 +142,39 @@
 | Validator / Critic | absent |
 | Bandit | absent — attend que le magasin se remplisse |
 
+### 0. ETAT EN VOL 2026-09-02 — OUVERT, a lire en premier
+
+> Plan complet : **`rituels/VAGUES_REPARATION.md`**. Detail des 43 sujets : sections 124 et 124.1.
+> Cette section est en tete parce que le hook `nexus_reprise.py:258` n affiche que les **18
+> premiers** sujets du fichier : un plan inscrit en fin de cockpit n est jamais remonte.
+
+| sujet ouvert | etat mesure |
+| --- | --- |
+| ACCIDENT : un worktree supprime SOUS un agent au travail | repertoire, entree git ET branche effaces ; le travail n a survecu que par le scratchpad |
+| Rien n est fusionne : les 10 reparations vivent en worktree | les defauts re-mesures sont TOUJOURS VIVANTS en production |
+| **DIX** fiches de preuve deposees, aucun VERT acquis | 143 Ko, 8 rubriques chacune ; rubrique 8 verifiee VIDE sur les 10 : pas un agent ne s est auto-audite |
+| FAUX VERT du collecteur de quarantaine — troisieme temps applique | 2 fiches classees `PREUVE_COMPLETE` avec « audit du tiers : rempli » ; lues sur disque, les deux rubriques 8 sont VIDES, l une disant « rien n a ete inscrit ici par l auteur ». Renvoye a son auteur |
+| Le verdict tiers en worktree est DEBLOQUE, mais son auteur est INCONNU | `nexus_valide.py` rend code 0 en worktree ; il annonce `gpt-oss-120b-cloud`, mesure coupe le meme jour : le juge a ete substitue en silence |
+| Une TRONCATURE bannit le modele, alors que le code dit lui-meme « un autre modele ne changerait rien » | `nexus_agent.py:1135` empile l echec dans `echecs`, rejoue plus bas dans `record_failure` ; mesure vivante : glm passe de `half_open echecs=3` a `open echecs=4` apres une troncature. PREEXISTANT |
+| `nexus_quarantaine.py` — l outil qui distingue le SAIN du CONTAMINE — n existe PAS sur main | 995 lignes, non suivi par git, vivant dans deux worktrees seulement ; base de comparaison = le VIDE |
+| La coupure du banc est TRANSITOIRE, pas permanente — rectification | mesure une heure plus tard : `is_available = True`, le refroidissement s etait ecoule ; elle se rejoue a chaque declenchement du compteur fabrique |
+| Un worktree lit desormais le `.env` REEL de la plateforme | necessaire pour qu un controle dise quoi que ce soit de la plateforme, mais elargissement non declare par son auteur ; aucune VALEUR n en sort |
+| 41 worktrees d agents sur le disque, 30 SANS AUCUNE PREUVE | 145 fichiers au total ; la flotte est bien plus large que les 10 fiches du jour |
+| Le temps 3 du 0.7.1 est bloque par la MECANIQUE, pas par le code | `nexus_valide.py --base HEAD~1` en worktree : code 1, 4 bloquants, aucun ne concerne le code repare |
+| Le temoin est suivi par git, la preuve ne l est pas | `nexus_conformite.py:791-803` cherche `nexus_pool: true` dans `litellm_config.yaml` (suivi) pour juger `.nexus/` (gitignore) : conclut « a existe puis disparu » la ou rien n a jamais existe |
+| **LE BANC TOURNE DEGRADE EN CE MOMENT** | `is_available` = False sur `gpt-oss-120b-cloud` ET `glm-4.7-flash-local`, les deux chevaux de trait ; circuit ouvert sur un compteur FABRIQUE (25 lignes, toutes a `echecs: 3`) |
+| La substitution de modele est MUETTE, et le champ `demande` ment | appel reel : demande `gpt-oss-120b-cloud`, servi `qwen3-coder:30b [local]`, et le champ `demande` du resultat porte `qwen3-coder-30b-local` : aucune trace de l intention ne survit |
+| 14 regles protegeant .ssh, OneDrive, Documents levent une exception avalee | zero protection en ecriture shell sur les cles SSH |
+| Deux gardes cablees seulement dans le settings GLOBAL, chemin grave sur l arbre principal | depuis un worktree, c est la garde de l arbre principal qui tourne |
+| `nexus_test.py` ne verifie JAMAIS le code de sortie d une epreuve | il ne compte que les lignes OK et RATE |
+| `MAX_LOADED_MODELS = 3` est un COMPTE, jamais un poids | 45 modeles de 0,5B tiendraient : 39,1 Go pour 39,7 de budget |
+| 213 s pour charger UN modele de 0,46 Go sous contention | c est le chargement qui bloque l essaim, pas la memoire |
+| `OLLAMA_CONTEXT_LENGTH` non pose | les modeles declarent 262 144, le moteur applique 8 192 |
+| `nexus_context` perdait toutes ses fenetres a l expiration | correctif pose en worktree, audit tiers en cours |
+| La garde d isolation de Bash est un controle de TEXTE, pas un bac a sable | un sous-processus Python contourne la verification |
+| `nexus_appliquer.py` a affiche REFUS apres avoir ecrit, puis APPLIQUE sur un patch supprimant une fonction | deux verdicts contraires au meme effet |
+| Aucun capteur de QUALITE | latence et debit mesures ; rien ne dit si une sortie est bonne |
+
 ### Pistes de recherche permanentes — inscrites au contrat le 30/08
 
 | Piste | État |
@@ -17883,3 +17916,63 @@ principal : propre.
 * **Trois instruments faux** dans la journee : un `grep -o` dont la classe
   excluait le separateur, une epreuve cherchant des guillemets qu argparse
   n ecrit pas, un chemin POSIX passe a un parseur PowerShell.
+
+---
+
+### 124. PLAN DE SAUVETAGE 2026-09-02 — SUJETS OUVERTS, cablage du plan
+
+> Plan complet et mesure : **`rituels/VAGUES_REPARATION.md`**. Ce tableau n'en est que
+> l'index : il existe pour que le hook `SessionStart` (`nexus_reprise.py:205`) et le rituel
+> de fin de tour (`nexus_rituel.py:83`) le remontent sans que personne ait a s'en souvenir.
+> Un plan non cable est un fichier, pas un mecanisme (contrat 0.2.1).
+
+| sujet ouvert | etat mesure |
+| --- | --- |
+| Cinq worktrees d agents non fusionnes, 8 fichiers NON COMMITES | rien n est en production |
+| Le troisieme temps du 0.7.1 est structurellement bloque | `nexus_valide.py` ne tourne pas dans un worktree, faute de `.env` et `.nexus/` |
+| Quarantaine de livraison : gabarit ecrit, mecanisme absent | `rituels/GABARIT_QUARANTAINE.md` en worktree, non fusionne |
+| Deux gardes ecrites, eprouvees, sans aucun hook | `nexus_garde_isolation.py`, `nexus_garde_ecriture.py` |
+| `nexus_garde_ecriture.py` ne lit que l ACL projet, ignore les 185 regles globales | 3 vecteurs d ecriture sur 5 refuses |
+| 46 regles deny sur 240 sont INERTES depuis Claude Code 2.1.210 | zero trou reel, 19 pour cent de poids mort |
+| `controle_gardes_accordes` ne peut pas voir une garde non cablee | il itere sur les hooks declares |
+| `nexus_disjoncteur.py` ouvre le circuit sur UN incident, sans etat half_open | remede en code sur disque, `30-Agents/chapter04/agent_utils.py:284` |
+| `nexus_context` expire a 900 s et perd toutes ses fenetres | seule promesse du contrat contredite par une mesure |
+| `OLLAMA_MAX_LOADED_MODELS = 3` interdit tout essaim | 20 ouvriers legers tiennent en 23,8 Go sur 39,7 de budget |
+| `OLLAMA_CONTEXT_LENGTH` non pose | les modeles declarent 262 144, le moteur applique son defaut |
+| Trois reglages moteur graves au lieu d etre derives du profil materiel | dette d adaptativite |
+| `NEXUS_CHARGE_RAM_MIN = 30` en valeur absolue | sur un hote de 16 Go, la plateforme se declare occupee a jamais |
+| Surveillance : GPU et disque non surveilles | seules CPU et RAM le sont |
+| `nexus_checklist_progres.py` compte les bundles dans le mauvais repertoire | 5 reels, il affiche 0 |
+| `nexus_appliquer.py` a affiche REFUS apres avoir ecrit, puis APPLIQUE sur un patch qui supprimait une fonction | deux verdicts contraires au meme effet |
+| `nexus_garde_shell.py` prend le marqueur de patch du depot pour un heredoc | faux positif sur `<<<AVANT>>>` |
+| `start.ps1` rend 1 alors que la pile demarre saine | code de sortie contraire au resultat |
+| `nexus_doc.py` affirme un ancrage faux pour la stdlib | annonce 3.13.2, installe 3.14.7 |
+| Cinq epreuves de gardes en echec, trois causes Windows | aucune n est un defaut des gardes |
+| Le scratchpad est PARTAGE entre worktrees isoles | l isolation ne couvre pas cet espace |
+| Les worktrees ne recoivent pas le corpus de livres | un pointeur seulement, copie obligatoire |
+| 4 livres non extraits : chemin de sortie superieur a 260 caracteres | 263 a 285, limite Windows |
+| Aucune tache planifiee Nexus enregistree | 0 sur 202, mesure par deux instruments |
+| `references/livres/code/` : 2 231 symboles avec implementation, jamais consultes | disjoncteur, planner, OllamaProvider y sont ecrits |
+| Le paquet `ollama` n est pas installe | seul obstacle a l emploi de `OllamaProvider` |
+| Aucun capteur de QUALITE | `nexus_bench` mesure la latence, rien ne mesure si la sortie est bonne |
+
+### 124.1 PLAN DE SAUVETAGE — SUJETS OUVERTS ajoutes en fin de vague
+
+| sujet ouvert | etat mesure |
+| --- | --- |
+| ACCIDENT : un worktree supprime SOUS un agent au travail | repertoire, entree git ET branche effaces ; aucune trace au reflog ; le travail n a survecu que par le scratchpad |
+| Hypothese a tester : « inchange » voudrait dire « sans commit » | 3 agents sur 5 laissent leur travail non commite — 8 fichiers en sursis |
+| Le collecteur de quarantaine collecte a la FIN, donc ce qui a survecu | la collecte doit devenir PERIODIQUE, changement de conception non fait |
+| Les 14 regles inter-volumes protegeant .ssh, OneDrive, Documents levent toutes une exception avalee | zero protection en ecriture shell sur les cles SSH |
+| La garde d isolation de Bash est un controle de TEXTE, pas un bac a sable | un sous-processus Python contourne la verification |
+| `nexus_test.py` ne verifie JAMAIS le code de sortie d une epreuve | il ne compte que les lignes OK et RATE |
+| `nexus_test.py:1355` appelle epreuve_garde_quote sans poser GARDE_AVANT | l epreuve est correcte, son appelant la rend rouge en permanence |
+| `MAX_LOADED_MODELS` est un COMPTE, jamais un poids | 43,1 Go tenus a 3 modeles, au-dessus du budget de 39,7 |
+| La recommandation de plafond emploie une moyenne globale | 4 modeles, alors qu un essaim de 0,5B en porte 45 |
+| 45 modeles de 0,5B TIENNENT : 39,1 Go pour 39,7 de budget | latence a chaud mesuree 0,08 a 0,11 s |
+| Mais 213 s pour charger UN modele de 0,46 Go sous contention | c est le chargement qui bloque l essaim, pas la memoire |
+| Les petits modeles installes sont MAL quantifies | smollm2:360m en F16 pese 0,73 Go quand qwen2.5:0.5b en Q4 pese 0,40 |
+| `nexus_appliquer.py` lance ruff sans verifier l extension | bruit trompeur sur un fichier .js |
+| `nexus_appliquer.py` affiche « Violations detectees » puis « All checks passed » | deux verdicts contraires au meme effet |
+| Le corpus de livres est absent des worktrees | un pointeur seulement ; les agents doivent le copier |
+| Citer n est pas appeler : le cliquet compte sa propre reference comme appelant | la categorie orphelin etait inatteignable |

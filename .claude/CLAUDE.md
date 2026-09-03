@@ -374,6 +374,55 @@ en amont.
 ---
 
 
+## 0.8 LES LIVRES SONT LE PLANCHER, JAMAIS LE PLAFOND
+
+Enonce par l'operateur le 2026-09-03 : *« ce qui est contenu dans les livres
+c'est le plancher pas le plafond. »*
+
+### Pourquoi la regle a ete necessaire
+
+Le corpus a ete constitue pour une raison exacte, deja au contrat : **les
+livres empechent d'halluciner**. Un mecanisme concu de memoire invente ses
+seuils, ses etats et ses garanties ; confronte au chapitre qui porte son nom,
+il herite de cas limites deja payes par d'autres.
+
+Mais la qualite se retourne en defaut des qu'on s'y arrete. Une consigne
+envoyee le jour meme a un agent disait : *« pour ce sujet precis, il n'y a pas
+a inventer, il y a a adapter un code lu »*. Le livre y devenait la borne
+SUPERIEURE du travail — l'inverse de ce qu'il est.
+
+### La regle, dans les deux sens
+
+| le livre EST | le livre N'EST PAS |
+| --- | --- |
+| le minimum exigible : ne pas le lire, c'est concevoir de memoire | la limite de ce qui peut etre concu |
+| l'etat de l'art **publie**, donc deja date | l'etat de l'art de cette machine |
+| ecrit pour un cas **general** | ecrit pour un moteur Ollama sur iGPU partage |
+| la preuve que le probleme est **connu** | la preuve que la solution publiee est la meilleure ICI |
+
+### Ce que cela impose a chaque tour
+
+1. **Lire le chapitre d'abord.** La regle anterieure ne bouge pas : on ne
+   concoit pas un disjoncteur sans avoir lu celui de `Release it!`.
+2. **Puis mesurer ce que le livre ne pouvait pas savoir.** Aucun ouvrage ne
+   sait qu'ici le repli `local -> cloud` fait SORTIR des donnees ; qu'un modele
+   de 0,46 Go met 213 s a charger sous contention ; que le temoin d'un releve
+   et le releve lui-meme sont separes par un `.gitignore`.
+3. **Depasser, et dire en quoi.** Un correctif qui va au-dela du livre nomme ce
+   qu'il ajoute et la mesure sur laquelle il l'appuie.
+
+### La tension a tenir, et elle est reelle
+
+Le corpus interdit d'inventer ; cette regle exige d'aller plus loin que lui.
+Les deux tiennent par une seule discipline :
+
+> **On ne depasse le livre que sur une MESURE, jamais sur une intuition.**
+
+Ce qui n'est ni dans le livre ni dans une mesure se classe `NON VERIFIE`, et ne
+s'ecrit pas (SS112.4).
+
+---
+
 ## 0.1.4 WITNESS USER AND MAINTAINER — both roles, never one without the other
 
 Stated by the operator on 2026-08-31: *« tu es utilisateur témoin et en même
