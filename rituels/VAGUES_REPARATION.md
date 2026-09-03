@@ -3867,3 +3867,64 @@ C'est le douzième cas de la nuit, et le premier dont je suis l'auteur seul.
 La troisième est la seule qui protège l'avenir. Les deux premières corrigent
 une erreur ; celle-là **empêche qu'une erreur du même genre entre sans être
 vue**, et les rendus écartés sont listés avec leur score plutôt qu'effacés.
+
+---
+
+## 44. LE MANQUE DE LA PILE LOCALE : un capteur de QUALITÉ
+
+Le cockpit porte depuis des jours le sujet ouvert *« Aucun capteur de
+QUALITÉ — latence et débit mesurés ; rien ne dit si une sortie est bonne »*.
+Cette nuit en a donné quatre démonstrations coûteuses.
+
+### Ce que la nuit a prouvé du manque
+
+| épisode | ce qui aurait dû être détecté | comment ça l'a été |
+| --- | --- | --- |
+| six ancrages fabriqués sur sept (§33) | des chemins et options qui n'existent pas | à la main, en les cherchant un par un |
+| trois notes hors sujet (§43.2) | des résumés de la mauvaise pièce jointe | à la main, par un comptage de termes |
+| une prémisse fausse dans mon propre mandat (§34.2) | « le motif apparaît deux fois » | par l'agent, qui a lu le contexte |
+| une correction inopérante (§lot cloud) | un ancrage sur un fichier gitignoré | à la main, en interrogeant git |
+
+**Quatre fois, la détection a reposé sur quelqu'un qui a pensé à vérifier.**
+C'est précisément ce que le contrat refuse : *un contrôle vert ne se questionne
+pas*, et un jugement qui dépend d'y penser ne protège personne.
+
+### Ce que la pile porte déjà, et ce qu'elle ne porte pas
+
+55 modèles installés — codage, généralistes, vision, plongements. Aucun
+**juge**.
+
+Vérifié par interrogation du registre, plutôt que supposé :
+
+| modèle | registre | ce qu'il apporte |
+| --- | --- | --- |
+| `bespoke-minicheck` | **200** | juge si une affirmation est **soutenue par un document donné** |
+| `granite3-guardian` | **200** | détection d'hallucination et de non-fondement sur du RAG |
+| `llama-guard3` | 200 | classifieur de sûreté — hors de nos classes de défaut |
+| `shieldgemma` | 200 | idem |
+| `mathstral` | 200 | spécialiste mathématique |
+| `qwen2.5-math` | **404** | n'existe pas |
+| `bge-reranker-v2-m3` | **404** | n'existe pas |
+
+Les deux premiers visent notre défaut exact : **une affirmation est-elle
+soutenue par la pièce jointe ?** C'est la question que j'ai posée à la main
+quatre fois cette nuit.
+
+### Pourquoi ce n'est pas « un modèle de plus »
+
+Notre pile compte 55 modèles qui **produisent**. Elle n'en a aucun qui **juge**.
+Ajouter un généraliste de plus n'aurait rien changé : le défaut n'est pas un
+manque de capacité de rédaction, c'est l'absence d'un second regard mécanique
+entre le rendu et son acceptation.
+
+Et le contrôle que j'ai bricolé — compter deux termes du sujet dans une note —
+est un substitut grossier : il attrape un hors-sujet total, jamais une
+affirmation plausible et fausse. Or c'est **exactement** ce que le banc produit
+quand il se trompe : du plausible.
+
+### Statut
+
+`bespoke-minicheck` en cours d'installation. Ce qui reste à faire, et qui
+n'est pas fait : le **câbler** — un juge qu'on n'appelle pas est un modèle de
+plus, pas un capteur. Le §0.2.1 est explicite là-dessus, et la nuit vient de
+montrer ce que coûte un outil orphelin.
