@@ -2781,3 +2781,67 @@ suis le diagnosticien, et de surcroît la source de l'erreur. Il faut un tiers.
 
 **Rien n'est intégré.** La rubrique 8 reste vide, et huit fiches attendent
 désormais le même tiers.
+
+### 31.9 LE FILET PROPOSAIT DE REBASER LE CLIQUET EN SILENCE
+
+Trouvé le 2026-09-03 en se servant du filet réparé pour préparer une récolte —
+donc par l'usage, encore, et non par lecture.
+
+Le dry-run annonce deux worktrees « ok » :
+
+```
+agent-a9bae5bcacf5d3042: 19 lignes - ok
+agent-a697c9b31ea2b75e4: 30 lignes - ok
+```
+
+Ce que ces diffs contiennent réellement :
+
+| worktree | contenu du diff |
+| --- | --- |
+| `a9bae5bc` | `rituels/cablage_reference.json` **et rien d'autre** — horodatage porté à `2026-09-03T04:57:26`, `nexus_epreuve_vide.py` retiré de `preuve_seule` |
+| `a697c9b3` | le même fichier (horodaté `01:41:37`) **plus** 2 vraies lignes dans `scripts/nexus_test.py` |
+
+`rituels/cablage_reference.json` est **la ligne de base du cliquet de câblage**.
+Elle est réécrite en effet de bord par toute passe de validation lancée dans un
+worktree : les horodatages sont ceux de cette nuit, pas ceux d'un travail
+d'agent.
+
+**Appliquer ces diffs rebaserait le cliquet en silence** — précisément le geste
+que `nexus_cablage.py` exige d'assumer explicitement (*« si la dégradation est
+voulue, l'assumer explicitement par `--rebaseline` »*), accompli ici par
+accident, sous couvert de récolte.
+
+Et pour `a9bae5bc`, **l'artefact est tout ce qui est récoltable**. L'outil dit
+« ok, 19 lignes » pour une opération dont le seul effet serait d'aveugler un
+contrôle. Son vrai correctif est dans son commit — que `commits_non_vus`
+signale désormais.
+
+**Le remède est dans le code de l'outil lui-même** : `--exclure` a déjà pour
+défaut `scripts/nexus_doc.py`, et sa docstring dit pourquoi — *« des copies
+posées par l'orchestrateur et non du travail d'agent »*.
+`rituels/cablage_reference.json` est rigoureusement la même catégorie : un
+fichier **généré**.
+
+Deux exigences transmises, la seconde étant la même que pour les trois autres
+défauts : un fichier généré ne doit pas entrer dans une récolte par défaut, et
+un diff **vide après exclusion** ne doit pas être annoncé « ok » — dire qu'il
+ne restait qu'un artefact est une information, « ok » est un mensonge.
+
+Contre-épreuve exigée sur ces deux worktrees réels, dont le cas difficile :
+`a697c9b3` doit **rester récoltable pour ses 2 lignes de `nexus_test.py`**. Une
+exclusion trop large qui ferait disparaître du vrai travail serait pire que le
+défaut.
+
+### 31.10 Conséquence pour la vague : la liste des récoltables était fausse
+
+Le §31 annonçait « 3 récoltables proprement ». Après examen du contenu :
+
+| worktree | verdict réel |
+| --- | --- |
+| `a6d8fb73` | 405 lignes de vrai travail |
+| `a697c9b3` | **2 lignes** de vrai travail, le reste est artefact |
+| `a9bae5bc` | **rien** — artefact seul ; son travail est dans un commit |
+
+« Récoltable » ne veut pas dire « porteur de travail ». C'est une leçon sur
+l'outil autant que sur la vague : il mesure l'applicabilité d'un patch, jamais
+sa valeur.
