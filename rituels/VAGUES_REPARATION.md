@@ -3604,3 +3604,70 @@ cliquet LOI 1 compte **853 lignes facturées** sur la session (§37), et neuf
 agents ont déjà tourné. Ouvrir un huitième chantier facturé aggraverait
 exactement ce que ce même cliquet aurait dû empêcher — s'il avait su regarder
 au-delà du dernier commit.
+
+---
+
+## 40. « PART DÉLÉGUÉE » NE CALCULE AUCUNE PART — huitième, et il garde la raison d'être du dépôt
+
+```python
+total = sum((par_plan.get(p) or {}).get("requetes", 0)
+            for p in ("local", "cloud"))
+if total:
+    return OK, "%d requete(s) deleguees aujourd'hui" % total
+return MANQUE, "aucune requete deleguee aujourd'hui"
+```
+
+**`if total:` — une seule requête déléguée suffit pour le vert.**
+
+Le contrôle s'appelle *part* déléguée. Il ne calcule aucune part :
+
+* il ne compare jamais le volume gratuit au volume facturé ;
+* il n'additionne même pas le plan `anthropic`, le seul facturé au jeton —
+  donc il ne peut pas former de rapport, même s'il le voulait ;
+* une session à une requête gratuite et dix mille facturées serait **verte**.
+
+### Le détail qui raconte tout
+
+Son propre commentaire :
+
+> *« `par_plan` est un dict de DICTS et non de listes. Le tester comme une liste
+> rendait MANQUE en toute circonstance. »*
+
+La version d'avant était donc **toujours rouge** ; la réparation l'a rendue
+**toujours verte**. Le correctif a déplacé le contrôle d'un extrême inutile à
+l'autre, et personne ne l'a vu parce qu'un vert ne se questionne pas.
+
+C'est la forme la plus pure du défaut de la nuit : on a corrigé le **bug**
+sans se demander si le **contrôle** mesurait la bonne chose.
+
+### 40.1 HUIT CONTRÔLES — le bilan complet
+
+| contrôle | ce qu'il mesure | ce qu'on voulait savoir |
+| --- | --- | --- |
+| garde de production (§35) | l'outil employé | le fichier écrit |
+| bannière `nexus_appliquer` (§29.2) | la présence d'une sortie | son sens |
+| témoin du relevé (§22) | un fichier suivi par git | un fichier gitignoré |
+| arbres en attente (§36) | une convention de nommage | les arbres réels |
+| cliquet LOI 1 (§37) | le dernier commit | la dette accumulée |
+| boussole (§38) | `PROGRESS.MD` | la boussole |
+| rédaction déclarée (§39) | le volume délégué | l'auteur d'un commit |
+| **part déléguée** | **la présence d'une délégation** | **sa part** |
+
+**Huit sur douze contrôles du rituel**, confrontés cette nuit à un cas qui
+aurait dû les faire rougir. Aucun n'a échoué.
+
+### 40.2 Ce que je NE dis pas
+
+Ces huit contrôles ne sont pas inutiles, et leurs auteurs n'ont pas été
+négligents. Plusieurs portent des commentaires soigneux, des mesures réelles,
+et des raisonnements justes sur le problème qu'ils avaient en tête. Le
+`controle_delegation` de `nexus_conformite.py`, lui, mesure bien une part sur
+sept jours avec un plancher — la question EST posée quelque part, correctement.
+
+Le défaut n'est pas l'incompétence : c'est qu'**un contrôle vert ne se
+questionne pas**. Aucun des huit n'a été confronté à un cas qui devait le faire
+échouer, et c'est le seul geste qui les aurait tous révélés — une commande
+d'une ligne chacun.
+
+> **Un silence ne prouve rien.** Un contrôle qui voit et un contrôle qui ne
+> voit plus rendent exactement la même sortie.
