@@ -16,8 +16,11 @@ Contraintes de conception :
 - La sortie de git est lue en OCTETS BRUTS puis decodee en UTF-8 explicitement (jamais text=True) ;
   une sortie qui ne se decode pas leve une erreur NOMMEE et se compte a part, jamais comme 'vide'.
 - Le diff recolte est UNIQUEMENT celui des modifications NON INDEXEES ('git diff -- .'). Un worktree
-  dont le travail est COMMITE (main..HEAD) est donc hors de la recolte automatique ; ce cas n'est
-  jamais confondu avec 'vide' -- voir commits_non_vus() -- mais il n'est pas non plus recolte ici.
+  dont le travail est COMMITE est donc hors de la recolte automatique ; ce cas n'est jamais confondu
+  avec 'vide' -- voir commits_non_vus() -- mais il n'est pas non plus recolte ici.
+- --racine permet de surcharger la racine derivee de __file__ (contrat §0.5) : sans elle, l'outil
+  est intestable depuis un worktree (il cherche <lui-meme>/.claude/worktrees/, absent d'un worktree
+  d'agent, et rend silencieusement 'Total worktrees: 0').
 """
 
 import sys
@@ -128,7 +131,13 @@ def suppressions(diff_text: str):
 def commits_non_vus(wt: Path):
     """
     Retourne (nb_commits, nb_fichiers) pour les commits presents dans le
-    worktree wt mais absents de main (plage main..HEAD).
+    worktree wt mais absents de main. Les commits comptent en DEUX points
+    (main..HEAD : "quoi que HEAD ait, que main n'a pas" -- la bonne question
+    pour un log). Les fichiers comptent en TROIS points (main...HEAD : diff
+    entre HEAD et la BASE COMMUNE de main et HEAD) -- deux points donnerait
+    le diff entre les deux SNAPSHOTS, qui inclut tout ce que main a change
+    de son cote depuis la divergence. Pour un diff, deux points ne repond
+    pas a la meme question que pour un log.
 
     Pourquoi cette fonction existe : diff_de() ne regarde QUE les
     modifications NON INDEXEES ('git diff -- .', sans reference). Un agent
@@ -142,8 +151,12 @@ def commits_non_vus(wt: Path):
 
     Mesure sur la flotte reelle le 2026-09-03, parmi les worktrees "vide" au
     sens de diff_de() : 2 worktrees sur 14 portaient en realite des commits
-    -- agent-a0bb278a9ee2836a5 (2 commits, 25 fichiers) et
-    agent-a96910bce09e87b38 (1 commit, 46 fichiers).
+    -- agent-a0bb278a9ee2836a5 (2 commits, 9 fichiers) et
+    agent-a96910bce09e87b38 (1 commit, 1 fichier). Chiffres corriges : une
+    premiere mesure avait compte les fichiers en DEUX points (25 et 46) --
+    ceux-la comptaient aussi les fichiers ou seul MAIN avait avance depuis
+    la divergence (jusqu'a 90 fichiers pour un worktree a ZERO commit
+    propre). Voir QUARANTAINE.md, rubrique 6, pour l'origine de l'erreur.
 
     Ne recolte ni n'applique rien : cette fonction NOMME le manque, elle ne
     le comble pas. Fusionner un diff de commits avec un diff non-indexe dans
@@ -158,7 +171,9 @@ def commits_non_vus(wt: Path):
     try:
         r_log = subprocess.run(['git', '-C', str(wt), 'log', '--oneline', 'main..HEAD'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        r_names = subprocess.run(['git', '-C', str(wt), 'diff', '--name-only', 'main..HEAD'],
+        # TROIS points ici, jamais deux : voir la docstring. 'main..HEAD' compterait
+        # aussi les fichiers ou seul main a avance depuis la divergence.
+        r_names = subprocess.run(['git', '-C', str(wt), 'diff', '--name-only', 'main...HEAD'],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError:
         return 0, 0
@@ -212,7 +227,16 @@ def main():
     parser.add_argument('--avec-suppressions', action='store_true', help='Autoriser les suppressions de fichiers.')
     parser.add_argument('--exclure', nargs='*', default=['scripts/nexus_doc.py'],
                         help='Chemins a exclure du diff.')
+    parser.add_argument("--racine", type=Path, default=None,
+                        help="Racine explicite (contrat 0.5) : remplace la racine derivee de "
+                             "__file__. Sans elle, lance depuis un worktree agent, l'outil se "
+                             "cherche LUI-MEME sous .claude/worktrees/, absent d'un worktree "
+                             "agent, et rend silencieusement Total worktrees: 0.")
     args = parser.parse_args()
+
+    # L'appelant decide ou l'outil travaille, jamais l'outil lui-meme (contrat §0.5) :
+    # une racine explicite l'emporte sur celle derivee de __file__.
+    racine_effective = args.racine or RACINE
 
     total = 0
     vides = 0
@@ -237,7 +261,7 @@ def main():
     # se confonde jamais avec un worktree reellement sans rien.
     commits_masques = 0
 
-    for wt in worktrees(RACINE):
+    for wt in worktrees(racine_effective):
         total += 1
         name = wt.name
         try:
@@ -252,7 +276,7 @@ def main():
                 commits_masques += 1
                 print(f'{name}: vide en modifications non indexees, MAIS {nb_commits} '
                       f'commit(s) non recoltes par ce dry-run ({nb_fichiers} fichier(s) '
-                      f'touches, plage main..HEAD)')
+                      f'touches, main...HEAD)')
             else:
                 vides += 1
                 print(f'{name}: vide')
@@ -270,7 +294,7 @@ def main():
             continue
 
         # appliquer() renvoie maintenant (etat, message, appliquable)
-        etat_check, msg_check, _ = appliquer(RACINE, diff_txt, verifier_seulement=True)
+        etat_check, msg_check, _ = appliquer(racine_effective, diff_txt, verifier_seulement=True)
         # POURQUOI la distinction compte : un lot deja integre a la main se lisait comme un echec, et un vrai conflit se noyait dans le meme total
         if etat_check == 'deja-applique':
             deja_appliques += 1
@@ -283,7 +307,7 @@ def main():
         # etat_check == 'applicable' : laisser le reste du code s'executer
 
         if args.appliquer:
-            etat_apply, msg_apply, _ = appliquer(RACINE, diff_txt, verifier_seulement=False)
+            etat_apply, msg_apply, _ = appliquer(racine_effective, diff_txt, verifier_seulement=False)
             if etat_apply == 'applique':
                 appliques += 1
                 print(f'{name}: {lignes} lignes - applique')
