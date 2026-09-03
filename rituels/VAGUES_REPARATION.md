@@ -3527,3 +3527,80 @@ Elle n'a été écrite pour aucun de ces six.
 n'est pas six correctifs : c'est **une contre-épreuve par contrôle**, qui
 échoue si le contrôle cesse de voir. Non délégué (LOI 1 rouge, §32) ; c'est un
 chantier à part entière et il revient à l'opérateur de l'ouvrir.
+
+---
+
+## 39. « RÉDACTION DÉCLARÉE » — le message dit la vérité, le verdict l'ignore
+
+Septième du même genre, et le plus net.
+
+```
+$ python scripts/nexus_redaction.py
+Commits de code: 56
+Appels delegues: 976
+Rapport appels/commit: 17.43
+Auteur declare : 4 sur 56 commits de code -- 52 MUETS
+code de sortie : 0
+```
+
+Le critère, écrit en commentaire dans `nexus_rituel.py` :
+
+```
+exit_code = 0 if delegated >= commits and commits > 0 else 1
+```
+
+**Il compare 976 appels délégués à 56 commits.** Deux grandeurs sans rapport :
+l'une mesure du volume, l'autre de la traçabilité. `976 >= 56` sera vrai
+essentiellement toujours — le contrôle ne peut pas rougir.
+
+Et pendant ce temps sa propre sortie annonce **52 commits sur 56 qui ne disent
+pas qui les a écrits**, dont les miens de cette nuit, qu'il cite nommément.
+
+> Le nom du contrôle et son message parlent d'**auteur**. Son verdict mesure du
+> **volume**. Qui lit `[OK] redaction declaree` conclut que la rédaction est
+> déclarée. Elle ne l'est pas, à 52 sur 56.
+
+### 39.1 SEPT CONTRÔLES, UN SEUL DÉFAUT — le bilan
+
+| contrôle | ce qu'il mesure | ce qu'on voulait savoir |
+| --- | --- | --- |
+| garde de production (§35) | l'outil employé | le fichier écrit |
+| bannière `nexus_appliquer` (§29.2) | la présence d'une sortie | son sens |
+| témoin du relevé (§22) | un fichier suivi par git | un fichier gitignoré |
+| arbres en attente (§36) | une convention de nommage | les arbres réels |
+| cliquet LOI 1 (§37) | le dernier commit | la dette accumulée |
+| boussole (§38) | `PROGRESS.MD` | la boussole |
+| **rédaction déclarée** | **le volume délégué** | **l'auteur d'un commit** |
+
+Sept mécanismes, sept mains, sept jours différents. **Aucun n'est faux en
+soi** : chacun exécute correctement ce qu'il exécute. Tous répondent à côté de
+la question qu'ils portent en titre.
+
+### 39.2 Ce que ce bilan dit du dépôt
+
+La couche de vérification de ce dépôt est **abondante et largement aveugle**.
+Sur douze contrôles au rituel, sept ont été confrontés cette nuit à un cas qui
+aurait dû les faire rougir ; **sept ne l'ont pas fait**.
+
+Cela ne se voit pas en lisant : chaque contrôle est défendable ligne à ligne,
+et plusieurs portent des commentaires soigneux expliquant un raisonnement
+juste. Cela ne se voit qu'en **exécutant le contrôle contre un cas qui doit le
+faire échouer** — une commande d'une ligne dans chacun des sept cas.
+
+Le contrat le dit depuis le §0.1.4.1, et cette nuit le mesure :
+
+> **La contre-épreuve est le livrable, pas un supplément.**
+> Un silence ne prouve rien : un dépôt propre et un motif cassé rendent
+> exactement la même sortie.
+
+### 39.3 Statut, et pourquoi je m'arrête là
+
+**Sept sujets OUVERTS, aucun corrigé.** Le remède commun n'est pas sept
+correctifs mais **une contre-épreuve par contrôle**, écrite pour échouer quand
+le contrôle cesse de voir.
+
+Non délégué, et cette fois pour une raison mesurée plutôt que par prudence : le
+cliquet LOI 1 compte **853 lignes facturées** sur la session (§37), et neuf
+agents ont déjà tourné. Ouvrir un huitième chantier facturé aggraverait
+exactement ce que ce même cliquet aurait dû empêcher — s'il avait su regarder
+au-delà du dernier commit.
