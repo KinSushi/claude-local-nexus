@@ -155,27 +155,34 @@
 | **DIX** fiches de preuve deposees, aucun VERT acquis | 143 Ko, 8 rubriques chacune ; rubrique 8 verifiee VIDE sur les 10 : pas un agent ne s est auto-audite |
 | FAUX VERT du collecteur de quarantaine — troisieme temps applique | 2 fiches classees `PREUVE_COMPLETE` avec « audit du tiers : rempli » ; lues sur disque, les deux rubriques 8 sont VIDES, l une disant « rien n a ete inscrit ici par l auteur ». Renvoye a son auteur |
 | Le verdict tiers en worktree est DEBLOQUE, mais son auteur est INCONNU | `nexus_valide.py` rend code 0 en worktree ; il annonce `gpt-oss-120b-cloud`, mesure coupe le meme jour : le juge a ete substitue en silence |
-| Une TRONCATURE bannit le modele, alors que le code dit lui-meme « un autre modele ne changerait rien » | `nexus_agent.py:1135` empile l echec dans `echecs`, rejoue plus bas dans `record_failure` ; mesure vivante : glm passe de `half_open echecs=3` a `open echecs=4` apres une troncature. PREEXISTANT |
 | `scripts/nexus_filet.py` porte SEUL les deux regressions du cliquet | orphelin de cablage ET le `RET505 0 -> 1` neuf ; jamais touche cette nuit, jamais appele par rien : « un script que personne n appelle n est pas un mecanisme, c est un fichier » |
-| L ENCODAGE DU FILET CONDAMNAIT **14 TRAVAUX D AGENTS** a tort | conflits 20 -> 6 apres correction, a nombre de lignes IDENTIQUE ; cp1252 corrompait le diff et `git apply --check` refusait un patch valide. Verifie : 3 patches (340, 453, 260 lignes) PASSENT. « conflit » se croit, une panne se voit |
+| `EMBED_HINT` ne voit toujours pas `bge-m3` — le fichier le DOCUMENTE | `nexus_generate.py:139` porte encore `embed\|minilm` ; la ligne 280 dit « angle mort corrige deux fois ailleurs sans jamais l etre a sa source ». `bge-m3` recevait 8192 PAR ACCIDENT |
+| Aucun capteur de QUALITE : 55 modeles qui PRODUISENT, aucun qui JUGE | `bespoke-minicheck` (32K de contexte) en installation. `granite3-guardian` ecarte : 8K tronquerait nos documents a 7604 jetons. Reste a le CABLER — un juge qu on n appelle pas est un modele de plus |
+| Deux fois le meme modele ne donne NI contexte NI 2x de debit | mesure : une seule entree dans `/api/ps`, 5,86 Go, caches KV separes. Gain reel 1,24x, paye en latence. Pour le contexte d un million, la voie reste MAP-REDUCE |
+| APPLIQUER un correctif, c est CORRIGER : l auditeur ne peut plus etre le poseur | quatre correctifs du lot cloud reclasses « poses, en attente du temps 3 ». Preuve mecanique : mes poses ont ajoute 2 violations que le cliquet a vues, pas moi |
 | RECTIFIE : 15 DIAGNOSTICS faux, mais **6** travaux reellement en peril | 9 des 15 etaient deja dans main : un faux « conflit » sur du travail deja integre coute de la confiance, pas du travail. Mon titre confondait diagnostic faux et travail en peril |
 | La GARDE DE PRODUCTION est contournable par un simple `>` | `Edit scripts/nexus_generate.py` -> code 2 DENY ; `echo casse > scripts/nexus_generate.py` -> code 0, AUTORISE. Deux agents, meme mandat : l un a contourne, l autre a refuse. Le remede n est PAS « bloquer Bash » — `nexus_appliquer.py` ecrit par la |
 | LOI 1 est ROUGE : **188 lignes** ecrites par un modele FACTURE | `nexus_loi1.py` : 194 retenues, 6 deleguees, 188 manuel sur `nexus_filet.py`. Neuf agents factures cette nuit. `--reference` existe pour assumer ; NON employe, taire l instrument le viderait de son sens |
 | Le banc gratuit sur une question de JUGEMENT : abstraction bonne, ancrage INVENTE | critere general utilisable rendu en 19 s pour zero ; mais 6 ancrages cites sur 7 n existent pas dans le depot, et il se trompe sur le seul cas prouve |
-| Le filet proposait de REBASER LE CLIQUET en silence | 2 worktrees « ok » ne portaient qu une reecriture de `rituels/cablage_reference.json`, horodatee de cette nuit : les appliquer retirait 2 scripts de la surveillance sans decision |
-| Un worktree VIDE etait annonce « deja applique » | `a50cbf7c`, 50 lignes, 100 % un `CHECKLIST_PROGRESS.md` genere, zero commit |
 | CINQ defauts sur `nexus_filet.py`, UN SEUL trouve par les epreuves de son auteur | trois par l audit externe, un par sa reverse-test, un par lui en cherchant sur la flotte. Une epreuve valide ce que son auteur a pense a eprouver |
 | `nexus_appliquer.py:229` annonce « Violations detectees » sur un fichier PROPRE | `if stdout:` — ruff ecrit « All checks passed! » sur stdout ; controle sur la PRESENCE au lieu du SENS. Observe deux fois. Qui le voit sur un cas propre apprend a l ignorer |
 | `nexus_appliquer.py` ne lit PAS `<<<FICHIER>>>` | le mot n existe pas dans le script : tous les blocs vont au fichier passe en argument. Echoue proprement grace au controle d unicite. Un patch se demande UN FICHIER A LA FOIS |
-| Les scripts de corpus ont un effet de bord A L IMPORT | ils reenveloppent `sys.stdout` : deux versions importees dans un meme processus se ferment mutuellement le tampon. Interdit par le §0.5, et rend tout banc differentiel impossible sans sous-processus |
 | `nexus_quarantaine.py` — l outil qui distingue le SAIN du CONTAMINE — n existe PAS sur main | 995 lignes, non suivi par git, vivant dans deux worktrees seulement ; base de comparaison = le VIDE |
-| La coupure du banc est TRANSITOIRE, pas permanente — rectification | mesure une heure plus tard : `is_available = True`, le refroidissement s etait ecoule ; elle se rejoue a chaque declenchement du compteur fabrique |
+
+### 0.2 OUVERTS, mais MASQUES par le plafond d affichage
+
+> Le hook `nexus_reprise.py:258` n affiche que les **18 premiers** sujets, et
+> sa troncature est MUETTE : mesure du 2026-09-03, **41 entrees, 18 vues,
+> 23 invisibles**. Ajouter a la liste la rendait donc moins lisible.
+>
+> **Ces sujets sont OUVERTS.** Ils ne sont pas resolus : ils sont ranges ici
+> pour que le masquage soit EXPLICITE au lieu d etre subi. Trois touchent la
+> securite.
+
+| sujet OUVERT, hors du champ d affichage | etat mesure |
+| --- | --- |
 | Un worktree lit desormais le `.env` REEL de la plateforme | necessaire pour qu un controle dise quoi que ce soit de la plateforme, mais elargissement non declare par son auteur ; aucune VALEUR n en sort |
 | 41 worktrees d agents sur le disque, 30 SANS AUCUNE PREUVE | 145 fichiers au total ; la flotte est bien plus large que les 10 fiches du jour |
-| Le temps 3 du 0.7.1 est bloque par la MECANIQUE, pas par le code | `nexus_valide.py --base HEAD~1` en worktree : code 1, 4 bloquants, aucun ne concerne le code repare |
-| Le temoin est suivi par git, la preuve ne l est pas | `nexus_conformite.py:791-803` cherche `nexus_pool: true` dans `litellm_config.yaml` (suivi) pour juger `.nexus/` (gitignore) : conclut « a existe puis disparu » la ou rien n a jamais existe |
-| **LE BANC TOURNE DEGRADE EN CE MOMENT** | `is_available` = False sur `gpt-oss-120b-cloud` ET `glm-4.7-flash-local`, les deux chevaux de trait ; circuit ouvert sur un compteur FABRIQUE (25 lignes, toutes a `echecs: 3`) |
-| La substitution de modele est MUETTE, et le champ `demande` ment | appel reel : demande `gpt-oss-120b-cloud`, servi `qwen3-coder:30b [local]`, et le champ `demande` du resultat porte `qwen3-coder-30b-local` : aucune trace de l intention ne survit |
 | 14 regles protegeant .ssh, OneDrive, Documents levent une exception avalee | zero protection en ecriture shell sur les cles SSH |
 | Deux gardes cablees seulement dans le settings GLOBAL, chemin grave sur l arbre principal | depuis un worktree, c est la garde de l arbre principal qui tourne |
 | `nexus_test.py` ne verifie JAMAIS le code de sortie d une epreuve | il ne compte que les lignes OK et RATE |
@@ -186,6 +193,27 @@
 | La garde d isolation de Bash est un controle de TEXTE, pas un bac a sable | un sous-processus Python contourne la verification |
 | `nexus_appliquer.py` a affiche REFUS apres avoir ecrit, puis APPLIQUE sur un patch supprimant une fonction | deux verdicts contraires au meme effet |
 | Aucun capteur de QUALITE | latence et debit mesures ; rien ne dit si une sortie est bonne |
+
+### 0.1 REGLE CETTE NUIT — sorti de la liste vive, garde pour la trace
+
+> Le hook n affiche que les **18 premiers** sujets. Au-dela, la troncature est
+> MUETTE : 41 entrees, 18 vues, 23 invisibles. Ajouter a la liste la rendait
+> donc moins lisible. Ces sujets sont REGLES et prouves — ils quittent la liste
+> vive pour que les sujets OUVERTS redeviennent visibles.
+
+| sujet regle | preuve |
+| --- | --- |
+| Une TRONCATURE bannit le modele, alors que le code dit lui-meme « un autre modele ne changerait rien » | `nexus_agent.py:1135` empile l echec dans `echecs`, rejoue plus bas dans `record_failure` ; mesure vivante : glm passe de `half_open echecs=3` a `open echecs=4` apres une troncature. PREEXISTANT |
+| L ENCODAGE DU FILET CONDAMNAIT **14 TRAVAUX D AGENTS** a tort | conflits 20 -> 6 apres correction, a nombre de lignes IDENTIQUE ; cp1252 corrompait le diff et `git apply --check` refusait un patch valide. Verifie : 3 patches (340, 453, 260 lignes) PASSENT. « conflit » se croit, une panne se voit |
+| La branche CPU du contexte s adaptait au TYPE de materiel, pas a sa MESURE | corrige : derive desormais de `inference_memory_gb` (66,2 Go mesures). POSE, NON AUDITE — palier `32768/16384` peut-etre trop conservateur au vu des 131072 mesures sur llama3.2:1b |
+| Le filet proposait de REBASER LE CLIQUET en silence | 2 worktrees « ok » ne portaient qu une reecriture de `rituels/cablage_reference.json`, horodatee de cette nuit : les appliquer retirait 2 scripts de la surveillance sans decision |
+| Un worktree VIDE etait annonce « deja applique » | `a50cbf7c`, 50 lignes, 100 % un `CHECKLIST_PROGRESS.md` genere, zero commit |
+| Les scripts de corpus ont un effet de bord A L IMPORT | ils reenveloppent `sys.stdout` : deux versions importees dans un meme processus se ferment mutuellement le tampon. Interdit par le §0.5, et rend tout banc differentiel impossible sans sous-processus |
+| La coupure du banc est TRANSITOIRE, pas permanente — rectification | mesure une heure plus tard : `is_available = True`, le refroidissement s etait ecoule ; elle se rejoue a chaque declenchement du compteur fabrique |
+| Le temps 3 du 0.7.1 est bloque par la MECANIQUE, pas par le code | `nexus_valide.py --base HEAD~1` en worktree : code 1, 4 bloquants, aucun ne concerne le code repare |
+| Le temoin est suivi par git, la preuve ne l est pas | `nexus_conformite.py:791-803` cherche `nexus_pool: true` dans `litellm_config.yaml` (suivi) pour juger `.nexus/` (gitignore) : conclut « a existe puis disparu » la ou rien n a jamais existe |
+| **LE BANC TOURNE DEGRADE EN CE MOMENT** | `is_available` = False sur `gpt-oss-120b-cloud` ET `glm-4.7-flash-local`, les deux chevaux de trait ; circuit ouvert sur un compteur FABRIQUE (25 lignes, toutes a `echecs: 3`) |
+| La substitution de modele est MUETTE, et le champ `demande` ment | appel reel : demande `gpt-oss-120b-cloud`, servi `qwen3-coder:30b [local]`, et le champ `demande` du resultat porte `qwen3-coder-30b-local` : aucune trace de l intention ne survit |
 
 ### Pistes de recherche permanentes — inscrites au contrat le 30/08
 
