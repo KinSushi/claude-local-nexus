@@ -63,8 +63,16 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# .env et .nexus/*.json ne voyagent jamais dans un worktree : ils sont
+# exclus par .gitignore (lignes 2 et 7) et `git worktree add` ne copie
+# que l'arbre suivi par git. PLATEFORME_REELLE resout la racine du clone
+# principal quel que soit le worktree d'ou ce script s'execute -- identique
+# a ROOT sur le clone principal. Voir nexus_capability.racine_plateforme().
+PLATEFORME_REELLE = (
+    capability.racine_plateforme(ROOT) if capability is not None else ROOT
+)
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
-ENV = os.path.join(ROOT, ".env")
+ENV = os.path.join(PLATEFORME_REELLE, ".env")
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
 
 BLOQUANT, AVERTISSEMENT, IGNORE = "BLOQUANT", "AVERT", "IGNORE"
@@ -772,7 +780,7 @@ def controle_releves_lisibles() -> None:
     """
     for nom, role in ((("latences.json"), "banc de latence"),
                       (("epreuves.json"), "releve des epreuves")):
-        chemin = os.path.join(ROOT, ".nexus", nom)
+        chemin = os.path.join(PLATEFORME_REELLE, ".nexus", nom)
         if not os.path.exists(chemin):
             # « Jamais mesure » et « mesure puis disparu » ne sont pas la
             # meme chose, et les confondre ouvrait un trou : supprimer le

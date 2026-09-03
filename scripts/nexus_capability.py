@@ -115,6 +115,49 @@ def _run(args: list[str], timeout: int = 60) -> str:
         return ""
 
 
+def racine_plateforme(defaut: str) -> str:
+    """
+    Racine de l'installation plateforme reelle -- jamais celle d'un worktree.
+
+    `.env` et `.nexus/*.json` sont exclus par .gitignore (lignes 2 et 7,
+    verifie 2026-09-03) : `git worktree add` ne copie que l'arbre suivi par
+    git, donc aucun worktree lie ne les recoit -- ils n'y sont pas casses,
+    ils n'y ont jamais existe. Une racine derivee de `__file__` designe
+    alors « la racine de la copie qui execute ce fichier », identique a la
+    plateforme pour le clone principal mais distincte pour tout worktree
+    isole (`scripts/nexus_worktree.py`) -- qui est pourtant le lieu meme ou
+    un agent doit pouvoir obtenir un verdict tiers (Claude.md §0.7).
+
+    `git rev-parse --git-common-dir` designe le meme `.git` partage par
+    TOUS les worktrees d'un depot : celui du clone principal. Son parent
+    est donc la racine de la plateforme, quel que soit le worktree d'ou on
+    l'interroge. Mesure ici le 2026-09-03, depuis un worktree lie :
+
+        .git (fichier)                  -> gitdir: <principal>/.git/worktrees/<nom>
+        git rev-parse --git-common-dir  -> <principal>/.git
+        dirname(...)                    -> <principal>          (= defaut sur le clone principal)
+
+    Degrade sur `defaut` si git est absent, hors depot, ou si la racine
+    resolue n'existe pas : un controle de conformite ne doit jamais planter
+    pour ne pas avoir su ou se trouvait la plateforme (meme principe que
+    `_run` ci-dessus, repete ici plutot que factorise pour ne pas imposer
+    a `_run` un `cwd` que ses seuls autres appelants n'utilisent pas).
+    """
+    try:
+        resultat = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=defaut, capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
+        )
+        if resultat.returncode == 0 and resultat.stdout.strip():
+            racine = os.path.dirname(resultat.stdout.strip())
+            if os.path.isdir(racine):
+                return racine
+    except Exception:
+        pass
+    return defaut
+
+
 def parse_size(text: str) -> float:
     """Taille en gigaoctets, quelle que soit l'unité écrite."""
     match = re.match(r"([\d.,]+)\s*([KMGT]?i?B)", text.strip(), re.I)

@@ -582,8 +582,12 @@ def main() -> int:
     graph = graphes.get("fallbacks", {})
 
     # --- 5. Variables d'environnement référencées -----------------------
+    # .env n'existe jamais dans un worktree (exclu par .gitignore) : la
+    # racine plateforme reelle est resolue via git-common-dir, jamais via
+    # __file__, qui designerait la copie du worktree plutot que le clone
+    # principal ou vit le vrai .env.
     env_present: set[str] = set(os.environ)
-    env_file = os.path.join(ROOT, ".env")
+    env_file = os.path.join(capability.racine_plateforme(ROOT), ".env")
     if os.path.exists(env_file):
         with io.open(env_file, encoding="utf-8", errors="replace") as fh:
             for line in fh:

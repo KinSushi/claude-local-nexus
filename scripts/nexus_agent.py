@@ -1017,7 +1017,7 @@ def executer(tache: dict, cle: str) -> dict:
             resultat["local_seul"] = True
         return etiqueter_ecritures(resultat, tache, consigne)
 
-    essais, echecs = [], []
+    essais, echecs, ecartes = [], [], []
     candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
     _dj = None
     try:
@@ -1025,6 +1025,21 @@ def executer(tache: dict, cle: str) -> dict:
         _dj = CircuitBreaker(failure_threshold=3)
         _c = [c for c in candidats if _dj.is_available(c)]
         if _c:
+            # Un candidat ecarte ici ne doit JAMAIS finir dans `echecs` : les
+            # deux boucles plus bas rejouent `echecs` dans _dj.record_failure,
+            # et cela ferait echouer une SECONDE fois une cible qui n a meme
+            # pas ete appelee, repoussant sans fin son recovery_timeout.
+            # Trace separee : mesure du 2026-09-02, une cible ecartee parce
+            # que son circuit etait deja ouvert ne laissait AUCUNE trace --
+            # ni dans echecs, ni dans le message de bascule, ni dans l erreur
+            # finale -- alors que c est exactement le cas ou le disjoncteur a
+            # fait son travail et ou l appelant a le plus besoin du pourquoi.
+            etat_dj = _dj.get_state()
+            for c in candidats:
+                if c not in _c:
+                    info = etat_dj.get(c, {})
+                    ecartes.append("%s : circuit %s (echecs=%s)" % (
+                        c, info.get("state", "open"), info.get("fail_count", "?")))
             candidats = _c
     except Exception as e:
         sys.stderr.write(f"Warning: circuit breaker initialization failed: {e}\\n")
@@ -1145,12 +1160,13 @@ def executer(tache: dict, cle: str) -> dict:
         if local_seul:
             resultat["local_seul"] = True
         if candidat != modele:
+            trace = ecartes + echecs
             resultat["bascule"] = "%s -> %s apres : %s" % (
-                modele, candidat, " | ".join(echecs))
+                modele, candidat, " | ".join(trace))
             resultat["demande_initiale"] = modele
-            motif = next((e for e in echecs if e.startswith(modele + " :")), "")
-            if not motif and echecs:
-                motif = echecs[-1]
+            motif = next((e for e in trace if e.startswith(modele + " :")), "")
+            if not motif and trace:
+                motif = trace[-1]
             resultat["motif_bascule"] = motif
         return etiqueter_ecritures(resultat, tache, consigne)
 
@@ -1188,7 +1204,7 @@ def executer(tache: dict, cle: str) -> dict:
         return trunc_failure
 
     return {"nom": nom, "modele": modele,
-            "erreur": "tous les replis gratuits ont echoue : " + " | ".join(echecs)}
+            "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
 
 def rendre(resultat: dict) -> None:
@@ -1204,7 +1220,7 @@ def rendre(resultat: dict) -> None:
         return
     if resultat.get("bascule"):
         print("  BASCULE : %s" % resultat["bascule"])
-    print("  demande : %s" % resultat["modele"])
+    print("  demande : %s" % resultat.get("demande_initiale", resultat["modele"]))
     print("  servi   : %s  [%s]  %s" %
           (resultat.get("servi_par", "?"),
            resultat.get("plan", "?"),

@@ -174,8 +174,17 @@ class CircuitBreaker:
 
             # Immediate open for permanent failures
             if motif and not echec_transitoire(motif):
+                # Mesure du 2026-09-02 : cette ligne ecrivait self.failure_threshold
+                # (une CONSTANTE) dans fail_count au lieu de l incrementer -- chaque
+                # echec permanent, le premier comme le dixieme, se lisait "echecs: 3"
+                # dans le journal, et le nombre REEL d occurrences etait perdu.
+                # Le livre (30-Agents-Every-AI-Engineer-Must-Build, chapitre 4,
+                # p.14-15) n incremente JAMAIS le compteur autrement que par +1 --
+                # c est ce plancher qui manquait ici. L ouverture immediate (avant
+                # d atteindre le seuil) reste volontaire et intacte : c est la SEULE
+                # protection a preserver, pas la valeur ecrite dans le compteur.
+                entry["fail_count"] += 1
                 entry["state"] = "open"
-                entry["fail_count"] = self.failure_threshold
                 entry["last_failure"] = time.time()
                 self._persist()
                 # Un echec PERMANENT ouvre le circuit immediatement : c est
