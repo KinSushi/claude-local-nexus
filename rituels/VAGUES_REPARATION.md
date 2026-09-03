@@ -3291,3 +3291,81 @@ voulue, avec un coût en frictions.
 facturées (§32) ; lancer un dixième agent facturé pour un arbitrage qui revient
 à l'opérateur aggraverait ce que je viens de consigner. La démonstration est
 faite, la cause est nommée, la décision lui appartient.
+
+---
+
+## 36. « AUCUN ARBRE EN ATTENTE » — un vert qui ne pouvait pas rougir
+
+Trouvé le 2026-09-03 en cherchant où câbler `nexus_filet.py`. Le rituel de fin
+de tour porte déjà le contrôle qui devait poser la question, et il est aveugle.
+
+### La mesure
+
+```
+lignes de « nexus_worktree.py --lister » contenant « [agent/ »          :  0
+lignes contenant « [worktree-agent- »                                  : 45
+worktrees d'agents reellement presents sur le disque                   : 45
+```
+
+`scripts/nexus_rituel.py`, dans `arbres_en_attente()` :
+
+```python
+if "[agent/" not in texte:
+    continue
+```
+
+Le filtre écarte les 45. Le contrôle rend donc **`aucun arbre en attente`**, et
+il l'a rendu à chaque tour de la nuit.
+
+### La cause, et elle est plus intéressante que le symptôme
+
+**Il y a deux créateurs de worktrees, avec deux conventions.**
+
+| créateur | nom de branche |
+| --- | --- |
+| `scripts/nexus_worktree.py:138` | `agent/<nom>` |
+| l'isolation du harnais (`isolation: worktree`) | `worktree-agent-<id>` |
+
+Le contrôle lit la convention du premier — et son commentaire l'explique
+soigneusement : *« Le critère vient de `creer_arbre()`, qui nomme toujours la
+branche `agent/<tache>`. On lit donc la convention plutôt qu'une position dans
+la liste, qui changerait au premier tri. »*
+
+Le raisonnement est juste. Il ne couvre simplement pas le créateur qui a servi
+**45 fois cette nuit et zéro fois l'autre**.
+
+### Ce que ce vert a coûté
+
+Pendant que le contrôle affirmait qu'il n'y avait rien à récolter :
+
+* 45 worktrees se sont accumulés ;
+* 6 portent un conflit réel ;
+* 4 portent des commits jamais récoltés ;
+* et l'outil qui sait tout cela — `nexus_filet.py` — était **orphelin**, donc
+  invisible.
+
+**Le contrôle aveugle et l'outil orphelin sont les deux moitiés du même
+mécanisme manquant.** L'un pose la question sans savoir regarder ; l'autre sait
+regarder et personne ne l'appelle.
+
+### Ce que cela ajoute à la doctrine, mesuré trois fois cette nuit
+
+Un contrôle qui lit une **convention** plutôt qu'un **fait** devient muet le
+jour où la convention change, et son silence ressemble à un succès. C'est le
+même motif que :
+
+* la garde de production, armée sur `Edit`/`Write`, muette sur `Bash` (§35) ;
+* la bannière de `nexus_appliquer`, qui teste la présence d'une sortie et non
+  son sens (§29.2) ;
+* le témoin du relevé, suivi par git alors que sa preuve ne l'est pas (§22).
+
+Quatre contrôles, un seul défaut de nature : **on a mesuré ce qui était facile
+à mesurer, pas ce qu'on voulait savoir.**
+
+### Statut
+
+**OUVERT.** Deux remèdes possibles, et le choix n'est pas évident :
+reconnaître les deux conventions, ou faire appeler `nexus_filet.py` par ce
+contrôle — ce que l'auditeur tiers avait proposé de son côté, sans connaître ce
+défaut. Le second câblerait l'outil orphelin et donnerait au contrôle un regard
+réel, d'une seule pierre. Non délégué : le contrôle LOI 1 est rouge (§32).
