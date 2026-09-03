@@ -118,3 +118,30 @@ n'est pas une lecture, et le contrat interdit de traiter l'un pour l'autre.
 le chapitre qui porte SON NOM. La nuit vient d'en donner la démonstration —
 huit défauts trouvés à la main portaient déjà, pour la moitié, un nom dans un
 livre du dépôt.
+
+
+---
+
+## 6. PREMIÈRE TENTATIVE DE LECTURE LOCALE — ratée, et pourquoi
+
+Six modèles locaux ont reçu chacun un fichier d'extraits réels et une question
+liée à un problème mesuré du dépôt. **Les trois rendus retenus étaient tous
+hors sujet** : zéro occurrence des termes du sujet (*mediation*,
+*specification*, *bandit*, *boundary*), et deux résumaient… la règle du
+plancher.
+
+**Cause, et elle est de moi.** J'avais joint DEUX fichiers à chaque tâche :
+les extraits du livre, et `LIVRES_PLANCHER.md` — la règle « les livres sont le
+plancher ». La consigne disait « lis les extraits joints » sans nommer lequel.
+Les modèles ont résumé le second : plus court, plus document-like, plus facile.
+
+**Ce que cela apprend, et ce n'est pas sur eux.** Une pièce jointe de contexte
+et une pièce jointe à traiter ne se distinguent pas d'elles-mêmes. Un modèle
+local ne demande pas « lequel ? » — il choisit, et il choisit le plus simple.
+
+**Mesuré, pas supposé** : le contrôle qui l'a révélé compte les termes du sujet
+dans chaque note. Sans ce comptage, trois résumés fluides et bien construits
+seraient entrés dans ce fichier comme des lectures.
+
+> **Il ne suffit pas de joindre la ressource : il faut nommer celle qu'on
+> demande de lire, et vérifier que la réponse en parle.**

@@ -3795,3 +3795,75 @@ choix d'appliquer — et il est de moi.
 attend un tiers : les fiches de quarantaine, le filet, le disjoncteur. La file
 ne raccourcit pas en ajoutant des poses — elle raccourcit en faisant venir des
 auditeurs.
+
+---
+
+## 43. DEUX DÉFAUTS DE MA PROPRE MÉTHODE, trouvés par mesure
+
+Le 2026-09-03, en faisant lire les livres par des modèles locaux.
+
+### 43.1 Le double lancement — `nohup … &` dans un appel déjà détaché
+
+```
+PID   CREE                 COMMANDE
+21252 03/09/2026 09:36:44  nexus_agent.py --lot lot_local.json
+31932 03/09/2026 09:36:44  nexus_agent.py --lot lot_local.json   <- meme seconde
+21572 03/09/2026 09:54:52  enchainer.py
+ 8164 03/09/2026 09:54:52  enchainer.py                          <- meme seconde
+```
+
+L'outil met **déjà** la commande en arrière-plan. Y ajouter `nohup … &` la
+lance **deux fois**. Les deux exemplaires écrivaient dans le même fichier de
+rendu et se disputaient le verrou du banc — qui est un mutex par machine.
+
+C'est pourquoi le premier lot traînait à 3 rendus sur 6 : il se combattait
+lui-même.
+
+**Effet de bord du remède** : en supprimant les deux doublons, j'ai emporté les
+survivants — ils formaient des paires parent/enfant. La chaîne est morte d'un
+coup. Rien n'était perdu (les rendus sont sur disque), mais le geste était plus
+brutal que je ne l'avais mesuré.
+
+### 43.2 La mauvaise pièce jointe lue — et c'est le plus instructif
+
+J'avais joint **deux** fichiers à chaque tâche : les extraits du livre, et
+`LIVRES_PLANCHER.md`, la règle « les livres sont le plancher ». La consigne
+disait *« lis les extraits joints »* sans nommer lequel.
+
+**Les trois rendus retenus résumaient le second.** Mesure du contrôle qui l'a
+révélé :
+
+| note | mentions de « plancher » | termes du sujet |
+| --- | --- | --- |
+| `modelcheck_specif` | 2 | **0** |
+| `bishop_mediation` | 1 | **0** |
+| `parallele_essaim` | 0 | **0** |
+
+Zéro occurrence de *mediation*, *specification*, *bandit*, *boundary*,
+*counterexample*. Trois résumés fluides, bien construits, et **entièrement hors
+sujet**.
+
+> Une pièce jointe de **contexte** et une pièce jointe **à traiter** ne se
+> distinguent pas d'elles-mêmes. Un modèle local ne demande pas « lequel ? » —
+> il choisit, et il choisit le plus court.
+
+### 43.3 Ce que ces deux défauts ont en commun avec les neuf autres
+
+Aucun des deux ne se voit en relisant le script : le lancement était correct,
+les pièces jointes étaient les bonnes, la consigne était claire. **Ils ne se
+voient qu'en regardant ce qui est sorti** — deux PID à la même seconde, et un
+comptage de termes dans les notes.
+
+C'est le douzième cas de la nuit, et le premier dont je suis l'auteur seul.
+
+### 43.4 Les trois corrections, chacune tirée de son échec
+
+| correction | tirée de |
+| --- | --- |
+| une seule pièce jointe, **nommée** dans la consigne | les trois résumés hors sujet |
+| lancement **sans** `nohup &` | les deux PID à la même seconde |
+| **contrôle mécanique** : une note n'est retenue que si elle cite ≥ 2 termes du sujet | le fait que j'aie dû le vérifier à la main |
+
+La troisième est la seule qui protège l'avenir. Les deux premières corrigent
+une erreur ; celle-là **empêche qu'une erreur du même genre entre sans être
+vue**, et les rendus écartés sont listés avec leur score plutôt qu'effacés.
