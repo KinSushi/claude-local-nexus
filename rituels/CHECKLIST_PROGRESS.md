@@ -1,23 +1,23 @@
 # Checklist Progress
-Generated: 2026-09-02 20:29:30
+Generated: 2026-09-05 14:44:37
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 12 |
+| Commits non pushes | 50 |
 | Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-02 16:01:09 -0500 |
+| Date du dernier commit | 2026-09-03 10:41:59 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
-| nexus_cablage.py | 1 |
-| nexus_outillage.py | 95 |
+| nexus_cablage.py | 5 |
+| nexus_outillage.py | 85 |
 
 ## 3. Outils
 | Description | Value |
 |---|---|
-| Scripts nexus dans scripts/ | 77 |
+| Scripts nexus dans scripts/ | 78 |
 | Occurrences name:"nexus_" dans server.js | 15 |
 
 ## 4. Checklist VS Code
@@ -39,8 +39,8 @@ Generated: 2026-09-02 20:29:30
 | Lignes dans fragments_embeddings.jsonl | 20366 |
 
 ## CE QUI RESTE OUVERT
-- Regressions de cablage : 1
-- Regressions d outillage : 95
+- Regressions de cablage : 5
+- Regressions d outillage : 85
 - Prescriptions rouges : 15
   - Dependency validation
   - Coordination testing
@@ -59,4 +59,4 @@ Generated: 2026-09-02 20:29:30
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
   - ORPHELINE
   - Consequence tenue
-- Commits non pousses : 12
+- Commits non pousses : 50

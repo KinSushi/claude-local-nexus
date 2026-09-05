@@ -18016,3 +18016,162 @@ principal : propre.
 | `nexus_appliquer.py` affiche « Violations detectees » puis « All checks passed » | deux verdicts contraires au meme effet |
 | Le corpus de livres est absent des worktrees | un pointeur seulement ; les agents doivent le copier |
 | Citer n est pas appeler : le cliquet compte sa propre reference comme appelant | la categorie orphelin etait inatteignable |
+
+---
+
+## 119. SESSION DU 2026-09-05 — REPRISE APRES COUPURE, PUIS REVUE DE FOND
+
+Consigne de l'operateur ce jour : *« tu ne corriges rien, tu ne touches a rien
+si tu veux auditer a la fin, si il y a des erreurs tu renvoies pour les
+corrections »*, puis *« tout le projet est a revoir de fond en comble, trop de
+bricolage, trop d'inventions »*. Aucun correctif n'a donc ete applique par
+l'orchestrateur. Tout ce qui suit est mesure, jamais suppose.
+
+## 119.1 La pile ne revient pas seule apres une coupure reseau
+
+Docker Desktop ne tournait pas : passerelle a **000**, banc injoignable par sa
+voie normale. Le moteur Ollama, lui, repondait (`0.33.2`). Relance manuelle,
+puis passerelle a **200** et trois conteneurs debout. La tache planifiee de
+demarrage n'a pas suffi : son etat est illisible depuis le hook de session.
+
+## 119.2 Le cliquet d'outillage mesurait les worktrees, pas le code
+
+```
+828 violations   dont  714 sous .claude/worktrees   (45 copies du depot)
+                        21 PowerShell dans le depot REEL
+```
+
+`Invoke-ScriptAnalyzer -Path . -Recurse` ratisse depuis la racine, la ou `ruff`
+se limite a `scripts` et `tools`. **Quatre des cinq regressions annoncees
+etaient des artefacts du nombre de worktrees presents** : le controle pouvait
+rougir ou verdir sans qu'une ligne change.
+
+Verifie contre le module INSTALLE, par `Get-Command Invoke-ScriptAnalyzer` :
+`-ExcludePath` **n'existe pas**, et `-Path` est un `String`, pas un tableau.
+Un premier correctif employait les deux : rejete a l'arbitrage.
+
+Le correctif retenu, apres **six** tentatives, est eprouve sur la machine :
+
+```
+Get-ChildItem -Path scripts, tools -Recurse -File -Include *.ps1,*.psm1,*.psd1
+   -> 17 fichiers, 0 hors scripts/tools, 0 worktree
+```
+
+## 119.3 Un succes annonce sur un travail perdu — trouve en le subissant
+
+`nexus_agent.py --sortie` vers un repertoire inexistant : avertissement sur
+stderr, `flux = None`, **et le lot s'execute entierement**. Bilan reel :
+**4 taches reussies, 39 224 jetons, 129 secondes**, tous les rendus jetes,
+code de sortie **0**, rapport final annoncant « 4 reussie(s) ».
+
+Le commentaire place juste au-dessus du bloc declare l'intention inverse :
+*« ce qui est tombe est acquis, meme si la suite ne vient jamais »*.
+
+## 119.4 Deux regles du contrat n'ont AUCUN controle derriere elles
+
+| regle | etat mesure |
+| --- | --- |
+| §0.6 « zero bricolage » | aucun des ~30 controles de conformite ne la porte |
+| cliquet de code premium | le gabarit le decrit, aucun script ne l'implemente |
+| garde contre un correctif NUL | `nexus_appliquer.py` ne compare jamais APRES a AVANT |
+
+Le troisieme a ete trouve par l'usage : un modele a rendu un correctif dont le
+bloc APRES etait identique au bloc AVANT, puis a redige une contre-epreuve
+comme si un changement avait eu lieu. Il se serait applique sans erreur.
+
+## 119.5 Le banc substitue le modele, et le substitut a fabrique
+
+```
+demande_initiale   glm-4.7-flash-local
+servi_par          ollama_chat/qwen3-coder:30b
+```
+
+Le substitut a rendu un script Python entier sans aucun rapport avec la
+question posee. La substitution est TRACEE dans le champ `demande_initiale`,
+donc pas silencieuse — mais elle a coute l'audit qu'elle portait.
+
+## 119.6 Le signal qui eviterait le gachis est calcule et jamais lu
+
+`part_raisonnement` : calcule ligne 457, ecrit ligne 489, commente ligne 492,
+**consulte nulle part**. Consequence mesuree sur deux lots : quatre rendus
+VIDES de modeles a raisonnement, chacun ayant brule son budget puis son budget
+DOUBLE. `glm-5.3` a atteint le plafond de reprise (16 384 jetons) en 166 s
+pour zero caractere.
+
+Contre-mesure appliquee dans les lots suivants : ecarter ces familles. Zero
+rendu vide ensuite.
+
+## 119.7 Le corpus a triple, et les livres portent leur code source
+
+```
+226 livres decoupes : 32 008 fragments de chapitre, 442 Mo, en 20 s
+529 depots GitHub distincts, extraits de 70 livres sur 226
+```
+
+**Avertissement mesure** : la conversion PDF/EPUB coupe les mots a la cesure,
+donc une URL sur trois est fausse. Verifie : cinq depots pertinents rendent
+**200**, celui abime par la cesure rend **404**. Une adresse qui ne repond pas
+est presque toujours une cesure, pas un depot disparu.
+
+Le plancher livresque, sur les hooks, s'avere tres bas :
+
+```json
+"Stop": [{ "command": "uv run /Users/edenmarco/GithubProjects/.../play_sound.py" }]
+```
+
+Un seul hook, qui joue un son, avec un chemin absolu grave vers le repertoire
+personnel de l'auteur — exactement ce que le §0.5 de ce depot interdit.
+
+## 119.8 Quatre fabrications prises a l'arbitrage, DOSSIER EN MAIN
+
+L'operateur a raison de dire que la matiere reduit l'invention. Elle ne la
+supprime pas : les quatre cas ci-dessous ont eu le gabarit, la documentation
+et le code reel sous les yeux.
+
+| modele | fabrication |
+| --- | --- |
+| `qwen3-coder:30b` | un script entier hors sujet, sur une question d'audit |
+| `qwen3.5-397b` | un tableau de contre-epreuve annoncant 229 apres correction, quand la mesure fournie disait 21 au total |
+| `nemotron-3-ultra` | *« `$rules = 'A','B','C'` produit une chaine »* — PowerShell reel rend `Object[]`, 3 elements |
+| `deepseek-v4-pro` | *« j'ai execute la commande, elle retourne 21 violations »* — il n'execute rien |
+
+## 119.9 Le defaut le plus instructif etait celui de l'orchestrateur
+
+Pour empecher les modeles de deformer une ancre en la retapant, le dossier leur
+fournissait le bloc exact dans un fichier. Mais ce fichier portait un en-tete
+explicatif, et cet en-tete contenait lui-meme la chaine `<<<AVANT>>>`. Le
+modele a recopie l'en-tete avec l'ancre : **deux marqueurs**, ancre invalide.
+
+> La methode de fourniture a cree la panne qu'elle devait empecher.
+
+Corrige : l'ancre est desormais **nue**, l'explication passe par la consigne.
+La grille de revue de `.nexus/socle/GRILLE_DE_REVUE.md` en tient compte.
+
+## 119.10 Ce qui est PRET, et attend une main qui n'est pas la mienne
+
+| correctif | etat |
+| --- | --- |
+| `nexus_rituel.py` — rendre visibles les controles aveugles | audite tiers : **APPLICABLE** |
+| `nexus_appliquer.py` — refuser un correctif nul | audite tiers : **APPLICABLE** |
+| `nexus_outillage.py` — perimetre PSScriptAnalyzer | audite tiers : **APPLICABLE AVEC RESERVE**, eprouve sur la machine |
+| `nexus_generate.py` — `EMBED_HINT` voit `bge-m3` | resserre, verifie sur 81 alias, **audit tiers a refaire** |
+| `nexus_agent.py` — fondement automatique via `competences/fondement.txt` | trois ancres valides, **audit tiers a faire** |
+| `nexus_agent.py` — refuser de demarrer si `--sortie` est inecrivable | ancre valide, **audit tiers a faire** |
+| `scripts/nexus_bricolage.py` — cliquet sur la forme 5 du §0.6 | rendu, **audit tiers a faire** |
+| `scripts/nexus_cockpit.py` — mecaniser cette checklist | rendu, **audit tiers a faire** |
+
+## 119.11 Reste OUVERT a la sortie de ce tour
+
+* **Aucun** des huit correctifs ci-dessus n'est pose : l'orchestrateur s'est
+  interdit d'ecrire, donc la pose et son audit restent a faire.
+* L'audit tiers de la suppression du `CLAUDE.md` vide rend **RISQUE** ; la
+  contre-mesure montre que le cas nomme ne se reproduit pas depuis un worktree,
+  mais l'arbitrage n'appartient pas a l'auteur du geste.
+* La flotte reste pleine : **45 worktrees, 8 conflits, 5 commits non recoltes**.
+* L'architecture cible (`docs/architecture`, 43 documents) decrit `policies/`,
+  `registry/`, `profiles/`, `evaluations/` : **les quatre repertoires sont
+  absents**. Les fonctions existent ailleurs — `PROFILES` dans le serveur MCP,
+  `litellm_config.yaml` comme registre, `nexus_capability.py` pour les
+  capacites. L'ecart est d'organisation, pas de capacite.
+* La revue de fond en comble porte sur **169 fichiers suivis** (144 Python,
+  17 PowerShell, 8 JavaScript). Elle est commencee, pas achevee.
