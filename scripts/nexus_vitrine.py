@@ -293,10 +293,24 @@ def main() -> int:
             if r.returncode == 0:
                 resultats.append(("publication", OK, "poussee vers origin"))
             else:
-                lignes = (r.stderr or r.stdout or "").strip().splitlines()
-                resultats.append(("publication", BLOQUE,
-                                  lignes[-1][:70] if lignes else "push a echoue"))
-                sain = False
+                # course mesuree ce jour : tache planifiee et appel manuel simultanes
+                # on verifie l'etat distant avant d'affirmer que rien n'est parti
+                local = executer(["git", "rev-parse", "HEAD"], racine, 60)
+                distant = executer(["git", "ls-remote", "origin", "HEAD"], racine, 60)
+                sha_local = (local.stdout or "").strip() if local.returncode == 0 else ""
+                sha_distant = ""
+                if distant.returncode == 0:
+                    sha_distant = (distant.stdout or "").strip().split("\t")[0]
+                if sha_local and sha_local == sha_distant:
+                    resultats.append(("publication", OK,
+                                      "deja poussee par un autre processus (course)"))
+                else:
+                    lignes = (r.stderr or r.stdout or "").strip().splitlines()
+                    detail = lignes[-1][:70] if lignes else "push a echoue"
+                    if distant.returncode != 0 or not sha_distant:
+                        detail += " ; etat distant non verifiable"
+                    resultats.append(("publication", BLOQUE, detail))
+                    sain = False
 
     if a.json:
         print(json.dumps({
