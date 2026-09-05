@@ -418,6 +418,7 @@ def main() -> int:
         resultats.append((nom, statut, detail))
 
     manques = [r for r in resultats if r[1] == MANQUE]
+    ignores = [r for r in resultats if r[1] == IGNORE]
 
     if a.json:
         print(json.dumps({
@@ -425,6 +426,7 @@ def main() -> int:
             "controles": [{"nom": n, "statut": s, "detail": d}
                           for n, s, d in resultats],
             "verdict": MANQUE if manques else OK,
+            "ignores": [{"nom": n, "detail": d} for n, s, d in ignores],
         }, ensure_ascii=False, indent=2))
         return 1 if manques else 0
 
@@ -435,6 +437,10 @@ def main() -> int:
     print("-" * 72)
     if manques:
         print("VERDICT : %d manque(s). Le tour n'est pas clos." % len(manques))
+    elif ignores:
+        print("VERDICT : rituel tenu — %d controle(s) aveugle(s) (IGNORE)." % len(ignores))
+        for nom, _, detail in ignores:
+            print("  [IGNORE] %-18s %s" % (nom, detail))
     else:
         print("VERDICT : rituel tenu.")
     return 1 if manques else 0

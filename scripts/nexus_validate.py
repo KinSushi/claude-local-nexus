@@ -69,7 +69,7 @@ warnings: list[str] = []
 # (« ollama show ») et savait que qwen3-vl est une vision. Les deux sources
 # ont diverge, et c'est le validateur qui avait tort.
 VISION = re.compile(r"(?:^|[-:])(?:vision|llava|vl)(?:$|[-:])")
-EMBED = re.compile(r"embed|minilm")
+EMBED = re.compile(r"(^|-)embed|(^|-)(minilm|bge|e5|gte|instructor)(-|$)")
 
 
 _CAPACITES = {}

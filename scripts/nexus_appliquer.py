@@ -128,6 +128,12 @@ def main():
             print("REFUS : le bloc %d a un texte APRES vide ou blanc ; une suppression pure doit etre demandee explicitement." % idx)
             return 1
 
+    # Verification que le texte APRES diffère du texte AVANT
+    for idx, (avant, apres) in enumerate(blocs, start=1):
+        if avant == apres:
+            print("REFUS : le bloc %d a un texte APRES identique à AVANT ; aucun changement réel." % idx)
+            return 1
+
     # Verification de chaque bloc AVANT
     for idx, (avant, _) in enumerate(blocs, start=1):
         occ = src.count(avant)
