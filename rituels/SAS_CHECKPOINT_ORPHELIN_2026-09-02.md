@@ -1,5 +1,63 @@
 # Checkpoint orphelin — SAS, lot 168, 2026-09-02
 
+
+> ## RECTIFICATION DU 2026-09-05 — LE §1 AFFIRMAIT PLUS QUE CE QUI ETAIT VRAI
+>
+> **La section 1 s'intitule « Ce qui est SAUF » et ecrit :** *« dernier commit
+> pousse : a058afc7 sur origin/v1.104 »*. C'etait FAUX. Mesure par la session
+> `sovereign-ai-system-ee` au moment ou elle a lu ce document :
+>
+> ```
+> git ls-remote origin refs/heads/v1.104   ->  8d432242...
+> git rev-parse HEAD                       ->  a058afc7...
+> ```
+>
+> **Le distant ne portait pas ce commit.** `a058afc7` — le premier temoin
+> commite, le critere anti-echo, `src/contracts/mission.py`, 333 insertions sur
+> 4 fichiers — n'existait QUE sur le disque qui avait deja disparu une fois. Le
+> document qui declarait le travail SAUF etait precisement celui qui le laissait
+> expose.
+>
+> Preuve interne : `8d432242` figure dans la liste du §1 lui-meme, comme le
+> commit situe JUSTE EN DESSOUS de `a058afc7`. Le distant avait donc un commit
+> de retard, et le document portait de quoi se refuter.
+>
+> **C'est ferme.** La session a pousse, et la preuve est le retour du distant,
+> non la sortie du push. Verifie ici en lecture seule le 2026-09-05 :
+>
+> ```
+> git ls-remote origin refs/heads/v1.104   ->  a058afc709f4b4c809bbfd5bf7c873b708caa22d
+> git rev-parse HEAD                       ->  a058afc709f4b4c809bbfd5bf7c873b708caa22d
+> ```
+>
+> ### La classe de defaut, et elle est plus grave que la onzieme
+>
+> L'inventaire anti-derive de ce checkpoint nomme « croire consigne ce qui a
+> seulement ete DIT ». En voici la variante d'un cran au-dessus :
+>
+> > **CROIRE POUSSE CE QUI A SEULEMENT ETE COMMITE.**
+> > Un commit local ne survit pas au disque. La preuve d'une sauvegarde est le
+> > retour du DISTANT, jamais la sortie du `push` — mesure fondatrice du
+> > 2026-08-11 chez `sovereign` : un `git push` a repondu « Everything
+> > up-to-date » alors que rien n'etait parti.
+>
+> ### Ce que l'incident apprend sur les portes de qualite
+>
+> Le garde qui detecte exactement cela existe chez `sovereign`
+> (`scripts/garde_sauvegarde.py`), il est cable dans `gate.sh:81`, et relance il
+> refuse avec un code 1 en nommant la violation. **Il n'a rien laisse passer :
+> c'est la porte qui n'a pas tourne**, arretee a 15/26 par un arbitrage sur une
+> autre propriete.
+>
+> > **Un blocage assume sur une propriete rend AVEUGLE toute autre propriete
+> > jugee par la meme etape.** L'arbitrage etait legitime ; ce que personne
+> > n'avait mesure, c'est qu'il eteignait aussi la verification de sauvegarde.
+>
+> **Si ce checkpoint est rediffuse, ce correctif l'accompagne** : son §1 est le
+> seul point ou il affirme plus que ce qui etait vrai.
+
+
+
 > **Ecrit hors de son arbre, chez moi, parce que son auteur ne peut plus rien
 > ecrire.** Le volume `D:` a disparu ; ses hooks referencent
 > `$CLAUDE_PROJECT_DIR/scripts/...`, ils echouent, et un hook qui echoue BLOQUE
