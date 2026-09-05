@@ -9,8 +9,9 @@ Source of the pattern: classic circuit breaker design as described in
 AI agent literature.
 """
 
-import os
+import contextlib
 import json
+import os
 import time
 import argparse
 import tempfile
@@ -70,10 +71,8 @@ def _save_state(state):
             os.replace(temp_path, path)
         except Exception:
             # Cleanup temporary file on any failure
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(temp_path)
-            except Exception:
-                pass
     except Exception:
         pass
 

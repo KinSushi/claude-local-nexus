@@ -455,8 +455,10 @@ def _run_psscriptanalyzer() -> Dict[str, Any]:
         ps_cmd = (
             "$ErrorActionPreference='Stop'; "
             "Import-Module PSScriptAnalyzer; "
-            "Invoke-ScriptAnalyzer -Path . -Recurse "
+            "Get-ChildItem -Path scripts, tools -Recurse -File -Include *.ps1, *.psm1, *.psd1 "
+            "| ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName "
             f"-IncludeRule {','.join(PS_ANALYZER_RULES)} "
+            "} "
             "| Select-Object RuleName, Severity, ScriptPath, Line, Message "
             "| ConvertTo-Json -Depth 3 -Compress -AsArray"
         )
