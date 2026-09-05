@@ -18175,3 +18175,87 @@ La grille de revue de `.nexus/socle/GRILLE_DE_REVUE.md` en tient compte.
   capacites. L'ecart est d'organisation, pas de capacite.
 * La revue de fond en comble porte sur **169 fichiers suivis** (144 Python,
   17 PowerShell, 8 JavaScript). Elle est commencee, pas achevee.
+
+---
+
+## 120. LES DEUX CLIQUETS PASSENT AU VERT — et ce que la mesure a revele
+
+Pose le 2026-09-05 sur decision de l'operateur, apres qu'il ait tranche entre
+trois issues : publier en contournant, poser les correctifs d'abord, ou ne rien
+pousser. Il a choisi **poser les correctifs d'abord**.
+
+## 120.1 Le cliquet d'outillage mesurait 45 copies du depot
+
+```
+AVANT   735 violations PowerShell rapportees
+APRES    16 violations reelles
+```
+
+`Invoke-ScriptAnalyzer -Path . -Recurse` ratissait depuis la racine, donc aussi
+`.claude/worktrees` : 45 copies du depot, 904 fichiers `.ps1`. Sur 828
+violations totales, **714 venaient des worktrees et 21 seulement du depot
+reel**. Le controle ne mesurait pas le code, il mesurait le nombre de worktrees
+presents sur le disque — et pouvait rougir ou verdir sans qu'une ligne change.
+
+Le remplacant se limite au perimetre de `ruff`, verifie sur la machine AVANT la
+pose : `Get-ChildItem -Path scripts, tools -Recurse -File -Include *.ps1,
+*.psm1, *.psd1` rend 17 fichiers, 0 hors `scripts/tools`, 0 worktree.
+
+Effet mesure apres la pose, cinq ameliorations :
+
+| regle | avant | apres |
+| --- | --- | --- |
+| `PSAvoidUsingEmptyCatchBlock` | 229 | **13** |
+| `PSAvoidOverwritingBuiltInCmdlets` | 18 | 1 |
+| `PSReviewUnusedParameter` | 18 | 1 |
+| `PSUseApprovedVerbs` | 19 | 1 |
+| `PSAvoidAssignmentToAutomaticVariable` | 3 | 0 |
+
+**La reference de 287 etait elle-meme contaminee.** La dette PowerShell reelle
+de ce depot est de seize violations.
+
+## 120.2 Six tentatives, et chacune a echoue AUTREMENT
+
+Le correctif tient en quatre lignes. Il a fallu six passages, et les cinq
+echecs sont plus instructifs que la reussite :
+
+| # | echec | ce qu'il apprend |
+| --- | --- | --- |
+| 1 | `-ExcludePath` invente, `-Path` avec deux chemins | verifier l'API contre le module INSTALLE, par `Get-Command`, jamais de memoire |
+| 2 | `$_` imbrique masquant le `$_` exterieur | un piege de langage qu'aucune relecture de prose n'attrape |
+| 3 | ancre deformee a la recopie : `Import-Mo-dule` | ne jamais faire RETAPER une ancre |
+| 4 | correctif NUL : bloc APRES identique au bloc AVANT | `nexus_appliquer.py` n'a aucune garde contre ce cas |
+| 5 | en-tete explicatif recopie DANS l'ancre | **defaut cause par la methode de fourniture elle-meme** |
+
+Le cinquieme est le plus utile : pour empecher la deformation d'une ancre, on
+la fournissait dans un fichier. Ce fichier portait un en-tete d'explication, et
+cet en-tete contenait la chaine `<<<AVANT>>>`. Le modele a recopie l'en-tete
+avec l'ancre. **La parade a cree la panne qu'elle devait empecher.** Depuis,
+l'ancre est NUE et l'explication passe par la consigne.
+
+## 120.3 SIM105 — la seule regression `ruff` reelle
+
+Un `try/except/pass` de nettoyage dans `nexus_disjoncteur.py`, remplace par
+`contextlib.suppress(Exception)`, import ajoute. L'outil d'application a
+signale au passage une violation `SIM103` **preexistante** ligne 163, non
+touchee.
+
+## 120.4 Le cablage : cinq outils manuels, assumes
+
+Les cinq scripts en etat `preuve_seule` sont tous lances a la main :
+`nexus_decouper_livres`, `nexus_extraire_livres`, `nexus_indexer_node`,
+`nexus_filet`, `nexus_quarantaine`. **Deux d'entre eux l'ont ete le jour meme**
+— pour decouper 226 livres et pour relever l'etat de la flotte. Le banc avait
+etabli qu'aucun autre mecanisme que `--rebaseline` n'existe pour declarer cette
+categorie. La degradation est donc assumee, pas subie.
+
+## 120.5 CE QUI RESTE DU, et qui ne peut pas etre fait ici
+
+**Les deux correctifs ont ete audites AVANT leur pose, jamais apres.**
+L'orchestrateur les a appliques ; il ne peut donc plus les auditer. Le
+troisieme temps du cycle appartient a un tiers qui ne les a ni diagnostiques,
+ni ecrits, ni poses.
+
+Reste egalement ouvert : le commit `83759be` est declare MUET par
+`nexus_redaction` faute de porter la formule attendue. Le corriger demande un
+`--amend`, qui reecrit l'historique et n'appartient pas a l'orchestrateur.
