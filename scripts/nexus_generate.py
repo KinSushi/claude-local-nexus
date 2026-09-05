@@ -136,7 +136,7 @@ ENTITLEMENT_CODES = {401, 402, 403, 404}
 
 CODE_HINT = re.compile(r"cod(er|e)|devstral|qwen|codestral")
 VISION_HINT = re.compile(r"vision|llava")
-EMBED_HINT = re.compile(r"embed|minilm")
+EMBED_HINT = re.compile(r"(^|-)embed|(^|-)(minilm|bge|e5|gte|instructor)(-|$)")
 
 
 def cloud_rank(name: str) -> int:

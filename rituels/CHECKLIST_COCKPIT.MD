@@ -18259,3 +18259,91 @@ ni ecrits, ni poses.
 Reste egalement ouvert : le commit `83759be` est declare MUET par
 `nexus_redaction` faute de porter la formule attendue. Le corriger demande un
 `--amend`, qui reecrit l'historique et n'appartient pas a l'orchestrateur.
+
+---
+
+## 121. QUATRE GARDES POSEES — et la contre-epreuve de chacune
+
+Pose le 2026-09-05. Consigne de l'operateur : *« si rien n'est mecanise alors
+ce n'est que de la prose, et des fichiers existants que personne ne
+consulte »*. Les quatre correctifs ci-dessous attendaient, audites, pendant que
+l'orchestrateur ecrivait de la doctrine.
+
+Chacun a ete produit par le banc gratuit, audite par un tiers d'une AUTRE
+famille AVANT la pose, et applique par `scripts/nexus_appliquer.py`.
+
+## 121.1 Un correctif NUL ne peut plus passer
+
+`scripts/nexus_appliquer.py` ne comparait jamais le bloc APRES au bloc AVANT.
+Un modele en a rendu un identique, caractere pour caractere, avec une
+contre-epreuve redigee comme si un changement avait eu lieu. Il se serait
+applique sans erreur et aurait ete rapporte comme pose.
+
+**Contre-epreuve executee**, sur un correctif nul fabrique :
+
+```
+message   REFUS : le bloc 1 a un texte APRES identique a AVANT
+code      1   (non nul)
+effet     aucun -- git diff vide sur la cible
+```
+
+Les trois criteres du contrat pour un refus propre sont tenus.
+
+## 121.2 Les controles aveugles apparaissent au verdict
+
+`scripts/nexus_rituel.py` ne distinguait pas IGNORE de OK. Mesure du jour :
+`part deleguee` rendait IGNORE sur une erreur de parsing JSON, `redaction
+declaree` sur « mesure impossible », pendant que le verdict annoncait
+seulement « 2 manques ». Les IGNORE sont desormais comptes a part et affiches.
+Le code de sortie ne change pas : une panne d'outil ne doit pas bloquer un
+tour.
+
+## 121.3 L'angle mort `bge-m3` est clos A SA SOURCE
+
+Il vivait dans DEUX fichiers, et le second est la garde :
+
+```
+scripts/nexus_generate.py:139   EMBED_HINT
+scripts/nexus_validate.py:72    EMBED       <- le VALIDATEUR
+```
+
+Un modele de plongement non reconnu passait pour du texte, donc un repli
+vision vers texte pouvait franchir le controle cense l'interdire. Le fichier
+`nexus_generate.py` portait, a sa ligne 280, un commentaire declarant l'angle
+mort *« corrige deux fois ailleurs sans jamais l'etre a sa source »* — il
+l'etait toujours.
+
+Regex resserree, identique dans les deux fichiers, verifiee sur les 81 alias
+reellement exposes :
+
+| chaine | verdict |
+| --- | --- |
+| `bge-m3-local` | EMBED |
+| `nomic-embed-text-local` | EMBED |
+| `te5st-local` | texte |
+| `agte-model-local` | texte |
+
+Les sous-chaines courtes `e5` et `gte` sont ancrees par `(^|-)` et `(-|$)`
+precisement pour cela. Verifie apres la pose : le motif ancien n'existe plus
+nulle part hors worktrees et sauvegardes.
+
+## 121.4 Ce qui reste ouvert, et qui n'est pas mince
+
+* **Le troisieme temps est du sur les quatre.** Ils ont ete audites AVANT la
+  pose, jamais apres. L'orchestrateur est desormais le poseur : il ne peut
+  plus les auditer.
+* **La configuration n'a pas ete regeneree.** Reclasser `bge-m3` en plongement
+  change ce que produit le generateur ; `litellm_config.yaml` porte d'ailleurs
+  a sa ligne 488 le commentaire qui documentait l'angle mort. La regeneration
+  est un changement d'une autre ampleur, a decider separement.
+* **`nexus_agent.py --sortie` perd toujours tout** quand son repertoire
+  n'existe pas : avertissement sur stderr, lot execute entierement, rendus
+  jetes, code 0. Le correctif existe et n'est pas audite.
+* **La chaine de repli ne verifie pas la capacite de contexte.**
+  `glm-4.7-flash-local` (32768) se replie sur `qwen3-coder-30b-local` (8192) :
+  une requete qui tient chez la source ne tient pas chez son repli. Deux
+  sessions ont recu du contenu fabrique a cause de cela. Aucun correctif.
+* **`part_raisonnement` est calcule et jamais consulte.** Sur 65 appels
+  mesures, tout rendu vide portait `inconnu` et aucun modele a valeur
+  numerique n'a rendu vide. Le banc mesure le signal qui eviterait le gachis
+  et l'ignore.
