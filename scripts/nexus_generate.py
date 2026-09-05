@@ -1702,10 +1702,25 @@ def main() -> int:
     # tronque qu'aucun controle ne relit : la generation suivante s'y
     # fierait, et des modeles pourtant autorises disparaitraient du pool
     # sans que rien ne signale pourquoi.
-    candidat_inventaire = CLOUD_LIST + ".candidat"
-    with io.open(candidat_inventaire, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(inventory) + "\n")
-    os.replace(candidat_inventaire, CLOUD_LIST)
+    # Evite de réécrire cloud_models.txt si seul l'horodatage change.
+    # Un arbre sale dû à un changement d'horodatage bloque la publication.
+    try:
+        with io.open(CLOUD_LIST, "r", encoding="utf-8") as existing_fh:
+            existing_lines = existing_fh.read().splitlines()
+    except Exception:
+        existing_lines = None
+
+    # Corps du fichier = tout sauf la première ligne (horodatage)
+    new_body = inventory[1:]
+
+    if existing_lines is not None and existing_lines[1:] == new_body:
+        # Aucun changement de corps ; on conserve l'ancien horodatage.
+        pass
+    else:
+        candidat_inventaire = CLOUD_LIST + ".candidat"
+        with io.open(candidat_inventaire, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(inventory) + "\n")
+        os.replace(candidat_inventaire, CLOUD_LIST)
 
     print("\n=== Génération terminée ===")
     for name, content in blocks.items():

@@ -18347,3 +18347,127 @@ nulle part hors worktrees et sauvegardes.
   mesures, tout rendu vide portait `inconnu` et aucun modele a valeur
   numerique n'a rendu vide. Le banc mesure le signal qui eviterait le gachis
   et l'ignore.
+
+---
+
+## 122. LE CONTROLE DE COMPILATION PYTHON — sept passes, et la cause etait chez le donneur d'ordre
+
+L'operateur l'a pose comme non negociable : *« vous utiliser python -m compile
+pour tester le code ! TEST ensuite REVERSE TEST puis FORWARD TEST. »*
+Il a fallu sept passes. Les six premieres ont echoue pour six causes
+**distinctes**, toutes mesurees, aucune supposee :
+
+| passe | cause de rejet | comment elle a ete vue |
+| --- | --- | --- |
+| 1 | ratissait la machine entiere, PostgreSQL et caches compris | lecture du rendu |
+| 2 | l'ajout d'un import en **supprimait trois** — `os`, `re`, `contextlib` | `NameError` a l'execution |
+| 3 | `git` lance avec `cwd` sur `scripts/`, compilation depuis la racine | 147 fichiers declares fautifs, tous sains |
+| 4 | import place **dans** une fonction de 300 lignes, nom devenu local | `UnboundLocalError` ligne 988 |
+| 5 | dependait de `GitPython`, **mesure absente** de la machine | `import git` -> NON installe |
+| 6 | `sys` importe et jamais employe ; `check(..., True, ...)` **litteral** ; appel hors de la garde `--only` | lecture + AST |
+
+Le depot n'a jamais ete casse : le garde a refuse, ou `git checkout` a
+restaure. Mais six passes pour un ajout de vingt-cinq lignes est un cout, et
+il appelait un diagnostic autre que « le modele se trompe ».
+
+### La cause reelle, et elle etait chez moi
+
+Un **jumeau exact** de la fonction demandee existait deja dans le meme fichier,
+dans la meme fonction, trente lignes plus haut : le controle de syntaxe
+PowerShell de `test_code()`. Je ne l'ai jamais joint.
+
+Ce que ce jumeau disait, et qu'aucune des six passes n'a pu savoir :
+
+```
+ROOT est une CONSTANTE DE MODULE          -> rien a deriver  (tue les passes 3 et 5)
+os, re, subprocess, sys sont importes     -> rien a importer (tue les passes 2 et 4)
+le controle vit DANS test_code()          -> pas de fonction neuve, pas de site d'appel
+check(libelle, not broken, "%d scripts")  -> la forme exacte  (tue la passe 6)
+```
+
+Les six modes d'echec ne sont pas six erreurs de modele : ce sont **six
+manieres de combler un vide que je laissais**. Un modele a qui l'on demande
+d'ecrire une fonction sans lui montrer celle qu'il doit imiter invente le
+contexte manquant — et il l'invente differemment a chaque fois.
+
+C'est exactement la consigne permanente de l'operateur, appliquee a
+l'orchestrateur lui-meme : *« EXPLOITER LE DEJA EXISTANT SUR DISQUE AVANT »*,
+*« NE PAS AGIR DE MEMOIRE »*. J'agissais de memoire sur la forme attendue au
+lieu de lire le disque, et je l'ai fait six fois.
+
+**A la septieme, jumeau joint, deux modeles independants ont rendu du code
+correct du premier coup** — `gpt-oss-120b` en 4,9 s, `kimi-k2.7-code` en 11,1 s.
+Tous deux passent l'integralite des criteres mecaniques : ancre unique, APRES
+contenant AVANT, aucune condition litterale, `cfile` present, `os.devnull`
+absent, `cwd=ROOT`, `PyCompileError` et `OSError` distingues, aucun import
+inutile, AST valide.
+
+### Le defaut que la mecanique ne pouvait pas voir
+
+Les deux rendus le partagent, et il est reel : **ni l'un ni l'autre ne regarde
+le code de retour de `git`**.
+
+```python
+git_py = subprocess.run(["git", "ls-files", "--", "*.py"],
+                        cwd=ROOT, capture_output=True, text=True)
+py_paths = [os.path.join(ROOT, n) for n in git_py.stdout.splitlines() if n.strip()]
+```
+
+git absent, `ROOT` hors depot, index verrouille : `stdout` est vide, la liste
+est vide, la boucle ne tourne pas, `casses` reste vide, et
+`check(..., not casses, "0 fichiers")` passe au **VERT**. Une panne de l'outil
+lue comme un depot sain — la classe de defaut la plus frequente de ce depot.
+
+Un audit **aveugle** confie a un troisieme modele, `nemotron-3-super`, sans
+qu'on lui souffle rien, a trouve ce defaut sur les deux rendus, avec le meme
+scenario, et n'en a trouve aucun autre. La trouvaille est donc confirmee par
+un tiers, et elle est la seule.
+
+### Ce que le troisieme temps a coute, et ce qu'il a rendu
+
+Premiere tentative de correction : `glm-5.3`, budget 3500 jetons. Rendu
+**VIDE**, `tronque: True`, `tokens_sortie: 7000` — tout le budget parti en
+raisonnement hors bande, rien pour la reponse. C'est le signal
+`part_raisonnement` que ce cockpit note comme jamais consulte, rencontre pour
+de vrai. Correction : budget triple, et une phrase du cahier des charges qui
+exige de repondre directement par le triplet.
+
+### Ce qui reste du sur ce chantier
+
+* le controle n'est **pas encore pose** : il attend une correction rendue par
+  un tiers n'ayant ecrit ni le rendu ni l'audit ;
+* le REVERSE TEST reste a ecrire — un fichier `.py` volontairement casse doit
+  faire echouer le controle, et son absence rendrait la garde muette ;
+* le FORWARD TEST est acquis a la base : `nexus_test.py --only code` rend
+  **19/19** a HEAD, mesure ce jour.
+
+---
+
+## 122.1 UN HORODATAGE REND LE DEPOT IMPUBLIABLE — trouve en publiant, pas en relisant
+
+`cloud_models.txt` est suivi par git et porte en premiere ligne l'horodatage
+de sa generation. Mesure sur la seule journee, machine identique, catalogue
+identique :
+
+```
+16:46  ->  18:00  ->  18:11
+```
+
+Le corps du fichier — les dix-neuf modeles — est rigoureusement **identique**
+aux trois passages. Seul l'horodatage bouge, et `git diff` ne montre que lui.
+
+Consequence, et elle n'est pas cosmetique : §0.3 exige un arbre propre avant
+toute publication. Chaque generation salit donc l'arbre pour une ligne de
+commentaire qui n'apprend rien, et **la vitrine refuse de publier**. Le
+mecanisme cense proteger la publication l'empeche.
+
+Ce defaut n'a ete vu ni par un audit ni par une relecture : il est apparu en
+voulant publier, et il s'est confirme **en direct** pendant la session, le
+fichier repassant de 18:00 a 18:11 sous les yeux. C'est §0.1.4 mot pour mot —
+le defaut trouve par l'usage est celui qu'aucune lecture ne trouve.
+
+Le remede confie au banc : ne pas reecrire quand le corps est inchange,
+l'ancien horodatage restant en place. Le mecanisme candidat + `os.replace`
+atomique est conserve intact — il protege d'une ecriture interrompue, et ce
+n'est pas lui qui est en cause.
+

@@ -1244,6 +1244,38 @@ def test_code() -> None:
             broken.append(name)
     check("scripts PowerShell sans erreur de syntaxe", not broken,
           ", ".join(broken) if broken else "%d scripts" % len(ps_paths))
+    # Les fichiers Python suivis par git doivent compiler.
+    import py_compile
+    import tempfile
+
+    try:
+        git_py = subprocess.run(["git", "ls-files", "--", "*.py"],
+                                cwd=ROOT, capture_output=True, text=True)
+    except OSError as e:
+        check("git ls-files executable trouve", False, "git introuvable: %s" % e)
+    else:
+        check("git ls-files a reussi", git_py.returncode == 0,
+              "code de retour %d" % git_py.returncode)
+        py_paths = [os.path.join(ROOT, n) for n in git_py.stdout.splitlines() if n.strip()]
+        check("fichiers Python suivis trouves", len(py_paths) > 0,
+              "%d fichiers" % len(py_paths) if py_paths else "aucun fichier .py suivi par git")
+
+        casses = []
+        manquants = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for full in py_paths:
+                name = os.path.relpath(full, ROOT)
+                cible = os.path.join(tmp, "test.pyc")
+                try:
+                    py_compile.compile(full, cfile=cible, doraise=True)
+                except py_compile.PyCompileError:
+                    casses.append(name)
+                except OSError:
+                    manquants.append(name)
+        check("fichiers Python sans erreur de syntaxe", not casses,
+              ", ".join(casses) if casses else "%d fichiers" % len(py_paths))
+        check("fichiers Python accessibles au controle", not manquants,
+              ", ".join(manquants) if manquants else "tous accessibles")
 
 
 # ----------------------------------------------------------------------
