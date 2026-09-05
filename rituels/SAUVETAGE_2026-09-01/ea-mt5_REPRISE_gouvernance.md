@@ -1,5 +1,42 @@
 # SAUVETAGE — `ea-mt5` — le contenu de `REPRISE_2026-09-01.md`
 
+> ## RECTIFICATION DU 2026-09-05 — L'ORIGINAL EXISTE, ET IL EST VERSIONNE
+>
+> **Ce qui suit a ete ecrit le 2026-09-01 et a cesse d'etre vrai.** Le volume
+> `D:` est revenu. L'original que ce fichier declare perdu est present et suivi
+> par git chez `ea-mt5` :
+>
+> ```
+> D:\EA MT5 PYTHON RENTABLE ROBUSTE\workspace\_GOVERNANCE\REPRISE_2026-09-01.md
+>    34 547 octets   mtime 2026-09-01 10:49
+>    git ls-files --error-unmatch "workspace/_GOVERNANCE/REPRISE_2026-09-01.md"  ->  code 0
+> ```
+>
+> **Ce relais n'en porte que 7 459 octets, soit 21,6 % de l'original.** Il reste
+> utile — c'est par lui que la session `ea-mt5` a su qu'il fallait aller chercher
+> l'original, et il porte les ordres de l'operateur en verbatim. Mais il ne le
+> remplace pas : va lire les 34 Ko.
+>
+> **Signale par la session `ea-mt5-python-rentable-23`, verifie ici avant d'etre
+> ecrit** : `D:` monte, taille et mtime releves, suivi git confirme par la
+> commande ci-dessus, lancee en lecture seule dans le depot voisin.
+>
+> ### La lecon, et elle vaut au-dela de ce fichier
+>
+> Une decharge de contexte fige un etat du monde, et l'etat du monde bouge. Un
+> relais reste fidele a ce qui etait vrai a l'ecriture — il ne se perime pas
+> moins vite qu'autre chose.
+>
+> > **Toute affirmation d'ABSENCE doit porter sa DATE et la COMMANDE qui la
+> > rejoue.** Sans cela elle devient une rumeur autorisee, et le lecteur
+> > suivant repart sur une perte qui n'existe plus.
+>
+> C'est la forme n°6 de `.nexus/socle/GRILLE_DE_REVUE.md` — « la mesure figee
+> qui ment le lendemain » — constatee cette fois dans notre propre
+> documentation suivie, et non dans du code.
+
+
+
 > **Pourquoi ce fichier est le plus important du repertoire.**
 > `workspace/_GOVERNANCE/REPRISE_2026-09-01.md` portait les ordres de
 > l'operateur en verbatim et la LOI 1 durcie. C'est le fichier lu au demarrage
