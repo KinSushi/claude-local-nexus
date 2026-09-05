@@ -158,12 +158,21 @@ def bloc_taches() -> None:
     non. Confondre les deux, c'est croire armé ce qui ne l'est plus.
     """
     titre("CE QUI TOURNE SANS SESSION")
-    # Les noms sont ceux que Windows porte REELLEMENT, releves par
-    # Get-ScheduledTask. « NexusDemarrage » etait une supposition : la tache
-    # existante s'appelle « Claude-Local-Nexus - Demarrage », si bien que la
-    # reprise l'annoncait ABSENTE alors qu'elle etait armee -- et invitait a
-    # la reenregistrer pour rien. Un tableau de bord qui se trompe sur ce qui
-    # tourne est pire qu'un tableau de bord vide.
+    # Les noms sont ceux que Windows porte REELLEMENT, relevés par
+    # Get-ScheduledTask. Mesures du 2026-09-05 : les quatre tâches
+    # « Claude-Local-Nexus - Demarrage », « Claude-Local-Nexus - Mise a jour »,
+    # « NexusTraque » et « NexusVitrine » sont absentes de la machine.
+    # Confirmation par trois voies concordantes :
+    #   • interrogation séparée de chaque nom → état ABSENTE ;
+    #   • aucune des 202 tâches listées ne référence « nexus » ni
+    #     « local‑llm » dans son action ;
+    #   • la requête sans filtre rend 202 lignes sans aucun des quatre noms.
+    # Motif du changement : avec -TaskName, le code de retour ne distingue pas
+    # une commande échouée d’une recherche infructueuse — une tâche absente
+    # demandée seule rend code 1 et sortie vide, une présente rend code 0,
+    # une présente plus une absente rend code 1 avec la ligne de la présente ;
+    # la bannière imprimait donc illisible pour les quatre et n’atteignait
+    # jamais sa branche ABSENTE.
     taches = (
         ("NexusTraque", "traque des defauts + cockpit, PT10M",
          "Register-NexusTraque.ps1"),
@@ -174,11 +183,13 @@ def bloc_taches() -> None:
         ("Claude-Local-Nexus - Mise a jour", "modeles, quotidien",
          "Register-NexusAutoUpdate.ps1"),
     )
-    # Un hook de démarrage paie le démarrage de PowerShell à chaque appel, pas seulement la requête : un seul appel pour toutes les tâches.
-    noms = ",".join("'%s'" % nom for nom, _, _ in taches)
+    # INTERROGER SANS FILTRE : Get-ScheduledTask sans -TaskName rend code 0
+    # et la liste complete. Le code de retour devient non ambigu : 0 = j'ai
+    # pu regarder, non nul = je n'ai pas pu. Le filtrage sur les 4 noms se
+    # fait en Python, ce qui leve l'ambiguite structurelle de PowerShell.
     commande = (
-        "Get-ScheduledTask -TaskName %s -ErrorAction SilentlyContinue | "
-        "ForEach-Object { \"$($_.TaskName)|$($_.State)\" }" % noms
+        "Get-ScheduledTask -ErrorAction SilentlyContinue | "
+        "ForEach-Object { \"$($_.TaskName)|$($_.State)\" }"
     )
     ok, sortie = executer(["powershell", "-NoProfile", "-Command", commande], 25)
     if not ok:
