@@ -18471,3 +18471,118 @@ l'ancien horodatage restant en place. Le mecanisme candidat + `os.replace`
 atomique est conserve intact — il protege d'une ecriture interrompue, et ce
 n'est pas lui qui est en cause.
 
+
+---
+
+## 122.2 LA VITRINE ANNONCAIT UN ECHEC SUR UNE REUSSITE — trouve en publiant
+
+Une tache planifiee et un appel manuel de `nexus_vitrine.py` ont publie **en
+meme temps**. Le gagnant a ecrit dans `logs/vitrine.log` :
+
+```
+  [OK    ] publication            poussee vers origin
+VERDICT : vitrine publiee.
+```
+
+Le perdant, au meme instant, a affiche :
+
+```
+  [BLOQUE] publication            error: failed to push some refs to ...
+VERDICT : publication REFUSEE. Rien n'est parti.
+```
+
+Verifie a la main dans la seconde qui suit : `origin/main` et `HEAD` sont
+identiques a `b40d1de`, et `git push` rend `Everything up-to-date`. **La
+publication avait bel et bien eu lieu.**
+
+**Le defaut n'est pas l'echec du push.** Deux pousseurs simultanes, l'un doit
+perdre — c'est normal. Le defaut est la PHRASE : *« rien n'est parti »* etait
+une affirmation sur l'etat DISTANT que le script n'avait jamais mesuree.
+
+Le §0.3 porte deja la regle symetrique : *un rapport qui annonce un succes sur
+un echec est pire que pas de rapport*. Celui-ci annoncait un echec sur une
+reussite, et coute exactement la meme chose — un operateur croit son travail
+perdu et le refait.
+
+Desormais le distant est INTERROGE avant toute conclusion. Distant egal au
+local : `OK`, detail *« deja poussee par un autre processus (course) »*.
+Distant different, ou non interrogeable : le blocage reste, detail *« etat
+distant non verifiable »*.
+
+**Un rendu sur deux a ete rejete, sur une mesure et non sur un gout.** Il
+employait `(r_remote.stdout or "").split()[0]`, qui leve `IndexError` si
+`ls-remote` rend une sortie vide avec un code 0 — mesure faite :
+`"".split()[0]` leve, `"".split("\t")[0]` rend `""`. Il aurait fait PLANTER la
+vitrine sur le chemin meme cense la fiabiliser.
+
+**RESTE OUVERT, et il est nomme :** `nexus_vitrine.py` ne prend **aucun
+verrou**, alors que `scripts/nexus_verrou_machine.py` existe (15 Ko) et sert
+deja a l'exclusion mutuelle entre projets. La course reste possible ; elle est
+desormais RAPPORTEE avec justesse au lieu d'etre EVITEE. Le remede structurel
+est le verrou ; ce correctif ne fait que cesser de mentir.
+
+---
+
+## 122.3 LES QUATRE TACHES PLANIFIEES SONT ENFIN ARMEES — et c'est la seule chose qui survit
+
+La banniere de reprise les portait ABSENTES depuis des jours. Mesure faite ce
+jour : **202 taches sur la machine, zero Nexus.** Les quatre scripts
+d'enregistrement existaient pourtant, entre 4 712 et 9 837 octets.
+
+Aucun n'exige l'administrateur — `Register-NexusTraque.ps1` emploie
+`-LogonType Interactive -RunLevel Limited`, verifie avant d'appeler. Le compte
+courant n'est pas administrateur, et l'enregistrement a reussi.
+
+| tache | cadence | verifiee sur la machine |
+| --- | --- | --- |
+| `NexusTraque` | 10 min | `Ready`, prochaine passe mesuree |
+| `Claude-Local-Nexus - Demarrage` | ouverture de session | `Ready` |
+| `Claude-Local-Nexus - Mise a jour` | 04:00 quotidien | `Ready` |
+| `NexusVitrine` | 6 h | `Ready` — elle a publie d'elle-meme dans l'heure |
+
+**Pourquoi cela compte plus que n'importe quel rappel.** La boucle de session
+— `ScheduleWakeup` ou un `cron` du harnais — vit dans la session et meurt avec
+elle. La banniere de reprise le dit deja en toutes lettres. Ces quatre taches
+sont **la seule mecanisation qui survit a une perte de contexte**, et
+`NexusVitrine` l'a prouve le jour meme en publiant sans que personne le lui
+demande.
+
+L'operateur l'avait formule ainsi : *« pas seulement rappeler mais TOUT
+mecaniser ce qui doit l'etre parce que tu vas oublier, tu vas perdre ton
+contexte et deriver »*. Un rappel depend de quelqu'un qui le lit. Une tache
+planifiee ne depend de personne.
+
+---
+
+## 122.4 LA PORTE DU RITUEL — en cours, et l'arbitrage est deja rendu
+
+Le hook `Stop` existe et lance `nexus_rituel.py` a chaque fin de tour. Mais sa
+commande, telle qu'elle est sur le disque, se termine par `|| true` et n'emet
+qu'un `systemMessage`. **Elle rappelle ; elle ne refuse jamais.**
+
+Une premiere conception a echoue pour la raison exacte qui a coute six passes
+au controle de compilation (§122) : elle n'avait pas les DEFINITIONS des
+controles et les a classes de memoire — elle a pris `loi1 tenue` pour une
+conformite legale. Definitions jointes, la seconde a lu le code et rendu deux
+constats **verifies ici** :
+
+* `boucle_armee` rend **toujours** `IGNORE` — *« ScheduleWakeup vit dans la
+  session, pas sur le disque »*. Elle ne peut donc jamais produire un manque,
+  donc jamais bloquer.
+* `loi1_tenue` est un **cliquet**, pas une porte : *« il refuse l'aggravation
+  sans reparer le passe »*. Elle est donc satisfiable, et non un piege.
+
+**Arbitrage rendu : la porte ne bloquera que sur `travail commite`.** C'est le
+seul controle a la fois essentiel et satisfiable A L'INSTANT par la session
+elle-meme. Les autres avertissent.
+
+La raison n'est pas la prudence, c'est l'efficacite : *une porte qui piege se
+fait desarmer, et une porte desarmee ne protege rien.* Bloquer sur
+`part deleguee` ou `arbres recoltes` — que la session ne peut pas toujours
+satisfaire dans l'instant — produirait exactement cela.
+
+Bornes exigees : deux refus consecutifs au plus, compteur sous `.nexus/`
+(ignore par git), echappatoire `NEXUS_AGENT_LIBRE=1` selon la convention deja
+en place, et **fail-ouvert absolu** — si `nexus_rituel.py` plante, expire ou
+rend un JSON illisible, la porte laisse passer.
+
