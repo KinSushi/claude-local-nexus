@@ -22234,3 +22234,96 @@ c'est celui qui porte la garantie.
 
 La correction repart au banc — l'orchestrateur a audite, il ne corrige pas.
 Chaque defaut part avec **sa mesure d'execution**, pas avec une opinion.
+
+
+---
+
+## 142. LA RECONCILIATION EST COMPLETE — six branches sur six, et elle a rendu une mesure
+
+### 142.1 Le point de depart, mesure
+
+```
+50 branches
+   40 worktree-agent ENTIEREMENT fusionnees   -> supprimees, 0 refusee
+    1 main-check, fusionnee                    -> supprimee
+    6 portant 13 commits UNIQUES               -> a reconcilier
+```
+
+`git branch -d` **refuse par construction** une branche non fusionnee. La
+garde est integree, et elle n'a refuse aucune des 41.
+
+### 142.2 Le verdict, branche par branche
+
+| branche | commits | verdict | preuve |
+| --- | ---: | --- | --- |
+| `worktree-agent-a9bae5bcacf5d3042` | 1 | **FUSIONNEE** | sans conflit ; `epreuve_rendu_vide.py` passe ses 5 cas, dont un temoin positif |
+| `worktree-agent-a415cd08dccd3fd97` | 5 | **FUSIONNEE** | sans conflit ; a apporte `QUARANTAINE.md` |
+| `worktree-agent-a0bb278a9ee2836a5` | 2 | **FUSIONNEE** | un seul fichier en conflit, arbitre sur couverture mesuree |
+| `worktree-agent-ae2755c603728d190` | 2 | **DEPASSEE** | **0 ligne** absente de main sur 818 + 112 |
+| `worktree-agent-a96910bce09e87b38` | 1 | **DEPASSEE** | 14 definitions sur 14 dans main, qui en porte 996 contre 595 |
+| `backup-avant-rebase-ae2755` | 2 | **DEPASSEE** | 6 lignes absentes, toutes des formulations que main a remplacees |
+
+**Trois fusionnees, trois deja absorbees.** Rien n'a ete perdu, et rien n'a
+ete force.
+
+### 142.3 Ce que la reconciliation a RENDU, et qu'on ne pouvait pas refaire
+
+Ce matin, mesure a la main et declaree **NON VERIFIE** :
+
+> *« l'amelioration de -271 sur PowerShell est SUSPECTE ; la reference porte
+> 229 et la mesure rend 16. La chute peut venir d'un PERIMETRE RETRECI. »*
+
+La branche `a0bb278a9ee2836a5`, ecrite le 2026-09-02 et jamais fusionnee, porte
+la reponse en commentaire :
+
+> *« depuis la racine, `-Path . -Recurse` descendait dans `.claude/worktrees/`,
+> ou chaque agent porte une COPIE de `scripts/`. La reference portait 229 la ou
+> le depot en compte 13 : dix-sept copies. […] une vraie aggravation etait
+> annoncee AMELIORATION « 229 -> 14 ». **Le cliquet ne refusait plus rien.** »*
+
+**Mon incertitude a ete levee par une branche restee hors de main pendant
+quatre jours.** La reconciliation ne range pas : elle rend des mesures qu'on
+etait en train de refaire.
+
+### 142.4 Et elle a corrige un defaut mesure le matin meme
+
+```
+AVANT   nexus_outillage.py | 83 regressions annoncees
+APRES   nexus_outillage.py |  0
+```
+
+Le §138 mesurait que le progress prenait `re.search(chiffre, stdout)` — **le
+premier entier**, soit le total ruff — et l'etiquetait « regressions ». La
+branche corrigeait deja cela, plus l'auto-reference du rapport :
+
+```
+Etat de l'arbre | propre (HORS CE TABLEAU)
+```
+
+Meme classe que le compteur de lettres de lecteur qui comptait sa propre
+documentation (§140) — et corrige quatre jours avant que je le mesure.
+
+### 142.5 L'arbitrage du seul conflit, sur mesure et non sur preference
+
+Les **deux** cotes avaient corrige le meme defaut :
+
+```
+main      Get-ChildItem -Path scripts, tools -Recurse ...
+branche   @(Get-ChildItem -Path . -File -Filter *.ps1)
+        + @(Get-ChildItem -Path scripts, tools -Recurse ...)
+```
+
+La version de la branche est un **sur-ensemble** : elle couvre aussi les `.ps1`
+de la **racine**. Mesure faite **avant** de trancher : main n'avait change que
+ces quatre lignes dans ce fichier. Retenir la branche ne perdait rien d'autre.
+
+### 142.6 Pourquoi les trois branches depassees ne sont PAS supprimees
+
+`git branch -d` les refuse — git les voit non fusionnees, meme si leur contenu
+est dans main par d'autres routes. Les effacer demanderait `-D`, c'est-a-dire
+**passer outre une garde**.
+
+> Le depot n'efface pas ce qu'une garde refuse d'effacer. Elles restent, avec
+> leur verdict ecrit ici.
+
+**Etat final : 4 branches** — `main` et trois depassees, chacune documentee.
