@@ -13,7 +13,7 @@ import sys
 import tempfile
 
 # add script directory to path
-script_dir = os.path.abspath(os.path.dirname(__file__))
+script_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts')
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 

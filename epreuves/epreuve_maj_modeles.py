@@ -13,8 +13,8 @@ import json
 import shutil
 import tempfile
 
-# add the directory containing this script to sys.path
-script_dir = os.path.abspath(os.path.dirname(__file__))
+# add script directory to sys.path
+script_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts')
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
