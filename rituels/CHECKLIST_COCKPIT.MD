@@ -21588,3 +21588,100 @@ derriere **deux pairs** :
 
 **Trois projets, chacun poliment a `--parallele 1`, un seul moteur.** Le
 verrou fait exactement son travail ; la machine est le goulot, pas le code.
+
+
+---
+
+## 135. LE JUGE LOCAL A TROUVE CE QUE J'AVAIS MANQUE — et le controle l'a confirme
+
+> *« utilise le juge local »* — l'operateur, 2026-09-06.
+
+Il avait raison sur le fond : **j'avais verifie moi-meme un deplacement que
+j'avais moi-meme execute**. C'est le troisieme temps de la LOI 1 (§0.7.1), et
+je l'avais saute en croyant l'avoir fait — parce que mes epreuves etaient
+mecaniques et passaient.
+
+### 135.1 Le juge, et pourquoi il etait deja prevu
+
+```
+python scripts/nexus_valide.py --base HEAD~1 --modele glm-4.7-flash-local
+```
+
+Le code portait deja le cas, en commentaire :
+
+> *« NEXUS_VALIDE_MODELE, ou `--modele`, permet de juger en local quand le
+> cloud est indisponible. On perd de la capacite, jamais la verification. »*
+
+Ecrit le 2026-08-30, apres une heure de `429` qui avait rendu la validation
+obligatoire **impossible a executer** — *« et une validation qui ne s'execute
+pas ne protege de rien »*. Le quota cloud etant epuise depuis ce matin, le cas
+prevu s'est presente.
+
+### 135.2 Ce qu'il a trouve
+
+```
+[ALERTE] sauvegardes de l'essaim
+    8 dans racine (ex. backup-nexus_agent.py-36312777.bak)
+```
+
+**Mon isolation etait incomplete** : mon lot ne listait que des *dossiers*, et
+les huit `backup-*.bak` de premier niveau dans `.nexus/` n'y figuraient pas.
+
+### 135.3 Le controle ne disait pas « encombrement »
+
+> *« chaque reste est un cycle interrompu : la cible peut porter du texte ecrit
+> par un modele et jamais relu. Verifier `git status` avant de supprimer. »*
+
+Ce ne sont pas des dechets : **huit avertissements** que huit fichiers du depot
+portent peut-etre du texte de modele jamais relu. Balayer aurait efface
+l'avertissement sans repondre a la question.
+
+### 135.4 La verification, suivant sa propre consigne
+
+| sauvegarde | cible | dernier commit | arbre |
+| --- | --- | --- | --- |
+| `nexus_agent.py` | differente | `4550dd2` 2026-09-05 | propre |
+| `nexus_conformite.py` | differente | `abd0283` 2026-09-05 | propre |
+| `nexus_doc.py` | differente | `5701a60` 2026-09-02 | propre |
+| `nexus_essaim.py` | differente | `27a92fc` 2026-09-02 | propre |
+| `nexus_generate.py` | differente | `19470de` 2026-09-05 | propre |
+| `nexus_outillage.py` | differente | `83759be` 2026-09-05 | propre |
+| `nexus_validate.py` | differente | `c20dec3` 2026-09-05 | propre |
+| `nexus_valide.py` | differente | `5e91a4c` 2026-09-02 | propre |
+
+```
+IDENTIQUES 0   DIFFERENTS 8   CIBLE INTROUVABLE 0
+cibles portant une modification NON COMMITEE : ZERO
+```
+
+Chaque ecart est passe par un **commit**, donc par le rituel qui exige une
+mesure et un auteur declare.
+
+**Ce que cela ne prouve pas** : qu'un humain ait relu chaque commit. Cela
+prouve que le texte n'est pas reste **hors historique**. La nuance est reelle,
+et elle n'est pas gommee.
+
+### 135.5 La prediction, puis la mesure
+
+Apres deplacement, j'ai ecrit : *« le controle doit passer au vert »*. C'etait
+une **prediction**. La conformite l'a verifiee :
+
+```
+AVANT   [ALERTE] sauvegardes de l'essaim   8 dans racine (ex. backup-...)
+APRES   [  OK  ] sauvegardes de l'essaim   aucun reste : chaque cycle s'est termine
+```
+
+**Le sujet est clos au sens du contrat** (§0.2.1) : un controle existe, il
+echouait, il passe, et il echouera de nouveau si des restes reapparaissent.
+
+### 135.6 L'etat de l'isolation, final
+
+```
+3 733,5 Mo sortis  ->  C:\local-llm-docker-hors-projet\
+3 manifestes JSON, chacun portant origine et destination
+rituels/_POINTEUR_HORS_PROJET.md   2 820 octets, SUIVI par git
+```
+
+Reste **un seul controle bloquant** dans tout le depot :
+`epreuve_garde_encodage` execute a l'import — deja commande au banc, axe
+`import_sans_effet` de la vague 24.
