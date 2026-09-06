@@ -19841,3 +19841,87 @@ redaction      Auteur declare : 18 sur 36 -- 18 MUETS   (>= : conforme)
 vitrine        verdict OK, 2 avertissement(s)
 conformite     Conforme, avec 4 avertissement(s)
 ```
+
+
+---
+
+## LE RAYON CODE PASSE DE 4 148 A 11 897 SYMBOLES — l index etait PERIME
+
+L index n'etait pas incomplet par defaut d'outil. Il datait d'avant un
+correctif deja pose sur l'indexeur, et personne ne l'avait regenere.
+
+### La mesure qui a ouvert l'axe
+
+| depot | matiere | dans l'INDEX | ce que l'OUTIL rend |
+| --- | --- | --- | --- |
+| Building-Agentic-AI-Systems | 1 .py + 8 carnets | **2** | **72** |
+| MLAT_Original | 29 .py + 158 carnets | **41** | **817** |
+| 30-Agents-Every-AI-Engineer | 50 .py + 104 carnets | **211** | **4 360** |
+
+Trois depots rendaient 5 249 symboles quand l'index entier en comptait 4 148
+sur dix-neuf depots. L'outil LIT les carnets : 187 fichiers lus sur MLAT, 3
+illisibles.
+
+### Resultat
+
+```
+ancien   4 148 entrees, 19 depots
+neuf    11 897 entrees, 16 depots, 0 doublon
+facteur  x2,87
+```
+
+### Deux defauts de la manoeuvre, trouves avant l'echange
+
+**1. Passer chaque depot un par un a `--source`** fait prendre ses
+sous-repertoires pour des depots. Mesure : 62 segments en position 2 au lieu
+de 16, dont 35 valant `chapter01`, `ch08`, `chapter13`. Le nom du depot
+disparaissait de l'identifiant, et une recherche par depot aurait casse.
+L'outil derive le nom du premier segment relatif a `--source` : il faut lui
+donner le PARENT. Sa docstring est ambigue sur ce point.
+
+**2. Indexer les deux sources** fait compter cinq depots deux fois, sous
+`PacktPublishing__X` et sous `X`. Mesure : **6 894 entrees en double emploi
+sur 18 791**, soit 37 %. Corrige par un arbre de JONCTIONS ne portant chaque
+depot qu'une fois — aucune copie de 300 Mo.
+
+### Ce qui est perdu, mesure et non masque
+
+145 symboles sur TROIS depots — `Python-Machine-Learning-by-Example`,
+`generative_ai_with_langchain`, `BAP3`. Les trois sont **introuvables sur le
+disque** : leur source a disparu, l'ancien index en gardait des entrees
+orphelines. Elles ne sont plus regenerables. L'ancien rayon est sauvegarde
+sous `.nexus/rayon_code_sauvegarde-*` pour qu'elles restent lisibles.
+
+### Epreuves
+
+```
+AVANT ECHANGE   en-tete intact, 40 relectures par seek concordantes,
+                0 fausse, 0 depot en double, sauvegarde prise
+FORWARD         'circuit' 22 resultats, 'CircuitBreaker' 10,
+                lecture d'un fragment rendant la classe et sa docstring
+REVERSE         requete inexistante -> verdict negatif nomme, CODE=2
+```
+
+### Ce que deux sessions voisines ont apporte
+
+L'une a mesure que SON extracteur ne lit pas les carnets du tout — tout depot
+sans `.py` rend exactement zero, quel qu'en soit le nombre de carnets. Cela a
+permis d'ecarter cette cause ici. Elle a ensuite **retire son propre
+diagnostic** sur sept depots recalcitrants : son lanceur perdait sept
+arguments sur vingt-trois EN SILENCE, et elle avait conclu que les depots
+resistaient a l'extracteur.
+
+> *« Mon instrument mesurait la FORME LITTERALE et pas l'EFFET. »*
+
+Sa formule est plus generale que la notre : elle vaut pour tout `grep` de
+verification. Elle avait cherche `exit(2)` dans ses hooks, trouve zero, et
+failli conclure qu'aucun ne bloquait — alors qu'ils ecrivent `return 2` puis
+`sys.exit(main())`.
+
+### Ce que cet episode dit du corpus en general
+
+Le rayon vit sur disque et n'est pas suivi par git : la regeneration ne laisse
+donc **aucune trace dans l'historique**. C'est la raison de cette section. Un
+corpus non versionne dont personne ne mesure la fraicheur peut rester perime
+des mois sans qu'aucun controle ne rougisse — et c'est exactement ce qui
+vient d'arriver.
