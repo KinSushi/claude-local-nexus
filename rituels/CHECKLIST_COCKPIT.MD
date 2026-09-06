@@ -22327,3 +22327,73 @@ est dans main par d'autres routes. Les effacer demanderait `-D`, c'est-a-dire
 > leur verdict ecrit ici.
 
 **Etat final : 4 branches** — `main` et trois depassees, chacune documentee.
+
+
+---
+
+## 143. LE BANC A SIGNALE LUI-MEME LA VIOLATION DE LA LOI 1
+
+Le lot prioritaire a rendu ses deux axes, et sa derniere ligne portait ceci :
+
+```
+2 alias -> 1 famille(s) distincte(s)
+[!] Des taches ont partage une meme famille, le croisement n'a pas eu lieu
+```
+
+**Le controle et sa contre-epreuve venaient du meme modele.** C'est exactement
+ce que la LOI 1 interdit : *celui qui ecrit ne peut pas eprouver*. Et ce n'est
+pas moi qui l'ai vu — **c'est l'outil**, dans la ligne que j'aurais pu ne pas
+lire.
+
+### 143.1 Les deux rendus, tous deux rejetes
+
+**Le controle**, cinq defauts prouves par execution — voir §141. Le premier
+suffit : il compare un chemin absolu a une liste relative, l'intersection est
+**vide**, et il rend VERT en toutes circonstances.
+
+**La contre-epreuve**, rejetee plus gravement encore :
+
+> Elle **reimplemente le controle** au lieu de l'eprouver. Elle porte une copie
+> de la logique, et **aucun cas de test** : ni forward, ni inverse, ni fuite.
+
+Autres defauts mesures :
+
+| defaut | pourquoi |
+| --- | --- |
+| `if tracked and others: return False` | vrai des qu'un depot a un fichier suivi ET un ignore — c'est-a-dire toujours |
+| `subprocess.run(['du','-sh', root])` | commande UNIX, la machine est Windows |
+| `float(size_res.stdout.split()[0])` | `du -sh` rend `"3.7G"`, pas un flottant |
+| `except: pass` | avale tout, y compris ce qu'il fallait voir |
+
+### 143.2 Ce qu'une contre-epreuve EST, et n'est pas
+
+> Elle **n'est pas** une seconde implementation du controle. Elle **lance** le
+> controle, sur des arborescences **fabriquees**, et verifie son **code de
+> sortie** et son **message**.
+
+Le rendu confondait les deux, et cette confusion produit le pire des faux
+verts : deux implementations du meme malentendu qui se confirment l'une
+l'autre.
+
+### 143.3 Le remede : imposer deux familles, explicitement
+
+```
+separation_controle_v3   qwen3-coder-30b-local   ecrit
+separation_epreuve_v3    glm-4.7-flash-local     eprouve
+```
+
+Le banc choisissait seul, et son repli les avait ramenes a la meme famille.
+**Le modele est donc nomme axe par axe**, ce qui restaure le croisement que la
+LOI 1 exige.
+
+### 143.4 Ce que cet episode enseigne sur la delegation
+
+Deux tours de banc, quatre rendus, **zero ligne posee**. Ce n'est pas un
+gaspillage : chaque rejet a resserre la consigne, et le troisieme lot part
+avec cinq defauts nommes, une definition explicite de ce qu'est une
+contre-epreuve, et deux familles imposees.
+
+> **Le troisieme temps de la LOI 1 ne coute pas du temps : il en fait gagner
+> au premier defaut qu'il attrape.** Sans lui, `nexus_separation.py` serait
+> dans `scripts/`, rendrait 0 a chaque appel, et la separation serait declaree
+> gardee alors que rien ne la garderait.
