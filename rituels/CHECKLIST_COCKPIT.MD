@@ -23362,3 +23362,112 @@ les 147 outils comme « projet ».
 
 Aucune ligne close : aucune n'a de controle qui echoue si la regle est
 enfreinte.
+
+
+---
+
+## 153. L'ANGLE MORT N'EST PAS DE SEIZE FICHIERS, IL EST DE CINQ
+
+Corrige §152, posee moins d'une heure plus tot par la meme main.
+
+### 153.1 Ce que §152 melangeait
+
+Elle annoncait : *« 16 fichiers ne peuvent pas bouger sans mise a jour HORS
+DEPOT »*. Le chiffre additionnait trois classes qui ne se traitent pas de la
+meme facon :
+
+| classe | comment on la trouve |
+| --- | --- |
+| A — dans un fichier **suivi** | `git grep` |
+| B — sur le disque, non suivi | une recherche de fichier |
+| C — **hors** du systeme de fichiers du projet | une INTERROGATION, et rien d'autre |
+
+Seule la classe C est un angle mort. Les autres cassent aussi, mais **on les
+voit** — et un lien qui casse et qu'on voit se repare, tandis qu'un lien
+invisible se decouvre a la panne.
+
+### 153.2 La mesure, par classe
+
+```
+.claude/settings.json  (le depot)   SUIVI par git
+   11 scripts nommes
+    0 chemin ABSOLU
+   15 references via $CLAUDE_PROJECT_DIR   -> portable, et TROUVABLE
+
+~/.claude/settings.json  (global)   HORS du depot
+    7 scripts nommes
+    6 chemins absolus vers ce depot        -> INVISIBLE
+
+planificateur Windows               HORS du depot
+    2 scripts nommes en absolu             -> INVISIBLE
+```
+
+**Les hooks du depot sont deja ecrits comme ils doivent l'etre** : zero chemin
+grave, tout derive de `$CLAUDE_PROJECT_DIR`. C'est la regle de portabilite
+§0.5 appliquee, et elle l'etait avant que je la cherche.
+
+### 153.3 Le vrai angle mort, nomme
+
+Trois scripts ne sont nommes QUE depuis l'exterieur :
+
+```
+nexus_agent.py            l'appel au banc
+nexus_garde_ecriture.py   UNE GARDE
+nexus_valide.py           la validation LOI 1
+```
+
+Plus les deux du planificateur, `start.ps1` et `Update-NexusModels.ps1`.
+**Cinq fichiers**, pas seize.
+
+Quatre autres gardes sont nommees des deux cotes — `nexus_garde_agent`,
+`nexus_garde_isolation`, `nexus_garde_production`, `nexus_garde_shell` — donc
+un `git grep` les trouve.
+
+`nexus_garde_ecriture.py` reste le cas grave : **une garde qui n'existe que
+dans la configuration globale**. Elle protege les autres projets de cette
+machine, et un clone de ce depot ne l'a pas. Sa disparition ne produit aucun
+message : le hook ne se declenche plus, et le silence se lit comme une
+protection.
+
+### 153.4 Pourquoi cette correction change la suite du travail
+
+Un chantier dimensionne sur seize fichiers invisibles se serait donne un
+appareillage lourd. Cinq, dont trois nommes, se garde par un controle court :
+lire les deux sources externes, verifier que chaque chemin resout, echouer
+sinon.
+
+C'est desormais assez petit pour etre mecanise — donc assez petit pour qu'un
+sujet se CLOSE au sens du §0.2.1, au lieu de rester une mesure de plus.
+
+**Le controle n'est pas ecrit.** LOI 1 : il sera commande au banc, qui sert
+en ce moment une session voisine. Sa commande est preparee, non lancee, pour
+tenir l'engagement pris de ne rien relancer avant ses quatre rendus.
+
+### 153.5 Ce que la contre-epreuve a deja etabli
+
+L'instrument de mesure a ete eprouve dans les deux sens avant d'etre cru :
+
+```
+chemins morts trouves sur le depot sain          0
+temoin fabrique nexus_garde_qui_nexiste_pas.py   detecte MORT
+```
+
+Le silence sur un depot sain ne prouvait rien ; le temoin le prouve.
+
+### 153.6 CE QUI RESTE OUVERT — remplace §152.7
+
+| sujet | etat |
+| --- | --- |
+| **5 references externes non gardees** | mesurees et NOMMEES, contre-epreuve passee. Commande preparee, non lancee. |
+| `nexus_garde_ecriture` global seule | une garde absente de tout clone, panne muette |
+| controle semantique des voisines | 2 specifications rejetees, aucune retenue |
+| commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
+| `nexus_valide.py` > 900 s | `run_conformite()` sans timeout |
+| `rituels/` hors du projet | 333 refs, 53 fichiers, 13 dynamiques litterales, zero dependance planifiee |
+| frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
+| les 91 constructions non litterales | mesurees, non traitees |
+| fichier `--sortie` jamais cree | ecrire VIDE distinguerait « rien produit » de « jamais lance » |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+Aucune ligne close.
