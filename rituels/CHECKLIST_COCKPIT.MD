@@ -19239,3 +19239,181 @@ jamais avant. Le depot ne doit a aucun moment se retrouver sans detection.
 fourni le `_wrap()` ni l'enregistrement dans la sequence des controles. Sans
 eux le controle serait un orphelin — le meme maillon que le cliquet de cablage
 avait deja signale a l'orchestrateur quelques heures plus tot.
+
+---
+
+## 128. LE CORPUS DE CODE EST INDEXE — 2 231 a 4 148 symboles, et la confrontation fonctionne
+
+L'operateur : *« livres et codes sources du code doivent confronter Versus
+Notre projet »*, et *« il faut que cela soit contre TOUT le projet, pas
+uniquement un fichier »*.
+
+**Ce qui est desormais possible, prouve de bout en bout.** Une seule recherche
+rend le chapitre ET son implementation :
+
+```
+Rayon: code | 30-Agents...agent_utils.CircuitBreaker
+              Circuit breaker with closed -> open -> half_open transitions
+Rayon: epub | Agentic AI for Offensive Cybersecurity - Circuit breaker pattern
+Rayon: epub | Design Multi-Agent AI Systems - Retry logic and circuit breakers
+```
+
+### Ce qui manquait n'etait pas GitHub, c'etait l'indexeur
+
+Mesure faite avant de conclure : **aucun fichier suivi par git ne produisait
+`references/livres/code`**. Ses 2 231 symboles existaient sans moyen de les
+regenerer, et dix depots de code d'auteurs dormaient sous `.nexus/livres_code`
+— **2,5 Go deja sur le disque**, dont les deux que l'operateur reclamait
+nommement.
+
+Les adresses etaient la aussi : `.nexus/livres_code/_a_cloner.txt`,
+`_valides.txt`, et `REPOS_DES_LIVRES.md` qui recense **529 depots** extraits de
+70 fichiers sur 226 livres — avec son propre avertissement mesure : la
+conversion PDF a coupe des URL a la cesure, donc certaines sont fausses.
+
+### Trois defauts de l'indexeur, tous trouves EN EXECUTANT
+
+| defaut | mesure |
+| --- | --- |
+| cellules de carnet **fusionnees** | 155 illisibles sur 185 -> **3** ; 91 symboles -> **689** |
+| magie en derniere ligne | aurait avale la ligne suivante — perte muette |
+| **en-tete perdu** en mode ajout | `open("w")` tronque, condition inversee |
+
+Le premier est prouve par comparaison sur un carnet reel :
+
+```
+concatenation SANS separateur : ECHEC ligne 150, invalid decimal literal
+concatenation AVEC separateur : analyse OK
+```
+
+parce que la derniere ligne d'une cellule n'a pas de retour a la ligne :
+
+```
+cellule 0 : "warnings.filterwarnings('ignore')"   sans \n
+cellule 1 : 'import seaborn as sns'               sans \n
+```
+
+**Le troisieme avait reellement casse le corpus.** L'outil de recherche, qui
+localise ses colonnes par nom, declarait le rayon illisible. Il a fallu
+restaurer depuis une sauvegarde prise avant indexation.
+
+### Indexation reelle
+
+```
+Agentic-Architectural-Patterns              36 symboles,   0 illisible
+Machine-Learning-Model-Serving-Patterns    102 symboles,   0 illisible
+Deep-Reinforcement-Learning-Hands-On      1090 symboles,   0 illisible
+Machine-Learning-for-Algorithmic-Trading   689 symboles,   3 illisibles
+Agentic-AI-for-Offensive-Cybersecurity       0 symbole     (ni .py ni .ipynb)
+rayon : 2231 -> 4148, en-tete intact, 30 entrees relues par seek concordent
+```
+
+**Quatre depots restent hors de portee et sont nommes** : `Modern-Cpp`,
+`Beginning-C-Game`, `Deep-Learning-with-C` sont en C++, `MATLAB-for-Machine-
+Learning` est en MATLAB. Un indexeur Python par AST ne peut rien en tirer.
+Les nommer vaut mieux que de laisser croire a une couverture complete.
+
+---
+
+## 128.1 L'OUTIL DU CORPUS PERDAIT LA STDLIB PYTHON ENTIERE
+
+Trouve en employant l'outil du depot au lieu d'en ecrire un — la lecon de la
+section 126.1 appliquee, et elle a paye immediatement.
+
+```
+index a 5 colonnes, lisibles :  7
+index a 6 colonnes, PERDUS   :  3
+    securite_confinement                    28 entrees
+    _LIVRABLE_PYTHON_STDLIB_267/symbols   3068 entrees
+    _LIVRABLE_PYTHON_STDLIB_267/symbols   3068 entrees (copie eamt5)
+TOTAL PERDU : 6 164 entrees
+```
+
+Cause : les index a six colonnes inserent `convention` avant `resume`, et
+l'outil depaquettait a cinq positions fixes sans jamais lire l'en-tete qui
+NOMME les colonnes. Il les localise desormais par nom.
+
+**Preuve :** recherche de « synchronization primitive » —
+
+```
+outil AVANT : aucun resultat
+outil APRES : Rayon symbols, _thread.LockType, _thread.lock
+```
+
+**Ce que l'incident dit de plus.** Le message d'erreur s'imprimait a *chaque*
+recherche depuis des mois. Personne ne l'avait traite parce que personne
+n'employait l'outil : il figurait dans les **17 `preuve_seule`** du cliquet de
+cablage. Un outil qu'on n'emploie pas ne signale ses defauts a personne.
+
+---
+
+## 128.2 LE CABLAGE — la lecon de l'operateur, mesuree contre moi
+
+*« Le defaut a chaque fois c'est que tu ne cables rien, donc tu as des fichiers
+par milliers et ensuite tu oublies que tu les as car pas consultes pas
+cables. »*
+
+Mesure du cliquet, lancee pour le verifier :
+
+```
+cable 88   appele 57   preuve_seule 17   orphelin 0
+```
+
+Dix-sept scripts n'existent que dans de la documentation. Et j'ai pose un
+indexeur qui est apparu **orphelin des le cliquet suivant**.
+
+**Une trace a ete posee** dans `nexus_livres.py` : chaque consultation ecrit
+une ligne JSON, y compris une recherche VIDE avec `count: 0` — le cas qui
+compte, parce que ne pas le tracer ferait croire que personne n'a cherche.
+
+**Un appelant a ete pose** dans le rituel : un controle qui exige une
+consultation de moins de 24 h avec `count > 0`. Six epreuves, toutes passees,
+dont trois reverse. Deux corrections y ont ete necessaires, chacune declenchee
+par une epreuve : `datetime` non importe par le module, puis **38 horodatages
+sans fuseau sur 44** — le journal preexistait a la trace posee aujourd'hui.
+
+### Ce qui reste OUVERT, et le cliquet le dit lui-meme
+
+`scripts/nexus_indexer_code.py` est classe **`preuve_seule`**. Son commentaire
+donne la regle et elle est deliberee : *« un script de production cite
+seulement par un test reste `preuve_seule` »*. J'avais choisi le mauvais type
+d'appelant — une epreuve ne cable pas un outil de production.
+
+L'appelant juste est un controle de conformite qui rapporte quels depots du
+disque ne sont pas indexes : c'est a la fois le cablage et la confrontation.
+Il est au banc ; deux rendus sont revenus malformes.
+
+**Et l'epreuve posee est FAIBLE, je le dis plutot que de m'en prevaloir.**
+Contre-epreuve faite : extraction neutralisee, compte tombe de 72 a 67,
+l'epreuve a rendu `[PASS]`. Elle prouve que l'outil TOURNE, jamais qu'il
+MARCHE. Un renforcement par plancher a echoue — il ne detecte pas une
+degradation de sept pour cent, et il DUPLIQUAIT le controle. Retire.
+
+---
+
+## 128.3 COORDINATION — une accusation retiree, une conclusion corrigee
+
+**Une attribution refutee par la mesure.** Ea-mt5 signalait quatre processus
+`pytest` bloquant le mutex partage depuis trois heures, et les attribuait a
+nexus. Verification : `scripts/avec_verrou.py`, `.venv` et `tests/` sont
+**tous les trois absents** de ce depot. Ils etaient de sovereign, qui l'a
+confirme et les a termines.
+
+**Mais ma propre conclusion etait fausse**, et sovereign l'a corrigee. J'avais
+ecrit que `--attente-s 900` n'expirait pas apres 900 s. Colonne
+`ParentProcessId` : les quatre formaient **une seule chaine parent vers
+enfant**. Le premier avait PRIS le verrou immediatement ; les 184 minutes
+etaient du temps d'**execution**, jamais d'attente.
+
+> *« Age = 184 min » repond a depuis quand ce processus EXISTE, jamais a depuis
+> quand il ATTEND. Deux questions voisines, un seul chiffre, et le chiffre ne
+> distingue pas.*
+
+La colonne qui manquait etait sous ma main — j'interrogeais deja
+`Win32_Process`. J'ai vu quatre lignes et lu quatre processus. Le vrai defaut,
+que ma piste aurait masque : **`TaskStop` termine le shell et laisse la
+descendance vivante**, qui garde un mutex pris par un parent mort.
+
+**Ce qui tient de mon message :** un verrou sur un outil protege ceux qui
+passent par cet outil, pas la ressource. Nexus a le meme trou — douze outils
+MCP ne prennent pas son verrou, et c'est le chemin le plus naturel.
