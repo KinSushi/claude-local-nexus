@@ -20003,3 +20003,100 @@ de `backoff` invisibles.
 
 Les deux sont au banc. Ce qui est acquis, c'est que la cause est nommee et
 qu'elle n'est pas celle qu'on croyait.
+
+
+---
+
+## UN REFUS DE 0,5 SECONDE MASQUE EN PANNE DE 900 — le quota Ollama epuise
+
+Trois sessions ont perdu plus d'une heure a chercher une saturation de
+concurrence. La cause etait un **quota hebdomadaire epuise**, et la passerelle
+l'avait rendu invisible.
+
+### La sequence de mesures, et le piege de la troisieme
+
+| sonde | duree | resultat |
+| --- | --- | --- |
+| passerelle vivante | 2,1 s | HTTP 200 |
+| amont `/api/tags` | 0,2 s | HTTP 200, catalogue complet |
+| completion **par la passerelle** | **62 s** | `TimeoutError` |
+| completion **DIRECTE** vers l'amont | **0,5 s** | **HTTP 429** |
+
+```
+"you (dibaccointernacional) have reached your weekly usage limit,
+ upgrade for higher limits: https://ollama.com/upgrade"
+```
+
+**La deuxieme sonde est le piege.** Un `GET /api/tags` reussit alors que le
+quota de completion est mort. Elle repondait a *« l'amont est-il joignable »*
+quand la question etait *« l'amont accepte-t-il de travailler »*. J'ai failli
+conclure « la passerelle est le goulot » sur une mesure qui ne mesurait pas la
+bonne chose.
+
+### Le defaut : la passerelle efface la difference entre refus et lenteur
+
+```
+request_timeout : 900
+num_retries     : 2
+allowed_fails   : 2
+cooldown_time   : 120
+litellm         : UN SEUL processus, CPU 8,88 % — il attend, il ne calcule pas
+```
+
+Un 429 sur quota **hebdomadaire ne peut pas se retablir en reessayant**. La
+passerelle reessaie deux fois, suit ses chaines de repli vers d'autres alias
+du **meme compte** — donc vers la ressource deja epuisee — puis attend 900
+secondes.
+
+> **Un 429 dit « arrete ». Un timeout dit « reessaie peut-etre ». La passerelle
+> traduit le premier par le second.**
+
+### Ce que cela a coute, et le diagnostic faux qu'il a produit
+
+Quatorze processus `nexus_agent` vivants sur la machine, repartis sur trois
+sessions, dont plusieurs de trente a quarante minutes. Les trois sessions ont
+conclu independamment a une **saturation de concurrence** et ont commence a
+concevoir des plafonds partages.
+
+**Les zombies etaient le symptome, pas la cause.** Tous attendaient un 429
+deja rendu. Les tuer etait juste ; croire que c'etait la cause ne l'etait pas.
+
+Une session voisine avait resume le probleme sans en connaitre l'origine :
+
+> *« Un lot mort ressemble exactement a un lot lent. C'est ce qui rend le
+> seuil si couteux a decouvrir — on attend, parce que rien ne dit
+> d'arreter. »*
+
+La raison est maintenant nommee : **la passerelle efface la difference.**
+
+### Ce qui reste vrai du travail sur la concurrence
+
+Les mesures prises sur le seuil gardent leur valeur, mais elles doivent etre
+DATEES : elles ont ete prises quand le quota tenait encore.
+
+| mesure | source |
+| --- | --- |
+| 6 taches sequentielles ~90 s, avec `--parallele 4` 39 s | session voisine |
+| au-dela de ~4 appels en vol, le rendement tombe a zero | brief d'une autre |
+| 40 connexions sortantes pour 3 appels clients, 46 refus 429 en 5 min | idem |
+
+⚠️ **Cette derniere merite d'etre rouverte** : ces 46 refus n'etaient
+peut-etre pas une saturation de debit mais deja un quota. Aucune des trois
+sessions n'avait isole ce facteur.
+
+### Ce qui est a corriger, et ou
+
+1. **`nexus_agent` doit distinguer un refus de quota d'une lenteur.** Un 429
+   remonte en 0,5 s doit arreter le LOT entier et nommer la cause, au lieu
+   d'etre absorbe en attente. Aucun plafond de concurrence n'aurait sauve
+   cette heure : a un seul lanceur, on aurait attendu 900 s pour le meme refus.
+2. **Le repli vers un alias du meme compte est inutile sur un 429 de quota.**
+   Il vise la ressource deja epuisee et triple la charge qui a cause le refus.
+3. **Un refus `fail-closed` au demarrage d'un lot**, propose par une session
+   voisine, reste souhaitable — mais une couche au-dessus du vrai defaut.
+
+### La lecon de methode
+
+La mesure qui a tranche est la plus simple de toutes : **appeler l'amont
+directement, sans l'outil qu'on soupconne.** Elle a pris 0,5 seconde et elle a
+invalide une heure d'hypotheses partagees entre trois sessions.
