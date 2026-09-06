@@ -18586,3 +18586,204 @@ Bornes exigees : deux refus consecutifs au plus, compteur sous `.nexus/`
 en place, et **fail-ouvert absolu** — si `nexus_rituel.py` plante, expire ou
 rend un JSON illisible, la porte laisse passer.
 
+
+---
+
+## 123. LA PORTE EST CABLEE — et le cliquet a pris son auteur en flagrant delit
+
+Le hook `Stop` REFUSE desormais la cloture d'un tour quand le travail n'est pas
+commite. Ce n'est plus un rappel : sa sortie est
+`{"decision": "block", "reason": ...}`, et la commande ne se termine plus par un
+`|| true` qui avalait tout.
+
+**Le cliquet de cablage a signale l'orphelin avant moi.** Le script pose,
+`scripts/nexus_porte_rituel.py`, n'etait appele par personne :
+
+```
+[MANQUE] cablage tenu   Cablage : 1 REGRESSION(S). |   orphelin  scripts/nexus_porte_rituel.py
+```
+
+C'est exactement le maillon que le paragraphe 0.2.1 dit etre le plus souvent
+oublie — l'appelant est celui qui manque le plus souvent, parce que rien ne le
+reclame au moment ou l'on se croit fini. Il a fallu que le mecanisme le dise.
+Apres cablage : `Cablage : aucune regression.`
+
+### Le faux vert evite de justesse
+
+Un des deux candidats a la garde de fraicheur calculait l'age du fichier ainsi :
+
+```python
+age_seconds = int(os.path.getmtime(p) - os.path.getmtime(p))
+```
+
+Toujours nul. Le modele l'avait meme ecrit deux lignes plus haut :
+`# always 0, placeholder for clarity`. Sa garde ne pouvait donc **jamais**
+mordre. L'epreuve par le vrai chemin `--verdict` l'a montre : un verdict vieux
+de deux heures bloquait encore. La lecture ne l'avait pas vu.
+
+Et c'est ce meme candidat qui declarait la borne la mieux **justifiee** des deux
+— 30 s, soit la passe de 21 s mesuree plus 9 s de marge. L'autre calculait juste
+et posait 120 s sans rien derriere. Le rendu final prend le mecanisme de l'un et
+la justification de l'autre : **45 s**, avec le sens de l'erreur assume — on
+prefere laisser passer que bloquer a tort, car une garde qui bloque a tort finit
+desarmee.
+
+### Le cablage rejete, et pourquoi il etait pire que rien
+
+```sh
+if [ -f .nexus/rituel.json ]; then :; else <lancer le rituel>; fi
+```
+
+Le rituel n'aurait plus **jamais** tourne apres la premiere fois. La porte
+aurait juge sur un verdict gele — que sa propre garde de fraicheur aurait
+ensuite rejete en boucle, la rendant inutile. Deux mecanismes corrects se
+seraient annules.
+
+Le retenu lance toujours le rituel, redirige la sortie de la porte vers un
+fichier, et n'affiche qu'**un** objet JSON. Le point qui tranche a ete **mesure**
+et non suppose : la porte n'imprime rien quand elle laisse passer, donc le test
+`[ -s ]` est valide.
+
+### Pourquoi `--verdict` existe plutot qu'un contournement
+
+Mesure : une passe de `nexus_rituel.py` coute **21 s**, et le hook l'ecrivait
+deja dans `.nexus/rituel.json`. Cabler la porte a cote aurait fait tourner le
+rituel deux fois par tour — 42 s — pour un verdict deja sur le disque. Le mode
+`--epreuve` ne pouvait pas servir : il ne touche pas au compteur, donc la borne
+des deux refus n'aurait pas fonctionne.
+
+Le manque a donc ete **confie au banc** au lieu d'etre compense dans un coin.
+C'est le paragraphe 0.6 applique : un contournement local ne se transporte pas.
+
+### Les epreuves, dans les deux sens
+
+| epreuve | resultat |
+| --- | --- |
+| cinq refus d'affilee | `B B - B B` — la borne tient |
+| tour propre puis manque | compteur remis a zero |
+| message emis | integralement ASCII |
+| un AUTRE controle manquant | ne bloque pas |
+| verdict `None` | fail-ouvert |
+| `NEXUS_AGENT_LIBRE=1` | respectee |
+| verdict frais / perime | lu / rejete |
+| production, arbre SALE | refus, **1 seul** JSON, fichiers nommes |
+| production, arbre PROPRE | le resume parait, aucun blocage |
+
+---
+
+## 123.1 ONZE RENDUS VIDES, ET LA CAUSE MESUREE SUR L'API VIVANTE
+
+Sur **140 rendus** du banc dans la journee, **onze** sont revenus avec un texte
+VIDE — et le script les rendait comme des reussites : aucun message, aucun
+champ, un texte vide. L'appelant croit a un modele qui n'a rien a dire.
+
+```
+glm-5.3 x3   kimi-k3 x2   kimi-k2.7-code x2   kimi-k2.6
+deepseek-v4-pro   minimax-m3   glm-5.3-flash
+```
+
+Chacun avait brule **4 000 a 16 000 jetons** de sortie.
+
+**La cause, prise sur la passerelle vivante** en interrogeant `glm-5.3-cloud` :
+
+```
+cles de choices[0]            : ['finish_reason', 'index', 'message']
+cles de choices[0]['message'] : ['content', 'reasoning_content', 'role']
+```
+
+Le champ s'appelle `reasoning_content` et vit sur `choices[0]['message']`,
+**jamais** sur `choices[0]`. Pour la question « Reponds exactement: PRET », le
+modele a rendu `content='PRET'` — quatre caracteres — en consommant **113
+jetons, dont 109 en reasoning_content**. Voila le mecanisme entier : quand le
+budget est serre, tout part dans le raisonnement et `content` revient vide.
+
+**Le signal est parfaitement discriminant, et sans aucun seuil.** Mesure sur les
+140 rendus :
+
+```
+11 vides sur 11 detectes     0 faux negatif     0 faux positif sur 129 pleins
+```
+
+Aucun rendu NON vide ne porte `part_raisonnement = 'inconnu'`. Un seuil de
+jetons serait donc ancre a rien ; ce signal-ci est ancre a une mesure.
+
+**Un correctif a ete rejete sur ce point precis** : sa sonde cherchait
+`reasoning_content` dans `choix` au lieu de `choix["message"]`. Elle n'aurait
+jamais rien trouve, sur aucun modele. Trouve en interrogeant l'API, pas en
+relisant le patch.
+
+**Consequence operationnelle**, et elle vaut pour toute session : pour produire
+du VOLUME, prendre `gpt-oss-120b-cloud` — 5 a 9 s par tache, zero rendu vide sur
+plus de quarante appels ce jour. Les modeles a raisonnement hors bande sont a
+reserver au jugement, avec un budget triple.
+
+---
+
+## 123.2 COORDINATION A TROIS — ce qu'ea-mt5 tient, et l'ecart qui annule la moitie
+
+Reponse mesuree d'ea-mt5, verifiee ici en lisant son `_COUVERTURE.csv` :
+
+```
+70 lignes (dont TOTAL)   201 277 symboles   47 339 fragments
+trous a zero symbole : mql5, mutmut, python
+signatures : 87,3 % ok, 12,7 % indisponible
+```
+
+**Ma premiere somme etait fausse** : 402 554 symboles, exactement le double —
+j'avais somme la ligne `TOTAL` avec les autres. Divise par deux, ses chiffres
+tiennent au symbole pres.
+
+**L'ecart qui compte.** `references/python_libs_docs_PREMACHE_05B` **n'existe
+pas dans ce depot** : il vit chez ea-mt5. Ses 2 179 fiches suivies sont les
+siennes. Ici, `git ls-files references/python_libs_docs/` rend **1** fichier
+suivi pour **1 684** sur disque.
+
+Ce qu'il referme est donc invisible a nexus, et le paragraphe 0 interdit d'en
+dependre en place — lecture seule et **par copie**, jamais depuis l'original.
+
+**La sortie n'est pas de rapatrier.** Ses `symbols.jsonl` pesent 463 Mo et sont
+gitignores a juste titre ; mes 119,4 Mo le sont aussi. Ce qui doit voyager est
+**la commande qui reconstruit** plus le manifeste des versions ancrees — et son
+`_COUVERTURE.csv`, 8 109 octets, porte deja `lib, version_installee, ancre`.
+Versionne d'un cote et copie de l'autre, il permettrait a chaque machine de
+regenerer **et de verifier qu'elle a regenere la meme chose**. Arbitrage
+operateur, desormais pose avec un chiffre au lieu d'une intention.
+
+**Un point ou nos deux protocoles sont aveugles ensemble.** Son invariant
+verbatim compare la projection a sa propre source, jamais au binaire installe.
+Mon introspection compare au binaire, mais seulement la ou le symbole est
+resoluble — 98 jugeables sur 120 tires, 97 concordants. Ses 12,7 % de
+`sig_indisponible` sont vraisemblablement la meme zone. **C'est la que se
+cachent les erreurs, et ni l'un ni l'autre ne l'eclaire.**
+
+---
+
+## 123.3 LE GARDE DE SHELL MUTILE ENCORE — mesure en l'utilisant, deux fois
+
+Rencontre en voulant ecrire les sections ci-dessus. Deux tentatives d'ecriture
+par heredoc **pourtant quote** (`<<'MARQUEUR'`, qui interdit toute expansion)
+ont echoue de la meme facon :
+
+```
+/usr/bin/bash: -c: line 176: unexpected EOF while looking for matching `'`
+```
+
+Le contenu portait des accents graves — des blocs de code Markdown et des
+identifiants entre backticks. Le contrat le documente deja au paragraphe 0 :
+*le shell a mutile quatre commandes, dont un message de commit parti ampute de
+ses noms techniques*, et il prescrit de n'ecrire **ni accent grave ni heredoc**.
+
+**Le defaut survit donc a sa propre documentation.** Un heredoc quote ne peut
+pas, en bash, etre coupe par un accent grave : la mutilation vient d'un
+traitement en amont. La regle ecrite n'a pas protege son auteur, ce que le
+paragraphe 106.1 annonce mot pour mot.
+
+Le chemin correct, employe ici : **ecrire le script avec l'outil d'ecriture,
+puis l'executer**. Ce n'est pas un contournement mais le chemin qui evite le
+shell. Un vrai remede reste du : soit le garde cesse de toucher aux heredocs
+quotes, soit il refuse franchement au lieu de mutiler silencieusement — une
+mutilation muette est pire qu'un refus, parce qu'elle laisse croire a une
+erreur de l'appelant.
+
+**Ce que cela coute, mesure :** deux tentatives perdues, et un diagnostic
+initial faux — j'ai d'abord cru a une faute de quoting de ma part.

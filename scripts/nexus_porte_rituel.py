@@ -232,10 +232,7 @@ def main(argv: List[str] | None = None) -> int:
             print(out)
         return 0
 
-    if args.verdict:
-        verdict = _read_verdict_file(args.verdict)
-    else:
-        verdict = _run_rituel(root)
+    verdict = _read_verdict_file(args.verdict) if args.verdict else _run_rituel(root)
 
     block, out_json = _process(root, counter_path, verdict)
 
