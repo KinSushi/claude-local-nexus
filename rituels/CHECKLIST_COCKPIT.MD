@@ -20613,3 +20613,163 @@ tableau est desormais la liste de ce qu'il reste a mecaniser.
 La 17 est la plus lourde : **le troisieme temps de la LOI 1 n'est garde par
 rien.** Un cycle audit -> correction -> audit de la correction ne laisse
 aujourd'hui aucune trace verifiable qui dise *qui* a regarde en dernier.
+
+
+---
+
+## 126. CODE vs RESSOURCES DISQUE — la confrontation, rendue MECANIQUE
+
+> Consigne de l'operateur, 2026-09-06 : *« utilise bien les livres les doc
+> officelles et les bibliotheques python, ainsi que les codes sources des
+> livres »*, puis *« code vs ressources disque »*, puis — la precision qui
+> change tout — *« code vs ressources disque il faut que cela soit MECANIQUE,
+> ne pas inventer »*.
+
+Lire un chapitre et en tirer une conclusion n'est pas mecanique : c'est un
+jugement, et un jugement se discute. Ce qui est mecanique, c'est de
+**confronter le code aux ressources qu'il cite**, et de compter.
+
+### 126.1 Le compte, brut
+
+```
+148 fichiers python lus sous scripts/
+  citations de chapitre    1
+  citations de fragment    0
+  citations de livre       0
+  TOTAL                    1
+```
+
+**Une seule citation du corpus dans tout le code.** Elle est ici :
+
+```
+scripts/nexus_generate.py:1084
+  # ... On signale au lieu d'interdire parce que vider ces chaines
+  # laisserait leurs modeles source SANS AUCUN repli
+  # (chapitre_degradation.md, "Design agents to detect...").
+```
+
+### 126.2 La premiere conclusion etait FAUSSE, et sa correction vaut mieux
+
+Le premier releve a cherche la ressource **uniquement sous `references/`**
+(5869 fichiers) et a conclu : introuvable, donc **citation inventee**.
+
+C'etait faux. Une recherche sur tout le depot la trouve :
+
+```
+C:/local-llm-docker/.nexus/plans/chapitre_degradation.md   2604 octets
+```
+
+**Instrument exact, conclusion fausse** — la classe la plus frequente de ce
+depot, et le detecteur reste le meme : chercher DIRECTEMENT, sans l'outil
+qu'on soupconne.
+
+### 126.3 Ce que la correction revele, et qui est plus grave que l'invention
+
+```
+git check-ignore -v .nexus/plans/chapitre_degradation.md
+  -> .gitignore:7:.nexus/
+
+git ls-files --error-unmatch .nexus/plans/chapitre_degradation.md
+  -> did not match any file(s) known to git
+```
+
+La ressource **existe et n'est pas suivie**. Elle ne vit que sur cette
+machine. Tout lecteur du depot — un clone, un depot voisin, une session apres
+reinstallation — lit la justification d'une decision de conception et **ne
+peut pas la verifier**.
+
+Le meme constat, en grand :
+
+```
+references/ : 10170 fichiers sur disque, 16 suivis par git
+```
+
+**99,8 % des ressources du disque sont invisibles a tout clone.** C'est le
+sujet que l'operateur tient ouvert pour `python_libs_docs` (1684 sur disque, 1
+suivi) — mesure ici sur l'arbre entier.
+
+### 126.4 La regle que cela dicte, et la limite qu'il faut ecrire avec elle
+
+> Une citation ne doit pas seulement **resoudre** : elle doit resoudre vers un
+> fichier **SUIVI PAR GIT**. Une citation qui ne resout que sur la machine de
+> son auteur est inverifiable pour tous les autres, et le depot est la vitrine
+> professionnelle (§0.3).
+
+Et la limite, qui doit etre ecrite DANS le controle sous peine de faire lire
+son vert comme une garantie qu'il ne donne pas :
+
+**il verifie qu'une ressource citee existe et est suivie ; il ne verifie PAS
+que le code fait ce qu'elle prescrit.** L'exemple est immediat et mesure —
+voir §126.5 : le chapitre cite exige *« Design agents to detect which tier
+they're operating in »*, et le code ne signale que 13 descentes sur 35. La
+citation resout, et le code ne fait pas ce qu'elle dit.
+
+---
+
+## 126.5 LES DESCENTES DE CAPACITE, RECOMPTEES — 35 reelles, 13 signalees
+
+Le sujet etait declare EN COURS avec la formule *« 12/12 signalees en local,
+0/18 en cloud »*. Recompte le 2026-09-06 sur `litellm_config.yaml`, la
+configuration **deployee** (§5) :
+
+| zone | descentes reelles | signalees |
+| --- | --- | --- |
+| `ANTHROPIC_FALLBACKS` | 5 | **1** |
+| `LOCAL_FALLBACKS` | 12 | 12 |
+| `CLOUD_FALLBACKS` | **18** | **0** |
+| `LOCAL_CTX_FALLBACKS` | 0 | 0 |
+| `ANTHROPIC_CTX_FALLBACKS` | 0 | 0 |
+| `CLOUD_CTX_FALLBACKS` | 0 (zone vide) | 0 |
+| **TOTAL** | **35** | **13** |
+
+### Les 22 invisibles ont TOUTES la meme cible
+
+```
+18 cloud      *-cloud   -> glm-4.7-flash-local   (131072 -> 32768)
+ 4 anthropic  claude-*  -> glm-4.7-flash-local  (1000000 -> 32768)
+
+la SEULE anthropic signalee :
+             claude-sonnet-5 -> claude-haiku-4-5 (1000000 -> 200000)
+```
+
+La difference entre celle qui est signalee et les 22 qui ne le sont pas :
+`claude-haiku-4-5` est **membre de la chaine** ; `glm-4.7-flash-local` est le
+**terminal greffe**, qui n'en est pas membre.
+
+### La cause, verifiee a la source
+
+Le terminal est ajoute aux cibles **depuis `terminal_valide`**, pas depuis
+`chain` :
+
+```python
+targets = [e.alias for e in chain[i + 1:i + 1 + max(0, width - reserve)]]
+if terminal_valide:
+    for extra in terminal_valide:
+        if extra not in targets and extra != entry.alias:
+            targets.append(extra)          # <-- entre ICI, hors de chain
+            break
+```
+
+Et le signalement le cherche **uniquement dans `chain`** :
+
+```python
+target_entry = next((e for e in chain[i+1:] if e.alias == target), None)
+```
+
+Pour le terminal greffe, `target_entry` vaut donc `None`, la condition est
+fausse, et la descente n'est jamais signalee.
+
+### Correction d'une affirmation portee par le commit precedent
+
+Le commit `5973e41` affirmait que *« render_chain ne signale rien »*. **C'est
+faux** : `render_chain` signale, et c'est elle qui produit les 13 lignes
+`# descente de`. Le defaut n'est pas l'absence de signalement mais la
+**recherche de la cible dans une collection dont le terminal n'est pas
+membre**. L'arbitrage change donc de nature : il ne s'agit ni d'etendre
+`render_ctx_chain` au cloud — cela creerait des chaines volontairement
+absentes — ni de compter apres coup dans un controle, mais de corriger une
+recherche d'une ligne.
+
+Le commentaire du code, lui, dit exactement ce que le code sait voir :
+*« 12 chaines locales descendent »*. Il deviendra faux des que le correctif
+fonctionnera, et devra dire le nouveau compte ou cesser d'en donner un.
