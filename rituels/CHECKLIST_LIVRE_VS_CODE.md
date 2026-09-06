@@ -286,27 +286,99 @@ juste, la definition du tableau etait juste ; seule ma consigne ne l etait pas.
 destructive operations such as deletions or deployments »* — ce que ni le
 tableau ni les quatre tentatives n avaient retenu.
 
-## 13. UN FAUX VERT DANS LA SUITE D EPREUVES — 2026-09-02
+## 13. UN ROUGE PERMANENT DANS LA SUITE D EPREUVES — 2026-09-02
 
 | fait | etat |
 | --- | --- |
-| **`nexus_epreuve_vide.py` est appele SANS ARGUMENT** | 🔴 **OUVERT** |
+| **`nexus_epreuve_vide.py` est appele SANS ARGUMENT** | 🟢 **REPARE, prouve par effet et par contre-epreuve — PROPOSE par l agent ; temps 3 (audit tiers, contrat 0.7.1) a faire par l orchestrateur avant fusion** |
 
-`nexus_test.py:1383` fait `jouer_epreuve_python("nexus_epreuve_vide.py", "rendu vide")`.
-Mesure directe :
+**Rectification de classe, par la mesure.** Le titre disait « faux vert ».
+Mesure par `nexus_test.py --only vide` AVANT correction :
 
 ```
-python scripts/nexus_epreuve_vide.py
-Usage: nexus_epreuve_vide.py <path>...
+  [FAIL] rendu vide    aucun cas rendu par l'epreuve (code 2)
+  Reussis : 0    Echecs : 1                              exit 1
 ```
 
-**Aucun cas n est rendu.** L epreuve du « rendu vide » — celle-la meme qui
-existe pour attraper les rendus vides — est appelee d une facon qui la rend
-muette. Elle figure dans la suite, elle ne prouve rien.
+Ce n est pas un vert qui ne veut rien dire : c est un **ROUGE PERMANENT**, une
+ligne qui ne pouvait passer dans aucun etat du depot. Le commit `3d65131`
+l avait deja rectifie dans son message (*« C etait trop fort — le mecanisme
+DETECTE »*) sans que cette checklist le recoive. La consequence est la meme :
+une suite qui porte un rouge permanent ne distingue plus rien, son code de
+sortie vaut 1 quoi qu il arrive.
+
+**La faute est chez l APPELANT, pas dans l outil.** Sans argument, l outil
+refuse proprement au sens du contrat 0.1.4.1 : code 2, `Usage:
+nexus_epreuve_vide.py <path>...` sur stderr, rien sur stdout, aucun effet de
+bord (`scripts/nexus_epreuve_vide.py:93-95`). Mais `jouer_epreuve_python`
+(`nexus_test.py:2801-2859`) lance `[sys.executable, epreuve]` SANS argument
+(ligne 2840) et ne lit que les lignes `[OK  ]` / `[RATE]` (ligne 2850), un
+contrat que cet outil ne parle pas. Lui passer `scripts` n aurait rien
+change : il rend 31 lignes de signal et exit 1, donc toujours « aucun cas
+rendu ». Appelant unique, mesure : `nexus_test.py:1389` (grep sur `scripts/`,
+`tools/`, `.claude/`, `rituels/` ; hooks de `.claude/settings.json` ; aucune
+tache planifiee Nexus ni par `Get-ScheduledTask` ni par `schtasks`). Pose par
+`c672862`, dont le message dit lui-meme que ces quatre-la « ne sont pas des
+epreuves mais des OUTILS » — et les a cables quand meme.
+
+**Correctif pose** (worktree `agent-a9bae5bcacf5d3042`, LF, deux fichiers,
+l outil lui-meme n est PAS modifie) :
+
+* `scripts/epreuve_rendu_vide.py`, neuf, 152 lignes, ruff 0.16.5
+  `E,F,W,SIM,B` : « All checks passed » — cinq cas sur des fichiers FABRIQUES
+  en repertoire temporaire, jamais sur `scripts/` : refus sans argument (code
+  2, usage, rien sur stdout, rien d ecrit), temoin positif (une epreuve muette
+  est SIGNALEE, code 1), epreuve saine (code 0), epreuve cassee (signal sans
+  traceback), fichier hors motif (ignore) ;
+* `scripts/nexus_test.py:1388-1394` : la cle `vide` joue `epreuve_rendu_vide.py`
+  au lieu de l outil.
+
+**Preuves par effet, toutes EXECUTEES dans le worktree :**
+
+```
+python scripts/epreuve_rendu_vide.py          5 [OK  ]             exit 0
+python scripts/nexus_test.py --only vide      5 [PASS], Echecs 0   exit 0   (avant : 1 FAIL, exit 1)
+python scripts/nexus_epreuve_vide.py          Usage ... <path>     exit 2   (inchange)
+python scripts/nexus_epreuve_vide.py scripts  31 signaux           exit 1   (inchange ; la nouvelle epreuve n en fait pas partie)
+python scripts/nexus_cablage.py               aucune regression    exit 0
+```
+
+**Contre-epreuve** (`rv_contre_epreuve.py`, scratchpad) : trois mutations de
+l outil, chacune posee depuis l original puis restauree, empreinte
+`5d2c831a0c7b1ffa` identique avant et apres :
+
+```
+A  sans argument, exit 0 muet         -> [RATE] refus sans argument                    exit 1
+B  analyse aveugle, jamais de signal  -> [RATE] temoin positif : epreuve muette signalee exit 1
+C  SyntaxError non rattrapee          -> [RATE] epreuve cassee signalee sans plantage   exit 1
+outil restaure                        -> 0 [RATE]                                       exit 0
+```
+
+**Ce que le banc a fait, mesure, et pourquoi le fichier n est pas de lui.**
+Lot v1 servi par `ollama.com` en 14 s : rendu REJETE a l arbitrage — docstring
+= la consigne traduite en anglais, cinq f-strings en `\"` = SyntaxError. Lot
+v2 et reprise du patch : expirations a 3 et 8 min. Sonde de 20 jetons :
+demande `gpt-oss-120b-cloud`, **servie par `glm-4.7-flash [local]`** (ligne
+TRACABILITE), 40 s, ECHEC « plafond insuffisant ». Le plan cloud a disparu
+entre 20:45 et 20:57, et la bascule cloud→local a envoye les lots au modele
+qui rend zero caractere. Le fichier a donc ete pose par Fable 5, sous le
+mandat explicite de l operateur, par un script de pose DECLARE (`rv_poser.py`,
+ancre verifiee unique, refus hors du worktree) — la garde de production ayant
+refuse l outil Write, comme elle le doit. Le rendu rejete est conserve
+(`epreuve_rendu_vide.banc_v1.py`).
+
+**Reste OUVERT, mesure ce tour et NON corrige — aucune de ces lignes n est
+promue :**
+
+| fait | etat | mesure |
+| --- | --- | --- |
+| `nexus_index_livres.py`, `nexus_livres.py`, `nexus_sauvegarde.py` sont cables de la meme facon (`nexus_test.py:1396,1398,1400`, meme commit `c672862`) | 🔴 | `--only livres` : FAIL « aucun cas rendu (code 1) » ; `--only index_livres` : FAIL « (code 4) » ; `sauvegarde` NON EXECUTE (creerait un bundle) ; `nexus_socle.py` (`:1286`) NON VERIFIE |
+| le cliquet compte une EPREUVE comme appelant de PRODUCTION | 🔴 | `nexus_cablage.py --json` : `nexus_epreuve_vide.py -> appele` par `scripts/epreuve_rendu_vide.py`. Cause lue : le filtre des invocations (`nexus_cablage.py:284-287`) n ecarte que les noms contenant « test », celui des imports (`:302-304`) ecarte aussi « epreuve ». Faux gain, que le mode verdict FIGERAIT dans la reference (`:426-427`) — non execute ici pour cette raison |
+| l outil signale 31 epreuves sur 63 « does not launch anything » | 🟡 | dont `epreuve_cablage.py`, qui importe `nexus_cablage` : le module cible est derive sans le prefixe `nexus_` (`nexus_epreuve_vide.py:18`). Son verdict sur `scripts/` est NON FIABLE ; hors du perimetre de cette ligne |
 
 > Trouve par un agent isole qui a **execute** le script au lieu de lire son
-> appel. Aucune lecture ne l aurait montre : la ligne d appel est correcte en
-> syntaxe et fausse en effet.
+> appel, et repare par un autre qui a **execute la suite** au lieu de lire
+> l outil : la classe (rouge permanent, pas faux vert) ne se voyait qu ainsi.
 
 ---
 

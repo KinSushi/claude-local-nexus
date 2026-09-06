@@ -1418,7 +1418,12 @@ def main() -> int:
     if args.only in (None, "ruche"):
         jouer_epreuve_python("epreuve_ruche.py", "ruche")
     if args.only in (None, "vide"):
-        jouer_epreuve_python("nexus_epreuve_vide.py", "rendu vide")
+        # L'OUTIL du rendu vide n'est pas une epreuve : appele ici en direct,
+        # il partait SANS ARGUMENT et sans parler « [OK  ] / [RATE] ». Mesure
+        # le 2026-09-02 par --only vide : « aucun cas rendu par l'epreuve
+        # (code 2) », un rouge permanent. L'epreuve ci-dessous lui donne ses
+        # arguments, sur des fichiers fabriques, et traduit ses codes de sortie.
+        jouer_epreuve_python("epreuve_rendu_vide.py", "rendu vide")
     if args.only in (None, "index_livres"):
         jouer_epreuve_python("nexus_index_livres.py", "index des livres")
     if args.only in (None, "livres"):
