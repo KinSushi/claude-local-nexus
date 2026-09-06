@@ -21869,3 +21869,101 @@ produit la meme prose.
 > **Apres tout changement d'emplacement, verifier le PREMIER rendu avant de
 > laisser courir la vague.** Le champ `refus` existe pour cela, et il etait
 > juste : c'est le lecteur qui manquait.
+
+
+---
+
+## 138. LE PROGRESS ANNONCE 83 REGRESSIONS — IL Y EN A ZERO
+
+Trouve en faisant ce que l'operateur demandait : *« checklist et progress
+doivent s'accorder »*. En les accordant, on lit ce que le progress dit — et il
+dit faux.
+
+### 138.1 Le chiffre, et ce qu'il vaut
+
+`rituels/CHECKLIST_PROGRESS.md` :
+
+```
+## 2. Rituels
+| Script              | Regressions annoncees |
+| nexus_cablage.py    | 0                     |
+| nexus_outillage.py  | 83                    |
+```
+
+Comparaison a la reference, faite a la main :
+
+| outil | reference | courant | sens |
+| --- | ---: | ---: | --- |
+| `eslint` | 8 | 8 | stable |
+| `psscriptanalyzer` | 287 | 16 | **amelioration -271** |
+| `ruff` | 84 | 83 | **amelioration -1** |
+
+**Aucun outil en aggravation.** Chaque total courant est inferieur ou egal a sa
+reference. **Il y a zero regression.**
+
+### 138.2 Deux defauts enchaines
+
+**Premier — le cliquet ne dit pas son verdict.** Sa sortie entiere fait
+**452 octets** et ne contient ni « regression », ni « cliquet », ni
+« reference », ni aucune comparaison :
+
+```
+ruff : JOUE (83 violations)
+eslint : JOUE (8 violations)
+psscriptanalyzer : JOUE (16 violations)
+Python : 83 violations, regles : B007, B905, F401, ...
+
+CODE DE SORTIE = 1
+```
+
+**Un code non nul sans verdict** ne dit pas si c'est une aggravation ou l'etat
+de base.
+
+**Second — le progress invente le chiffre manquant.**
+`scripts/nexus_checklist_progres.py`, ligne 75 :
+
+```python
+m = re.search(r"(\d+)", result.stdout)
+regressions = int(m.group(1))
+```
+
+**Le premier entier de la sortie.** C'est `83`, le total de violations de
+ruff. Ligne 185, il est etiquete `Regressions annoncees`.
+
+### 138.3 La classe, et elle est connue ici
+
+Un **total** lu comme une **regression** — voisine directe du « verdict lu
+comme une panne » (§129) et du « vide lu comme une panne ». Le rapport ne ment
+pas par malice : il comble un silence par le premier nombre venu.
+
+**Un chiffre faux est pire qu'une absence de chiffre, parce qu'il se lit comme
+une mesure.** La bonne valeur, quand le rapport ne dit rien, est `INCONNU`.
+
+### 138.4 Ce qui reste incertain, et ne doit pas etre celebre
+
+L'amelioration de **-271** sur PowerShell est **suspecte** : la reference porte
+`PSAvoidUsingEmptyCatchBlock` a **229**, et la mesure courante rend **16**
+violations PowerShell au total. Un commit anterieur note que *« le cliquet
+mesurait 45 copies du depot »* — la chute peut donc venir d'un **perimetre
+retreci** et non d'un travail de correction. **NON VERIFIE.**
+
+### 138.5 Une correction de ma part, dans le meme tour
+
+J'avais signale que `PROGRESS.MD` etait regenere a chaque tour sans etre suivi
+par git, et je l'ai presente comme un demi-cablage. **C'est faux** :
+
+```
+git check-ignore -v PROGRESS.MD
+  -> .gitignore:76:PROGRESS.MD
+```
+
+Il est ignore **deliberement**. Machine-local par conception, pas par oubli.
+
+### 138.6 Ce qui est commande, et ce qui ne l'est pas
+
+**Commande** (vague 25) : que le cliquet DISE son verdict, et que le progress
+cesse d'inventer un chiffre.
+
+**Pas commande** : la correction des 83 violations. Ce sont des dettes de style
+connues et tenues par un cliquet. **Le defaut est dans le rapport, pas dans le
+code signale.**
