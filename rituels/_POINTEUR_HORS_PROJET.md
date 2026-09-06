@@ -14,12 +14,12 @@ etre isole ; separes du projet. le projet lui meme a son propre arbre
 propre »*, puis *« dans l'arbre propre du projet tu te mets des pointeurs et
 marqueurs, ainsi tu sais ce qui est sain »*.
 
-## L'arbre propre, mesure le 2026-09-06 13:03
+## L'arbre propre, mesure le 2026-09-06 13:32
 
 ```
-suivi par git (ce qu'un clone recoit)     307 fichiers      45.0 Mo
-present dans le dossier                 21958 fichiers    2837.1 Mo
-SORTI vers hors-projet                   5717 fichiers    3733.7 Mo
+suivi par git (ce qu'un clone recoit)     307 fichiers      20.3 Mo
+present dans le dossier                 21949 fichiers    2811.5 Mo
+SORTI vers hors-projet                   5729 fichiers    3734.5 Mo
 ```
 
 ## Ou c'est parti
@@ -59,9 +59,9 @@ deplacer l'une vers l'autre.
 | `.nexus/t8` | 3 | 0.9 Mo |
 | `scripts/.nexus` | 40 | 0.9 Mo |
 | `.nexus/tcb_pearson.txt` | 1 | 0.8 Mo |
+| `.claude/worktrees/.nexus-arbres` | 12 | 0.8 Mo |
 | `.nexus/bishop_gardes.md` | 1 | 0.6 Mo |
-| `.nexus/bishop_lots` | 12 | 0.6 Mo |
-| *(et 62 entree(s) de moins de 1 Mo)* | 369 | 9.31 Mo |
+| *(et 63 entree(s) de moins de 1 Mo)* | 381 | 10.08 Mo |
 
 ## Ce qui est RESTE, et pourquoi
 
@@ -89,3 +89,4 @@ Verification : ce script vise `<racine>/rituels/QUARANTAINE`, pas
 - `MANIFESTE-20260906-115256.json`
 - `MANIFESTE-20260906-115747.json`
 - `MANIFESTE-20260906-130324.json`
+- `MANIFESTE-20260906-133229.json`
