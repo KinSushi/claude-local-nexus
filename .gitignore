@@ -80,6 +80,13 @@ PROGRESS.MD
 # constate trois fois le 2026-09-01. Or la vitrine est la seule sauvegarde.
 # Meme arbitrage que PROGRESS.MD : un etat derive ne se versionne pas.
 outillage/rituels/STATE.md
+# CHEMIN MORT depuis le 2026-09-06 : rituels/ vit desormais sous outillage/.
+# STATE.md est une SORTIE GENEREE, elle ne doit etre suivie a AUCUN endroit.
+# La regle existait pour le nouveau chemin et manquait pour l'ancien, donc git
+# a vu un residu. Ignorer le chemin abandonne n'est pas masquer un defaut :
+# c'est declarer qu'aucune sortie ne doit plus y atterrir.
+/rituels/
+
 v15*.json
 
 # Les corpus pesent 59 Mo et n'ont rien a faire dans l'historique.
