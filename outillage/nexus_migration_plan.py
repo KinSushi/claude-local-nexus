@@ -18,8 +18,8 @@ Il n'efface rien et ne telecharge rien. Il produit une liste et un
 raisonnement, a executer ensuite en connaissance de cause.
 
 Usage :
-    python scripts/nexus_migration_plan.py
-    python scripts/nexus_migration_plan.py --write model_list.host.txt
+    python outillage/nexus_migration_plan.py
+    python outillage/nexus_migration_plan.py --write model_list.host.txt
 """
 from __future__ import annotations
 
@@ -303,7 +303,7 @@ def main() -> int:
             return 1
         lines = [
             "# Inventaire local a telecharger sur l'hote.",
-            "# Genere par scripts/nexus_migration_plan.py - %d modeles, %.0f Go."
+            "# Genere par outillage/nexus_migration_plan.py - %d modeles, %.0f Go."
             % (len(chosen), used),
             "# Les modeles inexecutables sur cette machine en sont absents.",
             "",

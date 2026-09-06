@@ -276,7 +276,7 @@ if ($Restart) {
         # bloquer la mise a jour laisserait une configuration a moitie
         # appliquee. Mais le message doit etre sans ambiguite.
         Write-Log "RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement" "ERROR"
-        Write-Log "Diagnostic : python scripts/nexus_releve.py --tous" "ERROR"
+        Write-Log "Diagnostic : python outillage/nexus_releve.py --tous" "ERROR"
     } else {
         Write-Log "Releve operationnelle" "OK"
     }

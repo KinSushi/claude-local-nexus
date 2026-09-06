@@ -14,7 +14,7 @@ COPIE = os.path.join(SCRATCH, "config_sonde_quota.yaml")
 
 def jouer_validateur(chemin: str):
     r = subprocess.run(
-        [sys.executable, os.path.join(RACINE, "scripts", "nexus_validate.py"),
+        [sys.executable, os.path.join(RACINE, "outillage", "nexus_validate.py"),
          "--config", chemin],
         cwd=RACINE, capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=300)

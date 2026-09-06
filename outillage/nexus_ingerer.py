@@ -36,8 +36,8 @@ l'index est ce qu'un petit modele lit EN ENTIER pour choisir quoi consulter.
 
 USAGE :
 
-    python scripts/nexus_ingerer.py --source docs/securite --nom securite
-    python scripts/nexus_ingerer.py --source docs/securite --nom securite --appliquer
+    python outillage/nexus_ingerer.py --source docs/securite --nom securite
+    python outillage/nexus_ingerer.py --source docs/securite --nom securite --appliquer
 
 Sans --appliquer, rien n'est ecrit : la simulation dit ce qui le serait.
 """
@@ -428,7 +428,7 @@ def main(argv=None):
     dossier = os.path.join(RACINE, "references", a.nom)
     n = ecrire_corpus(entrees, dossier, a.nom)
     print("ecrit : %s (%d entrees)" % (dossier, n))
-    print("consultable par : python scripts/nexus_doc.py <symbole>")
+    print("consultable par : python outillage/nexus_doc.py <symbole>")
     return 0
 
 

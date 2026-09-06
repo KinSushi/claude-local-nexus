@@ -11,7 +11,7 @@ Il est donc reproductible, auditable et localisable, conformément au
 contrat des rituels.
 
 Usage :
-    python scripts/nexus_state.py
+    python outillage/nexus_state.py
 """
 from __future__ import annotations
 
@@ -77,10 +77,10 @@ TRACKED = [
     ".mcp.json",
     "Set-ClaudeModel.ps1",
     "tools/nexus-mcp/server.js",
-    "scripts/nexus_generate.py",
-    "scripts/nexus_validate.py",
+    "outillage/nexus_generate.py",
+    "outillage/nexus_validate.py",
     "scripts/nexus_capability.py",
-    "scripts/nexus_test.py",
+    "outillage/nexus_test.py",
     "scripts/Update-NexusModels.ps1",
 ]
 
@@ -353,7 +353,7 @@ def main() -> int:
     # tout le processus et que la cause soit clairement indiquée.
     try:
         validation = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+            [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
             capture_output=True,
             text=True,
             timeout=TIMEOUT_RUN,
@@ -406,7 +406,7 @@ def main() -> int:
     lines = [
         "# État de la plateforme",
         "",
-        f"> Généré par `python scripts/nexus_state.py` le {now}.",
+        f"> Généré par `python outillage/nexus_state.py` le {now}.",
         "> **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,",
         "> pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.",
         "",
@@ -503,14 +503,14 @@ def main() -> int:
     lines += ["", "## Traque mecanique", ""]
     try:
         r = subprocess.run([sys.executable,
-                            os.path.join(ROOT, "scripts", "nexus_traque.py"),
+                            os.path.join(ROOT, "outillage", "nexus_traque.py"),
                             "--muet"], capture_output=True, text=True,
                            timeout=180, encoding="utf-8", errors="replace")
         if r.returncode == 0 and r.stdout.strip():
             lines += ["```", r.stdout.strip(), "```", "",
                       "Heuristiques : chaque constat est une piste a verifier",
                       "dans le code reel, jamais un verdict. Detail par",
-                      "`python scripts/nexus_traque.py`."]
+                      "`python outillage/nexus_traque.py`."]
         else:
             lines.append("_traque indisponible_")
     except Exception as exc:
@@ -564,7 +564,7 @@ def main() -> int:
     # reecriture. Le motif vise le format de `docker ps`, ou l'etat est
     # separe du nom par des tabulations.
     VOLATILES = (
-        "Généré par `python scripts/nexus_state.py`",
+        "Généré par `python outillage/nexus_state.py`",
         "| Commit |",
         "| Arbre de travail |",
         "\tUp ",

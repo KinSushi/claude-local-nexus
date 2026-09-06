@@ -23,7 +23,7 @@ reste-t-il, et comment s'en sert-on ?**
 ## 2. La commande à lancer en premier
 
 ```powershell
-python scripts/nexus_secours.py
+python outillage/nexus_secours.py
 ```
 
 **Code de retour observé : 0.** Elle répond en une trentaine de secondes et rend :
@@ -150,8 +150,8 @@ conversation avec un `HTTP 400`. `nexus_secours` les écarte et affiche les deux
 ## 4. Vérifier que la machine peut travailler
 
 ```powershell
-python scripts/nexus_charge.py
-python scripts/nexus_charge.py --json
+python outillage/nexus_charge.py
+python outillage/nexus_charge.py --json
 ```
 
 **Code de retour observé : 0.** Distingue trois états du moteur, jamais deux :
@@ -267,7 +267,7 @@ sans abonnement, il faut passer par `nexus_agent` ou `nexus_ruche`, pas par le c
 ## 7. L'orchestrateur
 
 ```powershell
-python scripts/nexus_ruche.py --simuler --plans local --max-cibles 6 --taille-lot 3 --essaims 2
+python outillage/nexus_ruche.py --simuler --plans local --max-cibles 6 --taille-lot 3 --essaims 2
 ```
 
 **Mesuré : 153 cibles découvertes, 2 essaims concurrents, rapport rendu.**
@@ -286,8 +286,8 @@ relance sur échec. Options : `--racine`, `--essaims` (max 4), `--taille-lot`,
 ## 8. Contrôler ce que le banc rend
 
 ```powershell
-python scripts/nexus_verifie_rendu.py <fichier|repertoire> --refs "prefixe_"
-python scripts/nexus_sonde_aveugle.py scripts/
+python outillage/nexus_verifie_rendu.py <fichier|repertoire> --refs "prefixe_"
+python outillage/nexus_sonde_aveugle.py scripts/
 ```
 
 `nexus_verifie_rendu` — **aucun modèle appelé, donc aucune hallucination possible.** Quatre
@@ -311,9 +311,9 @@ consigne explicite.
 **Ce qui remplace l'arbitrage n'est pas un modèle, c'est l'outillage mécanique :**
 
 ```powershell
-python scripts/nexus_test.py        # les épreuves câblées
-python scripts/nexus_rituel.py      # le tour est-il clos ?
-python scripts/nexus_conformite.py  # peut-on démarrer ?
+python outillage/nexus_test.py        # les épreuves câblées
+python outillage/nexus_rituel.py      # le tour est-il clos ?
+python outillage/nexus_conformite.py  # peut-on démarrer ?
 ```
 
 ~7 200 lignes de contrôles qui n'appellent **aucun modèle** et ne peuvent donc pas halluciner.

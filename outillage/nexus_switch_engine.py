@@ -21,9 +21,9 @@ Le script ne bascule QUE si la cible répond déjà : on ne coupe pas un
 moteur qui marche pour un moteur hypothétique.
 
 Usage :
-    python scripts/nexus_switch_engine.py --to host     [--dry-run]
-    python scripts/nexus_switch_engine.py --to docker   [--dry-run]
-    python scripts/nexus_switch_engine.py --status
+    python outillage/nexus_switch_engine.py --to host     [--dry-run]
+    python outillage/nexus_switch_engine.py --to docker   [--dry-run]
+    python outillage/nexus_switch_engine.py --status
 """
 from __future__ import annotations
 
@@ -347,7 +347,7 @@ def switch(target: str, dry_run: bool) -> int:
     print("\n%d adresse(s) reecrites vers %s" % (occurrences, source["api_base"]))
     print("Sauvegarde : %s" % backup)
     print("\nSuite :")
-    print("    python scripts/nexus_conformite.py    verifier avant de demarrer")
+    print("    python outillage/nexus_conformite.py    verifier avant de demarrer")
     print("    .\\scripts\\start.ps1 -Restart         redemarrer sous controle")
     return 0
 

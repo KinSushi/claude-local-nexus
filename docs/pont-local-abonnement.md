@@ -359,8 +359,8 @@ contexte et l'appartenance aux pools de routage. Être installé ne vaut pas
 ## 6. Garanties vérifiées par les tests
 
 ```powershell
-python scripts/nexus_test.py                  # tout
-python scripts/nexus_test.py --only reverse   # chemins interdits
+python outillage/nexus_test.py                  # tout
+python outillage/nexus_test.py --only reverse   # chemins interdits
 ```
 
 - **FORWARD** — le chemin nominal donne le bon résultat : arithmétique

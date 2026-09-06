@@ -31,6 +31,6 @@ Chaque entrée de la boussole porte une empreinte SHA-256, tronquée à
 l'état décrit ?*
 
 L'historique git complète le dispositif — il est lui-même un rituel de
-sauvegarde, et [`nexus_preserve.py`](../scripts/nexus_preserve.py) le
+sauvegarde, et [`nexus_preserve.py`](../outillage/nexus_preserve.py) le
 classe parmi les artefacts **irremplaçables** tant que des commits ne sont
 pas poussés.

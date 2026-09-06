@@ -25,9 +25,9 @@ Trois niveaux, et la distinction compte :
     IGNORE        non vérifiable dans l'état actuelle — jamais « réussi »
 
 Usage :
-    python scripts/nexus_conformite.py            # verdict complet
-    python scripts/nexus_conformite.py --json
-    python scripts/nexus_conformite.py --avant-demarrage   # ignore le runtime
+    python outillage/nexus_conformite.py            # verdict complet
+    python outillage/nexus_conformite.py --json
+    python outillage/nexus_conformite.py --avant-demarrage   # ignore le runtime
 
 Codes de sortie :
     0  conforme (des avertissements restent possibles)
@@ -229,7 +229,7 @@ def controle_gardes_accordes(racine):
 def controle_config_valide() -> None:
     """Le validateur d'intégrité, tel quel : il est déjà la référence."""
     r = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+        [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -520,7 +520,7 @@ def controle_verrou_machine() -> None:
     appartient pas, et bloquer notre demarrage pour un fichier qu'on ne peut
     pas corriger punirait l'operateur.
     """
-    notre = os.path.join(ROOT, "scripts", "nexus_verrou_machine.py")
+    notre = os.path.join(ROOT, "outillage", "nexus_verrou_machine.py")
     if not os.path.isfile(notre):
         return ignorer("verrou machine", "copie locale absente")
     prefixe = prefixe_de(notre)
@@ -621,7 +621,7 @@ def controle_imports() -> None:
     BLOQUANT : un module qui ne s'importe pas est casse pour tous ses
     appelants, et rien de ce qui suit ne peut etre tenu pour vrai.
     """
-    outil = os.path.join(ROOT, "scripts", "nexus_import.py")
+    outil = os.path.join(ROOT, "outillage", "nexus_import.py")
     if not os.path.isfile(outil):
         return ignorer("import des scripts", "nexus_import.py introuvable")
     try:
@@ -658,7 +658,7 @@ def controle_cablage() -> None:
     l'operateur venu justement le cabler. Le cliquet, lui, est dans le
     script : il echoue des que la liste s'allonge.
     """
-    outil = os.path.join(ROOT, "scripts", "nexus_cablage.py")
+    outil = os.path.join(ROOT, "outillage", "nexus_cablage.py")
     if not os.path.isfile(outil):
         return ignorer("cablage des scripts", "nexus_cablage.py introuvable")
     try:
@@ -1297,7 +1297,7 @@ def controle_portee_import() -> None:
     BLOQUANT, comme son voisin : un chemin qui leve NameError est casse pour
     tous ses appelants, et rien de ce qui suit ne peut etre tenu pour vrai.
     """
-    outil = os.path.join(ROOT, "scripts", "nexus_portee_import.py")
+    outil = os.path.join(ROOT, "outillage", "nexus_portee_import.py")
     if not os.path.isfile(outil):
         return ignorer("portee des imports", "nexus_portee_import.py introuvable")
     try:
@@ -1343,7 +1343,7 @@ def controle_doc_python() -> None:
                      "corpus absent — la reabsorber depuis le depot voisin")
     if not os.path.isfile(index):
         return noter("doc python", False, AVERTISSEMENT,
-                     "index absent — python scripts/nexus_doc.py --construire")
+                     "index absent — python outillage/nexus_doc.py --construire")
     try:
         with io.open(index, encoding="utf-8") as f:
             lignes = sum(1 for _ in f)
@@ -1679,7 +1679,7 @@ def controle_couverture_code(racine, lire_modeles) -> tuple[str, str]:
     manquants = [d for d in indexables if d not in indexés]
     if not manquants:
         return ("OK", "tout couvert"[:90])
-    cmd = f"python scripts/nexus_indexer_code.py --source {src_root} --cible references/livres/code"
+    cmd = f"python outillage/nexus_indexer_code.py --source {src_root} --cible references/livres/code"
     detail = f"manquants : {', '.join(manquants)} ; commande : {cmd}"
     return ("ALERTE", detail[:90])
 
@@ -1911,7 +1911,7 @@ def controle_runtime(avant_demarrage: bool) -> None:
         return
     try:
         r = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "scripts", "nexus_releve.py")],
+            [sys.executable, os.path.join(ROOT, "outillage", "nexus_releve.py")],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -1923,7 +1923,7 @@ def controle_runtime(avant_demarrage: bool) -> None:
         ignorer("releve operationnelle", "releve operationnelle injoignable : %s" % exc)
         return
     ligne = next((l.strip() for l in r.stdout.splitlines() if "epreuves reussies" in l), "")
-    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT, ligne or "voir python scripts/nexus_releve.py")
+    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT, ligne or "voir python outillage/nexus_releve.py")
 
 
 def controle_delegation(avant_demarrage: bool) -> None:
@@ -1959,7 +1959,7 @@ def controle_delegation(avant_demarrage: bool) -> None:
         r = subprocess.run(
             [
                 sys.executable,
-                os.path.join(ROOT, "scripts", "nexus_savings.py"),
+                os.path.join(ROOT, "outillage", "nexus_savings.py"),
                 "--jours",
                 "7",
                 "--json",

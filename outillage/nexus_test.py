@@ -18,7 +18,7 @@ Trois familles de tests, volontairement distinctes :
            Un routeur « local » ne doit jamais répondre depuis le cloud.
 
 Usage :
-    python scripts/nexus_test.py [--include-slow] [--only forward|reverse|policy|code|releve]
+    python outillage/nexus_test.py [--include-slow] [--only forward|reverse|policy|code|releve]
 """
 from __future__ import annotations
 
@@ -264,7 +264,7 @@ def run_validator_on(config: dict) -> tuple[int, str]:
     try:
         os.replace(temp, original)
         result = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+            [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
             capture_output=True, text=True, timeout=180,
         )
         return result.returncode, result.stdout + result.stderr
@@ -1042,7 +1042,7 @@ def test_code() -> None:
         # sur les droits du compte. Valider ici rendrait le resultat
         # dependant d'un quota qui peut varier entre les deux executions.
         generate = [sys.executable,
-                    os.path.join(ROOT, "scripts", "nexus_generate.py"),
+                    os.path.join(ROOT, "outillage", "nexus_generate.py"),
                     "--no-validate"]
         first = subprocess.run(generate, capture_output=True, text=True, timeout=300)
         with io.open(CONFIG, encoding="utf-8") as fh:
@@ -1063,7 +1063,7 @@ def test_code() -> None:
             fh.write(snapshot)
 
     # Le validateur doit accepter la configuration reellement deployee.
-    result = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
+    result = subprocess.run([sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
                             capture_output=True, text=True, timeout=180)
     if not SECRETS_ABSENTS:
         check("configuration deployee valide", result.returncode == 0,
@@ -1488,7 +1488,7 @@ def test_portee_import() -> None:
 
     print("\n--- PORTEE DES IMPORTS : le detecteur detecte-t-il encore ? ---")
 
-    outil = os.path.join(ROOT, "scripts", "nexus_portee_import.py")
+    outil = os.path.join(ROOT, "outillage", "nexus_portee_import.py")
     if not os.path.isfile(outil):
         skip("portee des imports", "nexus_portee_import.py introuvable")
         return
@@ -2158,7 +2158,7 @@ def test_registre_epreuves() -> None:
 
         # Le critere du code REEL, et non une reformulation : si quelqu'un
         # remet `adresse` dans la condition, ce controle doit tomber.
-        with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
+        with io.open(os.path.join(ROOT, "outillage", "nexus_releve.py"),
                      encoding="utf-8") as fh:
             code = fh.read()
         check("le critere ne s'appuie plus sur l'adresse",
@@ -2241,7 +2241,7 @@ def test_registre_epreuves() -> None:
 
     # Le saut doit etre DIT : une reprise muette se lirait comme « tout a ete
     # mesure », ce qui est exactement le contraire.
-    with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
+    with io.open(os.path.join(ROOT, "outillage", "nexus_releve.py"),
                  encoding="utf-8") as fh:
         code_releve = fh.read()
     check("la reprise annonce ce qu'elle saute",
@@ -2374,7 +2374,7 @@ def test_doc_annexe() -> None:
         skip("indexeur forward", "corpus absent")
     else:
         out_dir = os.path.join(ROOT, ".nexus", "tmp_index")
-        cmd = [sys.executable, "scripts/nexus_indexer_code.py",
+        cmd = [sys.executable, "outillage/nexus_indexer_code.py",
                "--source", cible,
                "--cible", out_dir,
                "--simuler"]
@@ -3237,7 +3237,7 @@ def test_ruche() -> None:
             # lui, un essai reel a petit perimetre redevient possible.
             # Verifie en sous-processus reel : --simuler garantit un cout et
             # un trafic reseau nuls.
-            script_ruche = os.path.join(ROOT, "scripts", "nexus_ruche.py")
+            script_ruche = os.path.join(ROOT, "outillage", "nexus_ruche.py")
             result = subprocess.run(
                 [sys.executable, script_ruche, "--max-cibles", "2",
                  "--taille-lot", "2", "--essaims", "1", "--simuler",
@@ -3267,8 +3267,8 @@ def test_vitrine() -> None:
 
     print("\n--- VITRINE : les garde-fous de publication ---")
 
-    racine_vitrine = os.path.join(ROOT, "scripts", "nexus_vitrine.py")
-    check("scripts/nexus_vitrine.py present", os.path.isfile(racine_vitrine),
+    racine_vitrine = os.path.join(ROOT, "outillage", "nexus_vitrine.py")
+    check("outillage/nexus_vitrine.py present", os.path.isfile(racine_vitrine),
           racine_vitrine)
     if not os.path.isfile(racine_vitrine):
         return
@@ -3490,7 +3490,7 @@ def test_garde_lecture() -> None:
 
     print("\n--- LECTURE AVANT ECRITURE : le garde refuse-t-il ? ---")
 
-    script = os.path.join(ROOT, "scripts", "nexus_garde_lecture.py")
+    script = os.path.join(ROOT, "outillage", "nexus_garde_lecture.py")
     if not os.path.isfile(script):
         skip("garde de lecture", "nexus_garde_lecture.py introuvable")
         return

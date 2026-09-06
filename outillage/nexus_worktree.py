@@ -32,17 +32,17 @@ une fois. Une occurrence ambiguë est un refus, pas un pari.
 
 Usage
 -----
-    python scripts/nexus_worktree.py \
+    python outillage/nexus_worktree.py \
         --nom validateur \
-        --fichier scripts/nexus_validate.py \
+        --fichier outillage/nexus_validate.py \
         --modele qwen3-coder-30b-local \
         --consigne "Signale et corrige les gestions d'erreur trop larges." \
         --verifier "python -c \"import ast,io;ast.parse(io.open('{fichier}',encoding='utf-8').read())\""
 
     # inspecter puis fusionner
-    python scripts/nexus_worktree.py --lister
-    python scripts/nexus_worktree.py --fusionner validateur
-    python scripts/nexus_worktree.py --jeter validateur
+    python outillage/nexus_worktree.py --lister
+    python outillage/nexus_worktree.py --fusionner validateur
+    python outillage/nexus_worktree.py --jeter validateur
 """
 from __future__ import annotations
 
@@ -373,8 +373,8 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
     d = git(["diff", "--stat"], cwd=chemin_arbre)
     print("  " + (d.stdout.strip() or "(aucun ecart)").replace("\n", "\n  "))
     print("\n  Pour examiner :  git -C %s diff" % chemin_arbre)
-    print("  Pour retenir  :  python scripts/nexus_worktree.py --fusionner %s" % nom)
-    print("  Pour jeter    :  python scripts/nexus_worktree.py --jeter %s" % nom)
+    print("  Pour retenir  :  python outillage/nexus_worktree.py --fusionner %s" % nom)
+    print("  Pour jeter    :  python outillage/nexus_worktree.py --jeter %s" % nom)
     return 0
 
 
@@ -527,7 +527,7 @@ def main() -> int:
             print("\n  Examiner puis retenir :")
             for _, nom, _ in retenus:
                 print("    git -C %s diff" % arbre_de(nom))
-                print("    python scripts/nexus_worktree.py --fusionner %s" % nom)
+                print("    python outillage/nexus_worktree.py --fusionner %s" % nom)
         print("=" * 72)
     return 0 if all(c == 0 for _, _, c in resultats) else 1
 

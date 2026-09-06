@@ -41,12 +41,12 @@ et rituels/CHECKLIST_COCKPIT.MD qui ne font que citer cette note).
 EXCEPTION REELLE, PARTIELLE : `router_version` EXISTE, mais pas sous la forme
 proposee ici (un champ par trace individuelle). C'est un tampon de version
 GLOBAL du fichier de configuration genere :
-  - calcule dans scripts/nexus_generate.py:1602 (`router_version = "r" +
+  - calcule dans outillage/nexus_generate.py:1602 (`router_version = "r" +
     sha256(...)`) et ecrit ligne 1612 comme commentaire
     `# NEXUS-ROUTER-VERSION: <hash>` dans litellm_config.yaml (confirme :
     litellm_config.yaml ligne 26 porte `# NEXUS-ROUTER-VERSION: r19be7650d1`
     au moment de cette verification) ;
-  - relu par scripts/nexus_state.py:384-420 pour l'afficher dans
+  - relu par outillage/nexus_state.py:384-420 pour l'afficher dans
     rituels/STATE.md.
 Donc `router_version` designe une version de LA CONFIGURATION (un hash de son
 contenu), jamais un champ appose a chaque execution d'agent comme le

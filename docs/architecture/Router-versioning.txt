@@ -23,11 +23,11 @@ SHA-256 (10 caractères) du contenu qui décide réellement du modèle servi
 (pools cloud, chaîne de repli du routeur, budget mémoire), calculée et
 réinjectée dans un marqueur de commentaire à chaque génération.
 
-Code : scripts/nexus_generate.py:1573-1592 (calcule `router_version` et
+Code : outillage/nexus_generate.py:1573-1592 (calcule `router_version` et
 réécrit la ligne `# NEXUS-ROUTER-VERSION: <version>`).
 État réel observé : litellm_config.yaml:26 porte
 `# NEXUS-ROUTER-VERSION: r19be7650d1`.
-Lecture : scripts/nexus_state.py:384-420 relit ce marqueur pour le rapport.
+Lecture : outillage/nexus_state.py:384-420 relit ce marqueur pour le rapport.
 
 Ce que cette note ne dit pas et qui reste NON VÉRIFIÉ : aucune trace de
 requête individuelle (Langfuse ou autre) n'a été trouvée portant ce

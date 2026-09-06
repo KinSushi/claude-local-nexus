@@ -133,7 +133,7 @@ def count_delegated(window_hours):
     # Construction de la commande
     cmd = [
         sys.executable,
-        "scripts/nexus_savings.py",
+        "outillage/nexus_savings.py",
         "--jours", str(days),
         "--json"
     ]

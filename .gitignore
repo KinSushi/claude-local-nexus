@@ -125,7 +125,7 @@ references/python_ast_local/rapport.csv
 
 # Quarantaine des worktrees d'agents : 287 fichiers, 22,4 Mo de COPIES.
 # NON VERSIONNEES, et le motif est le meme que pour les corpus : elles se
-# REGENERENT en une commande -- python scripts/nexus_quarantaine.py -- tant
+# REGENERENT en une commande -- python outillage/nexus_quarantaine.py -- tant
 # que les worktrees sont la, et ils y sont tous (45 sur 45, verifie).
 # Le MANIFESTE, lui, EST versionne : il porte la mesure et l'index d'audit.
 rituels/QUARANTAINE/agent-*/

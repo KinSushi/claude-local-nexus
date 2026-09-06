@@ -188,7 +188,7 @@ def run_conformite():
     """Lance le script de conformité et attend un code de sortie 0."""
     cmd = [
         sys.executable,
-        os.path.join(PLATEFORME, "scripts", "nexus_conformite.py"),
+        os.path.join(PLATEFORME, "outillage", "nexus_conformite.py"),
         "--avant-demarrage",
     ]
     # La conformite juge la PLATEFORME (moteur, secrets, pile), pas le projet

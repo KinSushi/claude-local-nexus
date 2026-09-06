@@ -1,6 +1,6 @@
 # MANIFESTE DE QUARANTAINE
 
-Genere le 2026-09-06T14:17:58Z par `scripts/nexus_quarantaine.py`.
+Genere le 2026-09-06T14:17:58Z par `outillage/nexus_quarantaine.py`.
 
 | champ | valeur |
 | --- | --- |
@@ -40,7 +40,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `competences/relire-code.txt` | non_commite ( M) | 1078 | oui (1078 octets) |
 | `scripts/mesure_rendu_vide.py` | non_commite ( M) | 7932 | oui (7932 octets) |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a0b07e433b871704d
 
@@ -54,9 +54,9 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `epreuves/epreuve_charge_derive.py` | non_commite (??) | 5256 | NON -- FICHIER NEUF |
 | `epreuves/epreuve_reglages_moteur.py` | non_commite (??) | 4320 | NON -- FICHIER NEUF |
-| `scripts/nexus_charge.py` | non_commite ( M) | 14270 | oui (8094 octets) |
+| `outillage/nexus_charge.py` | non_commite ( M) | 14270 | oui (8094 octets) |
 | `scripts/nexus_reglages_moteur.py` | non_commite (??) | 20086 | NON -- FICHIER NEUF |
-| `scripts/nexus_test.py` | non_commite ( M) | 172074 | oui (175825 octets) |
+| `outillage/nexus_test.py` | non_commite ( M) | 172074 | oui (175825 octets) |
 
 ### agent-a0b2638a810ecfdd4
 
@@ -68,7 +68,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a13026bc69d52eaf0
 
@@ -82,7 +82,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `README.md` | non_commite ( M) | 15264 | oui (15567 octets) |
 | `UTILISER_NEXUS.md` | non_commite ( M) | 3859 | oui (4079 octets) |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a1b41eff010c12245
 
@@ -137,7 +137,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a50cbf7c79394206d
 
@@ -186,7 +186,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `Set-ClaudeModel.ps1` | non_commite ( M) | 12771 | oui (12771 octets) |
 | `scripts/Initialize-Nexus.ps1` | non_commite ( M) | 10598 | oui (10598 octets) |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 | `scripts/restore.ps1` | non_commite ( M) | 7779 | oui (7779 octets) |
 | `scripts/stop.ps1` | non_commite ( M) | 4119 | oui (4119 octets) |
 
@@ -200,7 +200,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a676d0352359b0253
 
@@ -254,7 +254,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-a8ddf6cc4a6aec704
 
@@ -267,8 +267,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `.scratch_patch/` | non_commite (??) | ? [ERREUR COPIE: absent du worktree (supprime depuis ?)] | NON -- FICHIER NEUF |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
-| `scripts/nexus_generate.py` | non_commite ( M) | 77230 | oui (80018 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_generate.py` | non_commite ( M) | 77230 | oui (80018 octets) |
 
 ### agent-a95744881ae0492ff
 
@@ -292,7 +292,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_quarantaine.py` | commite (A) | 24980 | oui (43895 octets) |
+| `outillage/nexus_quarantaine.py` | commite (A) | 24980 | oui (43895 octets) |
 
 ### agent-a9fe6d8711708973c
 
@@ -304,7 +304,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 | `scripts/nexus_garde_production.py` | non_commite ( M) | 4459 | oui (4564 octets) |
 
 ### agent-aaafb81b13e76c172
@@ -332,7 +332,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-abbea6f5f883f4469
 
@@ -345,10 +345,10 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `scripts/nexus_agent.py` | non_commite ( M) | 73315 | oui (74721 octets) |
-| `scripts/nexus_appliquer.py` | non_commite ( M) | 10320 | oui (10903 octets) |
+| `outillage/nexus_appliquer.py` | non_commite ( M) | 10320 | oui (10903 octets) |
 | `scripts/nexus_disjoncteur.py` | non_commite ( M) | 9839 | oui (11129 octets) |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
-| `scripts/nexus_essaim.py` | non_commite ( M) | 30884 | oui (30884 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_essaim.py` | non_commite ( M) | 30884 | oui (30884 octets) |
 | `tmp/` | non_commite (??) | ? [ERREUR COPIE: absent du worktree (supprime depuis ?)] | NON -- FICHIER NEUF |
 
 ### agent-abfe13fb0c58da618
@@ -373,7 +373,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-acef566b4e8c5392f
 
@@ -410,7 +410,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `docker-compose.yml` | non_commite ( M) | 5979 | oui (6402 octets) |
 | `requirements.txt` | non_commite ( M) | 14 | oui (15 octets) |
-| `scripts/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
+| `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
 ### agent-ade9a13af3736b1a3
 
@@ -473,7 +473,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 10266 | NON -- FICHIER NEUF |
 | `rituels/GABARIT_QUARANTAINE.md` | non_commite (??) | 5846 | oui (5846 octets) |
-| `scripts/nexus_quarantaine.py` | non_commite (??) | 43895 | oui (43895 octets) |
+| `outillage/nexus_quarantaine.py` | non_commite (??) | 43895 | oui (43895 octets) |
 
 ### agent-a0bb278a9ee2836a5
 
@@ -493,12 +493,12 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | `rituels/outillage_reference.json` | commite (M) | 526 | oui (578 octets) |
 | `epreuves/epreuve_orphelines.py` | commite (M) | 4643 | oui (3677 octets) |
 | `epreuves/epreuve_progres.py` | commite (M) | 9119 | oui (5602 octets) |
-| `scripts/nexus_cablage.py` | commite (M) | 20787 | oui (19757 octets) |
-| `scripts/nexus_checklist_progres.py` | commite (M) | 10989 | oui (9381 octets) |
-| `scripts/nexus_conformite.py` | commite (M) | 89835 | oui (92142 octets) |
-| `scripts/nexus_outillage.py` | commite (M) | 34519 | oui (32787 octets) |
-| `scripts/nexus_progres.py` | commite (M) | 8636 | oui (7798 octets) |
-| `scripts/nexus_rituel.py` | commite (M) | 21784 | oui (21397 octets) |
+| `outillage/nexus_cablage.py` | commite (M) | 20787 | oui (19757 octets) |
+| `outillage/nexus_checklist_progres.py` | commite (M) | 10989 | oui (9381 octets) |
+| `outillage/nexus_conformite.py` | commite (M) | 89835 | oui (92142 octets) |
+| `outillage/nexus_outillage.py` | commite (M) | 34519 | oui (32787 octets) |
+| `outillage/nexus_progres.py` | commite (M) | 8636 | oui (7798 octets) |
+| `outillage/nexus_rituel.py` | commite (M) | 21784 | oui (21397 octets) |
 
 ### agent-a11923e06ae11d5df
 
@@ -553,7 +553,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 10791 | NON -- FICHIER NEUF |
-| `scripts/nexus_test.py` | non_commite ( M) | 172446 | oui (175825 octets) |
+| `outillage/nexus_test.py` | non_commite ( M) | 172446 | oui (175825 octets) |
 | `tools/nexus-mcp/epreuve_perte_map.js` | non_commite (??) | 9611 | NON -- FICHIER NEUF |
 | `tools/nexus-mcp/server.js` | non_commite ( M) | 156998 | oui (152490 octets) |
 
@@ -573,7 +573,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | commite (A) | 46522 | NON -- FICHIER NEUF |
 | `fichier.txt` | non_commite (??) | 28765 | NON -- FICHIER NEUF |
-| `scripts/nexus_filet.py` | commite (A) | 22581 | oui (22581 octets) |
+| `outillage/nexus_filet.py` | commite (A) | 22581 | oui (22581 octets) |
 
 ### agent-a55bdfccf377cfffa
 
@@ -608,7 +608,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 12176 | NON -- FICHIER NEUF |
 | `rituels/cablage_reference.json` | non_commite ( M) | 554 | oui (791 octets) |
-| `scripts/nexus_test.py` | non_commite ( M) | 171916 | oui (175825 octets) |
+| `outillage/nexus_test.py` | non_commite ( M) | 171916 | oui (175825 octets) |
 
 ### agent-a6d8fb7354cc50b30
 
@@ -625,9 +625,9 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 15763 | NON -- FICHIER NEUF |
-| `scripts/nexus_conformite.py` | non_commite ( M) | 93278 | oui (92142 octets) |
-| `scripts/nexus_socle.py` | non_commite ( M) | 5378 | oui (5683 octets) |
-| `scripts/nexus_test.py` | non_commite ( M) | 173033 | oui (175825 octets) |
+| `outillage/nexus_conformite.py` | non_commite ( M) | 93278 | oui (92142 octets) |
+| `outillage/nexus_socle.py` | non_commite ( M) | 5378 | oui (5683 octets) |
+| `outillage/nexus_test.py` | non_commite ( M) | 173033 | oui (175825 octets) |
 
 ### agent-a925f543aaa6e4d34
 
@@ -647,7 +647,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | `epreuves/epreuve_repli_epuise.py` | non_commite ( A) | 9158 | NON -- FICHIER NEUF |
 | `epreuves/epreuve_reprise_avant_repli.py` | non_commite ( M) | 6151 | oui (4159 octets) |
 | `scripts/nexus_agent.py` | non_commite ( M) | 75964 | oui (74721 octets) |
-| `scripts/nexus_test.py` | non_commite ( M) | 171885 | oui (175825 octets) |
+| `outillage/nexus_test.py` | non_commite ( M) | 171885 | oui (175825 octets) |
 
 ### agent-a95a4421aa8062ff1
 
@@ -684,7 +684,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | `rituels/CHECKLIST_LIVRE_VS_CODE.md` | commite (M) | 38308 | oui (33312 octets) |
 | `rituels/cablage_reference.json` | non_commite ( M) | 553 | oui (791 octets) |
 | `epreuves/epreuve_rendu_vide.py` | commite (A) | 6108 | NON -- FICHIER NEUF |
-| `scripts/nexus_test.py` | commite (M) | 172187 | oui (175825 octets) |
+| `outillage/nexus_test.py` | commite (M) | 172187 | oui (175825 octets) |
 
 ### agent-acbd763084f29adf5
 
@@ -737,8 +737,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 26297 | NON -- FICHIER NEUF |
 | `scripts/nexus_capability.py` | non_commite ( M) | 30590 | oui (30590 octets) |
-| `scripts/nexus_conformite.py` | non_commite ( M) | 89957 | oui (92142 octets) |
-| `scripts/nexus_validate.py` | non_commite ( M) | 34170 | oui (34209 octets) |
+| `outillage/nexus_conformite.py` | non_commite ( M) | 89957 | oui (92142 octets) |
+| `outillage/nexus_validate.py` | non_commite ( M) | 34170 | oui (34209 octets) |
 
 ## PREUVE COMPLETE
 

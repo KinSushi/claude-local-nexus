@@ -233,7 +233,7 @@ if ($IncludeVolumes) {
     }
 
     Write-Host "  Volume Ollama non archive : 541 Go retéléchargeables depuis model_list.txt." -ForegroundColor DarkGray
-    Write-Host "  Sauvegarde de l'irremplaçable : python scripts\nexus_preserve.py --backup" -ForegroundColor DarkGray
+    Write-Host "  Sauvegarde de l'irremplaçable : python outillage\nexus_preserve.py --backup" -ForegroundColor DarkGray
 }
 
 # ------------------------------------------------------------

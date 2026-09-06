@@ -18,7 +18,7 @@ donc invisible de l'historique — ce qui contredit l'objet même d'un rituel
 de traçabilité.
 
 Usage :
-    python scripts/nexus_boussole.py
+    python outillage/nexus_boussole.py
 """
 from __future__ import annotations
 
@@ -66,15 +66,15 @@ ROLES = {
     "README.md": ("Documentation", "Vue d'ensemble et installation"),
     "AGENTS.md": ("Contrat", "Contrat d'agent universel"),
     "tools/nexus-mcp/server.js": ("Pont", "Serveur MCP : les modèles comme outils"),
-    "scripts/nexus_generate.py": ("Génération", "Régénère les zones AUTOGEN"),
-    "scripts/nexus_validate.py": ("Vérification", "Intégrité — bloque tout redémarrage douteux"),
+    "outillage/nexus_generate.py": ("Génération", "Régénère les zones AUTOGEN"),
+    "outillage/nexus_validate.py": ("Vérification", "Intégrité — bloque tout redémarrage douteux"),
     "scripts/nexus_capability.py": ("Vérification", "Profil matériel et verdict par modèle"),
-    "scripts/nexus_test.py": ("Vérification", "Suite forward / reverse / policy / code"),
-    "scripts/nexus_state.py": ("Rituel", "Régénère STATE.md par mesure"),
-    "scripts/nexus_boussole.py": ("Rituel", "Régénère cette boussole"),
-    "scripts/nexus_switch_engine.py": ("Migration", "Bascule le moteur Docker ↔ hôte"),
-    "scripts/nexus_migration_plan.py": ("Migration", "Plan de sortie des modèles hors de Docker"),
-    "scripts/nexus_mcp_probe.py": ("Vérification", "Sonde les outils du pont MCP"),
+    "outillage/nexus_test.py": ("Vérification", "Suite forward / reverse / policy / code"),
+    "outillage/nexus_state.py": ("Rituel", "Régénère STATE.md par mesure"),
+    "outillage/nexus_boussole.py": ("Rituel", "Régénère cette boussole"),
+    "outillage/nexus_switch_engine.py": ("Migration", "Bascule le moteur Docker ↔ hôte"),
+    "outillage/nexus_migration_plan.py": ("Migration", "Plan de sortie des modèles hors de Docker"),
+    "outillage/nexus_mcp_probe.py": ("Vérification", "Sonde les outils du pont MCP"),
     "scripts/Update-NexusModels.ps1": ("Génération", "Orchestrateur de mise à jour"),
     "scripts/Test-NexusConfig.ps1": ("Vérification", "Enveloppe du validateur"),
     "scripts/Test-NexusSmoke.ps1": ("Vérification", "Smoke test runtime"),
@@ -231,7 +231,7 @@ def main() -> int:
     lines = [
         "# Boussole",
         "",
-        f"> Index du dépôt, généré par `python scripts/nexus_boussole.py` le {now}.",
+        f"> Index du dépôt, généré par `python outillage/nexus_boussole.py` le {now}.",
         "> Localiser sans chercher, verifier sans commande jetable.",
         "> `.env` en est volontairement absent : ni indexé, ni empreinté.",
         "",

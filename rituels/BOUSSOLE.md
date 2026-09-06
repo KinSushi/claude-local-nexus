@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python scripts/nexus_boussole.py` le 2026-09-06 13:06.
+> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-06 13:06.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -17,15 +17,15 @@
 | Pont | `Set-ClaudeModel.ps1` | Choix explicite du mode d'exécution de Claude Code | 12 Ko | 2026-09-02 | `cd68d2299da2ed40` |
 | Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 149 Ko | 2026-09-05 | `d8474627f5a282fb` |
 | Génération | `scripts/Update-NexusModels.ps1` | Orchestrateur de mise à jour | 13 Ko | 2026-08-31 | `1fedad75868f29c9` |
-| Génération | `scripts/nexus_generate.py` | Régénère les zones AUTOGEN | 78 Ko | 2026-09-05 | `f29c16a2361518a3` |
+| Génération | `outillage/nexus_generate.py` | Régénère les zones AUTOGEN | 78 Ko | 2026-09-05 | `f29c16a2361518a3` |
 | Vérification | `scripts/Test-NexusConfig.ps1` | Enveloppe du validateur | 5 Ko | 2026-08-30 | `c875db163924a585` |
 | Vérification | `scripts/Test-NexusSmoke.ps1` | Smoke test runtime | 9 Ko | 2026-09-02 | `3a0e8d637cb715aa` |
 | Vérification | `scripts/nexus_capability.py` | Profil matériel et verdict par modèle | 30 Ko | 2026-09-03 | `5914bd87ce48ec43` |
-| Vérification | `scripts/nexus_mcp_probe.py` | Sonde les outils du pont MCP | 16 Ko | 2026-08-31 | `413c9545c06d6797` |
-| Vérification | `scripts/nexus_test.py` | Suite forward / reverse / policy / code | 172 Ko | 2026-09-06 | `dd377397202a87c5` |
-| Vérification | `scripts/nexus_validate.py` | Intégrité — bloque tout redémarrage douteux | 33 Ko | 2026-09-05 | `8b0241724b3fbe8d` |
-| Migration | `scripts/nexus_migration_plan.py` | Plan de sortie des modèles hors de Docker | 14 Ko | 2026-09-02 | `fcb4d2aa31d11c21` |
-| Migration | `scripts/nexus_switch_engine.py` | Bascule le moteur Docker ↔ hôte | 14 Ko | 2026-08-31 | `20eb1ab7c7de95ba` |
+| Vérification | `outillage/nexus_mcp_probe.py` | Sonde les outils du pont MCP | 16 Ko | 2026-08-31 | `413c9545c06d6797` |
+| Vérification | `outillage/nexus_test.py` | Suite forward / reverse / policy / code | 172 Ko | 2026-09-06 | `dd377397202a87c5` |
+| Vérification | `outillage/nexus_validate.py` | Intégrité — bloque tout redémarrage douteux | 33 Ko | 2026-09-05 | `8b0241724b3fbe8d` |
+| Migration | `outillage/nexus_migration_plan.py` | Plan de sortie des modèles hors de Docker | 14 Ko | 2026-09-02 | `fcb4d2aa31d11c21` |
+| Migration | `outillage/nexus_switch_engine.py` | Bascule le moteur Docker ↔ hôte | 14 Ko | 2026-08-31 | `20eb1ab7c7de95ba` |
 | Automatisation | `scripts/Register-NexusAutoUpdate.ps1` | Tâche planifiée quotidienne | 10 Ko | 2026-08-31 | `5e53c6c931772afd` |
 | Exploitation | `scripts/backup.ps1` | Sauvegarde configuration et volumes | 10 Ko | 2026-08-31 | `682a8cec1359fe76` |
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-09-02 | `3d7c3f18eff18380` |
@@ -36,8 +36,8 @@
 | Rituel | `rituels/PROGRESS.md` | Historique des décisions et des erreurs | 17 Ko | 2026-09-01 | `242c817f63c2aa2f` |
 | Rituel | `rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-08-29 | `7714dfe8b4c7c548` |
 | Rituel | `rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-06 | `c115a6ce927a18e7` |
-| Rituel | `scripts/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-01 | `b4a0ccc8e23077af` |
-| Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 23 Ko | 2026-08-31 | `03b74fbf4a5704f0` |
+| Rituel | `outillage/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-01 | `b4a0ccc8e23077af` |
+| Rituel | `outillage/nexus_state.py` | Régénère STATE.md par mesure | 23 Ko | 2026-08-31 | `03b74fbf4a5704f0` |
 | Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-09-05 | `60299baf014b60d7` |
 | Documentation | `docs/pont-local-abonnement.md` | Associer modèles locaux et abonnement | 16 Ko | 2026-09-02 | `3444b19249e6d4ec` |
 | Architecture | `.claude/agents/nexus-delegue.md` | — | 4 Ko | 2026-08-29 | `103b5dbd0d19550c` |
@@ -9886,77 +9886,77 @@
 | Architecture | `scripts/nexus.ps1` | — | 12 Ko | 2026-09-01 | `fd0f13706df494d8` |
 | Architecture | `scripts/nexus_agent.py` | — | 73 Ko | 2026-09-06 | `d3d73071d6fbf800` |
 | Architecture | `scripts/nexus_agent.py.avant-patch` | — | 49 Ko | 2026-08-30 | `310e3bab9ab3d1fb` |
-| Architecture | `scripts/nexus_appliquer.py` | — | 11 Ko | 2026-09-05 | `da84c20c396b7ecc` |
-| Architecture | `scripts/nexus_armer_garde.py` | — | 13 Ko | 2026-09-02 | `bc7d7a6ed16ecaf5` |
-| Architecture | `scripts/nexus_armer_hook.py` | — | 8 Ko | 2026-09-01 | `6f3e2b64df18a3bb` |
-| Architecture | `scripts/nexus_avec_verrou.py` | — | 3 Ko | 2026-09-01 | `85f2741bf1deabb2` |
-| Architecture | `scripts/nexus_bench.py` | — | 36 Ko | 2026-08-31 | `d95d1fb66349aca1` |
-| Architecture | `scripts/nexus_cablage.py` | — | 20 Ko | 2026-09-06 | `6be7a01102dffc6a` |
-| Architecture | `scripts/nexus_charge.py` | — | 8 Ko | 2026-09-02 | `747c5ad7e21eb5a1` |
-| Architecture | `scripts/nexus_checklist_progres.py` | — | 11 Ko | 2026-09-06 | `041494ce57df48aa` |
-| Architecture | `scripts/nexus_conformite.py` | — | 90 Ko | 2026-09-06 | `890bedfe66fb490a` |
-| Architecture | `scripts/nexus_conformite.py.avant-patch` | — | 35 Ko | 2026-08-30 | `1ccee0e7fa3cffd4` |
-| Architecture | `scripts/nexus_corpus.py` | — | 3 Ko | 2026-09-02 | `9ca696257a42f853` |
-| Architecture | `scripts/nexus_decouper_livres.py` | — | 9 Ko | 2026-09-03 | `41dab5620b21c215` |
+| Architecture | `outillage/nexus_appliquer.py` | — | 11 Ko | 2026-09-05 | `da84c20c396b7ecc` |
+| Architecture | `outillage/nexus_armer_garde.py` | — | 13 Ko | 2026-09-02 | `bc7d7a6ed16ecaf5` |
+| Architecture | `outillage/nexus_armer_hook.py` | — | 8 Ko | 2026-09-01 | `6f3e2b64df18a3bb` |
+| Architecture | `outillage/nexus_avec_verrou.py` | — | 3 Ko | 2026-09-01 | `85f2741bf1deabb2` |
+| Architecture | `outillage/nexus_bench.py` | — | 36 Ko | 2026-08-31 | `d95d1fb66349aca1` |
+| Architecture | `outillage/nexus_cablage.py` | — | 20 Ko | 2026-09-06 | `6be7a01102dffc6a` |
+| Architecture | `outillage/nexus_charge.py` | — | 8 Ko | 2026-09-02 | `747c5ad7e21eb5a1` |
+| Architecture | `outillage/nexus_checklist_progres.py` | — | 11 Ko | 2026-09-06 | `041494ce57df48aa` |
+| Architecture | `outillage/nexus_conformite.py` | — | 90 Ko | 2026-09-06 | `890bedfe66fb490a` |
+| Architecture | `outillage/nexus_conformite.py.avant-patch` | — | 35 Ko | 2026-08-30 | `1ccee0e7fa3cffd4` |
+| Architecture | `outillage/nexus_corpus.py` | — | 3 Ko | 2026-09-02 | `9ca696257a42f853` |
+| Architecture | `outillage/nexus_decouper_livres.py` | — | 9 Ko | 2026-09-03 | `41dab5620b21c215` |
 | Architecture | `scripts/nexus_disjoncteur.py` | — | 11 Ko | 2026-09-05 | `7b77a8745010acd0` |
-| Architecture | `scripts/nexus_doc.py` | — | 40 Ko | 2026-09-02 | `3effab2351b3bcd1` |
-| Architecture | `scripts/nexus_epreuve_vide.py` | — | 3 Ko | 2026-09-02 | `a45ca88e5150cc28` |
-| Architecture | `scripts/nexus_essaim.py` | — | 30 Ko | 2026-09-02 | `1b2876b0bf1dacdb` |
-| Architecture | `scripts/nexus_extraire_livres.py` | — | 4 Ko | 2026-09-03 | `05d333f5b466e963` |
-| Architecture | `scripts/nexus_filet.py` | — | 22 Ko | 2026-09-03 | `facc27703f8b477a` |
-| Architecture | `scripts/nexus_fonctions.py` | — | 10 Ko | 2026-08-29 | `2ba1bece318f7134` |
+| Architecture | `outillage/nexus_doc.py` | — | 40 Ko | 2026-09-02 | `3effab2351b3bcd1` |
+| Architecture | `outillage/nexus_epreuve_vide.py` | — | 3 Ko | 2026-09-02 | `a45ca88e5150cc28` |
+| Architecture | `outillage/nexus_essaim.py` | — | 30 Ko | 2026-09-02 | `1b2876b0bf1dacdb` |
+| Architecture | `outillage/nexus_extraire_livres.py` | — | 4 Ko | 2026-09-03 | `05d333f5b466e963` |
+| Architecture | `outillage/nexus_filet.py` | — | 22 Ko | 2026-09-03 | `facc27703f8b477a` |
+| Architecture | `outillage/nexus_fonctions.py` | — | 10 Ko | 2026-08-29 | `2ba1bece318f7134` |
 | Architecture | `scripts/nexus_garde_agent.py` | — | 10 Ko | 2026-09-02 | `716e907f0027d58a` |
 | Architecture | `scripts/nexus_garde_ecriture.py` | — | 7 Ko | 2026-09-01 | `8e83b8bb9616a580` |
-| Architecture | `scripts/nexus_garde_edition.py` | — | 5 Ko | 2026-08-31 | `a8c5480c1edcf1e5` |
+| Architecture | `outillage/nexus_garde_edition.py` | — | 5 Ko | 2026-08-31 | `a8c5480c1edcf1e5` |
 | Architecture | `scripts/nexus_garde_isolation.py` | — | 6 Ko | 2026-09-01 | `a9f07e624e220f1a` |
 | Architecture | `scripts/nexus_garde_lecture.py` | — | 21 Ko | 2026-09-01 | `f5388622cfdd5ff1` |
 | Architecture | `scripts/nexus_garde_production.py` | — | 4 Ko | 2026-09-02 | `1530a72d31cdee36` |
 | Architecture | `scripts/nexus_garde_shell.py` | — | 12 Ko | 2026-09-06 | `d49adafec02a5eef` |
-| Architecture | `scripts/nexus_import.py` | — | 6 Ko | 2026-08-30 | `e6477fe5ccdc7993` |
-| Architecture | `scripts/nexus_index_livres.py` | — | 7 Ko | 2026-09-02 | `daa97c03e76a27fe` |
-| Architecture | `scripts/nexus_indexer_code.py` | — | 20 Ko | 2026-09-05 | `6ca1bf51e9b2d9bb` |
-| Architecture | `scripts/nexus_indexer_node.py` | — | 7 Ko | 2026-09-03 | `10a7973214344567` |
-| Architecture | `scripts/nexus_ingerer.py` | — | 18 Ko | 2026-08-31 | `979b50e85a6a8d88` |
-| Architecture | `scripts/nexus_libs.py` | — | 3 Ko | 2026-09-02 | `d79c6b8dfcf9c117` |
-| Architecture | `scripts/nexus_livres.py` | — | 8 Ko | 2026-09-06 | `890fbcc137a8d261` |
-| Architecture | `scripts/nexus_livres_semantique.py` | — | 9 Ko | 2026-09-02 | `1aeb9cd5f58692f9` |
-| Architecture | `scripts/nexus_loi1.py` | — | 7 Ko | 2026-09-05 | `2b809f39def7783c` |
-| Architecture | `scripts/nexus_maj_modeles.py` | — | 17 Ko | 2026-08-31 | `50f3e9131de6561d` |
-| Architecture | `scripts/nexus_ombre.py` | — | 5 Ko | 2026-09-02 | `ef365ca50a88dd3c` |
-| Architecture | `scripts/nexus_outillage.py` | — | 34 Ko | 2026-09-06 | `72b540496614f34b` |
-| Architecture | `scripts/nexus_patch.py` | — | 19 Ko | 2026-09-02 | `829eac012190db19` |
-| Architecture | `scripts/nexus_porte_rituel.py` | — | 9 Ko | 2026-09-05 | `ffd852e6b00a180c` |
-| Architecture | `scripts/nexus_portee_import.py` | — | 15 Ko | 2026-08-30 | `853e2d540c6b25fd` |
-| Architecture | `scripts/nexus_poser_socle.py` | — | 10 Ko | 2026-09-01 | `d5a8fe5deca5bddd` |
-| Architecture | `scripts/nexus_posterior.py` | — | 6 Ko | 2026-08-30 | `7737b49c4efa58ef` |
-| Architecture | `scripts/nexus_preload.py` | — | 3 Ko | 2026-09-01 | `112eaf3a20f6244e` |
-| Architecture | `scripts/nexus_preserve.py` | — | 21 Ko | 2026-09-02 | `b18ef48adab50f89` |
-| Architecture | `scripts/nexus_progres.py` | — | 8 Ko | 2026-09-06 | `942dc5eb0492e91b` |
-| Architecture | `scripts/nexus_pull_host.py` | — | 17 Ko | 2026-08-30 | `cd52e6f87870bdff` |
-| Architecture | `scripts/nexus_quarantaine.py` | — | 43 Ko | 2026-09-03 | `2d6d690e3be4107b` |
-| Architecture | `scripts/nexus_redaction.py` | — | 15 Ko | 2026-09-03 | `47474ac5594899e4` |
-| Architecture | `scripts/nexus_relais.py` | — | 12 Ko | 2026-09-02 | `39b806a14c628861` |
-| Architecture | `scripts/nexus_releve.py` | — | 37 Ko | 2026-08-31 | `e61eccc3add7eb69` |
-| Architecture | `scripts/nexus_reprise.py` | — | 18 Ko | 2026-09-05 | `671db7acbd59b86d` |
-| Architecture | `scripts/nexus_rituel.py` | — | 24 Ko | 2026-09-06 | `31bc935e5bee88e8` |
-| Architecture | `scripts/nexus_ruche.py` | — | 22 Ko | 2026-09-02 | `a425d4a7efa1faba` |
-| Architecture | `scripts/nexus_sauvegarde.py` | — | 5 Ko | 2026-09-02 | `577ef8575b4f2793` |
-| Architecture | `scripts/nexus_savings.py` | — | 21 Ko | 2026-09-01 | `9404f626f1ef705c` |
-| Architecture | `scripts/nexus_schema.py` | — | 13 Ko | 2026-09-01 | `2635807478ff99e4` |
-| Architecture | `scripts/nexus_secours.py` | — | 7 Ko | 2026-09-02 | `2b39376658c017ff` |
-| Architecture | `scripts/nexus_socle.py` | — | 6 Ko | 2026-09-01 | `91ce05a21bfba42e` |
-| Architecture | `scripts/nexus_sonde_aveugle.py` | — | 4 Ko | 2026-09-02 | `72af33c757cee9a2` |
-| Architecture | `scripts/nexus_stats_jsonl.py` | — | 6 Ko | 2026-09-01 | `9bf65a3f349486af` |
-| Architecture | `scripts/nexus_sujets.py` | — | 23 Ko | 2026-09-01 | `72083efc47d61f43` |
-| Architecture | `scripts/nexus_test_outillage.py` | — | 25 Ko | 2026-08-29 | `f81da04dcd695fa2` |
-| Architecture | `scripts/nexus_traque.py` | — | 15 Ko | 2026-08-31 | `876e7556473353f8` |
+| Architecture | `outillage/nexus_import.py` | — | 6 Ko | 2026-08-30 | `e6477fe5ccdc7993` |
+| Architecture | `outillage/nexus_index_livres.py` | — | 7 Ko | 2026-09-02 | `daa97c03e76a27fe` |
+| Architecture | `outillage/nexus_indexer_code.py` | — | 20 Ko | 2026-09-05 | `6ca1bf51e9b2d9bb` |
+| Architecture | `outillage/nexus_indexer_node.py` | — | 7 Ko | 2026-09-03 | `10a7973214344567` |
+| Architecture | `outillage/nexus_ingerer.py` | — | 18 Ko | 2026-08-31 | `979b50e85a6a8d88` |
+| Architecture | `outillage/nexus_libs.py` | — | 3 Ko | 2026-09-02 | `d79c6b8dfcf9c117` |
+| Architecture | `outillage/nexus_livres.py` | — | 8 Ko | 2026-09-06 | `890fbcc137a8d261` |
+| Architecture | `outillage/nexus_livres_semantique.py` | — | 9 Ko | 2026-09-02 | `1aeb9cd5f58692f9` |
+| Architecture | `outillage/nexus_loi1.py` | — | 7 Ko | 2026-09-05 | `2b809f39def7783c` |
+| Architecture | `outillage/nexus_maj_modeles.py` | — | 17 Ko | 2026-08-31 | `50f3e9131de6561d` |
+| Architecture | `outillage/nexus_ombre.py` | — | 5 Ko | 2026-09-02 | `ef365ca50a88dd3c` |
+| Architecture | `outillage/nexus_outillage.py` | — | 34 Ko | 2026-09-06 | `72b540496614f34b` |
+| Architecture | `outillage/nexus_patch.py` | — | 19 Ko | 2026-09-02 | `829eac012190db19` |
+| Architecture | `outillage/nexus_porte_rituel.py` | — | 9 Ko | 2026-09-05 | `ffd852e6b00a180c` |
+| Architecture | `outillage/nexus_portee_import.py` | — | 15 Ko | 2026-08-30 | `853e2d540c6b25fd` |
+| Architecture | `outillage/nexus_poser_socle.py` | — | 10 Ko | 2026-09-01 | `d5a8fe5deca5bddd` |
+| Architecture | `outillage/nexus_posterior.py` | — | 6 Ko | 2026-08-30 | `7737b49c4efa58ef` |
+| Architecture | `outillage/nexus_preload.py` | — | 3 Ko | 2026-09-01 | `112eaf3a20f6244e` |
+| Architecture | `outillage/nexus_preserve.py` | — | 21 Ko | 2026-09-02 | `b18ef48adab50f89` |
+| Architecture | `outillage/nexus_progres.py` | — | 8 Ko | 2026-09-06 | `942dc5eb0492e91b` |
+| Architecture | `outillage/nexus_pull_host.py` | — | 17 Ko | 2026-08-30 | `cd52e6f87870bdff` |
+| Architecture | `outillage/nexus_quarantaine.py` | — | 43 Ko | 2026-09-03 | `2d6d690e3be4107b` |
+| Architecture | `outillage/nexus_redaction.py` | — | 15 Ko | 2026-09-03 | `47474ac5594899e4` |
+| Architecture | `outillage/nexus_relais.py` | — | 12 Ko | 2026-09-02 | `39b806a14c628861` |
+| Architecture | `outillage/nexus_releve.py` | — | 37 Ko | 2026-08-31 | `e61eccc3add7eb69` |
+| Architecture | `outillage/nexus_reprise.py` | — | 18 Ko | 2026-09-05 | `671db7acbd59b86d` |
+| Architecture | `outillage/nexus_rituel.py` | — | 24 Ko | 2026-09-06 | `31bc935e5bee88e8` |
+| Architecture | `outillage/nexus_ruche.py` | — | 22 Ko | 2026-09-02 | `a425d4a7efa1faba` |
+| Architecture | `outillage/nexus_sauvegarde.py` | — | 5 Ko | 2026-09-02 | `577ef8575b4f2793` |
+| Architecture | `outillage/nexus_savings.py` | — | 21 Ko | 2026-09-01 | `9404f626f1ef705c` |
+| Architecture | `outillage/nexus_schema.py` | — | 13 Ko | 2026-09-01 | `2635807478ff99e4` |
+| Architecture | `outillage/nexus_secours.py` | — | 7 Ko | 2026-09-02 | `2b39376658c017ff` |
+| Architecture | `outillage/nexus_socle.py` | — | 6 Ko | 2026-09-01 | `91ce05a21bfba42e` |
+| Architecture | `outillage/nexus_sonde_aveugle.py` | — | 4 Ko | 2026-09-02 | `72af33c757cee9a2` |
+| Architecture | `outillage/nexus_stats_jsonl.py` | — | 6 Ko | 2026-09-01 | `9bf65a3f349486af` |
+| Architecture | `outillage/nexus_sujets.py` | — | 23 Ko | 2026-09-01 | `72083efc47d61f43` |
+| Architecture | `outillage/nexus_test_outillage.py` | — | 25 Ko | 2026-08-29 | `f81da04dcd695fa2` |
+| Architecture | `outillage/nexus_traque.py` | — | 15 Ko | 2026-08-31 | `876e7556473353f8` |
 | Architecture | `scripts/nexus_valide.py` | — | 33 Ko | 2026-09-02 | `8913807140189c17` |
 | Architecture | `scripts/nexus_verbatim.py` | — | 11 Ko | 2026-09-01 | `6ec91fbea334f3ad` |
-| Architecture | `scripts/nexus_verifie_rendu.py` | — | 7 Ko | 2026-09-02 | `62f86a8dafd9a9de` |
+| Architecture | `outillage/nexus_verifie_rendu.py` | — | 7 Ko | 2026-09-02 | `62f86a8dafd9a9de` |
 | Architecture | `scripts/nexus_verrou_machine.py` | — | 15 Ko | 2026-09-01 | `a60f534393dbb2ef` |
-| Architecture | `scripts/nexus_verrou_tenir.py` | — | 4 Ko | 2026-09-01 | `ca5efa8bab8c6460` |
-| Architecture | `scripts/nexus_vitrine.py` | — | 15 Ko | 2026-09-06 | `51274e97f334d904` |
-| Architecture | `scripts/nexus_worktree.py` | — | 21 Ko | 2026-08-31 | `19653309be19ed9e` |
+| Architecture | `outillage/nexus_verrou_tenir.py` | — | 4 Ko | 2026-09-01 | `ca5efa8bab8c6460` |
+| Architecture | `outillage/nexus_vitrine.py` | — | 15 Ko | 2026-09-06 | `51274e97f334d904` |
+| Architecture | `outillage/nexus_worktree.py` | — | 21 Ko | 2026-08-31 | `19653309be19ed9e` |
 | Architecture | `tools/nexus-mcp/epreuve_decoupage.js` | — | 4 Ko | 2026-08-31 | `283938068ee8ec4c` |
 | Architecture | `tools/nexus-mcp/epreuve_mentions.js` | — | 4 Ko | 2026-08-30 | `c56a5df8e7c9eedb` |
 | Architecture | `tools/nexus-mcp/epreuve_noms_js.js` | — | 6 Ko | 2026-08-30 | `e3178ae07a52f85b` |

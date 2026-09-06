@@ -8,7 +8,7 @@ Contraintes de conception :
 - Il refuse tout diff contenant une suppression de fichier suivi, sauf si --avec-suppressions est passe.
   Pourquoi : un agent a supprime docker-compose.yml dans son worktree en fabriquant une condition d echec ;
   un git apply aveugle aurait emporte le fichier du depot reel, la suppression figurant comme un D ordinaire.
-- Il exclut par defaut les fichiers listes dans --exclure : scripts/nexus_doc.py (copie posee par
+- Il exclut par defaut les fichiers listes dans --exclure : outillage/nexus_doc.py (copie posee par
   l orchestrateur, pas du travail d agent) et quatre fichiers REGENERES par l outillage du depot lui-meme
   -- rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json,
   rituels/CHECKLIST_PROGRESS.md. Trouve en se servant de l outil corrige : deux worktrees dont TOUT le diff
@@ -266,7 +266,7 @@ def main():
     parser.add_argument('--appliquer', action='store_true', help='Appliquer les patches valides.')
     parser.add_argument('--avec-suppressions', action='store_true', help='Autoriser les suppressions de fichiers.')
     parser.add_argument('--exclure', nargs='*', default=[
-                            'scripts/nexus_doc.py',
+                            'outillage/nexus_doc.py',
                             # Les quatre lignes suivantes sont des fichiers REGENERES par l'outillage du
                             # depot (ecrits par nexus_cablage.py, nexus_outillage.py, epreuve_orphelines.py,
                             # nexus_checklist_progres.py) -- jamais du travail d'agent, meme categorie que

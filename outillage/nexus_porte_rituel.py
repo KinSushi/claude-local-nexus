@@ -77,7 +77,7 @@ def _write_counter(path: Path, count: int) -> None:
 
 def _run_rituel(root: Path) -> dict | None:
     """
-    Execute ``scripts/nexus_rituel.py --json`` depuis la racine du depot.
+    Execute ``outillage/nexus_rituel.py --json`` depuis la racine du depot.
     Retourne le JSON decode ou ``None`` en cas d'erreur (fail-open).
     """
     cmd = [

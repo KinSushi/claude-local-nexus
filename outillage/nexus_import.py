@@ -41,9 +41,9 @@ quatre défauts :
 * `--seul` avec un nom inconnu rendait « 0 module, 0 échec » et le code 0 —
   un succès annoncé pour un test qui n'a pas eu lieu.
 
-    python scripts/nexus_import.py
-    python scripts/nexus_import.py --seul nexus_ruche --seul nexus_agent
-    python scripts/nexus_import.py --json
+    python outillage/nexus_import.py
+    python outillage/nexus_import.py --seul nexus_ruche --seul nexus_agent
+    python outillage/nexus_import.py --json
 """
 from __future__ import annotations
 

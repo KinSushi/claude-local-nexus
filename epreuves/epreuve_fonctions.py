@@ -3,7 +3,7 @@ import sys
 import subprocess
 import tempfile
 
-TOOL_PATH = "scripts/nexus_fonctions.py"
+TOOL_PATH = "outillage/nexus_fonctions.py"
 TIMEOUT = 10
 
 def run_tool(args, stdin_data=None, env_vars=None):

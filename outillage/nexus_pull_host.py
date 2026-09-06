@@ -20,9 +20,9 @@ Le script est relançable : ce qui est déjà présent est ignoré, ce qui a
 échoué est retenté au passage suivant.
 
 Usage :
-    python scripts/nexus_pull_host.py               # comble ce qui manque
-    python scripts/nexus_pull_host.py --dry-run     # simule
-    python scripts/nexus_pull_host.py --liste model_list.host.txt
+    python outillage/nexus_pull_host.py               # comble ce qui manque
+    python outillage/nexus_pull_host.py --dry-run     # simule
+    python outillage/nexus_pull_host.py --liste model_list.host.txt
 """
 from __future__ import annotations
 
@@ -285,7 +285,7 @@ def main() -> int:
         if not os.path.exists(chemin):
             print("Liste introuvable : %s" % chemin)
             print(
-                "La produire : python scripts/nexus_migration_plan.py --write model_list.host.txt"
+                "La produire : python outillage/nexus_migration_plan.py --write model_list.host.txt"
             )
             return 1
 
@@ -406,9 +406,9 @@ def main() -> int:
         print(
             """
   Suite, dans cet ordre :
-    1. python scripts/nexus_switch_engine.py --to host
+    1. python outillage/nexus_switch_engine.py --to host
     2. .\\scripts\\Update-NexusModels.ps1 -Restart
-    3. python scripts/nexus_test.py
+    3. python outillage/nexus_test.py
     4. SEULEMENT si tout passe : retirer COMPOSE_PROFILES de .env,
        puis docker compose down et supprimer le volume ollama_data.
 """
@@ -417,15 +417,15 @@ def main() -> int:
         print(
             """
   Suite :
-    python scripts/nexus_conformite.py        ce qui manque encore
-    python scripts/nexus_pull_host.py         relancer apres liberation
+    python outillage/nexus_conformite.py        ce qui manque encore
+    python outillage/nexus_pull_host.py         relancer apres liberation
 """
         )
     else:
         print(
             """
   Suite :
-    python scripts/nexus_validate.py
+    python outillage/nexus_validate.py
     .\\scripts\\Update-NexusModels.ps1 -Restart
 """
         )

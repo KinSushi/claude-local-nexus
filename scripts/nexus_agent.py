@@ -28,7 +28,7 @@ Usage
 -----
     # une tâche, un modèle
     python scripts/nexus_agent.py --tache "Relis et signale les defauts" \
-        --fichiers scripts/nexus_validate.py --modele codestral-22b-local
+        --fichiers outillage/nexus_validate.py --modele codestral-22b-local
 
     # plusieurs tâches en parallèle, décrites dans un JSON
     python scripts/nexus_agent.py --lot taches.json
@@ -40,9 +40,9 @@ Format du lot (liste d'objets) :
 
     [
       {"nom": "validateur", "modele": "codestral-22b-local",
-       "tache": "...", "fichiers": ["scripts/nexus_validate.py"]},
+       "tache": "...", "fichiers": ["outillage/nexus_validate.py"]},
       {"nom": "generateur", "modele": "qwen3-14b-local",
-       "tache": "...", "fichiers": ["scripts/nexus_generate.py"]}
+       "tache": "...", "fichiers": ["outillage/nexus_generate.py"]}
     ]
 """
 from __future__ import annotations

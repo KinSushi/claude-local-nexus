@@ -1,22 +1,10 @@
 {
-  "mesure_le": "2026-09-06T19:22:56.327080+00:00",
+  "mesure_le": "2026-09-06T20:35:03.311358+00:00",
   "categories": {
     "orphelin": [],
     "preuve_seule": [
       "scripts/Compact-NexusDisk.ps1",
-      "scripts/Initialize-Nexus.ps1",
-      "scripts/nexus_armer_hook.py",
-      "scripts/nexus_checklist_progres.py",
-      "scripts/nexus_decouper_livres.py",
-      "scripts/nexus_extraire_livres.py",
-      "scripts/nexus_filet.py",
-      "scripts/nexus_index_livres.py",
-      "scripts/nexus_indexer_node.py",
-      "scripts/nexus_livres.py",
-      "scripts/nexus_ombre.py",
-      "scripts/nexus_poser_socle.py",
-      "scripts/nexus_quarantaine.py",
-      "scripts/nexus_sauvegarde.py"
+      "scripts/Initialize-Nexus.ps1"
     ]
   }
 }

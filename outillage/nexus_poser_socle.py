@@ -221,12 +221,12 @@ def process_target(source_path, target_path, mode):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage : python scripts/nexus_poser_socle.py [--simulation|--poser|--restaurer]")
+        print("Usage : python outillage/nexus_poser_socle.py [--simulation|--poser|--restaurer]")
         return 0
 
     mode = sys.argv[1]
     if mode not in ('--simulation', '--poser', '--restaurer'):
-        print("Usage : python scripts/nexus_poser_socle.py [--simulation|--poser|--restaurer]")
+        print("Usage : python outillage/nexus_poser_socle.py [--simulation|--poser|--restaurer]")
         return 0
 
     repo_root = get_repo_root()
@@ -264,7 +264,7 @@ def main():
     if mode == '--poser' and all(c == 0 for c in codes):
         print("a mesurer maintenant : rm -rf /tmp/temoin_socle_inexistant_2026")
         print("a mesurer maintenant : ecrire par l outil Write un fichier neuf sous un chemin couvert par une regle Write")
-        print("a rejouer : python scripts/nexus_socle.py")
+        print("a rejouer : python outillage/nexus_socle.py")
 
     # Retourner 2 si une verification a echoue
     if any(c == 2 for c in codes):

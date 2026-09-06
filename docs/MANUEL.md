@@ -144,7 +144,7 @@ système réduit un type d'erreur, elle ne rend pas le modèle plus capable.
 *Le banc produit, l’outil applique.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_patch.py" `
+python "C:/local-llm-docker/outillage/nexus_patch.py" `
     --cible src/module.py `
     --consigne brief.md
 ```
@@ -181,7 +181,7 @@ compte, relancez.
 *Audit + correction + vérification en parallèle.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_essaim.py" `
+python "C:/local-llm-docker/outillage/nexus_essaim.py" `
     --cibles a.py b.py c.ps1 `
     --plans deux `
     --parallele 4
@@ -268,7 +268,7 @@ mieux ne rien affirmer que répéter une comparaison qui ne tient pas.
 **Le tuyau.** Un troisième piège, celui-ci sur la *lecture* de la mesure :
 
 ```bash
-timeout 600 python scripts/nexus_releve.py 2>&1 | tail -8   # NON
+timeout 600 python outillage/nexus_releve.py 2>&1 | tail -8   # NON
 ```
 
 Deux défauts en une ligne. Le code de sortie observé est celui de `tail`, pas
@@ -281,7 +281,7 @@ Observé ici : une relève expirée a rendu « code 0 » et zéro ligne. Rien ne
 distinguait ce cas d'une relève qui n'aurait eu rien à dire.
 
 ```bash
-timeout 1500 python -u scripts/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
+timeout 1500 python -u outillage/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
 ```
 
 `-u` désactive le buffer, la redirection remplace le tuyau, et le `$?` lu
@@ -293,7 +293,7 @@ juste après porte enfin sur Python.
 *Découverte automatique + plusieurs essaims concurrents.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_ruche.py" `
+python "C:/local-llm-docker/outillage/nexus_ruche.py" `
     --essaims 2 `
     --taille-lot 3 `
     --plans cloud
@@ -307,7 +307,7 @@ python "C:/local-llm-docker/scripts/nexus_ruche.py" `
 
 ## 📊 Mesurer ce que cela rapporte  
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_savings.py" `
+python "C:/local-llm-docker/outillage/nexus_savings.py" `
     --jours 7
 ```
 Affiche la part de travail déléguée et le coût évité. **À lancer dès le premier jour** d’un nouveau projet ; sans mesure initiale, on ne sait jamais si le dispositif tient ses promesses.

@@ -12,7 +12,7 @@ Il produit deux fichiers au format mesure sur le rayon existant :
 - symbols.jsonl : un objet JSON par ligne, 25 champs exacts
 
 Appel :
-    python scripts/nexus_indexer_code.py --source .nexus/livres_code/<depot> \
+    python outillage/nexus_indexer_code.py --source .nexus/livres_code/<depot> \
                                          --cible references/livres/code \
                                          [--simuler]
 """

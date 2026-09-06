@@ -3,7 +3,7 @@
 Pourquoi cette épreuve existe ?
 
 Le mécanisme de classification « câblage » du dépôt (module
-`scripts/nexus_cablage.py`) a classé une épreuve réellement jouée par
+`outillage/nexus_cablage.py`) a classé une épreuve réellement jouée par
 `nexus_test.py` comme « prouvée, connectée à rien », ce qui a été compté en
 régression. Le contrat impose que seules les épreuves réellement
 exécutées soient considérées comme « câblées », sinon le mécanisme est
@@ -41,7 +41,7 @@ def jouer() -> int:
     # Cas 1 – Production citée uniquement par un test → preuve_seule
     cible = "scripts/machin_production.py"
     textes = {
-        "scripts/nexus_test.py": (
+        "outillage/nexus_test.py": (
             'subprocess.run([sys.executable, "scripts/machin_production.py"])'
         )
     }
@@ -55,7 +55,7 @@ def jouer() -> int:
     # Cas 2 – Épreuve réellement jouée → cable
     cible = "epreuves/epreuve_bidon.py"
     textes = {
-        "scripts/nexus_test.py": (
+        "outillage/nexus_test.py": (
             'subprocess.run([sys.executable, "epreuves/epreuve_bidon.py"])'
         )
     }

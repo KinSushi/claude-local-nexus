@@ -14,7 +14,7 @@ pas.
 
 | # | condition | mesure qui la tranche | état au 2026-09-03 |
 | --- | --- | --- | --- |
-| **A** | le rituel de fin de tour est VERT | `python scripts/nexus_rituel.py` → code 0 | **4 manques** |
+| **A** | le rituel de fin de tour est VERT | `python outillage/nexus_rituel.py` → code 0 | **4 manques** |
 | **B** | aucune correction posée sans audit tiers | rubrique 8 remplie sur chaque fiche | **8 fiches sur 15 vides** |
 | **C** | la flotte est vidée | `nexus_filet.py` → 0 conflit, 0 commit non récolté | **8 conflits, 5 commits** |
 | **D** | aucun contrôle aveugle connu | contre-épreuve par contrôle | **5 sur 12 aveugles** |

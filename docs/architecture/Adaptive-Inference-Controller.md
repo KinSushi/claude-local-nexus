@@ -270,7 +270,7 @@ Contrôle poste par poste du tableau « État », contre le code réel (worktree
 | --- | --- | --- |
 | Profils `coding / reasoning / rapide / multimodal` | **VÉRIFIÉ** | `tools/nexus-mcp/server.js:1463` déclare `const PROFILES = { coding: {...}, reasoning: {...}, rapide: {...}, multimodal: {...} }`. |
 | Température par profil `0.10 / 0.40 / 0.00 / 0.20`, figée, non apprise | **VÉRIFIÉ** | `tools/nexus-mcp/server.js:656-661` : `const TEMPERATURE_PROFIL = { coding: 0.1, rapide: 0.0, reasoning: 0.4, multimodal: 0.2 };` — correspondance exacte, chiffre pour chiffre. |
-| Routage par capacité — lit `ollama show`, pas le nom du modèle | **VÉRIFIÉ** | `grep -rln "ollama show" scripts/` → `scripts/nexus_generate.py`, `scripts/nexus_validate.py`. |
+| Routage par capacité — lit `ollama show`, pas le nom du modèle | **VÉRIFIÉ** | `grep -rln "ollama show" scripts/` → `outillage/nexus_generate.py`, `outillage/nexus_validate.py`. |
 | Task Classifier / Complexity Estimator / Validator-Critic / Policy Store / Bandit — absents | **VÉRIFIÉ** | `grep -rn "TaskClassifier\|ComplexityEstimator\|Validator.*Critic\|PolicyStore\|policy_store\|bandit\|UCB\|Thompson" --include=*.js --include=*.py .` (hors `docs/architecture`) ne rend qu'une seule occurrence, un commentaire qui CONSTATE leur absence : `server.js:667` « aucun bandit n'a de quoi selectionner ». |
 | **Télémétrie — PÉRIMÉ** | Voir ci-dessous. | |
 

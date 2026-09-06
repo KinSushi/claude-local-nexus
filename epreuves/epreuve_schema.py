@@ -19,7 +19,7 @@ def run_tool(args, timeout=10):
     return proc.returncode, out, err
 
 def main():
-    tool_path = os.path.abspath(os.path.join("scripts", "nexus_schema.py"))
+    tool_path = os.path.abspath(os.path.join("outillage", "nexus_schema.py"))
     if not os.path.isfile(tool_path):
         print(f"[MISSING] Tool not found at {tool_path}")
         sys.exit(3)

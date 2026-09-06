@@ -4,7 +4,7 @@ worktree ont produit, pour qu'un tiers puisse l'auditer SANS connaitre git.
 
 Pourquoi ce script existe
 --------------------------
-Le worktree isole (`scripts/nexus_worktree.py`) est une isolation
+Le worktree isole (`outillage/nexus_worktree.py`) est une isolation
 D'EXECUTION : chaque agent travaille dans sa propre copie, sans collision
 avec les autres ni avec l'arbre principal. Mais rien n'oblige cette
 execution a se terminer par un commit, et rien n'oblige un commit a se
@@ -75,10 +75,10 @@ jamais dans le meme tableau qu'un fichier prouve.
 
 Usage
 -----
-    python scripts/nexus_quarantaine.py --simulation
-    python scripts/nexus_quarantaine.py
-    python scripts/nexus_quarantaine.py --json
-    python scripts/nexus_quarantaine.py --cible D:/ailleurs/QUARANTAINE ^
+    python outillage/nexus_quarantaine.py --simulation
+    python outillage/nexus_quarantaine.py
+    python outillage/nexus_quarantaine.py --json
+    python outillage/nexus_quarantaine.py --cible D:/ailleurs/QUARANTAINE ^
         --worktrees D:/ailleurs/.claude/worktrees
 """
 from __future__ import annotations
@@ -696,7 +696,7 @@ def construire_manifeste(racine, arbre_princ, err_arbre_princ, cible,
                           worktrees_dir, simulation, resultats) -> dict:
     return {
         "genere_le": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "outil": "scripts/nexus_quarantaine.py",
+        "outil": "outillage/nexus_quarantaine.py",
         "gabarit_audit": "rituels/GABARIT_QUARANTAINE.md",
         "racine": racine,
         "arbre_principal": arbre_princ,

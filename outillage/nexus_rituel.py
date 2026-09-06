@@ -11,8 +11,8 @@ un rituel oublié.
 Il constate et rapporte ; il ne corrige rien. Un MANQUE n'est pas une
 erreur du script : c'est son résultat.
 
-    python scripts/nexus_rituel.py
-    python scripts/nexus_rituel.py --json
+    python outillage/nexus_rituel.py
+    python outillage/nexus_rituel.py --json
 
 Écrit par le banc gratuit sur consigne, intégré après correction d'un
 défaut : il traitait `par_plan` comme un dictionnaire de listes, alors que
@@ -140,7 +140,7 @@ def boussole_fraiche(racine: Path) -> tuple[str, str]:
     statut, detail = _frais(racine, "rituels/BOUSSOLE.md",
                             "pas de boussole dans ce depot")
     if statut == MANQUE:
-        detail += " : python scripts/nexus_boussole.py"
+        detail += " : python outillage/nexus_boussole.py"
     return statut, detail
 
 
@@ -163,7 +163,7 @@ def part_deleguee(racine: Path) -> tuple[str, str]:
     plateforme existe pour déléguer.
     """
     try:
-        r = subprocess.run([sys.executable, "scripts/nexus_savings.py",
+        r = subprocess.run([sys.executable, "outillage/nexus_savings.py",
                             "--jours", "1", "--json"], cwd=racine,
                            capture_output=True, text=True, timeout=120,
                            encoding="utf-8", errors="replace")
@@ -212,7 +212,7 @@ def progres(racine: Path) -> tuple[str, str]:
     """
     try:
         res = subprocess.run(
-            [sys.executable, "scripts/nexus_progres.py"],
+            [sys.executable, "outillage/nexus_progres.py"],
             cwd=racine,
             capture_output=True,
             text=True,
@@ -248,7 +248,7 @@ def arbres_en_attente(racine: Path) -> tuple[str, str]:
     Écrit par le banc (gpt-oss-120b-cloud, 1687 jetons, coût nul), intégré
     sans correction.
     """
-    cmd = [sys.executable, "scripts/nexus_worktree.py", "--lister"]
+    cmd = [sys.executable, "outillage/nexus_worktree.py", "--lister"]
     try:
         result = subprocess.run(
             cmd, cwd=str(racine), capture_output=True, text=True,
@@ -356,7 +356,7 @@ def cablage_tenu(racine: Path) -> tuple[str, str]:
     prouves-seuls s'allonge. Le rituel ne le RAPPELLE pas : il le LANCE.
     """
     try:
-        r = subprocess.run([sys.executable, "scripts/nexus_cablage.py"],
+        r = subprocess.run([sys.executable, "outillage/nexus_cablage.py"],
                            cwd=racine, capture_output=True, text=True,
                            timeout=180, encoding="utf-8", errors="replace")
         lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
@@ -388,7 +388,7 @@ def outillage_tenu(racine) -> tuple[str, str]:
     declare non clos par la lenteur d'une mesure.
     """
     try:
-        r = subprocess.run([sys.executable, "scripts/nexus_outillage.py",
+        r = subprocess.run([sys.executable, "outillage/nexus_outillage.py",
                             "--cliquet"],
                            cwd=racine, capture_output=True, text=True,
                            timeout=420, encoding="utf-8", errors="replace")
@@ -412,7 +412,7 @@ def loi1_tenue(racine):
     C'est un CLIQUET, pas une porte : il refuse l'aggravation sans reparer le passe.
     """
     try:
-        r = subprocess.run([sys.executable, "scripts/nexus_loi1.py"],
+        r = subprocess.run([sys.executable, "outillage/nexus_loi1.py"],
                            cwd=racine, capture_output=True, text=True,
                            timeout=300, encoding="utf-8", errors="replace")
         lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
@@ -447,7 +447,7 @@ def loi1_tenue(racine):
 
 def redaction_declaree(racine):
     try:
-        r = subprocess.run([sys.executable, 'scripts/nexus_redaction.py'],
+        r = subprocess.run([sys.executable, 'outillage/nexus_redaction.py'],
                            cwd=racine, capture_output=True, text=True,
                            timeout=180, encoding='utf-8', errors='replace')
     except subprocess.TimeoutExpired:

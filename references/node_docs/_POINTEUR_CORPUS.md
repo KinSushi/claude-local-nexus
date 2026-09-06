@@ -10,7 +10,7 @@ produit qui pèse 1,46 Mo. Même règle que `references/livres/` et `references/
 la matière reste sur disque et hors historique, seul ce pointeur est suivi.
 
 Le rayon y relève à **double titre** : c'est un corpus, et `all.json` est la *source de
-régénération* de `scripts/nexus_indexer_node.py --source`. `.gitignore` pose déjà la règle pour
+régénération* de `outillage/nexus_indexer_node.py --source`. `.gitignore` pose déjà la règle pour
 ce qui se régénère.
 
 ## Fiabilité — ✅ **DOCUMENTATION OFFICIELLE, VERBATIM**
@@ -40,14 +40,14 @@ Sur disque, trois fichiers :
 
 ## Comment s'en servir
 
-Le rayon se **découvre** — son nom n'est gravé nulle part. `scripts/nexus_livres.py` parcourt
+Le rayon se **découvre** — son nom n'est gravé nulle part. `outillage/nexus_livres.py` parcourt
 `references/` et retient tout répertoire portant un `index.tsv` (ligne 125), puis lit par
 `symbols.jsonl` (ligne 146). Il apparaît dans les résultats sous le nom `22.23.2`.
 
 **TROUVER** :
 
 ```bash
-python scripts/nexus_livres.py "timeout socket"
+python outillage/nexus_livres.py "timeout socket"
 # -> Rayon: 22.23.2 | ID: http.http.Server.setTimeout | Resume: Sets the timeout value...
 ```
 
@@ -64,7 +64,7 @@ with open(rayon / "symbols.jsonl", "rb") as f:
 **RÉGÉNÉRER**, si la version de Node change :
 
 ```bash
-python scripts/nexus_indexer_node.py --source <chemin vers all.json>
+python outillage/nexus_indexer_node.py --source <chemin vers all.json>
 ```
 
 ---

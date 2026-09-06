@@ -20,7 +20,7 @@ partage du travail : **le local détecte, l'orchestrateur arbitre.**
 
 ---
 
-## 2026-08-29 — `qwen3-coder:30b` sur `scripts/nexus_savings.py`
+## 2026-08-29 — `qwen3-coder:30b` sur `outillage/nexus_savings.py`
 
 271 lignes, 3 appels successifs, 52 à 78 s chacun, coût 0.
 
@@ -121,7 +121,7 @@ parallèle.
 
 ---
 
-## 2026-08-29 — `qwen3-coder:30b` sur `scripts/nexus_state.py` : le piège de la bonne pratique
+## 2026-08-29 — `qwen3-coder:30b` sur `outillage/nexus_state.py` : le piège de la bonne pratique
 
 Trois corrections proposées, **une seule retenue**. Les deux autres
 portaient l'apparence d'une bonne pratique et étaient l'une une
@@ -248,15 +248,15 @@ proposition ; les deux ne coïncident pas toujours.
 
 ```powershell
 # une relecture isolée, sans toucher l'arbre principal
-python scripts/nexus_worktree.py `
+python outillage/nexus_worktree.py `
     --nom relecture `
     --fichier scripts/<cible>.py `
     --modele qwen3-coder-30b-local `
     --consigne "..." `
     --verifier "python -c \"import ast,io;ast.parse(io.open('{fichier}',encoding='utf-8').read())\""
 
-python scripts/nexus_worktree.py --fusionner relecture   # retenir
-python scripts/nexus_worktree.py --jeter relecture       # jeter
+python outillage/nexus_worktree.py --fusionner relecture   # retenir
+python outillage/nexus_worktree.py --jeter relecture       # jeter
 ```
 
 Voir aussi [`RESTE-A-FAIRE.md`](RESTE-A-FAIRE.md) pour les défauts

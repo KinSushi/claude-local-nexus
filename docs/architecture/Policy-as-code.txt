@@ -32,7 +32,7 @@ porte de bloc `deny:` structure comme l'exemple (`classification: L3`,
 
 La regle qu'il illustre ("les donnees L3 ne sortent jamais") EST bel et bien
 appliquee -- mais en Python imperatif, pas en YAML declaratif : voir
-`scripts/nexus_test.py:769 test_policy()` (verification "aucun repli ne
+`outillage/nexus_test.py:769 test_policy()` (verification "aucun repli ne
 reduit la confidentialite", ligne 855) et §108 de `.claude/CLAUDE.md`
 ("Fallback direction"). Le SEUL bloc `deny:` reellement present dans le
 depot est `.claude/settings.json` (`permissions.deny`, un seul match), et il

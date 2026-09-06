@@ -178,8 +178,8 @@ candidat réellement exposé **et exécutable**, en privilégiant le local.
 ## Vérification
 
 ```powershell
-python scripts/nexus_test.py                   # suite complète (~10 min, pile démarrée)
-python scripts/nexus_test.py --only reverse    # chemins interdits
+python outillage/nexus_test.py                   # suite complète (~10 min, pile démarrée)
+python outillage/nexus_test.py --only reverse    # chemins interdits
 .\scripts\Test-NexusSmoke.ps1 -IncludeRouters  # runtime de bout en bout
 ```
 
@@ -233,8 +233,8 @@ jour est rattrapée à l'ouverture suivante.
 ## Sauvegarde : ce qui se retélécharge, et ce qui ne se retélécharge pas
 
 ```powershell
-python scripts/nexus_preserve.py             # audit
-python scripts/nexus_preserve.py --backup    # sauvegarde l'irremplaçable
+python outillage/nexus_preserve.py             # audit
+python outillage/nexus_preserve.py --backup    # sauvegarde l'irremplaçable
 ```
 
 La question n'est jamais « est-ce volumineux » mais **« existe-t-il une

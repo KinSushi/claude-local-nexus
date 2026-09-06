@@ -48,9 +48,9 @@ défauts bloquants :
   d'utilisateurs : le modèle a lu « compte » comme *account* au lieu de
   *comptage*, et a retourné la raison d'être du mécanisme.
 
-    python scripts/nexus_cablage.py              # porte : echec si regression
-    python scripts/nexus_cablage.py --rapport    # le tableau complet
-    python scripts/nexus_cablage.py --rebaseline # figer l'etat courant
+    python outillage/nexus_cablage.py              # porte : echec si regression
+    python outillage/nexus_cablage.py --rapport    # le tableau complet
+    python outillage/nexus_cablage.py --rebaseline # figer l'etat courant
 """
 from __future__ import annotations
 
@@ -418,7 +418,7 @@ def main() -> int:
         print("  %d cable(s), %d appele(s), %d preuve(s) seule(s), %d orphelin(s)"
               % tuple(len(categories[n]) for n in
                       ("cable", "appele", "preuve_seule", "orphelin")))
-        print("  Figer cet etat : python scripts/nexus_cablage.py --rebaseline")
+        print("  Figer cet etat : python outillage/nexus_cablage.py --rebaseline")
         # Pas d'echec : une premiere execution ne peut pas constater de
         # regression, et echouer ici apprendrait a contourner l'outil.
         return 0

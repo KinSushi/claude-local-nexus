@@ -282,14 +282,14 @@ def bloc_sujets() -> None:
 
 def bloc_gestes() -> None:
     titre("LES GESTES, ET CE QU'ILS COUTENT")
-    print("  python scripts/nexus_conformite.py     peut-on demarrer ? (~1 min)")
-    print("  python scripts/nexus_rituel.py         le tour est-il clos ?")
-    print("  python scripts/nexus_vitrine.py --simulation   publierait-on ?")
+    print("  python outillage/nexus_conformite.py     peut-on demarrer ? (~1 min)")
+    print("  python outillage/nexus_rituel.py         le tour est-il clos ?")
+    print("  python outillage/nexus_vitrine.py --simulation   publierait-on ?")
     print("  python scripts/nexus_valide.py --base HEAD~1   LOI 1, cout zero")
-    print("  python scripts/nexus_test.py --only isolation  regle 0.4 tenue ?")
+    print("  python outillage/nexus_test.py --only isolation  regle 0.4 tenue ?")
     print("")
     print("  NE JAMAIS ECRIRE CONTRE UNE BIBLIOTHEQUE DE MEMOIRE :")
-    print("    python scripts/nexus_doc.py <symbole>   # ex. subprocess.run,")
+    print("    python outillage/nexus_doc.py <symbole>   # ex. subprocess.run,")
     print("                                            #    New-Item, trap")
     # LE NOMBRE SE DERIVE. Il etait ecrit en dur, donc juste un seul jour :
     # l'absorption des corpus shell et des lecons y a ajoute 673 entrees sans

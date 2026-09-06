@@ -125,7 +125,7 @@ def racine_plateforme(defaut: str) -> str:
     ils n'y ont jamais existe. Une racine derivee de `__file__` designe
     alors « la racine de la copie qui execute ce fichier », identique a la
     plateforme pour le clone principal mais distincte pour tout worktree
-    isole (`scripts/nexus_worktree.py`) -- qui est pourtant le lieu meme ou
+    isole (`outillage/nexus_worktree.py`) -- qui est pourtant le lieu meme ou
     un agent doit pouvoir obtenir un verdict tiers (Claude.md §0.7).
 
     `git rev-parse --git-common-dir` designe le meme `.git` partage par

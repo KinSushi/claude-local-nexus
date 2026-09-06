@@ -17,9 +17,9 @@ couples se seraient effondrés sur une seule température et le posterior
 aurait comparé des choses différentes sous le même nom.
 
 Usage :
-    python scripts/nexus_posterior.py
-    python scripts/nexus_posterior.py --json
-    python scripts/nexus_posterior.py --modele llama3.2-3b-local
+    python outillage/nexus_posterior.py
+    python outillage/nexus_posterior.py --json
+    python outillage/nexus_posterior.py --modele llama3.2-3b-local
 """
 from __future__ import annotations
 

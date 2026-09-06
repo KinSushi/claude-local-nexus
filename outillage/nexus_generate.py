@@ -18,7 +18,7 @@ donc acycliques par construction (chaîne strictement descendante) et ne
 franchissent jamais une frontière de modalité ni de fournisseur (§17, §65, §66).
 
 Usage :
-    python scripts/nexus_generate.py [--dry-run] [--no-validate]
+    python outillage/nexus_generate.py [--dry-run] [--no-validate]
 
 La validation des droits est active par defaut.
 """
@@ -683,7 +683,7 @@ def latences_relevees() -> dict:
 
 def epreuves_relevees() -> dict:
     """
-    Registre des epreuves reelles, ecrit par scripts/nexus_releve.py.
+    Registre des epreuves reelles, ecrit par outillage/nexus_releve.py.
 
     Meme contrat que latences_relevees() : ne leve jamais. Un registre absent
     rend simplement la derogation inoperante, donc le seuil de latence seul
@@ -1316,7 +1316,7 @@ def main() -> int:
             print("TOUS des pools, et effacerait du meme coup la trace qui")
             print("permet de s'en apercevoir. La generation s'arrete.")
             print(chr(10) + "Remedes : restaurer .nexus/latences.json depuis une")
-            print("sauvegarde, ou remesurer avec scripts/nexus_bench.py.")
+            print("sauvegarde, ou remesurer avec outillage/nexus_bench.py.")
             return 1
 
     entries = classify(config, profile, sizes)
@@ -1663,7 +1663,7 @@ def main() -> int:
         fh.write("\n".join(lines).rstrip() + "\n")
 
     verdict = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py"),
+        [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py"),
          "--config", candidat],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=600)
@@ -1691,7 +1691,7 @@ def main() -> int:
     # Rien n'est à décommenter à la main — la prochaine validation les
     # réintègre d'elle-même.
     inventory = [
-        "# Catalogue Ollama Cloud — généré le %s par scripts/nexus_generate.py"
+        "# Catalogue Ollama Cloud — généré le %s par outillage/nexus_generate.py"
         % datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "# Actifs : exécutables avec l'abonnement Ollama Cloud actuel.",
         "# Commentés : publiés mais non autorisés — ils redeviendront actifs",

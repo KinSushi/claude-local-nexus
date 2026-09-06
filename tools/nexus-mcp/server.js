@@ -792,7 +792,7 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
     corps.num_predict = maxTokens || 2048;
   }
   // le cache exact est neutralise parce qu un second appel servi par le cache mesure le cache et non le modele
-  // le depot l a deja mesure dans scripts/nexus_bench.py
+  // le depot l a deja mesure dans outillage/nexus_bench.py
   // une reponse cachee porte le message de troncature de l ANCIEN budget
   corps.cache = { "no-cache": true, "no-store": true };
   // Les modeles Anthropic recents rejettent certains parametres

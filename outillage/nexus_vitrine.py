@@ -12,9 +12,9 @@ push — pas comme un push auquel on a ajouté des vérifications.
 Il constate et publie ; il ne corrige rien. Un BLOQUE n'est pas une panne
 du script : c'est son résultat.
 
-    python scripts/nexus_vitrine.py --simulation
-    python scripts/nexus_vitrine.py
-    python scripts/nexus_vitrine.py --epreuve
+    python outillage/nexus_vitrine.py --simulation
+    python outillage/nexus_vitrine.py
+    python outillage/nexus_vitrine.py --epreuve
 
 Squelette produit par le banc gratuit, intégré après correction de trois
 défauts réels :
@@ -296,7 +296,7 @@ def main() -> int:
                               "simulation -- git push origin HEAD non execute"))
         else:
             r = executer(
-                [sys.executable, "scripts/nexus_avec_verrou.py", "PUBLICATION",
+                [sys.executable, "outillage/nexus_avec_verrou.py", "PUBLICATION",
                  "--attente-s", "120", "--", "git", "push", "origin", "HEAD"],
                 racine, 600)
             if r.returncode == 0:

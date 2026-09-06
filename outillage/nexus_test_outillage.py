@@ -24,7 +24,7 @@ l'usage :
     qui EXECUTE le script au lieu de le PARSER -- sur restore.ps1 cela
     aurait supprime les volumes Docker.
 
-Meme forme de rapport que scripts/nexus_test.py : fonctions check()/skip(),
+Meme forme de rapport que outillage/nexus_test.py : fonctions check()/skip(),
 listes PASSED/FAILED/SKIPPED, decompte final, code de sortie 1 des qu'un
 test echoue.
 
@@ -519,7 +519,7 @@ def test_valide() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Rapport final -- meme forme que scripts/nexus_test.py
+# Rapport final -- meme forme que outillage/nexus_test.py
 # ---------------------------------------------------------------------------
 
 def main() -> int:

@@ -42,7 +42,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_cablage.py",
+  "fichier": "outillage/nexus_cablage.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 18,
@@ -56,7 +56,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_checklist_progres.py",
+  "fichier": "outillage/nexus_checklist_progres.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 43,
@@ -70,7 +70,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_conformite.py",
+  "fichier": "outillage/nexus_conformite.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 10,
@@ -84,7 +84,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_outillage.py",
+  "fichier": "outillage/nexus_outillage.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 29,
@@ -98,7 +98,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_progres.py",
+  "fichier": "outillage/nexus_progres.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 42,
@@ -112,7 +112,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_rituel.py",
+  "fichier": "outillage/nexus_rituel.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 69,
@@ -140,7 +140,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_filet.py",
+  "fichier": "outillage/nexus_filet.py",
   "agent": "agent-a415cd08dccd3fd97",
   "branche": "worktree-agent-a415cd08dccd3fd97",
   "plus": 406,
@@ -154,7 +154,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_quarantaine.py",
+  "fichier": "outillage/nexus_quarantaine.py",
   "agent": "agent-a96910bce09e87b38",
   "branche": "worktree-agent-a96910bce09e87b38",
   "plus": 595,
@@ -196,7 +196,7 @@
   }
  },
  {
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "agent": "agent-a9bae5bcacf5d3042",
   "branche": "worktree-agent-a9bae5bcacf5d3042",
   "plus": 6,

@@ -19,8 +19,8 @@ C'est cette poignée de mégaoctets qui doit rester dans Docker et être
 sauvegardée. Le reste doit en sortir.
 
 Usage :
-    python scripts/nexus_preserve.py              # audit
-    python scripts/nexus_preserve.py --backup   # sauvegarde l'irremplaçable
+    python outillage/nexus_preserve.py              # audit
+    python outillage/nexus_preserve.py --backup   # sauvegarde l'irremplaçable
 """
 from __future__ import annotations
 
@@ -600,7 +600,7 @@ def main() -> int:
     if args.backup:
         return backup_irreplaceable()
 
-    print("  Sauvegarder l'irremplacable : python scripts/nexus_preserve.py --backup")
+    print("  Sauvegarder l'irremplacable : python outillage/nexus_preserve.py --backup")
     return 0
 
 

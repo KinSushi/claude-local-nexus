@@ -1,5 +1,5 @@
 # Inventaire local a telecharger sur l'hote.
-# Genere par scripts/nexus_migration_plan.py — 4 modeles, 20 Go.
+# Genere par outillage/nexus_migration_plan.py — 4 modeles, 20 Go.
 # Les modeles inexecutables sur cette machine en sont absents.
 
 qwen3-coder:30b

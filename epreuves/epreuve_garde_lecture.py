@@ -9,7 +9,7 @@ import tempfile
 import time
 
 def verifier_fichier_outil():
-    chemin_outil = os.path.join("scripts", "nexus_garde_lecture.py")
+    chemin_outil = os.path.join("outillage", "nexus_garde_lecture.py")
     if not os.path.exists(chemin_outil):
         print(f"[ERREUR] Fichier de l'outil introuvable : {chemin_outil}")
         sys.exit(3)
@@ -20,7 +20,7 @@ def lancer_epreuve(cas, entree, attendu, code_attendu=None):
         f_entree.flush()
 
         try:
-            cmd = [sys.executable, os.path.join("scripts", "nexus_garde_lecture.py")]
+            cmd = [sys.executable, os.path.join("outillage", "nexus_garde_lecture.py")]
             debut = time.time()
             resultat = subprocess.run(
                 cmd,
@@ -144,7 +144,7 @@ def main():
 
     # Cas 6 : Appel sans arguments requis (doit rendre usage)
     try:
-        cmd = [sys.executable, os.path.join("scripts", "nexus_garde_lecture.py")]
+        cmd = [sys.executable, os.path.join("outillage", "nexus_garde_lecture.py")]
         resultat = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         if resultat.returncode == 0:
             print("[USAGE] ECHEC - Code retour 0 au lieu de non nul")

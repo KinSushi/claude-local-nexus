@@ -289,7 +289,7 @@ try {
         Write-Host "  Releve locale operationnelle." -ForegroundColor Green
     } else {
         Write-Host "  RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement." -ForegroundColor Red
-        Write-Host "  Diagnostic : python scripts/nexus_releve.py --tous" -ForegroundColor Yellow
+        Write-Host "  Diagnostic : python outillage/nexus_releve.py --tous" -ForegroundColor Yellow
         exit $LASTEXITCODE
     }
 } finally { Pop-Location }
@@ -313,5 +313,5 @@ if ($Verifier) {
 }
 
 Write-Host ""
-Write-Host "Modeles manquants : python scripts/nexus_pull_host.py --manquants" -ForegroundColor Gray
+Write-Host "Modeles manquants : python outillage/nexus_pull_host.py --manquants" -ForegroundColor Gray
 Write-Host ""

@@ -26,7 +26,7 @@
 | ~~M9~~ | `masterKey` ne retire ni guillemets ni commentaire de fin de ligne : `KEY="sk-…"` produirait un 401 opaque — exactement ce que son commentaire veut éviter | FAIBLE | **Fait** — même traitement que `nexus_test.py:master_key`, à une nuance près : le commentaire n'est retiré que d'une valeur **non citée**, car entre guillemets un `#` appartient à la clé (`"sk-a#b"` est préservé, là où le Python le tronque) |
 | ~~M10~~ | `spawnSync` sans `PYTHONIOENCODING` : la sortie Python revient en page de codes locale, accents corrompus. `run.stderr` est jeté, le message accuse « Python introuvable » alors que Python fonctionne | FAIBLE | **Fait** — mesuré : sans la variable, `sys.stdout.encoding` vaut `cp1252` et `éèàç` revient en `e9 e8 e0 e7`, illisible en UTF-8 ; avec, `c3a9 c3a8`. `stderr` est remonté (500 caractères) et « Python introuvable » n'est plus dit que si les deux candidats donnent `ENOENT` |
 
-**Conséquence de M8, à traiter dans un autre fichier.** `scripts/nexus_test.py`,
+**Conséquence de M8, à traiter dans un autre fichier.** `outillage/nexus_test.py`,
 au test « MCP : outil inconnu signale sans crash » (~ligne 656), affirme encore
 `unknown["result"].get("isError") is True`. Un outil inconnu rendant désormais
 `error.code == -32602`, la clé `result` est absente : le `KeyError` est avalé
@@ -34,7 +34,7 @@ par le `except Exception` et le test **échoue**. L'assertion doit devenir
 `unknown["error"]["code"] == -32602`, la survie du serveur restant vérifiée par
 `tools/list`. Non corrigé ici : ce fichier est hors du périmètre de cette passe.
 
-## Génération — `scripts/nexus_generate.py`
+## Génération — `outillage/nexus_generate.py`
 
 | # | Défaut | Gravité | Correction |
 |---|---|---|---|
@@ -46,7 +46,7 @@ par le `except Exception` et le test **échoue**. L'assertion doit devenir
 | G6 | `local_context()` devine la fenêtre depuis le **nombre de paramètres lu dans le nom**, alors que le poids réel est dans `sizes`. `mixtral:8x7b` → « 7 » ≤ 9 → 16 384 pour un modèle de 26 Go classé DEGRADED | FAIBLE | Budgéter depuis le poids mesuré et la mémoire du moteur |
 | G7 | `if len(targets) >= width + 1` au lieu de `>= width` : l'éventail vaut 2, **3**, 2 selon les successeurs restants | FAIBLE | Corriger l'indice |
 
-## Validation — `scripts/nexus_validate.py`
+## Validation — `outillage/nexus_validate.py`
 
 | # | Défaut | Gravité | Correction |
 |---|---|---|---|
@@ -111,7 +111,7 @@ s'en chargera :
   trouve plus et journalise « synchronisation ignoree ». Le téléchargement
   non arbitré est masqué, pas supprimé — il reviendra avec la réécriture du
   bloc ;
-* `scripts/nexus_pull_host.py` contrôle déjà le disque, mais avec sa propre
+* `outillage/nexus_pull_host.py` contrôle déjà le disque, mais avec sa propre
   arithmétique en Gio et sans passer par `can_download()`. Deux
   arithmétiques pour une même décision finiront par diverger.
 
@@ -245,8 +245,8 @@ cd C:\local-llm-docker
 Ensuite, et sans intervention :
 
 ```powershell
-python scripts/nexus_pull_host.py --manquants
-python scripts/nexus_conformite.py
+python outillage/nexus_pull_host.py --manquants
+python outillage/nexus_conformite.py
 ```
 
 Six alias restent déclarés sans poids d'ici là : `gemma4-31b`,

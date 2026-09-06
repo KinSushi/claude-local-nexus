@@ -19,7 +19,7 @@ def cleanup(temp_dir):
     shutil.rmtree(temp_dir)
 
 def run_test(args, temp_config=None, expect_success=True):
-    cmd = [sys.executable, "scripts/nexus_armer_garde.py"] + args
+    cmd = [sys.executable, "outillage/nexus_armer_garde.py"] + args
     if temp_config:
         env = os.environ.copy()
         env["USERPROFILE"] = temp_config.rsplit(os.sep, 2)[0]
