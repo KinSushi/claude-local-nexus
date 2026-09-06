@@ -93,7 +93,13 @@ def _score_entry(row, query):
     score = 0
     for term in query:
         t = term.lower()
-        hits = resume.count(t) + ident.count(t) + kind.count(t)
+        # Poids: ID (3x) > resume (1x) > type (1x)
+        # Un nom de classe/fonction dans l'ID est plus pertinent
+        # qu'une mention dans le resume ou le type
+        ident_hits = ident.count(t) * 3
+        resume_hits = resume.count(t)
+        kind_hits = kind.count(t)
+        hits = ident_hits + resume_hits + kind_hits
         if hits == 0:
             return False, 0
         score += hits
