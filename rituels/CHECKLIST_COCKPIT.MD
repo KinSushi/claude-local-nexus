@@ -19549,3 +19549,63 @@ avaient une cause unique.
 C'est la meme famille que le `const` qui masque un parametre : **un correctif
 plausible qui ne corrige rien**, et qu'aucune lecture rapide ne distingue du
 bon.
+
+---
+
+## 130. LA COURSE DE PUBLICATION EST FERMEE — plus seulement rapportee
+
+Le matin, la vitrine annoncait *« rien n'est parti »* sur une publication
+reussie : deux instances poussaient en meme temps et le perdant affirmait un
+etat distant qu'il n'avait pas mesure. Le rapport a ete corrige. **La course,
+elle, demeurait.**
+
+`scripts/nexus_avec_verrou.py` existait pourtant, avec son contrat lu par
+`--help` :
+
+```
+python nexus_avec_verrou.py <classe> [--attente-s N] -- <commande>
+  0-74, 76-255 : code de sortie de la commande lancee
+  75           : CONTENTION, le verrou est tenu par un autre processus
+LIMITE declaree : il protege uniquement ce qui passe par lui.
+```
+
+### Le placement, arbitre et justifie
+
+Le verrou est pris **juste avant la poussee**, apres les sept controles.
+
+| placement | ce qu'il coute |
+| --- | --- |
+| trop tot | l'autre instance attend ~70 s pendant conformite et rituel, qui n'ont **aucun effet de bord sur le distant** — une contention artificielle |
+| trop tard | la fenetre reste ouverte : les deux passent `sain == True`, puis s'entredetruisent sur le push — **exactement la course mesuree** |
+| juste avant | la section critique ne contient que la poussee et sa confirmation |
+
+### Trois cas, et le troisieme est celui qui compte
+
+```
+code 0   la poussee a reussi
+code 75  CONTENTION -- une autre instance publie en ce moment.
+         Ce n'est PAS un echec : l'etat voulu sera atteint par elle.  -> OK
+autre    la poussee a echoue : le distant est interroge avant de conclure
+```
+
+Le cas 75 applique directement la lecon du jour, apprise sur `nexus_charge` :
+**un verdict lu comme une panne coute autant qu'une panne lue comme un
+verdict.** Une contention qui rendrait BLOQUE ferait croire a un echec de
+publication la ou tout se passe bien.
+
+### Deux corrections au second tour, et une erreur de ma part
+
+* des **accents dans un detail RENDU**, alors que ce fichier les rend en ASCII ;
+* l'interpreteur ecrit en dur `"python"` au lieu de `sys.executable` —
+  plusieurs Python coexistent sur cette machine, et rien ne garantit que celui
+  nomme `python` soit celui qui execute le script.
+
+**Mon erreur** : j'avais fait ancrer la seconde passe sur la **premiere**, qui
+n'avait jamais ete posee. L'applicateur a refuse — `Occurrences trouvees : 0` —
+et il avait raison. Le patch a ete recompose avec l'ancre reelle et les deux
+extremites produites par le banc.
+
+**Ce qui reste vrai et que le contrat de l'outil dit lui-meme** : il ne protege
+que ce qui passe par lui. Un `git push` tape a la main echappe encore au
+verrou. La question utile reste celle qu'une session voisine a formulee :
+*par quels chemins la ressource peut-elle etre prise sans lui ?*
