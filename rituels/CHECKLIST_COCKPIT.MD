@@ -19925,3 +19925,81 @@ donc **aucune trace dans l'historique**. C'est la raison de cette section. Un
 corpus non versionne dont personne ne mesure la fraicheur peut rester perime
 des mois sans qu'aucun controle ne rougisse — et c'est exactement ce qui
 vient d'arriver.
+
+
+---
+
+## LES CONSULTATIONS QUI ECHOUENT : ni le ET strict, ni le vocabulaire — le PERIMETRE
+
+Une session voisine avait pose la bonne question — *« distingue les deux
+causes avant de corriger, appariement trop strict ou requetes mal posees,
+elles n'ont pas le meme remede »*. La mesure repond : **aucune des deux**.
+
+### Le chiffre annonce etait faux, et il est retire
+
+J'avais rapporte 51 echecs sur 144 consultations. En separant les modes :
+
+```
+recherches    75, dont 15 sans resultat   (20 %)
+lectures      47, dont  2 sans resultat   ( 4 %)
+mode non etiquete  38
+```
+
+Et **4 des 15 sont des requetes de CONTRE-EPREUVE** — `zzz_terme_absent_zzz`,
+`zzzqqqxxx_inexistant` — qui doivent echouer. Restent 11 echecs reels sur 71,
+soit 15 %. J'avais additionne lectures, recherches et un mode non etiquete
+dans le meme seau.
+
+### Ce qui ecarte l'appariement trop strict
+
+| mots dans la requete | avec resultat | sans | echec |
+| --- | --- | --- | --- |
+| 1 | 39 | 11 | 22 % |
+| 2 | 21 | 3 | 12 % |
+| 7 | 0 | 1 | 100 % (contre-epreuve) |
+
+Les echecs se concentrent sur les requetes d'**un seul mot**. Un ET strict
+n'a rien a intersecter sur un mot : la cause est ailleurs.
+
+### Ce qui ecarte le vocabulaire, et designe le perimetre
+
+Comptage des mots qui echouent dans le champ CHERCHE contre le CONTENU reel
+des fragments :
+
+| mot | dans `resume` | dans le CONTENU | verdict |
+| --- | --- | --- | --- |
+| `backoff` | 0 | **61** | invisible a la recherche |
+| `idempot` | 0 | **12** | invisible |
+| `throttle` | 1 | 9 | quasi invisible |
+| `deployment` | 79 | 113 | trouvable |
+| `gate` | 47 | 207 | trouvable |
+| `ratchet` | 0 | 0 | reellement absent |
+
+**Un seul mot sur six etait vraiment absent du corpus.** Les autres y sont, et
+la recherche ne les voit pas : elle lit `id`, `type` et `resume`, trois
+colonnes du fichier d'index. La substance vit dans `docstring_brut`,
+`implementation`, `signature`, `texte` — dans le fichier de fragments, jamais
+consulte par la recherche.
+
+### La contrainte de conception est reelle, et personne ne l'avait chiffree
+
+```
+index.tsv       2,8 Mo    lu entierement a chaque recherche
+symbols.jsonl  23,1 Mo    lu par seek, ~280 jetons par consultation
+```
+
+Chercher dans le CONTENU voudrait dire parcourir 23 Mo a chaque requete. Le
+choix d'origine n'est donc pas un oubli, c'est un compromis — mais il n'avait
+jamais ete mesure, donc personne ne savait ce qu'il coutait : 61 occurrences
+de `backoff` invisibles.
+
+### Deux remedes, non tranches
+
+1. **Enrichir le `resume` a l'indexation** avec les termes saillants du
+   contenu. Cout paye une fois, index un peu plus gros, recherche inchangee.
+2. **Construire l'index semantique** — `scripts/nexus_livres_semantique.py`
+   propose `build` et `search`, et **aucun index n'existe sur le disque**.
+   L'outil est ecrit, cable a rien, jamais lance.
+
+Les deux sont au banc. Ce qui est acquis, c'est que la cause est nommee et
+qu'elle n'est pas celle qu'on croyait.
