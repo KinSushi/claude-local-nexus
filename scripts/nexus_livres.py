@@ -142,8 +142,10 @@ def main():
 
     if args.read:
         bytes_read = 0
+        rayons_consultes = []
         for root, _, files in os.walk(ref_dir):
             if "symbols.jsonl" in files:
+                rayons_consultes.append(Path(root).name)
                 sym_path = Path(root).joinpath("symbols.jsonl")
                 try:
                     with open(sym_path, "rb") as f:
@@ -179,7 +181,13 @@ def main():
                 except Exception as e:
                     print(f"Erreur lecture fragment {args.read}: {e}", file=sys.stderr)
         _log_consultation("lecture", args.read, 0, 0)
-        return 1
+        if not rayons_consultes:
+            print(f"Aucun rayon consultable sous {ref_dir}", file=sys.stderr)
+            return 1
+        rayons = ", ".join(sorted(rayons_consultes))
+        print(f"Verdict negatif: identifiant '{args.read}' introuvable. "
+              f"Rayons consultes: {rayons}", file=sys.stderr)
+        return 2
 
     _log_consultation("recherche", args.query, len(matches))
 

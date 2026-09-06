@@ -63,23 +63,32 @@ import sys
 
 
 def lire_entree():
-    """Toute anomalie rend un dictionnaire vide, donc autorise en silence."""
+    """Retourne None si l'entrée est vide,
+    un dict spécial si le JSON est illisible,
+    sinon le dict décodé."""
+    raw = sys.stdin.read()
+    if raw == "":
+        return None                      # entrée vide : rien à juger
     try:
-        return json.loads(sys.stdin.read())
+        return json.loads(raw)
     except Exception:
-        return {}
+        return {"__unreadable__": True}  # entrée illisible : événement
 
 
 def refuser(motif):
+    """Émet un refus strictement en ASCII et termine avec code d'erreur."""
     try:
-        sys.stdout.write(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": motif,
-        }}, ensure_ascii=False))
+        payload = json.dumps(
+            {"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": motif,
+            }}, ensure_ascii=True)
+        sys.stdout.write(payload)
     except Exception:
-        pass
-    sys.exit(0)
+        # Si l'écriture échoue, on signale l'erreur sur stderr.
+        sys.stderr.write("Refus impossible : " + str(motif))
+    sys.exit(1)
 
 
 # Les outils que ce garde JUGE. Compare au matcher de
@@ -224,6 +233,10 @@ def detecter_cas_ps(commande):
 
 def main():
     donnees = lire_entree()
+    if donnees is None:
+        return
+    if isinstance(donnees, dict) and donnees.get("__unreadable__"):
+        refuser("Entree non-JSON (illisible)")
     if not isinstance(donnees, dict):
         return
     # LES DEUX OUTILS, ET DES REGLES CHOISIES SELON L'OUTIL.
