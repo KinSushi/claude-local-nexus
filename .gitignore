@@ -105,3 +105,13 @@ references/CODE_LIVRES/
 # Index d embeddings : sortie de calcul, jamais du code. Ecrit par erreur dans
 # nexus/ sans le point le 2026-09-02 — QUATRIEME fois que ce point se perd.
 nexus/
+
+# Corpus AST Python engendres sur CETTE machine, 75 Mo, 234211 symboles.
+# NON VERSIONNES, et le choix est motive : ils sont ancres sur l interpreteur
+# LOCAL -- leur en-tete imprime sa version et son chemin -- donc les livrer a
+# un autre hote livrerait des mesures fausses sur SA machine. Meme raison que
+# pour .nexus/latences.json et .nexus/epreuves.json.
+# Ils se REGENERENT : references/python_ast_eamt5/_outils/couvrir_toutes_les_libs.py
+# Le generateur, lui, EST versionne.
+references/python_ast_local/corpus/
+references/python_ast_local/rapport.csv
