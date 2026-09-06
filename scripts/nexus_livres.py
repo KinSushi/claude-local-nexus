@@ -27,9 +27,11 @@ def _iter_index(idx_path):
                 print(f"Fichier illisible {idx_path}: colonne(s) manquante(s) {', '.join(missing)}",
                       file=sys.stderr)
                 return
+            skipped = 0
             for line in f:
                 parts = line.rstrip("\n").split("\t")
                 if len(parts) < len(cols):
+                    skipped += 1
                     continue
                 yield {
                     "id": parts[colpos["id"]],
@@ -38,6 +40,9 @@ def _iter_index(idx_path):
                     "type": parts[colpos["type"]],
                     "resume": parts[colpos["resume"]],
                 }
+            if skipped:
+                print(f"{idx_path}: {skipped} ligne(s) sautee(s): colonnes manquantes",
+                      file=sys.stderr)
     except Exception as e:
         print(f"Fichier illisible {idx_path}: {e}", file=sys.stderr)
 

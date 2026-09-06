@@ -50,31 +50,35 @@ CAS = [
      False, "quote : le shell ne lit rien de tout cela, aucune fuite"),
 ]
 
-echecs = 0
-for nom, cmd, doit_refuser, pourquoi in CAS:
-    verdict = None
-    for f in ("detecter_cas_a", "detecter_cas_b", "detecter_cas_ps", "analyser"):
-        fn = getattr(gs, f, None)
-        if fn is None:
-            continue
-        try:
-            r = fn(cmd)
-        except Exception as exc:
-            print("  %-52s FONCTION %s A LEVE : %s" % (nom, f, exc))
-            continue
-        if r:
-            verdict = (f, r)
-            break
-    refuse = verdict is not None
-    ok = refuse == doit_refuser
-    echecs += 0 if ok else 1
-    print("  %-52s %s  refuse=%-5s attendu=%-5s %s"
-          % (nom, "PASS" if ok else "ECHEC", refuse, doit_refuser,
-             ("<- " + verdict[0]) if verdict else ""))
-    if not ok:
-        print("        pourquoi ce cas : %s" % pourquoi)
+def _run_tests():
+    echecs = 0
+    for nom, cmd, doit_refuser, pourquoi in CAS:
+        verdict = None
+        for f in ("detecter_cas_a", "detecter_cas_b", "detecter_cas_ps", "analyser"):
+            fn = getattr(gs, f, None)
+            if fn is None:
+                continue
+            try:
+                r = fn(cmd)
+            except Exception as exc:
+                print("  %-52s FONCTION %s A LEVE : %s" % (nom, f, exc))
+                continue
+            if r:
+                verdict = (f, r)
+                break
+        refuse = verdict is not None
+        ok = refuse == doit_refuser
+        echecs += 0 if ok else 1
+        print("  %-52s %s  refuse=%-5s attendu=%-5s %s"
+              % (nom, "PASS" if ok else "ECHEC", refuse, doit_refuser,
+                 ("<- " + verdict[0]) if verdict else ""))
+        if not ok:
+            print("        pourquoi ce cas : %s" % pourquoi)
 
-print("\n  fonctions vues : %s"
-      % ", ".join(n for n in dir(gs) if n.startswith("detecter") or n == "analyser"))
-print("  %d echec(s)" % echecs)
-sys.exit(1 if echecs else 0)
+    print("\n  fonctions vues : %s"
+          % ", ".join(n for n in dir(gs) if n.startswith("detecter") or n == "analyser"))
+    print("  %d echec(s)" % echecs)
+    sys.exit(1 if echecs else 0)
+
+if __name__ == "__main__":
+    _run_tests()

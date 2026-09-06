@@ -278,10 +278,13 @@ def main() -> int:
             statut, detail = fn()
         except Exception as exc:
             statut, detail = BLOQUE, str(exc).splitlines()[0][:60]
+        # Certains controles avertissent au lieu de bloquer : la session ne
+        # peut pas les satisfaire elle-meme a l'instant.
         if type_ctrl == "AVERTISSENT" and statut == BLOQUE:
             statut = "AVERTISSEMENT"
             avertissements += 1
         resultats.append((nom, statut, detail))
+        # Les controles suivants coutent des minutes et ne changeraient pas le verdict.
         if statut == BLOQUE:
             break
 
@@ -334,7 +337,9 @@ def main() -> int:
     for nom, statut, detail in resultats:
         print("  [%-12s] %-22s %s" % (statut, nom, detail))
     print("-" * 72)
-    # Le verdict lit le RESULTAT d'abord, le mode ensuite
+    # Le verdict lit le RESULTAT d'abord, le mode ensuite : le premier jet
+    # faisait l'inverse et annoncait SIMULATION sur un blocage, soit un
+    # rapport annoncant une reussite sur un echec.
     if not sain:
         if any("etat distant non verifiable" in d for _, _, d in resultats):
             print("VERDICT : etat distant non verifiable. Publication incertaine.")
