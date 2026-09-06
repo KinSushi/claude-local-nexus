@@ -20223,3 +20223,82 @@ d'hypotheses partagees.
    par le lanceur.
 3. **Le repli vers un alias du meme compte est inutile sur un 429 de quota** :
    il vise la ressource deja epuisee.
+
+
+---
+
+## LA QUARANTAINE EST FAITE — 287 fichiers isoles, ZERO preuve complete
+
+L'operateur, le 2026-09-06 : *« il y avait un plan l'autre jour, avec des
+fichiers contamines par tes bricolages qui a fait planter tout le projet »*,
+puis *« il faut d'abord isoler les fichiers sains des contamines »*.
+
+Fait par l'outil qui existait deja — `scripts/nexus_quarantaine.py` — et non
+par un outil neuf. La memoire de session le declarait ABSENT de `main` ; il y
+est. Un fait fige ment le lendemain, y compris dans une memoire.
+
+### Ce qui a ete mesure AVANT de trier
+
+```
+worktrees d'agents        45, TOUS encore sur le disque
+portent du travail        43
+n'ont RIEN commite        40 sur 45
+fichiers touches          157 copies, 111 distincts
+retard derriere main      median 105 commits (min 66, max 284)
+a moins de 5 commits      ZERO
+```
+
+**Le fichier le plus dispute : `scripts/nexus_doc.py`, modifie par TREIZE
+agents**, tous a `commits=0` et de 111 a 284 commits de retard. Treize
+versions divergentes d'un meme fichier, aucune commitee.
+
+### Le tri, tel que le manifeste le rend
+
+| population | fichiers | worktrees |
+| --- | --- | --- |
+| SANS PREUVE | 99 | 30 |
+| PREUVE PARTIELLE | 58 | 15 |
+| **PREUVE COMPLETE** | **0** | **0** |
+
+**Aucun des 157 fichiers ne porte les huit rubriques remplies.** Deux
+worktrees seulement declarent les trois epreuves vertes ; quinze ont une
+fiche partielle.
+
+### Ce qui a ete fait, et rien de plus
+
+```
+287 fichiers copies, 22,4 Mo, 43 dossiers d'agents, avec leur provenance
+MANIFESTE.json et MANIFESTE.md a la racine
+aucun worktree detruit — 45 sur 45 verifies presents APRES l'operation
+aucune fusion
+```
+
+### Pourquoi ne rien fusionner, et c'est une mesure de la nuit
+
+Un patch ancre sur une version anterieure de **quatre** patchs a casse le
+programme — `IndexError` au premier appel, alors qu'il compilait et que son
+ancre etait unique. **A 105 commits de retard median, aucune ancre ne peut
+etre supposee valide.**
+
+Ce qui se sauve n'est donc pas le code mais les **quinze fiches de preuve** :
+elles portent les diagnostics, qui ne perimen pas. Les correctifs se
+recommissionnent contre la version actuelle.
+
+### L'honnetete du manifeste merite d'etre relevee
+
+Il declare lui-meme que son critere porte sur la **presence** d'une reponse
+par rubrique, jamais sur son contenu, et qu'aucune couleur n'est calculee —
+seule celle **ecrite par l'auteur** est rapportee. Un outil de tri qui dit ce
+qu'il ne mesure pas est plus utile qu'un outil qui tranche sans le dire.
+
+### Ce qui reste OUVERT, et appartient a l'operateur
+
+| sujet | etat |
+| --- | --- |
+| les 40 worktrees SANS PREUVE | rien ne sera detruit sans son mot |
+| les 15 fiches de preuve partielle | a lire, puis recommissionner les correctifs |
+| les 13 versions de `nexus_doc.py` | aucune n'est commitee ; le diagnostic est peut-etre encore bon, le patch non |
+
+Les 22,3 Mo de copies ne sont **pas versionnes** : elles se regenerent en une
+commande tant que les worktrees sont la, et ils y sont tous. Le MANIFESTE,
+lui, est versionne — il porte la mesure et l'index d'audit.
