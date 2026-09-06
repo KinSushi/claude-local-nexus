@@ -325,10 +325,14 @@ def _neutralise_magics(lines: list[str]) -> list[str]:
     for line in lines:
         stripped = line.lstrip()
         if stripped.startswith("!") or stripped.startswith("%"):
-            prefix = line[:len(line) - len(stripped)]
-            out.append(f"{prefix}# {stripped}")
+            prefix = line[: len(line) - len(stripped)]
+            new_line = f"{prefix}# {stripped}"
         else:
-            out.append(line)
+            new_line = line
+        # Garantir un retour à la ligne pour chaque ligne afin d'éviter la fusion
+        if not new_line.endswith("\n"):
+            new_line += "\n"
+        out.append(new_line)
     return out
 
 
@@ -359,8 +363,13 @@ def _collect_from_notebook(
             continue
         src = cell.get("source", [])
         if isinstance(src, list):
-            lines.extend(src)
+            # S’assurer que chaque ligne se termine par un retour à la ligne.
+            for l in src:
+                if not l.endswith("\n"):
+                    l = l + "\n"
+                lines.append(l)
         elif isinstance(src, str):
+            # splitlines(keepends=True) conserve déjà les retours à la ligne.
             lines.extend(src.splitlines(keepends=True))
 
     # Neutralise les magies.
@@ -519,10 +528,8 @@ def _merge_and_write(
             sym_fh.write(payload)
             offset += length
 
-    index_existed = index_path.exists()
     with index_path.open("w", encoding="utf-8") as idx_fh:
-        if not index_existed:
-            idx_fh.write("id\toffset_octets\tlongueur_octets\ttype\tresume\n")
+        idx_fh.write("id\toffset_octets\tlongueur_octets\ttype\tresume\n")
         for row in index_rows:
             idx_fh.write("\t".join(str(c) for c in row) + "\n")
 
