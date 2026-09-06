@@ -22671,3 +22671,125 @@ corpus**, pas un message de session. Remis le meme jour ; le corpus repasse a
 
 Le manifeste conserve l'entree, marquee `ANNULE`, avec sa raison. **Une erreur
 tue est une erreur qui recommence.**
+
+
+---
+
+## 148. LA POLLUTION N'ETAIT PAS LA DONNEE, C'ETAIT LE CODE SUIVI
+
+Mesure du 2026-09-06. L'operateur a demande DOUZE FOIS la separation de mon
+outillage et du vrai projet. Douze fois j'ai mesure les fichiers TEMPORAIRES
+— vagues, lots, sauvegardes — sorti 3734,6 Mo, et repondu que l'arbre etait
+propre. Il l'etait, pour cette question-la. Ce n'etait pas la sienne.
+
+### 148.1 La mesure que je n'avais jamais faite
+
+```
+git ls-files | par repertoire
+  scripts/     166   dont 147 OUTILLAGE (nexus_ epreuve_ verif_)
+  rituels/      48   dont  48 OUTILLAGE (cockpit, progress, socles)
+  docs/         41
+  (racine)      17
+  references/   16
+  tools/         8
+  .claude/       4
+  competences/   3
+```
+
+**195 des 307 fichiers suivis sont mon outillage : 63,5 %.**
+
+Le depot se lit donc comme un depot d'outillage Python. Il est une passerelle
+Docker/LiteLLM. Un lecteur qui clone voit d'abord 147 scripts d'orchestration
+et 48 fichiers de rituel ; le produit — `docker-compose.yml`,
+`litellm_config.yaml`, `model_list.txt` et dix-neuf scripts PowerShell
+d'exploitation — est en dessous.
+
+### 148.2 Ce que la racine dit, et pourquoi elle m'a trompe
+
+Les 17 fichiers de la racine sont TOUS le vrai projet :
+
+```
+.env.example  .gitattributes  .gitignore  .mcp.json  AGENTS.md  LICENSE
+README.md  Set-ClaudeModel.ps1  Start-Claude.ps1  UTILISER_NEXUS.md
+cloud_models.txt  docker-compose.gpu.yml  docker-compose.yml
+litellm_config.yaml  model_list.host.txt  model_list.txt  requirements.txt
+```
+
+Je regardais la racine, elle etait saine, et j'en concluais l'arbre sain.
+**La pollution n'etait pas a la racine : elle etait d'un cran en dessous**,
+dans deux repertoires exactement, et ces deux-la portent les deux tiers du
+depot.
+
+### 148.3 Le rayon d'impact, et l'angle mort qui compte
+
+```
+1233 occurrences de "scripts/nexus_" "scripts/epreuve_" "scripts/verif_"
+     dans 114 fichiers
+
+  par extension    418 md   286 json   170 py   152 MD   149 csv
+                    35 txt   11 ps1     1 yml     1 js
+  par repertoire   scripts 59  rituels 24  docs 17  racine 7  .claude 4
+```
+
+**Et 91 constructions NON LITTERALES**, qui ne contiennent pas la chaine et
+echappent donc a toute reecriture textuelle :
+
+```
+rituels/RESUME.ps1:31        $Scripts = Join-Path $RepoRoot "scripts"
+scripts/epreuve_avec_verrou.py:20
+    LANCEUR = os.path.join(RACINE, "scripts", "nexus_avec_verrou.py")
+scripts/epreuve_armer_garde.py:40
+    guard_script = os.path.join("scripts", "nexus_garde_fictif.py")
+```
+
+Une reecriture de `scripts/nexus_` vers `outillage/nexus_` traiterait les
+1233 et **manquerait les 91 en silence**. C'est la meme classe d'angle mort
+que §136 : un chemin assemble par `os.path.join` echappe a une recherche de
+chemin. Je l'ai ecrite, puis j'ai failli agir contre elle — deuxieme fois
+dans la journee.
+
+### 148.4 Ce que la verification de ce matin prouvait, et ce qu'elle ne prouvait pas
+
+Quatre controles, codes de sortie reels, sans tube :
+
+| controle | code | ce qu'il prouve |
+| --- | --- | --- |
+| separation a 4 questions | 0 | aucune DONNEE d'outil n'est revenue |
+| `nexus_rituel.py` | 0 | le tour est clos |
+| `git status` | 0 modifie | l'arbre de travail est net |
+| pointeur 5741 = 5741 | concordant | ce qui est sorti est decrit |
+
+Tous exacts. **Aucun ne pose la question du perimetre du CODE SUIVI.** Le
+controle mesurait ce qui traine, jamais ce qui est versionne — et c'est
+precisement ce que l'operateur nommait.
+
+Huitieme cas du jour ou l'instrument est exact et la conclusion fausse.
+
+### 148.5 Deux mesures d'appoint, dont une corrige un commit d'aujourd'hui
+
+**La vague 28 est morte sans rien produire.** `v28.json` ecrit a 13:29,
+aucun `v28.md`, zero processus `nexus_agent` a 17:12. `rendus_separateur.md`
+fait deux lignes. J'ai annonce a une session voisine qu'elle etait « en vol » ;
+elle ne l'etait plus depuis des heures. Une vague qui meurt ne le dit pas.
+
+**La suite de tests n'expire pas a cause du tube.** Le commit `77de19a` a
+etabli que la sortie vide et le code 0 venaient de `tail`. C'est vrai, et
+incomplet : relancee sans tube, avec `capture_output` et un budget de 1800 s,
+elle leve `subprocess.TimeoutExpired`. Relancee en flux non tamponne, elle
+avance normalement — forward en cours, `proxy joignable` et `inventaire non
+vide 83 modeles` passes. **Elle n'est donc pas bloquee : elle depasse trente
+minutes.** Le tube masquait une duree, pas une panne.
+
+### 148.6 CE QUI RESTE OUVERT — remplace §147.5
+
+| sujet | etat |
+| --- | --- |
+| **perimetre projet / outillage** | mesure, NON garde. Aucun controle n'echoue si un outil neuf atterrit dans le projet. Plan commande au banc, vague 29. |
+| les 91 constructions non litterales | mesurees, non traitees |
+| duree de `nexus_test.py` | > 1800 s, cause non diagnostiquee |
+| `.nexus/` dans le dossier | 103 references, 36 fichiers, nomme au contrat — ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` ecrit a l'import | seul BLOQUANT du depot, mon propre defaut |
+| 234 211 symboles AST invisibles | pas d'`index.tsv` |
+
+Un sujet ne se clot que lorsqu'un controle echoue si la regle est enfreinte.
+Aucune ligne ci-dessus n'est close.
