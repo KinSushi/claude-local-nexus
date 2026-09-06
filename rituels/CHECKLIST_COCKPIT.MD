@@ -18982,3 +18982,147 @@ s'ancre dessus, rendant definitivement vert tout ce qui est en dessous.
 
 Aucun de ces axes ne recevra de code de l'orchestrateur. Les plans reviennent,
 sont arbitres, et le code part au banc.
+
+---
+
+## 126. LE REMEDE ETAIT DANS LE CORPUS — et la contre-epreuve a trouve le trou
+
+L'operateur l'a redit sans avoir a etre entendu deux fois : *« les livres sont
+plus fiables que le depot github »*, et *« normalement je ne devrais meme pas
+te relancer le rappel sur les livres [...] cela devrait etre cable et
+mecanise »*.
+
+### Le chapitre existait, et il a renverse la conception
+
+Avant de concevoir, l'index a ete interroge sur le NOM du probleme. Trois
+chapitres portaient exactement ce nom :
+
+```
+Design Multi-Agent AI Systems Using MCP and A2A · Graceful degradation strategies
+Design Multi-Agent AI Systems Using MCP and A2A · Context window limitations
+Design Multi-Agent AI Systems Using MCP and A2A · Context window management
+```
+
+Lus par positionnement direct : **13 957 octets sur un corpus de 26 Mo**.
+
+Le chapitre dit que degrader vers un modele plus simple est **legitime** —
+*« Tier 3 could switch to simpler, faster models that are less accurate but
+more reliable »* — a la condition expresse que le systeme sache dans quel
+palier il se trouve : *« Design agents to detect which tier they are operating
+in and adjust behavior accordingly. »*
+
+**Cela a renverse le remede.** Le reflexe etait d'interdire la descente ;
+interdire aurait vide douze chaines et laisse leurs modeles source **sans aucun
+repli**. Le defaut n'etait pas que le repli descende, c'est que **rien ne le
+declarait**.
+
+Un plan re-cadre a conclu independamment la meme chose, apres qu'un premier eut
+ete rejete : il proposait de verifier la taille de la REQUETE dans
+`render_chain`, dont la signature reelle est
+`render_chain(groups, indent, width, terminal) -> list[str]` — une fonction qui
+rend du YAML avant qu'aucune requete n'existe. Deux sources independantes, meme
+conclusion.
+
+### La contre-epreuve a fait ce qu'un forward test ne pouvait pas
+
+FORWARD : 13 commentaires ecrits, YAML valide, 83 modeles, validateur du depot
+au vert. Le mecanisme a meme trouve une descente **que je n'avais pas
+comptee** : 1 000 000 vers 200 000 jetons sur une chaine anthropic.
+
+REVERSE : **echoue**, et c'est la trouvaille.
+
+```
+LOCAL_FALLBACKS        12 descentes   12 signalees   complet
+ANTHROPIC_FALLBACKS     5 descentes    3 signalees   2 manquantes
+CLOUD_FALLBACKS        18 descentes    0 signalee    aucune
+```
+
+Cause diagnostiquee : les dix-huit vont toutes vers le **terminal greffe** —
+`cloud 131072 -> glm-4.7-flash-local 32768` — et le code cherche la cible dans
+`chain[i+1:]`, ou le terminal n'est pas. La garde *« ne rien affirmer qu'on n'a
+pas mesure »* fonctionne ; elle est aveugle la ou les descentes sont les plus
+nombreuses. La contrainte est dans la signature : `terminal: list[str]`, des
+chaines sans contexte.
+
+**Sans la contre-epreuve, ce trou passait pour un mecanisme complet.**
+
+### Deux faux positifs de MA mesure, retires plutot que tus
+
+* J'avais compte 18 descentes cloud vers cloud : les **19 alias cloud ont tous
+  le meme contexte, 131 072**. Aucune n'existe.
+* J'avais compte `CLOUD_POOL_GLOBAL` comme une chaine : c'est une **liste de
+  pool**. Mon detecteur y voyait des maillons inexistants.
+
+### Trois rejets sur mesure, et le troisieme etait ma faute
+
+| rejet | mesure |
+| --- | --- |
+| ligne de 112 caracteres | limite du depot : 100 |
+| fleches `↓` et `→` emises dans le YAML | ASCII exige ; le depot a deja paye une espace fine insecable invisible |
+| ancre prise sur SA PROPRE sortie, puis re-indentee 8 au lieu de 12 | ma faute en partie : je lui avais donne deux pieces sans dire laquelle etait l'ancre |
+
+---
+
+## 126.1 J'AI ECRIT A LA MAIN UN OUTIL QUI EXISTAIT
+
+En cherchant le chapitre, j'ai ecrit un lecteur de corpus par seek. Mesure
+faite ensuite : `scripts/nexus_livres.py` existe, avec l'interface exacte —
+`query` pour chercher, `-r` pour lire un fragment — et il est **deja expose en
+outil MCP**. Il existe aussi `nexus_corpus.py` et `nexus_livres_semantique.py`.
+
+**J'ai commis la faute pendant que je lisais le chapitre qui la decrit.**
+
+C'est §0.2.1 dans les deux sens : le script existe, mais **deux maillons
+manquent**.
+
+| maillon | etat mesure |
+| --- | --- |
+| le script | `nexus_livres.py` existe |
+| la trace | **absente** — une consultation ne laisse rien sur disque |
+| la porte | **absente** — aucun controle n'exige la consultation |
+
+C'est la trace qui manque en premier : sans elle, aucune porte ne peut savoir
+si le corpus a ete consulte. Le plan de cette porte est au banc, avec le piege
+nomme — exiger « une consultation a eu lieu » est trivialement satisfaisable
+par une recherche vide, et deviendrait un rituel creux.
+
+---
+
+## 126.2 COORDINATION — l'audit a rendu plus que ce qu'il demandait
+
+ea-mt5 a demande un audit de son corpus. Trois resultats, tous mesures ici.
+
+**Sa trouvaille methodologique tient, et elle couvre MON angle mort.** Quand un
+paquet est installe mais que son import echoue, `ast.parse` extrait signatures
+et docstrings sans jamais charger le module. Verifie sur un cas concret :
+
+```
+torch   installe 2.13.0   import KO (OSError)
+        ast.parse -> 189 fonctions extraites SANS import
+        importlib -> ECHEC, donc inspect.signature impossible
+```
+
+Mes « 22 symboles non resolus sur 120 » sont vraisemblablement de cette
+famille. La verification doit donc etre a **deux etages, avec deux taux
+SEPARES** : `importlib` compare au binaire, fort mais partiel ; `ast` couvre
+l'imimportable mais ne peut pas voir un binaire divergeant de sa source. Les
+fondre produirait une concordance flatteuse.
+
+**Son defaut est pire qu'il ne l'avait mesure.** Il diagnostiquait une colonne
+`ancre` *perimee*. Mesure ici :
+
+```
+torch     installe 2.13.0 chez nexus,  absent chez lui
+mutmut    absent chez nexus,           installe 3.7.0 chez lui
+```
+
+Elle n'est pas perimee, elle est **relative a un referentiel que le CSV ne
+nomme pas**. Perimee, on peut la dater ; relative sans referentiel, on ne peut
+rien en faire. C'est sa propre lecon retournee contre son artefact — *nommer le
+referentiel des deux termes ; s'ils different, ce n'est pas une mesure
+imprecise, c'est une non-mesure.* Il l'a acceptee et renvoie son verificateur
+en correction avec un refus **fail-closed** hors referentiel.
+
+**Ma premiere somme de ses chiffres etait fausse** : 402 554 symboles, exactement
+le double, parce que j'avais somme sa ligne `TOTAL`. Divise par deux, ses
+201 277 tiennent au symbole pres.
