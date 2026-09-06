@@ -23738,3 +23738,135 @@ Deux gestes, tous deux verifies dans les deux sens : les epreuves sorties de
 `scripts/` avec parite exacte des echecs, et `node_docs` passe a la convention
 du depot avec le rayon toujours atteignable (`nexus_livres.py "timeout"` rend
 6 entrees du rayon `22.23.2`).
+
+
+---
+
+## 156. LE PARTAGE DE `scripts/` N'EST PAS LE PROBLEME — SON EMPLACEMENT L'EST
+
+### 156.1 Les deux mesures qui tranchent
+
+Coupe **imposee** — les 7 gardes epinglees restent dans `scripts/`, le reste
+part :
+
+```
+imports traversant le partage        36
+dont NON couverts par sys.path       28
+```
+
+Coupe **naturelle**, simulee sans rien deplacer — tout l'outillage part
+ensemble :
+
+```
+outillage/ -> ailleurs     2   (les deux vers console_tools, un script PROJET)
+scripts/   -> ailleurs     0
+```
+
+**28 contre 2.** Le graphe n'est pas entrelace : c'est la coupe qui passe au
+mauvais endroit, et elle y passe parce que sept modules sont cloues.
+
+### 156.2 Ce qui cloue ces sept modules
+
+`~/.claude/settings.json` — le fichier de configuration **de l'utilisateur**,
+hors du depot — les nomme par chemin absolu :
+
+```
+nexus_agent.py            nexus_garde_isolation.py
+nexus_garde_agent.py      nexus_garde_production.py
+nexus_garde_ecriture.py   nexus_garde_shell.py
+nexus_valide.py
+```
+
+Ce fichier sert **les autres projets de cette machine**. Ce depot n'a pas a le
+modifier, et le faire sans le dire serait pire que ne rien faire.
+
+Et la consequence d'un chemin faux n'est pas theorique : elle a ete mesuree
+une heure plus tot, en la declenchant. Un hook qui ne trouve pas son fichier
+**refuse tous les outils a la fois**.
+
+### 156.3 La tentative, et son cout exact
+
+Deux essais, mesures :
+
+| coupe | imports casses |
+| --- | --- |
+| les 7 restent, 73 partent | 24 |
+| + les 5 modules qu'elles importent reviennent | **28** |
+
+Ramener leurs dependances a **aggrave** le compte : chaque module rendu a
+`scripts/` cree de nouvelles aretes depuis `outillage/`. La fermeture des
+sept, mesuree par `ast`, est pourtant peu profonde — profondeur 1, cinq
+modules, rien au-dela. Ce n'est donc pas leur poids qui gene, c'est leur
+POSITION : elles sont au milieu du graphe.
+
+### 156.4 Ce qui est fait, et qui tient
+
+```
+scripts/    99 -> 31   (19 projet + 7 epinglees + 5 dependances)
+outillage/   0 -> 68
+1032 references reecrites, 100 fichiers
+  89 constructions dynamiques traitees, 18 fichiers
+py_compile sur les 68 : code 0
+```
+
+**`py_compile` a code 0 alors que 28 imports sont casses.** Ils echouent a
+l'EXECUTION, jamais a la compilation : un vert de compilation ne prouve rien
+sur ce genre de deplacement, et c'est la lecon a retenir du chantier.
+
+### 156.5 L'ARBITRAGE, et il n'est pas le mien
+
+Deux voies, et une seule rend l'arbre propre :
+
+| voie | ce qu'elle donne | ce qu'elle coute |
+| --- | --- | --- |
+| **A.** mettre a jour `~/.claude/settings.json` (7 chemins), puis deplacer les 80 | `scripts/` = 19 fichiers du produit. **2 aretes croisees**, toutes deux vers `console_tools` | modifier un fichier qui sert les AUTRES projets de l'operateur |
+| **B.** renoncer au partage | rien ne casse | `scripts/` reste melange : 19 du produit, 80 d'outillage |
+
+La voie A est propre et son cout est **une decision, pas un risque
+technique** : les sept chemins sont connus, le fichier est court, et un
+controle verifie deja que chaque chemin cite existe.
+
+**Ce depot ne prendra pas cette decision seul.** Modifier la configuration
+personnelle de l'operateur sans qu'il l'ait demande serait exactement le
+genre de geste que la LOI 1 et le §0.6 interdisent.
+
+### 156.6 Un instrument qui a sur-declare, treizieme du jour
+
+La verification des chemins morts en annoncait **9 cites par du code**.
+Verification individuelle :
+
+* quatre sont des montages fabriques a l'execution par les epreuves —
+  `epreuve_bidon.py`, `rien.py`, `x.py`, `machin_production.py` ;
+* cinq sont des manifestes de **quarantaine**, qui citent des fichiers
+  disparus **par construction** — c'est leur role.
+
+**Pannes reelles : zero.** Le tri s'est fait sur l'extension du fichier qui
+cite, et il fallait ensuite regarder chaque cas : l'extension separe le code
+de la prose, elle ne separe pas le code VIVANT du code de TEST.
+
+### 156.7 CE QUI RESTE OUVERT — remplace §155.5
+
+| sujet | etat |
+| --- | --- |
+| **partage de `scripts/`** | branche `assainissement-outillage`, NON fusionnee. 28 imports casses. ARBITRAGE OPERATEUR : voie A ou voie B |
+| **un hook nommant un chemin** | verrou sur la structure ; il bloque TOUS les outils quand le chemin meurt. Aucun controle ne le verifie |
+| `nexus_test.py` plante | `test_terminal_repli`, cause non tranchee |
+| repli de modele silencieux | 7 substitutions sur 133 rendus |
+| 5 references externes non gardees | commande preparee, non lancee |
+| controle semantique des voisines | 2 specifications rejetees |
+| `nexus_valide.py` > 900 s | cout non annonce sur large diff |
+| `rituels/` hors du projet | de-risque, non lance |
+| les 91 constructions non litterales | traitees pour `scripts/`, pas ailleurs |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+### 156.8 L'etat de `main`, qui lui est propre
+
+```
+scripts/    99   epreuves/ 67   un clone : 305 fichiers, 8,57 Mo
+```
+
+contre 307 fichiers et 20,26 Mo ce matin. Les deux gestes fusionnes — les
+epreuves sorties de `scripts/`, `node_docs` passe a la convention du depot —
+sont verifies dans les deux sens et n'ont rien casse.
