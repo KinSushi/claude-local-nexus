@@ -24702,3 +24702,104 @@ neuve porte `texte` » et une epreuve d'utilisabilite par rayon.
 | decoupage de `nexus.ps1` | **6** commandes d'orchestration, non 4 |
 | unification du lecteur de corpus | regle + epreuve d'utilisabilite par rayon |
 | cout de l'index semantique | **mesure par personne** ; ne pas le mesurer sous contention |
+
+
+---
+
+## 164. LE PONT ET LA VITRINE — la sauvegarde repart
+
+Suite directe de §163. Les deux premieres etapes de la roadmap de l'audit sont
+executees et prouvees.
+
+### 164.1 Ce qui etait casse, mesure avant
+
+**Le pont MCP** appelait trois outils par un chemin mort :
+
+```
+[OK  ] scripts/nexus_capability.py
+[MORT] scripts/nexus_savings.py            -> outillage/
+[MORT] scripts/nexus_charge.py             -> outillage/
+[MORT] scripts/nexus_livres_semantique.py  -> outillage/
+```
+
+plus `nexus_verrou_tenir.py` ligne 3524. **C'est par ce pont que Claude Code
+atteint le banc gratuit.**
+
+**La vitrine etait bloquee**, execution a l'appui :
+
+```
+python outillage/nexus_vitrine.py --simulation   ->  code 1
+  [AVERTISSEMENT] conformite            nexus_conformite.py introuvable
+  [BLOQUE      ] rituel de fin de tour  nexus_rituel.py introuvable
+  VERDICT : publication REFUSEE. Rien n'est parti.
+```
+
+Aucune sauvegarde ne partait sur GitHub depuis le rangement, et le contrat dit
+« GitHub = sauvegarde rapide ».
+
+### 164.2 Pourquoi c'etait invisible — cinquieme incarnation
+
+```python
+nexus_vitrine.py:150   chemin = racine / "scripts" / script
+server.js:3228         path.join(INSTALL_ROOT, "scripts", "nexus_savings.py")
+```
+
+Chemins **assembles**. `git grep` ne les voit pas, `py_compile` ne voit pas un
+chemin qui pointe a cote, et JavaScript n'a aucune compilation.
+
+### 164.3 Ce qui est pose, et ce qui le prouve
+
+Six patchs du banc (`glm-4.7-flash`, 242 s, non tronque), sur diagnostic d'un
+auditeur tiers. Quatre chemins du pont, un repli `scripts/` puis `outillage/`
+dans `sous_controle` — qui couvre ses **deux** appelants d'un seul correctif —
+et un message de refus qui dit desormais **ou** le script a ete cherche.
+
+```
+6 ancres uniques sur 6, aucune ambigue
+py_compile sur nexus_vitrine.py    OK
+chemins du pont MCP                6 verifies, 0 MORT
+vitrine en simulation              les deux « introuvable » ONT DISPARU
+```
+
+Le refus suivant n'etait plus « fichier introuvable » mais « le tour n'est pas
+clos » : **la porte fait son travail au lieu de tomber en panne.**
+
+### 164.4 Deux verifications qui ont evite une faute
+
+**Le banc a pose une question au lieu d'une affirmation.** Il a demande si
+`nexus_rituel.py` etait reference ailleurs dans `server.js`. Verification :
+six references de chemin au total, aucune vers lui. Fausse alerte — mais la
+forme etait juste.
+
+**Deux chemins n'ont deliberement PAS ete touches.** Lignes 3222 et 3245,
+`nexus_capability.py` et `nexus_verrou_machine.py`, tous deux reellement dans
+`scripts/`. Le banc les a laisses, et c'est juste.
+
+### 164.5 CE QUI RESTE OUVERT — remplace §163.5
+
+| sujet | etat |
+| --- | --- |
+| **code de sortie des taches planifiees** | l'audit dit que `pwsh -Command` avale le refus ; **NON contre-verifie par moi** |
+| **6 skip silencieux** | verifies ligne a ligne, non corriges |
+| perimetres aveugles | traque 14/156, import 75/156, linters 14/156, hooks 5/8 |
+| `Initialize-Nexus.ps1:207` | casse sur machine neuve |
+| 7 autres chemins morts | nommes par l'audit, non verifies par moi |
+| 3 gardes executees deux fois | global + projet |
+| 98 litteraux `"scripts"` | compte corrige par l'audit |
+| decoupage de `nexus.ps1` | **6** commandes d'orchestration, non 4 |
+| unification du lecteur de corpus | offsets en CARACTERES contre OCTETS, 422 vs 428 |
+| cout de l'index semantique | **mesure par personne** |
+
+### 164.6 Ce que la journee a produit, mesure
+
+```
+scripts/   166 -> 29 fichiers      outillage/  0 -> 127
+epreuves/   67                     un clone    20,26 Mo -> 8,57 Mo
+porte d'integrite du produit       code 0
+pont MCP                           0 chemin mort
+vitrine                            ne bloque plus sur un fichier absent
+```
+
+Et le prix, dit sans l'arrondir : **cinq classes de chemin assemble** ont casse
+quelque chose aujourd'hui, dont trois n'ont ete trouvees que par un auditeur
+tiers.
