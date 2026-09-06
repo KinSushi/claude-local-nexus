@@ -24584,3 +24584,121 @@ C'est du code, et il revient a un tiers.
 | cliquet LOI 1 aveugle aux renommages | 15 624 lignes fantomes |
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+
+
+---
+
+## 163. L'AUDIT DE FABLE 5.1 — douze affirmations sur vingt-neuf etaient fausses
+
+Audit commande par l'operateur, mene par un tiers qui n'avait ecrit ni le plan
+ni le code, dans son propre arbre de travail isole. 303 049 jetons, 115 appels
+d'outil, 27 minutes. **Rien n'a ete modifie dans les arbres.**
+
+### 163.1 Ce qu'il a demoli, et que j'avais ecrit
+
+| j'affirmais | mesure |
+| --- | --- |
+| 13 chemins PowerShell **a reparer** | **deja repares** — mon plan etait perime de mon propre fait |
+| 3 mecanismes aveugles | **au moins 7** |
+| **29** `dirname(dirname(__file__))` dans `epreuves/` | **ZERO** sous cette forme ; 10 epreuves posent deja les deux chemins |
+| les 7 gardes importent 4 modules liberables | elles n'importent **rien** ; les doublons servent `nexus_agent.py` |
+| le settings global epingle **7** gardes | **5** |
+| `livres_texte` est **francais** et distinct | **anglais** (85 sur 102), et **25 livres sont les Packt deja indexes** |
+| 29 973 fragments indexes | `epub` et `packt` sont **les memes 25 livres, comptes deux fois** |
+| `python_libs_docs` vs `node_docs` en sens inverse | `.gitignore:46,109` les ignore **tous les deux** — rien a arbitrer |
+| 4 chemins graves a corriger | **un seul** est un angle mort ; deux visent des fichiers presents |
+| `controle_gardes_accordes` rend VERT | il rend **ALERTE**, au mauvais motif |
+| **« le corpus ne couvre pas ce probleme »** | plein texte : *quality gate* x6, *refactoring* x52, *technical debt* x6 |
+
+**La derniere est la plus instructive.** J'avais conclu que le corpus ne
+traitait pas du sujet apres cinq recherches infructueuses. Le corpus le traite ;
+c'est que **rien n'interroge son contenu** — lexical et semantique cherchent
+tous deux dans `resume`, c'est-a-dire dans des titres de section.
+
+**Ce qu'il confirme comme juste** : les comptes de fichiers, 963 Mo, les
+271 Mo invisibles sur 2 801 fichiers, les 234 211 symboles, les 6 doublons
+identiques a ce jour, les 98 litteraux `"scripts"`, et le caractere anterieur
+du defaut de `model_list.txt`.
+
+**Ce qu'il declare INVERIFIABLE** : les 8,57 Mo d'un clone, le passage de 21 a
+99 violations, et tous les chiffres de vitesse cloud contre local de ma
+Partie C.
+
+### 163.2 Ce qu'il a trouve et que personne n'avait vu
+
+**Le pont MCP est muet.** `tools/nexus-mcp/server.js` appelle quatre outils par
+`path.join(INSTALL_ROOT, "scripts", ...)`. Verifie a la main :
+
+```
+[OK  ] scripts/nexus_capability.py
+[MORT] scripts/nexus_savings.py            -> outillage/
+[MORT] scripts/nexus_charge.py             -> outillage/
+[MORT] scripts/nexus_livres_semantique.py  -> outillage/
+```
+
+**Aucune sauvegarde ne peut partir.** `outillage/nexus_vitrine.py:150`
+construit `racine / "scripts" / script` et rend `BLOQUE` si le fichier manque.
+Refus deja mesures a 12:43 et 16:33 — et la tache planifiee `NexusVitrine`
+rend **0** malgre le refus, le code etant avale par `-Command`.
+
+**Six `skip` silencieux** dans `nexus_test.py`, verifies ligne a ligne :
+
+```
+:2342  epreuve_doc_annexe.py      cherchee dans scripts/
+:2427  epreuve_sonde_mcp.py       cherchee dans scripts/
+:2962  epreuve_quota_partage.py   cherchee dans scripts/
+:3005  epreuve_cablage.py         cherchee dans scripts/
+:3059  epreuve_garde_plan.py      cherchee dans scripts/
+:3493  nexus_garde_lecture.py     cherchee dans outillage/ -- CASSE PAR MA
+                                  PROPRE CORRECTION, pas par le deplacement
+```
+
+Un `skip` ne fait pas echouer la suite : **elle rend vert sur des epreuves
+qu'elle n'a jamais jouees.**
+
+Plus sept autres chemins morts, une tache de 04:00 en echec depuis un defaut
+anterieur, et trois gardes executees **deux fois** (global et projet).
+
+### 163.3 Son verdict sur les livres, qui tranche une question ouverte
+
+Sens de conversion : **du pre-mache VERS le schema du depot**, tous les
+lecteurs lisant `index.tsv` + `symbols.jsonl` — mais le depot doit s'etendre
+sur la **cle de recherche** : plein texte plus `concepts.tsv` par rayon.
+
+**Une conversion « resumes seuls » est a rejeter** : `resume_mecanique` est
+genere, et `verbatim` n'est qu'un **drapeau** valant `faux`. Le texte n'est que
+dans le `.txt`, dont les unites atomiques ne couvrent que **16 %** de Kleinberg
+& Tardos et 32 % du livre Claude Code.
+
+Et les offsets du pre-mache sont en **caracteres**, ceux du depot en **octets**
+— 422 contre 428 sur un cas mesure. Une conversion naive decalerait tout.
+
+**Unifier d'abord le LECTEUR**, pas les donnees : une regle « toute entree
+neuve porte `texte` » et une epreuve d'utilisabilite par rayon.
+
+### 163.4 Les trois risques, dans son ordre
+
+1. **Aucune sauvegarde ne part.** Refus mesures, refus certain au prochain
+   arbre propre, et la tache rend 0.
+2. **Le vert porte sur 9 % du code.** Traque 14/156, import 75/156, linters
+   14/156, hooks 5/8, six skips, et un BLOQUANT de 04:00 qui va disparaitre
+   par sortie de perimetre plutot que par correction.
+3. **Pont MCP muet, quota epuise, repli local silencieux** sur un iGPU deja
+   tenu par deux `pytest` voisins.
+
+### 163.5 CE QUI RESTE OUVERT — remplace §162.6
+
+| sujet | etat |
+| --- | --- |
+| **pont MCP muet** | 4 lignes, correctif AU BANC |
+| **vitrine bloquee** | `nexus_vitrine.py:150`, correctif AU BANC |
+| **code de sortie des taches planifiees** | `-Command` avale le refus ; la tache rend 0 |
+| **6 skip silencieux** | la suite rend vert sur ce qu'elle n'a pas joue |
+| perimetres aveugles | traque, import, conformite, cablage, 3 linters |
+| `Initialize-Nexus.ps1:207` | casse sur machine neuve |
+| 7 autres chemins morts | nommes par l'audit |
+| 3 gardes executees deux fois | global + projet |
+| 98 litteraux `"scripts"` | non 92 : compte corrige par l'audit |
+| decoupage de `nexus.ps1` | **6** commandes d'orchestration, non 4 |
+| unification du lecteur de corpus | regle + epreuve d'utilisabilite par rayon |
+| cout de l'index semantique | **mesure par personne** ; ne pas le mesurer sous contention |
