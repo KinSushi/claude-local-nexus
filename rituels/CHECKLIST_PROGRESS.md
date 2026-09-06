@@ -1,12 +1,12 @@
 # Checklist Progress
-Generated: 2026-09-06 09:37:10
+Generated: 2026-09-06 11:59:26
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 4 |
-| Etat de l'arbre | modifie |
-| Date du dernier commit | 2026-09-06 09:34:47 -0500 |
+| Commits non pushes | 13 |
+| Etat de l'arbre | propre |
+| Date du dernier commit | 2026-09-06 11:59:00 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
@@ -58,4 +58,4 @@ Generated: 2026-09-06 09:37:10
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
   - ORPHELINE
   - Consequence tenue
-- Commits non pousses : 4
+- Commits non pousses : 13
