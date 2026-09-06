@@ -2362,6 +2362,37 @@ def test_doc_annexe() -> None:
     if not vus:
         check("doc annexe", False, "aucun cas rendu (code %s)" % r.returncode)
 
+    # Forward test de l'indexeur sur le corpus Python
+    cible = os.path.join(ROOT, ".nexus", "livres_code",
+                         "Building-Agentic-AI-Systems")
+    if not os.path.isdir(cible):
+        skip("indexeur forward", "corpus absent")
+    else:
+        out_dir = os.path.join(ROOT, ".nexus", "tmp_index")
+        cmd = [sys.executable, "scripts/nexus_indexer_code.py",
+               "--source", cible,
+               "--cible", out_dir,
+               "--simuler"]
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               timeout=5)  # <1s pour 72 symboles
+        except subprocess.TimeoutExpired:
+            check("indexeur forward", False,
+                  "timeout après %d s" % 5)
+        else:
+            if r.returncode != 0:
+                check("indexeur forward", False,
+                      "code retour %s" % r.returncode)
+            else:
+                m = re.search(r"Symboles extraits\s*:?\s*(\d+)", r.stdout)
+                if not m:
+                    check("indexeur forward", False,
+                          "motif introuvable")
+                else:
+                    nb = int(m.group(1))
+                    check("indexeur forward", nb > 0,
+                          "symboles extraits %d" % nb)
+
 
 def test_sonde_mcp() -> None:
     """
