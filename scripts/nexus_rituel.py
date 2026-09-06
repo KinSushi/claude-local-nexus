@@ -253,6 +253,39 @@ def arbres_en_attente(racine: Path) -> tuple[str, str]:
         return (IGNORE, msg[:60])
 
 
+def appelant_recent(racine: Path) -> tuple[str, str]:
+    """
+    Un outil du corpus a-t-il ete appele RECEMMENT ?
+
+    Le journal .nexus/consultations.jsonl trace chaque consultation. Une
+    consultation vide (count: 0) ne compte pas : elle peut etre un test ou un
+    ratage. Le rituel tourne a chaque fin de tour ; la fenetre est 24 heures.
+    """
+    from datetime import datetime, timezone, timedelta  # import local pour le calcul de la fenêtre
+    journal = racine / ".nexus" / "consultations.jsonl"
+    seuil = datetime.now(timezone.utc) - timedelta(hours=24)
+    try:
+        with journal.open("r", encoding="utf-8") as f:
+            recentes = []
+            for ligne in f:
+                try:
+                    entree = json.loads(ligne)
+                    ts = datetime.fromisoformat(entree["timestamp"])
+                    # Hypothèse : un horodatage sans fuseau est en temps universel (UTC),
+                    # car la trace écrite aujourd'hui l'écrit en UTC.
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    if ts >= seuil and entree.get("count", 0) > 0:
+                        recentes.append(entree)
+                except (json.JSONDecodeError, KeyError, ValueError):
+                    continue
+        if recentes:
+            dernier = recentes[-1]
+            return OK, f"{dernier['mode']} {dernier['count']} {dernier['timestamp'][:16]}"
+        return MANQUE, "aucune consultation valide en 24 h"
+    except (OSError, IOError):
+        return IGNORE, "journal illisible ou absent"
+
 def cablage_tenu(racine: Path) -> tuple[str, str]:
     """
     Ce qui a ete livre ce tour est-il CABLE, ou seulement ecrit ?
@@ -403,6 +436,7 @@ def main() -> int:
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
         ("cablage tenu", lambda: cablage_tenu(racine)),
+        ("appelant recent", lambda: appelant_recent(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),
         ("redaction declaree", lambda: redaction_declaree(racine)),
         ("loi1 tenue", lambda: loi1_tenue(racine)),
