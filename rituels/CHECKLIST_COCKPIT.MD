@@ -22938,3 +22938,159 @@ litterales lui echappent. **32 est un plancher, jamais un total.**
 
 Aucune ligne n'est close : aucune n'a de controle qui echoue si la regle est
 enfreinte.
+
+
+---
+
+## 150. LE PREMIER DEPLACEMENT REEL — 67 EPREUVES, ET TROIS REGRESSIONS NOMMEES
+
+L'operateur, quinze fois : *« arbre et dossier propre et pro du projet, hors
+de tes fichiers pollueurs et contaminants »*. Puis, plus durement : *« comment
+tu veux mener un projet propre de A a Z si tu pollue tout et contamine tout en
+bricolant sans arret ? »*
+
+Il avait raison sur le reproche de methode : ce depot mesurait sans ranger.
+Ce tour range.
+
+### 150.1 Le geste, et pourquoi CELUI-LA
+
+Branche `assainissement-epreuves`. **67 fichiers `epreuve_*.py` sortent de
+`scripts/` vers `epreuves/`.**
+
+```
+scripts/ suivis    166  ->  99
+epreuves/            0  ->  67
+references residuelles a scripts/epreuve_ : aucune
+```
+
+Pourquoi les epreuves et rien d'autre : c'est le seul lot dont la nature ne
+demande **aucun arbitrage**. Un `epreuve_X.py` est l'epreuve de X, et tout
+depot professionnel tient ses tests a part. Les deux frontieres discutables —
+le prefixe `nexus_`, l'accessibilite depuis le produit — ont ete mesurees et
+REFUTEES (§149.5) ; elles restent ouvertes et intouchees.
+
+Le rayon d'impact le permettait, et il a ete mesure AVANT d'ecrire une ligne :
+
+| | references | fichiers |
+| --- | --- | --- |
+| l'outillage entier | 1233 | 114 |
+| **les epreuves seules** | **218** | **17** |
+
+Un seul point de passage : `nexus_test.py:2878`.
+
+### 150.2 Ce que des TIERS ont verifie
+
+| controle | verdict |
+| --- | --- |
+| `py_compile` sur les 67 | code 0 |
+| les 9 epreuves recablees, lancees | 9 passent, 0 echouent |
+| `nexus_cablage.py` (cliquet) | code 0, **« 1 script MIEUX cable »** |
+| `epreuve_registre_epreuves.py` | code 0 |
+| echantillon de 30 epreuves | 21 passent, 9 echouent |
+
+### 150.3 LA CONTRE-MESURE — sans elle, deux verdicts faux etaient possibles
+
+Neuf epreuves de l'echantillon echouent. Les **memes**, relancees depuis
+`main` dans un worktree isole :
+
+```
+SEPT echouaient DEJA sur main   -> pre-existantes, etrangeres au deplacement
+DEUX passaient sur main         -> REGRESSIONS
+   epreuve_conformite_sources.py   0 -> 1   No module named nexus_conformite
+   epreuve_garde_plan.py           0 -> 1   code=2, sortie vide
+```
+
+Sans cette contre-mesure, deux conclusions fausses etaient egalement
+disponibles : imputer neuf echecs au deplacement, ou dedouaner les deux vrais
+en constatant que « des epreuves echouaient deja ». **C'est la comparaison a
+l'etat anterieur, et elle seule, qui separe les deux.**
+
+Une troisieme regression a ete trouvee par lecture, hors echantillon :
+`epreuve_maj_modeles.py`, meme defaut.
+
+### 150.4 La cause racine est la mienne, et c'est la lecon du jour REPETEE
+
+Mon recablage a remplace **deux chaines litterales**. Il en existe cinq
+formes, mesurees apres coup :
+
+```
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))     traitee
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))     traitee
+script_dir = os.path.abspath(...) puis insert(0, script_dir)       MANQUEE x2
+os.path.join(dirname(abspath(__file__)), "nexus_garde_agent.py")   MANQUEE
+SCRIPTS_DIR = os.path.join(RACINE, "scripts")                      deja juste
+```
+
+J'ai vise la **syntaxe** au lieu de la **semantique** : la question n'est pas
+quelle chaine est ecrite, mais *ce fichier cherche-t-il ses voisines dans son
+propre repertoire ?*
+
+C'est exactement l'avertissement de §148.3 sur les 91 constructions non
+litterales — ecrit par moi deux heures plus tot, et enfreint par son auteur
+dans l'heure. Troisieme fois de la journee que cette classe frappe.
+
+Un controle semantique est commande au banc : lire les `import` et les
+`sys.path.insert` par `ast`, jamais par motif de chaine.
+
+### 150.5 Les trois ancres, pour le tiers qui corrigera
+
+```
+epreuves/epreuve_conformite_sources.py:16
+epreuves/epreuve_maj_modeles.py:17
+    script_dir = os.path.abspath(os.path.dirname(__file__))
+epreuves/epreuve_garde_plan.py:16
+    os.path.dirname(os.path.abspath(__file__)), "nexus_garde_agent.py")
+```
+
+Meme forme : le repertoire PROPRE doit devenir le repertoire FRERE `scripts/`.
+`epreuve_part_raisonnement.py` derive deja de `RACINE` et n'a rien a corriger
+— **verifie, pas suppose**.
+
+**LA BRANCHE N'EST PAS FUSIONNEE.** Elle porterait `main` de 7 a 10 epreuves
+en echec. On ne fusionne pas un chantier dont on connait les trous.
+
+### 150.6 Le bloc suivant est mesure, et il n'est pas ouvert
+
+`rituels/` — 48 fichiers, 100 % orchestrateur.
+
+```
+333 references, dans 53 fichiers (dont 21 dans rituels/ lui-meme)
+ 13 constructions dynamiques -- TOUTES avec le litteral "rituels",
+    aucune indirection par variable, donc toutes trouvables
+  0 mention dans .claude/settings.json : aucun hook n'en depend
+```
+
+Le deplacement est donc faisable. **Il n'est pas lance** : empiler un second
+chantier de 333 references sur une branche qui porte trois trous connus est
+la maniere ordinaire de casser un depot. On finit avant d'ouvrir.
+
+### 150.7 Deux fausses alertes de ce tour, dont une fabriquee par mon instrument
+
+**`"docs` n'existe pas.** `git ls-files` echappe les chemins contenant des
+accents (`Cache-policy-avancee`, `Self-critique-controlee`), et mon `awk -F/`
+a coupe sur le guillemet d'echappement. J'ai cru voir un repertoire nomme avec
+un guillemet, sequelle d'une commande mutilee. `docs/` a 43 fichiers, pas 41
+plus deux. **Dixieme cas du jour de la classe « instrument exact, conclusion
+fausse » — et le premier ou l'instrument est le mien, ecrit dans la minute.**
+
+**Le plan du banc a ete REJETE sur deux points.** Il proposait `git reset
+--hard HEAD` comme retour arriere — destructif, il efface le travail non
+commite — et un deplacement de tout d'un bloc, ce qui contredit son propre
+principe de garder le depot fonctionnel a chaque etape. Le reste (code avant
+documentation, isoler les non-litterales d'abord) est retenu.
+
+### 150.8 CE QUI RESTE OUVERT — remplace §149.6
+
+| sujet | etat |
+| --- | --- |
+| **3 regressions du deplacement** | ancres exactes connues, correctif AU BANC, branche non fusionnee |
+| **controle semantique des voisines** | specification au banc ; aucun controle ne garde encore ce cas |
+| `rituels/` hors du projet | mesure (333 refs, 53 fichiers, 13 dynamiques litterales), NON lance |
+| frontiere projet / outillage | les deux regles evidentes REFUTEES, noyau plancher 32 |
+| les 91 constructions non litterales | mesurees, non traitees |
+| `epreuve_verrou_banc.py` plante | `TimeoutExpired` non rattrapee, budget 180 s |
+| `.nexus/` dans le dossier | 103 references, 36 fichiers — ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` ecrit a l'import | seul BLOQUANT, mon defaut |
+
+Aucune ligne close : aucune n'a de controle qui echoue si la regle est
+enfreinte.
