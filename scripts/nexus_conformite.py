@@ -1648,6 +1648,45 @@ def controle_readme_chiffres(racine, lire_modeles):
     detail = "verification manquante: modele locaux mesures absente; 2 chiffres du README concordent"
     return ("OK", _tronque(detail))
 
+def controle_couverture_code(racine, lire_modeles) -> tuple[str, str]:
+    """Compare les dépôts indexés et ceux présents sur disque."""
+    idx_path = os.path.join(racine, "references", "livres", "code", "index.tsv")
+    src_root = os.path.join(racine, ".nexus", "livres_code")
+    if not (os.path.isdir(src_root) and os.path.isfile(idx_path)):
+        return ("ALERTE", "mesure non réalisée : répertoires manquants"[:90])
+    try:
+        with open(idx_path, "r", encoding="utf-8") as f:
+            lignes = f.read().splitlines()
+    except Exception:
+        return ("ALERTE", "impossible de lire index.tsv"[:90])
+    indexés = {l.split(".")[2] for l in lignes if "." in l}
+    try:
+        disques = [d for d in os.listdir(src_root) if os.path.isdir(os.path.join(src_root, d))]
+    except Exception:
+        return ("ALERTE", "impossible de lister .nexus/livres_code"[:90])
+    indexables = []
+    for d in disques:
+        chemin = os.path.join(src_root, d)
+        for root, _, files in os.walk(chemin):
+            if any(f.endswith((".py", ".ipynb")) for f in files):
+                indexables.append(d)
+                break
+    manquants = [d for d in indexables if d not in indexés]
+    if not manquants:
+        return ("OK", "tout couvert"[:90])
+    cmd = f"python scripts/nexus_indexer_code.py --source {src_root} --cible references/livres/code"
+    detail = f"manquants : {', '.join(manquants)} ; commande : {cmd}"
+    return ("ALERTE", detail[:90])
+
+def controle_couverture_code_wrap() -> None:
+    """Wrapper appelant le contrôle de couverture code."""
+    etat, detail = controle_couverture_code(ROOT, lambda: None)
+    if etat == "OK":
+        noter("couverture code", True, BLOQUANT, detail)
+    elif etat == "ALERTE":
+        noter("couverture code", False, AVERTISSEMENT, detail)
+    else:
+        noter("couverture code", False, BLOQUANT, detail)
 def controle_readme_chiffres_wrap() -> None:
     """Adapte le controle a la sequence, qui appelle sans argument."""
     etat, detail = controle_readme_chiffres(ROOT, lambda: _alias_declares(ROOT))
@@ -2097,6 +2136,7 @@ def main() -> int:
         controle_garde_agent,
         controle_gardes_accordes_wrap,
         controle_readme_chiffres_wrap,
+        controle_couverture_code_wrap,
         controle_config_active_wrap,
         controle_commande_nexus_wrap,
         controle_encodage_sortie,
