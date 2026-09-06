@@ -1,6 +1,6 @@
 {
   "genere_le": "2026-09-06T14:17:58Z",
-  "outil": "scripts/nexus_quarantaine.py",
+  "outil": "outillage/nexus_quarantaine.py",
   "gabarit_audit": "rituels/GABARIT_QUARANTAINE.md",
   "racine": "C:\\local-llm-docker",
   "arbre_principal": "C:/local-llm-docker",
@@ -52,7 +52,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "competences/relire-code.txt",
+          "chemin": "outillage/competences/relire-code.txt",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 1078,
@@ -94,7 +94,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -182,7 +182,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_quarantaine.py",
+          "chemin": "outillage/nexus_quarantaine.py",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 43895,
@@ -270,7 +270,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_charge.py",
+          "chemin": "outillage/nexus_charge.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 14270,
@@ -312,7 +312,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 172074,
@@ -358,7 +358,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -488,7 +488,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_cablage.py",
+          "chemin": "outillage/nexus_cablage.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 20787,
@@ -509,7 +509,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_checklist_progres.py",
+          "chemin": "outillage/nexus_checklist_progres.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 10989,
@@ -530,7 +530,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_conformite.py",
+          "chemin": "outillage/nexus_conformite.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 89835,
@@ -551,7 +551,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_outillage.py",
+          "chemin": "outillage/nexus_outillage.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 34519,
@@ -572,7 +572,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_progres.py",
+          "chemin": "outillage/nexus_progres.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 8636,
@@ -593,7 +593,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_rituel.py",
+          "chemin": "outillage/nexus_rituel.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 21784,
@@ -769,7 +769,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -991,7 +991,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "competences/arbitrer.txt",
+          "chemin": "outillage/competences/arbitrer.txt",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 2862,
@@ -1251,7 +1251,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 172446,
@@ -1339,7 +1339,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -1427,7 +1427,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_filet.py",
+          "chemin": "outillage/nexus_filet.py",
           "etat": "commite",
           "statut_git": "A",
           "octets": 22581,
@@ -1838,7 +1838,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -1993,7 +1993,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -2105,7 +2105,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 171916,
@@ -2172,7 +2172,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_conformite.py",
+          "chemin": "outillage/nexus_conformite.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 93278,
@@ -2193,7 +2193,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_socle.py",
+          "chemin": "outillage/nexus_socle.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 5378,
@@ -2214,7 +2214,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 173033,
@@ -2520,7 +2520,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -2587,7 +2587,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -2608,7 +2608,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_generate.py",
+          "chemin": "outillage/nexus_generate.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 77230,
@@ -2738,7 +2738,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 171885,
@@ -2897,7 +2897,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_quarantaine.py",
+          "chemin": "outillage/nexus_quarantaine.py",
           "etat": "commite",
           "statut_git": "A",
           "octets": 24980,
@@ -3027,7 +3027,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_test.py",
+          "chemin": "outillage/nexus_test.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 172187,
@@ -3073,7 +3073,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -3249,7 +3249,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -3316,7 +3316,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_appliquer.py",
+          "chemin": "outillage/nexus_appliquer.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 10320,
@@ -3358,7 +3358,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -3379,7 +3379,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_essaim.py",
+          "chemin": "outillage/nexus_essaim.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 30884,
@@ -3492,7 +3492,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -3738,7 +3738,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_doc.py",
+          "chemin": "outillage/nexus_doc.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 40700,
@@ -4405,7 +4405,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_conformite.py",
+          "chemin": "outillage/nexus_conformite.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 89957,
@@ -4426,7 +4426,7 @@
           }
         },
         {
-          "chemin": "scripts/nexus_validate.py",
+          "chemin": "outillage/nexus_validate.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 34170,

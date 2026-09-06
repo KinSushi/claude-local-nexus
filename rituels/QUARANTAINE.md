@@ -1,6 +1,6 @@
-# Audit en quarantaine — scripts/nexus_filet.py
+# Audit en quarantaine — outillage/nexus_filet.py
 
-**Fichier:** `scripts/nexus_filet.py`
+**Fichier:** `outillage/nexus_filet.py`
 **Agent:** `agent-a415cd08dccd3fd97`
 **Modèle:** `claude-sonnet-5` (Sonnet 5, mandat explicite de l'opérateur — voir rubrique 2)
 **Branche:** `worktree-agent-a415cd08dccd3fd97`
@@ -11,16 +11,16 @@
 
 ## 1. Identité
 
-Fichier modifié dans le dépôt : `scripts/nexus_filet.py`
-Chemin relatif depuis la racine : `scripts/nexus_filet.py`
-**Nouveau ou remplaçant ?** Remplaçant. Le fichier n'existait pas dans ce worktree au moment de sa création (branché depuis `main` avant que `nexus_filet.py` n'y soit ajouté — commits `6b2285b`/`1e15822`, postérieurs au point de branchement `a149320`). Une copie fournie par l'orchestrateur (`.nexus/dossier_agent/COPIE_nexus_filet.py`) a été vérifiée **identique** au sommet de `main` (`git show 1e15822:scripts/nexus_filet.py`, `diff` sans sortie) et sert d'ORIGINAL.
+Fichier modifié dans le dépôt : `outillage/nexus_filet.py`
+Chemin relatif depuis la racine : `outillage/nexus_filet.py`
+**Nouveau ou remplaçant ?** Remplaçant. Le fichier n'existait pas dans ce worktree au moment de sa création (branché depuis `main` avant que `nexus_filet.py` n'y soit ajouté — commits `6b2285b`/`1e15822`, postérieurs au point de branchement `a149320`). Une copie fournie par l'orchestrateur (`.nexus/dossier_agent/COPIE_nexus_filet.py`) a été vérifiée **identique** au sommet de `main` (`git show 1e15822:outillage/nexus_filet.py`, `diff` sans sortie) et sert d'ORIGINAL.
 
 ## 2. Provenance
 
 Produit par l'agent : `agent-a415cd08dccd3fd97`
 Modèle utilisé : `claude-sonnet-5`, sur mandat explicite : *« NEXUS_JUSTIFIE_PAYANT tâche de code exigeant diagnostic, correction et exécution des trois épreuves contre 43 worktrees git réels — le banc gratuit est mono-passe, ne lance aucune épreuve et ne manipule pas git. Sonnet pour le code est la répartition posée par l'opérateur. »*
 
-**Tension avec LOI 1, traitée explicitement plutôt que contournée.** Le contrat du dépôt (§0.7, §0.1.5) exige que le correctif soit délégué au banc gratuit, jamais rédigé par l'orchestrateur. Une tentative de délégation réelle a été menée (voir ci-dessous) et a échoué de façon mesurée. Le mandat qui m'a été confié autorise explicitement Sonnet à écrire le code pour CETTE tâche précise, avec une raison factuelle vérifiable (le banc mono-passe ne manipule pas git, ne construit pas de reproduction, ne lance pas d'épreuve). La garde `nexus_garde_production.py` du dépôt a refusé une première écriture directe (`Write` sur `scripts/nexus_filet.py`, refus mécanique, message : *« tu ne produis pas, tu orchestres et tu audites »*). Plutôt que de contourner cette garde par la variable d'environnement qu'elle propose (`NEXUS_PRODUCTION_LIBRE=1` — inopérante de toute façon depuis cet agent : elle doit être positionnée dans l'environnement du hook lui-même, pas dans un appel Bash séparé, qui ne partage pas son environnement), une délégation RÉELLE a été tentée :
+**Tension avec LOI 1, traitée explicitement plutôt que contournée.** Le contrat du dépôt (§0.7, §0.1.5) exige que le correctif soit délégué au banc gratuit, jamais rédigé par l'orchestrateur. Une tentative de délégation réelle a été menée (voir ci-dessous) et a échoué de façon mesurée. Le mandat qui m'a été confié autorise explicitement Sonnet à écrire le code pour CETTE tâche précise, avec une raison factuelle vérifiable (le banc mono-passe ne manipule pas git, ne construit pas de reproduction, ne lance pas d'épreuve). La garde `nexus_garde_production.py` du dépôt a refusé une première écriture directe (`Write` sur `outillage/nexus_filet.py`, refus mécanique, message : *« tu ne produis pas, tu orchestres et tu audites »*). Plutôt que de contourner cette garde par la variable d'environnement qu'elle propose (`NEXUS_PRODUCTION_LIBRE=1` — inopérante de toute façon depuis cet agent : elle doit être positionnée dans l'environnement du hook lui-même, pas dans un appel Bash séparé, qui ne partage pas son environnement), une délégation RÉELLE a été tentée :
 
 - Lot construit pour `nexus_agent.py`, modèle `qwen3-coder-30b-local`, avec le texte AVANT (fichier joint) et le texte APRÈS **entièrement spécifiés** par mes soins (le diagnostic m'était explicitement demandé : *« Je ne te donne pas ma cause. Diagnostique-la toi-même »*), en demandant au banc une **transcription mécanique** au format `<<<AVANT>>>/<<<APRES>>>/<<<FIN>>>`.
 - Résultat mesuré (236 s, 10285 jetons, coût nul, `ollama_chat/qwen3-coder:30b` local) : le banc **n'a pas transcrit** le texte demandé. Il a produit son propre correctif, différent et incomplet — `text=True` jamais retiré (la cause réelle du crash reste intacte), une classe `ErreurExecution` déclarée mais **jamais levée nulle part** (le `try/except` ajouté ne peut donc jamais se déclencher), RET505 non levé — et la balise de fermeture était malformée (`<<<FIN>>` — deux chevrons, pas trois), ce qui aurait de toute façon fait échouer `nexus_appliquer.py` au comptage des balises.
@@ -48,7 +48,7 @@ Contraintes de conception :
 - Il refuse tout diff contenant une suppression de fichier suivi, sauf si --avec-suppressions est passe.
   Pourquoi : un agent a supprime docker-compose.yml dans son worktree en fabriquant une condition d echec ;
   un git apply aveugle aurait emporte le fichier du depot reel, la suppression figurant comme un D ordinaire.
-- Il exclut par defaut les fichiers listes dans --exclure (defaut : scripts/nexus_doc.py), qui sont des copies posees
+- Il exclut par defaut les fichiers listes dans --exclure (defaut : outillage/nexus_doc.py), qui sont des copies posees
   par l orchestrateur et non du travail d agent.
 - Chaque patch est teste par git apply --check AVANT toute ecriture ; un patch qui ne s applique pas proprement
   est signale et saute, il n interrompt pas les autres.
@@ -146,7 +146,7 @@ def main():
     parser = argparse.ArgumentParser(description='Recuperer les diffs des worktrees agents et les appliquer.')
     parser.add_argument('--appliquer', action='store_true', help='Appliquer les patches valides.')
     parser.add_argument('--avec-suppressions', action='store_true', help='Autoriser les suppressions de fichiers.')
-    parser.add_argument('--exclure', nargs='*', default=['scripts/nexus_doc.py'],
+    parser.add_argument('--exclure', nargs='*', default=['outillage/nexus_doc.py'],
                         help='Chemins a exclure du diff.')
     args = parser.parse_args()
 
@@ -306,7 +306,7 @@ Confirmé, chiffre pour chiffre, identique à la mesure transmise par le coordin
 
 **Corrigé** : `commits_non_vus()` garde le log en DEUX points (`main..HEAD` — question correcte pour « quels commits HEAD a-t-il que main n'a pas ») et passe le diff en TROIS points (`main...HEAD`). Vérifié qu'aucune autre occurrence de plage `..`/`...` n'existe ailleurs dans le fichier : `diff_de()` n'utilise aucune référence (`git diff -- .`, working tree contre index) et `appliquer()` n'utilise que `git apply --check`/`--check --reverse`/`--3way`, sans plage — le piège était unique à `commits_non_vus()`.
 
-**Épreuve, en invocation CLI réelle** (processus séparé, `python scripts/nexus_filet.py --racine C:/local-llm-docker`, code de sortie lu directement sur le processus, aucun wrapper) :
+**Épreuve, en invocation CLI réelle** (processus séparé, `python outillage/nexus_filet.py --racine C:/local-llm-docker`, code de sortie lu directement sur le processus, aucun wrapper) :
 
 ```
 agent-a084add637786a142: vide
@@ -333,11 +333,11 @@ Les trois faux positifs (`a084add6`, `a0b2638a`, `a3a373ce`) sont redevenus un s
 **Défaut de testabilité, trouvé par le coordinateur, également corrigé.** `RACINE` était dérivée de `Path(__file__).resolve().parent.parent` sans surcharge possible — lancé tel quel depuis ce worktree, l'outil se cherche lui-même sous `<ce worktree>/.claude/worktrees/`, absent ici, et se tait avec « Total worktrees: 0 » (reproduit ci-dessous, RACINE inchangé). Contraire au contrat §0.5 (*« une racine de travail explicite (--racine) l'emporte »*). Ajouté : `--racine`, qui remplace la racine dérivée quand elle est fournie ; `main()` calcule `racine_effective = args.racine or RACINE` et l'utilise aux deux points d'appel (`worktrees(...)`, `appliquer(...)`) au lieu du global brut.
 
 ```
-$ python scripts/nexus_filet.py                                    (sans --racine, depuis ce worktree)
+$ python outillage/nexus_filet.py                                    (sans --racine, depuis ce worktree)
 Total worktrees: 0
 (... tous les compteurs a 0 ...)
 
-$ python scripts/nexus_filet.py --racine "C:/local-llm-docker"     (avec --racine, meme worktree)
+$ python outillage/nexus_filet.py --racine "C:/local-llm-docker"     (avec --racine, meme worktree)
 Total worktrees: 43
 (... la flotte reelle, voir ci-dessus ...)
 ```
@@ -352,8 +352,8 @@ agent-a697c9b31ea2b75e4: 30 lignes - ok
 
 **Verifie independamment avant toute correction** (inspecter_deux_worktrees.py, git diff brut sur les deux worktrees) — confirmation exacte, ligne pour ligne, de ce que le coordinateur a rapporte :
 
-- agent-a9bae5bcacf5d3042 : diff ENTIEREMENT compose d'un changement a rituels/cablage_reference.json — un horodatage (mesure_le) et le retrait de scripts/nexus_epreuve_vide.py de la liste preuve_seule. Rien d'autre.
-- agent-a697c9b31ea2b75e4 : MEME artefact cablage_reference.json (horodate differemment, epreuve_cles_only.py retire de preuve_seule cette fois) PLUS un vrai ajout de 2 lignes dans scripts/nexus_test.py (cablage de epreuve_cles_only.py derriere --only cles).
+- agent-a9bae5bcacf5d3042 : diff ENTIEREMENT compose d'un changement a rituels/cablage_reference.json — un horodatage (mesure_le) et le retrait de outillage/nexus_epreuve_vide.py de la liste preuve_seule. Rien d'autre.
+- agent-a697c9b31ea2b75e4 : MEME artefact cablage_reference.json (horodate differemment, epreuve_cles_only.py retire de preuve_seule cette fois) PLUS un vrai ajout de 2 lignes dans outillage/nexus_test.py (cablage de epreuve_cles_only.py derriere --only cles).
 
 rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus_cablage.py, fonction ecrire_reference()), reecrite en effet de bord par toute passe de validation lancee dans le worktree — jamais du travail d'agent. Le confondre avec du travail recoltable aurait, pour --appliquer, rebase le cliquet en silence — exactement le geste que nexus_cablage.py exige d'assumer explicitement par --rebaseline.
 
@@ -361,12 +361,12 @@ rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus
 
 ```
 === TOUS les fichiers touches dans >= 2 worktrees ===
- 12 worktrees : scripts/nexus_doc.py                 (deja exclu par defaut)
-  5 worktrees : scripts/nexus_test.py                (travail reel plausible, laisse tel quel)
+ 12 worktrees : outillage/nexus_doc.py                 (deja exclu par defaut)
+  5 worktrees : outillage/nexus_test.py                (travail reel plausible, laisse tel quel)
   3 worktrees : scripts/nexus_agent.py                (travail reel plausible, laisse tel quel)
   3 worktrees : scripts/nexus_disjoncteur.py          (travail reel plausible, laisse tel quel)
   2 worktrees : rituels/cablage_reference.json        (confirme genere, voir ci-dessus)
-  2 worktrees : scripts/nexus_conformite.py           (travail reel plausible, laisse tel quel)
+  2 worktrees : outillage/nexus_conformite.py           (travail reel plausible, laisse tel quel)
   2 worktrees : docs/architecture/model-registry.yaml (travail reel plausible, laisse tel quel)
 
 === Recherche specifique des candidats "generes" ===
@@ -388,7 +388,7 @@ rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus
 
 **Non ajoutes, faute de mecanisme d'ecriture confirme et faute d'occurrence mesuree sur cette flotte** : rituels/PROGRESS.md, rituels/BOUSSOLE.md, rituels/BOUSSOLE.csv, rituels/CHECKLIST_COCKPIT.MD. Le contrat de ce depot et un commentaire de nexus_rituel.py ("Meme traitement que PROGRESS.MD : regeneration silencieuse") suggerent qu'ils sont de la meme famille, mais je n'ai pas retrouve, en cherchant dans le code, la ligne qui les ecrit effectivement (recherche par le nom de fichier dans nexus_progres.py/nexus_boussole.py, sans resultat — l'ecriture passe peut-etre par un chemin construit, pas un litteral). Les exclure sur une ressemblance de contrat plutot que sur une ecriture verifiee serait exactement l'erreur inverse que le coordinateur met en garde contre — voir rubrique 6.
 
-**Corrige** : --exclure inclut par defaut, en plus de scripts/nexus_doc.py, les quatre fichiers confirmes (rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json, rituels/CHECKLIST_PROGRESS.md). Nouvelle fonction fichiers_diff(wt, exclure=()) : appelee SANS exclusion quand le diff filtre est vide, elle nomme les fichiers qui ont reellement change — si elle rend une liste non vide, l'exclusion est la SEULE raison du vide, et le message le dit explicitement au lieu de se taire ou de dire "ok".
+**Corrige** : --exclure inclut par defaut, en plus de outillage/nexus_doc.py, les quatre fichiers confirmes (rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json, rituels/CHECKLIST_PROGRESS.md). Nouvelle fonction fichiers_diff(wt, exclure=()) : appelee SANS exclusion quand le diff filtre est vide, elle nomme les fichiers qui ont reellement change — si elle rend une liste non vide, l'exclusion est la SEULE raison du vide, et le message le dit explicitement au lieu de se taire ou de dire "ok".
 
 **Contre-epreuve exigee par le coordinateur, sur les deux worktrees reels, en invocation CLI reelle avec --racine :**
 
@@ -398,7 +398,7 @@ agent-a697c9b31ea2b75e4: 30 lignes - ok
 agent-a9bae5bcacf5d3042: 19 lignes - ok
 ```
 
-APRES (python scripts/nexus_filet.py --racine "C:/local-llm-docker", processus reel) :
+APRES (python outillage/nexus_filet.py --racine "C:/local-llm-docker", processus reel) :
 ```
 agent-a697c9b31ea2b75e4: 13 lignes - ok
 agent-a9bae5bcacf5d3042: vide en modifications non indexees (1 fichier(s) genere(s) ecarte(s) : rituels/cablage_reference.json), MAIS 1 commit(s) non recoltes par ce dry-run (3 fichier(s) touches, main...HEAD)
@@ -408,13 +408,13 @@ exit reel du process : 1
 (stderr : vide)
 ```
 
-a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (rituels/CHECKLIST_LIVRE_VS_CODE.md, epreuves/epreuve_rendu_vide.py, scripts/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
+a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (rituels/CHECKLIST_LIVRE_VS_CODE.md, epreuves/epreuve_rendu_vide.py, outillage/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
 
 ### 4b. REVERSE-TEST — le chemin interdit échoue-t-il proprement ?
 
 Worktree jetable fabriqué dans le scratchpad (`racine_test/`, dépôt git réel avec une branche `main`, un fichier suivi `fichier_suivi.txt`, et un vrai `git worktree add` pour `.claude/worktrees/agent-suppression-test`), dans lequel le fichier suivi est supprimé physiquement (suppression NON indexée, confirmée par un `git diff` brut avant l'épreuve : `deleted file mode 100644`).
 
-Commande (équivalent de `python scripts/nexus_filet.py`, RACINE repointée sur `racine_test`, `sys.argv` sans `--avec-suppressions`) :
+Commande (équivalent de `python outillage/nexus_filet.py`, RACINE repointée sur `racine_test`, `sys.argv` sans `--avec-suppressions`) :
 
 **Sur le code corrigé v2 (encodage + RET505 + commits, AVANT le troisième correctif) :**
 ```
@@ -441,7 +441,7 @@ CODE NON NUL : True
 **Rejouée en invocation CLI réelle**, avec `--racine` (le coordinateur avait noté ne pas avoir pu le faire faute de cette option — voir 4a) :
 
 ```
-$ python scripts/nexus_filet.py --racine "<racine_test>"
+$ python outillage/nexus_filet.py --racine "<racine_test>"
 agent-suppression-test: 9 lignes - refuse suppression [fichier_suivi.txt] (repasser avec --avec-suppressions pour autoriser)
 Refuses (suppressions): 1
 exit reel du process : 1
@@ -496,27 +496,27 @@ Raisons de ne pas proposer VERT malgré trois épreuves vertes :
 Mesuré avec l'outil du dépôt lui-même, `nexus_cablage.py` (après avoir suivi le fichier dans ce worktree pour le rendre visible à l'analyseur — un fichier non suivi est invisible à `git ls-files`, donc à cet outil) :
 
 ```
-$ python scripts/nexus_cablage.py
+$ python outillage/nexus_cablage.py
 Cablage : 1 REGRESSION(S).
-  orphelin       scripts/nexus_filet.py
+  orphelin       outillage/nexus_filet.py
 exit=1
 ```
 
 **Confirmé : orphelin, 0 citant.** Aucun autre fichier du dépôt (hors `.nexus/dossier_agent`, hors documentation) ne nomme `nexus_filet.py` en dehors de lui-même.
 
-Proposition, par argument et par précédent mesuré dans le dépôt — jamais par préférence : `scripts/nexus_rituel.py` câble déjà `nexus_cablage.py` lui-même selon exactement ce schéma (`cablage_tenu`, ligne ~266-280 : `subprocess.run` avec timeout 180 s, `IGNORE` sur timeout/exception, jamais bloquant) et porte même déjà un contrôle voisin mais distinct, `arbres_en_attente` (qui demande à `nexus_worktree.py --lister` si des worktrees traînent — pas s'ils contiennent un travail récoltable). Ajouter un contrôle `("recolte disponible", lambda: recolte_disponible(racine))` au même tableau `controles`, appelant `nexus_filet.py` **en dry-run seulement** (jamais `--appliquer`) et rapportant `MANQUE` dès que `Conflits`, `Erreurs de lecture` ou `Commits non recoltes` est non nul, `OK` sinon :
-- rendrait le fichier `cable` (au sens strict du dépôt : nommé par un mécanisme qui tourne sans qu'on ait à y penser) puisque `nexus_rituel.py` fait partie des `CABLEURS` reconnus (`scripts/nexus_rituel.py` n'est pas lui-même dans `CABLEURS`, mais **le devient** de fait pour tout script qu'il invoque, par le même mécanisme que `nexus_cablage.py` — à vérifier par le tiers plutôt qu'affirmé ici, voir rubrique 6) ;
+Proposition, par argument et par précédent mesuré dans le dépôt — jamais par préférence : `outillage/nexus_rituel.py` câble déjà `nexus_cablage.py` lui-même selon exactement ce schéma (`cablage_tenu`, ligne ~266-280 : `subprocess.run` avec timeout 180 s, `IGNORE` sur timeout/exception, jamais bloquant) et porte même déjà un contrôle voisin mais distinct, `arbres_en_attente` (qui demande à `nexus_worktree.py --lister` si des worktrees traînent — pas s'ils contiennent un travail récoltable). Ajouter un contrôle `("recolte disponible", lambda: recolte_disponible(racine))` au même tableau `controles`, appelant `nexus_filet.py` **en dry-run seulement** (jamais `--appliquer`) et rapportant `MANQUE` dès que `Conflits`, `Erreurs de lecture` ou `Commits non recoltes` est non nul, `OK` sinon :
+- rendrait le fichier `cable` (au sens strict du dépôt : nommé par un mécanisme qui tourne sans qu'on ait à y penser) puisque `nexus_rituel.py` fait partie des `CABLEURS` reconnus (`outillage/nexus_rituel.py` n'est pas lui-même dans `CABLEURS`, mais **le devient** de fait pour tout script qu'il invoque, par le même mécanisme que `nexus_cablage.py` — à vérifier par le tiers plutôt qu'affirmé ici, voir rubrique 6) ;
 - est SANS RISQUE d'écriture : le dry-run ne modifie jamais rien, contrairement à `--appliquer` ;
 - résout directement le défaut nommé dans la mission : *« il était orphelin, appelé par personne, donc invisible »* — le rituel tourne à chaque tour (§0.2 du contrat), rendant l'existence de l'outil et ses trouvailles impossibles à manquer.
 
-Alternative plus légère, cumulable : une sous-commande `nexus recolte` sur `scripts/nexus.ps1` (déjà le point d'entrée unique et l'un des trois `CABLEURS` reconnus), invoquant `python scripts/nexus_filet.py` en dry-run par défaut. Rendrait le fichier `cable` sans aucune automaticité — un humain doit taper la commande.
+Alternative plus légère, cumulable : une sous-commande `nexus recolte` sur `scripts/nexus.ps1` (déjà le point d'entrée unique et l'un des trois `CABLEURS` reconnus), invoquant `python outillage/nexus_filet.py` en dry-run par défaut. Rendrait le fichier `cable` sans aucune automaticité — un humain doit taper la commande.
 
 **Ce que je n'ai pas fait, délibérément :** je n'ai câblé ni l'un ni l'autre. Inventer un appelant pour faire taire le cliquet serait exactement le bricolage que le contrat interdit (§0.6) ; la décision — et le risque qu'elle engage si `nexus_rituel.py` tourne toutes les 5 minutes et appelle git 43 fois à chaque fois — revient à l'orchestrateur.
 
 ## 6. Non vérifié par l'auteur
 
 ```
-[NON VERIFIE] Que scripts/nexus_rituel.py devienne effectivement "cableur" pour tout ce qu'il
+[NON VERIFIE] Que outillage/nexus_rituel.py devienne effectivement "cableur" pour tout ce qu'il
               invoque, par le mecanisme de nexus_cablage.py -- affirme par analogie avec
               cablage_tenu/outillage_tenu, jamais mesure directement sur nexus_filet.py lui-meme
               (impossible sans cabler pour de vrai, ce que je me suis interdit).
@@ -591,7 +591,7 @@ Alternative plus légère, cumulable : une sous-commande `nexus recolte` sur `sc
 ## 7. Effets de bord
 
 ```
-scripts/nexus_filet.py    modifié dans CE worktree seulement (commit ebee376), jamais sur main,
+outillage/nexus_filet.py    modifié dans CE worktree seulement (commit ebee376), jamais sur main,
                            jamais dans un autre worktree agent-*
 
 fichier.txt                cree PAR ERREUR a la racine de ce worktree pendant une reproduction

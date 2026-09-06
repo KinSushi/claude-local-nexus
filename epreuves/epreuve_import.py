@@ -11,7 +11,7 @@ def run(args):
         return -1, "", str(e)
 
 def main():
-    tool = os.path.join("scripts", "nexus_import.py")
+    tool = os.path.join("outillage", "nexus_import.py")
     if not os.path.exists(tool):
         print(f"Outil introuvable : {tool}")
         sys.exit(42)

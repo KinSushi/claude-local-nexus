@@ -32,7 +32,7 @@ recording the change », sans mecanisme associe. `compatible_models` par
 prompt : zero occurrence hors cette note.
 
 Ce que le depot fait a la place, aujourd'hui : les consignes systeme sont
-des fichiers plats sous `competences/` (verifie : `competences/
+des fichiers plats sous `outillage/competences/` (verifie : `outillage/competences/
 repondre-court.txt` existe et est charge dynamiquement par
 `scripts/nexus_agent.py` via `charger_competence()`, lignes 1322-1440), sans
 version ni liste de modeles compatibles. C'est un registre de fait, mais

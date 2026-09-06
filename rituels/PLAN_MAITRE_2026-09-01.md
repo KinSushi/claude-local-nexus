@@ -233,7 +233,7 @@ Le partage naturel, et il découle des mesures ci-dessus :
 **Par lots parallèles délégués**, jamais à la main :
 
     python scripts/nexus_agent.py --lot lot.json --sortie rendus.jsonl --parallele N
-    python scripts/nexus_appliquer.py rendus.jsonl <nom-tache> <fichier-cible>
+    python outillage/nexus_appliquer.py rendus.jsonl <nom-tache> <fichier-cible>
 
 Quatre règles apprises **ce soir, en usage** :
 

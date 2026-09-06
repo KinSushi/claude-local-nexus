@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test harness for scripts/nexus_libs.py
+Test harness for outillage/nexus_libs.py
 """
 
 import sys, json, subprocess, tempfile, pathlib

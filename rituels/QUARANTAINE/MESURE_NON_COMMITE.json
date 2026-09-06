@@ -1,7 +1,7 @@
 [
  {
   "agent": "agent-a03ce1f4953606cae",
-  "fichier": "competences/relire-code.txt",
+  "fichier": "outillage/competences/relire-code.txt",
   "plus": 1,
   "moins": 1,
   "etat": "MODIFIE",
@@ -19,7 +19,7 @@
  },
  {
   "agent": "agent-a03ce1f4953606cae",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -46,7 +46,7 @@
  },
  {
   "agent": "agent-a084add637786a142",
-  "fichier": "scripts/nexus_quarantaine.py",
+  "fichier": "outillage/nexus_quarantaine.py",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -55,7 +55,7 @@
  },
  {
   "agent": "agent-a0b07e433b871704d",
-  "fichier": "scripts/nexus_charge.py",
+  "fichier": "outillage/nexus_charge.py",
   "plus": 122,
   "moins": 4,
   "etat": "MODIFIE",
@@ -64,7 +64,7 @@
  },
  {
   "agent": "agent-a0b07e433b871704d",
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "plus": 4,
   "moins": 0,
   "etat": "MODIFIE",
@@ -100,7 +100,7 @@
  },
  {
   "agent": "agent-a0b2638a810ecfdd4",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -163,7 +163,7 @@
  },
  {
   "agent": "agent-a13026bc69d52eaf0",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -226,7 +226,7 @@
  },
  {
   "agent": "agent-a268d2e8fe1dc957c",
-  "fichier": "competences/arbitrer.txt",
+  "fichier": "outillage/competences/arbitrer.txt",
   "plus": 36,
   "moins": 0,
   "etat": "MODIFIE",
@@ -307,7 +307,7 @@
  },
  {
   "agent": "agent-a3666d882218a276d",
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "plus": 10,
   "moins": 0,
   "etat": "MODIFIE",
@@ -343,7 +343,7 @@
  },
  {
   "agent": "agent-a3a373ce61c0f6d6f",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -415,7 +415,7 @@
  },
  {
   "agent": "agent-a54e8dae802fa4a1b",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -469,7 +469,7 @@
  },
  {
   "agent": "agent-a697c9b31ea2b75e4",
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "plus": 2,
   "moins": 0,
   "etat": "MODIFIE",
@@ -487,7 +487,7 @@
  },
  {
   "agent": "agent-a6d8fb7354cc50b30",
-  "fichier": "scripts/nexus_conformite.py",
+  "fichier": "outillage/nexus_conformite.py",
   "plus": 124,
   "moins": 45,
   "etat": "MODIFIE",
@@ -496,7 +496,7 @@
  },
  {
   "agent": "agent-a6d8fb7354cc50b30",
-  "fichier": "scripts/nexus_socle.py",
+  "fichier": "outillage/nexus_socle.py",
   "plus": 47,
   "moins": 72,
   "etat": "MODIFIE",
@@ -505,7 +505,7 @@
  },
  {
   "agent": "agent-a6d8fb7354cc50b30",
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "plus": 23,
   "moins": 0,
   "etat": "MODIFIE",
@@ -613,7 +613,7 @@
  },
  {
   "agent": "agent-a8a7d862bd3f37091",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -622,7 +622,7 @@
  },
  {
   "agent": "agent-a8ddf6cc4a6aec704",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -631,7 +631,7 @@
  },
  {
   "agent": "agent-a8ddf6cc4a6aec704",
-  "fichier": "scripts/nexus_generate.py",
+  "fichier": "outillage/nexus_generate.py",
   "plus": 26,
   "moins": 6,
   "etat": "MODIFIE",
@@ -694,7 +694,7 @@
  },
  {
   "agent": "agent-a925f543aaa6e4d34",
-  "fichier": "scripts/nexus_test.py",
+  "fichier": "outillage/nexus_test.py",
   "plus": 1,
   "moins": 0,
   "etat": "MODIFIE",
@@ -757,7 +757,7 @@
  },
  {
   "agent": "agent-a9fe6d8711708973c",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 22,
   "moins": 2,
   "etat": "MODIFIE",
@@ -811,7 +811,7 @@
  },
  {
   "agent": "agent-ab941411343b29376",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -829,7 +829,7 @@
  },
  {
   "agent": "agent-abbea6f5f883f4469",
-  "fichier": "scripts/nexus_appliquer.py",
+  "fichier": "outillage/nexus_appliquer.py",
   "plus": 37,
   "moins": 5,
   "etat": "MODIFIE",
@@ -847,7 +847,7 @@
  },
  {
   "agent": "agent-abbea6f5f883f4469",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -856,7 +856,7 @@
  },
  {
   "agent": "agent-abbea6f5f883f4469",
-  "fichier": "scripts/nexus_essaim.py",
+  "fichier": "outillage/nexus_essaim.py",
   "plus": 17,
   "moins": 1,
   "etat": "MODIFIE",
@@ -1090,7 +1090,7 @@
  },
  {
   "agent": "agent-acb34a9bbc8199d49",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -1153,7 +1153,7 @@
  },
  {
   "agent": "agent-ad3f0e991a26eb4ce",
-  "fichier": "scripts/nexus_doc.py",
+  "fichier": "outillage/nexus_doc.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -1360,7 +1360,7 @@
  },
  {
   "agent": "agent-afe13c9acd701d299",
-  "fichier": "scripts/nexus_conformite.py",
+  "fichier": "outillage/nexus_conformite.py",
   "plus": 10,
   "moins": 2,
   "etat": "MODIFIE",
@@ -1369,7 +1369,7 @@
  },
  {
   "agent": "agent-afe13c9acd701d299",
-  "fichier": "scripts/nexus_validate.py",
+  "fichier": "outillage/nexus_validate.py",
   "plus": 5,
   "moins": 1,
   "etat": "MODIFIE",

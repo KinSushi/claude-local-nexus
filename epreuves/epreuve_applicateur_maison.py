@@ -2,7 +2,7 @@
 
 Cette epreuve protege le depot contre les scripts maison qui
 appliquent des patches sans passer par l'outil officiel
-scripts/nexus_appliquer.py. Elle detecte les fichiers .py du
+outillage/nexus_appliquer.py. Elle detecte les fichiers .py du
 repertoire scripts qui contiennent a la fois le marqueur de
 patch <<<AVANT>>> et un appel d'ecriture sur disque (write_text ou
 write). Les fichiers exclus de la verification sont :

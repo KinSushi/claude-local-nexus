@@ -95,7 +95,7 @@ $lg = $log.Replace("'", "''")
 $drapeau = if ($Simulation) { " --simulation" } else { "" }
 $commande = "Set-Location '$rac'; " +
             "Write-Output ('=== ' + (Get-Date -Format s) + ' ==='); " +
-            "& '$py' scripts/nexus_vitrine.py$drapeau"
+            "& '$py' outillage/nexus_vitrine.py$drapeau"
 $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
              "-Command ""& { $commande } *>> '$lg'"""
 
@@ -128,6 +128,6 @@ Register-ScheduledTask -TaskName $NomTache -Trigger $trigger -Action $action `
 Write-Host "Tache $NomTache enregistree : toutes les $Heures heures ($mode)." -ForegroundColor Green
 Write-Host "  Journal    : $log" -ForegroundColor Gray
 Write-Host "  Remote     : $remote" -ForegroundColor Gray
-Write-Host "  A la main  : python scripts/nexus_vitrine.py --simulation" -ForegroundColor Gray
+Write-Host "  A la main  : python outillage/nexus_vitrine.py --simulation" -ForegroundColor Gray
 Write-Host "  Supprimer  : .\scripts\Register-NexusVitrine.ps1 -Supprimer" -ForegroundColor Gray
 exit 0

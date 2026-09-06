@@ -35,7 +35,7 @@ import tempfile
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANCEUR = os.path.join(RACINE, "scripts", "nexus_agent.py")
-VERROU = os.path.join(RACINE, "scripts", "nexus_verrou_machine.py")
+VERROU = os.path.join(RACINE, "outillage", "nexus_verrou_machine.py")
 CODE_REFUS = 75
 
 

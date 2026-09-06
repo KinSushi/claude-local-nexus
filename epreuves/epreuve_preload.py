@@ -3,7 +3,7 @@ import os
 import sys
 
 def run_test(args):
-    tool = os.path.join("scripts", "nexus_preload.py")
+    tool = os.path.join("outillage", "nexus_preload.py")
     cmd = [sys.executable, tool] + args
     try:
         res = subprocess.run(
@@ -19,7 +19,7 @@ def run_test(args):
         return -2, "", str(e)
 
 def main():
-    tool_path = os.path.join("scripts", "nexus_preload.py")
+    tool_path = os.path.join("outillage", "nexus_preload.py")
     if not os.path.exists(tool_path):
         print(f"Tool missing: {tool_path}")
         sys.exit(99)

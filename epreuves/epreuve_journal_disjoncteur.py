@@ -29,7 +29,7 @@ CAS = [
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    chemin = os.path.join(RACINE, "scripts", "nexus_disjoncteur.py")
+    chemin = os.path.join(RACINE, "outillage", "nexus_disjoncteur.py")
     spec = importlib.util.spec_from_file_location("_dj", chemin)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

@@ -23,7 +23,7 @@ def get_file_stats(base_dir):
     return stats
 
 def run_nexus_corpus(root, extensions=None, max_depth=None, json_output=False):
-    cmd = [sys.executable, 'scripts/nexus_corpus.py', str(root)]
+    cmd = [sys.executable, 'outillage/nexus_corpus.py', str(root)]
     if extensions:
         cmd.extend(['-e', extensions])
     if max_depth is not None:
@@ -103,8 +103,8 @@ def check_file_integrity(stdout, stderr):
     return not stderr
 
 def main():
-    if not os.path.exists('scripts/nexus_corpus.py'):
-        print("[FAIL] Fichier de l'outil introuvable: scripts/nexus_corpus.py")
+    if not os.path.exists('outillage/nexus_corpus.py'):
+        print("[FAIL] Fichier de l'outil introuvable: outillage/nexus_corpus.py")
         sys.exit(1)
 
     test_cases = [

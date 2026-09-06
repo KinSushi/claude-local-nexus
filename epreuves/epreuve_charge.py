@@ -14,7 +14,7 @@ import json
 import time
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCRIPT = os.path.join(RACINE, "scripts", "nexus_charge.py")
+SCRIPT = os.path.join(RACINE, "outillage", "nexus_charge.py")
 
 def _dire(ok, nom, detail):
     print("%s %s : %s" % ("[OK  ]" if ok else "[RATE]", nom, detail))

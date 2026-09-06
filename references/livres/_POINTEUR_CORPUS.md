@@ -59,7 +59,7 @@ with open(rayon / "symbols.jsonl", "rb") as f:
 
 **Coût mesuré : 2 914 octets sur 26 161 265** — 0,011 % du corpus pour un chapitre entier.
 
-**Le rayon `code`** porte des symboles : `python scripts/nexus_doc.py <symbole>`.
+**Le rayon `code`** porte des symboles : `python outillage/nexus_doc.py <symbole>`.
 
 ## Entrées de premier niveau
 

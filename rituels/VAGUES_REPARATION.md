@@ -8,7 +8,7 @@
 > cinq compteurs du dépôt ont été trouvés périmés le même soir.
 >
 > Ce fichier n'est **pas généré**. `rituels/CHECKLIST_PROGRESS.md` l'est, par
-> `scripts/nexus_checklist_progres.py` — l'éditer à la main serait écrasé au passage suivant.
+> `outillage/nexus_checklist_progres.py` — l'éditer à la main serait écrasé au passage suivant.
 
 ---
 
@@ -139,7 +139,7 @@ positif sur un import aliasé — `ast.alias.name` n'était pas visité), plus d
 Mesuré, c'est l'inverse : **un rouge permanent**.
 
 ```
-python scripts/nexus_test.py --only vide      (AVANT)
+python outillage/nexus_test.py --only vide      (AVANT)
   [FAIL] rendu vide   aucun cas rendu par l'epreuve (code 2)
   Reussis : 0   Echecs : 1                    EXIT=1
 ```
@@ -203,7 +203,7 @@ lançant la copie de l'arbre principal, ce qui ferait juger — et écrire — d
 
 **Un contrôle de validation ÉCRIT dans un fichier suivi par git.** `nexus_conformite` appelle
 `nexus_cablage.py` en mode verdict, qui « resserre » `rituels/cablage_reference.json`
-(`nexus_cablage.py:426-427`) : il en a retiré `scripts/nexus_epreuve_vide.py` de `preuve_seule`,
+(`nexus_cablage.py:426-427`) : il en a retiré `outillage/nexus_epreuve_vide.py` de `preuve_seule`,
 **figeant dans la référence le faux gain** décrit au §2.2 — celui où une épreuve compte comme
 appelant d'un fichier de production. Détecté par `git diff`, restauré par `git checkout`.
 
@@ -1454,7 +1454,7 @@ RAM DISQUE »*, *« ADAPTATIF »*.
 
 #### Ce qui est surveillé aujourd'hui
 
-`scripts/nexus_charge.py` — sortie réelle mesurée :
+`outillage/nexus_charge.py` — sortie réelle mesurée :
 
 ```
 RAM Libre: 23.41 Go / Modeles residents: 20.45 Go / Disponible pour inference: 43.86 Go / Totale: 61.62 Go
@@ -1900,7 +1900,7 @@ Les quatre bloquants, et **aucun ne concerne le code réparé** :
 
 ### La cause exacte, lue dans le code réel
 
-`scripts/nexus_conformite.py:791-803`. Le contrôle est bien raisonné : il
+`outillage/nexus_conformite.py:791-803`. Le contrôle est bien raisonné : il
 n'assimile pas l'absence à une panne. Il cherche un **témoin** pour distinguer
 « jamais mesuré » de « mesuré puis effacé » :
 
@@ -2420,7 +2420,7 @@ Ruff écrit `All checks passed!` sur `stdout` **même quand il ne trouve rien**.
 Observé mot pour mot :
 
 ```
-APPLIQUE : 2 bloc(s) dans scripts/nexus_extraire_livres.py
+APPLIQUE : 2 bloc(s) dans outillage/nexus_extraire_livres.py
 [!] Violations detectees :
 All checks passed!
 ```
@@ -2500,7 +2500,7 @@ point d'entrée — une commande de rafraîchissement du corpus — et non un
 raccourci posé à la hâte.
 
 **3. Outillage : `RET505 0 -> 1` et les alertes PowerShell.** Le `RET505` est
-dans `scripts/nexus_filet.py:91`, fichier jamais touché cette nuit et qui porte
+dans `outillage/nexus_filet.py:91`, fichier jamais touché cette nuit et qui porte
 **aussi** l'orphelin de câblage. Ni diagnostiqué ni corrigé ici : il revient à
 un tiers.
 
@@ -2532,7 +2532,7 @@ qu'un audit qui lit bien.**
 
 Trouvé le 2026-09-03, en cherchant pourquoi le cliquet de câblage restait rouge.
 
-### Ce que `scripts/nexus_filet.py` fait
+### Ce que `outillage/nexus_filet.py` fait
 
 Il récolte le travail des agents depuis leurs worktrees et l'applique à l'arbre
 principal. Ses garde-fous sont écrits après un incident réel :
@@ -2558,7 +2558,7 @@ récolte automatique des worktrees » comme encore ouverte — alors que l'outil
 ### Le défaut, mesuré en s'en servant
 
 ```
-$ python scripts/nexus_filet.py
+$ python outillage/nexus_filet.py
 code de sortie : 1
 UnicodeDecodeError: 'charmap' codec can't decode byte 0x9d in position 2142
 UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 7297
@@ -2604,7 +2604,7 @@ câblage sont dans le même mandat, la décision restant à l'orchestrateur.
 
 Mesuré le 2026-09-03, en croisant son tableau avec l'état git réel.
 
-`scripts/nexus_filet.py:41` :
+`outillage/nexus_filet.py:41` :
 
 ```python
 cmd = ['git', '-C', str(wt), 'diff', '--', '.'] + excl_args
@@ -2799,7 +2799,7 @@ Ce que ces diffs contiennent réellement :
 | worktree | contenu du diff |
 | --- | --- |
 | `a9bae5bc` | `rituels/cablage_reference.json` **et rien d'autre** — horodatage porté à `2026-09-03T04:57:26`, `nexus_epreuve_vide.py` retiré de `preuve_seule` |
-| `a697c9b3` | le même fichier (horodaté `01:41:37`) **plus** 2 vraies lignes dans `scripts/nexus_test.py` |
+| `a697c9b3` | le même fichier (horodaté `01:41:37`) **plus** 2 vraies lignes dans `outillage/nexus_test.py` |
 
 `rituels/cablage_reference.json` est **la ligne de base du cliquet de câblage**.
 Elle est réécrite en effet de bord par toute passe de validation lancée dans un
@@ -2817,7 +2817,7 @@ contrôle. Son vrai correctif est dans son commit — que `commits_non_vus`
 signale désormais.
 
 **Le remède est dans le code de l'outil lui-même** : `--exclure` a déjà pour
-défaut `scripts/nexus_doc.py`, et sa docstring dit pourquoi — *« des copies
+défaut `outillage/nexus_doc.py`, et sa docstring dit pourquoi — *« des copies
 posées par l'orchestrateur et non du travail d'agent »*.
 `rituels/cablage_reference.json` est rigoureusement la même catégorie : un
 fichier **généré**.
@@ -3017,11 +3017,11 @@ Deux réserves, qui ne bloquent pas mais restent ouvertes :
 
 ## 32. LE CONTRÔLE LOI 1 M'ACCUSE, ET IL A RAISON
 
-Après intégration du filet, `python scripts/nexus_loi1.py` :
+Après intégration du filet, `python outillage/nexus_loi1.py` :
 
 ```
 Fichier                        Retenues Deleguees Manuel
-scripts/nexus_filet.py              194         6    188
+outillage/nexus_filet.py              194         6    188
 
 Violation : 188 lignes a la main en plus que la reference (0).
 ```
@@ -3231,15 +3231,15 @@ sous-processus là où la garde l'avait bloqué.
 ### La démonstration, sur le même fichier
 
 ```
-$ Edit scripts/nexus_generate.py
+$ Edit outillage/nexus_generate.py
   -> code 2, DENY
-     « Le chemin 'scripts/nexus_generate.py' est refuse car il s'agit d'un
+     « Le chemin 'outillage/nexus_generate.py' est refuse car il s'agit d'un
        fichier code source en production. Regle : tu ne produis pas, tu
        orchestres et tu audites. »
      + la voie nommee (nexus_agent.py puis nexus_appliquer.py)
      + l echappatoire nommee (NEXUS_PRODUCTION_LIBRE=1)
 
-$ echo casse > scripts/nexus_generate.py      (via Bash)
+$ echo casse > outillage/nexus_generate.py      (via Bash)
   -> code 0, sortie VIDE. Autorise.
 ```
 
@@ -3276,7 +3276,7 @@ garde présente sur TOUS les chemins.*
 
 ### Pourquoi le remède n'est PAS « bloquer les écritures Bash »
 
-`scripts/nexus_appliquer.py` est la voie **sanctionnée** pour écrire un fichier
+`outillage/nexus_appliquer.py` est la voie **sanctionnée** pour écrire un fichier
 de production — c'est elle que la garde nomme dans son propre message de
 refus — et elle écrit depuis un processus lancé par Bash. Interdire Bash
 casserait le chemin correct tout en laissant intacts vingt autres détours.
@@ -3307,7 +3307,7 @@ lignes contenant « [worktree-agent- »                                  : 45
 worktrees d'agents reellement presents sur le disque                   : 45
 ```
 
-`scripts/nexus_rituel.py`, dans `arbres_en_attente()` :
+`outillage/nexus_rituel.py`, dans `arbres_en_attente()` :
 
 ```python
 if "[agent/" not in texte:
@@ -3323,7 +3323,7 @@ il l'a rendu à chaque tour de la nuit.
 
 | créateur | nom de branche |
 | --- | --- |
-| `scripts/nexus_worktree.py:138` | `agent/<nom>` |
+| `outillage/nexus_worktree.py:138` | `agent/<nom>` |
 | l'isolation du harnais (`isolation: worktree`) | `worktree-agent-<id>` |
 
 Le contrôle lit la convention du premier — et son commentaire l'explique
@@ -3380,7 +3380,7 @@ Trouvé le 2026-09-03, en constatant qu'un contrôle rouge deux heures plus tôt
 ### La mesure
 
 ```
-$ python scripts/nexus_loi1.py --base <X>
+$ python outillage/nexus_loi1.py --base <X>
 
   base HEAD~1      code 0   violation :   0     <- ce que le rituel appelle
   base HEAD~5      code 0   violation :   0
@@ -3388,7 +3388,7 @@ $ python scripts/nexus_loi1.py --base <X>
   base f364f40     code 1   violation : 853     <- debut de la session
 ```
 
-`scripts/nexus_loi1.py:98` :
+`outillage/nexus_loi1.py:98` :
 
 ```python
 parser.add_argument("--base", default="HEAD~1", help="Commit de base")
@@ -3460,7 +3460,7 @@ Sixième du même genre, et le plus nu : il ne mesure pas la mauvaise chose, il
 
 ### La preuve, en trois lignes
 
-`scripts/nexus_rituel.py`, liste des contrôles :
+`outillage/nexus_rituel.py`, liste des contrôles :
 
 ```python
 ("progres",  lambda: progres(racine)),
@@ -3535,7 +3535,7 @@ chantier à part entière et il revient à l'opérateur de l'ouvrir.
 Septième du même genre, et le plus net.
 
 ```
-$ python scripts/nexus_redaction.py
+$ python outillage/nexus_redaction.py
 Commits de code: 56
 Appels delegues: 976
 Rapport appels/commit: 17.43
@@ -3758,7 +3758,7 @@ Mes quatre poses ont **ajouté deux violations** :
 
 ```
 ruff : SIM105 21 -> 22
-scripts/nexus_appliquer.py:32:20 : SIM115
+outillage/nexus_appliquer.py:32:20 : SIM115
 ```
 
 Je ne les ai pas vues en vérifiant. C'est le **cliquet d'outillage** qui me les
@@ -3990,7 +3990,7 @@ Constat de départ : `qwen3-coder:30b` et `codestral:22b` tournaient à
 dur, et j'allais l'écrire.
 
 Vérifié : `litellm_config.yaml` porte **70** valeurs de `num_ctx`, et
-`scripts/nexus_generate.py:local_context()` les produit. Sa docstring dit
+`outillage/nexus_generate.py:local_context()` les produit. Sa docstring dit
 exactement le contraire de ce que je m'apprêtais à affirmer :
 
 > *« Elle suit le matériel plutôt qu'une constante. […] Avec une VRAM dédiée,

@@ -1,0 +1,49 @@
+Verifier chaque premisse fournie avant de l'utiliser dans le raisonnement.
+Ne jamais generer de valeur numerique qui n'a pas ete explicitement fournie.
+Nommer clairement le fait ou la donnee sur lequel repose chaque verdict.
+Si l'information necessaire est absente, retourner le statut INDETERMINE.
+Contredire l'utilisateur lorsque les faits connus le justifient, sans chercher a lui plaire.
+Expliquer la contrepartie ou le compromis associe a chaque decision prise.
+Ne pas supposer l'existence d'un artefact sans l'avoir constate.
+Ne pas postuler une exigence du systeme d'exploitation sans l'avoir verifiee.
+Ne pas inventer de mesures chiffrees ; se limiter aux donnees recues.
+Chaque affirmation doit etre appuyee par une reference a la source ou a la donnee.
+Si plusieurs options sont possibles, presenter leurs contreparties respectives.
+En cas d'equilibre entre avantages et inconvenients, choisir l'option dont les faits sont les plus solides.
+Documenter le raisonnement de maniere concise et factuelle.
+
+---
+VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
+
+CABLAGE - VERIFIE. `lister_competences()` (scripts/nexus_agent.py:1303) lit
+`outillage/competences/*.txt` par le nom de fichier ; l'option `--competence`
+(scripts/nexus_agent.py:1353-1355) l'expose. Preuve d'execution :
+
+    $ python scripts/nexus_agent.py --help | grep -A2 competence
+    --competence COMPETENCE
+                          Consigne systeme prise dans outillage/competences/. Disponibles
+                          : arbitrer, relire-code, repondre-court
+
+"arbitrer" apparait bien dans la liste rendue par le vrai script, sur ce
+depot, a cette date.
+
+CONTENU - JUGE COHERENT, aucune contradiction interne trouvee. La regle 4
+("statut INDETERMINE" si l'information manque) n'est pas un mot invente pour
+l'occasion : c'est une convention reellement consommee ailleurs dans le
+depot -- `scripts/nexus_valide.py:437` (`VERDICT = re.compile(r"\b(REGRESSION|
+TRAITE|INDETERMINE)\b")`) et `scripts/nexus_capability.py:543`
+(`print("INDETERMINE : " + motif)`). La regle 4 (retourner INDETERMINE face a
+une information absente) et la regle 12 (choisir l'option aux faits les plus
+solides en cas d'equilibre) ne se contredisent pas : la premiere couvre
+l'absence de donnee, la seconde l'egalite entre options connues -- deux
+situations distinctes.
+
+A comparer avec le defaut deja prouve par execution dans
+`outillage/competences/relire-code.txt` (hors perimetre de cet audit) : sa regle 12
+interdit toute affirmation sans execution alors que ses regles 3-4 exigent
+une analyse statique -- une contradiction reelle, absente ici.
+
+NON VERIFIABLE : le respect effectif de ces 13 regles par un modele du banc
+lors d'un usage reel n'a pas ete mesure dans cette passe (aucun appel
+`--competence arbitrer` execute contre une tache reelle) ; seul le cablage et
+la coherence textuelle ont ete controles.

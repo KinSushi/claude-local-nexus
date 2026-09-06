@@ -106,7 +106,7 @@ Quand la latence prime sur la confidentialité, demander
 ## 1️⃣bis Les compétences
 *Une consigne système réutilisable, désignée par son nom.*
 
-Les fichiers vivent dans `competences/` à la racine de la plateforme : un
+Les fichiers vivent dans `outillage/competences/` à la racine de la plateforme : un
 fichier `.txt` par compétence, une règle par ligne.
 
 | Nom | Ce qu'elle impose |
@@ -128,7 +128,7 @@ Un nom inconnu affiche la liste des noms disponibles et rend le code 1.
 
 Les compétences appartiennent à la **plateforme** : un projet tiers qui
 appelle le script en hérite sans rien installer. Pour en ajouter une, dépose
-un fichier `.txt` dans `competences/` — aucun code à modifier.
+un fichier `.txt` dans `outillage/competences/` — aucun code à modifier.
 
 Ce que cela vaut, mesuré. Sur un piège réel — un découpage PowerShell
 `$Reste[1..($Reste.Count-1)]` qui, sur un tableau d'un seul élément, renvoie
@@ -144,7 +144,7 @@ système réduit un type d'erreur, elle ne rend pas le modèle plus capable.
 *Le banc produit, l’outil applique.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_patch.py" `
+python "C:/local-llm-docker/outillage/nexus_patch.py" `
     --cible src/module.py `
     --consigne brief.md
 ```
@@ -181,7 +181,7 @@ compte, relancez.
 *Audit + correction + vérification en parallèle.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_essaim.py" `
+python "C:/local-llm-docker/outillage/nexus_essaim.py" `
     --cibles a.py b.py c.ps1 `
     --plans deux `
     --parallele 4
@@ -268,7 +268,7 @@ mieux ne rien affirmer que répéter une comparaison qui ne tient pas.
 **Le tuyau.** Un troisième piège, celui-ci sur la *lecture* de la mesure :
 
 ```bash
-timeout 600 python scripts/nexus_releve.py 2>&1 | tail -8   # NON
+timeout 600 python outillage/nexus_releve.py 2>&1 | tail -8   # NON
 ```
 
 Deux défauts en une ligne. Le code de sortie observé est celui de `tail`, pas
@@ -281,7 +281,7 @@ Observé ici : une relève expirée a rendu « code 0 » et zéro ligne. Rien ne
 distinguait ce cas d'une relève qui n'aurait eu rien à dire.
 
 ```bash
-timeout 1500 python -u scripts/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
+timeout 1500 python -u outillage/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
 ```
 
 `-u` désactive le buffer, la redirection remplace le tuyau, et le `$?` lu
@@ -293,7 +293,7 @@ juste après porte enfin sur Python.
 *Découverte automatique + plusieurs essaims concurrents.*
 
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_ruche.py" `
+python "C:/local-llm-docker/outillage/nexus_ruche.py" `
     --essaims 2 `
     --taille-lot 3 `
     --plans cloud
@@ -307,7 +307,7 @@ python "C:/local-llm-docker/scripts/nexus_ruche.py" `
 
 ## 📊 Mesurer ce que cela rapporte  
 ```powershell
-python "C:/local-llm-docker/scripts/nexus_savings.py" `
+python "C:/local-llm-docker/outillage/nexus_savings.py" `
     --jours 7
 ```
 Affiche la part de travail déléguée et le coût évité. **À lancer dès le premier jour** d’un nouveau projet ; sans mesure initiale, on ne sait jamais si le dispositif tient ses promesses.

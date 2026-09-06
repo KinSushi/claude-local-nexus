@@ -10,7 +10,7 @@ CODE_OUTIL_ABSENT = 127
 CODE_ECHEC_TEST = 1
 
 def verifier_existence_outil():
-    chemin = Path("scripts/nexus_secours.py")
+    chemin = Path("outillage/nexus_secours.py")
     if not chemin.exists():
         print(f"[ERREUR] Outil introuvable : {chemin.absolute()}")
         return False
@@ -20,7 +20,7 @@ def lister_fichiers(repertoire):
     return {f for f in repertoire.iterdir() if f.is_file()}
 
 def executer_test(args, timeout=90, capture_sortie=True):
-    cmd = [sys.executable, "scripts/nexus_secours.py"] + args
+    cmd = [sys.executable, "outillage/nexus_secours.py"] + args
     try:
         resultat = subprocess.run(
             cmd,

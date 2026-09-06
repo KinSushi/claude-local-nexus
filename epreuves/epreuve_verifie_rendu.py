@@ -5,7 +5,7 @@ def make_file(path, content):
         f.write(content)
 
 def run_tool(file_path, extra_args=None):
-    cmd = [sys.executable, os.path.join('scripts', 'nexus_verifie_rendu.py'), file_path]
+    cmd = [sys.executable, os.path.join('outillage', 'nexus_verifie_rendu.py'), file_path]
     if extra_args:
         cmd.extend(extra_args)
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

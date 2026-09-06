@@ -33,6 +33,15 @@ import shutil
 import sys
 import tempfile
 
+# Les modules eprouves vivent dans scripts/ ET dans outillage/ depuis le
+# rangement du 2026-09-06. On pose les DEUX, derives de __file__ : un
+# chemin absolu casserait le jour ou le depot bouge.
+for _d in ("scripts", "outillage"):
+    _p = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), _d)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 from nexus_ingerer import decouper_markdown, ecrire_corpus  # noqa: E402

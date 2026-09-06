@@ -92,7 +92,7 @@ Ne jamais charger `symbols.jsonl` en entier.
 Le rayon `code/` porte des **symboles**, donc il est déjà atteignable :
 
 ```powershell
-python scripts/nexus_doc.py run_self_improvement_loop
+python outillage/nexus_doc.py run_self_improvement_loop
 ```
 
 ---
@@ -121,8 +121,8 @@ ressource*.
 Ce corpus-là est distinct, et il a son propre accès :
 
 ```powershell
-python scripts/nexus_doc.py subprocess.run      # 166 507 symboles, ~280 jetons par consultation
-python scripts/nexus_doc.py --paquets           # la liste des 63
+python outillage/nexus_doc.py subprocess.run      # 166 507 symboles, ~280 jetons par consultation
+python outillage/nexus_doc.py --paquets           # la liste des 63
 ```
 
 `MetaTrader5 · arch · catboost · duckdb · hmmlearn · hypothesis · lifelines · lightgbm ·

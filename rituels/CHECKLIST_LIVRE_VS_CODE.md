@@ -310,7 +310,7 @@ sortie vaut 1 quoi qu il arrive.
 **La faute est chez l APPELANT, pas dans l outil.** Sans argument, l outil
 refuse proprement au sens du contrat 0.1.4.1 : code 2, `Usage:
 nexus_epreuve_vide.py <path>...` sur stderr, rien sur stdout, aucun effet de
-bord (`scripts/nexus_epreuve_vide.py:93-95`). Mais `jouer_epreuve_python`
+bord (`outillage/nexus_epreuve_vide.py:93-95`). Mais `jouer_epreuve_python`
 (`nexus_test.py:2801-2859`) lance `[sys.executable, epreuve]` SANS argument
 (ligne 2840) et ne lit que les lignes `[OK  ]` / `[RATE]` (ligne 2850), un
 contrat que cet outil ne parle pas. Lui passer `scripts` n aurait rien
@@ -330,17 +330,17 @@ l outil lui-meme n est PAS modifie) :
   2, usage, rien sur stdout, rien d ecrit), temoin positif (une epreuve muette
   est SIGNALEE, code 1), epreuve saine (code 0), epreuve cassee (signal sans
   traceback), fichier hors motif (ignore) ;
-* `scripts/nexus_test.py:1388-1394` : la cle `vide` joue `epreuve_rendu_vide.py`
+* `outillage/nexus_test.py:1388-1394` : la cle `vide` joue `epreuve_rendu_vide.py`
   au lieu de l outil.
 
 **Preuves par effet, toutes EXECUTEES dans le worktree :**
 
 ```
 python epreuves/epreuve_rendu_vide.py          5 [OK  ]             exit 0
-python scripts/nexus_test.py --only vide      5 [PASS], Echecs 0   exit 0   (avant : 1 FAIL, exit 1)
-python scripts/nexus_epreuve_vide.py          Usage ... <path>     exit 2   (inchange)
-python scripts/nexus_epreuve_vide.py scripts  31 signaux           exit 1   (inchange ; la nouvelle epreuve n en fait pas partie)
-python scripts/nexus_cablage.py               aucune regression    exit 0
+python outillage/nexus_test.py --only vide      5 [PASS], Echecs 0   exit 0   (avant : 1 FAIL, exit 1)
+python outillage/nexus_epreuve_vide.py          Usage ... <path>     exit 2   (inchange)
+python outillage/nexus_epreuve_vide.py scripts  31 signaux           exit 1   (inchange ; la nouvelle epreuve n en fait pas partie)
+python outillage/nexus_cablage.py               aucune regression    exit 0
 ```
 
 **Contre-epreuve** (`rv_contre_epreuve.py`, scratchpad) : trois mutations de
@@ -549,7 +549,7 @@ Les 49 se repartissent ainsi, et deux lots ont ete depeches pour les couvrir :
 
 * **2 scripts Python du projet** — `console_tools.py`, `mesure_rendu_vide.py` —
   du CODE jamais audite ;
-* **3 `competences/*.txt`**, charges dynamiquement par `nexus_agent.py` comme
+* **3 `outillage/competences/*.txt`**, charges dynamiquement par `nexus_agent.py` comme
   consigne systeme : une consigne qui se contredit est un defaut reel ;
 * **44 documents** sous `docs/`, dont ~36 `docs/architecture/*.txt`.
 

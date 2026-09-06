@@ -641,9 +641,9 @@ Never by a bare `git push`. Publication goes through the one gesture that
 verifies first:
 
 ```powershell
-python scripts/nexus_vitrine.py --simulation   # verify everything, publish nothing
-python scripts/nexus_vitrine.py                # publish if, and only if, sane
-python scripts/nexus_vitrine.py --epreuve      # does the secret detector detect?
+python outillage/nexus_vitrine.py --simulation   # verify everything, publish nothing
+python outillage/nexus_vitrine.py                # publish if, and only if, sane
+python outillage/nexus_vitrine.py --epreuve      # does the secret detector detect?
 ```
 
 Seven blocking controls before anything leaves: clean tree, `.env` untracked,
@@ -678,7 +678,7 @@ Three rules, and they are indivisible:
 1. **Never hand the original files to the MCP.** A worker gets a copy, never
    the source. It may truncate, rewrite or invent — and the repository must not
    be able to suffer for it.
-2. **Every worker in an isolated worktree** (`scripts/nexus_worktree.py`).
+2. **Every worker in an isolated worktree** (`outillage/nexus_worktree.py`).
    Isolated means its own working copy, its own commits, no collision with the
    others or with the main tree.
 3. **Preserve the orchestrator's context.** Whatever can be read, summarised,
@@ -4311,7 +4311,7 @@ the pool by itself at the next update.
 .\scripts\Test-NexusSmoke.ps1 -IncludeRouters         # runtime check
 python scripts/nexus_valide.py --base main            # validation, cout zero
 .\scripts\Register-NexusAutoUpdate.ps1                # daily task, 04:00
-python scripts/nexus_test.py                          # full test suite
+python outillage/nexus_test.py                          # full test suite
 
 .\scripts\start.ps1 [-Verifier]                       # bring the stack up
 .\scripts\Install-NexusCommande.ps1                   # `nexus` in the profile
@@ -4680,7 +4680,7 @@ subscription.
 
 # 111. Measuring what delegation saves
 
-`scripts/nexus_savings.py` reports volume by plane and the counterfactual
+`outillage/nexus_savings.py` reports volume by plane and the counterfactual
 cost on Claude.
 
 Two honesty constraints, both learned the hard way:
@@ -4714,7 +4714,7 @@ before it was wired in.
 ```
 
 Law 1 paid for itself on first use. It found a real regression: `switch()` in
-`scripts/nexus_switch_engine.py` still treated an unreachable engine as an
+`outillage/nexus_switch_engine.py` still treated an unreachable engine as an
 engine with no models, and printed that claim as the last message before
 rewriting the configuration.
 
@@ -4744,7 +4744,7 @@ free ones**.
 | `scripts/nexus_garde_agent.py` | `PreToolUse` hook. Refuses a subagent whose `model` is absent or not allowed, and refuses `subagent_type: fork`, whose parent model is inherited whatever is requested — letting it through while believing it capped would be a false guarantee, worse than none. Any anomaly (unreadable JSON, missing field) passes: a guard that crashes must never stop work. Override: `NEXUS_AGENT_LIBRE=1`. |
 | `.claude/settings.json` | Wires the hook. |
 | `.claude/agents/nexus-delegue.md` | The economical agent, cheap by construction: fixed model, delegation protocol, caps on tool calls and report length. |
-| `controle_delegation` in `scripts/nexus_conformite.py` | Measures the delegated share over 7 days. Floor 90%, WARNING and never BLOCKING — a falling share does not prevent starting, and refusing to start would punish the operator who came to fix it. Reports `anthropic` requests separately: they alone are billed per token, and a flattering average is carried by free volume. |
+| `controle_delegation` in `outillage/nexus_conformite.py` | Measures the delegated share over 7 days. Floor 90%, WARNING and never BLOCKING — a falling share does not prevent starting, and refusing to start would punish the operator who came to fix it. Reports `anthropic` requests separately: they alone are billed per token, and a flattering average is carried by free volume. |
 
 ## 112.3 The bench, as measured
 
@@ -4783,8 +4783,8 @@ The measured order of the bench, sorted, refutes the parameter count outright:
 | `gemma4-12b` | 12 B | 51.5 s |
 
 A threshold on parameter count would have excluded `codestral-22b` and admitted
-`gemma4-12b` — exactly backwards. Hence `scripts/nexus_bench.py`, and hence
-`SEUIL_POOL_MS` in `scripts/nexus_generate.py` gating on the reading rather
+`gemma4-12b` — exactly backwards. Hence `outillage/nexus_bench.py`, and hence
+`SEUIL_POOL_MS` in `outillage/nexus_generate.py` gating on the reading rather
 than on the size.
 
 **What this measurement does not say.** The bench asks for sixteen tokens. It

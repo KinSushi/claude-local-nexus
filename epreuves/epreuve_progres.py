@@ -80,7 +80,7 @@ def depot_jetable(avec_git, checklist=None):
     la source)."""
     racine = tempfile.mkdtemp(prefix="epreuve_progres_")
     os.makedirs(os.path.join(racine, "scripts"))
-    shutil.copy(GENERATEUR, os.path.join(racine, "scripts", "nexus_progres.py"))
+    shutil.copy(GENERATEUR, os.path.join(racine, "outillage", "nexus_progres.py"))
     if checklist is not None:
         os.makedirs(os.path.join(racine, "rituels"))
         with open(os.path.join(racine, "rituels", "CHECKLIST_COCKPIT.MD"),
@@ -104,7 +104,7 @@ def depot_jetable(avec_git, checklist=None):
 def generer(racine):
     """Joue le generateur copie ; rend (code, contenu de PROGRESS.MD ou None)."""
     r = subprocess.run(
-        [sys.executable, os.path.join(racine, "scripts", "nexus_progres.py")],
+        [sys.executable, os.path.join(racine, "outillage", "nexus_progres.py")],
         cwd=racine, capture_output=True, text=True, encoding="utf-8",
         errors="replace", timeout=DELAI_S)
     chemin = os.path.join(racine, "PROGRESS.MD")

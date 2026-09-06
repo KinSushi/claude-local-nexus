@@ -8,7 +8,7 @@ import sys
 def run(args, input_str=None):
     try:
         res = subprocess.run(
-            [sys.executable, "scripts/nexus_posterior.py"] + args,
+            [sys.executable, "outillage/nexus_posterior.py"] + args,
             input=input_str,
             capture_output=True,
             text=True,
@@ -21,7 +21,7 @@ def run(args, input_str=None):
         return -2, "", str(e)
 
 def main():
-    tool = "scripts/nexus_posterior.py"
+    tool = "outillage/nexus_posterior.py"
     if not os.path.isfile(tool):
         print(f"Outil absent : {tool}")
         sys.exit(42)

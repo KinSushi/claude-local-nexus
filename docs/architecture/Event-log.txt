@@ -34,7 +34,7 @@ Tu obtiens progressivement un système event-sourced au niveau agentique.
 n'emet ces evenements : recherche exhaustive de "task.created", "task.
 classified" et "policy.checked" dans `scripts/*.py` et `tools/nexus-mcp/*.js`
 — zero resultat. Langfuse est bien integre (`litellm_config.yaml`,
-`scripts/nexus_vitrine.py`) mais comme tracing LiteLLM standard, pas comme ce
+`outillage/nexus_vitrine.py`) mais comme tracing LiteLLM standard, pas comme ce
 flux d'evenements agentiques nomme. CONCORDANCE avec le livre "Design
 Multi-Agent AI Systems Using MCP and A2A", section "Structured logging and
 trace formats" (design-multi-agent-ai-systems-usin.c9bfd169#323) : le livre

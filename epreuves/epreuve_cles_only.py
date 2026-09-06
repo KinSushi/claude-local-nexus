@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
-CIBLE = RACINE / "scripts" / "nexus_test.py"
+CIBLE = RACINE / "outillage" / "nexus_test.py"
 MOTIF = r'args\.only\s+in\s+\(None,\s*"([^"]+)"\)'
 
 

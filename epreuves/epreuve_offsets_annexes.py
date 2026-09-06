@@ -85,7 +85,7 @@ def batir(decalage=0):
 
 
 def construire():
-    r = subprocess.run([sys.executable, os.path.join(RACINE, "scripts", "nexus_doc.py"),
+    r = subprocess.run([sys.executable, os.path.join(RACINE, "outillage", "nexus_doc.py"),
                         "--construire"], cwd=RACINE, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")

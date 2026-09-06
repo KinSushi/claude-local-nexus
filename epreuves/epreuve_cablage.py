@@ -3,7 +3,7 @@
 Pourquoi cette épreuve existe ?
 
 Le mécanisme de classification « câblage » du dépôt (module
-`scripts/nexus_cablage.py`) a classé une épreuve réellement jouée par
+`outillage/nexus_cablage.py`) a classé une épreuve réellement jouée par
 `nexus_test.py` comme « prouvée, connectée à rien », ce qui a été compté en
 régression. Le contrat impose que seules les épreuves réellement
 exécutées soient considérées comme « câblées », sinon le mécanisme est
@@ -20,6 +20,15 @@ comporte exactement comme attendu pour ces quatre scénarios.
 """
 import os
 import sys
+
+# Les modules eprouves vivent dans scripts/ ET dans outillage/ depuis le
+# rangement du 2026-09-06. On pose les DEUX, derives de __file__ : un
+# chemin absolu casserait le jour ou le depot bouge.
+for _d in ("scripts", "outillage"):
+    _p = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), _d)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 # Ajout du répertoire du script au PATH afin d’importer nexus_cablage
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
@@ -41,7 +50,7 @@ def jouer() -> int:
     # Cas 1 – Production citée uniquement par un test → preuve_seule
     cible = "scripts/machin_production.py"
     textes = {
-        "scripts/nexus_test.py": (
+        "outillage/nexus_test.py": (
             'subprocess.run([sys.executable, "scripts/machin_production.py"])'
         )
     }
@@ -55,7 +64,7 @@ def jouer() -> int:
     # Cas 2 – Épreuve réellement jouée → cable
     cible = "epreuves/epreuve_bidon.py"
     textes = {
-        "scripts/nexus_test.py": (
+        "outillage/nexus_test.py": (
             'subprocess.run([sys.executable, "epreuves/epreuve_bidon.py"])'
         )
     }

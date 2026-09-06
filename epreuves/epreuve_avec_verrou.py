@@ -17,7 +17,7 @@ import subprocess
 import sys
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LANCEUR = os.path.join(RACINE, "scripts", "nexus_avec_verrou.py")
+LANCEUR = os.path.join(RACINE, "outillage", "nexus_avec_verrou.py")
 SCRIPTS_DIR = os.path.join(RACINE, "scripts")
 
 def _dire(ok, nom, detail):

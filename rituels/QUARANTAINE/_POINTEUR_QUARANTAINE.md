@@ -52,7 +52,7 @@ n'est pas versionne, ce qui porte la **mesure** l'est.
 Les copies se refont en une commande tant que les worktrees existent :
 
 ```
-python scripts/nexus_quarantaine.py
+python outillage/nexus_quarantaine.py
 ```
 
 Verifie avant le deplacement : **45 worktrees sur 45 presents**.

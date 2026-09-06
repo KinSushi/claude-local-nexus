@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 def _find_tool():
-    # tool is expected at scripts/nexus_outillage.py relative to this file
+    # tool is expected at outillage/nexus_outillage.py relative to this file
     base = Path(__file__).resolve().parent
     candidate = base / "scripts" / "nexus_outillage.py"
     if candidate.is_file():
