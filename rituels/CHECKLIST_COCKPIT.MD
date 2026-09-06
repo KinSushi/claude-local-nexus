@@ -18902,3 +18902,83 @@ d'avoir joint le jumeau qui vivait trente lignes plus haut ; le code A2A dormait
 sous `.nexus/` pendant qu'on concevait de memoire. **Exploiter le deja existant
 sur disque n'est pas une preference, c'est ce qui separe une conception d'une
 invention.**
+
+---
+
+## 125. HUIT AXES VERIFIES DANS LE CODE REEL — dont un que j'ai failli ecarter a tort
+
+Les rendus d'une vague d'audit ne valent rien tant qu'ils ne sont pas
+confrontes au code. Sur trois trouvailles reprises ici, **une a ete refutee,
+une confirmee et chiffree, et une a echappe de peu a un rejet injuste**.
+
+### Refutee : les chaines de repli et le contexte — la moitie etait deja faite
+
+`render_ctx_chain` porte en docstring : *« Contexte : on ne remonte que vers une
+fenetre strictement plus large »*, et le code le tient — `e.ctx > entry.ctx`.
+Les chaines `*_CTX_FALLBACKS` sont donc **deja** correctes, et le sujet que ce
+cockpit portait ouvert etait faux pour elles.
+
+### Confirmee et chiffree : le repli ORDINAIRE, lui, descend
+
+`render_chain` garde deux invariants et deux seulement — la **direction**
+(`local -> cloud` interdit, les donnees sortiraient) et la **modalite** (pas
+d'image vers un modele aveugle). Rien sur la capacite.
+
+Mesure sur `litellm_config.yaml`, 79 alias portant `max_input_tokens` :
+**douze** chaines de repli locales **descendent** en contexte.
+
+```
+glm-4.7-flash-local     32768  ->  qwen3-coder-30b-local     8192   perte 24576
+glm-4.7-flash-local     32768  ->  qwen2.5-coder-32b-local   8192   perte 24576
+qwen2.5-0.5b-local      32768  ->  qwen3-14b-local          16384   perte 16384
+granite3.3-8b-local     32768  ->  gpt-oss-20b-local        16384   perte 16384
+mixtral-8x7b-local      32768  ->  phi3-medium-local        16384   perte 16384
+```
+
+La pire part de `glm-4.7-flash-local`, qui est le modele de chat **par defaut**
+du serveur MCP. Une requete de 20 000 jetons qui s'y replie part vers une
+fenetre de 8 192 : elle sera tronquee, ou elle expirera sans erreur claire.
+
+**Le remede n'est pas evident et c'est pourquoi il part en PLAN.** Refuser
+toute descente retrecirait les chaines et pourrait laisser un modele sans aucun
+repli le jour ou son plan tombe. Un repli est une degradation subie ; la
+question est de savoir quelle degradation est acceptable.
+
+### Echappee de peu : j'ai failli rejeter une trouvaille juste
+
+Un rendu accusait `controle_readme_chiffres` de sauter une comparaison en
+silence quand un motif est absent du README. Mon premier `grep` n'a **rien**
+trouve et j'ai conclu a une fabrication.
+
+Le grep etait faux — un echappement de `\d` perdu dans le shell. En relisant
+par AST : la fonction fait **65 lignes** et contient bel et bien le motif cite.
+
+**La lecon n'est pas « verifier »**, elle est plus etroite : *un outil de
+verification qui rend zero ne prouve rien tant qu'on n'a pas prouve qu'il sait
+trouver.* C'est exactement la regle de la contre-epreuve, appliquee cette fois
+a mon propre grep. Un motif casse et un depot sain rendent le meme silence.
+
+### Confirmee : le cliquet LOI 1 peut perdre sa memoire
+
+Verifie aux lignes 149-151 et 156-157 de `scripts/nexus_loi1.py` : la reference
+est reecrite **en force** sous `--reference`, et creee a la premiere execution
+sur la valeur courante. Deux consequences a peser, et elles partent en plan :
+apres un passage en force le cliquet ne detectera plus l'aggravation qu'il
+venait d'enregistrer ; et sur un depot portant deja de la dette, la reference
+s'ancre dessus, rendant definitivement vert tout ce qui est en dessous.
+
+### Les huit axes envoyes en PLAN, un modele par axe
+
+| axe | mesure qui le fonde |
+| --- | --- |
+| contexte des replis | 12 descentes, la pire a 24 576 jetons |
+| controle README muet | motif absent, comparaison jamais faite |
+| reference LOI 1 effacable | deux ecritures verifiees |
+| verrou de la vitrine | course mesuree, deux pousseurs simultanes |
+| applicateur sans fichier neuf | copie manuelle faite aujourd'hui |
+| portes de la vitrine | bloquee par un passe irrattrapable |
+| vocabulaire du detecteur | 4 declarations invisibles sur 40 |
+| garde de shell | heredoc quote mutile, deux fois |
+
+Aucun de ces axes ne recevra de code de l'orchestrateur. Les plans reviennent,
+sont arbitres, et le code part au banc.
