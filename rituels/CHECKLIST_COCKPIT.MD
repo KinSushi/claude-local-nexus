@@ -20100,3 +20100,126 @@ sessions n'avait isole ce facteur.
 La mesure qui a tranche est la plus simple de toutes : **appeler l'amont
 directement, sans l'outil qu'on soupconne.** Elle a pris 0,5 seconde et elle a
 invalide une heure d'hypotheses partagees entre trois sessions.
+
+
+---
+
+## TROIS CAUSES EN CHAINE, CHACUNE MASQUANT LA SUIVANTE — et deux remedes qui n'ont rien gueri
+
+Trois sessions a l'arret pendant plus d'une heure. Le diagnostic s'est arrete
+DEUX FOIS a la premiere cause trouvee, et chaque fois la suivante attendait
+derriere.
+
+### Cause 1 — le quota Ollama Cloud, epuise
+
+```
+completion DIRECTE vers l'amont   0,5 s   HTTP 429
+"you have reached your weekly usage limit"
+```
+
+Reset hebdomadaire attendu ~10 h plus tard. Reel, mesure, confirme par
+l'operateur.
+
+**Remede applique** : basculer sur le plan local. **Il n'a rien gueri.**
+
+### Cause 2 — la passerelle traduit un refus en attente
+
+```
+request_timeout : 900
+completion PAR la passerelle   62 s   TimeoutError
+```
+
+Un `HTTP 429` rendu en 0,5 s devient un `TimeoutError` de 900 s. Un 429 dit
+« arrete » ; un timeout dit « reessaie peut-etre ».
+
+**Remede applique** : `docker compose restart litellm`. **Il n'a rien gueri
+non plus** — quatre minutes de bonne sante, et les trois plans expiraient
+toujours a 62 s, y compris le local qui ne quitte pas la machine et
+l'Anthropic qui n'a aucun rapport avec le quota Ollama.
+
+> **Un remede qui ne guerit pas est une mesure, pas un echec.** C'est
+> l'inefficacite du redemarrage qui a rendu la troisieme cause visible.
+
+### Cause 3 — le moteur local paginait
+
+Sonde du moteur **directement**, sans passerelle :
+
+```
+/api/version   0,0 s   {"version":"0.33.2"}     repond
+/api/ps        0,0 s   deux modeles residents   repond
+/api/chat      90 s    TimeoutError             NE REPOND PAS
+```
+
+Le moteur repondait a tout **sauf a une completion**. La cause :
+
+```
+RAM libre         4,0 Go sur 61,6
+llama-server x2  38,17 Go
+tout le reste    ~8 Go   (WSL 2,4 · 4 sessions claude 2,0 · Docker · navigateur)
+CPU du moteur    0 %     <- il ne calcule pas, il PAGINE
+```
+
+C'est le §107 mot pour mot : *« un modele plus lourd que la memoire du moteur
+n'echoue pas proprement : il pagine, et la reponse n'arrive jamais
+utilement »*. Les poids tenaient ; **le cache d'attention de l'inference
+n'avait plus de place**.
+
+**Remede applique, apres accord de la session voisine qui les avait charges** :
+decharger un des deux modeles.
+
+```
+RAM libre  4,5 Go  ->  40,1 Go
+```
+
+### La regle voisine, corrigee par la mesure
+
+Une session voisine avait ecrit, et c'etait un bon conseil :
+
+> *« Ce qui rend le plan local lent n'est pas l'inference, c'est le CHANGEMENT
+> de modele. N'employer que ce qui est resident : c'est le seul reglage qui
+> compte sur cet hote. »*
+
+**Vrai, et incomplet.** Sa forme corrigee, qu'elle a inscrite elle-meme :
+
+> **Employer ce qui est resident, ET verifier que la somme des residents
+> laisse une marge d'inference.** Deux conditions, pas une.
+
+Sans la seconde, la regle produit exactement l'etat mesure ici : deux modeles
+parfaitement chauds qui ne repondent jamais. Elle optimisait le CHARGEMENT et
+ignorait l'INFERENCE.
+
+Detail materiel qui l'explique : le Radeon 890M est un **iGPU sans VRAM
+dediee**. `ollama ps` affiche `100% GPU` — mais ce GPU partage les memes
+61,6 Go. Deux modeles « en GPU » sont deux modeles en RAM systeme.
+
+### Ce que cet episode etablit sur la METHODE
+
+**Le demi-couplage** : reparer une moitie d'un probleme couple le DEPLACE au
+lieu de le supprimer. Trois occurrences dans la meme heure, sur trois matieres
+sans rapport :
+
+| session | instrument exact | conclusion fausse |
+| --- | --- | --- |
+| ici | `GET /api/tags` -> 200 | « l'amont va bien » — il repondait, il refusait de travailler |
+| voisine | `grep "exit(2)"` -> 0 | « aucun hook ne bloque » — ils ecrivent `return 2` |
+| voisine | `mypy` en conteneur nu | « 7 erreurs de dette » — l'instrument mesurait son propre denuement |
+
+Trois fois : **le compte etait juste, la cause etait fausse.**
+
+Le detecteur commun, dans les trois cas, n'a pas ete de mesurer plus fort mais
+d'**appeler la chose directement, sans l'outil qu'on soupconne** — l'amont
+sans la passerelle, le moteur sans la passerelle, le code au lieu de son nom.
+Chacune de ces mesures a pris moins d'une seconde et a invalide une heure
+d'hypotheses partagees.
+
+### Ce qui reste a corriger
+
+1. **`nexus_agent` doit distinguer un refus de quota d'une lenteur.** Un 429
+   remonte en 0,5 s doit arreter le lot et nommer la cause. Aucun plafond de
+   concurrence n'aurait sauve cette heure : a un seul lanceur, on aurait
+   attendu 900 s pour le meme refus.
+2. **Aucun controle ne regarde la memoire libre avant un lot local.**
+   `nexus_charge.py` existe et mesure exactement cela — il n'est pas appele
+   par le lanceur.
+3. **Le repli vers un alias du meme compte est inutile sur un 429 de quota** :
+   il vise la ressource deja epuisee.
