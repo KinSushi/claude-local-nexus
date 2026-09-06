@@ -15,7 +15,7 @@ et un filtre qui rejette tout est aussi inutile qu'un filtre qui passe tout.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 from nexus_sujets import marqueur_fiable, semble_clos  # noqa: E402
 

@@ -13,7 +13,7 @@ travailler, ce qui est pire que le defaut surveille.
 import json, os, subprocess, sys
 
 GARDE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "nexus_garde_agent.py")
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "nexus_garde_agent.py")
 
 echecs = 0
 

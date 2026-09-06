@@ -141,7 +141,7 @@ def refuser(chemin_affiche: str) -> None:
 #
 # L'extraction passe un banc d'acceptation de 17 cas, dont les anti-controles
 # qui ont fait tomber la greffe voisine : `ls > /dev/null` et la restauration.
-# Voir scripts/epreuve_cibles_shell.py.
+# Voir epreuves/epreuve_cibles_shell.py.
 # ---------------------------------------------------------------------------
 
 

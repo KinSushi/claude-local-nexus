@@ -3237,7 +3237,7 @@ Le second a ete impose par **l'epreuve, contre mon code** — elle avait raison.
 
 ### 27.4 Ferme par un controle qui echoue
 
-`scripts/epreuve_maj_modeles.py`, **23 cas**, cablee par un lanceur commun
+`epreuves/epreuve_maj_modeles.py`, **23 cas**, cablee par un lanceur commun
 `jouer_epreuve_python()` ou une epreuve MUETTE compte comme un echec. Trois
 defauts remis un par un : chacun rougit en nommant son cas.
 
@@ -3324,7 +3324,7 @@ filtre emportait sont revenus.
 
 ### 28.2 Ferme par un controle qui echoue
 
-`scripts/epreuve_sujets_filtre.py`, 9 cas, cablee (`--only sujets`). Ses
+`epreuves/epreuve_sujets_filtre.py`, 9 cas, cablee (`--only sujets`). Ses
 fragments **ne sont pas inventes** : ce sont les sorties reelles de
 l'execution bruitee, et l'une d'elles est un VRAI sujet qui doit **survivre**.
 Sans elle l'epreuve ne prouverait que la severite — un filtre qui rejette tout
@@ -3418,7 +3418,7 @@ Le hook vivant, sans redemarrage de session : la here-string indentee est
 refusee en nommant le remede ; la here-string correcte et l'accent grave
 d'echappement passent.
 
-`scripts/epreuve_garde_shell_ps.py` porte dix cas, mais rejouee contre le
+`epreuves/epreuve_garde_shell_ps.py` porte dix cas, mais rejouee contre le
 garde d'avant elle n'en rougit qu'**un**. Les neuf autres sont des
 **anti-controles** : ils doivent passer dans les deux versions, c'est leur
 office. Sans eux, un garde qui refuserait tout paraitrait parfait — et serait
@@ -3738,7 +3738,7 @@ sa **definition**.
 | **fuite** | cinq commandes, dont `ls > /dev/null`, **PASSENT** |
 
 Plus : une commande sans ecriture n'inscrit **rien** — sinon le journal
-mesurerait le bruit. `scripts/epreuve_cibles_shell.py`, 16 cas, cablee
+mesurerait le bruit. `epreuves/epreuve_cibles_shell.py`, 16 cas, cablee
 (`--only cibles`). Les anti-controles portent **la moitie** du banc.
 
 **Prouve en vrai** : le hook a capte une ecriture reelle de la session, avec
@@ -4016,7 +4016,7 @@ faudrait le multiplier par soixante pour *esperer* — mais de le **repartir par
 corpus**. Un corpus est produit par un outil unique : s'il se trompe, il se
 trompe sur TOUTES ses entrees.
 
-Ferme par `scripts/epreuve_offsets_annexes.py`, 5 cas, cablee
+Ferme par `epreuves/epreuve_offsets_annexes.py`, 5 cas, cablee
 (`--only offsets`), avec son corpus jetable a offsets decales.
 
 ### 36.4 La confrontation des deux extracteurs — 26 commandes
@@ -4350,7 +4350,7 @@ deux editions, deux noms de profil — regroupe par EDITION, et **dit laquelle
 manque et quel geste repare**. ALERTE et non blocage : une commande de confort
 absente n'empeche pas la plateforme de fonctionner.
 
-`scripts/epreuve_commande_nexus.py`, 7 cas, cablee (`--only commande`), dont le
+`epreuves/epreuve_commande_nexus.py`, 7 cas, cablee (`--only commande`), dont le
 piege OneDrive et le cas « aucun profil » qui doit rendre IGNORE — *une machine
 neuve n'est pas une machine mal configuree.*
 
@@ -5453,7 +5453,7 @@ le contraire sans le verifier.
 
 | maillon | etat |
 | --- | --- |
-| le script | `scripts/epreuve_orphelines.py` |
+| le script | `epreuves/epreuve_orphelines.py` |
 | **sa preuve** | contre-epreuve : une orpheline ajoutee -> **code 1**, les deux nommees ; retiree -> code 0. **Rejouee a travers le harnais.** |
 | l'appelant | `nexus_test.py --only orphelines` |
 | la porte | le harnais **a refuse** l'epreuve : muette a zero orpheline. Corrigee pour toujours dire son compte |
@@ -5621,7 +5621,7 @@ cas.
 
 | maillon | etat |
 | --- | --- |
-| le script | `scripts/epreuve_couverture_gardes.py` |
+| le script | `epreuves/epreuve_couverture_gardes.py` |
 | **sa preuve** | detecteur temporaire ajoute sans cas -> `[RATE] detecter_cas_zz : missing test cases`, **code 1** ; garde restaure -> code 0 |
 | l'appelant | `nexus_test.py --only couverture` |
 | la porte | 6 reussis, 0 echec par le harnais |
@@ -5677,14 +5677,14 @@ Chaine complete desormais : declaree 2688, incrementee 2777 et 2877, lue 2897.
 
 ### 56.3 LE CONTROLE QUI FERME LA CLASSE
 
-`scripts/epreuve_dire_troncature.py` analyse le **source** du pont : pour
+`epreuves/epreuve_dire_troncature.py` analyse le **source** du pont : pour
 chaque gestionnaire, si son etendue contient un appel a `chat()`, elle exige
 la marque `mentionsReponse` **ou** la marque `tronquee`. Un gestionnaire qui
 n'appelle pas le modele n'est pas concerne.
 
 | maillon | etat |
 | --- | --- |
-| le script | `scripts/epreuve_dire_troncature.py` |
+| le script | `epreuves/epreuve_dire_troncature.py` |
 | **sa preuve** | sur une copie du code d'AVANT : `[RATE] nexus_summarize`, `[RATE] nexus_batch`, **code 1** ; code corrige -> code 0 |
 | l'appelant | `nexus_test.py --only troncature` |
 | la porte | 6 gestionnaires concernes, 6 verts |
@@ -5749,7 +5749,7 @@ controle le montrait deja sans en rien conclure. Ce point-la **reste ouvert**.
 
 ### 57.3 L'epreuve, et ses quatre issues
 
-`scripts/epreuve_verdicts_rituel.py` remplace `subprocess.run` par un faux —
+`epreuves/epreuve_verdicts_rituel.py` remplace `subprocess.run` par un faux —
 aucun processus n'est lance — et mene le controle a **chacun** de ses
 verdicts :
 
@@ -5811,7 +5811,7 @@ Une epreuve decablee de `nexus_test.py` :
 
 ```
 Cablage : 1 REGRESSION(S).
-  preuve_seule   scripts/epreuve_verdicts_rituel.py       code 1
+  preuve_seule   epreuves/epreuve_verdicts_rituel.py       code 1
 ```
 
 Recablee, code 0. **Avant ce correctif, cette meme regression serait
@@ -5894,7 +5894,7 @@ nombre qui manquait pour que l'operateur puisse trancher.**
 
 ### 59.4 Le controle, qui ne touche pas a la politique
 
-`scripts/epreuve_registre_epreuves.py` refuse une **incoherence interne**,
+`epreuves/epreuve_registre_epreuves.py` refuse une **incoherence interne**,
 jamais une politique :
 
 * `complet` vrai alors que la derniere mesure est inferieure au total ;
@@ -5986,7 +5986,7 @@ en s'en servant.
 
 ### 60.3 L'epreuve et sa contre-epreuve
 
-`scripts/epreuve_verdict_rassurant.py` remplace `free_plan_judgment` par un
+`epreuves/epreuve_verdict_rassurant.py` remplace `free_plan_judgment` par un
 faux — **aucun appel de modele** — qui rend « aucune regression », une bascule
 de plan, et un texte portant l'avertissement. Elle capture la sortie de `main`
 et verifie trois marques.
@@ -10546,7 +10546,7 @@ regle generale.
 
 ## 100. PREMIERE MECANISATION DE LA SEANCE — et le maillon qui manque a TOUTES les epreuves
 
-`scripts/epreuve_concentration_routage.py`, posee et cablee le 2026-09-01. Elle
+`epreuves/epreuve_concentration_routage.py`, posee et cablee le 2026-09-01. Elle
 garde le sujet 2 du §90.3 : les deux chemins d'appel doivent designer le meme
 plan.
 
@@ -10608,7 +10608,7 @@ n'est pas optionnel.
 
 | maillon (§0.2.1) | etat |
 | --- | --- |
-| le script | `scripts/epreuve_concentration_routage.py`, 130 lignes |
+| le script | `epreuves/epreuve_concentration_routage.py`, 130 lignes |
 | sa propre preuve | rougit sur le defaut reel + 2 contre-epreuves internes |
 | **le caller** | cable dans `nexus_test.py --only routage` — verifie : ses 10 cas sont reverses dans la suite, le `[RATE]` devient `[FAIL]` |
 | **la gate** | **AUCUNE** — voir ci-dessous |
@@ -15793,7 +15793,7 @@ Ce n'est donc ni un orphelin ni un projet.
 > sans qu'aucun controle ne verifie qu'il fait bien cela, est exactement le genre de piece
 > dont on decouvre le defaut le jour ou l'on en depend.
 
-`scripts/epreuve_ruche.py` est pose. Ses cas : decouverte coherente sur un repertoire
+`epreuves/epreuve_ruche.py` est pose. Ses cas : decouverte coherente sur un repertoire
 temporaire fabrique, repertoire vide sans plantage, respect de la limite de cibles, refus
 motive sur un plan invalide, et **verification qu'une execution simulee n'ecrit rien**.
 
@@ -19763,7 +19763,7 @@ REVERSE heredoc PYTHON non quote, accent grave dans le CORPS   ECHEC
 1 echec(s)    rc=1
 ```
 
-`scripts/epreuve_garde_heredoc.py`, ecrite deux heures plus tot, cablee a la
+`epreuves/epreuve_garde_heredoc.py`, ecrite deux heures plus tot, cablee a la
 suite de tests une heure plus tard. **Ni la compilation, ni une relecture
 humaine, ni l unicite des ancres ne distinguaient ce patch d un bon.**
 
@@ -19843,7 +19843,7 @@ dans leur propre reponse.** La premiere n avait pas vu que `re.search` glisse ;
 la seconde rendait le guillemet obligatoire sur un site qui le veut optionnel,
 ce qui vidait la fonction sans qu aucune erreur n apparaisse.
 
-**Ce qui les a separees d un bon patch :** `scripts/epreuve_garde_heredoc.py`,
+**Ce qui les a separees d un bon patch :** `epreuves/epreuve_garde_heredoc.py`,
 et rien d autre. Ni la compilation, ni l unicite des ancres, ni une relecture.
 
 **Et la garde a bloque la commande qui venait la corriger** — elle portait les
@@ -22131,7 +22131,7 @@ scripts/nexus_agent.py         L284   commentaire sur les lecteurs differents
 scripts/nexus_garde_lecture.py L53-54 commentaire : C:/a/B.py et c:\a\b.py
 scripts/nexus_quarantaine.py   L82    exemple d'usage (suite)
 scripts/nexus_quarantaine.py   L145   docstring
-scripts/epreuve_garde_shell_ps.py L114 CAS DE TEST : Get-ChildItem -Path C:\temp
+epreuves/epreuve_garde_shell_ps.py L114 CAS DE TEST : Get-ChildItem -Path C:\temp
 ```
 
 **Limite nommee de l'instrument** : il classe ligne par ligne, et une
@@ -22723,7 +22723,7 @@ depot.
 ### 148.3 Le rayon d'impact, et l'angle mort qui compte
 
 ```
-1233 occurrences de "scripts/nexus_" "scripts/epreuve_" "scripts/verif_"
+1233 occurrences de "scripts/nexus_" "epreuves/epreuve_" "scripts/verif_"
      dans 114 fichiers
 
   par extension    418 md   286 json   170 py   152 MD   149 csv
@@ -22736,9 +22736,9 @@ echappent donc a toute reecriture textuelle :
 
 ```
 rituels/RESUME.ps1:31        $Scripts = Join-Path $RepoRoot "scripts"
-scripts/epreuve_avec_verrou.py:20
+epreuves/epreuve_avec_verrou.py:20
     LANCEUR = os.path.join(RACINE, "scripts", "nexus_avec_verrou.py")
-scripts/epreuve_armer_garde.py:40
+epreuves/epreuve_armer_garde.py:40
     guard_script = os.path.join("scripts", "nexus_garde_fictif.py")
 ```
 
@@ -22854,7 +22854,7 @@ n'atteignait jamais `sys.exit`. J'avais repris ce signalement sans le mesurer.
 L'epreuve du depot le refute, et elle existait deja :
 
 ```
-python scripts/epreuve_verrou_banc.py
+python epreuves/epreuve_verrou_banc.py
   [OK  ] le mecanisme est ARME : tout est branche
   [OK  ] une tache LOCALE est refusee : code 75 (attendu 75)
 ```

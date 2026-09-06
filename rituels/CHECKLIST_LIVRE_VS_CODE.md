@@ -324,7 +324,7 @@ epreuves mais des OUTILS » — et les a cables quand meme.
 **Correctif pose** (worktree `agent-a9bae5bcacf5d3042`, LF, deux fichiers,
 l outil lui-meme n est PAS modifie) :
 
-* `scripts/epreuve_rendu_vide.py`, neuf, 152 lignes, ruff 0.16.5
+* `epreuves/epreuve_rendu_vide.py`, neuf, 152 lignes, ruff 0.16.5
   `E,F,W,SIM,B` : « All checks passed » — cinq cas sur des fichiers FABRIQUES
   en repertoire temporaire, jamais sur `scripts/` : refus sans argument (code
   2, usage, rien sur stdout, rien d ecrit), temoin positif (une epreuve muette
@@ -336,7 +336,7 @@ l outil lui-meme n est PAS modifie) :
 **Preuves par effet, toutes EXECUTEES dans le worktree :**
 
 ```
-python scripts/epreuve_rendu_vide.py          5 [OK  ]             exit 0
+python epreuves/epreuve_rendu_vide.py          5 [OK  ]             exit 0
 python scripts/nexus_test.py --only vide      5 [PASS], Echecs 0   exit 0   (avant : 1 FAIL, exit 1)
 python scripts/nexus_epreuve_vide.py          Usage ... <path>     exit 2   (inchange)
 python scripts/nexus_epreuve_vide.py scripts  31 signaux           exit 1   (inchange ; la nouvelle epreuve n en fait pas partie)
@@ -373,7 +373,7 @@ promue :**
 | fait | etat | mesure |
 | --- | --- | --- |
 | `nexus_index_livres.py`, `nexus_livres.py`, `nexus_sauvegarde.py` sont cables de la meme facon (`nexus_test.py:1396,1398,1400`, meme commit `c672862`) | 🔴 | `--only livres` : FAIL « aucun cas rendu (code 1) » ; `--only index_livres` : FAIL « (code 4) » ; `sauvegarde` NON EXECUTE (creerait un bundle) ; `nexus_socle.py` (`:1286`) NON VERIFIE |
-| le cliquet compte une EPREUVE comme appelant de PRODUCTION | 🔴 | `nexus_cablage.py --json` : `nexus_epreuve_vide.py -> appele` par `scripts/epreuve_rendu_vide.py`. Cause lue : le filtre des invocations (`nexus_cablage.py:284-287`) n ecarte que les noms contenant « test », celui des imports (`:302-304`) ecarte aussi « epreuve ». Faux gain, que le mode verdict FIGERAIT dans la reference (`:426-427`) — non execute ici pour cette raison |
+| le cliquet compte une EPREUVE comme appelant de PRODUCTION | 🔴 | `nexus_cablage.py --json` : `nexus_epreuve_vide.py -> appele` par `epreuves/epreuve_rendu_vide.py`. Cause lue : le filtre des invocations (`nexus_cablage.py:284-287`) n ecarte que les noms contenant « test », celui des imports (`:302-304`) ecarte aussi « epreuve ». Faux gain, que le mode verdict FIGERAIT dans la reference (`:426-427`) — non execute ici pour cette raison |
 | l outil signale 31 epreuves sur 63 « does not launch anything » | 🟡 | dont `epreuve_cablage.py`, qui importe `nexus_cablage` : le module cible est derive sans le prefixe `nexus_` (`nexus_epreuve_vide.py:18`). Son verdict sur `scripts/` est NON FIABLE ; hors du perimetre de cette ligne |
 
 > Trouve par un agent isole qui a **execute** le script au lieu de lire son
@@ -456,7 +456,7 @@ preuve**. Ce qui suit est mesure, pas suppose.
 | epreuve | etat REEL mesure | verdict |
 | --- | --- | --- |
 | `epreuve_journal_disjoncteur.py` | **cablee mais IMBRIQUEE** sous `if args.only in (None, "import")`. Elle se joue en passe complete — `args.only` vaut `None` — mais **`--only` ne peut pas l atteindre seule** : elle n a pas de cle propre | 🟡 **PARTIEL** |
-| `epreuve_cles_only.py` | **ORPHELINE**. Ecrite, verte, contre-epreuve prouvee — et **personne ne l appelle**. Le cliquet la signale : `orphelin scripts/epreuve_cles_only.py` | 🔴 **NON CABLEE** |
+| `epreuve_cles_only.py` | **ORPHELINE**. Ecrite, verte, contre-epreuve prouvee — et **personne ne l appelle**. Le cliquet la signale : `orphelin epreuves/epreuve_cles_only.py` | 🔴 **NON CABLEE** |
 
 ### Ce que j ai commis, et qui est la faute la plus interessante du tour
 
@@ -502,7 +502,7 @@ moins qu une dette ecrite.
 Mesure, dans l ordre, sans rien omettre :
 
 ```
-1. cliquet avant inscription   ->  orphelin  scripts/epreuve_cles_only.py
+1. cliquet avant inscription   ->  orphelin  epreuves/epreuve_cles_only.py
 2. j inscris la dette dans CHECKLIST_LIVRE_VS_CODE.md
 3. cliquet apres inscription   ->  preuve_seule  (categorie MOINS grave)
 4. rebaseline                  ->  « 0 orphelin(s) »

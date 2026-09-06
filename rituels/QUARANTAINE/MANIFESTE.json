@@ -228,7 +228,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "scripts/epreuve_charge_derive.py",
+          "chemin": "epreuves/epreuve_charge_derive.py",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 5256,
@@ -249,7 +249,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_reglages_moteur.py",
+          "chemin": "epreuves/epreuve_reglages_moteur.py",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 4320,
@@ -446,7 +446,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_orphelines.py",
+          "chemin": "epreuves/epreuve_orphelines.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 4643,
@@ -467,7 +467,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_progres.py",
+          "chemin": "epreuves/epreuve_progres.py",
           "etat": "commite",
           "statut_git": "M",
           "octets": 9119,
@@ -882,7 +882,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_armer_garde.py",
+          "chemin": "epreuves/epreuve_armer_garde.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 3403,
@@ -903,7 +903,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_garde_ecriture.py",
+          "chemin": "epreuves/epreuve_garde_ecriture.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 5423,
@@ -924,7 +924,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_garde_lecture.py",
+          "chemin": "epreuves/epreuve_garde_lecture.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 7300,
@@ -945,7 +945,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_garde_shell.py",
+          "chemin": "epreuves/epreuve_garde_shell.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 2454,
@@ -2675,7 +2675,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_repli_epuise.py",
+          "chemin": "epreuves/epreuve_repli_epuise.py",
           "etat": "non_commite",
           "statut_git": " A",
           "octets": 9158,
@@ -2696,7 +2696,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_reprise_avant_repli.py",
+          "chemin": "epreuves/epreuve_reprise_avant_repli.py",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 6151,
@@ -3006,7 +3006,7 @@
           }
         },
         {
-          "chemin": "scripts/epreuve_rendu_vide.py",
+          "chemin": "epreuves/epreuve_rendu_vide.py",
           "etat": "commite",
           "statut_git": "A",
           "octets": 6108,

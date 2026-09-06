@@ -150,7 +150,7 @@ aucun effet de bord. **La faute est chez l'appelant**, `nexus_test.py:1389`, qui
 argument et n'attend que des `[OK  ]`/`[RATE]` qu'un outil ne parle pas. Le commit `c672862`
 qui l'a posé dit lui-même que ces quatre-là « ne sont pas des épreuves mais des OUTILS ».
 
-Correctif : `scripts/epreuve_rendu_vide.py`, 152 lignes, ruff propre, 5 cas sur fichiers
+Correctif : `epreuves/epreuve_rendu_vide.py`, 152 lignes, ruff propre, 5 cas sur fichiers
 fabriqués en répertoire temporaire. Trois contre-épreuves par mutation de l'outil — rendu muet,
 analyse aveugle, `SyntaxError` — les trois font échouer le lanceur ; restauration vérifiée par
 empreinte identique avant/après.

@@ -34,7 +34,7 @@ avait releve deux appelants reels, nexus_doc.py:46 et epreuve_doc_annexe.py:206 
 cette verification en ajoute un troisieme que l'audit n'avait pas vu :
 scripts/mesure_rendu_vide.py ligne 26 (from console_tools import forcer_utf8).
 En revanche scripts/nexus_test.py, scripts/nexus_cablage.py et
-scripts/epreuve_cablage.py ne font que mentionner console_tools dans un
+epreuves/epreuve_cablage.py ne font que mentionner console_tools dans un
 commentaire ou une chaine, sans jamais l'importer : ce ne sont pas de vrais
 appelants. Essai 1 (FORWARD, console reelle cp1252) : premier appel
 reconfigure en utf-8 (change=True), deuxieme appel idempotent (change=False) ;

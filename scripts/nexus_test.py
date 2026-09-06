@@ -2875,7 +2875,7 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
     n'imprime rien, c'est elle qui est cassee, et le silence se lirait comme
     un succes.
     """
-    epreuve = os.path.join(ROOT, "scripts", fichier)
+    epreuve = os.path.join(ROOT, "epreuves", fichier)
     if not os.path.isfile(epreuve):
         skip(etiquette, "%s introuvable" % fichier)
         return
