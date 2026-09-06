@@ -23870,3 +23870,165 @@ scripts/    99   epreuves/ 67   un clone : 305 fichiers, 8,57 Mo
 contre 307 fichiers et 20,26 Mo ce matin. Les deux gestes fusionnes — les
 epreuves sorties de `scripts/`, `node_docs` passe a la convention du depot —
 sont verifies dans les deux sens et n'ont rien casse.
+
+
+---
+
+## 157. LA COPIE, ORDONNEE PAR L'OPERATEUR — ce qu'elle regle et ce qu'elle coute
+
+Consigne, donnee deux fois : *« ce qui pourrait casser quoi que ce soit =>
+copie »*, puis simplement *« COPIE »*.
+
+### 157.1 Ce qu'elle debloque
+
+Sept gardes sont clouees dans `scripts/` par `~/.claude/settings.json`, le
+fichier de configuration **de l'operateur**, qui sert ses autres projets. Les
+deplacer casserait ceux-la ; les laisser cassait le partage.
+
+La copie sort de l'impasse : **six modules sont copies, aucun deplace.**
+
+```
+nexus_agent.py        nexus_capability.py    nexus_verrou_machine.py
+nexus_verbatim.py     console_tools.py       nexus_disjoncteur.py
+```
+
+Les originaux restent dans `scripts/`. Les paires sont **identiques octet par
+octet**, verifie.
+
+```
+imports non resolus   28  ->  10
+les 10 restants viennent TOUS de epreuves/
+```
+
+### 157.2 Ce qui n'est PAS copie, et pourquoi le refus compte
+
+Les dix restants vont de `epreuves/` vers `outillage/`. Copier la serait une
+faute d'une autre nature : **une epreuve qui porte une copie du module qu'elle
+eprouve teste une version perimee.** Elle passerait au vert sur du code mort —
+pire qu'une epreuve cassee, qui au moins se voit.
+
+Elles demandent un preambule `sys.path`, donc du code, donc un tiers.
+
+### 157.3 Mon instrument mentait des la premiere copie
+
+La premiere mesure associait chaque nom de module a **un** repertoire. Des
+qu'une copie existe, un meme nom vit a deux endroits et cette table repond
+faux : elle a declare casses des imports qui se resolvent parfaitement —
+`scripts/nexus_agent.py` important `nexus_capability`, par exemple.
+
+La bonne question n'est pas *« ou vit ce module ? »* mais *« celui qui
+l'importe le trouve-t-il A COTE DE LUI ? »* — Python met le repertoire du
+script lance en tete de `sys.path`.
+
+```
+instrument fautif   17 casses
+instrument corrige  10 casses
+                     7 faux positifs, tous produits par ma table
+```
+
+Quatorzieme cas du jour de la classe « instrument exact, conclusion fausse ».
+
+### 157.4 Le prix de la copie, et il n'est PAS garde
+
+**Rien n'echoue aujourd'hui si une des deux versions est modifiee sans
+l'autre.** Les six paires sont identiques a cet instant ; demain, une
+correction posee d'un seul cote ne produira aucun message.
+
+C'est un sujet OUVERT, pas une solution. Le prix de la copie se paie par un
+controle, jamais par une consigne — §0.2.1, et il a deja ete enfreint assez
+souvent aujourd'hui pour qu'on ne s'y trompe pas.
+
+### 157.5 `competences/` quitte la racine
+
+Trois fichiers de consignes d'agents occupaient un repertoire de premier
+niveau. 24 references dans 12 fichiers reecrites, deux constructions
+dynamiques `os.path.join(ROOT, "competences")` reprises.
+
+Les deux constructions vivaient **a l'identique dans les deux copies** de
+`nexus_agent.py` — ce qui verifie au passage que la copie etait en phase.
+
+Forward : `lister_competences()` rend les trois, `charger_competence` rend
+2892 octets. `py_compile` sur les deux copies : OK.
+
+### 157.6 Ce que couterait UN SEUL repertoire d'outillage
+
+L'operateur en veut un ; il y en a trois : `epreuves/`, `outillage/`,
+`rituels/`. Cout mesure de l'imbrication :
+
+```
+expressions dependant de la PROFONDEUR   30
+   epreuves/  29   (dirname(dirname(__file__)) et Path(...).parent.parent)
+   rituels/    1   (RESUME.ps1 : Split-Path -Parent $PSScriptRoot)
+
+references textuelles a reecrire
+   epreuves/  222 dans  17 fichiers
+   rituels/   337 dans  54 fichiers
+```
+
+**`py_compile` ne voit RIEN de ces trente cas.** Une racine fausse n'est pas
+une erreur de syntaxe : c'est un chemin qui pointe a cote, et qui se decouvre
+a l'execution.
+
+**Le remede est deja dans le depot**, et il vaut mieux que trente
+corrections. `epreuves/epreuve_couverture_gardes.py` ne compte pas les crans,
+il REMONTE jusqu'a trouver un marqueur :
+
+```python
+cur = os.path.abspath(os.path.dirname(__file__))
+while True:
+    if os.path.isdir(os.path.join(cur, 'scripts')):
+        break
+    parent = os.path.abspath(os.path.join(cur, os.pardir))
+    if parent == cur:
+        raise FileNotFoundError(...)
+    cur = parent
+```
+
+Six fichiers l'emploient deja. Le rendre uniforme reglerait la classe
+**definitivement** : l'arbre deviendrait deplacable sans que rien ne compte
+sa profondeur. C'est la commande a passer, et elle vaut mieux que le
+deplacement qui l'a fait apparaitre.
+
+### 157.7 Attribuer un processus : l'executable et le repertoire de travail
+
+Deux processus du banc tournaient, et deux sessions se sont trompees sur leur
+proprietaire — moi en les attribuant a tort, la session voisine en les niant.
+La mesure complete tranche :
+
+```
+executable en chemin ABSOLU   C:/local-llm-docker/scripts/nexus_agent.py   -> MON outil
+--lot / --sortie RELATIFS     workspace/_SCRATCH/...  -> n'existe pas chez moi
+repertoire de travail         celui de la session voisine  -> SON travail
+```
+
+**L'executable dit a qui est l'outil ; le repertoire de travail dit a qui est
+le travail.** Un chemin relatif dans une ligne de commande n'attribue rien,
+puisque les deux depots ont un `workspace/`. Nous avions chacun raison sur une
+moitie, et aucun des deux n'avait mesure la bonne chose.
+
+### 157.8 CE QUI RESTE OUVERT — remplace §156.7
+
+| sujet | etat |
+| --- | --- |
+| **paires copiees non gardees** | 6 paires identiques ; rien n'echoue si l'une derive |
+| **10 imports depuis `epreuves/`** | preambule `sys.path` a produire par un tiers |
+| **racine derivee par la PROFONDEUR** | 30 expressions ; remede present dans le depot, non uniforme |
+| un hook nommant un chemin | verrou sur la structure, aucun controle |
+| `nexus_test.py` plante | `test_terminal_repli`, cause non tranchee |
+| repli de modele silencieux | 7 substitutions sur 133 rendus |
+| 5 references externes non gardees | commande preparee |
+| `nexus_valide.py` > 900 s | cout non annonce |
+| `rituels/` sous `outillage/` | mesure : 337 refs, 54 fichiers, 1 ancre de code |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+### 157.9 L'arbre, mesure a cet instant
+
+```
+outillage/  77      epreuves/ 67      rituels/  48
+docs/       41      scripts/  31      racine    17
+references/ 14      tools/     8
+
+un clone : 305 fichiers, 8,57 Mo   (307 et 20,26 Mo ce matin)
+```
