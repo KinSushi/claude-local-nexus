@@ -22793,3 +22793,148 @@ minutes.** Le tube masquait une duree, pas une panne.
 
 Un sujet ne se clot que lorsqu'un controle echoue si la regle est enfreinte.
 Aucune ligne ci-dessus n'est close.
+
+
+---
+
+## 149. TROIS CORRECTIONS, DONT DEUX CONTRE LA SECTION 148 ELLE-MEME
+
+Posee une heure apres §148, qui contenait deux affirmations fausses. La
+mesure les a refutees. On ne corrige pas en place : la trace de l'erreur
+vaut autant que la correction.
+
+### 149.1 La vague 28 n'est pas morte — elle a ete REFUSEE, et elle l'a dit
+
+§148.5 affirmait : *« la vague 28 est morte sans rien produire »*. Faux.
+Elle s'est terminee a 18:0x, quatre heures et demie apres son lancement, en
+imprimant exactement ce qui s'etait passe :
+
+```
+verrou machine [banc] REFUSE (local-llm-docker) — un AUTRE processus tient
+« banc » (une inference locale sur le banc de modeles, la memoire du moteur
+etant partagee) — attendu 2400s en vain
+banc: contention detectee
+```
+
+Elle n'a pas echoue en silence : elle a attendu 2400 s le verrou machine,
+s'est vue refuser, et l'a **nomme**. Ce que j'ai pris pour une mort est un
+refus correct, annonce, d'un mecanisme qui fonctionne.
+
+J'avais par ailleurs annonce a une session voisine qu'elle etait « en vol ».
+Elle attendait un verrou. La difference compte : une vague en vol consomme,
+une vague en attente ne consomme rien et rend la main.
+
+### 149.2 `rendus_separateur.md` n'etait pas vide — j'ai lu un COMPTE DE LIGNES
+
+§148 s'appuyait sur : *« rendus_separateur.md fait deux lignes »*, donc vide,
+donc rien a exploiter, donc il faut commissionner a neuf.
+
+```
+wc -l rendus_separateur.md   ->      2
+ls -l  rendus_separateur.md   ->  21291 octets
+```
+
+**Vingt et un kilo-octets sur deux lignes.** C'est un rendu JSON du banc, en
+une seule longue ligne. Un compte de lignes n'est pas une mesure de contenu,
+et je l'ai employe comme telle pour declarer un fichier vide.
+
+Neuvieme cas du jour de la classe « instrument exact, conclusion fausse » —
+et le meme reflexe que le vide-lu-comme-panne deja recense.
+
+Ce que le fichier contenait : `nexus_indexer_code.py`, l'indexeur de corpus,
+d'une vague anterieure et **deja integre au depot**. La conclusion tenait
+donc — il n'y avait pas de rendu de separation a exploiter — mais elle
+tenait par chance, sur un raisonnement faux.
+
+### 149.3 Le refus de verrou rend BIEN 75 — le defaut signale n'existe pas
+
+Une session voisine avait signale que `return 75` dans `nexus_agent.py`
+n'atteignait jamais `sys.exit`. J'avais repris ce signalement sans le mesurer.
+
+L'epreuve du depot le refute, et elle existait deja :
+
+```
+python scripts/epreuve_verrou_banc.py
+  [OK  ] le mecanisme est ARME : tout est branche
+  [OK  ] une tache LOCALE est refusee : code 75 (attendu 75)
+```
+
+`return 75` est dans `main()` ligne 1507, `sys.exit(main())` ligne 1619, et
+le code de sortie mesure vaut 75. **Le mecanisme est correct.** Le
+signalement etait faux, et je l'avais relaye.
+
+### 149.4 En revanche l'EPREUVE, elle, plante — et sur son cas inverse
+
+La meme execution a leve, sur son second cas :
+
+```
+subprocess.TimeoutExpired: nexus_agent.py --lot cloud.json
+    timed out after 180 seconds
+```
+
+Le cas inverse — verifier qu'une tache CLOUD n'est PAS refusee — lance un
+appel cloud reel avec un budget de 180 s. Il n'a pas expire pour une raison
+de verrou : il a expire parce que l'appel dure plus longtemps que le budget,
+d'autant que quatre appels cloud tournaient au meme moment, lances par moi.
+
+Deux defauts, distincts :
+
+| defaut | portee |
+| --- | --- |
+| budget de 180 s pour un appel cloud reel | le cas inverse ne peut pas passer sous charge |
+| `TimeoutExpired` NON RATTRAPEE | l'epreuve PLANTE au lieu d'echouer proprement |
+
+Le second est le plus grave et il enfreint une regle du contrat : une epreuve
+doit **echouer proprement** — code non nul, message qui nomme la voie — et
+non remonter une trace d'exception. Une epreuve qui plante ne distingue plus
+« le mecanisme est casse » de « l'epreuve est mal outillee ».
+
+Trouve en la LANCANT, pas en la lisant : le code se lit correctement.
+
+### 149.5 Le perimetre : les DEUX frontieres evidentes sont fausses
+
+Mesure faite ce tour, et c'est la trouvaille utile de la section.
+
+**Frontiere 1, le prefixe.** `nexus_*` = outillage ? Faux. Dix des dix-neuf
+scripts « projet » appellent l'outillage — `start.ps1` cinq fois,
+`nexus.ps1` six, `Update-NexusModels.ps1` neuf. Et parmi les appeles,
+`nexus_generate.py` **ecrit `litellm_config.yaml`** : c'est le produit.
+
+**Frontiere 2, l'accessibilite.** Atteignable depuis les points d'entree du
+produit = produit ? Faux aussi, et la contre-mesure le montre :
+
+```
+fermeture depuis 12 points d entree      135 outils sur 147
+la meme, en coupant DEUX moyeux           32 outils sur 147
+                                         ---
+atteints par les moyeux seuls            103
+```
+
+Les moyeux sont `nexus_test.py` et `nexus_conformite.py` : ils ENUMERENT
+chaque epreuve. Un lanceur de tests qui cite tout le depot traine tout le
+depot dans le produit. La reachabilite ne separe donc rien.
+
+**Le noyau reel est de 32**, et il melange encore deux natures :
+`nexus_generate`, `nexus_capability`, `nexus_releve`, `nexus_bench`,
+`nexus_maj_modeles`, `nexus_pull_host`, `nexus_switch_engine` servent la
+passerelle ; `nexus_essaim`, `nexus_ruche`, `nexus_savings`, `nexus_sujets`,
+`nexus_patch` servent l'orchestrateur.
+
+Ce que la mesure ne dit pas, et qui est ecrit dans l'instrument : elle suit
+les mentions TEXTUELLES d'un nom de script. Les 91 constructions non
+litterales lui echappent. **32 est un plancher, jamais un total.**
+
+### 149.6 CE QUI RESTE OUVERT — remplace §148.6
+
+| sujet | etat |
+| --- | --- |
+| **frontiere projet / outillage** | les deux regles evidentes sont REFUTEES par la mesure. Noyau plancher 32. Aucun controle ne garde encore quoi que ce soit. Plans au banc, vague 29. |
+| `epreuve_verrou_banc.py` plante | `TimeoutExpired` non rattrapee, budget 180 s inadapte au cloud |
+| les 91 constructions non litterales | mesurees, non traitees |
+| duree de `nexus_test.py` | > 1800 s : elle fait de l'inference REELLE sur 83 modeles. Pas une panne, un cout. |
+| `.nexus/` dans le dossier | 103 references, 36 fichiers, nomme au contrat — ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` ecrit a l'import | seul BLOQUANT du depot, mon propre defaut |
+| 234 211 symboles AST invisibles | pas d'`index.tsv` |
+
+Aucune ligne n'est close : aucune n'a de controle qui echoue si la regle est
+enfreinte.
