@@ -149,7 +149,9 @@ def sous_controle(racine: Path, script: str, saute: bool) -> tuple:
         return IGNORE, "saute par --sauf-tests"
     chemin = racine / "scripts" / script
     if not chemin.is_file():
-        return BLOQUE, "%s introuvable" % script
+        chemin = racine / "outillage" / script
+    if not chemin.is_file():
+        return BLOQUE, "%s introuvable dans scripts/ ou outillage/" % script
 # Un controle interrompu n'est pas un controle qui refuse.
 # Un code de terminaison n'est pas un verdict.
     r = executer([sys.executable, str(chemin)], racine, 600)

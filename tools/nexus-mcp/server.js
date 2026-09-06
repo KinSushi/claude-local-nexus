@@ -3225,11 +3225,11 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
   if (name === "nexus_savings") {
     const jours = String(args.jours || 7);
     return await runPython(
-      [path.join(INSTALL_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
+      [path.join(INSTALL_ROOT, "outillage", "nexus_savings.py"), "--jours", jours]);
   }
   if (name === "nexus_charge") {
     return await runPython(
-      [path.join(INSTALL_ROOT, "scripts", "nexus_charge.py")],
+      [path.join(INSTALL_ROOT, "outillage", "nexus_charge.py")],
       300000,
       [0, 1, 2]
     );
@@ -3238,7 +3238,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     const q = String(args.question || "");
     if (!q) return { content: [{ type: "text", text: "question requise" }] };
     return await runPython(
-      [path.join(INSTALL_ROOT, "scripts", "nexus_livres_semantique.py"), "search", q]);
+      [path.join(INSTALL_ROOT, "outillage", "nexus_livres_semantique.py"), "search", q]);
   }
 
   if (name === "nexus_verrou") {
@@ -3521,7 +3521,7 @@ async function tenirVerrou(classe) {
     // spawn du processus, capture des exceptions
     try {
       const python = process.env.NEXUS_PYTHON || 'python'
-      const script = path.join(__dirname, '..', '..', 'scripts', 'nexus_verrou_tenir.py')
+      const script = path.join(__dirname, '..', '..', 'outillage', 'nexus_verrou_tenir.py')
       child = spawn(python, [script, classe, '--projet', 'mcp', '--attente-s', '900'], { stdio: ['pipe', 'pipe', 'inherit'] })
     } catch (e) {
       log('Erreur lors du spawn du verrou :', e)
