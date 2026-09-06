@@ -19417,3 +19417,135 @@ descendance vivante**, qui garde un mutex pris par un parent mort.
 **Ce qui tient de mon message :** un verrou sur un outil protege ceux qui
 passent par cet outil, pas la ressource. Nexus a le meme trou — douze outils
 MCP ne prennent pas son verrou, et c'est le chemin le plus naturel.
+
+---
+
+## 129. UN VERDICT LU COMME UNE PANNE — le miroir du defaut le plus frequent du depot
+
+Signale par une session voisine, qui recevait de l'outil MCP :
+
+```
+mcp__nexus-local__nexus_charge
+  -> Echec de nexus_charge : nexus_charge.py a echoue (code 1)
+```
+
+Reproduit a la main :
+
+```
+RAM Libre: 20.63 Go / Modeles residents: 20.98 Go / Disponible: 41.61 Go
+machine CHARGEE : processus significatifs (modeles residents: 20.98 Go)
+code de sortie : 1
+```
+
+**Le script n'etait pas casse. Le code 1 est son VERDICT**, et son propre
+docstring le declare :
+
+```
+0 : Machine au repos (libre)
+1 : Machine chargee
+2 : Mesure impossible (verdict INCONNU)
+```
+
+Suivi de sa propre formule : *« une mesure impossible n'est PAS une mesure a
+zero ; un garde qui confond "rien trouve" et "pas pu chercher" autorise
+precisement ce qu'il ne sait pas voir. »*
+
+`runPython` rejetait sur tout code non nul. **C'est le miroir exact du defaut
+le plus frequent de ce depot** — le vide lu comme une sante — dans le sens que
+personne ne surveillait.
+
+**La reformulation, due a la session voisine, et elle est meilleure que la
+notre** : il y a **trois** etats, pas deux — succes, verdict negatif, mesure
+impossible. Le docstring en nommait deux ; il manquait celui du milieu, et
+c'est precisement celui qui a mordu.
+
+### Le correctif, et les six rejets qui l'ont precede
+
+```
+signature   runPython(args, timeoutMs = 300000, codesToleres = [0])
+condition   resout si code 0 OU code dans codesToleres
+handler     runPython(args, 300000, [0, 1, 2]) pour nexus_charge
+```
+
+Onze lignes, six appels avant comme apres, les cinq autres appelants intacts.
+
+| rejet | ce qu'il faisait |
+| --- | --- |
+| **API fabriquee** x2 | `{ allowNonZero: true }` et `result.code` — n'existent nulle part |
+| **parametre masque** | `const codesToleres` redeclare dans le CORPS : la tolerance ne se serait jamais appliquee |
+| **arguments deplaces** | delai et liste places DANS le tableau, donc envoyes a `nexus_charge.py` en ligne de commande |
+| **marqueurs** x2 | `<<<FIN>>>` ecrit a la place de `<<<APRES>>>` |
+
+Aucun des trois premiers ne se distingue du bon a la lecture rapide.
+
+**Reserve, non masquee** : le serveur MCP lit son fichier **au demarrage** —
+son propre commentaire le documente et mesure le degat. Le correctif ne prendra
+effet qu'au prochain demarrage, et **il n'a pas ete eprouve en conditions
+reelles**. La contre-epreuve faite est LOGIQUE : `0/[0]` resout, `1/[0]`
+refuse, `1` et `2` resolvent avec `[0,1,2]`, `3` refuse.
+
+---
+
+## 129.1 DEUX REGLES RECUES D'UNE SESSION VOISINE, MESUREES, ET QUI VALENT ICI
+
+### 1. On peut demander de FAIRE ; on ne peut pas demander de NE PAS FAIRE
+
+Mesure de sovereign sur huit chapitres de manuel :
+
+```
+consignes d'AJOUT      « cherche les superiorites », « ecris REFERENCE MUETTE »,
+                       « liste les symboles non exploites »      -> TOUTES tenues
+consignes d'ABSTENTION « ne cite pas de memoire », « ne recompose pas »,
+                       « aucun # type: ignore »                  -> TOUTES violees
+```
+
+Trois fois dans la journee, dont une ou le contre-exemple exact figurait dans
+la consigne — *« tu connais tres bien pydantic, le risque de citer de memoire
+y est MAXIMAL »* — et ce chapitre a produit **le pire taux des huit, 4
+fabrications sur 23**.
+
+**Verifie ici le meme jour, dans les deux sens.** Ma consigne *« n'emploie
+aucun identifiant absent du fichier joint »* — une abstention — a fait
+**s'abstenir les trois modeles** : ajouter un parametre exige un nom neuf, et
+leur refus etait plus rigoureux que ma consigne. Reformulee en action —
+*« codesToleres est un nom NEUF que tu definis toi-meme, emploie-le »* — le
+patch est passe du premier coup.
+
+> **La regle doit porter sur ce qu'on PRETEND exister, jamais sur ce qu'on
+> DEFINIT soi-meme dans le meme patch.** Un parametre qu'on ajoute est un nom
+> qu'on cree, pas un nom qu'on suppose.
+
+### 2. La question n'est pas « l'outil le dit-il », c'est « ai-je lu tout ce qu'il dit »
+
+Sovereign a mene **deux echanges avec deux sessions voisines** pour attribuer
+quatre processus — alors que `verrou_machine --etat` porte depuis toujours une
+colonne d'attribution `[SAS]` / `[EA-MT5]` / `[?]`. Il avait lu les colonnes
+qu'il cherchait.
+
+**Meme classe exactement que `nexus_charge` ici** : le contrat des codes de
+sortie etait dans le docstring, et personne ne l'avait ouvert. Dans les deux
+cas, l'information etait dans la sortie ; c'est la lecture qui a manque.
+
+### 3. Le taux de fabrication suit ce que le modele CROIT DEJA SAVOIR
+
+```
+couches OBSCURES (antropy, nolds, pyinform)  ->  0 fabrication
+couches FAMILIERES (lightgbm, shapely, typer) -> 9 a 17 %
+```
+
+Ce ne sont pas les symboles rares qui sont inventes, ce sont les plus
+courants — `shapely.geometry.Point`, `typer.Exit`. **Node et son ecosysteme
+sont exactement dans cette categorie**, ce qui explique les deux API
+fabriquees ci-dessus. Le remede mesure : joindre la source, et nommer ce qu'on
+attend plutot que d'interdire ce qu'on refuse.
+
+### 4. Un correctif qui fait descendre le compteur sans faire descendre la dette
+
+Sovereign a refuse un correctif qui posait trois `# type: ignore` : le cliquet
+serait descendu, la dette non. Au renvoi avec interdiction explicite, le banc a
+trouve **une annotation, une ligne, et les trois symptomes ont disparu** — ils
+avaient une cause unique.
+
+C'est la meme famille que le `const` qui masque un parametre : **un correctif
+plausible qui ne corrige rien**, et qu'aucune lecture rapide ne distingue du
+bon.

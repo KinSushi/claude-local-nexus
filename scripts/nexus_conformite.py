@@ -1667,7 +1667,7 @@ def controle_couverture_code(racine, lire_modeles) -> tuple[str, str]:
     indexables = []
     for d in disques:
         chemin = os.path.join(src_root, d)
-        for root, _, files in os.walk(chemin):
+        for _, _, files in os.walk(chemin):
             if any(f.endswith((".py", ".ipynb")) for f in files):
                 indexables.append(d)
                 break
