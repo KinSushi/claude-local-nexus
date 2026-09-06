@@ -618,7 +618,7 @@ def main(argv: List[str] | None = None) -> int:
         all_occurrences.extend(commit_occ)
 
     # 3. Cockpit
-    cockpit_path = Path("rituels") / "CHECKLIST_COCKPIT.MD"
+    cockpit_path = Path("outillage", "rituels") / "CHECKLIST_COCKPIT.MD"
     cockpit_occ = process_cockpit(cockpit_path)
     if cockpit_occ:
         sources_read += 1

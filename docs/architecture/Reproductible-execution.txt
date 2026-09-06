@@ -40,13 +40,13 @@ router_version — VÉRIFIÉ, PARTIEL (niveau système, pas par exécution)
       # NEXUS-ROUTER-VERSION: r19be7650d1        (litellm_config.yaml:26,
                                                    valeur mesurée ce jour)
   et relue par outillage/nexus_state.py:384-390 pour l'afficher dans
-  rituels/STATE.md. C'est une version de la POLITIQUE (un hash de ce qui
+  outillage/rituels/STATE.md. C'est une version de la POLITIQUE (un hash de ce qui
   décide), pas un champ attaché à chaque exécution individuelle — la nuance
   que ce document réclame (un identifiant par tâche) n'est pas couverte.
 
 git_commit — VÉRIFIÉ, PARTIEL (même niveau : rapport d'état, pas par tâche)
   outillage/nexus_state.py:394 : `commit = run(["git", "rev-parse", "--short",
-  "HEAD"])`, également reporté dans rituels/STATE.md. Réel, mais c'est le
+  "HEAD"])`, également reporté dans outillage/rituels/STATE.md. Réel, mais c'est le
   commit du DÉPÔT au moment où l'état est généré, jamais associé à une
   exécution d'agent précise.
 

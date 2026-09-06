@@ -37,7 +37,7 @@
  },
  {
   "agent": "agent-a084add637786a142",
-  "fichier": "rituels/GABARIT_QUARANTAINE.md",
+  "fichier": "outillage/rituels/GABARIT_QUARANTAINE.md",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -361,7 +361,7 @@
  },
  {
   "agent": "agent-a50cbf7c79394206d",
-  "fichier": "rituels/CHECKLIST_PROGRESS.md",
+  "fichier": "outillage/rituels/CHECKLIST_PROGRESS.md",
   "plus": 9,
   "moins": 8,
   "etat": "MODIFIE",
@@ -370,7 +370,7 @@
  },
  {
   "agent": "agent-a50cbf7c79394206d",
-  "fichier": "rituels/GABARIT_QUARANTAINE.md",
+  "fichier": "outillage/rituels/GABARIT_QUARANTAINE.md",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -379,7 +379,7 @@
  },
  {
   "agent": "agent-a50cbf7c79394206d",
-  "fichier": "rituels/VAGUES_REPARATION.md",
+  "fichier": "outillage/rituels/VAGUES_REPARATION.md",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -388,7 +388,7 @@
  },
  {
   "agent": "agent-a5415ae7306cee00e",
-  "fichier": "rituels/DOSSIER_MANDAT_AGENT.md",
+  "fichier": "outillage/rituels/DOSSIER_MANDAT_AGENT.md",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -460,7 +460,7 @@
  },
  {
   "agent": "agent-a697c9b31ea2b75e4",
-  "fichier": "rituels/cablage_reference.json",
+  "fichier": "outillage/rituels/cablage_reference.json",
   "plus": 1,
   "moins": 2,
   "etat": "MODIFIE",
@@ -739,7 +739,7 @@
  },
  {
   "agent": "agent-a9bae5bcacf5d3042",
-  "fichier": "rituels/cablage_reference.json",
+  "fichier": "outillage/rituels/cablage_reference.json",
   "plus": 1,
   "moins": 2,
   "etat": "MODIFIE",

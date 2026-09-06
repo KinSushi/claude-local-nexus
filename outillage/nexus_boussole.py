@@ -10,8 +10,8 @@ SHA‑256 tronquée — de quoi dire si le dépôt correspond encore à ce qu'on
 croit, et où regarder.
 
 Deux sorties, pour deux usages :
-    rituels/BOUSSOLE.md   versionnée par git, lisible telle quelle
-    rituels/BOUSSOLE.csv  ouvrable dans un tableur
+    outillage/rituels/BOUSSOLE.md   versionnée par git, lisible telle quelle
+    outillage/rituels/BOUSSOLE.csv  ouvrable dans un tableur
 
 Le fichier .xlsx d'origine n'est pas alimenté : il est exclu par .gitignore,
 donc invisible de l'historique — ce qui contredit l'objet même d'un rituel
@@ -33,7 +33,7 @@ import tempfile
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
 # et les accents se dégradent dès que la sortie est capturée -- le
-# résultat finissait commité dans rituels/STATE.md, donc visible sur
+# résultat finissait commité dans outillage/rituels/STATE.md, donc visible sur
 # GitHub. PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
@@ -45,8 +45,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_MD = os.path.join(ROOT, "rituels", "BOUSSOLE.md")
-OUT_CSV = os.path.join(ROOT, "rituels", "BOUSSOLE.csv")
+OUT_MD = os.path.join(ROOT, "outillage", "rituels", "BOUSSOLE.md")
+OUT_CSV = os.path.join(ROOT, "outillage", "rituels", "BOUSSOLE.csv")
 
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".nexus", "backups",
              "logs", ".venv", "venv", "images"}
@@ -86,11 +86,11 @@ ROLES = {
     "scripts/start.ps1": ("Exploitation", "Démarrage de la pile"),
     "scripts/stop.ps1": ("Exploitation", "Arrêt de la pile"),
     "docs/pont-local-abonnement.md": ("Documentation", "Associer modèles locaux et abonnement"),
-    "rituels/STATE.md": ("Rituel", "État mesuré — généré, ne pas éditer"),
-    "rituels/PROGRESS.md": ("Rituel", "Historique des décisions et des erreurs"),
-    "rituels/CHECKLIST_COCKPIT.MD": ("Rituel", "Sujets ouverts"),
-    "rituels/RESUME.ps1": ("Rituel", "Reprise de session"),
-    "rituels/BOUSSOLE.md": ("Rituel", "Cet index"),
+    "outillage/rituels/STATE.md": ("Rituel", "État mesuré — généré, ne pas éditer"),
+    "outillage/rituels/PROGRESS.md": ("Rituel", "Historique des décisions et des erreurs"),
+    "outillage/rituels/CHECKLIST_COCKPIT.MD": ("Rituel", "Sujets ouverts"),
+    "outillage/rituels/RESUME.ps1": ("Rituel", "Reprise de session"),
+    "outillage/rituels/BOUSSOLE.md": ("Rituel", "Cet index"),
     ".claude/CLAUDE.md": ("Contrat", "Contrat d'exploitation de la plateforme"),
 }
 

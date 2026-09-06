@@ -79,7 +79,7 @@ def cockpit_frais(racine: Path) -> tuple[str, str]:
     cockpit au moins aussi récent que celui du code (les deux partis
     ensemble).
     """
-    return _frais(racine, "rituels/CHECKLIST_COCKPIT.MD", "pas de cockpit dans ce depot")
+    return _frais(racine, "outillage/rituels/CHECKLIST_COCKPIT.MD", "pas de cockpit dans ce depot")
 
 
 def _frais(racine: Path, rel: str, absent: str) -> tuple[str, str]:
@@ -130,14 +130,14 @@ def boussole_fraiche(racine: Path) -> tuple[str, str]:
     nom et l'effet divergent est pire qu'un controle absent : il se lit
     comme fait.
 
-    La boussole n'est PAS regeneree ici : rituels/BOUSSOLE.md est versionne,
+    La boussole n'est PAS regeneree ici : outillage/rituels/BOUSSOLE.md est versionne,
     et la regenerer a chaque tour salirait l'arbre -- le conflit deja mesure
     sur PROGRESS.MD (cockpit §75.8), resolu la-bas en l'ignorant de git. Le
     rituel VERIFIE donc, comme pour le cockpit, et nomme le geste (cockpit
     §105.3, ligne « un controle qui echoue si l'index est plus ancien que le
     dernier commit »).
     """
-    statut, detail = _frais(racine, "rituels/BOUSSOLE.md",
+    statut, detail = _frais(racine, "outillage/rituels/BOUSSOLE.md",
                             "pas de boussole dans ce depot")
     if statut == MANQUE:
         detail += " : python outillage/nexus_boussole.py"

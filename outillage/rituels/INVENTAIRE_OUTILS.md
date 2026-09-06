@@ -69,7 +69,7 @@
 | `nexus_secours` | non | diagnostic de secours pour le moteur d'inference local. |
 | `nexus_socle` | non | (sans docstring) |
 | `nexus_sonde_aveugle` | non | (sans docstring) |
-| `nexus_state` | non | Génère rituels/STATE.md à partir de l'état réellement mesuré. |
+| `nexus_state` | non | Génère outillage/rituels/STATE.md à partir de l'état réellement mesuré. |
 | `nexus_stats_jsonl` | non | Croise des motifs regex avec un champ booleen, PAR GROUPE, sur un journal JSONL. |
 | `nexus_sujets` | non | (sans docstring) |
 | `nexus_switch_engine` | non | Bascule le moteur d'inférence local entre Docker et l'hôte. |

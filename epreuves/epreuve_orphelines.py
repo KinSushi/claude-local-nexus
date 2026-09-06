@@ -83,7 +83,7 @@ def main():
 
     # Load or create reference
     # Une reference de cliquet doit etre SUIVIE, sinon elle se remet a zero ailleurs et le cliquet ne retient rien.
-    rituels_dir = repo_root / "rituels"
+    rituels_dir = repo_root / "outillage", "rituels"
     ref_file = rituels_dir / "orphelines_reference.json"
     if not ref_file.is_file():
         rituels_dir.mkdir(parents=True, exist_ok=True)

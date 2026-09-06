@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Génère rituels/STATE.md à partir de l'état réellement mesuré.
+Génère outillage/rituels/STATE.md à partir de l'état réellement mesuré.
 
 Un fichier d'état saisi à la main vieillit mal : il décrit ce qu'on croyait
 au moment de l'écrire. Celui-ci est produit par mesure — services, moteur
@@ -58,14 +58,14 @@ finally:
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
 # et les accents se dégradent dès que la sortie est capturée – le résultat
-# finissait commité dans rituels/STATE.md, donc visible sur GitHub.
+# finissait commité dans outillage/rituels/STATE.md, donc visible sur GitHub.
 # PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ; il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATE = os.path.join(ROOT, "rituels", "STATE.md")
+STATE = os.path.join(ROOT, "outillage", "rituels", "STATE.md")
 
 # Fichiers qui commandent le comportement : leur empreinte permet de dire
 # si l'état décrit ici correspond encore à la plateforme installée.
@@ -558,7 +558,7 @@ def main() -> int:
     # elles, et non le fichier a sa version commitee : le diff contre git
     # melangeait les changements de plusieurs passages et masquait celui-ci.
     #
-    # Tant qu'il comptait, `rituels/STATE.md` ne pouvait etre propre plus
+    # Tant qu'il comptait, `outillage/rituels/STATE.md` ne pouvait etre propre plus
     # d'une heure, et la porte de publication se refermait toute seule. La
     # ligne reste ECRITE et lisible -- elle cesse seulement de decider d'une
     # reecriture. Le motif vise le format de `docker ps`, ou l'etat est

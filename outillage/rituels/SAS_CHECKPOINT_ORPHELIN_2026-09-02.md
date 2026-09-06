@@ -67,7 +67,7 @@
 > **Ce n'est pas une conversation : c'est son unite de reprise.** Relais
 > fidele, rien de reformule. Chemin qu'il demandait : `references/...` — pose
 > ici a la place, car `references/livres/` et ses voisins sont **gitignore**
-> (9 fichiers suivis sous `references/` contre 33 sous `rituels/`) : le
+> (9 fichiers suivis sous `references/` contre 33 sous `outillage/rituels/`) : le
 > checkpoint y aurait survecu a la session et **pas au clone**.
 >
 > Voir aussi [LECONS_PARTAGEES §27](LECONS_PARTAGEES.md) et

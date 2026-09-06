@@ -28,7 +28,7 @@ detruit quoi que ce soit contre sa propre base.
 
 ```
 git checkout <branche> -- <fichier>          pour le commite
-cp rituels/QUARANTAINE/<agent>/<fichier> .   pour le non commite
+cp outillage/rituels/QUARANTAINE/<agent>/<fichier> .   pour le non commite
 ```
 
 Une session voisine a paye l'autre choix : une greffe par cherry-pick a
@@ -44,8 +44,8 @@ autres sont partis en silence.
 | `scripts/nexus_disjoncteur.py` | `755c603728d190` | 22 | 3 | 7/8 | False/False/False | `git checkout worktree-agent-ae2755c603728d190 -- scripts/nexus_disjoncteur.py` |
 | `QUARANTAINE.md` | `5cd08dccd3fd97` | 625 | 0 | 6/8 | False/True/True | `git checkout worktree-agent-a415cd08dccd3fd97 -- QUARANTAINE.md` |
 | `outillage/nexus_filet.py` | `5cd08dccd3fd97` | 406 | 0 | 6/8 | False/True/True | `git checkout worktree-agent-a415cd08dccd3fd97 -- outillage/nexus_filet.py` |
-| `rituels/CHECKLIST_LIVRE_VS_CODE.md` | `ae5bcacf5d3042` | 83 | 11 | 5/8 | False/False/False | `git checkout worktree-agent-a9bae5bcacf5d3042 -- rituels/CHECKLIST_LIVRE_VS_CODE.md` |
-| `rituels/outillage_reference.json` | `b278a9ee2836a5` | 5 | 6 | 5/8 | False/False/False | `git checkout worktree-agent-a0bb278a9ee2836a5 -- rituels/outillage_reference.json` |
+| `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | `ae5bcacf5d3042` | 83 | 11 | 5/8 | False/False/False | `git checkout worktree-agent-a9bae5bcacf5d3042 -- outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` |
+| `outillage/rituels/outillage_reference.json` | `b278a9ee2836a5` | 5 | 6 | 5/8 | False/False/False | `git checkout worktree-agent-a0bb278a9ee2836a5 -- outillage/rituels/outillage_reference.json` |
 | `epreuves/epreuve_orphelines.py` | `b278a9ee2836a5` | 17 | 0 | 5/8 | False/False/False | `git checkout worktree-agent-a0bb278a9ee2836a5 -- epreuves/epreuve_orphelines.py` |
 | `epreuves/epreuve_progres.py` | `b278a9ee2836a5` | 195 | 163 | 5/8 | False/False/False | `git checkout worktree-agent-a0bb278a9ee2836a5 -- epreuves/epreuve_progres.py` |
 | `epreuves/epreuve_rendu_vide.py` | `ae5bcacf5d3042` | 152 | 0 | 5/8 | False/False/False | `git checkout worktree-agent-a9bae5bcacf5d3042 -- epreuves/epreuve_rendu_vide.py` |

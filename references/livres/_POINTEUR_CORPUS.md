@@ -28,7 +28,7 @@ source et son titre de section. Aucune reformulation, aucun résumé généré.
 | 270 | Architecting AI Software Systems |
 
 Les 17 autres — trading algorithmique, C++, cybersécurité offensive, mathématiques du ML,
-apprentissage par renforcement — sont listés dans `rituels/CORPUS_LIVRES.md`.
+apprentissage par renforcement — sont listés dans `outillage/rituels/CORPUS_LIVRES.md`.
 
 ## Provenance
 

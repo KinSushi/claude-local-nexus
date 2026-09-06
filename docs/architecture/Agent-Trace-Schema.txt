@@ -36,7 +36,7 @@ parent_agent_id, policy_version, prompt_version, context_profile, tool,
 iteration, input_tokens, output_tokens, latency_ms, cost_usd, status,
 error_type, fallback_from, fallback_to, validation_status n'apparait dans un
 script du depot (grep sur l'ensemble de l'arbre, hors docs/architecture/*.txt
-et rituels/CHECKLIST_COCKPIT.MD qui ne font que citer cette note).
+et outillage/rituels/CHECKLIST_COCKPIT.MD qui ne font que citer cette note).
 
 EXCEPTION REELLE, PARTIELLE : `router_version` EXISTE, mais pas sous la forme
 proposee ici (un champ par trace individuelle). C'est un tampon de version
@@ -47,7 +47,7 @@ GLOBAL du fichier de configuration genere :
     litellm_config.yaml ligne 26 porte `# NEXUS-ROUTER-VERSION: r19be7650d1`
     au moment de cette verification) ;
   - relu par outillage/nexus_state.py:384-420 pour l'afficher dans
-    rituels/STATE.md.
+    outillage/rituels/STATE.md.
 Donc `router_version` designe une version de LA CONFIGURATION (un hash de son
 contenu), jamais un champ appose a chaque execution d'agent comme le
 suggere ce schema. Classer ce champ seul : PARTIELLEMENT VERIFIE (le nom

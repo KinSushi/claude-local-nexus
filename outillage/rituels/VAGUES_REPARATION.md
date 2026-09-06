@@ -7,7 +7,7 @@
 > **Chaque chiffre de ce document a été mesuré**, aucun n'est repris d'une note antérieure :
 > cinq compteurs du dépôt ont été trouvés périmés le même soir.
 >
-> Ce fichier n'est **pas généré**. `rituels/CHECKLIST_PROGRESS.md` l'est, par
+> Ce fichier n'est **pas généré**. `outillage/rituels/CHECKLIST_PROGRESS.md` l'est, par
 > `outillage/nexus_checklist_progres.py` — l'éditer à la main serait écrasé au passage suivant.
 
 ---
@@ -202,7 +202,7 @@ C'est un défaut structurel du cycle à trois temps du §0.7.1. L'agent refuse d
 lançant la copie de l'arbre principal, ce qui ferait juger — et écrire — dans l'arbre vivant.
 
 **Un contrôle de validation ÉCRIT dans un fichier suivi par git.** `nexus_conformite` appelle
-`nexus_cablage.py` en mode verdict, qui « resserre » `rituels/cablage_reference.json`
+`nexus_cablage.py` en mode verdict, qui « resserre » `outillage/rituels/cablage_reference.json`
 (`nexus_cablage.py:426-427`) : il en a retiré `outillage/nexus_epreuve_vide.py` de `preuve_seule`,
 **figeant dans la référence le faux gain** décrit au §2.2 — celui où une épreuve compte comme
 appelant d'un fichier de production. Détecté par `git diff`, restauré par `git checkout`.
@@ -216,7 +216,7 @@ travail. **Deux acteurs, deux fois, le même outil.**
 
 **Ce que l'agent 1 a réfuté** : `CHECKLIST_LIVRE_VS_CODE.md:387` affirme que le cliquet
 signalait l'épreuve comme orpheline. Mesuré : **il ne la signalait pas** — il la classait
-`PREUVE_SEULE`, figée par `rituels/cablage_reference.json:8`. Le défaut réel existait,
+`PREUVE_SEULE`, figée par `outillage/rituels/cablage_reference.json:8`. Le défaut réel existait,
 l'instrument ne le voyait pas.
 
 **Défauts collatéraux qu'il signale et n'a pas corrigés** :
@@ -495,7 +495,7 @@ Précisions de l'opérateur, dans l'ordre où elles sont venues :
 
 ### 7.1.1 Le fait qui rend l'architecture possible — mesuré, pas supposé
 
-`rituels/SURVIE_SANS_ABONNEMENT.md` §2 :
+`outillage/rituels/SURVIE_SANS_ABONNEMENT.md` §2 :
 
 ```
 POST http://localhost:11434/v1/messages   ->  HTTP 200 en 48.9 s
@@ -1650,7 +1650,7 @@ d'exécution a tenu, et la livraison n'existe pas.
 ### 13.7.3 Le dépôt a le nom, pas le mécanisme
 
 ```
-rituels/_QUARANTAINE_BRICOLAGE/
+outillage/rituels/_QUARANTAINE_BRICOLAGE/
     _temoin_bricolage.py      88 octets
 ```
 
@@ -1869,9 +1869,9 @@ contrôle survit à un appel entièrement réussi. Prouvé par exécution.
 - Les **4 livres à chemin trop long** ne sont pas récupérés.
 - Le candidat `.nexus/settings_candidat.json` n'est pas appliqué.
 - Aucun audit final global, **aucun troisième temps** sur la vague 1.
-- « 40 fichiers » et « 98 outils » évoqués par l'opérateur : **aucune trace** dans `rituels/`,
+- « 40 fichiers » et « 98 outils » évoqués par l'opérateur : **aucune trace** dans `outillage/rituels/`,
   `docs/`, les contrats ni les worktrees. Classés **NON VÉRIFIÉ**. Le seul décompte voisin est
-  `rituels/STATE.md:73` — 140 fichiers analysés, six classes de défauts.
+  `outillage/rituels/STATE.md:73` — 140 fichiers analysés, six classes de défauts.
 - Le template `CODE_PREMIUM` des dépôts voisins a été **localisé mais non importé** :
   l'opérateur les rejette, et la copie a d'ailleurs été refusée par l'ACL. Seules les trois
   idées du cockpit §70.5 sont retenues — provenance, présence ≠ contenu, cliquet ≠ portail.
@@ -2378,7 +2378,7 @@ avec le travail en cours sur `main`. Aucun conflit possible, et rien à perdre.
 Intégré : `nexus_disjoncteur.py`, `nexus_agent.py`, `nexus_capability.py`,
 `nexus_conformite.py`, `nexus_validate.py`, plus deux fichiers neufs —
 `nexus_quarantaine.py` (995 lignes, jamais présent sur `main`) et
-`rituels/GABARIT_QUARANTAINE.md`.
+`outillage/rituels/GABARIT_QUARANTAINE.md`.
 
 ### 28.2 Ce qui reste OUVERT après cette vague
 
@@ -2798,10 +2798,10 @@ Ce que ces diffs contiennent réellement :
 
 | worktree | contenu du diff |
 | --- | --- |
-| `a9bae5bc` | `rituels/cablage_reference.json` **et rien d'autre** — horodatage porté à `2026-09-03T04:57:26`, `nexus_epreuve_vide.py` retiré de `preuve_seule` |
+| `a9bae5bc` | `outillage/rituels/cablage_reference.json` **et rien d'autre** — horodatage porté à `2026-09-03T04:57:26`, `nexus_epreuve_vide.py` retiré de `preuve_seule` |
 | `a697c9b3` | le même fichier (horodaté `01:41:37`) **plus** 2 vraies lignes dans `outillage/nexus_test.py` |
 
-`rituels/cablage_reference.json` est **la ligne de base du cliquet de câblage**.
+`outillage/rituels/cablage_reference.json` est **la ligne de base du cliquet de câblage**.
 Elle est réécrite en effet de bord par toute passe de validation lancée dans un
 worktree : les horodatages sont ceux de cette nuit, pas ceux d'un travail
 d'agent.
@@ -2819,7 +2819,7 @@ signale désormais.
 **Le remède est dans le code de l'outil lui-même** : `--exclure` a déjà pour
 défaut `outillage/nexus_doc.py`, et sa docstring dit pourquoi — *« des copies
 posées par l'orchestrateur et non du travail d'agent »*.
-`rituels/cablage_reference.json` est rigoureusement la même catégorie : un
+`outillage/rituels/cablage_reference.json` est rigoureusement la même catégorie : un
 fichier **généré**.
 
 Deux exigences transmises, la seconde étant la même que pour les trois autres
@@ -2851,7 +2851,7 @@ sa valeur.
 Rejoué par l'audit, avec `--racine`, contre la flotte réelle :
 
 ```
-a50cbf7c : vide (1 fichier genere ecarte : rituels/CHECKLIST_PROGRESS.md)
+a50cbf7c : vide (1 fichier genere ecarte : outillage/rituels/CHECKLIST_PROGRESS.md)
 a697c9b3 : 13 lignes - ok
 a9bae5bc : vide en modifications non indexees (1 fichier genere ecarte),
            MAIS 1 commit(s) non recoltes (3 fichiers, main...HEAD)
@@ -2871,7 +2871,7 @@ fait.
 
 **Cinquième cas, trouvé par l'auteur et non par moi** : `a50cbf7c`, que le
 filet annonçait `50 lignes - deja applique`, est à 100 % un
-`rituels/CHECKLIST_PROGRESS.md` — un rapport dont l'en-tête porte littéralement
+`outillage/rituels/CHECKLIST_PROGRESS.md` — un rapport dont l'en-tête porte littéralement
 `Generated:` — avec zéro commit d'avance. **Un worktree vide présenté comme du
 travail intégré.**
 
@@ -3475,8 +3475,8 @@ Et les horodatages :
 
 ```
 PROGRESS.MD              2026-09-03 07:17    regeneree cette nuit
-rituels/BOUSSOLE.md      2026-09-02 07:21    24 heures
-rituels/BOUSSOLE.csv     2026-09-02 07:21    24 heures
+outillage/rituels/BOUSSOLE.md      2026-09-02 07:21    24 heures
+outillage/rituels/BOUSSOLE.csv     2026-09-02 07:21    24 heures
 ```
 
 Le contrôle a rendu `[OK] boussole` à **chaque tour**, pendant que le fichier
@@ -3513,7 +3513,7 @@ rougir.** Pas relire son code — le confronter.
 * `echo casse > un_fichier_de_production` → la garde aurait dû refuser ;
 * `--base f364f40` → le cliquet aurait dû compter 853 ;
 * `grep -c "[worktree-agent-"` → 45 là où le contrôle compte 0 ;
-* `date -r rituels/BOUSSOLE.md` → 24 heures là où il dit « régénéré ».
+* `date -r outillage/rituels/BOUSSOLE.md` → 24 heures là où il dit « régénéré ».
 
 Chacune de ces commandes tient sur une ligne. Aucune ne demande de lire le
 code. C'est la **contre-épreuve**, et le contrat la déclare obligatoire depuis

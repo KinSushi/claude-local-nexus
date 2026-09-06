@@ -1,6 +1,6 @@
 {
   "_a_fusionner_dans": "C:/Users/dibac/.claude/settings.json",
-  "_comment": "FRAGMENT PRET A FUSIONNER — ajouter la cle 'permissions' ci-dessous au fichier de reglages GLOBAL, sans remplacer le reste du fichier. Derive de rituels/SOCLE_UNIVERSEL.json, dont l'empreinte sha256 cef66586c7fbebfb est la PREUVE de convergence des trois depots — ce fichier source ne doit jamais etre modifie, d'ou ce fragment separe.",
+  "_comment": "FRAGMENT PRET A FUSIONNER — ajouter la cle 'permissions' ci-dessous au fichier de reglages GLOBAL, sans remplacer le reste du fichier. Derive de outillage/rituels/SOCLE_UNIVERSEL.json, dont l'empreinte sha256 cef66586c7fbebfb est la PREUVE de convergence des trois depots — ce fichier source ne doit jamais etre modifie, d'ou ce fragment separe.",
   "_apres_la_pose_deux_mesures": [
     "1. PRECEDENCE : les regles LOCALES s'ajoutent-elles ou sont-elles remplacees ? Non mesuree par les trois sessions. Enjeu : si le global remplace, sovereign perd ses 99 regles actives — les seules eprouvees des trois — en croyant en gagner.",
     "2. INERTIE DES Write() : ea-mt5 documente que Write/MultiEdit/NotebookEdit seraient acceptees et jamais consultees depuis la v2.1.210. Non re-mesure. Protocole : ecrire par l'outil Write un fichier NEUF a un chemin couvert par une regle Write(...), en zone scratch. Si l'ecriture passe, la regle est inerte et il faut les retirer.",

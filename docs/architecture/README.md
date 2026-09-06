@@ -4,7 +4,7 @@ Ces documents sont la **matière première du projet** : ce qu'on veut
 construire, et pourquoi. Ils décrivent une cible, pas l'état déployé.
 
 La distinction est volontaire. L'état réellement en place est mesuré et
-généré — voir [`rituels/STATE.md`](../../rituels/STATE.md) — tandis que ces
+généré — voir [`outillage/rituels/STATE.md`](../../rituels/STATE.md) — tandis que ces
 notes servent de réserve d'idées où puiser à mesure que la plateforme mûrit.
 Plusieurs y ont déjà été puisées : les profils d'exécution, le versionnement
 du routeur, la détection de dérive et les tests de conformité sont

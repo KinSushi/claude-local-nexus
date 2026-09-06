@@ -18,7 +18,7 @@ Genere le 2026-09-06T14:17:58Z par `outillage/nexus_quarantaine.py`.
 
 ## Audit
 
-Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT_QUARANTAINE.md` (une ligne du tableau = un « Fichier » du gabarit). La colonne « original » dit si `_ORIGINAL/<chemin>` existe sous ce worktree en quarantaine : sans lui, aucun diff n'est possible et l'audit ne peut pas avoir lieu. « FICHIER NEUF » signifie qu'aucun original n'a ete trouve dans l'arbre principal -- attendu pour un fichier cree par l'agent, a verifier sinon. Les trois sections qui suivent separent les fichiers SANS aucun fichier de preuve, de ceux dont la preuve est PARTIELLE (fichier trouve, rubriques non toutes remplies) et de ceux dont la preuve est COMPLETE (huit rubriques remplies). Le critere porte sur la PRESENCE d'une reponse par rubrique, jamais sur son contenu, et aucune couleur n'est calculee ici : seule celle ECRITE PAR L'AUTEUR est rapportee, ou son absence (contrat §0.7.1).
+Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `outillage/rituels/GABARIT_QUARANTAINE.md` (une ligne du tableau = un « Fichier » du gabarit). La colonne « original » dit si `_ORIGINAL/<chemin>` existe sous ce worktree en quarantaine : sans lui, aucun diff n'est possible et l'audit ne peut pas avoir lieu. « FICHIER NEUF » signifie qu'aucun original n'a ete trouve dans l'arbre principal -- attendu pour un fichier cree par l'agent, a verifier sinon. Les trois sections qui suivent separent les fichiers SANS aucun fichier de preuve, de ceux dont la preuve est PARTIELLE (fichier trouve, rubriques non toutes remplies) et de ceux dont la preuve est COMPLETE (huit rubriques remplies). Le critere porte sur la PRESENCE d'une reponse par rubrique, jamais sur son contenu, et aucune couleur n'est calculee ici : seule celle ECRITE PAR L'AUTEUR est rapportee, ou son absence (contrat §0.7.1).
 
 ## Resume
 
@@ -149,18 +149,18 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `rituels/BOUSSOLE.csv` | non_commite ( M) | 400763 | oui (13663046 octets) |
-| `rituels/CHECKLIST_COCKPIT.MD` | non_commite ( M) | 952614 | oui (1066903 octets) |
-| `rituels/CHECKLIST_LIVRE_VS_CODE.md` | non_commite ( M) | 33312 | oui (33312 octets) |
-| `rituels/CHECKLIST_PROGRESS.md` | non_commite ( M) | 1509 | oui (1509 octets) |
-| `rituels/GABARIT_QUARANTAINE.md` | non_commite (??) | 5846 | oui (5846 octets) |
-| `rituels/INVENTAIRE_OUTILS.md` | non_commite ( M) | 6416 | oui (6416 octets) |
-| `rituels/LECONS_PARTAGEES.md` | non_commite ( M) | 60078 | oui (60078 octets) |
-| `rituels/SURVIE_SANS_ABONNEMENT.md` | non_commite ( M) | 11855 | oui (11855 octets) |
-| `rituels/VAGUES_REPARATION.md` | non_commite (??) | 94466 | oui (205112 octets) |
-| `rituels/cablage_reference.json` | non_commite ( M) | 593 | oui (791 octets) |
-| `rituels/orphelines_reference.json` | non_commite ( M) | 19 | oui (19 octets) |
-| `rituels/outillage_reference.json` | non_commite ( M) | 578 | oui (578 octets) |
+| `outillage/rituels/BOUSSOLE.csv` | non_commite ( M) | 400763 | oui (13663046 octets) |
+| `outillage/rituels/CHECKLIST_COCKPIT.MD` | non_commite ( M) | 952614 | oui (1066903 octets) |
+| `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | non_commite ( M) | 33312 | oui (33312 octets) |
+| `outillage/rituels/CHECKLIST_PROGRESS.md` | non_commite ( M) | 1509 | oui (1509 octets) |
+| `outillage/rituels/GABARIT_QUARANTAINE.md` | non_commite (??) | 5846 | oui (5846 octets) |
+| `outillage/rituels/INVENTAIRE_OUTILS.md` | non_commite ( M) | 6416 | oui (6416 octets) |
+| `outillage/rituels/LECONS_PARTAGEES.md` | non_commite ( M) | 60078 | oui (60078 octets) |
+| `outillage/rituels/SURVIE_SANS_ABONNEMENT.md` | non_commite ( M) | 11855 | oui (11855 octets) |
+| `outillage/rituels/VAGUES_REPARATION.md` | non_commite (??) | 94466 | oui (205112 octets) |
+| `outillage/rituels/cablage_reference.json` | non_commite ( M) | 593 | oui (791 octets) |
+| `outillage/rituels/orphelines_reference.json` | non_commite ( M) | 19 | oui (19 octets) |
+| `outillage/rituels/outillage_reference.json` | non_commite ( M) | 578 | oui (578 octets) |
 
 ### agent-a5415ae7306cee00e
 
@@ -172,7 +172,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `rituels/DOSSIER_MANDAT_AGENT.md` | non_commite (??) | 14167 | NON -- FICHIER NEUF |
+| `outillage/rituels/DOSSIER_MANDAT_AGENT.md` | non_commite (??) | 14167 | NON -- FICHIER NEUF |
 
 ### agent-a54e8dae802fa4a1b
 
@@ -472,7 +472,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 10266 | NON -- FICHIER NEUF |
-| `rituels/GABARIT_QUARANTAINE.md` | non_commite (??) | 5846 | oui (5846 octets) |
+| `outillage/rituels/GABARIT_QUARANTAINE.md` | non_commite (??) | 5846 | oui (5846 octets) |
 | `outillage/nexus_quarantaine.py` | non_commite (??) | 43895 | oui (43895 octets) |
 
 ### agent-a0bb278a9ee2836a5
@@ -490,7 +490,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 21624 | NON -- FICHIER NEUF |
-| `rituels/outillage_reference.json` | commite (M) | 526 | oui (578 octets) |
+| `outillage/rituels/outillage_reference.json` | commite (M) | 526 | oui (578 octets) |
 | `epreuves/epreuve_orphelines.py` | commite (M) | 4643 | oui (3677 octets) |
 | `epreuves/epreuve_progres.py` | commite (M) | 9119 | oui (5602 octets) |
 | `outillage/nexus_cablage.py` | commite (M) | 20787 | oui (19757 octets) |
@@ -607,7 +607,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 12176 | NON -- FICHIER NEUF |
-| `rituels/cablage_reference.json` | non_commite ( M) | 554 | oui (791 octets) |
+| `outillage/rituels/cablage_reference.json` | non_commite ( M) | 554 | oui (791 octets) |
 | `outillage/nexus_test.py` | non_commite ( M) | 171916 | oui (175825 octets) |
 
 ### agent-a6d8fb7354cc50b30
@@ -681,8 +681,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 15392 | NON -- FICHIER NEUF |
-| `rituels/CHECKLIST_LIVRE_VS_CODE.md` | commite (M) | 38308 | oui (33312 octets) |
-| `rituels/cablage_reference.json` | non_commite ( M) | 553 | oui (791 octets) |
+| `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | commite (M) | 38308 | oui (33312 octets) |
+| `outillage/rituels/cablage_reference.json` | non_commite ( M) | 553 | oui (791 octets) |
 | `epreuves/epreuve_rendu_vide.py` | commite (A) | 6108 | NON -- FICHIER NEUF |
 | `outillage/nexus_test.py` | commite (M) | 172187 | oui (175825 octets) |
 

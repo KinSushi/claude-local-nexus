@@ -111,6 +111,6 @@ Register-ScheduledTask -TaskName $NomTache -Trigger $trigger -Action $action `
 
 Write-Host "Tache $NomTache enregistree : toutes les $Minutes minutes." -ForegroundColor Green
 Write-Host "  Journal   : $log" -ForegroundColor Gray
-Write-Host "  Cockpit   : rituels/STATE.md" -ForegroundColor Gray
+Write-Host "  Cockpit   : outillage/rituels/STATE.md" -ForegroundColor Gray
 Write-Host "  Supprimer : .\scripts\Register-NexusTraque.ps1 -Supprimer" -ForegroundColor Gray
 exit 0

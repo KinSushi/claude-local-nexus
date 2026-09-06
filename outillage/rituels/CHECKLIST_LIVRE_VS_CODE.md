@@ -316,7 +316,7 @@ bord (`outillage/nexus_epreuve_vide.py:93-95`). Mais `jouer_epreuve_python`
 contrat que cet outil ne parle pas. Lui passer `scripts` n aurait rien
 change : il rend 31 lignes de signal et exit 1, donc toujours « aucun cas
 rendu ». Appelant unique, mesure : `nexus_test.py:1389` (grep sur `scripts/`,
-`tools/`, `.claude/`, `rituels/` ; hooks de `.claude/settings.json` ; aucune
+`tools/`, `.claude/`, `outillage/rituels/` ; hooks de `.claude/settings.json` ; aucune
 tache planifiee Nexus ni par `Get-ScheduledTask` ni par `schtasks`). Pose par
 `c672862`, dont le message dit lui-meme que ces quatre-la « ne sont pas des
 epreuves mais des OUTILS » — et les a cables quand meme.
@@ -541,7 +541,7 @@ fichier a faire reparer »*. Inventaire mecanique, pas declaratif.
 | ensemble | compte |
 | --- | --- |
 | fichiers suivis par git | 278 |
-| dont **le PROJET** (hors `nexus_*`, `epreuve_*`, `rituels/`, `references/`, `.claude/`) | **93** |
+| dont **le PROJET** (hors `nexus_*`, `epreuve_*`, `outillage/rituels/`, `references/`, `.claude/`) | **93** |
 | couverts par un agent de reparation | **44** |
 | **jamais vus par personne** | **49** |
 
