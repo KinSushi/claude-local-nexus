@@ -20360,3 +20360,35 @@ porte la commande qui le tranche**. Les sept fermes ci-dessus l'ont ete par
 une ligne de code chacun ; les sept ouverts le restent pour la meme raison,
 et on le sait maintenant en trente secondes au lieu d'une lecture de 20 000
 lignes.
+
+
+### Correction immediate — le NEUVIEME faux ferme, trouve dix minutes apres
+
+`nexus_doc affirme un ancrage faux pour la stdlib` avait ete classe **FERME**
+ci-dessus, sur la foi de `--stats` qui n'imprimait aucune version. Une requete
+REELLE le dement :
+
+```
+python scripts/nexus_doc.py subprocess.run
+  - **Bibliotheque** : `python` version `3.13.2`
+    ancrage version installee : **OUI**
+```
+
+**L'interpreteur installe est 3.14.7.** La base porte une doc figee de 3.13.2
+et **affirme le contraire**. Le sujet est **OUVERT**.
+
+Ce qui l'a revele : une session voisine demandait a copier cette base pour
+verifier des signatures avant d'ecrire. C'est le pire usage possible d'un
+ancrage faux — une signature de 3.13.2 presentee comme celle de la version
+courante, donc une erreur **confirmee a tort**.
+
+**Ma commande de verification etait le probleme** : `--stats` ne rend aucune
+version, donc « aucune version annoncee » a ete lu comme « aucune version
+fausse ». Un silence pris pour un verdict, la classe meme que ce cockpit
+traque.
+
+⇒ **Le remede general, et il vaut pour les 27 sujets** : un sujet ne se
+verifie pas par la commande la plus commode mais par celle qui EXERCE le
+mecanisme. `--stats` decrit ; une requete reelle exerce. Les sept fermetures
+declarees plus haut ont toutes ete obtenues par une commande qui exerce ; ce
+neuvieme faux ferme est le seul qui reposait sur une commande qui decrit.
