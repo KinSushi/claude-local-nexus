@@ -3680,6 +3680,28 @@ def test_garde_shell() -> None:
         check(nom, r.stdout == "" and r.returncode == 0,
               "rc=%s" % r.returncode)
 
+    # Deux épreuves autonomes surveillent cette même garde et le cliquet
+    # de câblage les a signalées orphelines : personne ne les appelait.
+    # Chacune fait sys.exit(1 si un cas interne échoue, 0 sinon) ; un
+    # returncode nul exige donc qu'AUCUN cas n'ait échoué, pas seulement
+    # que le script a tourné -- sinon ce serait un faux vert. cwd=ROOT :
+    # leurs chemins internes sont relatifs à la racine du dépôt.
+    for nom, script in (
+        ("epreuve garde heredoc", "epreuve_garde_heredoc.py"),
+        ("epreuve garde encodage", "epreuve_garde_encodage.py"),
+    ):
+        chemin = os.path.join(ROOT, "scripts", script)
+        if not os.path.isfile(chemin):
+            skip(nom, "%s introuvable" % script)
+            continue
+        r = subprocess.run([sys.executable, chemin], cwd=ROOT,
+                           capture_output=True, text=True, timeout=60,
+                           encoding="utf-8", errors="replace")
+        lignes = [x.strip() for x in (r.stdout or "").splitlines()
+                  if "ECHEC" in x or "PLANTE" in x]
+        detail = " | ".join(lignes[:2]) if lignes else "rc=%d" % r.returncode
+        check(nom, r.returncode == 0, detail)
+
 
 if __name__ == "__main__":
     sys.exit(main())
