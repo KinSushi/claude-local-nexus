@@ -1,7 +1,7 @@
 [
  {
   "agent": "agent-a03ce1f4953606cae",
-  "fichier": "competences/relire-code.txt",
+  "fichier": "outillage/competences/relire-code.txt",
   "plus": 1,
   "moins": 1,
   "etat": "MODIFIE",
@@ -226,7 +226,7 @@
  },
  {
   "agent": "agent-a268d2e8fe1dc957c",
-  "fichier": "competences/arbitrer.txt",
+  "fichier": "outillage/competences/arbitrer.txt",
   "plus": 36,
   "moins": 0,
   "etat": "MODIFIE",

@@ -52,7 +52,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "competences/relire-code.txt",
+          "chemin": "outillage/competences/relire-code.txt",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 1078,
@@ -991,7 +991,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "competences/arbitrer.txt",
+          "chemin": "outillage/competences/arbitrer.txt",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 2862,

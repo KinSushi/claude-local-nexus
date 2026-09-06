@@ -18172,7 +18172,7 @@ La grille de revue de `.nexus/socle/GRILLE_DE_REVUE.md` en tient compte.
 | `nexus_appliquer.py` — refuser un correctif nul | audite tiers : **APPLICABLE** |
 | `nexus_outillage.py` — perimetre PSScriptAnalyzer | audite tiers : **APPLICABLE AVEC RESERVE**, eprouve sur la machine |
 | `nexus_generate.py` — `EMBED_HINT` voit `bge-m3` | resserre, verifie sur 81 alias, **audit tiers a refaire** |
-| `nexus_agent.py` — fondement automatique via `competences/fondement.txt` | trois ancres valides, **audit tiers a faire** |
+| `nexus_agent.py` — fondement automatique via `outillage/competences/fondement.txt` | trois ancres valides, **audit tiers a faire** |
 | `nexus_agent.py` — refuser de demarrer si `--sortie` est inecrivable | ancre valide, **audit tiers a faire** |
 | `scripts/nexus_bricolage.py` — cliquet sur la forme 5 du §0.6 | rendu, **audit tiers a faire** |
 | `scripts/nexus_cockpit.py` — mecaniser cette checklist | rendu, **audit tiers a faire** |
@@ -22693,7 +22693,7 @@ git ls-files | par repertoire
   references/   16
   tools/         8
   .claude/       4
-  competences/   3
+  outillage/competences/   3
 ```
 
 **195 des 307 fichiers suivis sont mon outillage : 63,5 %.**

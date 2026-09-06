@@ -106,7 +106,7 @@ Quand la latence prime sur la confidentialité, demander
 ## 1️⃣bis Les compétences
 *Une consigne système réutilisable, désignée par son nom.*
 
-Les fichiers vivent dans `competences/` à la racine de la plateforme : un
+Les fichiers vivent dans `outillage/competences/` à la racine de la plateforme : un
 fichier `.txt` par compétence, une règle par ligne.
 
 | Nom | Ce qu'elle impose |
@@ -128,7 +128,7 @@ Un nom inconnu affiche la liste des noms disponibles et rend le code 1.
 
 Les compétences appartiennent à la **plateforme** : un projet tiers qui
 appelle le script en hérite sans rien installer. Pour en ajouter une, dépose
-un fichier `.txt` dans `competences/` — aucun code à modifier.
+un fichier `.txt` dans `outillage/competences/` — aucun code à modifier.
 
 Ce que cela vaut, mesuré. Sur un piège réel — un découpage PowerShell
 `$Reste[1..($Reste.Count-1)]` qui, sur un tableau d'un seul élément, renvoie

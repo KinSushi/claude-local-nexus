@@ -1336,7 +1336,7 @@ def lister_competences() -> list:
     Un repertoire absent rend une liste vide plutot que de lever : l'absence
     de competences n'est pas une panne, seulement une fonction inemployee.
     """
-    chemin = os.path.join(ROOT, "competences")
+    chemin = os.path.join(ROOT, "outillage", "competences")
     if not os.path.isdir(chemin):
         return []
     return sorted(os.path.splitext(f)[0]
@@ -1355,7 +1355,7 @@ def charger_competence(nom: str) -> str:
         raise RuntimeError(
             "Competence '%s' inconnue. Disponibles : %s"
             % (nom, ", ".join(disponibles) or "aucune"))
-    chemin = os.path.join(ROOT, "competences", nom + ".txt")
+    chemin = os.path.join(ROOT, "outillage", "competences", nom + ".txt")
     with io.open(chemin, encoding="utf-8") as fh:
         return fh.read()
 
@@ -1375,7 +1375,7 @@ def main() -> int:
                               "les modeles locaux lents.")
     parseur.add_argument("--systeme", help="Consigne systeme optionnelle.")
     parseur.add_argument("--competence",
-                         help="Consigne systeme prise dans competences/. "
+                         help="Consigne systeme prise dans outillage/competences/. "
                               "Disponibles : %s" % (", ".join(lister_competences()) or "aucune"))
     # Le défaut était 1500 quand le paramètre était inerte : la passerelle
     # ignorait max_tokens et appliquait 4096 (ou 8192 en cloud). Depuis que

@@ -16,12 +16,12 @@ Documenter le raisonnement de maniere concise et factuelle.
 VERIFICATION (2026-09-02, agent d'audit, worktree agent-a268d2e8fe1dc957c)
 
 CABLAGE - VERIFIE. `lister_competences()` (scripts/nexus_agent.py:1303) lit
-`competences/*.txt` par le nom de fichier ; l'option `--competence`
+`outillage/competences/*.txt` par le nom de fichier ; l'option `--competence`
 (scripts/nexus_agent.py:1353-1355) l'expose. Preuve d'execution :
 
     $ python scripts/nexus_agent.py --help | grep -A2 competence
     --competence COMPETENCE
-                          Consigne systeme prise dans competences/. Disponibles
+                          Consigne systeme prise dans outillage/competences/. Disponibles
                           : arbitrer, relire-code, repondre-court
 
 "arbitrer" apparait bien dans la liste rendue par le vrai script, sur ce
@@ -39,7 +39,7 @@ l'absence de donnee, la seconde l'egalite entre options connues -- deux
 situations distinctes.
 
 A comparer avec le defaut deja prouve par execution dans
-`competences/relire-code.txt` (hors perimetre de cet audit) : sa regle 12
+`outillage/competences/relire-code.txt` (hors perimetre de cet audit) : sa regle 12
 interdit toute affirmation sans execution alors que ses regles 3-4 exigent
 une analyse statique -- une contradiction reelle, absente ici.
 

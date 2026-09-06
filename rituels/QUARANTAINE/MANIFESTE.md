@@ -38,7 +38,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `competences/relire-code.txt` | non_commite ( M) | 1078 | oui (1078 octets) |
+| `outillage/competences/relire-code.txt` | non_commite ( M) | 1078 | oui (1078 octets) |
 | `scripts/mesure_rendu_vide.py` | non_commite ( M) | 7932 | oui (7932 octets) |
 | `outillage/nexus_doc.py` | non_commite ( M) | 40700 | oui (40700 octets) |
 
@@ -106,7 +106,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `competences/arbitrer.txt` | non_commite ( M) | 2862 | oui (2862 octets) |
+| `outillage/competences/arbitrer.txt` | non_commite ( M) | 2862 | oui (2862 octets) |
 | `docs/architecture/Agent-Contracts.txt` | non_commite ( M) | 3231 | oui (3231 octets) |
 | `docs/architecture/Architecture_documentaire.md` | non_commite ( M) | 3266 | oui (3266 octets) |
 | `docs/architecture/Conformance-Tests.txt` | non_commite ( M) | 3928 | oui (3928 octets) |

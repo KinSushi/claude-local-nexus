@@ -549,7 +549,7 @@ Les 49 se repartissent ainsi, et deux lots ont ete depeches pour les couvrir :
 
 * **2 scripts Python du projet** — `console_tools.py`, `mesure_rendu_vide.py` —
   du CODE jamais audite ;
-* **3 `competences/*.txt`**, charges dynamiquement par `nexus_agent.py` comme
+* **3 `outillage/competences/*.txt`**, charges dynamiquement par `nexus_agent.py` comme
   consigne systeme : une consigne qui se contredit est un defaut reel ;
 * **44 documents** sous `docs/`, dont ~36 `docs/architecture/*.txt`.
 

@@ -140,9 +140,9 @@
 | Architecture | `PROGRESS.MD` | — | 2 Ko | 2026-09-06 | `973df027d55996d2` |
 | Architecture | `Start-Claude.ps1` | — | 8 Ko | 2026-09-02 | `1e0f9aacea9185a2` |
 | Architecture | `UTILISER_NEXUS.md` | — | 4 Ko | 2026-09-02 | `c998f1c0176edd30` |
-| Architecture | `competences/arbitrer.txt` | Note d'architecture | 3 Ko | 2026-09-02 | `e712f6e2103957fa` |
-| Architecture | `competences/relire-code.txt` | Note d'architecture | 1 Ko | 2026-09-02 | `74ac48948ff2445d` |
-| Architecture | `competences/repondre-court.txt` | Note d'architecture | 614 o | 2026-08-30 | `65d3d5329a4babd3` |
+| Architecture | `outillage/competences/arbitrer.txt` | Note d'architecture | 3 Ko | 2026-09-02 | `e712f6e2103957fa` |
+| Architecture | `outillage/competences/relire-code.txt` | Note d'architecture | 1 Ko | 2026-09-02 | `74ac48948ff2445d` |
+| Architecture | `outillage/competences/repondre-court.txt` | Note d'architecture | 614 o | 2026-08-30 | `65d3d5329a4babd3` |
 | Architecture | `docker-compose.gpu.yml` | — | 941 o | 2026-08-29 | `d8cb0679e22c2e51` |
 | Architecture | `docs/MANUEL.md` | — | 19 Ko | 2026-09-02 | `adcf68e304a2b353` |
 | Architecture | `docs/MANUEL.md.candidat` | — | 7 Ko | 2026-08-29 | `16f191b9f3f7f995` |
