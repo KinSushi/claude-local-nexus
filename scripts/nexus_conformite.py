@@ -1641,9 +1641,12 @@ def controle_readme_chiffres(racine, lire_modeles):
         if nb_modele != mesures.get("local"):
             detail = f"README dit {nb_modele} modeles locaux mesures, la configuration en declare {mesures.get('local')}"
             return ("ALERTE", _tronque(detail))
-
-    # 6. tout concorde
-    return ("OK", "3 chiffres du README concordent avec la configuration declaree")
+        # phrase presente et concordante : trois verifications
+        detail = "3 chiffres du README concordent avec la configuration declaree"
+        return ("OK", _tronque(detail))
+    # phrase absente : deux verifications seulement
+    detail = "verification manquante: modele locaux mesures absente; 2 chiffres du README concordent"
+    return ("OK", _tronque(detail))
 
 def controle_readme_chiffres_wrap() -> None:
     """Adapte le controle a la sequence, qui appelle sans argument."""
