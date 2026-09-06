@@ -21025,3 +21025,79 @@ moi-meme.
   40 dans scripts/ (ancien chemin)
   48 au total
 ```
+
+
+---
+
+## 129. CODE vs API INSTALLEES — la confrontation mecanique, trois epreuves passees
+
+> *« code vs ressources disque il faut que cela soit MECANIQUE, ne pas
+> inventer »* — l'operateur, 2026-09-06, deux fois.
+
+### 129.1 Le manque, nomme par le depot lui-meme
+
+`controle_doc_python` verifie que les **166 507 symboles sont consultables**.
+Il ne confronte **jamais** le code a eux. Sa propre docstring dit pourtant le
+prix exact de ce trou :
+
+> *« une statistique passee a `scipy.stats.bootstrap(vectorized=True)`
+> n'acceptait pas le mot-cle `axis` que scipy passe pourtant dans ce mode. Le
+> TypeError a ete avale par un except et presente comme une IMPOSSIBILITE
+> STATISTIQUE — un resultat scientifique faux, ne d'un defaut de signature,
+> parce que la documentation n'avait pas ete ouverte. »*
+
+**Le depot sait ce que ce trou coute, et ne verifie que la presence du
+corpus.**
+
+### 129.2 La mesure, dans les trois sens
+
+**FORWARD** — lecture par AST, resolution contre l'interpreteur installe :
+
+```
+fichiers analyses                      148
+appels <module>.<attribut>() stdlib   1707
+resolus sur python 3.14.7             1707
+INTROUVABLES                             0
+```
+
+**REVERSE** — un fichier piege, en temporaire, trois appels faux et deux vrais :
+
+```
+os.path_qui_nexiste_pas       INTROUVABLE   attendu
+json.dumps                    RESOLU        attendu
+json.charge_le_truc           INTROUVABLE   attendu
+subprocess.run                RESOLU        attendu
+subprocess.executer_vite      INTROUVABLE   attendu
+
+3 faux sur 3 detectes · 2 vrais sur 2 resolus · 0 faux positif
+```
+
+**FUITE** — le temporaire est nettoye, rien n'est ecrit dans le depot.
+
+**Le « 0 introuvable » du forward est donc un vrai vert, et non un silence.**
+Un depot sain et un detecteur casse rendent la meme sortie ; seule l'epreuve
+inverse les separe (§0.1.4.1).
+
+### 129.3 Un second fait, mesure au passage
+
+Les seuls modules « tiers » rencontres sont **les modules du depot lui-meme**
+— `nexus_capability`, `nexus_agent`, `nexus_releve`, `nexus_valide`…
+
+**Les 148 scripts n'appellent aucune bibliotheque tierce.** La regle de
+portabilite du §0.5 tient donc **en fait**, et non seulement en doctrine.
+
+### 129.4 Pourquoi l'interpreteur, et non l'index
+
+L'index de `nexus_doc` annonce **python 3.13.2** alors que **3.14.7** est
+installe. Resoudre contre lui produirait de faux positifs sur tout ce qui a
+bouge entre les deux versions. **La verite est ce qui est installe.**
+
+### 129.5 Ce que ce controle ne pourra pas faire
+
+Il verifie qu'un **attribut existe**. Il ne verifie **ni la signature, ni les
+mots-cles**.
+
+Or c'est un **mot-cle** qui a produit le faux resultat scientifique cite en
+§129.1 : *ce controle ne l'aurait pas attrape*. La limite doit etre ecrite
+**dans** le controle — un vert muet sur ce qu'il ne couvre pas se lit comme
+une garantie qu'il ne donne pas.
