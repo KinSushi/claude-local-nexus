@@ -19786,3 +19786,58 @@ meme nuit dans le corpus de ce depot, le dit :
 
 Une liste elargie a chaque vocabulaire nouveau ne mesure plus rien. Le message
 s adapte au controle.
+
+
+### FERME — la collision entre la convention de patch et la garde du depot
+
+Quatre tentatives, deux desarmements evites, un correctif pose et eprouve.
+
+```
+site 1  (?<!<)<<(?!<)\s*(["']?)(\S+)\1     guillemet OPTIONNEL, preserve
+site 2  (?<!<)<<(?!<)\s*(["'])(\S+)\1      guillemet EXIGE, preserve
+```
+
+Les deux sites partagent la garde contre la triple chevron, et **rien
+d autre** : leur semantique respective sur le guillemet est intacte. C est
+precisement ce qu une consigne anterieure de l orchestrateur avait interdit,
+a tort, en exigeant des motifs identiques.
+
+| cas | site 1 | site 2 |
+| --- | --- | --- |
+| `'<<<AVANT>>>'` | aucun match | aucun match |
+| `'la ligne <<<AVANT>>> seule'` | aucun match | aucun match |
+| `"cat <<'EOF'"` | `EOF` | `EOF` |
+| `'python - <<PYEOF'` | `PYEOF` | aucun match — **voulu** |
+| `'cat <<"X"'` | `X` | `X` |
+| `'x <<< mot'` | aucun match | aucun match |
+| `'cat << EOF'` | `EOF` | aucun match — **voulu** |
+
+**Epreuve en conditions reelles**, la seule qui prouve qu un hook bloque :
+
+```
+commande portant les trois marqueurs   -> PASSE   (bloquee dix minutes plus tot)
+heredoc python non quote + antislash   -> REFUSE
+accent grave entre guillemets doubles  -> REFUSE
+commande ordinaire                     -> PASSE
+```
+
+**Les deux tentatives ecartees annoncaient toutes deux le bon comportement
+dans leur propre reponse.** La premiere n avait pas vu que `re.search` glisse ;
+la seconde rendait le guillemet obligatoire sur un site qui le veut optionnel,
+ce qui vidait la fonction sans qu aucune erreur n apparaisse.
+
+**Ce qui les a separees d un bon patch :** `scripts/epreuve_garde_heredoc.py`,
+et rien d autre. Ni la compilation, ni l unicite des ancres, ni une relecture.
+
+**Et la garde a bloque la commande qui venait la corriger** — elle portait les
+marqueurs. Refus propre, motif nomme, voie indiquee : ecrire le fichier avec
+l outil Write puis l executer. Suivie.
+
+### Etat des controles a la fermeture de ce tour
+
+```
+cablage        aucune regression
+redaction      Auteur declare : 18 sur 36 -- 18 MUETS   (>= : conforme)
+vitrine        verdict OK, 2 avertissement(s)
+conformite     Conforme, avec 4 avertissement(s)
+```
