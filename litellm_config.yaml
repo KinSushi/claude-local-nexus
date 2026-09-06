@@ -1526,6 +1526,7 @@ router_settings:
         - claude-sonnet-5
         - glm-4.7-flash-local
 
+    # descente de 800000 jetons (1000000 -> 200000)
     - claude-sonnet-5:
         - claude-haiku-4-5
         - glm-4.7-flash-local
@@ -1536,6 +1537,8 @@ router_settings:
     # <<< AUTOGEN:ANTHROPIC_FALLBACKS
 
     # >>> AUTOGEN:LOCAL_FALLBACKS
+    # descente de 24576 jetons (32768 -> 8192)
+    # descente de 24576 jetons (32768 -> 8192)
     - glm-4.7-flash-local:
         - qwen3-coder-30b-local
         - qwen2.5-coder-32b-local
@@ -1568,10 +1571,13 @@ router_settings:
         - qwen2.5-0.5b-local
         - qwen2.5-1.5b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - qwen2.5-0.5b-local:
         - qwen2.5-1.5b-local
         - qwen3-14b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
+    # descente de 16384 jetons (32768 -> 16384)
     - qwen2.5-1.5b-local:
         - qwen3-14b-local
         - qwen3-32b-local
@@ -1606,10 +1612,12 @@ router_settings:
         - granite3.3-8b-local
         - gemma3-1b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - granite3.3-8b-local:
         - gemma3-1b-local
         - gpt-oss-20b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - gemma3-1b-local:
         - gpt-oss-20b-local
         - granite3.1-moe-1b-local
@@ -1630,10 +1638,13 @@ router_settings:
         - mistral-7b-local
         - mixtral-8x7b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - mistral-7b-local:
         - mixtral-8x7b-local
         - phi3.5-local
 
+    # descente de 16384 jetons (32768 -> 16384)
+    # descente de 16384 jetons (32768 -> 16384)
     - mixtral-8x7b-local:
         - phi3.5-local
         - phi3-medium-local
@@ -1673,10 +1684,12 @@ router_settings:
         - qwen3-vl-8b-local
         - qwen3.5-9b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - qwen3-vl-8b-local:
         - qwen3.5-9b-local
         - qwen3.6-27b-local
 
+    # descente de 16384 jetons (32768 -> 16384)
     - qwen3.5-9b-local:
         - qwen3.6-27b-local
 

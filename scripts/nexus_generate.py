@@ -1078,6 +1078,16 @@ def render_chain(groups: dict, indent: int, width: int = 2,
                         break
             if not targets:
                 continue
+            # Signalement des descentes de capacité : 12 chaines locales descendent
+            # (pire cas : 32768 -> 8192, perte de 24576 jetons). On signale au lieu
+            # d'interdire parce que vider ces chaines laisserait leurs modèles source
+            # SANS AUCUN repli (chapitre_degradation.md, "Design agents to detect...").
+            for target in targets:
+                target_entry = next((e for e in chain[i+1:] if e.alias == target), None)
+                if target_entry and target_entry.ctx is not None and entry.ctx is not None:
+                    if target_entry.ctx < entry.ctx:
+                        out.append("%s# descente de %d jetons (%d -> %d)" %
+                                  (pad, entry.ctx - target_entry.ctx, entry.ctx, target_entry.ctx))
             out.append("%s- %s:" % (pad, entry.alias))
             for target in targets:
                 out.append("%s    - %s" % (pad, target))
