@@ -78,6 +78,23 @@ def _format_fragment(data):
     return affiche, found
 
 
+def _score_entry(row, query):
+    """Return (keep, score) for a row against query terms."""
+    if not query:
+        return True, 1
+    resume = row["resume"].lower()
+    ident = row["id"].lower()
+    kind = row["type"].lower()
+    score = 0
+    for term in query:
+        t = term.lower()
+        hits = resume.count(t) + ident.count(t) + kind.count(t)
+        if hits == 0:
+            return False, 0
+        score += hits
+    return True, score
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("query", nargs="*", help="Mots a chercher")
@@ -101,9 +118,11 @@ def main():
             for row in _iter_index(idx_path):
                 if not row:
                     continue
-                if all(q.lower() in row["resume"].lower() for q in args.query):
+                keep, score = _score_entry(row, args.query)
+                if keep:
                     matches.append((Path(root).name, row["id"], row["resume"],
-                                    row["offset_octets"], row["longueur_octets"]))
+                                    row["offset_octets"], row["longueur_octets"],
+                                    score))
 
     if not found_any_corpus:
         print(f"Aucun corpus n a ete trouve sous le repertoire des references {ref_dir}",
@@ -153,9 +172,11 @@ def main():
 
     _log_consultation("recherche", args.query, len(matches))
 
+    matches.sort(key=lambda m: m[5], reverse=True)
+
     if not matches:
-        print("Verdict negatif: aucun resultat. Tous les mots de la requete "
-              "doivent etre presents dans le champ resume.", file=sys.stderr)
+        print("Verdict negatif: aucun resultat. Les termes de la requete "
+              "n'ont ete trouves dans id, type ou resume.", file=sys.stderr)
         return 2
 
     for m in matches[:args.limit]:
