@@ -21967,3 +21967,100 @@ cesse d'inventer un chiffre.
 **Pas commande** : la correction des 83 violations. Ce sont des dettes de style
 connues et tenues par un cliquet. **Le defaut est dans le rapport, pas dans le
 code signale.**
+
+
+---
+
+## 139. ZERO LETTRE DE LECTEUR, ZERO DETTE — la regle, et l'ecart mesure
+
+> *« le projet ne doit pas dependre d'une lettre de lecteur, 0 dettes
+> techniques : rajoute cela a ta checklist »* — l'operateur, 2026-09-06.
+
+**Regle inscrite. Et mesuree dans le meme geste, parce qu'une regle sans
+mesure est une intention.**
+
+### 139.1 L'ecart, sur ce que git suit
+
+```
+fichiers SUIVIS par git          306
+fichiers examines (code + doc)   293
+occurrences de lettre de lecteur 198
+fichiers concernes                37
+```
+
+| famille | fichiers | occurrences | ce que ca coute |
+| --- | ---: | ---: | --- |
+| **code** | 17 | 99 | casse a l'execution sur une autre machine |
+| **document** | 20 | 99 | n'execute rien, mais lie le depot a une machine |
+
+### 139.2 Le contrat annonce 0, et c'est perime
+
+§0.5 porte, noir sur blanc :
+
+```
+chemins absolus en dur dans scripts/*.py          0
+```
+
+**Faux au 2026-09-06** :
+
+```
+scripts/nexus_socle.py         L7    "C:/local-llm-docker/rituels/SOCLE_UNIVERSEL.json"
+                               L8    "D:/SAS/sovereign-ai-system/v1.104/..."
+scripts/nexus_conformite.py    L468  r"D:\SAS\sovereign-ai-system\v1.104\..."
+                               L470  r"D:\EA MT5 PYTHON RENTABLE ROBUSTE"
+patch_lot.py                   L5    chemin = r"C:\local-llm-docker\scripts\nexus_agent.py"
+rituels/QUARANTAINE/MANIFESTE.json   49 occurrences, SUIVI par git
+rituels/A_POSER_global.json    L2    "C:/Users/dibac/.claude/settings.json"
+```
+
+**Un chiffre grave dans la doctrine ment des le lendemain** — la regle que ce
+depot s'est donnee, appliquee ici a lui-meme.
+
+### 139.3 Toutes les occurrences ne sont pas des dettes
+
+Le motif ne distingue pas l'exemple de la dependance. Trois cas mesures sont
+**legitimes** :
+
+| fichier | pourquoi c'est legitime |
+| --- | --- |
+| `scripts/nexus_garde_lecture.py` L53-54 | un **commentaire** illustrant que `C:/a/B.py` et `c:\a\b.py` designent le meme fichier — c'est le sujet du code |
+| `scripts/nexus_quarantaine.py` L81-82 | un **exemple d'usage** dans la docstring : `--cible D:/ailleurs/QUARANTAINE` |
+| `references/node_docs/.../all.json` | 28 occurrences dans la **documentation Node.js** elle-meme |
+
+**Chaque occurrence demande un oeil avant d'etre comptee comme une dette.**
+Un controle qui les compterait toutes crierait au loup et serait desarme.
+
+### 139.4 Les dettes reelles, nommees
+
+| lieu | nature |
+| --- | --- |
+| `patch_lot.py` L5 | **code executable**, chemin en dur vers `scripts/nexus_agent.py` — il suffit de le deriver |
+| `scripts/nexus_socle.py` L7-8 | table de chemins vers d'autres depots, gravee |
+| `scripts/nexus_conformite.py` L468-470 | chemins des depots voisins, graves |
+| `rituels/QUARANTAINE/MANIFESTE.json` | 49 chemins de machine, **suivis par git** |
+| `rituels/A_POSER_*.json` | chemins vers `settings.json` d'un utilisateur nomme |
+
+Les chemins des **depots voisins** sont un cas a arbitrer et non a corriger a
+l'aveugle : le §0 les nomme explicitement comme sources d'inspiration, et une
+machine differente n'a ni SAS ni EA MT5. La bonne forme est probablement une
+configuration lue, pas une constante — mais c'est une decision, pas une
+evidence.
+
+### 139.5 Le meme defaut, commis par moi, une heure plus tot
+
+Le pointeur `rituels/_POINTEUR_HORS_PROJET.md` portait
+`C:\local-llm-docker-hors-projet` **et il est suivi par git**. Il partait donc
+dans le depot public avec le chemin d'une seule machine.
+
+Corrige le jour meme : il decrit desormais une **relation** — un repertoire
+frere du depot, portant le meme nom suffixe de `-hors-projet` — et non un
+chemin. **Occurrences restantes : 0.**
+
+Trouve non pas en relisant, mais en **lisant le fichier comme un etranger**.
+
+### 139.6 Ce qui manque encore
+
+Aucun controle ne garde cette regle. La mesure ci-dessus vit dans un
+scratchpad, comme celle de la separation. **Tant qu'un script du depot ne
+refuse pas, la regle est un paragraphe** — et §0.2.1 dit ce que vaut un
+paragraphe.
