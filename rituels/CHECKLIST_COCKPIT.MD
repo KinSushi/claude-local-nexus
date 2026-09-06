@@ -21784,3 +21784,88 @@ officielles python »*).
 **Ne prouve pas** : que les 362 extractions soient justes. Elles ont ete
 produites par AST chez le voisin, et le §0.1.4.1 vaut ici aussi — un corpus
 indexe et faux est pire qu'un corpus absent, parce qu'il repond.
+
+
+---
+
+## 137. LA CORRECTION DE PROPRETE A CASSE LA DELEGATION — et le banc l'avait dit
+
+Le defaut le plus instructif du tour, parce qu'il enchaine deux gestes justes
+en un resultat faux.
+
+### 137.1 Ce qui s'est passe
+
+1. L'operateur demande que les outils de bricolage sortent du projet. **Juste.**
+2. Les commissions sont deplacees vers le scratchpad. **Juste aussi.**
+3. La vague 24 est lancee. Le premier rendu revient :
+
+```
+trace_forme_unique   850 s   441 jetons   servi par ollama_chat/llama3.2:3b
+demande = gpt-oss-120b-cloud
+
+refus = ['...scratchpad/commissions/vague24/MESURE_trace_corpus.txt
+          (hors de la racine de travail C:\local-llm-docker ; --racine pour
+           en designer une autre, ou copier le fichier sous la racine)']
+```
+
+**Le banc a refuse la piece jointe.** Le modele a recu la tache **sans sa
+mesure**, et a rendu une description en prose du fichier `nexus_doc.py` au lieu
+d'un patch ancre. 441 jetons sur un budget de 6 000.
+
+### 137.2 La garde a raison, et elle nomme l'issue
+
+`nexus_agent.py`, `charger_fichiers()` :
+
+```python
+complet = brut if os.path.isabs(brut) else os.path.join(racine, brut)
+if not sous_racine(complet, racine):
+    refus.append("%s (hors de la racine de travail %s ; --racine pour en"
+                 " designer une autre, ou copier le fichier sous la racine)")
+```
+
+Le commentaire au-dessus dit pourquoi :
+
+> *« Nommer l'issue, et non seulement la fermeture : une garde qui refuse sans
+> dire par ou passer se fait contourner, ou renoncer. »*
+
+C'est une garde **deliberee** : elle empeche un modele de recevoir un fichier
+arbitraire de la machine. Elle a fait exactement son travail.
+
+### 137.3 Ce que l'orchestrateur n'a pas fait
+
+**Il n'a pas lu le champ `refus` avant de laisser tourner quinze axes.** Le
+premier rendu le portait, et le rendu se presentait comme un SUCCES : `tronque:
+false`, `cause_vide: contenu_present`, 441 jetons de texte. Rien dans le
+resume ne disait que la piece maitresse manquait.
+
+C'est un demi-succes qui se lit comme un succes — la classe la plus chere du
+depot, ici du cote de la delegation.
+
+### 137.4 Le remede, sans bricolage
+
+Le §0.6 interdit de compenser dans un coin : on corrige a la source ou on
+reporte. Ici, la source est simple — **une mesure est du TEXTE**. Elle n'a
+aucune raison d'etre un fichier.
+
+```
+15 mesures mises DANS le champ tache (vague 24)
+ 4 idem (vague 25)
+12 pieces jointes RELATIVES au depot conservees -- elles sont sous la racine
+ 0 piece fautive
+ 0 axe sans mesure
+```
+
+Ni `--racine` detourne, ni fichier remis dans le projet : le probleme
+disparait au lieu d'etre contourne.
+
+### 137.5 Ce que cela coute, mesure
+
+La vague avortee a tourne **33 minutes** pour un rendu inutilisable. Elle a
+ete **arretee** plutot que laissee finir : quatorze axes de plus auraient
+produit la meme prose.
+
+### 137.6 La regle qui en sort
+
+> **Apres tout changement d'emplacement, verifier le PREMIER rendu avant de
+> laisser courir la vague.** Le champ `refus` existe pour cela, et il etait
+> juste : c'est le lecteur qui manquait.
