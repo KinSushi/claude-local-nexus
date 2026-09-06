@@ -23094,3 +23094,128 @@ documentation, isoler les non-litterales d'abord) est retenu.
 
 Aucune ligne close : aucune n'a de controle qui echoue si la regle est
 enfreinte.
+
+
+---
+
+## 151. LE LECTEUR QU'AUCUN GREP NE TROUVE — et deux instruments qui ont menti
+
+### 151.1 Quatre tâches planifiées nomment le dépôt par CHEMIN ABSOLU
+
+Interrogé, pas lu. `Get-ScheduledTask` rend ceci :
+
+```
+Claude-Local-Nexus - Demarrage
+   & 'C:\local-llm-docker\scripts\start.ps1'  *> '...\logs\demarrage.log'
+Claude-Local-Nexus - Mise a jour
+   & 'C:\local-llm-docker\scripts\Update-NexusModels.ps1' -SyncLocal ...
+NexusTraque
+   Set-Location 'C:\local-llm-docker'
+   python.exe scripts/nexus_traque.py --muet ; python.exe scripts/nexus_state.py
+NexusVitrine
+   Set-Location 'C:\local-llm-docker' ; python.exe scripts/nexus_vitrine.py
+```
+
+**Cinq scripts sont nommés depuis l'extérieur du dépôt.** Aucun `git grep` ne
+peut les voir : le texte qui les cite vit dans le planificateur Windows, pas
+dans un fichier suivi.
+
+C'est la contrainte dure de tout déplacement futur de `scripts/` : déplacer
+`start.ps1`, `Update-NexusModels.ps1`, `nexus_traque.py`, `nexus_state.py` ou
+`nexus_vitrine.py` **casserait quatre tâches en silence**, et le silence ne se
+verrait qu'au prochain démarrage ou à la prochaine publication.
+
+**Ce que cela dé-risque, en revanche :** aucune des quatre ne cite `rituels/`.
+Le déplacement de `rituels/` mesuré au §150.6 ne les touche pas — vérifié, pas
+supposé. Les scripts qu'elles lancent ÉCRIVENT dans `rituels/`, mais cette
+dépendance-là est dans le code, donc trouvable, et déjà comptée dans les 13
+constructions dynamiques.
+
+La règle générale, et elle vaut au-delà de ce cas : **un lecteur hors du dépôt
+ne se cherche pas, il s'interroge.** Le planificateur, le profil PowerShell,
+les hooks du client, une tâche cron : chacun cite des chemins qu'aucune
+recherche de code ne rendra.
+
+### 151.2 `wmic ... | grep` TRONQUE, et m'a fait lancer un doublon
+
+```
+wmic process where "name='python.exe'" get commandline | grep -c "nexus_agent"
+   ->  0
+Get-CimInstance Win32_Process -Filter "Name='python.exe'"
+   ->  SIX processus nexus_agent
+```
+
+`wmic get commandline` coupe la ligne à la largeur de colonne. Le motif
+cherché tombe au-delà de la coupe, donc le compte rend zéro.
+
+Sur ce zéro j'ai conclu que la vague 30 était morte, et j'en ai **relancé une
+copie** — quatre processus locaux au lieu de deux, sur un iGPU à mémoire
+partagée, pendant qu'une session voisine attendait le verrou. Le doublon a été
+arrêté dès la mesure juste obtenue.
+
+Onzième cas du jour de la classe « instrument exact, conclusion fausse ».
+C'est aussi la deuxième fois que je déclare une vague morte sur une mesure
+défaillante — la première était §149.1.
+
+### 151.3 La répartition réelle du banc, et ce qu'elle apprend à la session voisine
+
+```
+6 processus nexus_agent
+  2 a la session sovereign   --lot workspace/_SCRATCH/lot_audit_plan.json
+  4 a moi                    (dont 2 en doublon, arretes)
+```
+
+La session voisine m'écrivait : *« banc 4 processus, aucun a moi »*. Deux sont
+à elle, et **ce sont eux qui tiennent le verrou sur lequel sa troisième
+tentative d'audit échoue**. Elle attendait son propre travail.
+
+Deux sessions, deux instruments, deux comptes faux, sur la même machine et à
+la même minute. Le verrou fonctionne ; c'est la VUE du verrou qui manque.
+
+### 151.4 Le signalement du `return 75` est REFUTE — mesuré, pas argumenté
+
+La session voisine localisait un défaut : le code 75 remonterait par le pont
+MCP et se perdrait sur le chemin CLI. L'épreuve du dépôt dit le contraire :
+
+```
+python scripts/epreuve_verrou_banc.py
+  [OK  ] une tache LOCALE est refusee : code 75 (attendu 75)
+```
+
+La cause de l'illusion, des deux côtés : le `[exited with code 0]` affiché par
+le harness est celui de la **dernière commande de la chaîne shell**, pas celui
+de `nexus_agent.py`. Trois fois aujourd'hui cette confusion a produit un
+diagnostic faux, dont une fois sur ce sujet précis.
+
+### 151.5 `nexus_valide.py` DÉPASSE 900 s sur une branche de 68 fichiers
+
+```
+timeout 900 python scripts/nexus_valide.py --base main   ->  code 124
+```
+
+124 est le code de `timeout`. Le geste que le contrat §0.2 prescrit à chaque
+tour, et qualifie de « coût zéro », **coûte plus de quinze minutes** dès que la
+branche est large : sa batterie mécanique traite chaque fichier modifié, et
+`run_conformite()` lance `nexus_conformite.py` **sans timeout** (ligne 196).
+
+Le coût suit donc le nombre de fichiers, et un renommage de 67 fichiers le
+fait exploser. Ce n'est pas une panne — c'est un coût non documenté, et il rend
+le rituel impraticable exactement quand le changement est important.
+
+### 151.6 CE QUI RESTE OUVERT — remplace §150.8
+
+| sujet | état |
+| --- | --- |
+| **3 régressions du déplacement** | ancres exactes, correctif au banc (2 processus en vol), branche NON fusionnée |
+| **contrôle sémantique des voisines** | spécification au banc, aucun contrôle ne garde ce cas |
+| **lecteurs hors dépôt** | 4 tâches planifiées, 5 scripts nommés en absolu — aucun contrôle ne le vérifie |
+| `nexus_valide.py` > 900 s | mesuré, non traité ; `run_conformite()` sans timeout |
+| `rituels/` hors du projet | mesuré, NON lancé — et vérifié sans dépendance planifiée |
+| frontière projet / outillage | les deux règles évidentes RÉFUTÉES, noyau plancher 32 |
+| les 91 constructions non littérales | mesurées, non traitées |
+| `epreuve_verrou_banc.py` plante | `TimeoutExpired` non rattrapée, budget 180 s |
+| `.nexus/` dans le dossier | 103 références, 36 fichiers — ARBITRAGE OPÉRATEUR |
+| `epreuve_garde_encodage` écrit à l'import | seul BLOQUANT, mon défaut |
+
+Aucune ligne close : aucune n'a de contrôle qui échoue si la règle est
+enfreinte.
