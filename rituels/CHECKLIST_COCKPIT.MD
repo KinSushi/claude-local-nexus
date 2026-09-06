@@ -20773,3 +20773,118 @@ recherche d'une ligne.
 Le commentaire du code, lui, dit exactement ce que le code sait voir :
 *« 12 chaines locales descendent »*. Il deviendra faux des que le correctif
 fonctionnera, et devra dire le nouveau compte ou cesser d'en donner un.
+
+
+---
+
+## 127. 47,9 % DES « SUJETS OUVERTS » SONT MORTS — la convention existe, personne ne la lit
+
+C'est la premiere chose qu'une session lit en reprenant le travail. Mesure du
+2026-09-06, avec **exactement** le critere de `nexus_reprise.py`, pas un
+critere voisin :
+
+```
+cockpit              20776 lignes
+sections retenues       72
+SUJETS listes          728
+affiches                18
+NON AFFICHES           710      (97,5 %)
+```
+
+### 127.1 La convention que le cockpit porte deja
+
+Les sessions successives l'ont ecrite **a la main, dans le titre** :
+
+```
+### 65.5 SUJETS OUVERTS a la sortie de ce tour
+### 65.8 SUJETS OUVERTS — remplace §65.5
+### 66.6 SUJETS OUVERTS — remplace §65.8
+### 67.5 SUJETS OUVERTS — remplace §66.6
+```
+
+**25 titres** declarent ainsi remplacer un autre, en une chaine continue de
+§65.5 jusqu'aux environs de §89.5.
+
+### 127.2 Ce que coute de ne pas la lire
+
+| | |
+| --- | --- |
+| sujets TOTAL | 728 |
+| dans une section **explicitement remplacee** | **au moins 349** |
+| dont le titre ne porte **aucun numero lisible** | 191 — **non evaluable** |
+| **part comptee pour rien** | **au moins 47,9 %** |
+
+**Le 349 est un PLANCHER, pas un total — et c'est la verification de ma propre
+mesure qui l'a etabli, apres que le chiffre eut ete publie comme exact.** Deux
+defauts dans l'instrument, trouves en cherchant a lever une incertitude que la
+mesure avait elle-meme declaree :
+
+* quatre numeros sont portes deux fois (§65.5, §65.8, §66.6, §67.5) — mais
+  leur seconde occurrence porte **zero** ligne de tableau, donc elle ne fausse
+  rien. L'incertitude declaree etait, sur ce point, sans consequence ;
+* le motif `^(\d+(?:\.\d+)*)\s` **ne lit pas** un titre de la forme
+  `124. PLAN DE SAUVETAGE` : le point suivi d'une espace le fait echouer.
+  **191 sujets** tombent dans un panier « sans numero » et ne peuvent etre
+  rattaches a aucune supersession — ni morts ni vivants, **inevaluables**.
+
+Le sens ne change pas, il se renforce : meme au plancher, pres de la moitie
+des sujets listes vivent dans une section qu'une session a declaree remplacee,
+et un quart de plus echappe entierement a l'evaluation.
+
+Les plus lourdes, encore comptees comme ouvertes :
+
+```
+§88.5   21 sujets  -- remplace par §89.5
+§85.5   19 sujets  -- remplace par §86.3
+§86.3   19 sujets  -- remplace par §87.5
+§87.5   19 sujets  -- remplace par §88.5
+§80.4   18 sujets  -- remplace par §81.5
+§84.5   18 sujets  -- remplace par §85.5
+```
+
+### 127.3 Pourquoi c'est grave, et non cosmetique
+
+Le hook affiche **18 sujets sur 728, choisis par ORDRE DU DOCUMENT**. Les
+sections remplacees etant anterieures, elles passent **avant** les vivantes.
+
+Le plafond de 18 ne protege donc rien : **il attribue la fenetre a du
+perime**. Une session qui reprend voit en priorite des sujets qu'une session
+precedente a elle-meme declares remplaces — et elle les traite.
+
+C'est le §0.2.1 dans sa forme la plus pure : le mecanisme est **ecrit**, il
+est meme ecrit vingt-cinq fois, et **son lecteur n'existe pas**.
+
+### 127.4 Ce qui est demande, et ce qui ne l'est pas
+
+**Demande** : que `nexus_reprise.py` lise la convention deja ecrite, en
+traitant les CHAINES — une section remplacee par une section elle-meme
+remplacee reste remplacee.
+
+**Pas demande** : ne rien supprimer. Les sections remplacees portent
+l'histoire, et le depot n'efface pas ses traces. Il s'agit de ne plus les
+**afficher** comme ouvertes.
+
+**Et le hook ne doit jamais planter** : si la lecture de la convention echoue,
+on retombe sur le comportement actuel. Une garde qui plante arrete le travail
+qu'elle devait proteger.
+
+### 127.5 Ce que cette mesure explique
+
+Trois sujets reviennent a chaque reprise alors qu'ils sont **mesures faux** :
+
+| sujet repete | verdict mesure le 2026-09-06 |
+| --- | --- |
+| « la vitrine ne prend AUCUN verrou » | **FAUX** — `nexus_vitrine.py:299` appelle `nexus_avec_verrou.py PUBLICATION --attente-s 120`, et traite le code 75 |
+| « la consultation du corpus n'a NI TRACE NI PORTE » | **FAUX** — `.nexus/consultations.jsonl` est la trace, `appelant_recent` est la porte ; le defaut reel est l'accord de FORME (§125.3) |
+| « le cliquet LOI 1 est effacable par `--reference` » | **VRAI mais incomplet** — `repo_root = Path.cwd()` L145 est une seconde voie, et elle ne demande aucun drapeau (§125.2) |
+
+Aucun de ces trois n'a de sortie possible sous la regle actuelle : *« un sujet
+ne se clot que lorsqu'un CONTROLE echoue si la regle est enfreinte »*. Pour un
+sujet **mesure faux**, aucun controle ne peut exister — il n'y a pas de regle
+a garder, parce qu'il n'y avait pas de defaut.
+
+**Il manque donc un second etat, distinct de FERME** : `RETIRE`, qui dit que
+le sujet a ete mesure et n'existait pas. Les confondre serait dangereux —
+marquer « ferme » ce qui etait « jamais vrai » masquerait le fait que le
+processus de mesure a produit une fausse alerte, et cette session seule en a
+retire quatorze.
