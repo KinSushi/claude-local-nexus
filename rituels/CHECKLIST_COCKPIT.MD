@@ -22595,3 +22595,79 @@ jetons pour deux lignes de prose — c'est le prix de la regle, et il est juste.
 
 **On ne s'arrete pas sur une affirmation.** On s'arrete quand un controle rend
 **0** et qu'il a prouve, dans le meme tour, qu'il sait rendre **1**.
+
+
+---
+
+## 147. LE CORPUS INVISIBLE EST PLUS GROS QUE CELUI QUI MARCHE — 234 211 symboles
+
+Le §136 mesurait « 362 bibliotheques extraites, et aucun outil ne les voit ».
+Le chiffre reel est bien plus grand.
+
+### 147.1 La mesure, depuis `rapport.csv`
+
+```
+references/python_ast_local/rapport.csv
+   489 cibles, 329 EXTRAIT
+   234 211 symboles au total
+```
+
+Contre **166 507** pour la base que `nexus_doc.py` sait interroger.
+
+> **Le corpus que personne ne peut consulter est 1,4 fois plus gros que celui
+> qui fonctionne.**
+
+### 147.2 Ce qu'il contient, par richesse
+
+```
+transformers   33 915 symboles
+torch          29 484
+sympy          24 960
+vllm           23 012
+litellm        14 116
+```
+
+**`litellm` est la bibliotheque sur laquelle cette plateforme est batie.**
+Une session qui ecrit contre elle — et c'est le cas de tout travail sur
+`litellm_config.yaml`, sur les routeurs, sur les replis — n'a **aucune
+documentation locale** a interroger. Elle ecrit de memoire, ce que le contrat
+interdit en toutes lettres.
+
+Et `torch`, `transformers`, `vllm` sont exactement les bibliotheques qu'un
+travail sur l'inference locale demanderait.
+
+### 147.3 Le seul manque, mesure
+
+`nexus_livres.py` **decouvre par parcours** : il retient tout repertoire sous
+`references/` portant un `index.tsv`. Aucun rayon n'est nomme dans son code.
+
+```
+index.tsv sous references/ : 10
+python_ast_local           : AUCUN
+```
+
+Il ne manque donc **qu'un fichier d'index** — pas un outil, pas une
+reecriture, pas une decision. Le format est mesure (§136.5) : cinq colonnes,
+`id`, `offset_octets`, `longueur_octets`, `type`, `resume`, et un
+`symbols.jsonl` lu par `seek`.
+
+### 147.4 Ce que cela ne prouve pas
+
+Que les 234 211 symboles soient **justes**. Ils ont ete extraits par AST chez
+le depot voisin, et §0.1.4.1 vaut ici : **un corpus indexe et faux est pire
+qu'un corpus absent, parce qu'il repond.**
+
+La contre-epreuve commandee (§ v25, `corpus_muet_contre_epreuve`) porte
+precisement la-dessus : relire chaque entree par `seek(offset)` sur
+`longueur_octets` doit rendre **exactement** le fragment attendu, et un
+decalage d'un seul octet doit faire echouer l'epreuve.
+
+### 147.5 Au passage — un faux positif de mon propre filtre
+
+En sortant les fichiers de lot du projet, un motif trop large
+(`startswith("msg")`) a capture `msgspec_api_ast.md` : **un document de ce
+corpus**, pas un message de session. Remis le meme jour ; le corpus repasse a
+**362** fichiers `.md`.
+
+Le manifeste conserve l'entree, marquee `ANNULE`, avec sa raison. **Une erreur
+tue est une erreur qui recommence.**
