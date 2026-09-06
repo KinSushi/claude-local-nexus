@@ -1,18 +1,18 @@
 # Checklist Progress
-Generated: 2026-09-06 11:59:26
+Generated: 2026-09-06 12:47:06
 
 ## 1. Depot
 | Metric | Value |
 |---|---|
-| Commits non pushes | 13 |
-| Etat de l'arbre | propre |
-| Date du dernier commit | 2026-09-06 11:59:00 -0500 |
+| Commits non pushes | 33 |
+| Etat de l'arbre | propre (hors ce tableau) |
+| Date du dernier commit | 2026-09-06 12:46:53 -0500 |
 
 ## 2. Rituels
 | Script | Regressions annoncees |
 |---|---|
 | nexus_cablage.py | 0 |
-| nexus_outillage.py | 83 |
+| nexus_outillage.py | 0 |
 
 ## 3. Outils
 | Description | Value |
@@ -20,12 +20,12 @@ Generated: 2026-09-06 11:59:26
 | Scripts nexus dans scripts/ | 80 |
 | Occurrences name:"nexus_" dans server.js | 15 |
 
-## 4. Checklist VS Code
+## 4. Checklist LIVRE VS CODE
 | Couleur | Nombre |
 |---|---|
-| Vert | 13 |
-| Jaune | 11 |
-| Rouge | 15 |
+| Vert | 14 |
+| Jaune | 12 |
+| Rouge | 16 |
 
 ## 5. Sauvegardes
 | Metric | Value |
@@ -39,8 +39,7 @@ Generated: 2026-09-06 11:59:26
 | Lignes dans fragments_embeddings.jsonl | 20366 |
 
 ## CE QUI RESTE OUVERT
-- Regressions d outillage : 83
-- Prescriptions rouges : 15
+- Prescriptions rouges : 16
   - Dependency validation
   - Coordination testing
   - Tool compatibility checks
@@ -54,8 +53,9 @@ Generated: 2026-09-06 11:59:26
   - TTL
   - Degradation en tiers
   - reste 🔴
-  - `nexus_epreuve_vide.py` est appele SANS ARGUMENT
+  - `nexus_index_livres.py`, `nexus_livres.py`, `nexus_sauvegarde.py` sont cables de la meme facon (`nexus_test.py:1396,1398,1400`, meme commit `c672862`)
+  - le cliquet compte une EPREUVE comme appelant de PRODUCTION
   - les worktrees d agents naissent en retard, et se resynchronisent sur le MAUVAIS point
   - ORPHELINE
   - Consequence tenue
-- Commits non pousses : 13
+- Commits non pousses : 33
