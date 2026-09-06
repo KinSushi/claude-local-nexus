@@ -22397,3 +22397,58 @@ contre-epreuve, et deux familles imposees.
 > au premier defaut qu'il attrape.** Sans lui, `nexus_separation.py` serait
 > dans `scripts/`, rendrait 0 a chaque appel, et la separation serait declaree
 > gardee alors que rien ne la garderait.
+
+
+---
+
+## 144. LE VERROU A REFUSE — et son defaut de 120 s est un CHOIX, pas un oubli
+
+La vague 27 est revenue **sans aucun rendu** :
+
+```
+verrou machine [banc] REFUSE (local-llm-docker) — un AUTRE processus tient
+« banc » — attendu 120s en vain
+banc: contention detectee
+```
+
+### 144.1 Qui tenait le banc, mesure directement
+
+```
+sovereign   lot_audit_p0.json   06/09/2026 12:53:04   5 processus
+```
+
+Mesure prise en listant les processus **avec leur ligne de commande complete**
+— pas via le diagnostic du verrou, qui est structurellement aveugle a la
+classe `banc` (§128).
+
+### 144.2 Le defaut de 120 s porte sa raison dans le code
+
+`scripts/nexus_agent.py:1498-1501` :
+
+```python
+# l'attente est bornee a 120 secondes pour qu'une contention reste visible
+# au lieu de devenir un blocage silencieux
+attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
+# une valeur gravee ment le lendemain, et surtout une epreuve ne peut pas
+# solliciter le REFUS du verrou si elle doit le tenir plus de deux minutes —
+# un verrou qu'on n'a jamais vu refuser n'est pas mesure.
+```
+
+**Deux raisons, toutes deux justes** : une contention doit rester *visible*, et
+un verrou dont on n'a jamais vu le refus n'est pas un verrou mesure.
+
+Le defaut n'est donc pas a corriger — il est a **depasser explicitement**
+quand on veut faire la queue :
+
+```
+NEXUS_VERROU_ATTENTE_S=2400 python scripts/nexus_agent.py --lot ...
+```
+
+### 144.3 Ce que cet episode ajoute a la mesure du banc
+
+Trois projets partagent un moteur, chacun poliment a `--parallele 1`. La
+contention n'est **pas un defaut de la plateforme** : c'est la ressource qui
+est unique, et le verrou fait exactement son travail — il refuse, il dit
+pourquoi, et il nomme la variable qui permet d'attendre.
+
+**Un refus qui nomme la voie ne se contourne pas : il s'emprunte.**
