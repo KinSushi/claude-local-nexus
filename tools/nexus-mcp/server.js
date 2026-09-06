@@ -2555,7 +2555,7 @@ let pythonRetenu = null;
  * confondait les deux et annoncait « Python introuvable » alors que Python
  * fonctionnait ; la cause reelle etait dans stderr, que le code jetait.
  */
-function runPython(args, timeoutMs = 300000) {
+function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
   const { spawn } = require("node:child_process");
   const candidats = pythonRetenu ? [pythonRetenu] : ["python", "python3"];
 
@@ -2621,7 +2621,8 @@ function runPython(args, timeoutMs = 300000) {
         // L'interpreteur a demarre : inutile de retenter l'autre au prochain
         // appel, meme si le script lui-meme a echoue.
         pythonRetenu = commande;
-        if (code === 0 && texte) {
+        // 0 repos, 1 charge, 2 inconnu
+        if ((code === 0 || codesToleres.includes(code)) && texte) {
           rendre(resolve, texte);
           return;
         }
@@ -3227,7 +3228,11 @@ function runPython(args, timeoutMs = 300000) {
       [path.join(INSTALL_ROOT, "scripts", "nexus_savings.py"), "--jours", jours]);
   }
   if (name === "nexus_charge") {
-    return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_charge.py")]);
+    return await runPython(
+      [path.join(INSTALL_ROOT, "scripts", "nexus_charge.py")],
+      300000,
+      [0, 1, 2]
+    );
   }
   if (name === "nexus_livres") {
     const q = String(args.question || "");
