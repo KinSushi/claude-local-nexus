@@ -24185,3 +24185,115 @@ clone ne les recoit pas.
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
 | `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+
+---
+
+## 159. L'ISOLATION : jusqu'ou elle va, et ce qui l'arrete
+
+### 159.1 L'arbre, mesure
+
+```
+racine :  docs/  epreuves/  images/  outillage/  references/  scripts/  tools/
+          + docker-compose.yml, litellm_config.yaml, model_list.txt, README.md...
+
+outillage/  127   TOUT ce qui est a l'orchestrateur, rituels et competences inclus
+epreuves/    67   les tests -- convention standard
+docs/        41
+scripts/     29   le produit, PLUS 10 fichiers epingles (voir 159.3)
+racine       17   TOUS du produit
+references/  14   pointeurs de corpus
+tools/        8   le pont MCP
+```
+
+Depart du jour : `scripts/` en portait **166**.
+
+### 159.2 Ce qui est parti ce tour
+
+`Register-NexusTraque.ps1` et `Register-NexusVitrine.ps1` : ils enregistrent
+**mes** taches, la traque de defauts et la publication. Aucun fichier du
+produit ne les cite — verifie avant le premier `git mv`.
+
+**Un controle prealable a refuse un troisieme.** `mesure_rendu_vide.py` devait
+partir ; il est cite par `scripts/nexus.ps1`, le point d'entree du produit. Le
+controle a tout arrete avant d'ecrire. Ce refus enseigne §159.4.
+
+### 159.3 Ce qui reste dans `scripts/`, et ce n'est pas mon choix
+
+Dix fichiers y sont **epingles par `~/.claude/settings.json`**, la
+configuration personnelle de l'operateur, qui les nomme par chemin ABSOLU :
+
+```
+7 gardes          nexus_agent, nexus_garde_agent, nexus_garde_ecriture,
+                  nexus_garde_isolation, nexus_garde_production,
+                  nexus_garde_shell, nexus_valide
+5 dependances     nexus_capability, nexus_disjoncteur, nexus_garde_lecture,
+                  nexus_verbatim, nexus_verrou_machine
+```
+
+Ce fichier sert ses **autres projets**. Ce depot ne le modifie pas, et la
+consequence d'un chemin faux n'est pas theorique : mesuree aujourd'hui en la
+declenchant, elle bloque **tous les outils a la fois**, dans tous ses projets.
+
+**L'arbitrage appartient donc a l'operateur, et il reste ouvert.**
+
+### 159.4 LE BLOQUEUR STRUCTUREL — et il ne se resout pas en deplacant
+
+`outillage/` peut-il sortir du depot suivi ? Trois mesures, et elles ne disent
+pas la meme chose :
+
+| mesure | resultat |
+| --- | --- |
+| fichiers du produit citant `outillage/` | **7 scripts**, dans 7 fichiers |
+| fermeture des `import` de ces sept | **11 fichiers a ramener sur 74** |
+| fermeture TEXTUELLE depuis les entrees du produit | **29 fichiers** |
+
+L'ecart entre 11 et 29 n'est pas une erreur : la mesure par `import` **ne voit
+pas les appels par `subprocess` a un chemin**, et c'est exactement ainsi que
+les scripts PowerShell appellent les outils. Elle l'avoue elle-meme.
+
+**La cause de l'ecart est nommee.** `scripts/nexus.ps1`, le point d'entree
+unique, expose neuf commandes :
+
+```
+PRODUIT        start  stop  status  check  mcp
+ORCHESTRATION  ask  valide  appliquer  sujets
+```
+
+Un point d'entree qui melange les deux roles rend l'outillage atteignable
+depuis le produit **par construction**. Aucun deplacement de fichier ne
+corrigera cela : il faudrait decouper `nexus.ps1`, ce qui est du code et
+appartient a un tiers.
+
+### 159.5 Le verdict honnete
+
+**0 pollution dans la RACINE** : les 17 fichiers y sont tous du produit, et
+les six repertoires restants sont des conventions standard plus `outillage/`,
+qui porte tout ce qui est a moi et le declare par son nom.
+
+**PAS 0 pollution dans `scripts/`** : dix fichiers y restent, et ils y restent
+pour une raison qui ne m'appartient pas.
+
+**PAS detachable** : `outillage/` ne peut pas sortir du depot suivi tant que
+`nexus.ps1` melange les deux roles.
+
+Dire que c'est fini serait faux. Dire que rien n'a bouge le serait tout autant :
+`scripts/` est passe de **166 a 29**, et un clone de **20,26 Mo a 8,57 Mo**.
+
+### 159.6 CE QUI RESTE OUVERT — remplace §158.8
+
+| sujet | etat |
+| --- | --- |
+| **10 fichiers epingles dans `scripts/`** | ARBITRAGE OPERATEUR sur son settings global |
+| **`nexus.ps1` melange produit et orchestration** | bloque tout detachement ; decoupage = code, a confier |
+| identite des 6 paires copiees | aucun controle ne compare leur contenu |
+| racine derivee par la PROFONDEUR | 29 expressions dans `epreuves/` ; commission echouee deux fois |
+| cliquet LOI 1 aveugle aux renommages | 15 624 lignes fantomes |
+| `--json` de `nexus_loi1` n'est pas du JSON | texte avant ET apres |
+| un hook nommant un chemin | bloque tous les outils quand le chemin meurt |
+| `nexus_test.py` plante | `test_terminal_repli` |
+| repli de modele silencieux | 7 substitutions sur 133 rendus |
+| `nexus_valide.py` > 900 s | cout non annonce |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
