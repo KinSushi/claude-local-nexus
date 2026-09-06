@@ -14,7 +14,8 @@ spec = importlib.util.spec_from_file_location(
 gs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gs)
 
-BT = chr(96)  # accent grave, jamais ecrit litteralement dans ce fichier
+BT = chr(96)
+Q = chr(39)   # apostrophe, jamais ecrite litteralement ici  # accent grave, jamais ecrit litteralement dans ce fichier
 
 CAS = [
     # (nom, commande, doit_etre_refuse, pourquoi)
@@ -30,9 +31,19 @@ CAS = [
      'echo "resultat: ' + BT + "whoami" + BT + '"\n',
      True, "substitution de commande reelle, hors de tout heredoc"),
 
-    ("REVERSE heredoc NON quote avec substitution dans le CORPS",
-     "cat <<EOF\nvaleur = " + BT + "rm -rf /" + BT + "\nEOF\n",
-     True, "un heredoc NON quote EXPANSE son corps : le danger est reel"),
+    # CORRIGE. Le cas precedent employait "cat <<EOF", HORS du contrat de
+    # detecter_cas_a, dont le code restreint l examen aux heredocs PYTHON :
+    #     if "py" not in delimiteur.lower() and "python" not in avant.lower():
+    #         continue
+    # L epreuve accusait donc la garde d un trou que son contrat exclut, et
+    # son ECHEC se lisait comme un defaut du code. Reecrit DANS le contrat.
+    ("REVERSE heredoc PYTHON non quote, accent grave dans le CORPS",
+     "python - <<PYEOF\nx = " + BT + "whoami" + BT + "\nPYEOF\n",
+     True, "heredoc python non quote : le shell substitue le corps"),
+
+    ("FORWARD heredoc PYTHON QUOTE, accent grave dans le CORPS",
+     "python - <<" + Q + "PYEOF" + Q + "\nx = " + BT + "whoami" + BT + "\nPYEOF\n",
+     False, "quote : aucune substitution, refuser serait un faux positif"),
 
     ("FUITE heredoc quote dont le corps imite du code dangereux",
      "cat <<'EOF'\nrm -rf / et " + BT + "whoami" + BT + " et $(id)\nEOF\n",

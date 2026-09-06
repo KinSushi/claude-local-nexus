@@ -373,7 +373,13 @@ def loi1_tenue(racine):
             return MANQUE, lignes[0] if lignes else ""
         if r.returncode == 2:
             stderr = (r.stderr or "").strip()
-            detail = stderr.splitlines()[-1] if stderr else "mesure impossible"
+            lines = stderr.splitlines() if stderr else []
+            if not lines:
+                detail = "mesure impossible"
+            elif len(lines) == 1:
+                detail = lines[0]
+            else:
+                detail = f"{lines[0]} ({lines[-1]})" if len(f"{lines[0]} ({lines[-1]})") <= 60 else lines[0]
             return MANQUE, f"mesure impossible : {detail}"
         return IGNORE, "code de retour inattendu"
     except subprocess.TimeoutExpired:

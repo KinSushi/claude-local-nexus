@@ -118,7 +118,8 @@ def detecter_cas_a(commande):
             if suite.strip() == delimiteur:
                 break
             corps.append(suite)
-        if "\\" in "\n".join(corps):
+        corps_text = "\n".join(corps)
+        if "\\" in corps_text or "`" in corps_text:
             return True
     return False
 
