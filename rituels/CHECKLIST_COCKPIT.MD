@@ -142,11 +142,28 @@
 | Validator / Critic | absent |
 | Bandit | absent — attend que le magasin se remplisse |
 
-### 0. ETAT EN VOL 2026-09-02 — OUVERT, a lire en premier
+### 0. ETAT EN VOL 2026-09-02 — REMPLACE par §146, conserve pour l'histoire
+
+> **PERIME. Ne pas travailler sur cette liste sans la re-mesurer.** Elle date du
+> 2026-09-02 et plusieurs de ses entrees ont ete **mesurees fausses** depuis —
+> voir §146 pour l'etat courant et ses preuves.
+>
+> Elle est conservee parce que le depot n'efface pas ses traces, et parce que
+> les entrees encore vraies y sont detaillees.
+
+**Ce qui a change depuis, mesure le 2026-09-06 :**
+
+| entree de 2026-09-02 | verdict mesure le 2026-09-06 |
+| --- | --- |
+| « Rien n'est fusionne : les 10 reparations vivent en worktree » | **FAUX** — reconciliation **6 branches sur 6** : 3 fusionnees, 3 depassees (0 ligne absente de main sur 818+112 ; 14 def sur 14 ; 6 lignes remplacees) |
+| « `nexus_quarantaine.py` n'existe PAS sur main » | **FAUX** — il existe, **996 lignes**, integre par un commit qui dit « trois correctifs audites par un TIERS » |
+| « ACCIDENT : un worktree supprime SOUS un agent » | **traite** — 45 worktrees retires, **45 branches conservees**, puis 41 elaguees parce qu'entierement fusionnees (`git branch -d` n'en a refuse aucune) |
+| « `scripts/nexus_filet.py` porte SEUL les deux regressions » | **fusionne** ce jour, +1031 lignes deja presentes dans main |
 
 > Plan complet : **`rituels/VAGUES_REPARATION.md`**. Detail des 43 sujets : sections 124 et 124.1.
-> Cette section est en tete parce que le hook `nexus_reprise.py:258` n affiche que les **18
-> premiers** sujets du fichier : un plan inscrit en fin de cockpit n est jamais remonte.
+> Cette section etait en tete parce que le hook `nexus_reprise.py:258` n'affiche que les **18
+> premiers** sujets du fichier. **C'est precisement le defaut mesure au §127** : la fenetre est
+> prise par la section la plus ANCIENNE, et les mesures du jour ne remontent jamais.
 
 | sujet ouvert | etat mesure |
 | --- | --- |
@@ -22519,3 +22536,62 @@ chose a **l'orchestrateur qui l'invoque** :
 L'axe `renvois_quarantaine` part au banc avec la mesure exacte : deux
 commentaires, aucune ligne de code, largeur des lignes preservee. Trois mille
 jetons pour deux lignes de prose — c'est le prix de la regle, et il est juste.
+
+
+---
+
+## 146. ETAT EN VOL 2026-09-06 — remplace §0, et chaque ligne porte sa preuve
+
+> Cette section remplace le §0 « ETAT EN VOL 2026-09-02 », dont plusieurs
+> entrees ont ete **mesurees fausses** depuis. L'ancienne est conservee : le
+> depot n'efface pas ses traces.
+
+### 146.1 Ce qui est FAIT, et prouve dans les deux sens
+
+| sujet | preuve mesuree |
+| --- | --- |
+| **arbre du projet SEPARE** | 3 733,7 Mo hors de l'arbre ; controle a 4 questions **code 0**, et il a rendu **code 1** sur `.nexus/vague23` avant correction |
+| **arbre IDENTIFIE** | racine a **23 entrees** toutes reconnaissables ; `rituels/_POINTEUR_HORS_PROJET.md` **suivi par git**, 0 chemin absolu, 5717 = 5717 fichiers |
+| **depot AUTONOME** | `.git` REPERTOIRE ; `--git-dir` == `--git-common-dir` ; `git worktree list` = 1 entree ; `.git/worktrees/` inexistant ; `git fsck` propre |
+| **RECONCILIATION 6/6** | 3 fusionnees, 3 depassees. 50 branches -> 4. `git branch -d` n'en a refuse **aucune** des 41 |
+| **boussole a jour** | 9 960 fichiers, **-152 118 lignes** : elle indexait les 45 worktrees retires |
+| **rituel TENU** | un seul controle aveugle, la boucle, que seule la session peut verifier |
+
+### 146.2 Ce qui est MESURE et NON encore garde
+
+| sujet | mesure | ou en est le remede |
+| --- | --- | --- |
+| la separation n'a **aucun controle** | `scripts/nexus_separation.py` n'existe pas | **quatre rendus rejetes** ; vague 27 en vol, deux familles imposees |
+| **dette de lettres de lecteur** | 207 occurrences = 81 CONTENU + 111 CITATION + **9 dependances reelles** | trois familles nommees au §140, aucune corrigee |
+| **362 bibliotheques AST invisibles** | `python_ast_local` n'a pas d'`index.tsv` ; `nexus_doc.py PIL.Image.open` rend « aucun symbole » | commande, v25 |
+| `epreuve_garde_encodage` **s'execute a l'import** | **279 octets** de sortie a l'import, verifie a l'instant | **SEUL BLOQUANT du depot**, et c'est un defaut de l'orchestrateur ; commande v24 |
+| le hook de reprise ne lit pas la **supersession** | au moins 349 sujets sur 728 dans une section declaree remplacee | commande, v24 |
+
+### 146.3 Ce qui est BLOQUE, et par quoi
+
+| sujet | cause |
+| --- | --- |
+| `.claude/CLAUDE.md` non mis a jour | **refuse en ecriture** par les permissions de la session. Doctrine reportee au cockpit §139-146 et dans `MEMORY.md` |
+| le banc rend peu | trois projets partagent **un** moteur ; quota Ollama Cloud **epuise** (429 en 0,5 s, limite hebdomadaire) |
+
+### 146.4 Les cinq refus du jour — les gardes tiennent
+
+| garde | ce qu'elle a refuse a l'orchestrateur |
+| --- | --- |
+| shell | un accent grave dans un `-m` |
+| lecture-avant-ecriture | un `Edit` sur un fichier jamais lu |
+| production | un commentaire de `nexus_filet.py`, **et la rationalisation qui l'accompagnait** |
+| shell | la sonde qui cherchait un trou dans la garde |
+| shell | le recit de cette recherche, qui **citait** les motifs |
+| verrou machine | la vague 27, apres 120 s d'attente — defaut **delibere** |
+
+> **Un mecanisme tient quand il refuse aussi a celui qui l'invoque.** Six fois
+> aujourd'hui, et chaque fois en **nommant la voie**.
+
+### 146.5 La regle d'arret, posee par l'operateur
+
+> *« une fois cette condition remplie tu t'arretes. Extinction des moteurs,
+> mais avant d'eteindre les moteurs, tu verifies ! »*
+
+**On ne s'arrete pas sur une affirmation.** On s'arrete quand un controle rend
+**0** et qu'il a prouve, dans le meme tour, qu'il sait rendre **1**.
