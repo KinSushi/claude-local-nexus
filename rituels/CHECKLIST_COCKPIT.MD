@@ -19126,3 +19126,116 @@ en correction avec un refus **fail-closed** hors referentiel.
 **Ma premiere somme de ses chiffres etait fausse** : 402 554 symboles, exactement
 le double, parce que j'avais somme sa ligne `TOTAL`. Divise par deux, ses
 201 277 tiennent au symbole pres.
+
+---
+
+## 127. LE CORPUS PERD 6 164 ENTREES — dont la bibliotheque standard Python
+
+Trouve en employant l'outil du depot au lieu d'en ecrire un, c'est-a-dire en
+appliquant la lecon de la section precedente. Chaque recherche imprime trois
+lignes d'erreur avant son resultat :
+
+```
+Fichier illisible references/python_libs_docs/_LIVRABLE_PYTHON_STDLIB_267/symbols/index.tsv:
+    too many values to unpack (expected 5, got 6)
+Fichier illisible references/python_libs_docs_eamt5/_LIVRABLE_PYTHON_STDLIB_267/symbols/index.tsv:
+    too many values to unpack (expected 5, got 6)
+Fichier illisible references/securite_confinement/index.tsv:
+    too many values to unpack (expected 5, got 6)
+```
+
+**Ampleur, comptee :**
+
+```
+index a 5 colonnes, lisibles      :  7
+index a 6 colonnes, PERDUS        :  3
+    securite_confinement                  28 entrees
+    _LIVRABLE_PYTHON_STDLIB_267/symbols  3068 entrees
+    _LIVRABLE_PYTHON_STDLIB_267/symbols  3068 entrees (copie eamt5)
+TOTAL PERDU : 6 164 entrees
+```
+
+**La bibliotheque standard Python entiere est invisible a l'outil de
+recherche.** L'operateur repete que tout le projet en depend.
+
+**Cause, lue dans les fichiers.** Les deux formes portent une ligne d'en-tete
+qui NOMME les colonnes :
+
+```
+id  offset_octets  longueur_octets  type  resume            <- 5
+id  offset_octets  longueur_octets  type  convention  resume  <- 6
+```
+
+L'outil depaquette a cinq positions fixes et ne lit jamais cet en-tete. Le
+remede confie au banc : localiser les colonnes **par nom**, ignorer les
+colonnes surnumeraires, et refuser franchement — en nommant le fichier et la
+colonne absente — quand une colonne essentielle manque vraiment.
+
+**Ce que l'incident dit de plus.** Le message d'erreur s'imprimait a *chaque*
+recherche. Personne ne l'avait traite depuis qu'il existe — parce que personne
+n'employait l'outil. Un outil qu'on n'emploie pas ne signale ses defauts a
+personne, et c'est exactement pourquoi l'operateur veut la consultation
+**mecanisee** plutot que rappelee.
+
+---
+
+## 127.1 CE QUE LE CORPUS DIT DU MECANISME EN COURS DE CONCEPTION
+
+La question posee par l'operateur — *« et les livres et leurs codes sources, et
+les documentations disent quoi… ? »* — a ete posee au corpus avant de finir le
+controle, et non apres.
+
+Deux chapitres portent le nom du mecanisme : **« Static compliance validation »**
+et **« Adding production guardrails »**. Le premier, lu pour **1 481 octets sur
+26 161 265** — 0,006 % du corpus :
+
+> *Agents inspect source code and **configuration** for violations of security
+> baselines, data locality restrictions, and other formal policies. This
+> capability extends the static analysis we discussed in the context of code
+> quality [...] The compliance agent flags this immediately, **before tests even
+> run**, preventing the violation from advancing through the workflow.*
+
+Deux confirmations pour la conception en cours :
+
+* l'inspection **statique d'une configuration produite** est le patron reconnu
+  — c'est la voie B, choisie par deux juges independants ;
+* la propriete qui compte est le **placement** : signaler *avant* que
+  l'artefact n'avance. Ici, `nexus_conformite.py` est lance par le rituel **et**
+  par la vitrine, donc en amont de la publication. Le cablage est le bon.
+
+---
+
+## 127.2 LE CONTROLE DES DESCENTES — deux rendus rejetes sur MESURE
+
+Le premier candidat ne pouvait **jamais** fonctionner. Il cherchait
+`max_input_tokens` a l'interieur des zones de repli. Mesure :
+
+```
+max_input_tokens dans tout le fichier      : 79
+max_input_tokens DANS une zone *_FALLBACKS :  0
+```
+
+Les 79 vivent dans les declarations de modeles, ailleurs. Le controle aurait
+rendu ALERTE en toutes circonstances, quel que soit l'etat du depot.
+
+Son second defaut inversait le sens du controle :
+
+```python
+if zone.endswith("FALLBACKS"):  pass
+elif "POOL" in zone:            continue
+elif "CTX_FALLBACKS" in zone:   continue
+```
+
+Mesure : `"LOCAL_CTX_FALLBACKS".endswith("FALLBACKS")` vaut **True**. Le premier
+`if` avale les zones CTX et le `elif` qui devait les ecarter n'est **jamais
+atteint**. Or les chaines CTX ne remontent que vers plus large : les compter
+comme des descentes est un contresens exact.
+
+**Le retrait du signalement du generateur n'a PAS ete pose**, et c'est
+delibere : les juges ont prescrit de retirer *dans le meme geste* que l'ajout,
+jamais avant. Le depot ne doit a aucun moment se retrouver sans detection.
+
+**Ce qui reste ouvert, et le maillon est nomme** : aucun des candidats n'a
+fourni le `_wrap()` ni l'enregistrement dans la sequence des controles. Sans
+eux le controle serait un orphelin — le meme maillon que le cliquet de cablage
+avait deja signale a l'orchestrateur quelques heures plus tot.

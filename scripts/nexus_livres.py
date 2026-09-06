@@ -5,10 +5,43 @@ import json
 import argparse
 from pathlib import Path
 
+# 6164 entrées perdues sur trois index à six colonnes
+
+def _iter_index(idx_path):
+    """Yield rows of index.tsv as dicts keyed by column name."""
+    try:
+        with open(idx_path, "r", encoding="utf-8") as f:
+            header = f.readline()
+            if not header:
+                print(f"Fichier illisible {idx_path}: entete manquante", file=sys.stderr)
+                return
+            cols = header.rstrip("\n").split("\t")
+            colpos = {name: i for i, name in enumerate(cols)}
+            required = ["id", "offset_octets", "longueur_octets", "type", "resume"]
+            missing = [c for c in required if c not in colpos]
+            if missing:
+                print(f"Fichier illisible {idx_path}: colonne(s) manquante(s) {', '.join(missing)}",
+                      file=sys.stderr)
+                return
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) < len(cols):
+                    continue
+                yield {
+                    "id": parts[colpos["id"]],
+                    "offset_octets": parts[colpos["offset_octets"]],
+                    "longueur_octets": parts[colpos["longueur_octets"]],
+                    "type": parts[colpos["type"]],
+                    "resume": parts[colpos["resume"]],
+                }
+    except Exception as e:
+        print(f"Fichier illisible {idx_path}: {e}", file=sys.stderr)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("query", nargs="*", help="Mots a chercher")
-    parser.add_argument("-l", "--limit", type=int, default=10, help="Limite resultats")
+    parser.add_argument("-l", "--limit", type=int, default=10,
+                        help="Limite resultats")
     parser.add_argument("-r", "--read", help="ID du fragment a lire")
     args = parser.parse_args()
 
@@ -19,26 +52,23 @@ def main():
 
     found_any_corpus = False
     matches = []
-    
+
     for root, _, files in os.walk(ref_dir):
         if "index.tsv" in files:
             found_any_corpus = True
             idx_path = Path(root).joinpath("index.tsv")
-            try:
-                with open(idx_path, "r", encoding="utf-8") as f:
-                    next(f)
-                    for line in f:
-                        cols = line.strip().split("\t")
-                        if len(cols) < 5: continue
-                        uid, offset, length, dtype, summary = cols
-                        if all(q.lower() in summary.lower() for q in args.query):
-                            matches.append((Path(root).name, uid, summary, offset, length))
-            except Exception as e:
-                print(f"Fichier illisible {idx_path}: {e}", file=sys.stderr)
+            for row in _iter_index(idx_path):
+                if not row:
+                    continue
+                if all(q.lower() in row["resume"].lower() for q in args.query):
+                    matches.append((Path(root).name, row["id"], row["resume"],
+                                    row["offset_octets"], row["longueur_octets"]))
 
     if not found_any_corpus:
-        print(f"Aucun corpus n a ete trouve sous le repertoire des references {ref_dir}", file=sys.stderr)
+        print(f"Aucun corpus n a ete trouve sous le repertoire des references {ref_dir}",
+              file=sys.stderr)
         sys.exit(1)
+
     if args.read:
         for root, _, files in os.walk(ref_dir):
             if "symbols.jsonl" in files:
@@ -47,19 +77,18 @@ def main():
                     with open(sym_path, "rb") as f:
                         f.seek(0, 2)
                         f_size = f.tell()
-                        # Recherche de l'ID dans l'index du rayon
                         idx_path = Path(root).joinpath("index.tsv")
-                        with open(idx_path, "r", encoding="utf-8") as idx:
-                            next(idx)
-                            for line in idx:
-                                cols = line.strip().split("\t")
-                                if cols[0] == args.read:
-                                    off, length = int(cols[1]), int(cols[2])
-                                    f.seek(off)
-                                    data = json.loads(f.read(length).decode("utf-8"))
-                                    print(f"Cout: {length} / {f_size} octets")
-                                    print(data.get("texte", ""))
-                                    return 0
+                        for row in _iter_index(idx_path):
+                            if not row:
+                                continue
+                            if row["id"] == args.read:
+                                off = int(row["offset_octets"])
+                                length = int(row["longueur_octets"])
+                                f.seek(off)
+                                data = json.loads(f.read(length).decode("utf-8"))
+                                print(f"Cout: {length} / {f_size} octets")
+                                print(data.get("texte", ""))
+                                return 0
                 except Exception as e:
                     print(f"Erreur lecture fragment {args.read}: {e}", file=sys.stderr)
         return 1
@@ -69,7 +98,6 @@ def main():
 
     for m in matches[:args.limit]:
         print(f"Rayon: {m[0]} | ID: {m[1]} | Resume: {m[2]}")
-    
     return 0
 
 if __name__ == "__main__":
