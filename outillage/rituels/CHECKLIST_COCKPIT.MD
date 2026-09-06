@@ -24297,3 +24297,102 @@ Dire que c'est fini serait faux. Dire que rien n'a bouge le serait tout autant :
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
 | `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+
+---
+
+## 160. LA DETTE QUE LA CECITE CACHAIT — chiffree avant d'etre debattue
+
+Prolonge §159. Dire que 91 % du code est hors du champ ne suffit pas : un
+remede dont on ignore le cout ne se decide pas.
+
+### 160.1 La mesure, binaire du depot, perimetre elargi a la main
+
+```
+ruff check <dir> --select E9,F,B,C4,SIM,RET
+
+  scripts/     23 violations    <- le seul repertoire scanne aujourd'hui
+  outillage/   68 violations    <- INVISIBLES
+  epreuves/     8 violations    <- INVISIBLES
+```
+
+**76 violations dorment hors du champ.** Le cliquet en annonce 21 ; le total
+reel est de l'ordre de **99**, soit **4,7 fois** ce qu'il rapporte.
+
+Le chiffre de 21 n'est donc pas une mesure de la qualite du depot. C'est une
+mesure de 14 fichiers sur 156.
+
+### 160.2 Ce que cela change pour le remede
+
+Elargir le perimetre fera passer le compte de 21 a 99 d'un coup. Le cliquet
+refusera, et il aura raison : de son point de vue, c'est une aggravation de
+78 violations.
+
+Le geste juste est donc en DEUX temps, et dans cet ordre :
+
+1. elargir le perimetre — c'est du code, et c'est au banc ;
+2. `--rebaseline` **avec la raison ecrite**, comme pour les copies : la
+   degradation n'est pas une regression, c'est la fin d'une cecite.
+
+L'inverse — rebaseliner d'abord — graverait le chiffre aveugle.
+
+### 160.3 Pourquoi la dette est concentree dans `outillage/`
+
+68 des 76 y sont, pour 75 fichiers. C'est mon outillage, ecrit vite, et il
+n'a **jamais** ete scanne depuis qu'il a quitte `scripts/` ce matin. Avant
+cela il l'etait, et le cliquet tenait a 15-21 : la dette n'est donc pas neuve,
+elle etait comptee et elle a disparu du compte en meme temps que les fichiers.
+
+### 160.4 Le corpus ne porte rien sur ce probleme — resultat negatif
+
+Consigne : chercher dans l'index le chapitre qui porte le nom du mecanisme
+avant de le concevoir. Fait, et il faut le dire :
+
+```
+metric        -> du code de StyleGAN, hors sujet
+coverage      -> l'API de couverture de Node, hors sujet
+quality gate  -> aucun resultat
+Goodhart      -> aucun resultat
+false green   -> aucun resultat
+```
+
+La recherche est lexicale sur la colonne `resume`, et ces notions ne figurent
+dans aucun titre de section du corpus. **Les livres sont le plancher et ils ne
+montent pas jusqu'ici** : le remede se concoit donc sur la mesure, et la
+mesure est au §160.1.
+
+### 160.5 Les chemins de la consigne permanente sont MORTS
+
+Trois des quatre chemins que l'operateur cite a chaque tour ne resolvent plus :
+
+```
+scripts/nexus_livres.py   MORT -> outillage/nexus_livres.py
+scripts/nexus_doc.py      MORT -> outillage/nexus_doc.py
+scripts/nexus_rituel.py   MORT -> outillage/nexus_rituel.py
+scripts/nexus_valide.py   OK   (epingle par le settings global)
+```
+
+Les outils fonctionnent depuis leur nouvel emplacement — verifie :
+`nexus_livres.py "guardrail"` rend trois fragments, `nexus_doc.py
+subprocess.run` rend sa fiche. **Seuls les chemins ecrits dans la consigne
+sont perimes**, et personne ne peut le savoir sans essayer.
+
+C'est la meme classe que les taches planifiees cassees en §158 : un chemin
+nomme hors du depot ne suit pas le depot.
+
+### 160.6 CE QUI RESTE OUVERT — remplace §159.6
+
+| sujet | etat |
+| --- | --- |
+| **perimetre des linters** | 76 violations invisibles ; correctif AU BANC |
+| **chemins de la consigne permanente** | 3 sur 4 morts ; a corriger dans le prompt de l'operateur |
+| 10 fichiers epingles dans `scripts/` | ARBITRAGE OPERATEUR |
+| `nexus.ps1` melange produit et orchestration | bloque tout detachement |
+| identite des 6 paires copiees | aucun controle |
+| racine derivee par la PROFONDEUR | 29 expressions ; commission echouee deux fois |
+| cliquet LOI 1 aveugle aux renommages | 15 624 lignes fantomes |
+| `--json` de `nexus_loi1` n'est pas du JSON | texte avant ET apres |
+| `nexus_test.py` plante | `test_terminal_repli` |
+| repli de modele silencieux | 7 substitutions sur 133 rendus |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
