@@ -7,6 +7,9 @@ import datetime
 from pathlib import Path
 
 # 6164 entrées perdues sur trois index à six colonnes
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def _iter_index(idx_path):
     """Yield rows of index.tsv as dicts keyed by column name."""
@@ -60,6 +63,21 @@ def _log_consultation(mode, query_or_id, count, bytes_read=0):
     except Exception:
         pass
 
+def _format_fragment(data):
+    """Return (rendering, known_keys_found) for a fragment."""
+    if "texte" in data:
+        return data["texte"], ["texte"]
+    code_cles = ("signature", "docstring_brut", "implementation")
+    found = [c for c in code_cles if c in data]
+    if not found:
+        return None, []
+    parts = [data.get(c, "") for c in found]
+    affiche = "\n\n".join(p for p in parts if p)
+    if not affiche:
+        return None, found
+    return affiche, found
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("query", nargs="*", help="Mots a chercher")
@@ -71,7 +89,7 @@ def main():
     ref_dir = Path(Path(__file__).parent).parent.joinpath("references")
     if not ref_dir.exists() or not ref_dir.is_dir():
         print(f"Aucun corpus trouve dans {ref_dir}")
-        sys.exit(2)
+        sys.exit(1)
 
     found_any_corpus = False
     matches = []
@@ -110,8 +128,21 @@ def main():
                                 length = int(row["longueur_octets"])
                                 f.seek(off)
                                 data = json.loads(f.read(length).decode("utf-8"))
+                                affiche, connues = _format_fragment(data)
+                                if not connues:
+                                    cles = sorted(data.keys())
+                                    print(f"Fragment {args.read}: cles inconnues {cles}",
+                                          file=sys.stderr)
+                                    _log_consultation("lecture", args.read, 0, 0)
+                                    return 3
+                                if affiche is None:
+                                    cles = sorted(data.keys())
+                                    print(f"Fragment {args.read}: cles connues vides {cles}",
+                                          file=sys.stderr)
+                                    _log_consultation("lecture", args.read, 0, 0)
+                                    return 3
                                 print(f"Cout: {length} / {f_size} octets")
-                                print(data.get("texte", ""))
+                                print(affiche)
                                 bytes_read = length
                                 _log_consultation("lecture", args.read, 1, bytes_read)
                                 return 0
@@ -123,7 +154,9 @@ def main():
     _log_consultation("recherche", args.query, len(matches))
 
     if not matches:
-        return 1
+        print("Verdict negatif: aucun resultat. Tous les mots de la requete "
+              "doivent etre presents dans le champ resume.", file=sys.stderr)
+        return 2
 
     for m in matches[:args.limit]:
         print(f"Rayon: {m[0]} | ID: {m[1]} | Resume: {m[2]}")
