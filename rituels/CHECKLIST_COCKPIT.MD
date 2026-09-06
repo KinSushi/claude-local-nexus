@@ -24032,3 +24032,156 @@ references/ 14      tools/     8
 
 un clone : 305 fichiers, 8,57 Mo   (307 et 20,26 Mo ce matin)
 ```
+
+
+---
+
+## 158. LE RANGEMENT EST FUSIONNE — et deux cliquets ont menti de la meme facon
+
+### 158.1 Ce qui est sur `main`
+
+```
+scripts/     99 -> 31    (19 du produit + 7 gardes epinglees + 5 dependances)
+outillage/    0 -> 77
+epreuves/          67
+competences/ quitte la racine
+
+echantillon de 30 epreuves   23 passent / 7 echouent
+ligne de base main AVANT     23 passent / 7 echouent   -> PARITE EXACTE
+les 7 echecs restants        IDENTIQUES, et anterieurs au chantier
+imports non resolus          28 -> 0
+```
+
+Verifie par des tiers : `nexus_cablage.py` code 0 sans regression,
+`epreuve_registre_epreuves.py` code 0, mesure d'imports par `ast` a zero.
+
+### 158.2 Ce qui a debloque la fin
+
+Dix epreuves importaient des modules partis dans `outillage/`. Le remede est
+la **seconde moitie d'un deplacement**, pas un diagnostic : une boucle qui met
+`scripts/` ET `outillage/` sur `sys.path`, derivee de `__file__`, identique
+dans les dix fichiers.
+
+```
+les 10 ciblees   0/10  ->  10/10
+echantillon      18/12 ->  23/7
+```
+
+Plus une ancre unique dans `epreuve_cles_only.py` : `nexus_test.py` a change
+de repertoire, la cible suit.
+
+**`py_compile` n'a jamais rien vu.** 68 fichiers compilaient a 0 pendant que
+28 imports etaient casses. C'est ecrit dans le script qui pose le preambule,
+pour que la lecon survive au commit.
+
+### 158.3 Le cliquet d'OUTILLAGE : une quantite, pas une identite
+
+Il a refuse le tour :
+
+```
+ruff SIM103   1 -> 2
+ruff SIM105   3 -> 8
+total Python 15 -> 21
+```
+
+Six modules ont ete COPIES sur consigne de l'operateur. **La copie duplique le
+code, donc elle duplique ses defauts** : +6 violations pour 6 copies. Le
+cliquet avait raison, et `--rebaseline` a acte la degradation.
+
+Mais il mesure un NOMBRE. Si demain `SIM105` est corrige dans
+`scripts/nexus_agent.py` et pas dans `outillage/nexus_agent.py`, le compte
+BAISSERA et le cliquet sera content — alors que les deux versions auront
+diverge. **Rien ne garde l'identite des six paires.**
+
+### 158.4 Le cliquet LOI 1 : un RENOMMAGE remet son compteur a zero
+
+Il a annonce :
+
+```
+Violation : 15624 lignes a la main en plus que la reference (0)
+```
+
+apres un chantier qui n'a fait que deplacer et copier. Son grand livre est
+indexe **par chemin**, et les trois modules presents a deux endroits le
+prouvent sans ambiguite :
+
+| chemin | manual | ce que c'est |
+| --- | --- | --- |
+| `outillage/nexus_agent.py` | **806** | chemin NEUF, fichier entier reattribue |
+| `scripts/nexus_agent.py` | 6 | son histoire reelle |
+| `outillage/nexus_capability.py` | 414 | idem |
+| `scripts/nexus_capability.py` | 1 | idem |
+| `outillage/console_tools.py` | 51 | idem |
+| `scripts/console_tools.py` | 1 | idem |
+
+**Un chemin neuf n'a pas d'histoire**, donc tout son contenu est attribue a
+celui qui l'a bouge. 76 fichiers traces, 15 624 lignes fantomes.
+
+**Les deux cliquets echouent pour la meme raison** : ils comptent une
+quantite attachee a un CHEMIN, et un rangement change les chemins. Aucun des
+deux n'est faux dans son calcul ; tous deux repondent a la question voisine.
+
+### 158.5 Un troisieme defaut, trouve en voulant mesurer le second
+
+```
+--json imprime AVANT le JSON : 'Traces chargees : 400'
+--json imprime APRES le JSON : 'Violation : 15624 lignes...'
+```
+
+Tout `json.load()` sur cette sortie echoue. Il faut un `raw_decode` et deux
+decoupes pour lire un format qui s'annonce machine. Trouve en l'employant, et
+invisible a la lecture — le drapeau existe, il porte le bon nom, et il ne rend
+pas du JSON.
+
+### 158.6 La commission de profondeur a ECHOUE
+
+`v32` devait produire `nexus_racine.py`, qui derive la racine en remontant
+jusqu'a deux marqueurs au lieu de compter les crans. Elle est morte en code
+**127**, apres deux troncatures a 4979 et 4886 jetons : **mon budget de 4000
+etait trop court**, et le banc l'a releve deux fois avant d'abandonner.
+
+Le sujet reste donc entier : **30 expressions derivent encore la racine en
+comptant**, ce qui interdit d'imbriquer `epreuves/` et `rituels/` sous
+`outillage/`. Le remede est dans le depot (six fichiers remontent deja jusqu'a
+un marqueur) et n'est pas generalise.
+
+Au passage : la machine portait **dix processus de banc** au moment du
+lancement, les trois sessions confondues. Un modele local sur iGPU partage n'y
+rend pas en temps utile.
+
+### 158.7 L'AUTONOMIE, mesuree pour la premiere fois
+
+Question de l'operateur : *le projet est-il suffisant a lui-meme ?*
+
+```
+fichiers du PRODUIT presents dans le clone   13 / 13
+variables exigees par la pile                11, toutes dans .env.example
+manques MUETS (absents et non documentes)    0
+.claude/settings.json : chemins portables    15
+.claude/settings.json : chemins ABSOLUS      0
+```
+
+Ce qui manque a un clone est soit **legitime** (`.env`, `.nexus/`, `logs/`),
+soit **documente par un pointeur suivi** (les trois corpus).
+
+**Reponse : OUI, autonome.** Avec une reserve qui n'est pas dans le depot :
+sept gardes ne sont cablees que dans le settings global de l'operateur, et un
+clone ne les recoit pas.
+
+### 158.8 CE QUI RESTE OUVERT — remplace §157.8
+
+| sujet | etat |
+| --- | --- |
+| **identite des 6 paires copiees** | aucun controle ne compare leur contenu |
+| **cliquet LOI 1 aveugle aux renommages** | 15 624 lignes fantomes ; reference reecrite avec sa raison |
+| **`--json` de `nexus_loi1` n'est pas du JSON** | texte avant ET apres |
+| **racine derivee par la PROFONDEUR** | 30 expressions ; commission ECHOUEE (budget trop court) |
+| `epreuves/` et `rituels/` sous `outillage/` | bloque par les 30 expressions |
+| un hook nommant un chemin | verrou sur la structure, aucun controle |
+| `nexus_test.py` plante | `test_terminal_repli`, cause non tranchee |
+| repli de modele silencieux | 7 substitutions sur 133 rendus |
+| 5 references externes non gardees | commande preparee, non lancee |
+| `nexus_valide.py` > 900 s | cout non annonce |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
