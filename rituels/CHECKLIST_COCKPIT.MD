@@ -19701,3 +19701,88 @@ l etat reel, et les fermetures sont nommees pour qu on ne les recompte pas.
 indexes sur cette machine, par outillage recu d une session voisine, regenere
 localement plutot que copie. Le corpus n est pas versionne -- il est ancre sur
 l interpreteur local -- mais le generateur l est.
+
+
+---
+
+## UN PATCH QUI COMPILAIT ET DESARMAIT LA GARDE — l epreuve l a attrape
+
+Trois rendus ont ete poses sur la regex de detection de heredoc. Les trois
+compilaient. Deux ont ete retires apres mesure.
+
+### Echec 1 — un lookahead seul ne suffit pas
+
+| | |
+| --- | --- |
+| motif propose | `<<(?!<)\s*(["']?)(\S+)\1` |
+| annonce du rendu | *« `'<<<AVANT>>>'` -> pas de match »* |
+| **mesure** | `'<<<AVANT>>>'` -> `groupe2='AVANT>>>'` — **toujours apparie** |
+
+`re.search` **glisse**. A l offset 0 le lookahead echoue ; a l offset 1 il voit
+les deuxieme et troisieme chevrons comme la double chevron, suivis d un `A`, et
+il passe. Le motif apparie a un caractere pres.
+
+### Echec 2 — le lookbehind etait bon, le motif desarmait la garde
+
+| | |
+| --- | --- |
+| motif propose | `(?<!<)<<\s*(["'])(\S+)\1` — applique aux DEUX sites |
+| annonce du rendu | *« `'python - <<PYEOF'` : match ; groupe 2 = `PYEOF` »* |
+| **mesure** | `'python - <<PYEOF'` -> **PAS DE MATCH** |
+
+Cinq cas sur six conformes, un faux — et c est celui qui compte. Le motif rend
+le guillemet **obligatoire**, alors que `detecter_cas_a` le veut **optionnel**
+et ecarte lui-meme les quotes par un test explicite sur le groupe 1. Rendre le
+guillemet obligatoire revient a n apparier que des quotes, que le test suivant
+ecarte toutes.
+
+**La fonction ne detectait plus rien. La garde devenait inerte, en silence, et
+le fichier compilait.**
+
+### Ce qui les a separes
+
+```
+REVERSE heredoc PYTHON non quote, accent grave dans le CORPS   ECHEC
+1 echec(s)    rc=1
+```
+
+`scripts/epreuve_garde_heredoc.py`, ecrite deux heures plus tot, cablee a la
+suite de tests une heure plus tard. **Ni la compilation, ni une relecture
+humaine, ni l unicite des ancres ne distinguaient ce patch d un bon.**
+
+### Ce que l episode etablit
+
+Une affirmation sur le comportement d une expression reguliere n est **pas
+verifiable a la lecture**, meme par son auteur. Les deux rendus avaient
+raisonne juste sur la position zero et faux sur le glissement. Le seul controle
+qui vaille est l **execution** sur une liste de cas, positifs et negatifs.
+
+**Et une consigne de l orchestrateur etait fausse.** Elle demandait que les
+deux motifs soient IDENTIQUES apres correction. Ils ne doivent pas l etre : le
+premier site veut le guillemet optionnel, le second l exige. C est cette
+consigne qui a produit l echec 2 — le modele a obei. Corrigee au renvoi, avec
+les deux contraintes separees.
+
+---
+
+## LE CONTROLE DE REDACTION M A REPRIS, ET LA LISTE N A PAS ETE ELARGIE
+
+```
+[MANQUE] redaction declaree   Auteur declare : 17 sur 35 -- 18 MUET
+```
+
+`scripts/nexus_redaction.py` n accepte que **six phrases exactes** —
+`banc gratuit`, `redige par le banc`, `redaction : banc`, `ecrit par le banc`,
+`redige a la main`, `redaction : orchestrateur`. Treize commits ecrits dans la
+nuit portaient `DELEGUE` et `ARBITRE` : vocabulaire different, donc **tous
+comptes muets**.
+
+Le remede n est pas d elargir la liste. La lecon **L-144** du registre, lue la
+meme nuit dans le corpus de ce depot, le dit :
+
+> *« Quand un garde du depot est trop large, l elargir pour faire passer son
+> lot est le geste qui le tue ; c est au depot de decider de sa tolerance, pas
+> au lot qui passe. »*
+
+Une liste elargie a chaque vocabulaire nouveau ne mesure plus rien. Le message
+s adapte au controle.
