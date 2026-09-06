@@ -23,6 +23,16 @@ Comment desarmer la porte ?
 Le compteur de refus consecutifs est stocke dans ``.nexus/rituel_counter.txt``
 a la racine du depot (chemin relatif, jamais absolu). Il est reinitialise
 des qu'un tour passe.
+
+Options :
+* ``--epreuve`` : lit un verdict JSON depuis l'entree standard et affiche la
+  decision qui serait prise, sans toucher au compteur. Mode de diagnostic.
+* ``--verdict CHEMIN`` : lit le verdict JSON depuis le fichier CHEMIN au lieu
+  de lancer ``nexus_rituel.py``. Le comportement est identique au mode normal
+  (compteur, borne, echappatoire, JSON de decision, code de sortie). Si le
+  fichier est absent, vide, illisible, contient un JSON invalide ou est trop
+  ancien, la porte laisse passer sans bloquer et sans planter (fail-open). Le
+  compteur n'est pas remis a zero dans ce cas : on n'a rien constate sur le rituel.
 """
 
 from __future__ import annotations
@@ -32,10 +42,18 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 # ---------------------------------------------------------------------------
+# Constante : âge maximal du fichier de verdict (en secondes)
+# Une passe du rituel prend environ 21 s sur cette machine. On ajoute une
+# marge de 24 s pour couvrir les ralentissements éventuels (charge CPU,
+# I/O, etc.). Ainsi, tout verdict plus vieux que 45 s est considéré périmé.
+# On préfère laisser passer (fail‑open) plutôt que de bloquer à tort,
+# car une garde qui bloque à tort désarme le dépôt.
+VERDICT_MAX_AGE = 45
 
 def _repo_root() -> Path:
     """Racine du depot, derivee de ce fichier (un niveau au-dessus)."""
@@ -80,6 +98,34 @@ def _run_rituel(root: Path) -> dict | None:
             # Le rituel renvoie 0 (pas de manque) ou 1 (manque)
             return None
         return json.loads(result.stdout.decode("utf-8"))
+    except Exception:
+        return None
+
+def _read_verdict_file(path: str) -> dict | None:
+    """
+    Lit un verdict JSON depuis un fichier. Retourne le dict ou ``None`` si le
+    fichier est absent, vide, illisible, contient un JSON invalide ou est trop
+    ancien.
+
+    Note sur le fichier perime : un fichier au format valide mais trop ancien
+    peut provoquer un blocage errone si son contenu ne correspond plus a l'etat
+    actuel du depot. Pour s'en premunir, on verifie l'age du fichier. Si
+    l'horodatage est illisible, on laisse passer (fail-open).
+    """
+    try:
+        verdict_path = Path(path)
+        if not verdict_path.exists():
+            return None
+
+        # Verification de l'age du fichier
+        file_mtime = verdict_path.stat().st_mtime
+        if time.time() - file_mtime > VERDICT_MAX_AGE:
+            return None
+
+        content = verdict_path.read_text(encoding="utf-8")
+        if not content.strip():
+            return None
+        return json.loads(content)
     except Exception:
         return None
 
@@ -141,14 +187,13 @@ def _process(
             )
         }
         return False, json.dumps(system_msg, ensure_ascii=True)
-    else:
-        # Refus reel
-        new_count = count + 1
-        _write_counter(counter_path, new_count)
-        remaining = 2 - count
-        reason = _actionable_message(detail, remaining)
-        block_msg = {"decision": "block", "reason": reason}
-        return True, json.dumps(block_msg, ensure_ascii=True)
+    # Refus reel
+    new_count = count + 1
+    _write_counter(counter_path, new_count)
+    remaining = 2 - count
+    reason = _actionable_message(detail, remaining)
+    block_msg = {"decision": "block", "reason": reason}
+    return True, json.dumps(block_msg, ensure_ascii=True)
 
 def _epreuve_mode(input_data: str) -> str:
     """
@@ -160,10 +205,11 @@ def _epreuve_mode(input_data: str) -> str:
     except Exception:
         return ""  # fail-open, aucune sortie
     block, detail = _should_block(verdict)
-    if not block:
-        return json.dumps({"decision": "allow", "reason": "Aucun blocage requis"})
-    reason = _actionable_message(detail, remaining=2)  # valeur indicative
-    return json.dumps({"decision": "block", "reason": reason}, ensure_ascii=True)
+    return json.dumps(
+        {"decision": "allow", "reason": "Aucun blocage requis"} if not block
+        else {"decision": "block", "reason": _actionable_message(detail, remaining=2)},
+        ensure_ascii=True,
+    )
 
 def main(argv: List[str] | None = None) -> int:
     """Point d'entree du hook."""
@@ -172,6 +218,7 @@ def main(argv: List[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--epreuve", action="store_true")
+    parser.add_argument("--verdict", type=str, default=None)
     args, _ = parser.parse_known_args(argv)
 
     root = _repo_root()
@@ -185,7 +232,11 @@ def main(argv: List[str] | None = None) -> int:
             print(out)
         return 0
 
-    verdict = _run_rituel(root)
+    if args.verdict:
+        verdict = _read_verdict_file(args.verdict)
+    else:
+        verdict = _run_rituel(root)
+
     block, out_json = _process(root, counter_path, verdict)
 
     if out_json:

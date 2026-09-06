@@ -330,7 +330,11 @@ def main() -> int:
     # Le verdict lit le RESULTAT d'abord, le mode ensuite. L'inverse -- la
     # faute du premier jet -- annoncait « SIMULATION » sur un blocage.
     if not sain:
-        print("VERDICT : publication REFUSEE. Rien n'est parti.")
+        # si on ne sait pas si le push a eu lieu (detail indique vérif impossible)
+        if any("etat distant non verifiable" in d for _, _, d in resultats):
+            print("VERDICT : etat distant non verifiable. Publication incertaine.")
+        else:
+            print("VERDICT : publication REFUSEE. Rien n'est parti.")
     elif a.simulation:
         print("VERDICT : sain. La publication reelle passerait.")
     else:
