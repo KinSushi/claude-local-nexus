@@ -357,10 +357,8 @@ def redaction_declaree(racine):
         return IGNORE, str(exc).splitlines()[0][:60]
     if r.returncode == 2:
         return IGNORE, 'mesure impossible'
-    # critere du script appele: exit_code = 0 if delegated >= commits and commits > 0 else 1
+    # critere du script appele: exit_code = 0 if declares >= muets else 1
     # un controle qui ignore le signal d'echec ne peut jamais rougir
-    if r.returncode == 1:
-        return MANQUE, f'delegation passee sous le nombre de commits, code={r.returncode}'
     lignes = [l.strip() for l in (r.stdout or '').splitlines() if l.strip()]
     detail = ''
     # CORRECTION : on prefere la ligne commencant par 'Auteur declare'
@@ -377,6 +375,12 @@ def redaction_declaree(racine):
     # Si aucune des deux n'existe, on prend la premiere ligne non vide
     if not detail and lignes:
         detail = lignes[0]
+    if r.returncode == 1:
+        if detail:
+            msg = f"sans auteur declare (banc gratuit) : {detail}"
+        else:
+            msg = "sans auteur declare (banc gratuit)"
+        return MANQUE, msg[:90]
     return OK, detail[:90]
 
 

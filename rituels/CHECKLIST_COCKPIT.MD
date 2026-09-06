@@ -18787,3 +18787,118 @@ erreur de l'appelant.
 
 **Ce que cela coute, mesure :** deux tentatives perdues, et un diagnostic
 initial faux — j'ai d'abord cru a une faute de quoting de ma part.
+
+---
+
+## 124. UN DIAGNOSTIC QUI ENVOYAIT AU MAUVAIS ENDROIT — et il bloquait la vitrine
+
+Le rituel refusait de se clore sur ce message :
+
+```
+[MANQUE] redaction declaree   delegation passee sous le nombre de commits, code=1
+```
+
+**Le message etait faux.** Mesure du jour : **391 appels delegues pour 9 commits
+de code**, soit un rapport de 43,44. La delegation n'etait donc pas « passee
+sous le nombre de commits » — elle etait quarante-trois fois au-dessus.
+
+Le vrai critere est a la ligne 398 de `scripts/nexus_redaction.py` :
+
+```python
+exit_code = 0 if declares >= muets else 1
+```
+
+Il compare les commits qui **declarent leur auteur** a ceux qui se taisent :
+3 contre 6. Rien a voir avec la delegation.
+
+Pire, le commentaire de la fonction appelante decrivait un critere qui n'existe
+plus : `# critere du script appele: exit_code = 0 if delegated >= commits...`.
+Un commentaire perime qui decrit un critere disparu est pire qu'absent — il
+fait chercher au mauvais endroit, et c'est exactement ce qu'il a fait.
+
+Le message rend desormais la cause reelle **et la sortie** :
+
+```
+[MANQUE] redaction declaree   sans auteur declare (banc gratuit) : Auteur declare : 3 sur 9 commits de code -- 6 MUETS
+```
+
+Un rendu sur deux a ete rejete : il corrigeait bien le message mais ne nommait
+aucune des six formules acceptees. Le depot mesure qu'une garde qui refuse sans
+nommer la sortie finit desarmee.
+
+### Le vocabulaire du detecteur, et l'ecart mesure
+
+Le detecteur accepte six phrases exactes : `banc gratuit`, `redige par le banc`,
+`redaction : banc`, `ecrit par le banc`, `redige a la main`,
+`redaction : orchestrateur`.
+
+Mesure sur les 40 derniers commits :
+
+```
+reconnus par le detecteur                     10
+declarent l'auteur AUTREMENT, invisibles       4
+reellement muets                              26
+```
+
+Quatre commits declarent leur auteur sans employer aucune formule — « Delegue :
+la porte, ses deux corrections... / Arbitre ici : ... ». Ils comptent MUETS.
+
+**Je ne monte pas cet ecart en epingle** : quatre sur quarante, et vingt-six
+sont vraiment muets. Le detecteur a surtout raison. Elargir son vocabulaire
+sans contre-epreuve echangerait un manque contre un mensonge — le depot a deja
+mesure qu'un detecteur a vocabulaire impose rendait **56 % de faux positifs**
+sur les commentaires reels.
+
+Quand un mecanisme et une habitude divergent, c'est l'habitude qui cede tant
+que le mecanisme n'a pas ete corrige par un tiers. La formule reconnue est donc
+adoptee.
+
+### La propriete structurelle qu'il faut nommer
+
+Ce controle juge le **passe**, sur une fenetre de 24 h, et la vitrine bloque sur
+n'importe quel manque du rituel. Un ecart historique irrattrapable rendrait donc
+le depot impubliable — pas indefiniment, la fenetre le fait expirer, mais assez
+longtemps pour que ce soit un cout reel.
+
+C'est exactement la propriete qui a fait ecarter dix controles sur onze quand il
+a fallu decider ce que la porte du §123 aurait le droit de BLOQUER : *un
+controle que la session ne peut pas satisfaire a l'instant est un piege.* La
+vitrine, elle, bloque encore sur les onze. Le sujet est ouvert et il est nomme.
+
+---
+
+## 124.1 LE DISQUE PORTE 3,3 Go DEJA LA — inventaire mesure
+
+Consultation faite avec des agents **locaux**, comme demande : le corpus ne
+quitte pas la machine, et l'en-tete de reponse le prouve —
+`adresse=http://host.docker.internal:11434`.
+
+```
+.nexus/livres_code              2 504,8 Mo    20 depots, 5 775 fichiers
+.nexus/livres_kos                 474,4 Mo
+.nexus/fragments_embeddings        215,6 Mo
+references/livres                    59,0 Mo
+.nexus/index_livres.bin              31,2 Mo
+.nexus/index_doc_libs.tsv            18,7 Mo
+```
+
+Vingt depots de code source de livres, dont plusieurs portent exactement le
+domaine de ce depot :
+
+| depot | matiere |
+| --- | --- |
+| `Design-Multi-Agent-AI-Systems-Using-MCP-and-A2A` | **485 fichiers .py**, ch03 a ch11 ; `ch08` porte `a2a_manager.py` et `a2a_message_pump.py` |
+| `Agentic-Architectural-Patterns-for-Building-Multi-Agent-Systems` | patrons multi-agents |
+| `Building-Agentic-AI-Systems` | boucles agentiques |
+| `Agentic-Coding-with-Claude-Code` | 32 fiches .md |
+| `Machine-Learning-Model-Serving-Patterns-and-Best-Practices` | 87 .py, patrons de service et de routage |
+
+`ch08` est la matiere de l'extension **A2A** annoncee par l'operateur, et elle
+etait deja sur le disque, non consultee.
+
+**Ce que cela confirme, et c'est la lecon du jour repetee** : la matiere existe
+avant qu'on la cherche. Le controle de compilation a coute six passes faute
+d'avoir joint le jumeau qui vivait trente lignes plus haut ; le code A2A dormait
+sous `.nexus/` pendant qu'on concevait de memoire. **Exploiter le deja existant
+sur disque n'est pas une preference, c'est ce qui separe une conception d'une
+invention.**
