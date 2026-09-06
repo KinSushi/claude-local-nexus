@@ -37,7 +37,7 @@ import zipfile
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
 # et les accents se dégradent dès que la sortie est capturée — le
-# résultat finissait commité dans rituels/STATE.md, donc visible sur
+# résultat finissait commité dans outillage/rituels/STATE.md, donc visible sur
 # GitHub. PYTHONUTF8 est déjà posé pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):

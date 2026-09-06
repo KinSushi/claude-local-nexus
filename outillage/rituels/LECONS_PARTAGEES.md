@@ -1006,8 +1006,8 @@ verrouilles hors de toute ecriture, puis elles se sont arretees.
 
 | fichier | ce qu il porte |
 | --- | --- |
-| `rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md` | son unite de reprise : 5 commits, 3 lots, les 3 jambes du temoin, 8 mesures, **5 retractations**, 3 regles, 2 defauts de conception, 12 fils ouverts, 3 angles morts de son protocole |
-| `rituels/DECHARGE_EA_MT5_2026-09-02.md` | ses mesures du jour, ses 6 lecons neuves, ses 6 decisions en attente |
+| `outillage/rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md` | son unite de reprise : 5 commits, 3 lots, les 3 jambes du temoin, 8 mesures, **5 retractations**, 3 regles, 2 defauts de conception, 12 fils ouverts, 3 angles morts de son protocole |
+| `outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md` | ses mesures du jour, ses 6 lecons neuves, ses 6 decisions en attente |
 | `LECONS_PARTAGEES.md` §27 | le defaut de conception commun aux trois depots |
 
 **Ils avaient raison, et la demonstration est faite sur eux** :

@@ -168,7 +168,7 @@ Cloud est un **quatrième état que le contrat ne nommait pas** : un modèle peu
     ollama list           →  53 modèles locaux + 3 refs cloud   (mesuré)
     console Ollama        →  19 modèles cloud accessibles       (mesuré)
 
-Source complète et ses autocorrections : `rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md`.
+Source complète et ses autocorrections : `outillage/rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md`.
 
 | # | Tâche | Ce qui la ferme |
 | --- | --- | --- |

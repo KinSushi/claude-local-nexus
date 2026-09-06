@@ -1,7 +1,7 @@
 {
   "genere_le": "2026-09-06T14:17:58Z",
   "outil": "outillage/nexus_quarantaine.py",
-  "gabarit_audit": "rituels/GABARIT_QUARANTAINE.md",
+  "gabarit_audit": "outillage/rituels/GABARIT_QUARANTAINE.md",
   "racine": "C:\\local-llm-docker",
   "arbre_principal": "C:/local-llm-docker",
   "arbre_principal_erreur": null,
@@ -161,7 +161,7 @@
           }
         },
         {
-          "chemin": "rituels/GABARIT_QUARANTAINE.md",
+          "chemin": "outillage/rituels/GABARIT_QUARANTAINE.md",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 5846,
@@ -425,7 +425,7 @@
           }
         },
         {
-          "chemin": "rituels/outillage_reference.json",
+          "chemin": "outillage/rituels/outillage_reference.json",
           "etat": "commite",
           "statut_git": "M",
           "octets": 526,
@@ -1473,7 +1473,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "rituels/BOUSSOLE.csv",
+          "chemin": "outillage/rituels/BOUSSOLE.csv",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 400763,
@@ -1494,7 +1494,7 @@
           }
         },
         {
-          "chemin": "rituels/CHECKLIST_COCKPIT.MD",
+          "chemin": "outillage/rituels/CHECKLIST_COCKPIT.MD",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 952614,
@@ -1515,7 +1515,7 @@
           }
         },
         {
-          "chemin": "rituels/CHECKLIST_LIVRE_VS_CODE.md",
+          "chemin": "outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 33312,
@@ -1536,7 +1536,7 @@
           }
         },
         {
-          "chemin": "rituels/CHECKLIST_PROGRESS.md",
+          "chemin": "outillage/rituels/CHECKLIST_PROGRESS.md",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 1509,
@@ -1557,7 +1557,7 @@
           }
         },
         {
-          "chemin": "rituels/GABARIT_QUARANTAINE.md",
+          "chemin": "outillage/rituels/GABARIT_QUARANTAINE.md",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 5846,
@@ -1578,7 +1578,7 @@
           }
         },
         {
-          "chemin": "rituels/INVENTAIRE_OUTILS.md",
+          "chemin": "outillage/rituels/INVENTAIRE_OUTILS.md",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 6416,
@@ -1599,7 +1599,7 @@
           }
         },
         {
-          "chemin": "rituels/LECONS_PARTAGEES.md",
+          "chemin": "outillage/rituels/LECONS_PARTAGEES.md",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 60078,
@@ -1620,7 +1620,7 @@
           }
         },
         {
-          "chemin": "rituels/SURVIE_SANS_ABONNEMENT.md",
+          "chemin": "outillage/rituels/SURVIE_SANS_ABONNEMENT.md",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 11855,
@@ -1641,7 +1641,7 @@
           }
         },
         {
-          "chemin": "rituels/VAGUES_REPARATION.md",
+          "chemin": "outillage/rituels/VAGUES_REPARATION.md",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 94466,
@@ -1662,7 +1662,7 @@
           }
         },
         {
-          "chemin": "rituels/cablage_reference.json",
+          "chemin": "outillage/rituels/cablage_reference.json",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 593,
@@ -1683,7 +1683,7 @@
           }
         },
         {
-          "chemin": "rituels/orphelines_reference.json",
+          "chemin": "outillage/rituels/orphelines_reference.json",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 19,
@@ -1704,7 +1704,7 @@
           }
         },
         {
-          "chemin": "rituels/outillage_reference.json",
+          "chemin": "outillage/rituels/outillage_reference.json",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 578,
@@ -1750,7 +1750,7 @@
       "classification": "SANS_PREUVE",
       "fichiers": [
         {
-          "chemin": "rituels/DOSSIER_MANDAT_AGENT.md",
+          "chemin": "outillage/rituels/DOSSIER_MANDAT_AGENT.md",
           "etat": "non_commite",
           "statut_git": "??",
           "octets": 14167,
@@ -2084,7 +2084,7 @@
           }
         },
         {
-          "chemin": "rituels/cablage_reference.json",
+          "chemin": "outillage/rituels/cablage_reference.json",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 554,
@@ -2964,7 +2964,7 @@
           }
         },
         {
-          "chemin": "rituels/CHECKLIST_LIVRE_VS_CODE.md",
+          "chemin": "outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md",
           "etat": "commite",
           "statut_git": "M",
           "octets": 38308,
@@ -2985,7 +2985,7 @@
           }
         },
         {
-          "chemin": "rituels/cablage_reference.json",
+          "chemin": "outillage/rituels/cablage_reference.json",
           "etat": "non_commite",
           "statut_git": " M",
           "octets": 553,

@@ -280,7 +280,7 @@ if ($script:Problemes -eq 0) {
 }
 Write-Host ""
 Write-Host "  Etat mesure     : .\rituels\RESUME.ps1"
-Write-Host "  Sujets ouverts  : rituels\CHECKLIST_COCKPIT.MD"
+Write-Host "  Sujets ouverts  : outillage/rituels\CHECKLIST_COCKPIT.MD"
 Write-Host "  Suite de tests  : python outillage\nexus_test.py"
 Write-Host ""
 exit ([int]($script:Problemes -gt 0))

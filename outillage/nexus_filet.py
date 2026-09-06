@@ -10,8 +10,8 @@ Contraintes de conception :
   un git apply aveugle aurait emporte le fichier du depot reel, la suppression figurant comme un D ordinaire.
 - Il exclut par defaut les fichiers listes dans --exclure : outillage/nexus_doc.py (copie posee par
   l orchestrateur, pas du travail d agent) et quatre fichiers REGENERES par l outillage du depot lui-meme
-  -- rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json,
-  rituels/CHECKLIST_PROGRESS.md. Trouve en se servant de l outil corrige : deux worktrees dont TOUT le diff
+  -- outillage/rituels/cablage_reference.json, outillage/rituels/outillage_reference.json, outillage/rituels/orphelines_reference.json,
+  outillage/rituels/CHECKLIST_PROGRESS.md. Trouve en se servant de l outil corrige : deux worktrees dont TOUT le diff
   non indexe n etait qu un horodatage regenere par une passe de validation -- l un des deux n avait RIEN
   d autre a recolter, et le disait "ok". Un diff devenu vide par cette exclusion ne se lit plus "ok" ;
   voir fichiers_diff() et la branche "vide" de main().
@@ -271,13 +271,13 @@ def main():
                             # depot (ecrits par nexus_cablage.py, nexus_outillage.py, epreuve_orphelines.py,
                             # nexus_checklist_progres.py) -- jamais du travail d'agent, meme categorie que
                             # nexus_doc.py ci-dessus. Mesure sur la flotte reelle du 2026-09-03 :
-                            # rituels/cablage_reference.json etait le SEUL contenu du diff de 2 worktrees
+                            # outillage/rituels/cablage_reference.json etait le SEUL contenu du diff de 2 worktrees
                             # sur 43, un horodatage regenere par une passe de validation lancee dans le
                             # worktree -- l'un d'eux n'avait RIEN d'autre a recolter, et etait annonce "ok".
-                            'rituels/cablage_reference.json',
-                            'rituels/outillage_reference.json',
-                            'rituels/orphelines_reference.json',
-                            'rituels/CHECKLIST_PROGRESS.md',
+                            'outillage/rituels/cablage_reference.json',
+                            'outillage/rituels/outillage_reference.json',
+                            'outillage/rituels/orphelines_reference.json',
+                            'outillage/rituels/CHECKLIST_PROGRESS.md',
                         ],
                         help='Chemins a exclure du diff (fichiers generes exclus par defaut).')
     parser.add_argument("--racine", type=Path, default=None,

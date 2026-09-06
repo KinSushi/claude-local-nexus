@@ -78,16 +78,16 @@ CABLEURS = (".claude/settings.json", "scripts/nexus.ps1",
 #
 # Mesure du 2026-09-02, par une sonde : un script que PERSONNE n'appelle
 # passait d'« orphelin » a « preuve seule » des qu'une ligne de
-# rituels/BOUSSOLE.md le listait -- or la boussole liste chaque fichier du
-# depot, par construction. Et rituels/cablage_reference.json, ecrit par ce
+# outillage/rituels/BOUSSOLE.md le listait -- or la boussole liste chaque fichier du
+# depot, par construction. Et outillage/rituels/cablage_reference.json, ecrit par ce
 # script, nommait les scripts qu'il avait deja classes faibles : une fois
 # inscrit, un orphelin ne pouvait plus jamais l'etre. « Orphelin » n'etait
 # atteignable que par un script plus recent que la derniere boussole. C'est
 # le defaut inscrit au cockpit et a CHECKLIST_LIVRE_VS_CODE §16.1 (« citer
 # n'est pas appeler »), ferme ici pour les seuls fichiers ou il est certain ;
 # la distinction generale citation/appel reste ouverte.
-INVENTAIRES = ("rituels/BOUSSOLE.md", "rituels/BOUSSOLE.csv",
-               "rituels/cablage_reference.json")
+INVENTAIRES = ("outillage/rituels/BOUSSOLE.md", "outillage/rituels/BOUSSOLE.csv",
+               "outillage/rituels/cablage_reference.json")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # VERSIONNEE, et non sous « .nexus ». La distinction n'est pas cosmetique :
@@ -98,7 +98,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # .nexus, la reference aurait ete absente sur toute autre machine, et la porte
 # y aurait annonce « aucune reference » a chaque execution -- silencieusement
 # inutile.
-REFERENCE = os.path.join(ROOT, "rituels", "cablage_reference.json")
+REFERENCE = os.path.join(ROOT, "outillage", "rituels", "cablage_reference.json")
 
 
 def suivis() -> list:

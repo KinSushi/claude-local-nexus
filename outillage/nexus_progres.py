@@ -95,7 +95,7 @@ def main():
     # QUATRE : Sujets Ouverts
     lines.append("## SUJETS OUVERTS")
     try:
-        checklist_path = os.path.join(root_dir, "rituels", "CHECKLIST_COCKPIT.MD")
+        checklist_path = os.path.join(root_dir, "outillage", "rituels", "CHECKLIST_COCKPIT.MD")
         if os.path.exists(checklist_path):
             with open(checklist_path, 'r', encoding='utf-8') as f:
                 content = f.read()

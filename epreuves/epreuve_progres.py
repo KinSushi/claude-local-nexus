@@ -82,8 +82,8 @@ def depot_jetable(avec_git, checklist=None):
     os.makedirs(os.path.join(racine, "scripts"))
     shutil.copy(GENERATEUR, os.path.join(racine, "outillage", "nexus_progres.py"))
     if checklist is not None:
-        os.makedirs(os.path.join(racine, "rituels"))
-        with open(os.path.join(racine, "rituels", "CHECKLIST_COCKPIT.MD"),
+        os.makedirs(os.path.join(racine, "outillage", "rituels"))
+        with open(os.path.join(racine, "outillage", "rituels", "CHECKLIST_COCKPIT.MD"),
                   "w", encoding="utf-8") as f:
             f.write(checklist)
     if avec_git:

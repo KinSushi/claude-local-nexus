@@ -38,7 +38,7 @@ intacte ci-dessus.
 CONFIRME : aucun agent ni script nomme litteralement « Verifier » ou
 « VerificationAgent » n'existe dans le depot (grep insensible a la casse sur
 l'arbre entier : seules trois mentions, toutes documentaires --
-rituels/BOUSSOLE.md, rituels/BOUSSOLE.csv qui cataloguent cette note, et
+outillage/rituels/BOUSSOLE.md, outillage/rituels/BOUSSOLE.csv qui cataloguent cette note, et
 docs/architecture/README.md qui la reference).
 
 Le role EST tenu, mais par un ensemble d'outils distincts plutot que par un

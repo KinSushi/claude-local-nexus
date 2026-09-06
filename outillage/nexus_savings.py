@@ -36,7 +36,7 @@ import urllib.request
 # La sortie est souvent redirigee : journaux, STATE.md, sousprocessus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
 # et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# resultat finissait commite dans outillage/rituels/STATE.md, donc visible sur
 # GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):

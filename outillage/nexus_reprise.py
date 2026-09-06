@@ -123,7 +123,7 @@ def bloc_objectif() -> None:
     print("  L'environnement est vaste et sous-employe : des modeles mesures,")
     print("  des bancs, des outils voisins reperes, et une documentation et")
     print("  des bibliotheques a portee de copie.")
-    print("  Voir « CE DONT JE DISPOSE » dans rituels/CHECKLIST_COCKPIT.MD.")
+    print("  Voir « CE DONT JE DISPOSE » dans outillage/rituels/CHECKLIST_COCKPIT.MD.")
 
 
 def bloc_git() -> None:
@@ -213,7 +213,7 @@ def bloc_taches() -> None:
 def bloc_sujets() -> None:
     """Sujets encore ouverts, EXTRAITS du cockpit — jamais recopiés ici."""
     titre("SUJETS OUVERTS — extraits du cockpit, non recopies")
-    chemin = os.path.join(ROOT, "rituels", "CHECKLIST_COCKPIT.MD")
+    chemin = os.path.join(ROOT, "outillage", "rituels", "CHECKLIST_COCKPIT.MD")
     if not os.path.isfile(chemin):
         print("  [!] cockpit introuvable : %s" % chemin)
         return
@@ -274,7 +274,7 @@ def bloc_sujets() -> None:
     if not montres:
         print("  Aucun sujet ouvert lisible — verifier le cockpit a la main.")
     elif non_affiches > 0:
-        print("  %d sujet(s) non affiché(s) — voir rituels/CHECKLIST_COCKPIT.MD. La SECTION 62, intitulée REPRISE APRES REDEMARRAGE, porte l'état en vol et se lit en premier." % non_affiches)
+        print("  %d sujet(s) non affiché(s) — voir outillage/rituels/CHECKLIST_COCKPIT.MD. La SECTION 62, intitulée REPRISE APRES REDEMARRAGE, porte l'état en vol et se lit en premier." % non_affiches)
     print("")
     print("  Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est")
     print("  enfreinte. Un paragraphe ne ferme rien (contrat 0.2.1).")
@@ -319,7 +319,7 @@ def bloc_gestes() -> None:
                 print("    Le depot porte un corpus de livres (%s), %d fragments."
                       % (_corpus, _n))
                 print("    REGLE : avant de concevoir un mecanisme, chercher dans")
-                print("    l'index le chapitre qui porte SON NOM (voir rituels/CORPUS_LIVRES.md).")
+                print("    l'index le chapitre qui porte SON NOM (voir outillage/rituels/CORPUS_LIVRES.md).")
         except Exception as e:
             print("    [!] corpus illisible : %s" % str(e)[:50])
     except Exception:

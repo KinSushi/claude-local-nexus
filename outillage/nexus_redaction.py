@@ -94,7 +94,7 @@ def count_commits(window_hours):
             current_has_code = False
         else:
             if (line.endswith('.py') or line.endswith('.ps1') or line.endswith('.js')) \
-               and not line.startswith('rituels/'):
+               and not line.startswith('outillage/rituels/'):
                 current_has_code = True
     if current_has_code:
         commit_count += 1
@@ -318,7 +318,7 @@ def controle_auteur(fenetre_heures):
         # et n'est pas limité à des fichiers ignorés.
         touches_code = False
         for f in files:
-            if f.startswith("rituels/"):
+            if f.startswith("outillage/rituels/"):
                 continue
             f_low = f.lower()
             if f_low.endswith(".py") or f_low.endswith(".ps1") or f_low.endswith(".js"):

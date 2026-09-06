@@ -298,7 +298,7 @@ Write-Log "Regeneration du cockpit"
 & $python (Join-Path $PSScriptRoot "nexus_state.py") 2>&1 |
     ForEach-Object { Write-Log "  $_" }
 if ($LASTEXITCODE -ne 0) {
-    Write-Log "Cockpit non regenere : rituels/STATE.md reste date" "WARN"
+    Write-Log "Cockpit non regenere : outillage/rituels/STATE.md reste date" "WARN"
 }
 
 Write-Log "Mise a jour terminee" "OK"

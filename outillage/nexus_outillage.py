@@ -629,7 +629,7 @@ def _determine_exit_code(tool_results: List[Dict[str, Any]], findings: List[Dict
 # ----------------------------------------------------------------------
 
 
-REFERENCE_OUTILLAGE = "rituels/outillage_reference.json"
+REFERENCE_OUTILLAGE = "outillage/rituels/outillage_reference.json"
 
 
 def _compter_regles(tool_result: Dict[str, Any]) -> Dict[str, int]:

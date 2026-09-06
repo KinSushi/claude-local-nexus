@@ -263,7 +263,7 @@ conteneurisé, Ollama en sort.
 ├── scripts/                   Génération, validation, tests, migration, sauvegarde
 ├── tools/nexus-mcp/           Serveur MCP — les modèles comme outils
 ├── docs/                      Documentation et notes d'architecture
-└── rituels/                   État mesuré, sujets ouverts, historique, boussole
+└── outillage/rituels/                   État mesuré, sujets ouverts, historique, boussole
 ```
 
 Les zones délimitées par `# >>> AUTOGEN:<NOM>` sont réécrites à chaque mise
@@ -328,8 +328,8 @@ Elles sont documentées plutôt que tues.
 | [Associer local et abonnement](docs/pont-local-abonnement.md) | La contrainte, les trois montages, ce qui est déployé |
 | [Notes d'architecture](docs/architecture/README.md) | La cible et les idées où puiser |
 | [Set-ClaudeModel](docs/set-claude-model.md) | Basculer délibérément toute une session |
-| [État mesuré](rituels/STATE.md) | Généré, jamais saisi à la main |
-| [Sujets ouverts](rituels/CHECKLIST_COCKPIT.MD) | Ce qui reste à faire, et pourquoi |
+| [État mesuré](outillage/rituels/STATE.md) | Généré, jamais saisi à la main |
+| [Sujets ouverts](outillage/rituels/CHECKLIST_COCKPIT.MD) | Ce qui reste à faire, et pourquoi |
 
 ---
 

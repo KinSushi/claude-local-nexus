@@ -78,4 +78,4 @@ if ($Full) {
     & (Join-Path $Scripts "Test-NexusSmoke.ps1") -IncludeRouters
 }
 
-Write-Host "`nEtat : rituels\STATE.md   Sujets : rituels\CHECKLIST_COCKPIT.MD   Historique : rituels\PROGRESS.md`n"
+Write-Host "`nEtat : outillage/rituels\STATE.md   Sujets : outillage/rituels\CHECKLIST_COCKPIT.MD   Historique : outillage/rituels\PROGRESS.md`n"

@@ -149,7 +149,7 @@ reconducted without anyone repeating it.
 deliverable is a check that fails, not a paragraph.
 
 **Close threads, do not open them.** An open task is not progress; a closed
-one is. Record what remains in `rituels/CHECKLIST_COCKPIT.MD`, which
+one is. Record what remains in `outillage/rituels/CHECKLIST_COCKPIT.MD`, which
 regenerates itself with each update, so nothing depends on remembering.
 
 The measure of a session is not what was explained. It is what is now
@@ -571,7 +571,7 @@ worth knowing.
 what was false, what proves it, and what remains uncertain. A commit that says
 what was done and not what was measured is a commit nobody can audit later.
 
-**3 — Record what is still open.** `rituels/CHECKLIST_COCKPIT.MD`. A defect
+**3 — Record what is still open.** `outillage/rituels/CHECKLIST_COCKPIT.MD`. A defect
 seen and then dropped is worse than a defect unseen: it was known, and the
 knowledge was lost. Under the standing rule, an entry closes only when a check
 fails if the rule is broken — never when a paragraph is written.
@@ -593,7 +593,7 @@ missing, because nothing asks for it at the moment you believe you have
 finished. `nexus_rituel.py` now runs `nexus_cablage.py` rather than reminding
 you to: the ratchet refuses to let the orphan list grow.
 
-The regenerating parts — `rituels/STATE.md`, the `NexusTraque` task — are not
+The regenerating parts — `outillage/rituels/STATE.md`, the `NexusTraque` task — are not
 in this list. They run without being asked, which is precisely why they are
 not rituals.
 

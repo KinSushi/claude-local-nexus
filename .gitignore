@@ -79,7 +79,7 @@ PROGRESS.MD
 # Versionne, il salissait l arbre en permanence et BLOQUAIT la vitrine —
 # constate trois fois le 2026-09-01. Or la vitrine est la seule sauvegarde.
 # Meme arbitrage que PROGRESS.MD : un etat derive ne se versionne pas.
-rituels/STATE.md
+outillage/rituels/STATE.md
 v15*.json
 
 # Les corpus pesent 59 Mo et n'ont rien a faire dans l'historique.
@@ -128,4 +128,4 @@ references/python_ast_local/rapport.csv
 # REGENERENT en une commande -- python outillage/nexus_quarantaine.py -- tant
 # que les worktrees sont la, et ils y sont tous (45 sur 45, verifie).
 # Le MANIFESTE, lui, EST versionne : il porte la mesure et l'index d'audit.
-rituels/QUARANTAINE/agent-*/
+outillage/rituels/QUARANTAINE/agent-*/

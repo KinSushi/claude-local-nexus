@@ -352,10 +352,10 @@ agent-a697c9b31ea2b75e4: 30 lignes - ok
 
 **Verifie independamment avant toute correction** (inspecter_deux_worktrees.py, git diff brut sur les deux worktrees) — confirmation exacte, ligne pour ligne, de ce que le coordinateur a rapporte :
 
-- agent-a9bae5bcacf5d3042 : diff ENTIEREMENT compose d'un changement a rituels/cablage_reference.json — un horodatage (mesure_le) et le retrait de outillage/nexus_epreuve_vide.py de la liste preuve_seule. Rien d'autre.
+- agent-a9bae5bcacf5d3042 : diff ENTIEREMENT compose d'un changement a outillage/rituels/cablage_reference.json — un horodatage (mesure_le) et le retrait de outillage/nexus_epreuve_vide.py de la liste preuve_seule. Rien d'autre.
 - agent-a697c9b31ea2b75e4 : MEME artefact cablage_reference.json (horodate differemment, epreuve_cles_only.py retire de preuve_seule cette fois) PLUS un vrai ajout de 2 lignes dans outillage/nexus_test.py (cablage de epreuve_cles_only.py derriere --only cles).
 
-rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus_cablage.py, fonction ecrire_reference()), reecrite en effet de bord par toute passe de validation lancee dans le worktree — jamais du travail d'agent. Le confondre avec du travail recoltable aurait, pour --appliquer, rebase le cliquet en silence — exactement le geste que nexus_cablage.py exige d'assumer explicitement par --rebaseline.
+outillage/rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus_cablage.py, fonction ecrire_reference()), reecrite en effet de bord par toute passe de validation lancee dans le worktree — jamais du travail d'agent. Le confondre avec du travail recoltable aurait, pour --appliquer, rebase le cliquet en silence — exactement le geste que nexus_cablage.py exige d'assumer explicitement par --rebaseline.
 
 **Recherche d'autres fichiers du meme genre, mesuree sur toute la flotte reelle** (mesurer_fichiers_generes2.py, comptage des fichiers touches par au moins un worktree, tous les 43 passes en revue) plutot que supposee :
 
@@ -365,30 +365,30 @@ rituels/cablage_reference.json est la ligne de base du cliquet de cablage (nexus
   5 worktrees : outillage/nexus_test.py                (travail reel plausible, laisse tel quel)
   3 worktrees : scripts/nexus_agent.py                (travail reel plausible, laisse tel quel)
   3 worktrees : scripts/nexus_disjoncteur.py          (travail reel plausible, laisse tel quel)
-  2 worktrees : rituels/cablage_reference.json        (confirme genere, voir ci-dessus)
+  2 worktrees : outillage/rituels/cablage_reference.json        (confirme genere, voir ci-dessus)
   2 worktrees : outillage/nexus_conformite.py           (travail reel plausible, laisse tel quel)
   2 worktrees : docs/architecture/model-registry.yaml (travail reel plausible, laisse tel quel)
 
 === Recherche specifique des candidats "generes" ===
-  2 worktrees : rituels/cablage_reference.json
-  0 worktrees : rituels/outillage_reference.json
-  0 worktrees : rituels/orphelines_reference.json
-  0 worktrees : rituels/PROGRESS.md
-  0 worktrees : rituels/BOUSSOLE.md
-  0 worktrees : rituels/BOUSSOLE.csv
-  0 worktrees : rituels/CHECKLIST_COCKPIT.MD
-  1 worktrees : rituels/CHECKLIST_PROGRESS.md         (agent-a50cbf7c79394206d)
+  2 worktrees : outillage/rituels/cablage_reference.json
+  0 worktrees : outillage/rituels/outillage_reference.json
+  0 worktrees : outillage/rituels/orphelines_reference.json
+  0 worktrees : outillage/rituels/PROGRESS.md
+  0 worktrees : outillage/rituels/BOUSSOLE.md
+  0 worktrees : outillage/rituels/BOUSSOLE.csv
+  0 worktrees : outillage/rituels/CHECKLIST_COCKPIT.MD
+  1 worktrees : outillage/rituels/CHECKLIST_PROGRESS.md         (agent-a50cbf7c79394206d)
 ```
 
 **Deux fichiers explicitement demandes par le coordinateur, confirmes generes par lecture du code (pas seulement par mesure — la flotte actuelle n'en montre aucune occurrence, ce qui ne prouve pas l'absence de risque) :**
-- rituels/outillage_reference.json : REFERENCE_OUTILLAGE = "rituels/outillage_reference.json" dans nexus_outillage.py, meme mecanisme de cliquet que cablage_reference.json.
-- rituels/orphelines_reference.json : ref_file.write_text(json.dumps(ref_data, ...)) dans epreuve_orphelines.py, meme famille.
+- outillage/rituels/outillage_reference.json : REFERENCE_OUTILLAGE = "outillage/rituels/outillage_reference.json" dans nexus_outillage.py, meme mecanisme de cliquet que cablage_reference.json.
+- outillage/rituels/orphelines_reference.json : ref_file.write_text(json.dumps(ref_data, ...)) dans epreuve_orphelines.py, meme famille.
 
-**Un troisieme cas reel, non nomme par le coordinateur, trouve par cette recherche elargie et verifie independamment** : agent-a50cbf7c79394206d, "50 lignes - deja applique []" avant correction. Verifie (verifier_a50cbf7c.py) : les 50 lignes sont INTEGRALEMENT rituels/CHECKLIST_PROGRESS.md (aucun autre fichier dans le diff non filtre), et ce worktree n'a AUCUN commit d'avance sur main (git log main..HEAD vide) — un worktree reellement sans rien a recolter, annonce comme du travail "deja applique". CHECKLIST_PROGRESS.md porte lui-meme l'en-tete "Generated: <horodatage>" et un contenu entierement fait de compteurs de mesure — confirme genere par nexus_checklist_progres.py.
+**Un troisieme cas reel, non nomme par le coordinateur, trouve par cette recherche elargie et verifie independamment** : agent-a50cbf7c79394206d, "50 lignes - deja applique []" avant correction. Verifie (verifier_a50cbf7c.py) : les 50 lignes sont INTEGRALEMENT outillage/rituels/CHECKLIST_PROGRESS.md (aucun autre fichier dans le diff non filtre), et ce worktree n'a AUCUN commit d'avance sur main (git log main..HEAD vide) — un worktree reellement sans rien a recolter, annonce comme du travail "deja applique". CHECKLIST_PROGRESS.md porte lui-meme l'en-tete "Generated: <horodatage>" et un contenu entierement fait de compteurs de mesure — confirme genere par nexus_checklist_progres.py.
 
-**Non ajoutes, faute de mecanisme d'ecriture confirme et faute d'occurrence mesuree sur cette flotte** : rituels/PROGRESS.md, rituels/BOUSSOLE.md, rituels/BOUSSOLE.csv, rituels/CHECKLIST_COCKPIT.MD. Le contrat de ce depot et un commentaire de nexus_rituel.py ("Meme traitement que PROGRESS.MD : regeneration silencieuse") suggerent qu'ils sont de la meme famille, mais je n'ai pas retrouve, en cherchant dans le code, la ligne qui les ecrit effectivement (recherche par le nom de fichier dans nexus_progres.py/nexus_boussole.py, sans resultat — l'ecriture passe peut-etre par un chemin construit, pas un litteral). Les exclure sur une ressemblance de contrat plutot que sur une ecriture verifiee serait exactement l'erreur inverse que le coordinateur met en garde contre — voir rubrique 6.
+**Non ajoutes, faute de mecanisme d'ecriture confirme et faute d'occurrence mesuree sur cette flotte** : outillage/rituels/PROGRESS.md, outillage/rituels/BOUSSOLE.md, outillage/rituels/BOUSSOLE.csv, outillage/rituels/CHECKLIST_COCKPIT.MD. Le contrat de ce depot et un commentaire de nexus_rituel.py ("Meme traitement que PROGRESS.MD : regeneration silencieuse") suggerent qu'ils sont de la meme famille, mais je n'ai pas retrouve, en cherchant dans le code, la ligne qui les ecrit effectivement (recherche par le nom de fichier dans nexus_progres.py/nexus_boussole.py, sans resultat — l'ecriture passe peut-etre par un chemin construit, pas un litteral). Les exclure sur une ressemblance de contrat plutot que sur une ecriture verifiee serait exactement l'erreur inverse que le coordinateur met en garde contre — voir rubrique 6.
 
-**Corrige** : --exclure inclut par defaut, en plus de outillage/nexus_doc.py, les quatre fichiers confirmes (rituels/cablage_reference.json, rituels/outillage_reference.json, rituels/orphelines_reference.json, rituels/CHECKLIST_PROGRESS.md). Nouvelle fonction fichiers_diff(wt, exclure=()) : appelee SANS exclusion quand le diff filtre est vide, elle nomme les fichiers qui ont reellement change — si elle rend une liste non vide, l'exclusion est la SEULE raison du vide, et le message le dit explicitement au lieu de se taire ou de dire "ok".
+**Corrige** : --exclure inclut par defaut, en plus de outillage/nexus_doc.py, les quatre fichiers confirmes (outillage/rituels/cablage_reference.json, outillage/rituels/outillage_reference.json, outillage/rituels/orphelines_reference.json, outillage/rituels/CHECKLIST_PROGRESS.md). Nouvelle fonction fichiers_diff(wt, exclure=()) : appelee SANS exclusion quand le diff filtre est vide, elle nomme les fichiers qui ont reellement change — si elle rend une liste non vide, l'exclusion est la SEULE raison du vide, et le message le dit explicitement au lieu de se taire ou de dire "ok".
 
 **Contre-epreuve exigee par le coordinateur, sur les deux worktrees reels, en invocation CLI reelle avec --racine :**
 
@@ -401,14 +401,14 @@ agent-a9bae5bcacf5d3042: 19 lignes - ok
 APRES (python outillage/nexus_filet.py --racine "C:/local-llm-docker", processus reel) :
 ```
 agent-a697c9b31ea2b75e4: 13 lignes - ok
-agent-a9bae5bcacf5d3042: vide en modifications non indexees (1 fichier(s) genere(s) ecarte(s) : rituels/cablage_reference.json), MAIS 1 commit(s) non recoltes par ce dry-run (3 fichier(s) touches, main...HEAD)
+agent-a9bae5bcacf5d3042: vide en modifications non indexees (1 fichier(s) genere(s) ecarte(s) : outillage/rituels/cablage_reference.json), MAIS 1 commit(s) non recoltes par ce dry-run (3 fichier(s) touches, main...HEAD)
 ...
 Commits non recoltes (vide en diff, non vus par ce dry-run): 3
 exit reel du process : 1
 (stderr : vide)
 ```
 
-a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (rituels/CHECKLIST_LIVRE_VS_CODE.md, epreuves/epreuve_rendu_vide.py, outillage/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
+a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md, epreuves/epreuve_rendu_vide.py, outillage/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
 
 ### 4b. REVERSE-TEST — le chemin interdit échoue-t-il proprement ?
 
@@ -564,7 +564,7 @@ Alternative plus légère, cumulable : une sous-commande `nexus recolte` sur `sc
               worktree.
 ```
 
-[NON VERIFIE] Que rituels/PROGRESS.md, BOUSSOLE.md, BOUSSOLE.csv et CHECKLIST_COCKPIT.MD soient
+[NON VERIFIE] Que outillage/rituels/PROGRESS.md, BOUSSOLE.md, BOUSSOLE.csv et CHECKLIST_COCKPIT.MD soient
               generes de la meme facon que les quatre fichiers exclus. Le contrat du depot et un
               commentaire de nexus_rituel.py l'affirment ("regeneration silencieuse"), mais je n'ai
               PAS retrouve la ligne d'ecriture reelle dans nexus_progres.py / nexus_boussole.py par

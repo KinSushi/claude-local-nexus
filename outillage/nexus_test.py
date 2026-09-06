@@ -41,7 +41,7 @@ import urllib.request
 # La sortie est souvent redirigee : journaux, STATE.md, sous-processus.
 # Sans cette ligne, Python ecrit dans la page de codes locale de Windows
 # et les accents se degradent des que la sortie est capturee -- le
-# resultat finissait commite dans rituels/STATE.md, donc visible sur
+# resultat finissait commite dans outillage/rituels/STATE.md, donc visible sur
 # GitHub. PYTHONUTF8 est deja pose pour LiteLLM dans le compose ;
 # il manquait ici.
 if hasattr(sys.stdout, "reconfigure"):
@@ -1224,7 +1224,7 @@ def test_code() -> None:
     ps_paths = [os.path.join(ROOT, "scripts", n) for n in ps_scripts]
     ps_paths += [os.path.join(ROOT, n) for n in os.listdir(ROOT)
                  if n.endswith(".ps1")]
-    rituels = os.path.join(ROOT, "rituels")
+    rituels = os.path.join(ROOT, "outillage", "rituels")
     if os.path.isdir(rituels):
         ps_paths += [os.path.join(rituels, n) for n in os.listdir(rituels)
                      if n.endswith(".ps1") and os.path.getsize(os.path.join(rituels, n))]

@@ -125,7 +125,7 @@ Fichiers MODIFIÉS en dehors du périmètre prévu:
 ou
 
 ```
-rituels/CHECKLIST_COCKPIT.md  [modifié, 2 lignes ajoutées]
+outillage/rituels/CHECKLIST_COCKPIT.md  [modifié, 2 lignes ajoutées]
 ```
 
 **Impact?** Listé pour vérification. Si liste vide, le dire explicitement.

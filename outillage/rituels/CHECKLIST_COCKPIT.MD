@@ -160,7 +160,7 @@
 | « ACCIDENT : un worktree supprime SOUS un agent » | **traite** — 45 worktrees retires, **45 branches conservees**, puis 41 elaguees parce qu'entierement fusionnees (`git branch -d` n'en a refuse aucune) |
 | « `outillage/nexus_filet.py` porte SEUL les deux regressions » | **fusionne** ce jour, +1031 lignes deja presentes dans main |
 
-> Plan complet : **`rituels/VAGUES_REPARATION.md`**. Detail des 43 sujets : sections 124 et 124.1.
+> Plan complet : **`outillage/rituels/VAGUES_REPARATION.md`**. Detail des 43 sujets : sections 124 et 124.1.
 > Cette section etait en tete parce que le hook `nexus_reprise.py:258` n'affiche que les **18
 > premiers** sujets du fichier. **C'est precisement le defaut mesure au §127** : la fenetre est
 > prise par la section la plus ANCIENNE, et les mesures du jour ne remontent jamais.
@@ -223,7 +223,7 @@
 | Une TRONCATURE bannit le modele, alors que le code dit lui-meme « un autre modele ne changerait rien » | `nexus_agent.py:1135` empile l echec dans `echecs`, rejoue plus bas dans `record_failure` ; mesure vivante : glm passe de `half_open echecs=3` a `open echecs=4` apres une troncature. PREEXISTANT |
 | L ENCODAGE DU FILET CONDAMNAIT **14 TRAVAUX D AGENTS** a tort | conflits 20 -> 6 apres correction, a nombre de lignes IDENTIQUE ; cp1252 corrompait le diff et `git apply --check` refusait un patch valide. Verifie : 3 patches (340, 453, 260 lignes) PASSENT. « conflit » se croit, une panne se voit |
 | La branche CPU du contexte s adaptait au TYPE de materiel, pas a sa MESURE | corrige : derive desormais de `inference_memory_gb` (66,2 Go mesures). POSE, NON AUDITE — palier `32768/16384` peut-etre trop conservateur au vu des 131072 mesures sur llama3.2:1b |
-| Le filet proposait de REBASER LE CLIQUET en silence | 2 worktrees « ok » ne portaient qu une reecriture de `rituels/cablage_reference.json`, horodatee de cette nuit : les appliquer retirait 2 scripts de la surveillance sans decision |
+| Le filet proposait de REBASER LE CLIQUET en silence | 2 worktrees « ok » ne portaient qu une reecriture de `outillage/rituels/cablage_reference.json`, horodatee de cette nuit : les appliquer retirait 2 scripts de la surveillance sans decision |
 | Un worktree VIDE etait annonce « deja applique » | `a50cbf7c`, 50 lignes, 100 % un `CHECKLIST_PROGRESS.md` genere, zero commit |
 | Les scripts de corpus ont un effet de bord A L IMPORT | ils reenveloppent `sys.stdout` : deux versions importees dans un meme processus se ferment mutuellement le tampon. Interdit par le §0.5, et rend tout banc differentiel impossible sans sous-processus |
 | La coupure du banc est TRANSITOIRE, pas permanente — rectification | mesure une heure plus tard : `is_available = True`, le refroidissement s etait ecoule ; elle se rejoue a chaque declenchement du compteur fabrique |
@@ -2450,7 +2450,7 @@ déjà — et elle vient d'être recommise par la main qui la relisait.
 ## 17. La porte qui se refermait sur ce qu'elle venait d'écrire
 
 `nexus_vitrine.py` joue `nexus_rituel.py`, dont les contrôles régénèrent
-`rituels/STATE.md`. L'arbre devenait sale **pendant** la vérification, le
+`outillage/rituels/STATE.md`. L'arbre devenait sale **pendant** la vérification, le
 contrôle « travail commité » échouait, et la publication était refusée —
 alors que le même rituel, joué une seconde plus tôt, rendait « tenu ».
 
@@ -5460,7 +5460,7 @@ le contraire sans le verifier.
 
 **Et un defaut attrape en comparant aux jumeaux.** Ma reference vivait dans
 `.nexus/`, **ignore par git**, alors que `cablage_reference.json` et
-`outillage_reference.json` vivent dans `rituels/`, **suivis**. Une reference
+`outillage_reference.json` vivent dans `outillage/rituels/`, **suivis**. Une reference
 ignoree se remet a zero sur chaque machine : le cliquet lit comme une
 protection sans en etre une. Deplacee.
 
@@ -7930,7 +7930,7 @@ Mesure de son action reelle :
 nexus_traque.py --muet ; nexus_state.py
 ```
 
-`nexus_state.py` reecrit `rituels/STATE.md`, qui est SUIVI par git. Toutes les
+`nexus_state.py` reecrit `outillage/rituels/STATE.md`, qui est SUIVI par git. Toutes les
 dix minutes, l'arbre devient donc sale — et `nexus_vitrine` refuse de publier
 sur un arbre sale. Constate **trois fois** aujourd'hui.
 
@@ -8949,7 +8949,7 @@ Le fait qui commandait : ce qu'elles portaient encore n'etait **sur aucun
 disque**. Volume mort, ecriture interdite ailleurs, et un contexte de session
 ne survit pas a un redemarrage.
 
-`rituels/SAUVETAGE_2026-09-01/` porte leurs deux vidages, recopies **verbatim**
+`outillage/rituels/SAUVETAGE_2026-09-01/` porte leurs deux vidages, recopies **verbatim**
 — resumer aurait ete perdre, car une mesure ne se reconstruit pas comme un
 fichier.
 
@@ -9163,7 +9163,7 @@ avant meme de savoir qui a raison, parce qu'il localise la mesure manquante.
 
 ### 82.5 LE LOT 2 DE `ea-mt5` EST SAUVE — et il porte la lecon la plus chere du jour
 
-`rituels/SAUVETAGE_2026-09-01/ea-mt5_lot2_source_et_outils.md`.
+`outillage/rituels/SAUVETAGE_2026-09-01/ea-mt5_lot2_source_et_outils.md`.
 
 Ce qu'il apporte au-dela de son depot :
 
@@ -9378,7 +9378,7 @@ faux dans la journee.
 
 ### 84.2 LA TROUVAILLE DE L'INVENTAIRE : LA RECUPERATION EST PETITE
 
-`rituels/SAUVETAGE_2026-09-01/inventaire_des_pertes.md`.
+`outillage/rituels/SAUVETAGE_2026-09-01/inventaire_des_pertes.md`.
 
 > **Il ne s'agit pas de restaurer 33 Gio ni 96 277 fichiers. Il s'agit de
 > retrouver quelques dizaines de fichiers, dans deux arborescences connues.**
@@ -10030,7 +10030,7 @@ que ce soit** — une desinstallation refusee a mi-parcours est le pire des cas.
 ### 89.4 CE QUI EST SAUVE, ET COMMENT ON L'A SU
 
 ```
-rituels/SAUVETAGE_2026-09-01/
+outillage/rituels/SAUVETAGE_2026-09-01/
   README.md                          l'index et la regle de provenance
   ea-mt5_lot1_mesures.md             les neuf figures, le stop, la concentration, le drawdown
   ea-mt5_lot2_source_et_outils.md    la source Baron, les deux outils, le correctif qui a AGGRAVE
@@ -10261,7 +10261,7 @@ cote — ou pire, aurait trouve du texte plausible a la mauvaise ligne.
 ```
 PROGRESS.md (racine)   GENERE par nexus_progres.py
                        « AVERTISSEMENT : Toute edition manuelle sera ecrasee »
-rituels/PROGRESS.md    JOURNAL manuscrit des decisions et des erreurs
+outillage/rituels/PROGRESS.md    JOURNAL manuscrit des decisions et des erreurs
 ```
 
 Qui edite le mauvais perd son travail au prochain passage du generateur. Le
@@ -10721,7 +10721,7 @@ reponse est oui, dans le JSON comme dans le code.
 | geste | verdict du garde |
 | --- | --- |
 | `Edit` de deux lignes sur `outillage/nexus_test.py` | **REFUSE** — fichier non lu avec l'outil `Read` |
-| reecriture de `rituels/CHECKLIST_COCKPIT.MD` (10 000 lignes) par `python - <<'PY'` | **AUCUN REFUS**, trois fois |
+| reecriture de `outillage/rituels/CHECKLIST_COCKPIT.MD` (10 000 lignes) par `python - <<'PY'` | **AUCUN REFUS**, trois fois |
 
 Meme session, meme depot, meme minute. La formulation exacte vient de `ea-mt5` :
 
@@ -11116,7 +11116,7 @@ qui sont propres a chacun (clause 0).
 **LE TROU, mesure aujourd'hui de la pire facon.** Un contexte de SESSION ne se sauve pas. Deux
 sessions voisines ont perdu leur volume a 11:35:16 et ce qu'elles portaient encore n'etait sur aucun
 disque. Le sauvetage a du etre fait **a la main**, par une troisieme session, dans
-`rituels/SAUVETAGE_2026-09-01/`.
+`outillage/rituels/SAUVETAGE_2026-09-01/`.
 
 > Aucun rituel des trois depots ne sauve ce qu'une session porte en vol. La parade employee ce jour
 > — ecrire les verbatim dans le depot AVANT l'arret — a fonctionne parce qu'elle a ete decidee a
@@ -11129,8 +11129,8 @@ disque. Le sauvetage a du etre fait **a la main**, par une troisieme session, da
 | ce qui le porte | etat mesure |
 | --- | --- |
 | commits portant la MESURE, non l'intention | tenu — six commits ce jour, chacun avec ses chiffres |
-| `rituels/PROGRESS.md` | journal manuscrit des decisions ET des erreurs, 350 lignes |
-| `rituels/CHECKLIST_COCKPIT.MD` | sujets ouverts, chacun avec « ce qui le fermerait » |
+| `outillage/rituels/PROGRESS.md` | journal manuscrit des decisions ET des erreurs, 350 lignes |
+| `outillage/rituels/CHECKLIST_COCKPIT.MD` | sujets ouverts, chacun avec « ce qui le fermerait » |
 | `.nexus/lectures/` | registre des fichiers lus, par session |
 
 **LE TROU : la tracabilite de l'AUTEUR.** `Auteur declare : 2 sur 65 commits de code — 63 MUETS`.
@@ -11254,7 +11254,7 @@ perdue en pratique.
 
 | mecanisme | mesure |
 | --- | --- |
-| `rituels/BOUSSOLE.md` + `.csv` | **3 205 fichiers indexes** — Role, Fichier, Objet, Taille, Modifie, **SHA-256** |
+| `outillage/rituels/BOUSSOLE.md` + `.csv` | **3 205 fichiers indexes** — Role, Fichier, Objet, Taille, Modifie, **SHA-256** |
 | `nexus_doc.py` | **166 507 symboles** Python + 24 073 annexes, ancres sur les versions INSTALLEES |
 | `nexus_search` / `nexus_index_build` (MCP) | recherche dans le corpus sans ramener le corpus |
 
@@ -11619,7 +11619,7 @@ Cause : `nexus_redaction.py` cherche des PHRASES dans le corps — « Ecrit par 
 
 | # | geste | qui |
 | --- | --- | --- |
-| 1 | fusionner `rituels/SOCLE_SECURITE_GLOBAL.json` dans le settings GLOBAL | **operateur** |
+| 1 | fusionner `outillage/rituels/SOCLE_SECURITE_GLOBAL.json` dans le settings GLOBAL | **operateur** |
 | 2 | matcher `"Agent"` -> `"Agent|Task|Workflow"` | **operateur** |
 | 3 | armer `nexus_garde_isolation.py` en `PreToolUse` | **operateur** |
 | 4 | rejouer l'EPREUVE DE COUVERTURE apres la pose | session |
@@ -11904,8 +11904,8 @@ nomme `structure fusionnable` rend desormais :
 Deux fragments SEPARES, produits depuis le socle sans le modifier :
 
 ```
-rituels/A_POSER_global.json   185 deny, 26 ask, sous une cle permissions
-rituels/A_POSER_local.json     44 deny
+outillage/rituels/A_POSER_global.json   185 deny, 26 ask, sous une cle permissions
+outillage/rituels/A_POSER_local.json     44 deny
 empreinte du socle apres production : cef66586c7fbebfb — INTACTE
 ```
 
@@ -12136,7 +12136,7 @@ Fin de tour du 2026-09-01. Le rituel refuse de clore :
 
 | fichier | ce que j'ai ecrit | pourquoi |
 | --- | --- | --- |
-| `.gitattributes` | `rituels/SOCLE_UNIVERSEL.json -text` | empecher que la conversion CRLF/LF detruise l'empreinte qui prouve la convergence des trois depots |
+| `.gitattributes` | `outillage/rituels/SOCLE_UNIVERSEL.json -text` | empecher que la conversion CRLF/LF detruise l'empreinte qui prouve la convergence des trois depots |
 | `outillage/nexus_test.py` | l'appel a `nexus_socle.py` et l'option `socle` | cabler la commande de verification |
 
 Aucune des deux n'est de la logique. Ce sont des lignes de CABLAGE et de configuration — le geste
@@ -12199,12 +12199,12 @@ defaut et qu'on desarme n'a jamais protege personne** — c'est le §106.1 vecu 
 ## 115. SUJETS OUVERTS — 2026-09-01, campagne securite et apports de la session sovereign
 
 > **Remplace la file de tete.** Le detail de chaque chantier, avec sa colonne
-> « ce qui la ferme », est dans `rituels/PLAN_MAITRE_2026-09-01.md`. Cette
+> « ce qui la ferme », est dans `outillage/rituels/PLAN_MAITRE_2026-09-01.md`. Cette
 > section est l'index : elle ne recopie pas le plan, elle y renvoie.
 
 ### 115.1 VERBATIM RECOPIE SUR CONSIGNE DE L'OPERATEUR
 
-`rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md` — catalogue Ollama local et
+`outillage/rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md` — catalogue Ollama local et
 cloud, question de l'operateur, sorties de terminal, analyse recue et ses
 **autocorrections**. Consigne : *« tu fais recopier verbatim sans bruler ton
 contexte, c'est pour ta checklist »*.
@@ -12662,9 +12662,9 @@ scripts/nexus_agent.py         saut de ligne terminal, --sortie-brute
 scripts/nexus_garde_agent.py   hookEventName + motif sur stderr + commentaire de cause corrige
 outillage/nexus_sujets.py        encodage utf-8 (son --help plantait)
 outillage/nexus_armer_hook.py    chemin derive de __file__ au lieu d'etre grave
-rituels/CHECKLIST_COCKPIT.MD   section 115
-rituels/PLAN_MAITRE_2026-09-01.md               (nouveau)
-rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md (nouveau)
+outillage/rituels/CHECKLIST_COCKPIT.MD   section 115
+outillage/rituels/PLAN_MAITRE_2026-09-01.md               (nouveau)
+outillage/rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md (nouveau)
 ```
 
 **LE DEFAUT DE FOND, et il n'a aucun garde** : le verrou de ce depot protege LE
@@ -15873,7 +15873,7 @@ Mode ordinaire strictement inchange. `epreuve_bascule` et `epreuve_secours` rest
 > mecanisme present mais mal appele se lit comme un mecanisme absent — et je l'avais lu comme
 > present.
 
-### 115.95 `rituels/SURVIE_SANS_ABONNEMENT.md` — les commandes, chacune lancee avant d'etre ecrite
+### 115.95 `outillage/rituels/SURVIE_SANS_ABONNEMENT.md` — les commandes, chacune lancee avant d'etre ecrite
 
 Reproche de l'operateur, et il est juste : *« il manque cruellement de code premium dans ton
 code et les outils clairement listes et expliques »*, puis *« mais sans commande ni rien...
@@ -16478,7 +16478,7 @@ l'invoque — rappelle desormais le corpus, son emplacement, son volume, et la r
 
     Le depot porte un corpus de livres (...\references\livres), 20304 fragments.
     REGLE : avant de concevoir un mecanisme, chercher dans
-    l'index le chapitre qui porte SON NOM (voir rituels/CORPUS_LIVRES.md).
+    l'index le chapitre qui porte SON NOM (voir outillage/rituels/CORPUS_LIVRES.md).
 
 **Le nombre est DERIVE, jamais grave** : il se compte en parcourant les `index.tsv`. Un chiffre
 fige ment le lendemain, et ce depot l'a paye trois fois.
@@ -17162,7 +17162,7 @@ que le plafond mypy du depot voisin, clos depuis onze jours et toujours declare 
 
     preuve_seule   epreuve_garde_lecture · garde_shell · import · outillage · progres
                    relais · reprise · ruche · nexus_epreuve_vide · nexus_index_livres
-                   · nexus_livres          <- tous cites par rituels/BOUSSOLE.md seulement
+                   · nexus_livres          <- tous cites par outillage/rituels/BOUSSOLE.md seulement
 
 **Aucune n'est un defaut de code** : ce sont onze scripts **prouves mais jamais appeles** — des
 epreuves ecrites, documentees dans la boussole, et que rien n'execute. ⇒ **Un script qu'aucun
@@ -17794,7 +17794,7 @@ l'extraction ; la solution etait de lire la doc de l'API.**
 
 ## 116.1 Le faux vert, et ce qu il masquait
 
-`rituels/CHECKLIST_LIVRE_VS_CODE.md` declarait « Circuit breakers, cable dans
+`outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` declarait « Circuit breakers, cable dans
 nexus_agent » en VERT. Mesure :
 
 ```
@@ -17848,8 +17848,8 @@ Mesure ici avant de conclure : **16 chemins de scripts, 0 hors du volume
 systeme, 0 introuvable**. Le risque ne se transpose pas. **La question n est
 pas tranchee pour autant** — et un paragraphe ne ferme rien.
 
-Leurs etats sont graves chez nous : `rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md`,
-`rituels/DECHARGE_EA_MT5_2026-09-02.md`, `LECONS_PARTAGEES.md` §27.
+Leurs etats sont graves chez nous : `outillage/rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md`,
+`outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md`, `LECONS_PARTAGEES.md` §27.
 
 ## 116.5 Ce que le cockpit lui-meme a appris ce jour
 
@@ -17884,7 +17884,7 @@ plateforme**, pas les 136 outils `nexus_*` et `epreuve_*`.
 | `restore.ps1` | `$PSScriptRoot` pointait sur `scripts/` alors que les fichiers sont a la RACINE ; et `docker exec ollama-server` -> « No such container » | chemins corriges, sonde HTTP sur `127.0.0.1:11434` qui rend `200 {"version":"0.33.2"}` |
 | `README.md` | annonçait 12 outils MCP | 15 |
 | `UTILISER_NEXUS.md` | « `nexus_ask` ne prend PAS de fichiers » (faux, il a `paths`) et un exemple avec `question=` la ou le schema exige `prompt` | corriges sur mesure du schema reel |
-| `rituels/SOCLE_UNIVERSEL.json` | empreinte annoncee `cef66586`, blob reel `34828bed` | renormalise, blob = `cef66586`, 216 CR |
+| `outillage/rituels/SOCLE_UNIVERSEL.json` | empreinte annoncee `cef66586`, blob reel `34828bed` | renormalise, blob = `cef66586`, 216 CR |
 
 ## 117.2 Ce qui reste OUVERT, mesure et non maquille
 
@@ -17978,7 +17978,7 @@ principal : propre.
 
 ### 124. PLAN DE SAUVETAGE 2026-09-02 — SUJETS OUVERTS, cablage du plan
 
-> Plan complet et mesure : **`rituels/VAGUES_REPARATION.md`**. Ce tableau n'en est que
+> Plan complet et mesure : **`outillage/rituels/VAGUES_REPARATION.md`**. Ce tableau n'en est que
 > l'index : il existe pour que le hook `SessionStart` (`nexus_reprise.py:205`) et le rituel
 > de fin de tour (`nexus_rituel.py:83`) le remontent sans que personne ait a s'en souvenir.
 > Un plan non cable est un fichier, pas un mecanisme (contrat 0.2.1).
@@ -17987,7 +17987,7 @@ principal : propre.
 | --- | --- |
 | Cinq worktrees d agents non fusionnes, 8 fichiers NON COMMITES | rien n est en production |
 | Le troisieme temps du 0.7.1 est structurellement bloque | `nexus_valide.py` ne tourne pas dans un worktree, faute de `.env` et `.nexus/` |
-| Quarantaine de livraison : gabarit ecrit, mecanisme absent | `rituels/GABARIT_QUARANTAINE.md` en worktree, non fusionne |
+| Quarantaine de livraison : gabarit ecrit, mecanisme absent | `outillage/rituels/GABARIT_QUARANTAINE.md` en worktree, non fusionne |
 | Deux gardes ecrites, eprouvees, sans aucun hook | `nexus_garde_isolation.py`, `nexus_garde_ecriture.py` |
 | `nexus_garde_ecriture.py` ne lit que l ACL projet, ignore les 185 regles globales | 3 vecteurs d ecriture sur 5 refuses |
 | 46 regles deny sur 240 sont INERTES depuis Claude Code 2.1.210 | zero trou reel, 19 pour cent de poids mort |
@@ -20531,7 +20531,7 @@ que vaut la discipline sur une longue session.**
 | 10 | **POUR PRODUIRE DU VOLUME : `gpt-oss-120b-cloud`.** Les modeles a raisonnement hors bande sont a reserver au jugement, budget triple. | *aucun* — le banc peut substituer en silence | **AUCUN** |
 | 11 | **RITUEL 1 — VALIDER PAR UN TIERS.** LOI 1 : jamais son propre travail. | `loi1_tenue` -> `nexus_loi1.py` | **CABLE, mais CASSE** — voir §125.2 |
 | 12 | **RITUEL 2 — COMMITTER AVEC LA MESURE**, jamais l'intention ; une des six formules d'auteur, sinon le commit compte MUET. | `redaction_declaree` -> `nexus_redaction.py` | CABLE |
-| 13 | **RITUEL 3 — CONSIGNER CE QUI RESTE OUVERT** dans `rituels/CHECKLIST_COCKPIT.MD`. Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est enfreinte. | `cockpit_frais` | CABLE |
+| 13 | **RITUEL 3 — CONSIGNER CE QUI RESTE OUVERT** dans `outillage/rituels/CHECKLIST_COCKPIT.MD`. Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est enfreinte. | `cockpit_frais` | CABLE |
 | 14 | **RITUEL 4 — REARMER LA BOUCLE.** | *aucun* — `ScheduleWakeup` vit dans la session, pas sur le disque | **AUCUN** |
 | 15 | **RITUEL 5 — DIRE CE QUI A ETE DELEGUE ET CE QUI A ETE ARBITRE.** | `part_deleguee`, `controle_delegation` | CABLE |
 | 16 | **RITUEL 6 — NE JAMAIS LAISSER UN MECANISME A MOITIE CABLE** : le script, sa contre-epreuve, son APPELANT, la porte qui refuse, la documentation, la regression. | `cablage_tenu` + `appelant_recent` | CABLE |
@@ -21569,7 +21569,7 @@ l'une vers l'autre.
 > *« dans l'arbre propre du projet tu te mets des pointeurs et marqueurs, ainsi
 > tu sais ce qui est sain »* — l'operateur.
 
-`rituels/_POINTEUR_HORS_PROJET.md`, **2 785 octets**, **non ignore par git** —
+`outillage/rituels/_POINTEUR_HORS_PROJET.md`, **2 785 octets**, **non ignore par git** —
 verifie par `git check-ignore`, parce qu'un pointeur ignore ne dit rien a
 personne (§130 : 2 pointeurs sur 12 seulement etaient suivis).
 
@@ -21696,7 +21696,7 @@ echouait, il passe, et il echouera de nouveau si des restes reapparaissent.
 ```
 3 733,5 Mo sortis  ->  C:\local-llm-docker-hors-projet\
 3 manifestes JSON, chacun portant origine et destination
-rituels/_POINTEUR_HORS_PROJET.md   2 820 octets, SUIVI par git
+outillage/rituels/_POINTEUR_HORS_PROJET.md   2 820 octets, SUIVI par git
 ```
 
 Reste **un seul controle bloquant** dans tout le depot :
@@ -21898,7 +21898,7 @@ dit faux.
 
 ### 138.1 Le chiffre, et ce qu'il vaut
 
-`rituels/CHECKLIST_PROGRESS.md` :
+`outillage/rituels/CHECKLIST_PROGRESS.md` :
 
 ```
 ## 2. Rituels
@@ -22026,8 +22026,8 @@ outillage/nexus_socle.py         L7    "C:/local-llm-docker/rituels/SOCLE_UNIVER
 outillage/nexus_conformite.py    L468  r"D:\SAS\sovereign-ai-system\v1.104\..."
                                L470  r"D:\EA MT5 PYTHON RENTABLE ROBUSTE"
 patch_lot.py                   L5    chemin = r"C:\local-llm-docker\scripts\nexus_agent.py"
-rituels/QUARANTAINE/MANIFESTE.json   49 occurrences, SUIVI par git
-rituels/A_POSER_global.json    L2    "C:/Users/dibac/.claude/settings.json"
+outillage/rituels/QUARANTAINE/MANIFESTE.json   49 occurrences, SUIVI par git
+outillage/rituels/A_POSER_global.json    L2    "C:/Users/dibac/.claude/settings.json"
 ```
 
 **Un chiffre grave dans la doctrine ment des le lendemain** — la regle que ce
@@ -22054,8 +22054,8 @@ Un controle qui les compterait toutes crierait au loup et serait desarme.
 | `patch_lot.py` L5 | **code executable**, chemin en dur vers `scripts/nexus_agent.py` — il suffit de le deriver |
 | `outillage/nexus_socle.py` L7-8 | table de chemins vers d'autres depots, gravee |
 | `outillage/nexus_conformite.py` L468-470 | chemins des depots voisins, graves |
-| `rituels/QUARANTAINE/MANIFESTE.json` | 49 chemins de machine, **suivis par git** |
-| `rituels/A_POSER_*.json` | chemins vers `settings.json` d'un utilisateur nomme |
+| `outillage/rituels/QUARANTAINE/MANIFESTE.json` | 49 chemins de machine, **suivis par git** |
+| `outillage/rituels/A_POSER_*.json` | chemins vers `settings.json` d'un utilisateur nomme |
 
 Les chemins des **depots voisins** sont un cas a arbitrer et non a corriger a
 l'aveugle : le §0 les nomme explicitement comme sources d'inspiration, et une
@@ -22065,7 +22065,7 @@ evidence.
 
 ### 139.5 Le meme defaut, commis par moi, une heure plus tot
 
-Le pointeur `rituels/_POINTEUR_HORS_PROJET.md` portait
+Le pointeur `outillage/rituels/_POINTEUR_HORS_PROJET.md` portait
 `C:\local-llm-docker-hors-projet` **et il est suivi par git**. Il partait donc
 dans le depot public avec le chemin d'une seule machine.
 
@@ -22113,7 +22113,7 @@ DEPENDANCE     15   <- la dette reelle
 
 | population | ce que c'est | exemples mesures |
 | --- | --- | --- |
-| **CONTENU** | le chemin **est** le document | `references/node_docs/.../all.json` (28) — la doc Node.js elle-meme ; `rituels/QUARANTAINE/MANIFESTE.json` (49) — le fait enregistre d'une operation passee |
+| **CONTENU** | le chemin **est** le document | `references/node_docs/.../all.json` (28) — la doc Node.js elle-meme ; `outillage/rituels/QUARANTAINE/MANIFESTE.json` (49) — le fait enregistre d'une operation passee |
 | **CITATION** | discute, n'execute rien | le cockpit, `docs/MANUEL.md`, `UTILISER_NEXUS.md`, les commentaires |
 | **DEPENDANCE** | un programme l'**emploie** | 15 lignes, listees ci-dessous |
 
@@ -22143,7 +22143,7 @@ faux positif **connu**, pas un mystere.
 | famille | lignes | nature |
 | --- | --- | --- |
 | **chemins des depots voisins** | `nexus_socle.py` L7-9, `nexus_conformite.py` L468, L470 | delibere — le §0 nomme SAS et EA MT5 comme sources. Une autre machine n'en a aucun. **A arbitrer**, pas a corriger a l'aveugle |
-| **chemins de reglages machine** | `rituels/A_POSER_global.json` L2, `A_POSER_local.json` L2, `SOCLE_SECURITE_GLOBAL.json` L2 | pointent vers un `settings.json` d'un utilisateur **nomme**, dans des fichiers **suivis** |
+| **chemins de reglages machine** | `outillage/rituels/A_POSER_global.json` L2, `A_POSER_local.json` L2, `SOCLE_SECURITE_GLOBAL.json` L2 | pointent vers un `settings.json` d'un utilisateur **nomme**, dans des fichiers **suivis** |
 | **valeur par defaut** | `scripts/backup.ps1` L16 : `$BackupRoot = "C:\backups"` | documentee comme configurable — dette **faible** |
 
 ### 140.5 Ce qui a ete paye ce tour
@@ -22480,7 +22480,7 @@ la LOI 1 se contourne **sans mauvaise foi**.
 
 ### 145.1 La situation
 
-`QUARANTAINE.md` a ete deplace de la racine vers `rituels/QUARANTAINE.md`
+`QUARANTAINE.md` a ete deplace de la racine vers `outillage/rituels/QUARANTAINE.md`
 (§144). Deux commentaires de `outillage/nexus_filet.py` le designent encore sans
 chemin :
 
@@ -22551,7 +22551,7 @@ jetons pour deux lignes de prose — c'est le prix de la regle, et il est juste.
 | sujet | preuve mesuree |
 | --- | --- |
 | **arbre du projet SEPARE** | 3 733,7 Mo hors de l'arbre ; controle a 4 questions **code 0**, et il a rendu **code 1** sur `.nexus/vague23` avant correction |
-| **arbre IDENTIFIE** | racine a **23 entrees** toutes reconnaissables ; `rituels/_POINTEUR_HORS_PROJET.md` **suivi par git**, 0 chemin absolu, 5717 = 5717 fichiers |
+| **arbre IDENTIFIE** | racine a **23 entrees** toutes reconnaissables ; `outillage/rituels/_POINTEUR_HORS_PROJET.md` **suivi par git**, 0 chemin absolu, 5717 = 5717 fichiers |
 | **depot AUTONOME** | `.git` REPERTOIRE ; `--git-dir` == `--git-common-dir` ; `git worktree list` = 1 entree ; `.git/worktrees/` inexistant ; `git fsck` propre |
 | **RECONCILIATION 6/6** | 3 fusionnees, 3 depassees. 50 branches -> 4. `git branch -d` n'en a refuse **aucune** des 41 |
 | **boussole a jour** | 9 960 fichiers, **-152 118 lignes** : elle indexait les 45 worktrees retires |
@@ -22687,7 +22687,7 @@ propre. Il l'etait, pour cette question-la. Ce n'etait pas la sienne.
 ```
 git ls-files | par repertoire
   scripts/     166   dont 147 OUTILLAGE (nexus_ epreuve_ verif_)
-  rituels/      48   dont  48 OUTILLAGE (cockpit, progress, socles)
+  outillage/rituels/      48   dont  48 OUTILLAGE (cockpit, progress, socles)
   docs/         41
   (racine)      17
   references/   16
@@ -22735,7 +22735,7 @@ depot.
 echappent donc a toute reecriture textuelle :
 
 ```
-rituels/RESUME.ps1:31        $Scripts = Join-Path $RepoRoot "scripts"
+outillage/rituels/RESUME.ps1:31        $Scripts = Join-Path $RepoRoot "scripts"
 epreuves/epreuve_avec_verrou.py:20
     LANCEUR = os.path.join(RACINE, "scripts", "nexus_avec_verrou.py")
 epreuves/epreuve_armer_garde.py:40
@@ -23051,10 +23051,10 @@ en echec. On ne fusionne pas un chantier dont on connait les trous.
 
 ### 150.6 Le bloc suivant est mesure, et il n'est pas ouvert
 
-`rituels/` — 48 fichiers, 100 % orchestrateur.
+`outillage/rituels/` — 48 fichiers, 100 % orchestrateur.
 
 ```
-333 references, dans 53 fichiers (dont 21 dans rituels/ lui-meme)
+333 references, dans 53 fichiers (dont 21 dans outillage/rituels/ lui-meme)
  13 constructions dynamiques -- TOUTES avec le litteral "rituels",
     aucune indirection par variable, donc toutes trouvables
   0 mention dans .claude/settings.json : aucun hook n'en depend
@@ -23085,7 +23085,7 @@ documentation, isoler les non-litterales d'abord) est retenu.
 | --- | --- |
 | **3 regressions du deplacement** | ancres exactes connues, correctif AU BANC, branche non fusionnee |
 | **controle semantique des voisines** | specification au banc ; aucun controle ne garde encore ce cas |
-| `rituels/` hors du projet | mesure (333 refs, 53 fichiers, 13 dynamiques litterales), NON lance |
+| `outillage/rituels/` hors du projet | mesure (333 refs, 53 fichiers, 13 dynamiques litterales), NON lance |
 | frontiere projet / outillage | les deux regles evidentes REFUTEES, noyau plancher 32 |
 | les 91 constructions non litterales | mesurees, non traitees |
 | `epreuve_verrou_banc.py` plante | `TimeoutExpired` non rattrapee, budget 180 s |
@@ -23125,9 +23125,9 @@ C'est la contrainte dure de tout déplacement futur de `scripts/` : déplacer
 `nexus_vitrine.py` **casserait quatre tâches en silence**, et le silence ne se
 verrait qu'au prochain démarrage ou à la prochaine publication.
 
-**Ce que cela dé-risque, en revanche :** aucune des quatre ne cite `rituels/`.
-Le déplacement de `rituels/` mesuré au §150.6 ne les touche pas — vérifié, pas
-supposé. Les scripts qu'elles lancent ÉCRIVENT dans `rituels/`, mais cette
+**Ce que cela dé-risque, en revanche :** aucune des quatre ne cite `outillage/rituels/`.
+Le déplacement de `outillage/rituels/` mesuré au §150.6 ne les touche pas — vérifié, pas
+supposé. Les scripts qu'elles lancent ÉCRIVENT dans `outillage/rituels/`, mais cette
 dépendance-là est dans le code, donc trouvable, et déjà comptée dans les 13
 constructions dynamiques.
 
@@ -23210,7 +23210,7 @@ le rituel impraticable exactement quand le changement est important.
 | **contrôle sémantique des voisines** | spécification au banc, aucun contrôle ne garde ce cas |
 | **lecteurs hors dépôt** | 4 tâches planifiées, 5 scripts nommés en absolu — aucun contrôle ne le vérifie |
 | `nexus_valide.py` > 900 s | mesuré, non traité ; `run_conformite()` sans timeout |
-| `rituels/` hors du projet | mesuré, NON lancé — et vérifié sans dépendance planifiée |
+| `outillage/rituels/` hors du projet | mesuré, NON lancé — et vérifié sans dépendance planifiée |
 | frontière projet / outillage | les deux règles évidentes RÉFUTÉES, noyau plancher 32 |
 | les 91 constructions non littérales | mesurées, non traitées |
 | `epreuve_verrou_banc.py` plante | `TimeoutExpired` non rattrapée, budget 180 s |
@@ -23353,7 +23353,7 @@ les 147 outils comme « projet ».
 | commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
 | controle semantique des voisines | 2 specifications rejetees, aucune retenue |
 | `nexus_valide.py` > 900 s | `run_conformite()` sans timeout |
-| `rituels/` hors du projet | mesure, non lance |
+| `outillage/rituels/` hors du projet | mesure, non lance |
 | frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
 | les 91 constructions non litterales | mesurees, non traitees |
 | fichier `--sortie` jamais cree | demande d'une session voisine : ecrire VIDE distinguerait « rien produit » de « jamais lance » |
@@ -23463,7 +23463,7 @@ Le silence sur un depot sain ne prouvait rien ; le temoin le prouve.
 | controle semantique des voisines | 2 specifications rejetees, aucune retenue |
 | commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
 | `nexus_valide.py` > 900 s | `run_conformite()` sans timeout |
-| `rituels/` hors du projet | 333 refs, 53 fichiers, 13 dynamiques litterales, zero dependance planifiee |
+| `outillage/rituels/` hors du projet | 333 refs, 53 fichiers, 13 dynamiques litterales, zero dependance planifiee |
 | frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
 | les 91 constructions non litterales | mesurees, non traitees |
 | fichier `--sortie` jamais cree | ecrire VIDE distinguerait « rien produit » de « jamais lance » |
@@ -23511,9 +23511,9 @@ Les cinq plus gros fichiers suivis :
 ```
 7,24 Mo  references/node_docs/node/22.23.2/all.json
 3,84 Mo  references/node_docs/node/22.23.2/symbols.jsonl
-1,55 Mo  rituels/BOUSSOLE.md
-1,35 Mo  rituels/BOUSSOLE.csv
-1,13 Mo  rituels/CHECKLIST_COCKPIT.MD
+1,55 Mo  outillage/rituels/BOUSSOLE.md
+1,35 Mo  outillage/rituels/BOUSSOLE.csv
+1,13 Mo  outillage/rituels/CHECKLIST_COCKPIT.MD
 ```
 
 **`references/node_docs` seul pese 11,08 Mo, soit 54,6 % de ce qu'un clone
@@ -23544,7 +23544,7 @@ raison ecrite.
 ### 154.3 Le parcours a sauve une mauvaise conclusion — troisieme fois
 
 Premiere mesure : `git grep node_docs` sur `scripts/`, `epreuves/`, `tools/`
-rend **zero**. Seuls des documents de `rituels/` le mentionnent en prose.
+rend **zero**. Seuls des documents de `outillage/rituels/` le mentionnent en prose.
 Conclusion tentante : personne ne le lit, il peut sortir.
 
 **Faux.** Verification semantique :
@@ -23624,7 +23624,7 @@ de fichiers modifies, et rien ne le dit a l'appelant.
 | controle semantique des voisines | 2 specifications rejetees |
 | commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
 | `nexus_valide.py` > 900 s | cout non annonce, `run_conformite()` sans timeout |
-| `rituels/` hors du projet | DE-RISQUE : 0 lecteur externe, 1 seule ancre de code (`RESUME.ps1:30`) |
+| `outillage/rituels/` hors du projet | DE-RISQUE : 0 lecteur externe, 1 seule ancre de code (`RESUME.ps1:30`) |
 | frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
 | les 91 constructions non litterales | mesurees, non traitees |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
@@ -23718,7 +23718,7 @@ trois faits n'etait ecrit avant aujourd'hui.**
 | controle semantique des voisines | 2 specifications rejetees |
 | commiter pendant une permutation | aucun controle ne refuse une config sans AUTOGEN |
 | `nexus_valide.py` > 900 s sur large diff | cout non annonce |
-| `rituels/` hors du projet | DE-RISQUE, non lance |
+| `outillage/rituels/` hors du projet | DE-RISQUE, non lance |
 | frontiere projet / outillage | deux regles REFUTEES, noyau plancher 32 |
 | les 91 constructions non litterales | mesurees, non traitees |
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR — vaut aussi pour `node_docs` |
@@ -23855,7 +23855,7 @@ de la prose, elle ne separe pas le code VIVANT du code de TEST.
 | 5 references externes non gardees | commande preparee, non lancee |
 | controle semantique des voisines | 2 specifications rejetees |
 | `nexus_valide.py` > 900 s | cout non annonce sur large diff |
-| `rituels/` hors du projet | de-risque, non lance |
+| `outillage/rituels/` hors du projet | de-risque, non lance |
 | les 91 constructions non litterales | traitees pour `scripts/`, pas ailleurs |
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
@@ -23953,16 +23953,16 @@ Forward : `lister_competences()` rend les trois, `charger_competence` rend
 ### 157.6 Ce que couterait UN SEUL repertoire d'outillage
 
 L'operateur en veut un ; il y en a trois : `epreuves/`, `outillage/`,
-`rituels/`. Cout mesure de l'imbrication :
+`outillage/rituels/`. Cout mesure de l'imbrication :
 
 ```
 expressions dependant de la PROFONDEUR   30
    epreuves/  29   (dirname(dirname(__file__)) et Path(...).parent.parent)
-   rituels/    1   (RESUME.ps1 : Split-Path -Parent $PSScriptRoot)
+   outillage/rituels/    1   (RESUME.ps1 : Split-Path -Parent $PSScriptRoot)
 
 references textuelles a reecrire
    epreuves/  222 dans  17 fichiers
-   rituels/   337 dans  54 fichiers
+   outillage/rituels/   337 dans  54 fichiers
 ```
 
 **`py_compile` ne voit RIEN de ces trente cas.** Une racine fausse n'est pas
@@ -24018,7 +24018,7 @@ moitie, et aucun des deux n'avait mesure la bonne chose.
 | repli de modele silencieux | 7 substitutions sur 133 rendus |
 | 5 references externes non gardees | commande preparee |
 | `nexus_valide.py` > 900 s | cout non annonce |
-| `rituels/` sous `outillage/` | mesure : 337 refs, 54 fichiers, 1 ancre de code |
+| `outillage/rituels/` sous `outillage/` | mesure : 337 refs, 54 fichiers, 1 ancre de code |
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
 | `epreuve_garde_encodage` a l'import | seul BLOQUANT |
@@ -24026,7 +24026,7 @@ moitie, et aucun des deux n'avait mesure la bonne chose.
 ### 157.9 L'arbre, mesure a cet instant
 
 ```
-outillage/  77      epreuves/ 67      rituels/  48
+outillage/  77      epreuves/ 67      outillage/rituels/  48
 docs/       41      scripts/  31      racine    17
 references/ 14      tools/     8
 
@@ -24141,7 +24141,7 @@ jusqu'a deux marqueurs au lieu de compter les crans. Elle est morte en code
 etait trop court**, et le banc l'a releve deux fois avant d'abandonner.
 
 Le sujet reste donc entier : **30 expressions derivent encore la racine en
-comptant**, ce qui interdit d'imbriquer `epreuves/` et `rituels/` sous
+comptant**, ce qui interdit d'imbriquer `epreuves/` et `outillage/rituels/` sous
 `outillage/`. Le remede est dans le depot (six fichiers remontent deja jusqu'a
 un marqueur) et n'est pas generalise.
 
@@ -24176,7 +24176,7 @@ clone ne les recoit pas.
 | **cliquet LOI 1 aveugle aux renommages** | 15 624 lignes fantomes ; reference reecrite avec sa raison |
 | **`--json` de `nexus_loi1` n'est pas du JSON** | texte avant ET apres |
 | **racine derivee par la PROFONDEUR** | 30 expressions ; commission ECHOUEE (budget trop court) |
-| `epreuves/` et `rituels/` sous `outillage/` | bloque par les 30 expressions |
+| `epreuves/` et `outillage/rituels/` sous `outillage/` | bloque par les 30 expressions |
 | un hook nommant un chemin | verrou sur la structure, aucun controle |
 | `nexus_test.py` plante | `test_terminal_repli`, cause non tranchee |
 | repli de modele silencieux | 7 substitutions sur 133 rendus |

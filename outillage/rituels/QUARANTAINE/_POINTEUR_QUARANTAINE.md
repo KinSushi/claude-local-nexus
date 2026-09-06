@@ -3,7 +3,7 @@
 Les **copies** des worktrees d'agents ont ete deplacees **deux fois**.
 
 **Aujourd'hui**, elles sont hors de l'arbre du projet, dans le repertoire
-frere decrit par `rituels/_POINTEUR_HORS_PROJET.md` :
+frere decrit par `outillage/rituels/_POINTEUR_HORS_PROJET.md` :
 
 ```
 <repertoire du depot>-hors-projet/.nexus__quarantaine/
@@ -23,11 +23,11 @@ l'annoncait encore apres leur sortie. **Il pointait donc dans le vide.**
 
 ## Pourquoi
 
-Elles etaient dans `rituels/`, le dossier des rituels DU PROJET. Mesure avant
+Elles etaient dans `outillage/rituels/`, le dossier des rituels DU PROJET. Mesure avant
 le deplacement :
 
 ```
-fichiers du projet dans rituels/   41,  29,2 Mo
+fichiers du projet dans outillage/rituels/   41,  29,2 Mo
 copies de quarantaine              290, 22,5 Mo   -> 88 % du dossier
 ```
 

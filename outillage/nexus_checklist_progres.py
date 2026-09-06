@@ -41,7 +41,7 @@ def get_git_status(root):
     status = "inconnu"
     try:
         out = _run_git_cmd(["status", "--porcelain", "--",
-                            ".", ":!rituels/CHECKLIST_PROGRESS.md"], cwd=root)
+                            ".", ":!outillage/rituels/CHECKLIST_PROGRESS.md"], cwd=root)
         if out is None:
             status = "inconnu"
         elif out == "":
@@ -120,7 +120,7 @@ def count_mcp_tools(root):
         return "inconnu"
 
 def checklist_vs_code(root):
-    file_path = root / "rituels" / "CHECKLIST_LIVRE_VS_CODE.md"
+    file_path = root / "outillage", "rituels" / "CHECKLIST_LIVRE_VS_CODE.md"
     counts = {"vert": "inconnu", "jaune": "inconnu", "rouge": "inconnu"}
     if not file_path.is_file():
         return counts
@@ -283,7 +283,7 @@ def main():
     data['backups_nb'], data['backups_recent'] = count_backups(root)
     data['corpus'] = count_corpus_lines(root)
 
-    out_path = root / "rituels" / "CHECKLIST_PROGRESS.md"
+    out_path = root / "outillage", "rituels" / "CHECKLIST_PROGRESS.md"
     success = generate_markdown(data, out_path)
     sys.exit(0 if success else 1)
 

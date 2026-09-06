@@ -16,7 +16,7 @@ travail d'un worktree et disparaissent avec lui si ce worktree est retire.
 L'isolation d'execution a tenu. L'isolation de LIVRAISON -- rendre visible,
 sans git, ce qui a ete produit et par qui -- n'existait pas. C'est l'objet
 de ce script : il ne fusionne rien et ne decide de rien, il COPIE, avec la
-provenance, pour que l'audit du gabarit (`rituels/GABARIT_QUARANTAINE.md`)
+provenance, pour que l'audit du gabarit (`outillage/rituels/GABARIT_QUARANTAINE.md`)
 puisse avoir lieu sans que l'auditeur ouvre un terminal git.
 
 Le piege qui a coute une premiere mesure fausse
@@ -65,7 +65,7 @@ Le manifeste enregistrait branche, tete, retard de commits et statut git --
 la PROVENANCE d'un fichier, jamais la preuve qu'il a ete verifie. Pour
 chaque worktree, ce script cherche maintenant un fichier de preuve
 (`<worktree>/QUARANTAINE.md`, puis `<worktree>/rituels/QUARANTAINE.md`)
-suivant le gabarit a huit rubriques `rituels/GABARIT_QUARANTAINE.md`, et
+suivant le gabarit a huit rubriques `outillage/rituels/GABARIT_QUARANTAINE.md`, et
 rapporte pour chacune si elle est REMPLIE ou VIDE -- jamais si elle est
 BONNE : ce collecteur ne juge aucun contenu et ne calcule aucune couleur,
 il RAPPORTE ce que l'auteur a ecrit, ou son absence (contrat §0.7.1).
@@ -282,7 +282,7 @@ def compter_commits(w: str, base: str, cible: str):
 # git) mais aucune PREUVE : un fichier dont l'auteur a joue ses trois
 # epreuves et un fichier dont l'auteur n'en a joue aucune arrivaient
 # identiques en quarantaine. Ce qui suit cherche, pour chaque worktree,
-# un fichier de preuve suivant `rituels/GABARIT_QUARANTAINE.md` (huit
+# un fichier de preuve suivant `outillage/rituels/GABARIT_QUARANTAINE.md` (huit
 # rubriques numerotees, la quatrieme portant les trois epreuves 4a/4b/4c),
 # et rapporte pour chaque rubrique si elle est REMPLIE ou VIDE.
 #
@@ -305,7 +305,7 @@ def compter_commits(w: str, base: str, cible: str):
 # celle que l'auteur a ecrite, ou son absence. Le jugement reste au tiers
 # qui audite (contrat §0.7.1).
 
-NOMS_PREUVE = ("QUARANTAINE.md", os.path.join("rituels", "QUARANTAINE.md"))
+NOMS_PREUVE = ("QUARANTAINE.md", os.path.join("outillage", "rituels", "QUARANTAINE.md"))
 
 # Mesure du 2026-09-03, sur la flotte REELLE (10 fichiers de preuve reels
 # trouves sous .claude/worktrees) : 10 sur 10 emploient '##' pour leurs
@@ -422,7 +422,7 @@ def _extraire_slots(texte: str) -> list:
     (```...```), hors bloc code chaque groupe entre crochets [...], et
     chaque cellule de reponse (hors libelle) des tableaux markdown.
     C'est exactement la ou le gabarit ET les fiches reelles placent leurs
-    blancs (verifie contre `rituels/GABARIT_QUARANTAINE.md` ET contre les
+    blancs (verifie contre `outillage/rituels/GABARIT_QUARANTAINE.md` ET contre les
     fiches reelles de `.claude/worktrees` -- voir la correction du
     2026-09-03 ci-dessus)."""
     zones = []
@@ -697,7 +697,7 @@ def construire_manifeste(racine, arbre_princ, err_arbre_princ, cible,
     return {
         "genere_le": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "outil": "outillage/nexus_quarantaine.py",
-        "gabarit_audit": "rituels/GABARIT_QUARANTAINE.md",
+        "gabarit_audit": "outillage/rituels/GABARIT_QUARANTAINE.md",
         "racine": racine,
         "arbre_principal": arbre_princ,
         "arbre_principal_erreur": err_arbre_princ,
@@ -796,7 +796,7 @@ def ecrire_manifeste_md(cible: str, manifeste: dict) -> None:
     L.append("")
     L.append(
         "Pour auditer chaque fichier liste ci-dessous, suivre le gabarit "
-        "`rituels/GABARIT_QUARANTAINE.md` (une ligne du tableau = un "
+        "`outillage/rituels/GABARIT_QUARANTAINE.md` (une ligne du tableau = un "
         "« Fichier » du gabarit). La colonne « original » dit si "
         "`_ORIGINAL/<chemin>` existe sous ce worktree en quarantaine : "
         "sans lui, aucun diff n'est possible et l'audit ne peut pas avoir "
@@ -879,7 +879,7 @@ def main() -> int:
             print("REFUS : %s" % msg)
         return 3
 
-    cible = os.path.abspath(a.cible) if a.cible else os.path.join(racine, "rituels", "QUARANTAINE")
+    cible = os.path.abspath(a.cible) if a.cible else os.path.join(racine, "outillage", "rituels", "QUARANTAINE")
     worktrees_dir = os.path.abspath(a.worktrees) if a.worktrees else os.path.join(racine, ".claude", "worktrees")
 
     # Garde-fou mecanique (pas seulement documente) : si --cible tombe

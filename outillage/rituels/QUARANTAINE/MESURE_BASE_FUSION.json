@@ -1,6 +1,6 @@
 [
  {
-  "fichier": "rituels/outillage_reference.json",
+  "fichier": "outillage/rituels/outillage_reference.json",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 5,
@@ -168,7 +168,7 @@
   }
  },
  {
-  "fichier": "rituels/CHECKLIST_LIVRE_VS_CODE.md",
+  "fichier": "outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md",
   "agent": "agent-a9bae5bcacf5d3042",
   "branche": "worktree-agent-a9bae5bcacf5d3042",
   "plus": 83,

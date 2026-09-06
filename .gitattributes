@@ -26,8 +26,8 @@
 # Fichiers generes : exclus des statistiques de langage, pour que la page
 # du depot reflete le code ecrit et non le code produit.
 docs/architecture/** linguist-documentation
-rituels/BOUSSOLE.csv linguist-generated
-rituels/STATE.md     linguist-generated
+outillage/rituels/BOUSSOLE.csv linguist-generated
+outillage/rituels/STATE.md     linguist-generated
 cloud_models.txt     linguist-generated
 
 # Copie CONFORME du verrou machine du depot voisin. « -text » interdit a git
@@ -43,4 +43,4 @@ scripts/nexus_verrou_machine.py -text
 # empreinte passe de cef66586... a 34828bed... — le controle « meme niveau »
 # se casserait tout seul au premier passage de git, sans qu'une seule regle
 # change. Git avait d'ailleurs deja emis l'avertissement.
-rituels/SOCLE_UNIVERSEL.json -text
+outillage/rituels/SOCLE_UNIVERSEL.json -text

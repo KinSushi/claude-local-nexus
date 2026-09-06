@@ -235,8 +235,8 @@ def main():
         return 1
 
     # Chemins des sources
-    global_source = os.path.join(repo_root, 'rituels', 'A_POSER_global.json')
-    local_source = os.path.join(repo_root, 'rituels', 'A_POSER_local.json')
+    global_source = os.path.join(repo_root, 'outillage', 'rituels', 'A_POSER_global.json')
+    local_source = os.path.join(repo_root, 'outillage', 'rituels', 'A_POSER_local.json')
 
     # Chemins des cibles
     userprofile = os.environ.get('USERPROFILE')
