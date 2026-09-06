@@ -73,6 +73,22 @@ LISIBLES = (".py", ".ps1", ".json", ".md", ".yaml", ".yml", ".js")
 CABLEURS = (".claude/settings.json", "scripts/nexus.ps1",
             "scripts/Register-*.ps1")
 
+# CE QUI NOMME TOUT SCRIPT PAR CONSTRUCTION, et ne prouve donc rien : les
+# inventaires generes du depot, et la memoire de ce cliquet lui-meme.
+#
+# Mesure du 2026-09-02, par une sonde : un script que PERSONNE n'appelle
+# passait d'« orphelin » a « preuve seule » des qu'une ligne de
+# rituels/BOUSSOLE.md le listait -- or la boussole liste chaque fichier du
+# depot, par construction. Et rituels/cablage_reference.json, ecrit par ce
+# script, nommait les scripts qu'il avait deja classes faibles : une fois
+# inscrit, un orphelin ne pouvait plus jamais l'etre. « Orphelin » n'etait
+# atteignable que par un script plus recent que la derniere boussole. C'est
+# le defaut inscrit au cockpit et a CHECKLIST_LIVRE_VS_CODE §16.1 (« citer
+# n'est pas appeler »), ferme ici pour les seuls fichiers ou il est certain ;
+# la distinction generale citation/appel reste ouverte.
+INVENTAIRES = ("rituels/BOUSSOLE.md", "rituels/BOUSSOLE.csv",
+               "rituels/cablage_reference.json")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # VERSIONNEE, et non sous « .nexus ». La distinction n'est pas cosmetique :
 # .nexus est gitignore parce qu'il mesure CETTE machine -- latences, epreuves,
@@ -220,7 +236,8 @@ def classer(cible: str, textes: dict) -> tuple:
     un contrôle qui se trompe en faveur du silence ne sert à rien.
     """
     nom = os.path.basename(cible)
-    citants = [rel for rel, t in textes.items() if rel != cible and nom in t]
+    citants = [rel for rel, t in textes.items()
+               if rel != cible and rel not in INVENTAIRES and nom in t]
     # UN MODULE PYTHON S'IMPORTE SANS SON EXTENSION.
     #
     # CE QUI ETAIT FAUX. Le nom est compare AVEC son extension -- regle juste,

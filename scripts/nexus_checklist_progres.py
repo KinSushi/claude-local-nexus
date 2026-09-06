@@ -32,12 +32,20 @@ def get_git_status(root):
     except Exception:
         pass
 
-    # etat du working tree
+    # etat du working tree, HORS ce tableau : il se regenere en s'ecrivant,
+    # et se mesurait donc lui-meme « modifie » a chaque generation -- le
+    # defaut inscrit OUVERT dans CHECKLIST_LIVRE_VS_CODE §17 : « le
+    # generateur mesure l arbre AVANT de s ecrire ». Exclu par pathspec,
+    # l'etat decrit le TRAVAIL non commite, ce que la colonne annonce.
+    # Et un git muet (None) reste « inconnu » : il se lisait « modifie ».
     status = "inconnu"
     try:
-        out = _run_git_cmd(["status", "--porcelain"], cwd=root)
-        if out == "":
-            status = "propre"
+        out = _run_git_cmd(["status", "--porcelain", "--",
+                            ".", ":!rituels/CHECKLIST_PROGRESS.md"], cwd=root)
+        if out is None:
+            status = "inconnu"
+        elif out == "":
+            status = "propre (hors ce tableau)"
         else:
             status = "modifie"
     except Exception:
@@ -54,26 +62,42 @@ def get_git_status(root):
 
     return {"commits_non_pousses": commits, "etat_arbre": status, "dernier_commit": last_date}
 
-def run_ritual(script_path):
+def lire_regressions(sortie):
+    """Le compte de REGRESSIONS annonce par un cliquet, ou « inconnu ».
+
+    CE QUI ETAIT FAUX, mesure le 2026-09-02 : le premier entier de la sortie
+    etait lu comme un compte de regressions. Or nexus_outillage.py, lance
+    SANS --cliquet, commence par « ruff : JOUE (85 violations) » -- et le
+    tableau annoncait « 85 regressions » la ou le cliquet en comptait UNE.
+    Le chiffre affiche etait la dette totale de ruff, pas son aggravation,
+    et il alimentait « CE QUI RESTE OUVERT ». On ne lit plus que la ligne de
+    verdict -- « Cablage : N REGRESSION(S). », « Outillage : N
+    REGRESSION(S). » -- la seule qui porte ce que la colonne annonce.
+    """
+    if re.search(r"aucune regression", sortie, re.IGNORECASE):
+        return 0
+    m = re.search(r":\s*(\d+)\s+REGRESSION", sortie)
+    return int(m.group(1)) if m else "inconnu"
+
+
+def run_ritual(script_path, *options):
     regressions = "inconnu"
     try:
         result = subprocess.run(
-            [sys.executable, str(script_path)],
+            [sys.executable, str(script_path), *options],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
-            timeout=120,
+            encoding="utf-8",
+            errors="replace",
+            # Le cliquet d'outillage ratisse trois linters ; nexus_rituel.py
+            # lui accorde 420 s pour cette raison (« le controle est LONG »).
+            # 120 s expirait sur PSScriptAnalyzer et rendait « inconnu ».
+            timeout=420,
         )
-        # chercher un entier dans la sortie
         # check=True levait des qu un rituel rendait un code non nul,
         # or c est le cas NORMAL quand il detecte des regressions.
-        # pourquoi ce cas existe : un rituel qui reussit n ecrit aucun chiffre, et son succes se lisait comme une ignorance
-        if re.search(r"aucune regression", result.stdout, re.IGNORECASE):
-            regressions = 0
-        else:
-            m = re.search(r"(\d+)", result.stdout)
-            if m:
-                regressions = int(m.group(1))
+        regressions = lire_regressions(result.stdout or "")
     except Exception:
         pass
     return regressions
@@ -195,7 +219,9 @@ def generate_markdown(data, out_path):
     lines.append(f"| Occurrences name:\"nexus_\" dans server.js | {data['mcp']} |")
     lines.append("")
     # Section 4: Checklist VS Code
-    lines.append("## 4. Checklist VS Code")
+    # « VS Code » se lisait comme Visual Studio Code : CHECKLIST_LIVRE_VS_CODE
+    # §8 a passe une mesure entiere a chercher un corpus VS Code inexistant.
+    lines.append("## 4. Checklist LIVRE VS CODE")
     lines.append("| Couleur | Nombre |")
     lines.append("|---|---|")
     lines.append(f"| Vert | {data['checklist']['vert']} |")
@@ -250,7 +276,7 @@ def main():
 
     scripts_dir = root / "scripts"
     data['cablage'] = run_ritual(root / "scripts" / "nexus_cablage.py")
-    data['outillage'] = run_ritual(root / "scripts" / "nexus_outillage.py")
+    data['outillage'] = run_ritual(root / "scripts" / "nexus_outillage.py", "--cliquet")
     data['nb_scripts'] = count_nexus_scripts(scripts_dir)
     data['mcp'] = count_mcp_tools(root)
     data['checklist'] = checklist_vs_code(root)

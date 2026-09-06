@@ -412,11 +412,16 @@ def controle_mcp_a_jour() -> None:
         return
 
     # Un serveur en marche est interroge par le protocole ; a defaut, on ne
-    # peut que rappeler l'empreinte attendue.
-    noter("serveur MCP a jour", True, AVERTISSEMENT,
-          "code sur disque %s — si une session MCP est plus ancienne que la "
-          "derniere modification de server.js, elle sert encore l'ancien "
-          "code : la redemarrer" % disque)
+    # peut que rappeler l'empreinte attendue -- et un rappel n'est pas une
+    # verification. Ce controle NOTAIT ok=True quoi qu'il arrive : aucune
+    # entree ne le faisait echouer (mesure du 2026-09-02), et il s'affichait
+    # [  OK  ] dans la porte, ce que l'en-tete de ce fichier interdit --
+    # « IGNORE : non verifiable dans l'etat actuel, jamais reussi ».
+    ignorer("serveur MCP a jour",
+            "non verifiable sans interroger la session ; code sur disque %s "
+            "— si une session MCP est plus ancienne que la derniere "
+            "modification de server.js, elle sert encore l'ancien code : la "
+            "redemarrer" % disque)
 
 
 # Ce que le pont a le droit d'ecrire, et rien d'autre. Trois destinations,

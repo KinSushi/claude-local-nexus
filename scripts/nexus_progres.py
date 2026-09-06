@@ -67,16 +67,23 @@ def main():
         nexus_count = len([f for f in all_scripts if f.startswith("nexus_")])
         epreuve_count = len([f for f in all_scripts if f.startswith("epreuve_")])
         
-        # Regex pour choices dans nexus_test.py
+        # LES CLES --only SE DERIVENT COMME nexus_test.py LES DERIVE.
+        #
+        # CE QUI ETAIT FAUX, mesure le 2026-09-02 : ce bloc cherchait
+        # « choices=[...] », une liste litterale que nexus_test.py n'ecrit
+        # pas -- il passe `choices=_choix`, variable derivee de sa propre
+        # source par le motif `args.only in (None, "cle")`. Le motif ne
+        # trouvait rien et PROGRESS.MD affichait « Options --only : 0 » :
+        # un zero faux, pire qu'un inconnu, sur un depot qui en compte
+        # plusieurs dizaines. On lit desormais le meme motif que
+        # nexus_test.py (son main, variable `pattern`).
         test_file_path = os.path.join(scripts_dir, "nexus_test.py")
-        choices_count = 0
+        choices_count = "inconnu"
         if os.path.exists(test_file_path):
             with open(test_file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-                match = re.search(r"choices=\[(.*?)\]", content, re.DOTALL)
-                if match:
-                    # On compte les elements quotes dans la liste
-                    choices_count = len(re.findall(r"['\"].*?['\"]", match.group(1)))
+            cles = re.findall(r'args\.only\s+in\s+\(None,\s*"([^"]+)"\)', content)
+            choices_count = len(set(cles))
         
         lines.append(f"- Scripts nexus_ : {nexus_count}")
         lines.append(f"- Scripts epreuve_ : {epreuve_count}")
@@ -136,41 +143,37 @@ def main():
 
     # SIX : Non Mecanise
     lines.append("## CE QUI N'EST PAS MECANISE")
+    # UNE SEULE SOURCE DE VERITE : le cliquet de cablage.
+    #
+    # CE QUI ETAIT FAUX, mesure le 2026-09-02 : ce bloc reimplementait la
+    # question « qui appelle ce script ? » avec sa propre regle (un nom cite
+    # dans scripts/*.py ou settings.json, tests exclus) et rendait SIX noms,
+    # quand nexus_cablage.py -- l'instrument que le contrat §0.2.1 designe
+    # pour ce maillon -- en rend TREIZE : un orphelin que ce bloc ne voyait
+    # pas, et un script qu'il listait a tort parce qu'il ne lisait pas les
+    # .ps1 qui l'appellent. (Les noms ne sont pas ecrits ici : le cliquet
+    # lit toute mention comme une citation, limite qu'il documente
+    # lui-meme, et un commentaire ferait passer un orphelin pour prouve.)
+    # Deux instruments, deux
+    # reponses : c'est la regle de non-concurrence du rituel (« deux sources
+    # de verite divergent au premier changement »). On lit donc le cliquet,
+    # et une mesure impossible se DIT -- jamais « Tout est mecanise ».
     try:
-        nexus_scripts = [f for f in os.listdir(scripts_dir) if f.startswith("nexus_") and f != script_name]
-        non_mecanise = []
-        
-        # Fichiers a scanner pour references
-        scan_files = []
-        for f in os.listdir(scripts_dir):
-            if f.endswith(".py") and f != script_name:
-                scan_files.append(os.path.join(scripts_dir, f))
-        
-        settings_json = os.path.join(root_dir, ".claude", "settings.json")
-        if os.path.exists(settings_json):
-            scan_files.append(settings_json)
-
-        for ns in nexus_scripts:
-            found = False
-            for sf in scan_files:
-                # On ignore les tests pour la definition de "mecanise"
-                if "nexus_test.py" in sf: continue 
-                try:
-                    with open(sf, 'r', encoding='utf-8', errors='ignore') as f:
-                        if ns in f.read():
-                            found = True
-                            break
-                except: pass
-            if not found:
-                non_mecanise.append(ns)
-        
-        if non_mecanise:
-            for nm in non_mecanise:
-                lines.append(f"- {nm}")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import nexus_cablage
+        categories = nexus_cablage.etat()["categories"]
+        faibles = [(cat, os.path.basename(c))
+                   for cat in ("orphelin", "preuve_seule")
+                   for c in categories[cat]]
+        if faibles:
+            for cat, nom in faibles:
+                lines.append(f"- {nom} ({cat})")
         else:
-            lines.append("- Tout est mecanise.")
-    except Exception as e:
-        lines.append(f"- Erreur analyse mecanisation : {e}")
+            lines.append("- Aucun script orphelin ni seulement prouve (nexus_cablage).")
+    except (Exception, SystemExit) as e:
+        # SystemExit : nexus_cablage sort en 2 quand git ne repond pas.
+        lines.append(f"- Mesure impossible (nexus_cablage) : {e}")
 
     # Ecriture atomique
     try:
