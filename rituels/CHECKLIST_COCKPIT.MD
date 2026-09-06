@@ -20480,3 +20480,136 @@ le chemin de l'interpreteur producteur.
 Elle n'a pas ete lancee : le verrou du banc etait tenu par une session
 voisine, et `qwen3-coder` n'etait plus resident — un lot aurait paye 52 s de
 chargement et dispute la machine a un travail en cours.
+
+
+---
+
+## 125. CONSIGNES PERMANENTES DE L'OPERATEUR — le registre, et sa garde
+
+> Demande du 2026-09-06 : *« je pense que pour t'eviter de deriver, tu devrais
+> inscrire toutes mes instructions dans checklist cockpit »*.
+
+Cette section est **le registre autoritaire**. Elle ne resume pas les
+consignes : elle les porte, et elle porte en face de chacune **le controle qui
+la garde** — parce qu'une consigne sans controle est precisement ce que la
+consigne premiere interdit.
+
+**Etat mesure le 2026-09-06 : 7 consignes sur 15 sont gardees par un controle
+qui echoue. Les 8 autres ne tiennent que par la discipline, et §106.1 dit ce
+que vaut la discipline sur une longue session.**
+
+### 125.1 Le registre
+
+| # | consigne, dans les mots de l'operateur | controle qui la garde | etat |
+| --- | --- | --- | --- |
+| 1 | **EXPLOITER LE DEJA EXISTANT SUR DISQUE AVANT. NE PAS REPONDRE DE MEMOIRE, NE PAS AGIR DE MEMOIRE.** Vaut pour le cloud, pour le local, et pour l'orchestrateur lui-meme. | `appelant_recent` dans `nexus_rituel.py`, sur `.nexus/consultations.jsonl` | **CABLE, mais AVEUGLE a 21 %** — voir §125.3 |
+| 2 | **AVANT DE CONCEVOIR UN MECANISME** : chercher dans l'index le chapitre qui porte SON NOM. Les outils EXISTENT DEJA, ne pas les reecrire. | le meme | idem |
+| 3 | **Si rien n'est mecanise, ce n'est que de la prose et des fichiers que personne ne consulte.** | `cablage_tenu`, `nexus_cablage.py` | CABLE |
+| 4 | **CODE PREMIUM, NON NEGOCIABLE.** `python -m py_compile` sur tout code pose. | `nexus_garde_edition.py`, hook `PostToolUse` | CABLE |
+| 5 | **TEST, puis REVERSE TEST, puis FORWARD TEST — les trois, jamais un seul.** | *aucun* | **AUCUN** |
+| 6 | **PLAN avant CODE.** | *aucun* | **AUCUN** |
+| 7 | **Vagues de 15 agents MAX, un seul lot large, parallelisme 6 au plus.** | `nexus_garde_agent.py` garde le MODELE, pas la TAILLE de la vague | **PARTIEL** |
+| 8 | **CHACUN FOCUS SUR SON PROJET.** | *aucun* | **AUCUN** |
+| 9 | **NE JAMAIS EMPLOYER DE HEREDOC NI D'ACCENT GRAVE DANS UNE COMMANDE SHELL.** Ecrire le script avec l'outil d'ecriture, PUIS l'executer. | `nexus_garde_shell.py`, hook `PreToolUse`, + `epreuve_garde_heredoc.py` | **CABLE ET EPROUVE** |
+| 10 | **POUR PRODUIRE DU VOLUME : `gpt-oss-120b-cloud`.** Les modeles a raisonnement hors bande sont a reserver au jugement, budget triple. | *aucun* — le banc peut substituer en silence | **AUCUN** |
+| 11 | **RITUEL 1 — VALIDER PAR UN TIERS.** LOI 1 : jamais son propre travail. | `loi1_tenue` -> `nexus_loi1.py` | **CABLE, mais CASSE** — voir §125.2 |
+| 12 | **RITUEL 2 — COMMITTER AVEC LA MESURE**, jamais l'intention ; une des six formules d'auteur, sinon le commit compte MUET. | `redaction_declaree` -> `nexus_redaction.py` | CABLE |
+| 13 | **RITUEL 3 — CONSIGNER CE QUI RESTE OUVERT** dans `rituels/CHECKLIST_COCKPIT.MD`. Un sujet ne se clot que lorsqu'un CONTROLE echoue si la regle est enfreinte. | `cockpit_frais` | CABLE |
+| 14 | **RITUEL 4 — REARMER LA BOUCLE.** | *aucun* — `ScheduleWakeup` vit dans la session, pas sur le disque | **AUCUN** |
+| 15 | **RITUEL 5 — DIRE CE QUI A ETE DELEGUE ET CE QUI A ETE ARBITRE.** | `part_deleguee`, `controle_delegation` | CABLE |
+| 16 | **RITUEL 6 — NE JAMAIS LAISSER UN MECANISME A MOITIE CABLE** : le script, sa contre-epreuve, son APPELANT, la porte qui refuse, la documentation, la regression. | `cablage_tenu` + `appelant_recent` | CABLE |
+| 17 | **LOI 1 — ORCHESTRER, DELEGUER, AUDITER.** Ne jamais corriger soi-meme, et surtout ne jamais sauter le TROISIEME temps : audit, puis correction par un tiers, puis **AUDIT DE LA CORRECTION** par un tiers qui n'a ecrit ni l'un ni l'autre. | `nexus_loi1.py` compte les lignes ecrites A LA MAIN ; **le troisieme temps n'est garde par RIEN** | **PARTIEL** |
+
+### 125.2 La consigne 11 est gardee par un cliquet qui PLANTE SON PROPRE REFUS
+
+Mesure du 2026-09-06, epreuve **inverse**, lancee depuis un repertoire etranger
+hors depot git :
+
+```
+code de sortie : 1
+stdout         : VIDE
+stderr         : Erreur interne : git absent ou commande echouee.
+                 Traceback (most recent call last):
+                   ...
+                 UnboundLocalError: cannot access local variable 'total_manual'
+```
+
+`total_manual` est affecte **dans** le `try` ; le bloc `except` le **lit**.
+Toute panne survenant avant cette affectation — git absent, mauvais `--base`,
+repertoire hors depot, soit le cas de panne le plus courant — fait donc lever
+`UnboundLocalError` **dans le gestionnaire d'exception**.
+
+Trois consequences, la troisieme etant la grave :
+
+1. le refus n'echoue pas **proprement** : double traceback la ou §0.1.4.1 exige
+   un message qui nomme la voie ;
+2. `sys.exit(2)`, ecrit ligne 194, **n'est jamais atteint** ;
+3. `nexus_rituel.py` porte une branche entiere pour le code 2, qui lit `stderr`
+   et rend `mesure impossible : <cause>`. **Cette branche est du code mort.**
+   La branche code 1 lue a sa place cherche `Violation` dans `stdout` — qui est
+   vide — et rend donc `MANQUE, ""`. **L'operateur voit un manque sans raison.**
+
+Deux voies d'effacement du cliquet, distinctes, mesurees au meme endroit :
+
+| voie | ligne | ce qu'elle demande |
+| --- | --- | --- |
+| `--reference` reecrit la reference a la valeur courante | 100, 149 | un drapeau, au moins visible dans l'historique |
+| `repo_root = Path.cwd()` au lieu de `__file__` | 145 | **rien du tout : un simple changement de repertoire** |
+
+La seconde est la pire, et elle n'etait pas nommee : l'outil sait pourtant
+deriver sa racine de `__file__` — il le fait **deja** ligne 18.
+
+À conserver intacte : la descente automatique lignes 172-174
+(`total_manual < reference` abaisse la reference). C'est le bon sens du
+cliquet ; seule la remontee arbitraire est en cause.
+
+### 125.3 Les consignes 1 et 2 sont gardees par une porte AVEUGLE a 21 %
+
+La porte existe — `appelant_recent` — et la trace existe :
+`.nexus/consultations.jsonl`. Le sujet ouvert qui disait *« la consultation du
+corpus n'a NI TRACE NI PORTE »* est donc **faux**.
+
+Le defaut est ailleurs, et il est du genre le plus cher de ce depot : **les
+outils n'ecrivent pas tous la meme forme, et la porte n'en lit qu'une.**
+
+```
+   147  LUE      bytes, count, id, mode, query, timestamp
+    40  IGNOREE  request, timestamp
+
+  entrees totales            187
+  retenues (count > 0)       127
+  SILENCIEUSEMENT IGNOREES    60
+```
+
+| outil | ce qu'il ecrit | vu par la porte |
+| --- | --- | --- |
+| `nexus_livres.py` | `mode`, `query`, `id`, `count`, `bytes` | **oui** |
+| `nexus_doc.py` | `timestamp`, `request` — pas de `count` | **non**, 40 entrees perdues |
+| `nexus_corpus.py` | rien | non |
+| `nexus_livres_semantique.py` | rien | non |
+
+Sur les 60 ignorees, 20 le sont **legitimement** (`count == 0`, une consultation
+vide, ce que la porte documente). Les **40 autres** sont de vraies consultations
+de `nexus_doc.py`, muettes par difference de forme.
+
+**Consequence exacte** : une session qui interroge les 166 507 symboles Python
+par `nexus_doc.py`, et rien d'autre, voit la porte rendre
+`MANQUE, "aucune consultation valide en 24 h"` — alors qu'elle a respecte la
+consigne 1 **a la lettre**. La porte punit l'obeissance, et recompense l'outil
+qui se trouve ecrire la bonne forme.
+
+C'est exactement la classe nommee au §0.2.1 : *« `nexus_bench.py` ecrivait ses
+releves sous une cle que ses propres lecteurs ne cherchaient pas »*. Le
+mecanisme est ecrit, l'appelant est cable, et le maillon qui manque est
+l'accord de FORME entre les deux.
+
+### 125.4 Ce que ce registre demande, et qui n'est pas fait
+
+Cinq consignes n'ont **aucun** controle : les 5, 6, 8, 10 et 14. Deux sont
+partielles : la 7 et la 17. Les nommer ici ne les ferme pas — §0.2.1 est
+explicite, un paragraphe ne ferme rien. Elles restent **ouvertes**, et ce
+tableau est desormais la liste de ce qu'il reste a mecaniser.
+
+La 17 est la plus lourde : **le troisieme temps de la LOI 1 n'est garde par
+rien.** Un cycle audit -> correction -> audit de la correction ne laisse
+aujourd'hui aucune trace verifiable qui dise *qui* a regarde en dernier.
