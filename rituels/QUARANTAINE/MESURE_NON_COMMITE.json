@@ -73,7 +73,7 @@
  },
  {
   "agent": "agent-a0b07e433b871704d",
-  "fichier": "scripts/epreuve_charge_derive.py",
+  "fichier": "epreuves/epreuve_charge_derive.py",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -82,7 +82,7 @@
  },
  {
   "agent": "agent-a0b07e433b871704d",
-  "fichier": "scripts/epreuve_reglages_moteur.py",
+  "fichier": "epreuves/epreuve_reglages_moteur.py",
   "plus": 0,
   "moins": 0,
   "etat": "NON SUIVI",
@@ -181,7 +181,7 @@
  },
  {
   "agent": "agent-a1f14f9783bcb3e7f",
-  "fichier": "scripts/epreuve_armer_garde.py",
+  "fichier": "epreuves/epreuve_armer_garde.py",
   "plus": 20,
   "moins": 12,
   "etat": "MODIFIE",
@@ -190,7 +190,7 @@
  },
  {
   "agent": "agent-a1f14f9783bcb3e7f",
-  "fichier": "scripts/epreuve_garde_ecriture.py",
+  "fichier": "epreuves/epreuve_garde_ecriture.py",
   "plus": 58,
   "moins": 16,
   "etat": "MODIFIE",
@@ -199,7 +199,7 @@
  },
  {
   "agent": "agent-a1f14f9783bcb3e7f",
-  "fichier": "scripts/epreuve_garde_lecture.py",
+  "fichier": "epreuves/epreuve_garde_lecture.py",
   "plus": 34,
   "moins": 17,
   "etat": "MODIFIE",
@@ -208,7 +208,7 @@
  },
  {
   "agent": "agent-a1f14f9783bcb3e7f",
-  "fichier": "scripts/epreuve_garde_shell.py",
+  "fichier": "epreuves/epreuve_garde_shell.py",
   "plus": 10,
   "moins": 10,
   "etat": "MODIFIE",
@@ -667,7 +667,7 @@
  },
  {
   "agent": "agent-a925f543aaa6e4d34",
-  "fichier": "scripts/epreuve_repli_epuise.py",
+  "fichier": "epreuves/epreuve_repli_epuise.py",
   "plus": 197,
   "moins": 0,
   "etat": "MODIFIE",
@@ -676,7 +676,7 @@
  },
  {
   "agent": "agent-a925f543aaa6e4d34",
-  "fichier": "scripts/epreuve_reprise_avant_repli.py",
+  "fichier": "epreuves/epreuve_reprise_avant_repli.py",
   "plus": 46,
   "moins": 14,
   "etat": "MODIFIE",

@@ -22,7 +22,7 @@ import os
 import sys
 
 # Ajout du répertoire du script au PATH afin d’importer nexus_cablage
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 import nexus_cablage
 
 echecs = 0
@@ -53,10 +53,10 @@ def jouer() -> int:
     )
 
     # Cas 2 – Épreuve réellement jouée → cable
-    cible = "scripts/epreuve_bidon.py"
+    cible = "epreuves/epreuve_bidon.py"
     textes = {
         "scripts/nexus_test.py": (
-            'subprocess.run([sys.executable, "scripts/epreuve_bidon.py"])'
+            'subprocess.run([sys.executable, "epreuves/epreuve_bidon.py"])'
         )
     }
     cat, citants = nexus_cablage.classer(cible, textes)
@@ -67,7 +67,7 @@ def jouer() -> int:
     )
 
     # Cas 3 – Épreuve mentionnée en commentaire uniquement → preuve_seule
-    cible = "scripts/epreuve_bidon.py"
+    cible = "epreuves/epreuve_bidon.py"
     textes = {
         "scripts/rien.py": "# epreuve_bidon.py est mentionnee en commentaire"
     }
@@ -79,7 +79,7 @@ def jouer() -> int:
     )
 
     # Cas 4 – Épreuve orpheline (aucune référence) → orphelin
-    cible = "scripts/epreuve_bidon.py"
+    cible = "epreuves/epreuve_bidon.py"
     textes = {}
     cat, citants = nexus_cablage.classer(cible, textes)
     verifier(

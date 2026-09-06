@@ -14,7 +14,7 @@
   }
  },
  {
-  "fichier": "scripts/epreuve_orphelines.py",
+  "fichier": "epreuves/epreuve_orphelines.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 17,
@@ -28,7 +28,7 @@
   }
  },
  {
-  "fichier": "scripts/epreuve_progres.py",
+  "fichier": "epreuves/epreuve_progres.py",
   "agent": "agent-a0bb278a9ee2836a5",
   "branche": "worktree-agent-a0bb278a9ee2836a5",
   "plus": 195,
@@ -182,7 +182,7 @@
   }
  },
  {
-  "fichier": "scripts/epreuve_rendu_vide.py",
+  "fichier": "epreuves/epreuve_rendu_vide.py",
   "agent": "agent-a9bae5bcacf5d3042",
   "branche": "worktree-agent-a9bae5bcacf5d3042",
   "plus": 152,

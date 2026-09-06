@@ -408,7 +408,7 @@ exit reel du process : 1
 (stderr : vide)
 ```
 
-a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (rituels/CHECKLIST_LIVRE_VS_CODE.md, scripts/epreuve_rendu_vide.py, scripts/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
+a9bae5bc a cesse d'etre "ok" — l'exigence 2. a697c9b3 reste recoltable, et VERIFIE INDEPENDAMMENT (verifier_a697c9b3.py, git diff avec les memes exclusions, hors de tout appel a nexus_filet.py) que les 13 lignes restantes sont exactement les 2 lignes reelles de nexus_test.py avec leur contexte unifie — rien de cablage_reference.json ne subsiste, et rien de plus n'a ete ecarte que ce fichier-la. L'exigence la plus importante — ne pas faire disparaitre du vrai travail — est satisfaite et verifiee par un chemin independant, pas seulement affirmee. Le vrai correctif d'a9bae5bc (verifie independamment, verifier_a9bae5bc.py) : 1 commit, 3 fichiers (rituels/CHECKLIST_LIVRE_VS_CODE.md, epreuves/epreuve_rendu_vide.py, scripts/nexus_test.py) — un vrai correctif, exactement ou le coordinateur l'avait situe.
 
 ### 4b. REVERSE-TEST — le chemin interdit échoue-t-il proprement ?
 

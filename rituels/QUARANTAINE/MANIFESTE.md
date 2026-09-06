@@ -52,8 +52,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
-| `scripts/epreuve_charge_derive.py` | non_commite (??) | 5256 | NON -- FICHIER NEUF |
-| `scripts/epreuve_reglages_moteur.py` | non_commite (??) | 4320 | NON -- FICHIER NEUF |
+| `epreuves/epreuve_charge_derive.py` | non_commite (??) | 5256 | NON -- FICHIER NEUF |
+| `epreuves/epreuve_reglages_moteur.py` | non_commite (??) | 4320 | NON -- FICHIER NEUF |
 | `scripts/nexus_charge.py` | non_commite ( M) | 14270 | oui (8094 octets) |
 | `scripts/nexus_reglages_moteur.py` | non_commite (??) | 20086 | NON -- FICHIER NEUF |
 | `scripts/nexus_test.py` | non_commite ( M) | 172074 | oui (175825 octets) |
@@ -491,8 +491,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 21624 | NON -- FICHIER NEUF |
 | `rituels/outillage_reference.json` | commite (M) | 526 | oui (578 octets) |
-| `scripts/epreuve_orphelines.py` | commite (M) | 4643 | oui (3677 octets) |
-| `scripts/epreuve_progres.py` | commite (M) | 9119 | oui (5602 octets) |
+| `epreuves/epreuve_orphelines.py` | commite (M) | 4643 | oui (3677 octets) |
+| `epreuves/epreuve_progres.py` | commite (M) | 9119 | oui (5602 octets) |
 | `scripts/nexus_cablage.py` | commite (M) | 20787 | oui (19757 octets) |
 | `scripts/nexus_checklist_progres.py` | commite (M) | 10989 | oui (9381 octets) |
 | `scripts/nexus_conformite.py` | commite (M) | 89835 | oui (92142 octets) |
@@ -533,10 +533,10 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 14784 | NON -- FICHIER NEUF |
-| `scripts/epreuve_armer_garde.py` | non_commite ( M) | 3403 | oui (3063 octets) |
-| `scripts/epreuve_garde_ecriture.py` | non_commite ( M) | 5423 | oui (3159 octets) |
-| `scripts/epreuve_garde_lecture.py` | non_commite ( M) | 7300 | oui (6260 octets) |
-| `scripts/epreuve_garde_shell.py` | non_commite ( M) | 2454 | oui (2539 octets) |
+| `epreuves/epreuve_armer_garde.py` | non_commite ( M) | 3403 | oui (3063 octets) |
+| `epreuves/epreuve_garde_ecriture.py` | non_commite ( M) | 5423 | oui (3159 octets) |
+| `epreuves/epreuve_garde_lecture.py` | non_commite ( M) | 7300 | oui (6260 octets) |
+| `epreuves/epreuve_garde_shell.py` | non_commite ( M) | 2454 | oui (2539 octets) |
 
 ### agent-a3666d882218a276d
 
@@ -644,8 +644,8 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | fichier | etat | octets | original |
 | --- | --- | --- | --- |
 | `QUARANTAINE.md` | non_commite (??) | 19183 | NON -- FICHIER NEUF |
-| `scripts/epreuve_repli_epuise.py` | non_commite ( A) | 9158 | NON -- FICHIER NEUF |
-| `scripts/epreuve_reprise_avant_repli.py` | non_commite ( M) | 6151 | oui (4159 octets) |
+| `epreuves/epreuve_repli_epuise.py` | non_commite ( A) | 9158 | NON -- FICHIER NEUF |
+| `epreuves/epreuve_reprise_avant_repli.py` | non_commite ( M) | 6151 | oui (4159 octets) |
 | `scripts/nexus_agent.py` | non_commite ( M) | 75964 | oui (74721 octets) |
 | `scripts/nexus_test.py` | non_commite ( M) | 171885 | oui (175825 octets) |
 
@@ -683,7 +683,7 @@ Pour auditer chaque fichier liste ci-dessous, suivre le gabarit `rituels/GABARIT
 | `QUARANTAINE.md` | non_commite (??) | 15392 | NON -- FICHIER NEUF |
 | `rituels/CHECKLIST_LIVRE_VS_CODE.md` | commite (M) | 38308 | oui (33312 octets) |
 | `rituels/cablage_reference.json` | non_commite ( M) | 553 | oui (791 octets) |
-| `scripts/epreuve_rendu_vide.py` | commite (A) | 6108 | NON -- FICHIER NEUF |
+| `epreuves/epreuve_rendu_vide.py` | commite (A) | 6108 | NON -- FICHIER NEUF |
 | `scripts/nexus_test.py` | commite (M) | 172187 | oui (175825 octets) |
 
 ### agent-acbd763084f29adf5

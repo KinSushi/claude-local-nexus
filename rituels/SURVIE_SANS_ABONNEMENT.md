@@ -202,7 +202,7 @@ La bascule `cloud -> local` est autorisée : elle ne coûte que de la capacité.
 `local -> cloud` est **fermée** : elle ferait sortir des données.
 
 ```powershell
-python scripts/epreuve_bascule.py          # code 0 attendu
+python epreuves/epreuve_bascule.py          # code 0 attendu
 ```
 
 ---

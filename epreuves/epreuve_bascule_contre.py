@@ -48,7 +48,7 @@ def _main() -> int:
 
     # et le depot reel doit rester vert
     r = subprocess.run(
-        [sys.executable, "-B", "scripts/epreuve_bascule.py"],
+        [sys.executable, "-B", "epreuves/epreuve_bascule.py"],
         capture_output=True,
         text=True,
         encoding="utf-8",

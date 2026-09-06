@@ -23,7 +23,7 @@ import os
 import sys
 
 # Ajout du répertoire du script au PATH afin d’importer les modules du dépôt
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 import nexus_doc
 import console_tools
 

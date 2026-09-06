@@ -18,7 +18,7 @@ import tempfile
 
 # try to import the function under test
 try:
-    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
     from nexus_conformite import controle_gardes_accordes
 except Exception as e:  # pragma: no cover
     print("[RATE] import : %s" % e)
