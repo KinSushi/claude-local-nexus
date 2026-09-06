@@ -21196,3 +21196,305 @@ matiere **reste** ignoree, faute de quoi le correctif aurait ouvert 938 Mo.
 **Ce qui n'est pas commande** : la creation des six pointeurs manquants. Il
 faudrait savoir ce que chaque corpus contient, et cela ne s'invente pas.
 Ils sont **signales**, non fabriques.
+
+
+---
+
+## 131. LE PARALLELISME LOCAL SE DETRUIT LUI-MEME — et la panne se lit comme un vide
+
+Deux defauts mesures dans le meme rendu, et le premier est **une erreur de
+l'orchestrateur**.
+
+### 131.1 Ce que la vague 23 a rendu
+
+```
+loi1_contre_epreuve      512 s   2991 jetons   -> RENDU, puis REJETE en arbitrage
+loi1_refus_propre          -     ECHEC
+loi1_racine_portable       -     ECHEC
+loi1_cliquet_sans_bouton   -     encore en vol apres 1 h
+```
+
+L'erreur des deux echecs, mot pour mot :
+
+```
+tous les replis gratuits ont echoue :
+  gpt-oss-120b-cloud    : timed out
+  glm-4.7-flash-local   : timed out
+  qwen3-coder-30b-local : timed out
+  llama3.2-3b-local     : timed out
+```
+
+### 131.2 La cause : `--parallele 4` sur un plan a UN moteur et UN verrou
+
+Quatre taches lancees ensemble se mettent en file sur le mutex `banc`, chacune
+expire a 900 s, puis essaie son repli suivant — **qui attend la meme file** —
+et expire encore. Quatre modeles, quatre expirations, zero rendu.
+
+**Le contrat portait deja la mesure** (§107.1, et le commentaire de
+`retry_policy` dans `litellm_config.yaml`) :
+
+> *« six taches simultanees produisaient 36 refus et ZERO succes en six
+> minutes, chaque appel client se demultipliant en tentatives et en replis sur
+> le meme quota. »*
+
+C'etait ecrit, mesure, et commente dans la configuration. **L'orchestrateur a
+lance `--parallele 4` quand meme.** Le plafond de l'operateur — « parallelisme
+6 au plus » — est une BORNE, pas une consigne : sur le plan local, la valeur
+correcte est **1**.
+
+### 131.3 Le second defaut : une panne qui se lit comme un vide
+
+Le rendu d'echec ne porte que **trois cles** :
+
+```
+succes : adresse, car_par_jeton, cause_vide, cout, demande_initiale, duree,
+         etiquete, fichiers_joints, mentions_hors_perimetre, modele, nom,
+         part_raisonnement, plan, refus, servi_par, texte, tokens,
+         tokens_sortie, tronque          (19 cles)
+
+echec  : erreur, modele, nom             (3 cles)
+```
+
+Consequence **mesuree sur place** : le premier releve a affiche
+`0 s, 0 jetons` pour les deux axes — c'est-a-dire *un rendu vide*, alors qu'il
+s'agissait d'une **panne totale**. Il a fallu redescendre aux cles brutes pour
+voir le champ `erreur`.
+
+C'est la classe « le vide lu comme une panne » du depot, **prise a l'envers** :
+ici, **une panne lue comme un vide**. Le champ `cause_vide`, ajoute
+precisement pour distinguer les deux, n'existe pas dans le rendu d'echec.
+
+### 131.4 Ce que le disque en dit — lu, pas invente
+
+`nexus_livres.py -r code.1b2bc582.…chapter07.helpers.resilience.graceful_fallback`
+— **4 314 / 24 181 565 octets, soit 0,018 %** du rayon :
+
+```
+max_retries : int
+    Number of attempts before falling back. Default is 1 (no retry).
+
+fallback_return : Any
+    The value returned when all retries are exhausted. Should match
+    the function's normal return type so downstream code can handle
+    it safely (e.g., pd.DataFrame() for data-loading tools).
+```
+
+Deux prescriptions, et le depot enfreint les deux :
+
+| le livre | ici |
+| --- | --- |
+| `max_retries` par defaut **1 — aucun rejeu** avant de replier | quatre replis, chacun a 900 s |
+| le rendu de repli **doit avoir la forme du rendu normal**, *« so downstream code can handle it safely »* | 3 cles contre 19 — et le lecteur aval a effectivement mal lu |
+
+### 131.5 Ce que le livre ne pouvait pas savoir (§0.8)
+
+Le livre parle d'un repli entre **appels**. Ici le repli est entre **modeles**,
+et epuiser la chaine coute **4 x 900 s**. La prescription `max_retries=1`
+n'est donc pas seulement une bonne pratique : elle vaut **une heure de machine
+par tache** sur ce banc.
+
+C'est le depassement autorise par §0.8 — et il repose sur une mesure, pas sur
+une intuition.
+
+### 131.6 Ce qui est decide
+
+* la vague 24 sera lancee **`--parallele 1`**, valeur mesuree correcte pour le
+  plan local ;
+* les deux axes perdus sont **a relancer**, ils ne sont pas abandonnes ;
+* la forme du rendu d'echec est un defaut **a commander**, pas a corriger ici.
+
+
+---
+
+## 132. OUTILS vs PROJET — la frontiere git tient, le DOSSIER etait contamine
+
+> *« il faut distinguer tes outils de bricolage avec le projet, c'est pour cela
+> que j'ai demande une separation claire »*, puis *« tes outils de bricolage
+> contaminent le projet »* — l'operateur, 2026-09-06.
+
+Reproche verifie plutot que discute. Il est **juste**, et la mesure precise
+**ou** il l'est.
+
+### 132.1 L'inventaire, par la frontiere git
+
+```
+projet, suivi par git   :    305 fichiers,    44,9 Mo
+present sur disque      : 27 231 fichiers, 5 634,6 Mo
+le clone ne recoit pas  :  99,2 %
+
+ni suivi ni ignore      :      0 fichier
+```
+
+**Zero fichier « ni projet ni ecarte ».** La frontiere git est nette : aucun
+depot d'outil n'entre dans le depot.
+
+```
+depots d'outil sur disque : 306 fichiers, 582,7 Mo
+   dont SUIVIS par git    :   0
+```
+
+| famille | fichiers | poids | suivis |
+| --- | --- | --- | --- |
+| sauvegardes d'essaim (`backup-*.bak`) | 48 | 1,26 Mo | 0 |
+| sauvegardes de configuration (`backups/`) | 85 | 580,67 Mo | 0 |
+| sorties de vague | 173 | 0,81 Mo | 0 |
+
+### 132.2 Ou le reproche porte exactement
+
+La contamination n'est pas **de contenu** — rien n'entre dans le depot — elle
+est **d'encombrement du dossier**, et cette distinction change le remede.
+
+Trois foyers, mesures :
+
+```
+22 repertoires .nexus/vague*        dont vague23 et vague24, MIENS, d'aujourd'hui
+40 fichiers .bak dans scripts/.nexus/   un .nexus DANS le repertoire des SOURCES
+85 fichiers dans backups/           580 Mo de vidages de base
+```
+
+**`scripts/.nexus/` est le pire des trois** : un depot d'outil au milieu des
+sources, date des 29-31 aout. C'est ce que le controle appelle « ancien
+chemin » — et son message dit « 8 dans racine, 40 dans scripts », alors que les
+huit sont en realite dans `.nexus/`. Le controle **nomme mal les lieux**, ce
+qui a d'abord fait chercher au mauvais endroit.
+
+### 132.3 Ce qui a ete corrige, et verifie
+
+`nexus_agent.py:311` accepte un chemin absolu :
+
+```python
+complet = brut if os.path.isabs(brut) else os.path.join(racine, brut)
+```
+
+Les commissions n'ont donc **aucune raison** de vivre dans le projet. Elles
+sont sorties vers le scratchpad, isole de la session et hors du dossier :
+
+```
+8 fichiers deplaces      .nexus/vague24/ -> scratchpad/commissions/vague24/
+.nexus/vague24           retire (vide apres deplacement)
+15 chemins reecrits      en absolu dans le lot
+27 pieces jointes        toutes verifiees presentes
+```
+
+**Deplacees, jamais supprimees** — la regle du depot vaut aussi pour mes
+propres fichiers.
+
+`.nexus/vague23` est **conserve** : sa vague est encore en vol, et deplacer ses
+pieces sous un travail en cours est precisement le geste qui a deja detruit un
+worktree sous un agent (§0, accident du 2026-09-02).
+
+### 132.4 Ce qui reste, et a qui c'est
+
+```
+21 repertoires .nexus/vague*   dont 1 a moi (vague23, en vol)
+                               et 20 anterieurs a cette session
+40 .bak dans scripts/.nexus/   anterieurs, du 29-31 aout
+85 fichiers dans backups/      580 Mo, dont deux vidages de 61 Mo
+```
+
+Rien de tout cela n'est supprime ici : ce sont des traces d'autrui, et le
+depot ne detruit pas ce qu'il n'a pas ecrit. **Signale, non traite.**
+
+### 132.5 La regle qui en sort
+
+> **Une commission, une mesure, une sortie de vague : dans le scratchpad,
+> jamais dans le dossier du projet.** Le banc accepte les chemins absolus ;
+> il n'existe donc aucune raison technique de faire autrement, et l'habitude
+> etait la seule cause.
+
+
+---
+
+## 133. L'ISOLATION EXECUTEE — 582,3 Mo sortis de l'arbre, depot intact
+
+> *« les fichiers qui contaminent doit etre isole ; separes du projet. le
+> projet lui meme a son propre arbre propre. »* — l'operateur, 2026-09-06.
+
+Destination : **`C:\local-llm-docker-hors-projet\`**, repertoire FRERE du
+projet, donc hors de son arbre — et non un sous-dossier, ce qui etait le
+defaut de la quarantaine precedente.
+
+### 133.1 Ce qui a ete verifie AVANT de deplacer
+
+| verification | resultat |
+| --- | --- |
+| `backup.ps1` ecrit-il dans `<projet>/backups/` ? | **non** — `$BackupRoot = "C:\backups"` par defaut ; aucun code ne lit ce repertoire |
+| un script lit-il `.nexus/vague*` ? | **non** — les cinq scripts qui disent « vague » ne le font qu'en **commentaire** |
+| `scripts/.nexus/` est-il legitime ? | **non** — quatre scripts le documentent comme *« l'ANCIEN chemin »*, et un controle le signale depuis le 2026-08-30 |
+| un fichier deplace est-il **suivi par git** ? | **zero** — le script refuse et s'arrete sinon |
+
+### 133.2 Le deplacement, et ses deux epreuves
+
+```
+scripts/.nexus          40 fichiers     0,88 Mo
+backups                 85 fichiers   580,67 Mo
+20 x .nexus/vague*     164 fichiers     0,75 Mo
+------------------------------------------------
+TOTAL                  289 fichiers   582,3 Mo
+```
+
+**Epreuve avant** — l'arbre du projet est-il intact ?
+`git status` : **0 fichier supprime du depot**.
+
+**Epreuve inverse** — est-ce bien SORTI ?
+```
+scripts/.nexus  ->  No such file or directory
+backups         ->  No such file or directory
+.nexus/vague23  ->  present  (CONSERVE, sa vague etait en vol)
+```
+
+Un **manifeste** JSON dit quoi, d'ou, pourquoi, et comment revenir en arriere.
+**Deplace, jamais supprime.**
+
+`.nexus/vague23` a ete **epargne volontairement** : deplacer des pieces sous un
+travail en cours est exactement le geste qui a detruit un worktree sous un
+agent le 2026-09-02.
+
+### 133.3 Ce qui reste dans le dossier, et n'a pas ete touche
+
+Mesure dedoublonnee par inode — la premiere mesure comptait deux fois et
+annoncait 5 993 Mo pour un total de 5 052 :
+
+```
+.nexus                3 651,5 Mo
+   quarantaine        2 624,3 Mo   <- isolee DANS le projet, pas DU projet
+   livres_code        2 388,8 Mo
+   livres_kos           452,4 Mo
+references              938,3 Mo
+```
+
+**La quarantaine de la session precedente est elle-meme dans l'arbre du
+projet.** Elle appelle le meme traitement, et n'est pas traitee ici : elle
+contient du travail d'autrui, et le deplacer demande de verifier d'abord ce
+qui le lit. **Signale, non traite.**
+
+### 133.4 La vague 23, arbitree
+
+```
+4 taches, 4210 s au total, 2 rendus, 2 echecs
+
+loi1_contre_epreuve       512 s  2991 jetons   REJETE
+loi1_cliquet_sans_bouton  866 s   730 jetons   REJETE
+loi1_refus_propre                              ECHEC (4 replis expires)
+loi1_racine_portable                           ECHEC (4 replis expires)
+```
+
+**Arbitrage mecanique du second rendu**, bloc par bloc, contre le code reel :
+
+| bloc | verdict |
+| --- | --- |
+| 1 | ancre unique, mais `old_ref = reference if "reference" in locals() else None` — `reference` est affecte **ligne 164**, la branche `--reference` est **ligne 149** : la condition vaut **toujours False**, et le message de tracabilite ne peut **jamais** s'imprimer. **Mecanisme inerte par construction.** |
+| 2 | `AVANT` et `APRES` **identiques** — le bloc ne change rien |
+| 3 | corrige reellement le `UnboundLocalError`, mais **hors du perimetre commande** |
+
+**Et une de mes trois suspicions etait fausse** : j'avais lu un mojibake dans
+les ancres (`forc�e`). Verification mecanique : les trois ancres sont trouvees
+**une fois chacune**. Le caractere abime etait un artefact de mon terminal, pas
+une donnee. Treizieme fois de la session qu'un instrument exact porte une
+lecture fausse — et la verification l'a prise.
+
+### 133.5 Le prix mesure de `--parallele 4` en local
+
+**4 210 s pour deux rendus, tous deux rejetes.** Soixante-dix minutes de
+machine pour zero ligne applicable. La valeur correcte sur le plan local est
+**1**, et le contrat le disait deja (§131).
