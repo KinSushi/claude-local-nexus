@@ -22064,3 +22064,96 @@ Aucun controle ne garde cette regle. La mesure ci-dessus vit dans un
 scratchpad, comme celle de la separation. **Tant qu'un script du depot ne
 refuse pas, la regle est un paragraphe** — et §0.2.1 dit ce que vaut un
 paragraphe.
+
+
+---
+
+## 140. LA DETTE REELLE EST DE 15 LIGNES, PAS DE 207 — et le compteur naif comptait sa propre documentation
+
+### 140.1 Le compteur a MONTE apres une correction
+
+Mesure : le compte de lettres de lecteur est passe de **198 a 207 APRES** le
+retrait d'un fichier fautif (`patch_lot.py`).
+
+**Cause** : le §139 ci-dessus **cite** les chemins fautifs pour les nommer, et
+le compteur compte ces citations.
+
+> **Un compteur qui compte sa propre documentation ne peut jamais atteindre
+> zero.** L'objectif « 0 dette » devient inatteignable par construction, et un
+> objectif inatteignable finit desarme.
+
+Meme classe que « un instrument qui embarque ses aiguilles se compte lui-meme »
+(§133) — ici, c'est le *registre* de la dette qui est compte comme dette.
+
+### 140.2 Les trois populations, et elles ne se valent pas
+
+```
+TOTAL         207
+CONTENU        81   le chemin EST la donnee
+CITATION      111   discute, n'execute rien
+DEPENDANCE     15   <- la dette reelle
+```
+
+| population | ce que c'est | exemples mesures |
+| --- | --- | --- |
+| **CONTENU** | le chemin **est** le document | `references/node_docs/.../all.json` (28) — la doc Node.js elle-meme ; `rituels/QUARANTAINE/MANIFESTE.json` (49) — le fait enregistre d'une operation passee |
+| **CITATION** | discute, n'execute rien | le cockpit, `docs/MANUEL.md`, `UTILISER_NEXUS.md`, les commentaires |
+| **DEPENDANCE** | un programme l'**emploie** | 15 lignes, listees ci-dessous |
+
+**Le classement est NOMME, jamais devine** : chaque fichier de contenu porte sa
+raison dans l'instrument. Un classement automatique serait un pari, et un
+controle qui crie au loup se fait desarmer.
+
+### 140.3 Les 15, et six n'en sont pas
+
+Six des quinze sont des **commentaires ou des cas de test** que le classement
+n'a pas su voir, faute de reconnaitre les lignes de **continuation** :
+
+```
+scripts/nexus_agent.py         L284   commentaire sur les lecteurs differents
+scripts/nexus_garde_lecture.py L53-54 commentaire : C:/a/B.py et c:\a\b.py
+scripts/nexus_quarantaine.py   L82    exemple d'usage (suite)
+scripts/nexus_quarantaine.py   L145   docstring
+scripts/epreuve_garde_shell_ps.py L114 CAS DE TEST : Get-ChildItem -Path C:\temp
+```
+
+**Limite nommee de l'instrument** : il classe ligne par ligne, et une
+docstring de plusieurs lignes n'est reconnue que sur sa premiere. C'est un
+faux positif **connu**, pas un mystere.
+
+### 140.4 Les vraies dependances : NEUF lignes, trois familles
+
+| famille | lignes | nature |
+| --- | --- | --- |
+| **chemins des depots voisins** | `nexus_socle.py` L7-9, `nexus_conformite.py` L468, L470 | delibere — le §0 nomme SAS et EA MT5 comme sources. Une autre machine n'en a aucun. **A arbitrer**, pas a corriger a l'aveugle |
+| **chemins de reglages machine** | `rituels/A_POSER_global.json` L2, `A_POSER_local.json` L2, `SOCLE_SECURITE_GLOBAL.json` L2 | pointent vers un `settings.json` d'un utilisateur **nomme**, dans des fichiers **suivis** |
+| **valeur par defaut** | `scripts/backup.ps1` L16 : `$BackupRoot = "C:\backups"` | documentee comme configurable — dette **faible** |
+
+### 140.5 Ce qui a ete paye ce tour
+
+`patch_lot.py` : **script de patch jetable, mort, et suivi par git.**
+
+```
+son bloc ANCIEN present dans nexus_agent.py   : NON
+son bloc NOUVEAU present                       : NON
+appelants                                      : AUCUN
+```
+
+Le code a depasse les deux formes : il ne peut plus rien patcher. Sorti du
+suivi (`git rm --cached`, l'historique garde la trace) et deplace hors du
+projet.
+
+**Epreuve** : absent du dossier OUI, absent du suivi OUI, present hors-projet
+OUI.
+
+### 140.6 Ou en est la reponse a « OUI ? »
+
+| question de l'operateur | reponse mesuree |
+| --- | --- |
+| l'arbre du projet est-il **separe** ? | **OUI** — 3 733,7 Mo dehors, controle a 4 questions code 0, prouve dans les deux sens |
+| est-il **identifie** ? | **OUI** — racine a 23 entrees toutes reconnaissables, pointeur suivi, 0 chemin absolu dedans |
+| **zero lettre de lecteur** ? | **NON** — 9 dependances reelles, trois familles nommees |
+| **zero dette technique** ? | **NON** — et aucun controle ne garde ces regles |
+
+**Ce qui manque pour dire OUI** : neuf lignes a arbitrer ou corriger, et
+`scripts/nexus_separation.py` a poser. Le second est au banc.
