@@ -23219,3 +23219,146 @@ le rituel impraticable exactement quand le changement est important.
 
 Aucune ligne close : aucune n'a de contrôle qui échoue si la règle est
 enfreinte.
+
+
+---
+
+## 152. QUATORZE SCRIPTS EPINGLES PAR UNE CONFIGURATION HORS DU DEPOT
+
+Prolonge §151. Le planificateur Windows n'etait qu'une source parmi d'autres.
+
+### 152.1 La mesure, et il a fallu trois instruments pour l'obtenir
+
+```
+grep brut sur le settings global        ->  5 chemins
+mon premier instrument (regex chemin)   ->  3 chemins
+mesure par NOM DE FICHIER               ->  7 dans le global, 11 dans le depot
+```
+
+Les deux premiers comptes etaient faux. Le premier ratait les scripts nommes
+sans chemin ; le second decrochait sur les separateurs, et sa correction par
+normalisation n'a **rien change** — l'hypothese etait fausse aussi. La cause
+reelle : une classe de caracteres mutilee par le shell dans un `python -c`
+en ligne, exactement ce que la consigne interdit et que j'ai fait quand meme.
+
+**Chercher le NOM plutot que le CHEMIN** a tranche du premier coup. C'est la
+troisieme fois que cette methode sauve une mesure de perimetre : elle avait
+deja sauve `livres_code` d'une sortie par erreur, et tranche pour la
+quarantaine.
+
+### 152.2 Le partage, et ce qu'il revele
+
+| | nb | scripts |
+| --- | --- | --- |
+| **global seul** | 3 | `nexus_agent`, `nexus_garde_ecriture`, `nexus_valide` |
+| **depot seul** | 7 | `nexus_cablage`, `nexus_garde_edition`, `nexus_garde_lecture`, `nexus_porte_rituel`, `nexus_reprise`, `nexus_rituel`, `nexus_verrou_machine` |
+| **les deux** | 4 | `nexus_garde_agent`, `nexus_garde_isolation`, `nexus_garde_production`, `nexus_garde_shell` |
+
+Chemins morts : **0**. Contre-epreuve : un temoin inexistant est bien
+detecte MORT — le controle voit, il ne se tait pas par cecite.
+
+**`nexus_garde_ecriture.py` n'est cablee que dans le GLOBAL.** Elle protege
+donc les autres projets de cette machine et **disparait pour quiconque clone
+ce depot**. Le contrat notait « deux gardes » dans ce cas ; la mesure en donne
+une seule qui soit une garde, et deux outils.
+
+Symetriquement, sept gardes ne vivent que dans le depot : elles protegent un
+clone et ne protegent pas les projets voisins de cette machine.
+
+### 152.3 La consequence pour l'arbre
+
+Seize fichiers ne peuvent pas bouger sans qu'une configuration **hors du
+depot** soit mise a jour dans le meme geste :
+
+```
+ 2  nommes par le planificateur   start.ps1, Update-NexusModels.ps1
+14  nommes par les settings du client
+```
+
+Aucun `git grep` ne les protege, et aucun controle ne verifie aujourd'hui
+qu'un script nomme de l'exterieur existe encore. Pour une garde, la panne est
+muette : le hook ne se declenche plus, et rien ne le dit.
+
+### 152.4 L'incident de la configuration vive — et le bon diagnostic est le second
+
+`git add -A`, apres application des trois correctifs, a pris cinq fichiers au
+lieu de trois :
+
+```
+litellm_config.yaml          version de TEST : 1519 lignes, ZERO marqueur AUTOGEN
+litellm_config.yaml.testswap la VRAIE       : 1976 lignes, 26 marqueurs
+```
+
+**Premier diagnostic, faux :** « une epreuve a permute et n'a pas restaure ».
+La mesure l'a refute — `nexus_test.py` TOURNAIT, deux processus actifs. Sa
+fonction `run_validator_on` permute la configuration a chaque test de
+validation puis restaure ; la fenetre est courte et parfaitement normale.
+
+**J'ai pris un etat TRANSITOIRE pour un residu**, et `git add -A` l'a fige
+dans un commit. Un clone aurait recu la configuration d'epreuve de la
+passerelle.
+
+La regle qui manquait, et elle est generale : **ne jamais `git add -A` pendant
+qu'un processus mute des fichiers suivis.** Le depot documente la fenetre de
+permutation en toutes lettres (`nexus_test.py` lignes 210-250, avec l'incident
+du 2026-08-30) ; il ne protege pas contre le fait de commiter pendant.
+
+Le critere qui distingue les deux configurations est net et vient du depot
+lui-meme : `yaml.safe_dump` perd les commentaires, donc **une configuration de
+test n'a aucun marqueur AUTOGEN**. Un `grep -c AUTOGEN` tranche.
+
+### 152.5 Une garde a refuse, et elle avait raison DEUX fois
+
+Premier geste tente : `cp .testswap litellm_config.yaml && rm .testswap`.
+**Refuse par la garde du depot.**
+
+Elle protegeait un fichier critique — et, sans le savoir, elle a empeche un
+`rm` qui aurait detruit la vraie configuration d'une suite encore en vol. La
+voie imposee, `git checkout main -- litellm_config.yaml`, restaure la version
+SUIVIE et laisse une trace auditable.
+
+**Ne pas contourner est ce qui a evite le dommage.** C'est la deuxieme fois
+aujourd'hui qu'un refus de garde vaut mieux que mon intention.
+
+### 152.6 Deuxieme specification rejetee sur le perimetre
+
+Le banc a rendu la specification du controle semantique des voisines. Rejetee
+sur son point 3 :
+
+> *« Un import est voisin si le nom du module importe correspond au nom du
+> repertoire contenant le fichier. »*
+
+Faux : `nexus_conformite` importe depuis `epreuves/` n'a aucun rapport avec le
+nom du dossier. La regle juste est qu'un module du meme nom existe comme
+fichier FRERE ailleurs dans le depot, et **pas** dans le repertoire vers
+lequel `sys.path` pointe.
+
+Sa contre-epreuve est malformee de surcroit : elle fabrique `import test`, qui
+masque un module de la bibliotheque standard.
+
+**Retenu** : les noeuds AST a regarder (`Call`, `Attribute`, `Name`,
+`Constant`), et l'aveu honnete de ses limites — `__import__` et
+`sys.path.append` lui echappent.
+
+Deuxieme rendu du banc rejete sur cette meme question ; le premier classait
+les 147 outils comme « projet ».
+
+### 152.7 CE QUI RESTE OUVERT — remplace §151.6
+
+| sujet | etat |
+| --- | --- |
+| **branche `assainissement-epreuves`** | 3 regressions CORRIGEES par le banc, parite exacte avec main (23/7), controles verts. NON FUSIONNEE : `nexus_test.py` mute encore `litellm_config.yaml`. |
+| **16 fichiers epingles hors depot** | mesures, contre-epreuve passee. AUCUN controle ne le verifie. |
+| `nexus_garde_ecriture` global seule | absente de tout clone |
+| commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
+| controle semantique des voisines | 2 specifications rejetees, aucune retenue |
+| `nexus_valide.py` > 900 s | `run_conformite()` sans timeout |
+| `rituels/` hors du projet | mesure, non lance |
+| frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
+| les 91 constructions non litterales | mesurees, non traitees |
+| fichier `--sortie` jamais cree | demande d'une session voisine : ecrire VIDE distinguerait « rien produit » de « jamais lance » |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+Aucune ligne close : aucune n'a de controle qui echoue si la regle est
+enfreinte.
