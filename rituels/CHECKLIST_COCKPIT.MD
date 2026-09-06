@@ -19609,3 +19609,95 @@ extremites produites par le banc.
 que ce qui passe par lui. Un `git push` tape a la main echappe encore au
 verrou. La question utile reste celle qu'une session voisine a formulee :
 *par quels chemins la ressource peut-elle etre prise sans lui ?*
+
+---
+
+## COCKPIT DE LA NUIT DU 5 AU 6 SEPTEMBRE 2026
+
+### CLASSE 1 : SILENCE SUR ERREUR
+
+Le fichier indique cinq formes de silence. Une erreur se produit mais n est
+pas signalee.
+
+* Bloc I : stderr redirige vers /dev/null. Six plantages lus comme vides.
+* Bloc IV : Rendu vide compte comme succes. 12 cas sur 141.
+* Bloc V : Panne lue comme conformite. Code 0 au lieu de 2.
+* Bloc VI : Ligne sautee sans message. Stderr vide avant correction.
+* Bloc IX : Avertissement lu par personne. 67 scripts exposes.
+
+Distinction : Ce n est pas une panne systeme. C est un instrument qui ment
+sur son etat.
+
+### CLASSE 2 : ERREUR DE LECTURE
+
+L outil lit une cle absente ou un nom de colonne faux.
+
+* Bloc I : Cle "texte" absente sur le rayon code. 4148 symboles invisibles.
+* Bloc XI : Colonne "symboles" lue au lieu de "nb_symbols". Zero lu sur
+  234211.
+* Bloc XII : Sortie tronquee lue comme blocage absent.
+
+Preuve : La correction affiche le fragment ou le champ cause_vide.
+
+### CLASSE 3 : CONFLIT D OUTIL
+
+L outil s attaque lui-meme ou refuse l operateur.
+
+* Bloc II : Quatrieme patch casse le programme. IndexError ligne 115.
+* Bloc III : Regex heredoc matche le marqueur de patch. 4 commandes mutilees.
+* Bloc VIII : La garde refuse la commande de correction. Code non nul.
+
+Distinction : La panne vient de l interaction, pas du code seul.
+
+### CLASSE 4 : COUT NON COMPTE
+
+Des jetons sont brules sans resultat visible.
+
+| mesure | valeur |
+| --- | --- |
+| rendus vides | 12 sur 141 |
+| jetons brules | 4000 a 16000 par cas |
+| raisonnement | 55512 caracteres |
+
+Fuite : Le champ cause_vide enregistre une longueur, jamais le contenu.
+
+### CLASSE 5 : FAUX POSITIF
+
+Un test accuse un code sain.
+
+* Bloc VII : Epreuve hors contrat. 1 echec sur la version d origine.
+* Bloc XII : Quatre accusations retirees apres mesure.
+
+Remede : Lire le code au lieu du nom.
+
+### CE QUI RESTE OUVERT — etat releve APRES la redaction ci-dessus
+
+Le banc a redige cette section a partir des mesures de la nuit ; trois de ses
+entrees ont ete fermees dans l heure qui a suivi. La liste ci-dessous est
+l etat reel, et les fermetures sont nommees pour qu on ne les recompte pas.
+
+**Ferme depuis la redaction :**
+
+| sujet | ce qui le ferme |
+| --- | --- |
+| le refus de garde pouvait disparaitre | `ensure_ascii=True`, repli sur stderr, epreuve sur les DEUX encodages : 4 cas sur 4 refusent |
+| JSON malforme autorise en silence | trois etats d entree distingues ; l illisible est desormais REFUSE |
+| le lecteur de corpus se taisait sur un identifiant introuvable | verdict negatif nommant les DIX rayons consultes, code 2 |
+
+**Toujours ouvert :**
+
+| sujet | etat exact |
+| --- | --- |
+| la regex here-string | DIAGNOSTIQUEE, non corrigee. Trois rendus tombes : un lookahead faux `(?!!<)`, deux sur un plafond de jetons trop serre |
+| le verificateur de verdicts d audit | CONCU, non pose. Deux rendus tombes sur le plafond ; c est le remede au maillon 3 qui fabrique |
+| le cliquet d encodage | 67 scripts exposes, recenses par un controle qui AVERTIT depuis des mois. Aucun mecanisme ne les fait baisser |
+| l applicateur ne pose pas de fichier NEUF | quatre tentatives, aucune aboutie. Deux rendus de la nuit attendent ce mode |
+| la vitrine publierait avec un cockpit perime | le critere BLOQUE/AVERTIT applique au rituel EN BLOC alors qu il porte sur CHAQUE controle |
+| deux epreuves ORPHELINES | `epreuve_garde_heredoc.py` et `epreuve_garde_encodage.py` : elles passent, elles detectent, personne ne les lance |
+| quatre depots C++/MATLAB | il manque un PARSEUR, pas des fichiers. Une session voisine les detient et est dans le meme etat |
+| l ecart entre les deux gardes du depot | l une sort en 2 sur refus, l autre en 1. L epreuve reelle montre que les deux bloquent ; l ecart n est pas explique |
+
+**Ce que la nuit a livre, et qui n etait pas prevu :** 234 211 symboles Python
+indexes sur cette machine, par outillage recu d une session voisine, regenere
+localement plutot que copie. Le corpus n est pas versionne -- il est ancre sur
+l interpreteur local -- mais le generateur l est.
