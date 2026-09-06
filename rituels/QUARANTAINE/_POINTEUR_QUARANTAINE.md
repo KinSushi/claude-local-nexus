@@ -1,10 +1,25 @@
 # QUARANTAINE — ou est le contenu, et pourquoi il n'est pas ici
 
-Les **copies** des worktrees d'agents ont ete deplacees vers :
+Les **copies** des worktrees d'agents ont ete deplacees **deux fois**.
+
+**Aujourd'hui**, elles sont hors de l'arbre du projet, dans le repertoire
+frere decrit par `rituels/_POINTEUR_HORS_PROJET.md` :
 
 ```
-.nexus/quarantaine/
+<repertoire du depot>-hors-projet/.nexus__quarantaine/
+    5246 fichiers, 2624,3 Mo
 ```
+
+**Auparavant**, elles etaient sous `.nexus/quarantaine/`, et ce pointeur
+l'annoncait encore apres leur sortie. **Il pointait donc dans le vide.**
+
+> **Ce que cet incident enseigne, et il est de la meme main que le
+> deplacement.** Un pointeur suivi par git est un ENGAGEMENT : celui qui
+> deplace la matiere doit mettre a jour tout pointeur qui la designe, dans le
+> meme geste. Sinon la convention se retourne — un pointeur faux est pire
+> qu'un pointeur absent, parce qu'on le croit.
+>
+> Aucun controle ne garde cela aujourd'hui. Le manque est nomme, pas comble.
 
 ## Pourquoi
 
