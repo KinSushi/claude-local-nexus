@@ -289,9 +289,14 @@ def main() -> int:
             resultats.append(("publication", IGNORE,
                               "simulation -- git push origin HEAD non execute"))
         else:
-            r = executer(["git", "push", "origin", "HEAD"], racine, 600)
+            r = executer(
+                [sys.executable, "scripts/nexus_avec_verrou.py", "PUBLICATION",
+                 "--attente-s", "120", "--", "git", "push", "origin", "HEAD"],
+                racine, 600)
             if r.returncode == 0:
                 resultats.append(("publication", OK, "poussee vers origin"))
+            elif r.returncode == 75:
+                resultats.append(("publication", OK, "verrou detenu par une autre instance, publication renoncee"))
             else:
                 # course mesuree ce jour : tache planifiee et appel manuel simultanes
                 # on verifie l'etat distant avant d'affirmer que rien n'est parti
@@ -311,8 +316,6 @@ def main() -> int:
                         detail += " ; etat distant non verifiable"
                     resultats.append(("publication", BLOQUE, detail))
                     sain = False
-
-    if a.json:
         print(json.dumps({
             "racine": str(racine),
             "simulation": a.simulation,
