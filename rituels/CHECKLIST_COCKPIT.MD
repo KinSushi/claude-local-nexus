@@ -20392,3 +20392,91 @@ verifie pas par la commande la plus commode mais par celle qui EXERCE le
 mecanisme. `--stats` decrit ; une requete reelle exerce. Les sept fermetures
 declarees plus haut ont toutes ete obtenues par une commande qui exerce ; ce
 neuvieme faux ferme est le seul qui reposait sur une commande qui decrit.
+
+
+---
+
+## LES TROUS DE LA DOCUMENTATION PYTHON — mesures, chiffres, et le remede prêt
+
+L'operateur : *« personne ne doit avoir des trous des manques sur des doc
+officielles python et bibliotheques officielles python. la qualite du code en
+depend fortement. »*
+
+### L'etat, mesure
+
+```
+modules stdlib declares par l'interpreteur   297
+couverts par le corpus AST                   152
+NON COUVERTS                                 145
+```
+
+Beaucoup des 145 sont des modules **prives** (`_abc`, `_ast`, `_bisect`) dont
+l'absence est normale. Les trous **reels** sont ailleurs :
+
+| classe | nombre | exemples |
+| --- | --- | --- |
+| stdlib **introuvables** a l'AST — purement C, aucun `.py` | **30** | `math`, `itertools`, `sys`, `builtins`, `array`, `gc`, `binascii`, `cmath`, `errno`, `mmap`, `select`, `time`, `zlib` |
+| stdlib a **zero symbole** — facades minces devant du C | **12** | `datetime`, `decimal`, `contextvars`, `struct`, `warnings`, `sre_parse`, `keyword` |
+
+**`math`, `itertools`, `sys` et `builtins` sont fondamentaux, et invisibles au
+corpus.** Un modele qui ecrit contre eux ecrit de memoire.
+
+### Ce que l'introspection recupererait, module par module
+
+```
+decimal      605      datetime     228      warnings     156
+sre_parse    151      sre_constants 121     itertools    118
+sys           91      zlib          86      time          84
+contextvars   85      sre_compile   69      struct        61
+
+TOTAL RECUPERABLE : 6 555 symboles
+```
+
+### Le piege, verifie a la source
+
+```
+datetime.datetime : inspect.isfunction rend   0 methode
+                    inspect.isroutine  rend  55 methodes
+```
+
+Une methode implementee en C est un `method_descriptor`, et `isfunction` rend
+**faux** dessus. Une session voisine a paye ce defaut : son premier complement
+rendait « 6 classes, 0 methode » — un compte **plausible**, donc invisible.
+
+### Le prix a nommer, et il est reel
+
+**L'introspection importe, donc elle EXECUTE le code du module documente.** La
+mesure l'a prouve en direct : importer le module `this` a imprime le Zen de
+Python au milieu de la sortie. Benin ici ; il ne le serait pas sur un module
+tiers.
+
+L'extraction par AST n'a pas ce risque — elle lit les fichiers sans rien
+lancer. **Les deux methodes ne sont donc pas interchangeables**, et une session
+voisine a refuse de leur donner le meme suffixe pour cette raison exacte :
+elles ne recensent pas la meme population, et un suffixe qui ment rend le
+corpus ininterpretable **retroactivement**.
+
+### Un second trou, distinct et plus insidieux
+
+```
+python scripts/nexus_doc.py subprocess.run
+  - **Bibliotheque** : `python` version `3.13.2`
+    ancrage version installee : **OUI**
+
+interpreteur REELLEMENT installe : 3.14.7
+```
+
+La base porte une doc figee de 3.13.2 et **affirme** etre ancree sur
+l'installe. Pour l'usage qui compte — verifier une signature avant d'ecrire —
+c'est le pire cas : une signature obsolete **confirmee a tort**.
+
+### La commission, prête
+
+`.nexus/vague22/` porte la mesure et la consigne complete : six exigences,
+dont l'emploi de `isroutine`, la capture de ce que l'import imprime, le
+suffixe `_api_inspect` qui dit la methode, et l'en-tete portant la version ET
+le chemin de l'interpreteur producteur.
+
+Elle n'a pas ete lancee : le verrou du banc etait tenu par une session
+voisine, et `qwen3-coder` n'etait plus resident — un lot aurait paye 52 s de
+chargement et dispute la machine a un travail en cours.
