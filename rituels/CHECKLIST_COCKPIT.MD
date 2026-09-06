@@ -20302,3 +20302,61 @@ qu'il ne mesure pas est plus utile qu'un outil qui tranche sans le dire.
 Les 22,3 Mo de copies ne sont **pas versionnes** : elles se regenerent en une
 commande tant que les worktrees sont la, et ils y sont tous. Le MANIFESTE,
 lui, est versionne — il porte la mesure et l'index d'audit.
+
+
+---
+
+## LES 27 SUJETS DU PLAN DE SAUVETAGE, REINTERROGES SUR LE DISQUE
+
+L'operateur : *« il faut aussi abattre la checklist »*. Fait en interrogeant
+le disque, pas en relisant le texte. Sept sujets etaient fermes sans que la
+checklist le sache.
+
+### Fermes, verifies par execution
+
+| sujet | ce qui le ferme |
+| --- | --- |
+| la garde de shell prend `<<<AVANT>>>` pour un heredoc | lookbehind `(?<!<)<<(?!<)` pose, 7 cas mesures |
+| quarantaine de livraison : mecanisme absent | `nexus_quarantaine.py` sur `main` + manifeste de 287 fichiers |
+| rayon code : 2 231 symboles jamais consultes | **11 897** symboles, **165** consultations tracees |
+| `nexus_doc` affirme un ancrage faux pour la stdlib | n'annonce plus aucune version ; installe 3.14.7 |
+| aucune tache planifiee Nexus | **4** taches enregistrees |
+| `nexus_garde_isolation` sans hook | cablee dans `.claude/settings.json` |
+
+### Toujours ouverts, mesures a l'instant
+
+| sujet | mesure |
+| --- | --- |
+| `OLLAMA_MAX_LOADED_MODELS` non pose | absent de l'environnement |
+| `OLLAMA_CONTEXT_LENGTH` non pose | absent — et c'est lui qui a coute 22 Go a trois sessions ce matin |
+| le paquet `ollama` n'est pas installe | non importable |
+| `nexus_garde_ecriture` sans hook | absente de `settings.json` |
+| aucun capteur de QUALITE | `nexus_bench` mesure la latence, rien ne juge la sortie |
+| `NEXUS_CHARGE_RAM_MIN` en valeur absolue | `os.environ.get("NEXUS_CHARGE_RAM_MIN", 30)` — grave, non derive |
+| `nexus_checklist_progres` compte au mauvais endroit | sortie vide : indeterminable en l'etat |
+
+### Un faux FERME de plus, et sa cause
+
+J'ai d'abord classe `NEXUS_CHARGE_RAM_MIN` comme **ferme**. C'etait faux, et
+deux faux positifs s'etaient combines :
+
+* mon motif cherchait `RAM_MIN = <nombre>` et n'a pas vu la forme reelle,
+  `os.environ.get("NEXUS_CHARGE_RAM_MIN", 30)` ;
+* il cherchait ensuite le mot `profil` comme indice de derivation, et l'a
+  trouve dans `powershell -NoProfile`.
+
+**Huitieme fois de la nuit qu'un instrument exact porte une conclusion
+fausse.** La forme generale, recue d'une session voisine et verifiee ici
+trois fois : *« mon instrument mesurait la FORME LITTERALE et pas l'EFFET »*.
+
+### Ce que la reinterrogation etablit sur la checklist elle-meme
+
+Sept sujets sur vingt-sept etaient fermes depuis des heures ou des jours, et
+la checklist les portait toujours ouverts. **Un inventaire tenu a la main
+derive de lui-meme** : il ne se trompe pas, il vieillit.
+
+Le remede n'est pas de le relire plus souvent — c'est que **chaque sujet
+porte la commande qui le tranche**. Les sept fermes ci-dessus l'ont ete par
+une ligne de code chacun ; les sept ouverts le restent pour la meme raison,
+et on le sait maintenant en trente secondes au lieu d'une lecture de 20 000
+lignes.
