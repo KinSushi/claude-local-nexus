@@ -9935,8 +9935,8 @@
 | Architecture | `scripts/Initialize-Nexus.ps1` | — | 10 Ko | 2026-09-06 | `efd71e15406efd0a` |
 | Architecture | `scripts/Install-NexusCommande.ps1` | — | 4 Ko | 2026-08-31 | `5e0850f51dbbc5fd` |
 | Architecture | `scripts/Register-NexusDemarrage.ps1` | — | 6 Ko | 2026-09-02 | `ea7149bfe4d7be05` |
-| Architecture | `scripts/Register-NexusTraque.ps1` | — | 5 Ko | 2026-09-06 | `39cc95f2d7561ba0` |
-| Architecture | `scripts/Register-NexusVitrine.ps1` | — | 6 Ko | 2026-09-06 | `f81bb66bd75ff974` |
+| Architecture | `outillage/Register-NexusTraque.ps1` | — | 5 Ko | 2026-09-06 | `39cc95f2d7561ba0` |
+| Architecture | `outillage/Register-NexusVitrine.ps1` | — | 6 Ko | 2026-09-06 | `f81bb66bd75ff974` |
 | Architecture | `scripts/console_tools.py` | — | 4 Ko | 2026-09-06 | `a03b80e03bdd69bf` |
 | Architecture | `scripts/mesure_rendu_vide.py` | — | 8 Ko | 2026-09-02 | `6fbe547079976463` |
 | Architecture | `scripts/nexus.ps1` | — | 12 Ko | 2026-09-01 | `fd0f13706df494d8` |

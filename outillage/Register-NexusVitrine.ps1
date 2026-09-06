@@ -19,10 +19,10 @@
     n'ajoute aucune permission au script, seulement la regularite.
 
 .EXAMPLE
-    .\scripts\Register-NexusVitrine.ps1
-    .\scripts\Register-NexusVitrine.ps1 -Heures 12
-    .\scripts\Register-NexusVitrine.ps1 -Simulation
-    .\scripts\Register-NexusVitrine.ps1 -Supprimer
+    .\outillage\Register-NexusVitrine.ps1
+    .\outillage\Register-NexusVitrine.ps1 -Heures 12
+    .\outillage\Register-NexusVitrine.ps1 -Simulation
+    .\outillage\Register-NexusVitrine.ps1 -Supprimer
 #>
 [CmdletBinding()]
 param(
@@ -129,5 +129,5 @@ Write-Host "Tache $NomTache enregistree : toutes les $Heures heures ($mode)." -F
 Write-Host "  Journal    : $log" -ForegroundColor Gray
 Write-Host "  Remote     : $remote" -ForegroundColor Gray
 Write-Host "  A la main  : python outillage/nexus_vitrine.py --simulation" -ForegroundColor Gray
-Write-Host "  Supprimer  : .\scripts\Register-NexusVitrine.ps1 -Supprimer" -ForegroundColor Gray
+Write-Host "  Supprimer  : .\outillage\Register-NexusVitrine.ps1 -Supprimer" -ForegroundColor Gray
 exit 0

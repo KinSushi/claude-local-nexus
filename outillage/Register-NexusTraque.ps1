@@ -17,9 +17,9 @@
     jour-la, une mesure prise pendant un telechargement de 28 Go.
 
 .EXAMPLE
-    .\scripts\Register-NexusTraque.ps1
-    .\scripts\Register-NexusTraque.ps1 -Minutes 30
-    .\scripts\Register-NexusTraque.ps1 -Supprimer
+    .\outillage\Register-NexusTraque.ps1
+    .\outillage\Register-NexusTraque.ps1 -Minutes 30
+    .\outillage\Register-NexusTraque.ps1 -Supprimer
 #>
 [CmdletBinding()]
 param(
@@ -112,5 +112,5 @@ Register-ScheduledTask -TaskName $NomTache -Trigger $trigger -Action $action `
 Write-Host "Tache $NomTache enregistree : toutes les $Minutes minutes." -ForegroundColor Green
 Write-Host "  Journal   : $log" -ForegroundColor Gray
 Write-Host "  Cockpit   : outillage/rituels/STATE.md" -ForegroundColor Gray
-Write-Host "  Supprimer : .\scripts\Register-NexusTraque.ps1 -Supprimer" -ForegroundColor Gray
+Write-Host "  Supprimer : .\outillage\Register-NexusTraque.ps1 -Supprimer" -ForegroundColor Gray
 exit 0
