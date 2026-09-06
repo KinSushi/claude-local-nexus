@@ -24396,3 +24396,92 @@ nomme hors du depot ne suit pas le depot.
 | repli de modele silencieux | 7 substitutions sur 133 rendus |
 | `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
 | `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+
+
+---
+
+## 161. LE PLANCHER DE `scripts/` — 25, et la raison de chacun
+
+Un arbre propre n'est pas un arbre vide : c'est un arbre dont **chaque fichier
+a une raison nommee d'y etre**. Mesure de ce plancher.
+
+### 161.1 Les 29 d'aujourd'hui
+
+```
+15 PowerShell    le produit : start, stop, backup, restore, Update-NexusModels,
+                 Test-NexusConfig, Test-NexusSmoke, Initialize-Nexus, nexus.ps1...
+14 Python        dont 7 EPINGLES au settings global, 7 libres
+```
+
+### 161.2 Qui retient les sept libres
+
+| fichier | verdict | retenu par |
+| --- | --- | --- |
+| `nexus_disjoncteur.py` | **PEUT PARTIR** | `nexus_agent` seul |
+| `nexus_garde_lecture.py` | **PEUT PARTIR** | `nexus_garde_ecriture` seul |
+| `nexus_verbatim.py` | **PEUT PARTIR** | `nexus_agent` seul |
+| `nexus_verrou_machine.py` | **PEUT PARTIR** | `nexus_agent` seul |
+| `console_tools.py` | RETENU | importe par `mesure_rendu_vide` |
+| `mesure_rendu_vide.py` | RETENU | cite par `nexus.ps1` |
+| `nexus_capability.py` | RETENU | cite par **`Initialize-Nexus.ps1`**, un script du PRODUIT |
+
+Les quatre premiers ne sont retenus que par des fichiers **epingles**. Ils
+partiraient si les sept gardes recevaient le preambule `sys.path` vers
+`outillage/` — exactement celui qui a fonctionne pour les dix epreuves ce
+matin, et qui a fait passer les imports non resolus de 28 a 0.
+
+`nexus_capability.py` est un cas interessant : il est cite par un script du
+produit, donc il **est** du produit. Il mesure le budget materiel qui decide
+du routage (§107). Sa place est la.
+
+### 161.3 La cible, et ce qui l'arrete
+
+```
+scripts/ aujourd'hui   29
+scripts/ atteignable   25   =  15 PowerShell du produit
+                             +  7 gardes epinglees au settings de l'operateur
+                             +  3 retenus, chacun pour une raison nommee
+```
+
+Descendre sous 25 demanderait l'une des deux choses qui ne m'appartiennent
+pas :
+
+* **l'arbitrage de l'operateur** sur `~/.claude/settings.json`, son fichier,
+  qui sert ses autres projets ;
+* **le decoupage de `nexus.ps1`**, qui expose cinq commandes du produit
+  (`start stop status check mcp`) et quatre d'orchestration (`ask valide
+  appliquer sujets`) — du code, donc a confier.
+
+### 161.4 Le reste de l'arbre, verifie ce tour
+
+`docs/` a ete mesure pour la premiere fois : ses 41 fichiers decrivent la
+PASSERELLE — routage bayesien, budget de latence, politique de cache, couche
+MCP externe, detection de derive. **Aucune pollution.**
+
+```
+racine       17   produit
+docs/        41   produit  (verifie ce tour)
+scripts/     29   produit + 10 retenus  -> plancher 25
+tools/        8   produit
+references/  14   pointeurs de corpus
+images/       1   produit
+epreuves/    67   les tests, convention standard
+outillage/  127   l'orchestrateur, et il le declare par son nom
+```
+
+### 161.5 CE QUI RESTE OUVERT — remplace §160.6
+
+| sujet | etat |
+| --- | --- |
+| **preambule sys.path des 7 gardes** | ferait tomber `scripts/` de 29 a 25 ; du code, a confier |
+| **perimetre des linters** | 76 violations invisibles ; commission v34 en vol |
+| **controle des chemins vivants** | commission v35 en vol ; couvrirait 4 des 5 pannes du jour |
+| 7 fichiers epingles dans `scripts/` | ARBITRAGE OPERATEUR |
+| `nexus.ps1` melange produit et orchestration | bloque tout detachement |
+| chemins de la consigne permanente | 3 sur 4 morts |
+| identite des 6 paires copiees | aucun controle |
+| racine derivee par la PROFONDEUR | 29 expressions ; commission echouee deux fois |
+| cliquet LOI 1 aveugle aux renommages | 15 624 lignes fantomes |
+| `nexus_test.py` plante | `test_terminal_repli` |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
