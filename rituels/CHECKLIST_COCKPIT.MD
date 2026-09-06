@@ -21685,3 +21685,102 @@ rituels/_POINTEUR_HORS_PROJET.md   2 820 octets, SUIVI par git
 Reste **un seul controle bloquant** dans tout le depot :
 `epreuve_garde_encodage` execute a l'import — deja commande au banc, axe
 `import_sans_effet` de la vague 24.
+
+
+---
+
+## 136. 362 BIBLIOTHEQUES EXTRAITES, ET AUCUN OUTIL NE LES VOIT
+
+C'est la phrase du contrat prise au mot : *« si rien n'est mecanise, ce n'est
+que de la prose et des fichiers que personne ne consulte »*.
+
+### 136.1 Le test fonctionnel, et non l'archeologie de chemins
+
+```
+references/python_ast_local/corpus/   362 fichiers *_api_ast.md   73,7 Mo
+   rapport.csv : PIL 908 symboles · InquirerPy 94 symboles · ...
+
+python scripts/nexus_doc.py "PIL.Image.open"
+  -> aucun symbole ne correspond a << PIL.Image.open >> dans la doc locale
+  -> ABSENCE DE DOC != AUTORISATION D'ECRIRE DE MEMOIRE
+
+python scripts/nexus_livres.py InquirerPy
+  -> Verdict negatif: aucun resultat
+```
+
+**73,7 Mo de documentation AST de 362 bibliotheques tierces sont sur le
+disque, extraites, et les deux outils de consultation repondent « rien ».**
+
+Une session qui interroge `PIL` s'entend dire qu'il n'y a pas de doc — pendant
+que 908 symboles extraits l'attendent, inaccessibles.
+
+### 136.2 La cause, mesuree
+
+`nexus_livres.py:117` derive `references/` de `__file__` puis **parcourt
+l'arbre**, retenant tout repertoire portant un `index.tsv`. La decouverte est
+automatique : aucun rayon n'est nomme dans le code.
+
+```
+index.tsv presents sous references/ : 10
+   lecons · livres/code · livres/epub · livres/packt · node_docs
+   python_libs_docs · python_libs_docs_eamt5 · securite_confinement
+   shell_docs/bash · shell_docs/powershell
+```
+
+`python_ast_local` **n'en a aucun**. Il porte un `rapport.csv` — utile a un
+humain, invisible a l'outil. **Le corpus n'est pas absent : il est muet.**
+
+### 136.3 Deux mesures a moi corrigees en chemin
+
+**Premiere** : j'avais annonce « 559,5 Mo inconsultables », en comptant
+`CODE_LIVRES` (300,2 Mo) et `CODE_ENZO` (73,1 Mo). **Faux.** Ces repertoires
+portent les **depots sources** — `PacktPublishing__30-Agents-Every-AI-Engineer-Must-Build`,
+etc. — dont l'index vit ailleurs, sous `references/livres/code/`. La matiere
+brute n'est pas parcourue, mais ses symboles **sont** indexes. Confondre la
+matiere et son acces etait mon erreur.
+
+**Seconde** : j'avais liste quatre corpus « lus par AUCUN script » depuis un
+`git grep "references/<nom>"`. **Faux aussi** : la decouverte etant faite par
+parcours, aucun rayon n'apparait litteralement dans le code. Un grep de chemin
+ne pouvait rien trouver.
+
+Le test fonctionnel — *demander un symbole reel et regarder la reponse* — a
+tranche les deux, la ou l'analyse de structure se trompait.
+
+### 136.4 L'outil existe deja, et il ne tourne pas ici
+
+`references/python_ast_eamt5/_outils/cabler_corpus_ast.py`, recu du depot
+voisin le 2026-09-05, porte exactement ce nom : *cabler le corpus AST*.
+
+Il ne peut pas tourner ici :
+
+```python
+doc_lib_path = racine / "workspace" / "tools" / "doc_lib.py"
+```
+
+`workspace/tools/doc_lib.py` est un chemin **de chez ea-mt5**. Le §0 le dit :
+*« une idee est empruntee, pas subie ; un mecanisme pris ailleurs est reecrit
+aux regles de ce depot »*.
+
+### 136.5 Le format cible, mesure et non suppose
+
+```
+head -2 references/lecons/index.tsv
+
+id <TAB> offset_octets <TAB> longueur_octets <TAB> type <TAB> resume
+```
+
+Cinq colonnes, et un `symbols.jsonl` lu par `seek(offset_octets)`. C'est tout
+ce qu'il faut produire pour que `nexus_livres.py` **decouvre le rayon sans
+qu'on le lui dise**.
+
+### 136.6 Ce que cela ouvre, et ce que cela ne prouve pas
+
+**Ouvre** : 362 bibliotheques tierces deviendraient consultables — exactement
+la lacune que l'operateur nomme depuis deux jours (*« personne ne doit avoir
+des trous des manques sur des doc officielles python et bibliotheques
+officielles python »*).
+
+**Ne prouve pas** : que les 362 extractions soient justes. Elles ont ete
+produites par AST chez le voisin, et le §0.1.4.1 vaut ici aussi — un corpus
+indexe et faux est pire qu'un corpus absent, parce qu'il repond.
