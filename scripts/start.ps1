@@ -198,7 +198,7 @@ Write-Host ""
 Write-Host "Controle de conformite avant demarrage..." -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $conformiteScript = Join-Path $PSScriptRoot "nexus_conformite.py"
+    $conformiteScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_conformite.py"
     if (-not (Test-Path $conformiteScript)) {
         Write-Error "Fichier manquant : $conformiteScript"
         exit 1
@@ -279,7 +279,7 @@ Write-Host "  Passerelle prete sur $HealthUrl" -ForegroundColor Green
 # ------------------------------------------------------------
 Push-Location $RepoRoot
 try {
-    $releveScript = Join-Path $PSScriptRoot "nexus_releve.py"
+    $releveScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_releve.py"
     if (-not (Test-Path $releveScript)) {
         Write-Error "Fichier manquant : $releveScript"
         exit 1

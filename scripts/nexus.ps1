@@ -88,7 +88,7 @@ switch ($Commande.ToLower()) {
     }
 
     'status' {
-        & (Get-Python) (Join-Path $PSScriptRoot 'nexus_conformite.py') @Reste
+        & (Get-Python) (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") 'nexus_conformite.py') @Reste
         Exit-Avec $LASTEXITCODE
     }
 
@@ -244,11 +244,11 @@ switch ($Commande.ToLower()) {
         # transcription, les messages de commit et le cockpit. Une session
         # longue perd ses sujets ouverts, et les deviner de memoire produit
         # des oublis silencieux ; ce qui est sur disque ne se perd pas.
-        & python (Join-Path $PSScriptRoot 'nexus_sujets.py') @Reste
+        & python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") 'nexus_sujets.py') @Reste
         Exit-Avec $LASTEXITCODE
     }
     'appliquer' {
-        & python (Join-Path $PSScriptRoot 'nexus_appliquer.py') @Reste
+        & python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") 'nexus_appliquer.py') @Reste
         Exit-Avec $LASTEXITCODE
     }
 
@@ -264,7 +264,7 @@ switch ($Commande.ToLower()) {
         # Non arme dans la tache quotidienne : engager la bande passante et
         # le disque sans que personne l'ait demande n'est pas une decision
         # d'outil.
-        & python (Join-Path $PSScriptRoot 'nexus_maj_modeles.py') @Reste
+        & python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") 'nexus_maj_modeles.py') @Reste
         Exit-Avec $LASTEXITCODE
     }
 

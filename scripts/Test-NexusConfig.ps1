@@ -68,7 +68,7 @@ if (-not $pythonCmd) {
 # ----------------------------------------------------------------------
 # Vérification de l'existence du script Python
 # ----------------------------------------------------------------------
-$scriptPath = Join-Path $PSScriptRoot "nexus_validate.py"
+$scriptPath = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_validate.py"
 if (-not (Test-Path $scriptPath)) {
     [Console]::Error.WriteLine("Le fichier nexus_validate.py est introuvable.")
     exit 1
