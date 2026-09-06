@@ -21101,3 +21101,98 @@ Or c'est un **mot-cle** qui a produit le faux resultat scientifique cite en
 §129.1 : *ce controle ne l'aurait pas attrape*. La limite doit etre ecrite
 **dans** le controle — un vert muet sur ce qu'il ne couvre pas se lit comme
 une garantie qu'il ne donne pas.
+
+
+---
+
+## 130. « VERSIONNER LES 119 Mo ? » — le depot avait deja repondu, et son exception ne tire pas
+
+Le sujet est porte en **EN ATTENTE OPERATEUR** depuis plusieurs jours.
+Il n'attendait pas une decision : il attendait qu'on **lise le `.gitignore`**.
+
+### 130.1 La decision est deja ecrite, lignes 85-90
+
+```
+# Les corpus pesent 59 Mo et n'ont rien a faire dans l'historique.
+# Mais leur POINTEUR pese 5 Ko et c'est le seul artefact qui dit a un
+# autre projet CE QUI EXISTE et CE QUI MANQUE. L'ignorer rendait le
+# partage impossible : mesure du 2026-09-02, aucun des deux pointeurs
+# n'etait suivi, y compris celui que la session voisine nous citait.
+!references/*/_POINTEUR_CORPUS.md
+```
+
+**La matiere reste hors historique ; c'est le POINTEUR qui est suivi.** La
+question posee — versionner ou non 119 Mo — avait donc deja sa reponse, et le
+chiffre lui-meme etait faux : ce n'est qu'un dossier sur douze.
+
+### 130.2 Le poids reel, mesure
+
+```
+references/ : 10 170 fichiers, 938,3 Mo
+
+CODE_LIVRES              1902 fichiers   300,7 Mo
+python_libs_docs_eamt5   2530 fichiers   142,0 Mo
+python_libs_docs         2181 fichiers   130,3 Mo
+livres_texte              614 fichiers   112,5 Mo
+livres                      7 fichiers    78,1 Mo
+CODE_ENZO                1824 fichiers    77,3 Mo
+python_ast_local          363 fichiers    73,7 Mo
+```
+
+### 130.3 La convention n'est tenue que pour 2 dossiers sur 12
+
+| etat | nombre | dossiers |
+| --- | --- | --- |
+| pointeur present **et suivi** | **2** | `livres`, `python_libs_docs` |
+| pointeur present, **non suivi** | 4 | `CODE_ENZO`, `CODE_LIVRES`, `livres_texte`, `python_libs_docs_eamt5` |
+| pointeur **absent** | 6 | `lecons`, `node_docs`, `python_ast_eamt5`, `python_ast_local`, `securite_confinement`, `shell_docs` |
+
+**Dix corpus sur douze sont invisibles a tout clone** — sans pointeur, ou avec
+un pointeur que git n'emporte pas.
+
+### 130.4 La cause, mesuree par git lui-meme
+
+```
+references/livres_texte/_POINTEUR_CORPUS.md
+    -> .gitignore:96:references/livres_texte/
+references/python_libs_docs_eamt5/_POINTEUR_CORPUS.md
+    -> .gitignore:97:references/python_libs_docs_eamt5/
+references/CODE_LIVRES/_POINTEUR_CORPUS.md
+    -> .gitignore:103:references/CODE_LIVRES/
+references/livres/_POINTEUR_CORPUS.md
+    -> NON IGNORE
+```
+
+L'exception est **ligne 90**. Les exclusions qui la neutralisent sont aux
+lignes **96, 97, 102 et 103** — donc **apres elle**. En gitignore, *le dernier
+motif qui correspond l'emporte*.
+
+Les exclusions des lignes 46 et 62 sont **avant** la ligne 90 : c'est pour cela
+que `livres` et `python_libs_docs` marchent, et pas les autres. **Le
+comportement n'est pas aleatoire, il est purement positionnel.**
+
+### 130.5 Le commentaire du fichier porte l'erreur qui l'a cause
+
+Lignes 94-95 :
+
+> *« Meme regle que references/livres/ : la matiere reste hors historique, seul
+> son pointeur est suivi par l'exception **plus bas**. »*
+
+**L'exception est plus HAUT**, ligne 90. Le commentaire decrit un agencement
+qui n'existe pas — et c'est precisement cette croyance qui a produit le defaut.
+Celui qui a ajoute les lignes 96-97 pensait ecrire *avant* l'exception.
+
+### 130.6 Ce qui a ete commande, et la limite a respecter
+
+Le correctif ne doit **rien** versionner de la matiere : 938 Mo restent hors
+historique, la decision du depot est bonne. Seuls les pointeurs entrent, 5 Ko
+chacun.
+
+Et la contre-epreuve doit interroger **git lui-meme** (`git check-ignore`) et
+non relire le `.gitignore` a la main : c'est git qui decide, pas notre lecture
+— c'est exactement ce qui a manque ici. Elle doit en outre verifier que la
+matiere **reste** ignoree, faute de quoi le correctif aurait ouvert 938 Mo.
+
+**Ce qui n'est pas commande** : la creation des six pointeurs manquants. Il
+faudrait savoir ce que chaque corpus contient, et cela ne s'invente pas.
+Ils sont **signales**, non fabriques.
