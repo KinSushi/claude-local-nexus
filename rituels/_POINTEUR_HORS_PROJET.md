@@ -1,26 +1,39 @@
 # Ce qui a ete SORTI de l'arbre du projet
 
-> Genere par `scripts/` — **ne pas editer a la main**. Les chiffres sont
-> derives des manifestes de `C:\local-llm-docker-hors-projet`.
+> **Ne pas editer a la main** : les chiffres sont derives des manifestes
+> JSON deposes dans le repertoire d'isolation, et une valeur gravee a la
+> main ment des le lendemain.
+>
+> **Generateur** : aujourd'hui un script de session, hors du depot. C'est
+> un manque, et il est nomme : tant que ce pointeur n'est pas regenere par
+> un script de `scripts/` appele par un rituel, il vieillira en silence.
+> Le controle `nexus_separation.py` est commande pour cela.
 
 Consigne de l'operateur, 2026-09-06 : *« les fichiers qui contaminent doit
 etre isole ; separes du projet. le projet lui meme a son propre arbre
 propre »*, puis *« dans l'arbre propre du projet tu te mets des pointeurs et
 marqueurs, ainsi tu sais ce qui est sain »*.
 
-## L'arbre propre, mesure le 2026-09-06 11:58
+## L'arbre propre, mesure le 2026-09-06 12:14
 
 ```
 suivi par git (ce qu'un clone recoit)     306 fichiers      44.9 Mo
-present dans le dossier                 21951 fichiers    2836.9 Mo
+present dans le dossier                 21952 fichiers    2837.0 Mo
 SORTI vers hors-projet                   5716 fichiers    3733.7 Mo
 ```
 
 ## Ou c'est parti
 
+Un repertoire **FRERE** du depot, hors de son arbre :
+
 ```
-C:\local-llm-docker-hors-projet
+<repertoire du depot>-hors-projet
 ```
+
+Le chemin n'est pas grave ici : ce fichier est SUIVI par git et partirait
+dans le depot avec le chemin d'une seule machine. Sur cette machine, la
+racine du depot est celle qui contient ce fichier ; le repertoire
+d'isolation porte le meme nom, suffixe de `-hors-projet`.
 
 **Deplace, jamais supprime.** Chaque manifeste JSON porte, pour chaque
 entree, son `origine` et sa `destination` : revenir en arriere consiste a
