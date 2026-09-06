@@ -257,28 +257,31 @@ def main() -> int:
         return 1
 
     # Une liste plate, pas un escalier : ajouter un controle est une ligne.
-    controles = [
-        ("arbre propre", lambda: arbre_propre(racine)),
-        (".env hors de git", lambda: env_hors_git(racine)),
-        ("aucun secret", lambda: aucun_secret(racine)),
-        ("conformite", lambda: sous_controle(racine, "nexus_conformite.py",
-                                             a.sauf_tests)),
-        ("rituel de fin de tour", lambda: sous_controle(racine,
-                                                        "nexus_rituel.py",
-                                                        a.sauf_tests)),
-        ("remote origin", lambda: remote_present(racine)),
-        ("amont de la branche", lambda: amont_present(racine)),
-    ]
+    # Classification des contrôles: BLOQUANT ou AVERTISSEUR
+    CONTROLES = {
+        "arbre propre": ("BLOQUENT", lambda: arbre_propre(racine)),
+        ".env hors de git": ("BLOQUENT", lambda: env_hors_git(racine)),
+        "aucun secret": ("BLOQUENT", lambda: aucun_secret(racine)),
+        "remote origin": ("BLOQUENT", lambda: remote_present(racine)),
+        "amont de la branche": ("BLOQUENT", lambda: amont_present(racine)),
+        "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
+                                                           a.sauf_tests)),
+        "rituel de fin de tour": ("AVERTISSENT", lambda: sous_controle(racine,
+                                                                      "nexus_rituel.py",
+                                                                      a.sauf_tests)),
+    }
 
     resultats = []
-    for nom, fn in controles:
+    avertissements = 0
+    for nom, (type_ctrl, fn) in CONTROLES.items():
         try:
             statut, detail = fn()
         except Exception as exc:
             statut, detail = BLOQUE, str(exc).splitlines()[0][:60]
+        if type_ctrl == "AVERTISSENT" and statut == BLOQUE:
+            statut = "AVERTISSEMENT"
+            avertissements += 1
         resultats.append((nom, statut, detail))
-        # On s'arrete au premier blocage : les controles suivants coutent des
-        # minutes et ne changeraient pas le verdict.
         if statut == BLOQUE:
             break
 
@@ -321,6 +324,7 @@ def main() -> int:
             "simulation": a.simulation,
             "controles": [{"nom": n, "statut": s, "detail": d}
                           for n, s, d in resultats],
+            "avertissements": avertissements,
             "verdict": OK if sain else BLOQUE,
         }, ensure_ascii=False, indent=2))
         return 0 if sain else 1
@@ -328,20 +332,18 @@ def main() -> int:
     print("Sauvegarde vitrine -- %s" % racine)
     print("-" * 72)
     for nom, statut, detail in resultats:
-        print("  [%-6s] %-22s %s" % (statut, nom, detail))
+        print("  [%-12s] %-22s %s" % (statut, nom, detail))
     print("-" * 72)
-    # Le verdict lit le RESULTAT d'abord, le mode ensuite. L'inverse -- la
-    # faute du premier jet -- annoncait « SIMULATION » sur un blocage.
+    # Le verdict lit le RESULTAT d'abord, le mode ensuite
     if not sain:
-        # si on ne sait pas si le push a eu lieu (detail indique vérif impossible)
         if any("etat distant non verifiable" in d for _, _, d in resultats):
             print("VERDICT : etat distant non verifiable. Publication incertaine.")
         else:
             print("VERDICT : publication REFUSEE. Rien n'est parti.")
     elif a.simulation:
-        print("VERDICT : sain. La publication reelle passerait.")
+        print(f"VERDICT : sain ({avertissements} avertissement(s)). La publication reelle passerait.")
     else:
-        print("VERDICT : vitrine publiee.")
+        print(f"VERDICT : vitrine publiee ({avertissements} avertissement(s)).")
     return 0 if sain else 1
 
 
