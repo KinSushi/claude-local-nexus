@@ -23471,3 +23471,270 @@ Le silence sur un depot sain ne prouvait rien ; le temoin le prouve.
 | `epreuve_garde_encodage` a l'import | seul BLOQUANT |
 
 Aucune ligne close.
+
+
+---
+
+## 154. CE QU'UN CLONE RECOIT — le produit pese 7,2 %, un corpus Node en pese 55
+
+Le juge de « propre et pro » n'est ni l'orchestrateur ni le disque : c'est ce
+qu'un clone recoit. Mesure faite pour la premiere fois.
+
+### 154.1 La composition, par poids
+
+```
+307 fichiers, 20,3 Mo
+
+references     16 fich.  11,78 Mo   pointeurs de corpus -- ET un corpus entier
+rituels        48         4,81 Mo   ORCHESTRATEUR
+scripts        99         1,62 Mo   19 d'exploitation + 80 d'orchestration
+images          1         1,12 Mo   banniere du README
+epreuves       67         0,28 Mo   les tests
+tools           8         0,19 Mo   LE PRODUIT : serveur MCP
+docs           43         0,17 Mo   documentation
+(racine)       17         0,15 Mo   LE PRODUIT : compose, config, listes
+.claude         4         0,13 Mo
+competences     3         0,00 Mo   ORCHESTRATEUR
+```
+
+Par nature :
+
+| | poids | part |
+| --- | --- | --- |
+| **le PRODUIT seul** | 1,46 Mo | **7,2 %** |
+| l'ORCHESTRATEUR seul | 4,81 Mo | 23,8 % |
+| scripts + epreuves (mixte) | 1,90 Mo | 9,4 % |
+| documentation et corpus | 11,95 Mo | 59,0 % |
+
+Les cinq plus gros fichiers suivis :
+
+```
+7,24 Mo  references/node_docs/node/22.23.2/all.json
+3,84 Mo  references/node_docs/node/22.23.2/symbols.jsonl
+1,55 Mo  rituels/BOUSSOLE.md
+1,35 Mo  rituels/BOUSSOLE.csv
+1,13 Mo  rituels/CHECKLIST_COCKPIT.MD
+```
+
+**`references/node_docs` seul pese 11,08 Mo, soit 54,6 % de ce qu'un clone
+telecharge** — plus que tout le reste reuni.
+
+### 154.2 L'incoherence de convention, et elle est nette
+
+Le depot a une convention, appliquee et documentee : **la matiere sort, un
+pointeur suivi reste**. Mesure :
+
+| rayon | sur disque | suivis | pointeur |
+| --- | --- | --- | --- |
+| `livres` | 7 | 1 | **OUI** |
+| `python_libs_docs` | 2181 | 1 | **OUI** |
+| `node_docs` | 3 | **3** | **NON** |
+| `securite_confinement` | 8 | 7 | NON |
+
+`python_libs_docs` porte 2181 fichiers sur disque et n'en expedie qu'un — le
+pointeur. `node_docs` en porte trois et les expedie tous les trois, soit
+11,08 Mo.
+
+**Les deux rayons sont traites en sens inverse**, et c'est exactement
+l'arbitrage que l'operateur a en attente depuis plusieurs jours : versionner
+ou non `python_libs_docs`. La reponse devrait valoir pour les deux, et
+aujourd'hui elle ne vaut pour aucun — l'un est versionne, l'autre non, sans
+raison ecrite.
+
+### 154.3 Le parcours a sauve une mauvaise conclusion — troisieme fois
+
+Premiere mesure : `git grep node_docs` sur `scripts/`, `epreuves/`, `tools/`
+rend **zero**. Seuls des documents de `rituels/` le mentionnent en prose.
+Conclusion tentante : personne ne le lit, il peut sortir.
+
+**Faux.** Verification semantique :
+
+```
+scripts/nexus_livres.py:117   ref_dir = ... .joinpath("references")
+scripts/nexus_livres.py:125   for root, _, files in os.walk(ref_dir)
+```
+
+Le corpus est decouvert **par parcours**, jamais nomme. Aucun `grep` ne peut
+le voir. Preuve directe, dans cette meme session : une recherche de
+« timeout » a rendu `Rayon: 22.23.2 | ID: http.http.Server.setTimeout` —
+c'est le rayon Node, et il servait.
+
+**Troisieme fois que la verification par parcours empeche une sortie erronee**
+(apres `livres_code` et `python_ast_local`). La question qui tranche n'est
+jamais « qui NOMME ce chemin ? » mais « qui PEUT l'atteindre ? ».
+
+Consequence : sortir `node_docs` de git est possible — c'est ce que font deja
+les deux autres rayons, dont la matiere reste sur disque et reste trouvee par
+`os.walk`. Mais **un clone perdrait le corpus**, exactement comme il perd deja
+`livres` et `python_libs_docs`. C'est un choix de convention, pas une
+correction technique, et il appartient a l'operateur.
+
+### 154.4 La substitution silencieuse de modele, mesuree sur 133 rendus
+
+Une session voisine a signale un repli de modele sans ligne `BASCULE`. Mesure
+sur l'integralite de mes rendus :
+
+```
+133 rendus lus
+  7 substitutions -- toutes le meme jour, toutes le meme motif
+    gpt-oss-120b-cloud  ->  glm-4.7-flash, plan LOCAL
+  126 servis par le modele demande
+```
+
+Le champ `servi_par` porte la verite ; le champ `modele` repete la demande.
+Le journal nomme bien le modele reellement appele, mais **rien ne dit que
+c'est un repli**, ni ce qui avait ete demande. Il faut relire son propre lot
+pour s'en apercevoir — donc personne ne s'en apercoit.
+
+**Deux comportements distincts, et ils ne pesent pas pareil :**
+
+| repli | verdict |
+| --- | --- |
+| `cloud -> local` (le mien, 7 cas) | autorise par §108 : ne coute que de la capacite |
+| `local -> local` entre familles (celui du voisin) | **detruit la decorrelation achetee** |
+
+Le second est le grave : une session voisine emploie quatre familles
+distinctes precisement pour satisfaire la LOI 1. Si trois retombent sur une
+seule, l'audit **semble** decorrele et ne l'est pas — pire qu'un audit absent,
+puisqu'il confere une assurance fausse.
+
+Defaut porte aux sujets ouverts : emettre une ligne de repli nommant le modele
+DEMANDE et le modele SERVI, sur le chemin `--lot` aussi.
+
+### 154.5 Ce que la validation LOI 1 a rendu
+
+```
+python scripts/nexus_valide.py --base HEAD~1   ->  code 0
+Aucune regression detectee — juge par le banc gratuit
+(diff entier, aucune fonction isolee)
+```
+
+A comparer au tour precedent, ou la meme commande `--base main` sur une
+branche de 68 fichiers **expirait a 900 s** (§151.5). Le cout suit le nombre
+de fichiers modifies, et rien ne le dit a l'appelant.
+
+### 154.6 CE QUI RESTE OUVERT — remplace §153.6
+
+| sujet | etat |
+| --- | --- |
+| **`node_docs` vs `python_libs_docs`** | traites en sens INVERSE sans raison ecrite — ARBITRAGE OPERATEUR, et il repond aux deux |
+| **repli de modele silencieux** | mesure sur 133 rendus ; aucune ligne ne nomme demande et servi |
+| 5 references externes non gardees | mesurees, commande PREPAREE non lancee (banc au voisin) |
+| `nexus_garde_ecriture` global seule | garde absente de tout clone, panne muette |
+| controle semantique des voisines | 2 specifications rejetees |
+| commiter pendant une permutation | aucun controle ne refuse une config sans marqueur AUTOGEN |
+| `nexus_valide.py` > 900 s | cout non annonce, `run_conformite()` sans timeout |
+| `rituels/` hors du projet | DE-RISQUE : 0 lecteur externe, 1 seule ancre de code (`RESUME.ps1:30`) |
+| frontiere projet / outillage | deux regles evidentes REFUTEES, noyau plancher 32 |
+| les 91 constructions non litterales | mesurees, non traitees |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+Aucune ligne close.
+
+
+---
+
+## 155. LA SUITE DE TESTS NE DURE PAS — ELLE PLANTE
+
+Troisieme diagnostic sur le meme sujet, et le premier qui soit juste.
+
+### 155.1 Les trois diagnostics successifs
+
+| tour | verdict | ce qui le produisait |
+| --- | --- | --- |
+| `77de19a` | « sortie vide, code 0 » | le code de `tail`, pas du programme |
+| §148.5 | « depasse 1800 s » | `TimeoutExpired` de `subprocess.run` |
+| **ici** | **elle leve une exception** | flux non tamponne, laisse aller au bout |
+
+Chaque mesure etait exacte et chaque conclusion s'arretait avant la cause. Le
+tube masquait le code de sortie ; le timeout masquait le plantage.
+
+### 155.2 La trace, verbatim
+
+```
+File "scripts/nexus_test.py", line 1343, in main
+    test_terminal_repli()
+File "scripts/nexus_test.py", line 1846, in test_terminal_repli
+    rendu = cibles_de(gen.render_chain({"cloud": chaine}, 4,
+                                        width=2, terminal=TERMINAL))
+File "scripts/nexus_generate.py", line 1087, in render_chain
+    if (target_entry and target_entry.ctx is not None and
+AttributeError: 'types.SimpleNamespace' object has no attribute 'ctx'
+```
+
+225 lignes de trace, dont 31 de tests passes avant l'arret. La suite ne va
+donc jamais jusqu'a son verdict : **tout ce qui suit `test_terminal_repli`
+n'est jamais joue**, et rien ne le dit.
+
+### 155.3 Le site, et pourquoi il n'est pas evident
+
+```python
+# nexus_generate.py, lignes 1085-1090
+for target in targets:
+    target_entry = next((e for e in chain[i+1:] if e.alias == target), None)
+    if (target_entry and target_entry.ctx is not None and
+            entry.ctx is not None and target_entry.ctx < entry.ctx):
+```
+
+Le code se protege deja de `target_entry` absent et de `ctx` valant `None`.
+Il ne se protege pas d'un objet qui **n'a pas d'attribut `ctx` du tout** — ce
+que produit un `SimpleNamespace` construit avec le seul `alias`.
+
+Deux causes possibles, et je ne tranche pas :
+
+* le montage du test fabrique une chaine incomplete, et c'est l'epreuve qui
+  est en tort ;
+* le code de production suppose une forme qu'il ne verifie pas, et l'epreuve
+  a raison de le prendre en defaut.
+
+**La distinction change le remede** : dans un cas on corrige un montage, dans
+l'autre on rend `render_chain` defensif. C'est exactement le genre d'arbitrage
+que la LOI 1 confie a un tiers, et le banc sert une session voisine.
+
+### 155.4 Ce que cela dit du geste « lancer la suite avant extinction »
+
+Le contrat prescrit la suite comme controle d'avant extinction. Mesure :
+
+* elle depasse **trente minutes** parce qu'elle fait de l'inference REELLE sur
+  83 modeles ;
+* elle **s'arrete avant la fin** sur une exception ;
+* elle **permute `litellm_config.yaml`** a chaque test de validation, ce qui
+  rend tout `git add -A` dangereux pendant sa duree (§152.4).
+
+Un geste qui coute trente minutes, ne finit pas, et rend le depot piegeur
+pendant ce temps n'est pas un controle d'avant extinction. **Aucun de ces
+trois faits n'etait ecrit avant aujourd'hui.**
+
+### 155.5 CE QUI RESTE OUVERT — remplace §154.6
+
+| sujet | etat |
+| --- | --- |
+| **`nexus_test.py` plante a `test_terminal_repli`** | trace exacte, site exact, cause NON tranchee — a confier |
+| **tout ce qui suit ce test n'est jamais joue** | portee inconnue |
+| repli de modele silencieux | mesure sur 133 rendus, 7 substitutions |
+| 5 references externes non gardees | commande PREPAREE, banc au voisin |
+| `nexus_garde_ecriture` global seule | garde absente de tout clone |
+| controle semantique des voisines | 2 specifications rejetees |
+| commiter pendant une permutation | aucun controle ne refuse une config sans AUTOGEN |
+| `nexus_valide.py` > 900 s sur large diff | cout non annonce |
+| `rituels/` hors du projet | DE-RISQUE, non lance |
+| frontiere projet / outillage | deux regles REFUTEES, noyau plancher 32 |
+| les 91 constructions non litterales | mesurees, non traitees |
+| `python_libs_docs` versionne ou non | ARBITRAGE OPERATEUR — vaut aussi pour `node_docs` |
+| `.nexus/` dans le dossier | ARBITRAGE OPERATEUR |
+| `epreuve_garde_encodage` a l'import | seul BLOQUANT |
+
+### 155.6 Ce qui a CHANGE dans l'arbre ce tour
+
+```
+un clone recevait   307 fichiers, 20,26 Mo
+un clone recoit     305 fichiers,  8,57 Mo     -57,7 %
+scripts/            166 -> 99 fichiers suivis
+epreuves/             0 -> 67
+```
+
+Deux gestes, tous deux verifies dans les deux sens : les epreuves sorties de
+`scripts/` avec parite exacte des echecs, et `node_docs` passe a la convention
+du depot avec le rayon toujours atteignable (`nexus_livres.py "timeout"` rend
+6 entrees du rayon `22.23.2`).
