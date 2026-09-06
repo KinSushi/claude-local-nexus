@@ -20888,3 +20888,140 @@ le sujet a ete mesure et n'existait pas. Les confondre serait dangereux —
 marquer « ferme » ce qui etait « jamais vrai » masquerait le fait que le
 processus de mesure a produit une fausse alerte, et cette session seule en a
 retire quatorze.
+
+
+---
+
+## 128. LE DIAGNOSTIC DU VERROU EST AVEUGLE A DEUX CLASSES SUR QUATRE
+
+Trouve en s'en servant, pas en le relisant — et il m'avait deja fait conclure
+faux **trois fois**.
+
+### 128.1 La sortie se contredit elle-meme
+
+```
+LIBRE  robocopy   une copie miroir massive
+LIBRE  pytest     une suite de tests
+TENU   hachage    un hachage massif d'arborescence
+TENU   banc       une inference locale sur le banc de modeles
+
+diagnostic (non autoritaire) — 0 processus concurrent(s) :
+    aucun
+```
+
+Le verrou `banc` est **TENU** et le diagnostic annonce **zero** processus.
+Les deux lignes sortent du meme appel.
+
+### 128.2 La cause, verifiee a la source
+
+`processus_concurrents()`, dans `scripts/nexus_verrou_machine.py` :
+
+```python
+if "robocopy" in bas_nom or bas_cmd.startswith("robocopy") ...:
+    classe = "robocopy"
+elif "pytest" in bas_cmd:
+    classe = "pytest"
+else:
+    continue          # <-- TOUT LE RESTE EST JETE
+```
+
+**Le verrou declare quatre classes ; le diagnostic n'en reconnait que deux.**
+Un processus du banc — `scripts/nexus_agent.py` — ne porte ni `robocopy` ni
+`pytest` dans sa ligne de commande : il tombe dans le `continue` et disparait.
+
+Sa propre docstring le dit sans detour : *« Enumere les robocopy/pytest en
+cours »*. Elle a ete ecrite pour deux classes, et le verrou en a gagne deux
+depuis. Personne n'a rouvert le diagnostic.
+
+### 128.3 Ce que ce defaut a reellement coute
+
+Trois conclusions **fausses** tirees de cette sortie, dans une seule session :
+
+| conclusion | ce que la mesure directe a montre |
+| --- | --- |
+| « un orphelin de 23 min tient le verrou » | la ligne de commande complete portait `--racine D:/SAS/...` : le depot voisin, bien vivant |
+| « ea-mt5 tient le verrou, ma vague attend derriere » | vrai a 10h20 ; **faux a 10h51** — plus aucun processus ea-mt5, et la seule instance de `nexus_agent.py` etait **la mienne** |
+| la meme, repetee au tour suivant | tiree sans nouvelle mesure |
+
+Le detenteur reel a chaque fois ete trouve en listant les processus
+**directement**, avec leur ligne de commande complete — c'est-a-dire en se
+passant de l'outil dont c'etait precisement le travail.
+
+### 128.4 Le fichier porte deja sa propre lecon, quelques lignes plus haut
+
+> *« Un diagnostic qui se trompe de classe est pire qu'un diagnostic absent :
+> il donne un nom faux a ce qu'on voit, et on cherche au mauvais endroit. »*
+
+Ici c'est un cran plus grave : il ne donne **aucun** nom, et
+`0 processus concurrent` se lit comme *« personne ne le tient »*.
+
+### 128.5 Ce qui est demande, et la limite a ne pas franchir
+
+**Demande** : reconnaitre les quatre classes, et nommer le detenteur probable
+quand un verrou est tenu — pid, projet, depuis quand. Un processus non
+classable doit etre **rapporte comme inconnu**, jamais jete en silence : c'est
+le silence qui a menti.
+
+**Interdit** : faire du diagnostic le mecanisme d'exclusion. Le fichier
+l'ecrit deja — *« le mutex est la verite ; confondre les deux rouvrirait la
+fenetre de course que le mutex ferme »*. Le diagnostic reste **non
+autoritaire**.
+
+### 128.6 Au passage, la vague n'etait pas bloquee — mesure
+
+Le ralentissement a d'abord ete attribue au pair. Mesure directe :
+
+```
+llama-server  CPU 652,5 -> 656,4 en 12 s   il TRAVAILLE (~4 s CPU / 12 s)
+nexus_agent   CPU inchange                  bloque sur la reponse HTTP
+```
+
+Pas de blocage : **inference CPU lente sur un modele de 20 Go**, jeu de
+travail 21,6 Go. Le diagnostic correct demandait de regarder la consommation
+CPU dans le temps, pas l'etat du verrou.
+
+### 128.7 LE QUOTA CLOUD, mesure — et une conclusion retiree dans le meme souffle
+
+```
+appel DIRECT a ollama.com    HTTP 429 en 0,5 s
+   "you have reached your weekly usage limit"
+appel via la passerelle      aucune reponse en 100 s (code 124)
+```
+
+De ces deux chiffres j'ai d'abord tire : *« la passerelle transforme un refus
+de 0,5 s en attente de 900 s, facteur 1800 »*.
+
+**C'est faux, et la faute est de methode : cette phrase etait ECRITE D'AVANCE
+DANS LA SONDE**, qui l'a imprimee comme un verdict. La sonde n'a mesure qu'une
+seule chose — `HTTP 429 en 0,5 s`.
+
+La configuration deployee dit l'inverse, et elle a raison :
+
+```yaml
+retry_policy:
+  RateLimitErrorRetries: 0
+  TimeoutErrorRetries: 0
+```
+
+> *« Un 429 DIT de ralentir. Le rejouer ajoute a la pression qui l'a cause.
+> Le repli local doit partir tout de suite : il ne consomme aucun quota, et il
+> termine la chaine. »*
+
+Le 429 **n'est pas rejoue**. Les 100 s sont le repli local qui charge 20 Go et
+genere sur CPU — exactement le comportement voulu par le terminal greffe.
+**Le systeme fonctionne comme concu ; la lenteur est physique, pas fautive.**
+
+**La lecon de methode vaut plus que la mesure : ne jamais ecrire la conclusion
+dans l'instrument.** Une sonde imprime ce qu'elle a mesure, pas ce que son
+auteur attendait. C'est la douzieme fois de cette session qu'un instrument
+exact porte une conclusion fausse — et la premiere ou je l'avais mise dedans
+moi-meme.
+
+### 128.8 Releve par la validation, non traite
+
+```
+[ALERTE] sauvegardes de l'essaim
+   8 fichiers .bak dans la racine
+  40 dans scripts/ (ancien chemin)
+  48 au total
+```
