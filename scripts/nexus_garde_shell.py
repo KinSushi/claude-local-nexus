@@ -111,7 +111,7 @@ def detecter_cas_a(commande):
     """
     lignes = commande.splitlines()
     for i, ligne in enumerate(lignes):
-        m = re.search(r'<<\s*([\'"]?)(\S+)\1', ligne)
+        m = re.search(r'(?<!<)<<(?!<)\s*([\'"]?)(\S+)\1', ligne)
         if not m:
             continue
         # Si le délimiteur est quoted (groupe 1 non‑vide), le quoting protège
@@ -155,7 +155,7 @@ def detecter_cas_b(commande):
     delimiteur = None
     for ligne in lignes:
         if not dans_heredoc:
-            m = re.search(r'<<\s*([\'"])(\S+)\1', ligne)
+            m = re.search(r'(?<!<)<<(?!<)\s*([\'"])(\S+)\1', ligne)
             if m:
                 gardees.append(ligne)
                 dans_heredoc = True
