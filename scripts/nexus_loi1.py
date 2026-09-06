@@ -191,7 +191,7 @@ def main():
             print("Rien a la main.", file=sys.stderr)
         else:
             print("Mesure non disponible.", file=sys.stderr)
-        sys.exit(0)
+        sys.exit(2)
 
 if __name__ == "__main__":
     main()

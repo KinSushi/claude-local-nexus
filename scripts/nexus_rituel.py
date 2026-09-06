@@ -371,6 +371,10 @@ def loi1_tenue(racine):
                 if l.startswith("Violation"):
                     return MANQUE, l
             return MANQUE, lignes[0] if lignes else ""
+        if r.returncode == 2:
+            stderr = (r.stderr or "").strip()
+            detail = stderr.splitlines()[-1] if stderr else "mesure impossible"
+            return MANQUE, f"mesure impossible : {detail}"
         return IGNORE, "code de retour inattendu"
     except subprocess.TimeoutExpired:
         return IGNORE, "nexus_loi1 n'a pas repondu en 300 s"
