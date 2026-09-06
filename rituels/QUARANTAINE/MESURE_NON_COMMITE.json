@@ -1,0 +1,1388 @@
+[
+ {
+  "agent": "agent-a03ce1f4953606cae",
+  "fichier": "competences/relire-code.txt",
+  "plus": 1,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a03ce1f4953606cae",
+  "fichier": "scripts/mesure_rendu_vide.py",
+  "plus": 17,
+  "moins": 4,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a03ce1f4953606cae",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a084add637786a142",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a084add637786a142",
+  "fichier": "rituels/GABARIT_QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a084add637786a142",
+  "fichier": "scripts/nexus_quarantaine.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a0b07e433b871704d",
+  "fichier": "scripts/nexus_charge.py",
+  "plus": 122,
+  "moins": 4,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0b07e433b871704d",
+  "fichier": "scripts/nexus_test.py",
+  "plus": 4,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0b07e433b871704d",
+  "fichier": "scripts/epreuve_charge_derive.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0b07e433b871704d",
+  "fichier": "scripts/epreuve_reglages_moteur.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0b07e433b871704d",
+  "fichier": "scripts/nexus_reglages_moteur.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0b2638a810ecfdd4",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a0bb278a9ee2836a5",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 5
+ },
+ {
+  "agent": "agent-a11923e06ae11d5df",
+  "fichier": "scripts/nexus_agent.py",
+  "plus": 23,
+  "moins": 7,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a11923e06ae11d5df",
+  "fichier": "scripts/nexus_disjoncteur.py",
+  "plus": 10,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a11923e06ae11d5df",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a13026bc69d52eaf0",
+  "fichier": "README.md",
+  "plus": 3,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a13026bc69d52eaf0",
+  "fichier": "UTILISER_NEXUS.md",
+  "plus": 3,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a13026bc69d52eaf0",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a1b41eff010c12245",
+  "fichier": "docs/architecture/Drift-detection.txt",
+  "plus": 16,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a1f14f9783bcb3e7f",
+  "fichier": "scripts/epreuve_armer_garde.py",
+  "plus": 20,
+  "moins": 12,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 3
+ },
+ {
+  "agent": "agent-a1f14f9783bcb3e7f",
+  "fichier": "scripts/epreuve_garde_ecriture.py",
+  "plus": 58,
+  "moins": 16,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 3
+ },
+ {
+  "agent": "agent-a1f14f9783bcb3e7f",
+  "fichier": "scripts/epreuve_garde_lecture.py",
+  "plus": 34,
+  "moins": 17,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 3
+ },
+ {
+  "agent": "agent-a1f14f9783bcb3e7f",
+  "fichier": "scripts/epreuve_garde_shell.py",
+  "plus": 10,
+  "moins": 10,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 3
+ },
+ {
+  "agent": "agent-a1f14f9783bcb3e7f",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 3
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "competences/arbitrer.txt",
+  "plus": 36,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Agent-Contracts.txt",
+  "plus": 49,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Architecture_documentaire.md",
+  "plus": 32,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Conformance-Tests.txt",
+  "plus": 38,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Policy-as-code.txt",
+  "plus": 38,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Routing-unit-tests.txt",
+  "plus": 41,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/Secrets-Gateway.txt",
+  "plus": 46,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a268d2e8fe1dc957c",
+  "fichier": "docs/architecture/budget-aware-execution.txt",
+  "plus": 54,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a2b921b2e5443e3f3",
+  "fichier": "tools/nexus-mcp/epreuve_protocole.js",
+  "plus": 8,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a3666d882218a276d",
+  "fichier": "scripts/nexus_test.py",
+  "plus": 10,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a3666d882218a276d",
+  "fichier": "tools/nexus-mcp/server.js",
+  "plus": 149,
+  "moins": 43,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a3666d882218a276d",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a3666d882218a276d",
+  "fichier": "tools/nexus-mcp/epreuve_perte_map.js",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a3a373ce61c0f6d6f",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a415cd08dccd3fd97",
+  "fichier": "fichier.txt",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a50cbf7c79394206d",
+  "fichier": "rituels/CHECKLIST_PROGRESS.md",
+  "plus": 9,
+  "moins": 8,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a50cbf7c79394206d",
+  "fichier": "rituels/GABARIT_QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a50cbf7c79394206d",
+  "fichier": "rituels/VAGUES_REPARATION.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a5415ae7306cee00e",
+  "fichier": "rituels/DOSSIER_MANDAT_AGENT.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a54e8dae802fa4a1b",
+  "fichier": "Set-ClaudeModel.ps1",
+  "plus": 2,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a54e8dae802fa4a1b",
+  "fichier": "scripts/Initialize-Nexus.ps1",
+  "plus": 8,
+  "moins": 9,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a54e8dae802fa4a1b",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a54e8dae802fa4a1b",
+  "fichier": "scripts/restore.ps1",
+  "plus": 14,
+  "moins": 15,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a54e8dae802fa4a1b",
+  "fichier": "scripts/stop.ps1",
+  "plus": 29,
+  "moins": 15,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a55bdfccf377cfffa",
+  "fichier": "scripts/nexus_garde_ecriture.py",
+  "plus": 102,
+  "moins": 10,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a55bdfccf377cfffa",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a697c9b31ea2b75e4",
+  "fichier": "rituels/cablage_reference.json",
+  "plus": 1,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a697c9b31ea2b75e4",
+  "fichier": "scripts/nexus_test.py",
+  "plus": 2,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a697c9b31ea2b75e4",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a6d8fb7354cc50b30",
+  "fichier": "scripts/nexus_conformite.py",
+  "plus": 124,
+  "moins": 45,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a6d8fb7354cc50b30",
+  "fichier": "scripts/nexus_socle.py",
+  "plus": 47,
+  "moins": 72,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a6d8fb7354cc50b30",
+  "fichier": "scripts/nexus_test.py",
+  "plus": 23,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a6d8fb7354cc50b30",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a7a78c2da71438fd9",
+  "fichier": "docs/architecture/Router-versioning.txt",
+  "plus": 21,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a7a78c2da71438fd9",
+  "fichier": "docs/architecture/model-registry.yaml",
+  "plus": 28,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Adaptive-Inference-Controller.md",
+  "plus": 70,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Agent-loops.txt",
+  "plus": 56,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Confidence-uncertainty.txt",
+  "plus": 35,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Cost-budget.txt",
+  "plus": 31,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Reproductible-execution.txt",
+  "plus": 59,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/Scientific-quantitative-evaluation-layer.txt",
+  "plus": 44,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/agent-planner.txt",
+  "plus": 58,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a803b8dbb3c35914b",
+  "fichier": "docs/architecture/tool-registry.txt",
+  "plus": 64,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8a7d862bd3f37091",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8ddf6cc4a6aec704",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8ddf6cc4a6aec704",
+  "fichier": "scripts/nexus_generate.py",
+  "plus": 26,
+  "moins": 6,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8ddf6cc4a6aec704",
+  "fichier": ".scratch_patch/extrait_call_site.txt",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8ddf6cc4a6aec704",
+  "fichier": ".scratch_patch/extrait_modalite_cloud.txt",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a8ddf6cc4a6aec704",
+  "fichier": ".scratch_patch/extrait_render_cloud_models.txt",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a925f543aaa6e4d34",
+  "fichier": "scripts/epreuve_repli_epuise.py",
+  "plus": 197,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a925f543aaa6e4d34",
+  "fichier": "scripts/epreuve_reprise_avant_repli.py",
+  "plus": 46,
+  "moins": 14,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a925f543aaa6e4d34",
+  "fichier": "scripts/nexus_agent.py",
+  "plus": 62,
+  "moins": 18,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a925f543aaa6e4d34",
+  "fichier": "scripts/nexus_test.py",
+  "plus": 1,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a925f543aaa6e4d34",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-a95744881ae0492ff",
+  "fichier": "AUDIT_TIERS.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a95a4421aa8062ff1",
+  "fichier": "scripts/nexus_disjoncteur.py",
+  "plus": 138,
+  "moins": 15,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a95a4421aa8062ff1",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-a9bae5bcacf5d3042",
+  "fichier": "rituels/cablage_reference.json",
+  "plus": 1,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 5
+ },
+ {
+  "agent": "agent-a9bae5bcacf5d3042",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 5
+ },
+ {
+  "agent": "agent-a9fe6d8711708973c",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 22,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-a9fe6d8711708973c",
+  "fichier": "scripts/nexus_garde_production.py",
+  "plus": 9,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aaafb81b13e76c172",
+  "fichier": "docs/MANUEL.md",
+  "plus": 3,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aaafb81b13e76c172",
+  "fichier": "docs/architecture/README.md",
+  "plus": 2,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aaafb81b13e76c172",
+  "fichier": "docs/pont-local-abonnement.md",
+  "plus": 41,
+  "moins": 21,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aaafb81b13e76c172",
+  "fichier": "docs/set-claude-model.md",
+  "plus": 8,
+  "moins": 7,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ab941411343b29376",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "scripts/nexus_agent.py",
+  "plus": 20,
+  "moins": 4,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "scripts/nexus_appliquer.py",
+  "plus": 37,
+  "moins": 5,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "scripts/nexus_disjoncteur.py",
+  "plus": 12,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "scripts/nexus_essaim.py",
+  "plus": 17,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/appliquer_patch1.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/appliquer_patch2.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/appliquer_patch3.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/appliquer_patch4.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/cible_test.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/instrument_apres.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/instrument_avant.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/lot_chevauchant.jsonl",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/lot_deux_blocs_ok.jsonl",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/lot_readonly.jsonl",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/lot_tronque.jsonl",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_agent.py.apres_patch1",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_agent.py.avant_patch1",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_appliquer.py.apres_patch3",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_appliquer.py.avant_patch3",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_disjoncteur.py.apres_patch2",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_disjoncteur.py.avant_patch2",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_essaim.py.apres_patch4",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/nexus_essaim.py.avant_patch4",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/test_disjoncteur_bout_en_bout.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/test_disjoncteur_classement.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/test_essaim_mort_worker.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/test_regression_modele_connu.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abbea6f5f883f4469",
+  "fichier": "tmp/test_verrou_contourne.py",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-abfe13fb0c58da618",
+  "fichier": "AUDIT_TIERS_FILET.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-acb34a9bbc8199d49",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-acbd763084f29adf5",
+  "fichier": "scripts/nexus_valide.py",
+  "plus": 103,
+  "moins": 7,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-acbd763084f29adf5",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 7
+ },
+ {
+  "agent": "agent-ad2d06940ef00ceb7",
+  "fichier": "Start-Claude.ps1",
+  "plus": 2,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ad2d06940ef00ceb7",
+  "fichier": "scripts/Register-NexusDemarrage.ps1",
+  "plus": 3,
+  "moins": 3,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ad3f0e991a26eb4ce",
+  "fichier": "docker-compose.yml",
+  "plus": 30,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ad3f0e991a26eb4ce",
+  "fichier": "requirements.txt",
+  "plus": 1,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ad3f0e991a26eb4ce",
+  "fichier": "scripts/nexus_doc.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Escalation-policy.txt",
+  "plus": 17,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Event-log.txt",
+  "plus": 17,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Final-target-architecture.txt",
+  "plus": 20,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Latency-budget.txt",
+  "plus": 12,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/MCP-external-tool-layer.txt",
+  "plus": 17,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/MCP-ne-doit-pas-bypasser-la-policy.txt",
+  "plus": 11,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Mission-P0.txt",
+  "plus": 10,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Model-lifecycle-automation.txt",
+  "plus": 16,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/Multi-agent-orchestration.txt",
+  "plus": 18,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/execution-policy.yaml.txt",
+  "plus": 12,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/execution-profiles.txt",
+  "plus": 8,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/missions/INGEST-001-platform-integration.md",
+  "plus": 10,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-ade9a13af3736b1a3",
+  "fichier": "docs/architecture/model-registry.yaml",
+  "plus": 10,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/Agent-Trace-Schema.txt",
+  "plus": 32,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/Bayesian-routing-evolution-future.txt",
+  "plus": 22,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/Context-cache.txt",
+  "plus": 27,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/Prompt-registry.txt",
+  "plus": 24,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/SKILLS.txt",
+  "plus": 26,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/Verification-Agent.txt",
+  "plus": 28,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "docs/architecture/provider-registry.txt",
+  "plus": 39,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-aec47b54a536e6499",
+  "fichier": "scripts/console_tools.py",
+  "plus": 20,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": false,
+  "rubriques": 0
+ },
+ {
+  "agent": "agent-afe13c9acd701d299",
+  "fichier": "scripts/nexus_capability.py",
+  "plus": 43,
+  "moins": 0,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-afe13c9acd701d299",
+  "fichier": "scripts/nexus_conformite.py",
+  "plus": 10,
+  "moins": 2,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-afe13c9acd701d299",
+  "fichier": "scripts/nexus_validate.py",
+  "plus": 5,
+  "moins": 1,
+  "etat": "MODIFIE",
+  "preuve": true,
+  "rubriques": 6
+ },
+ {
+  "agent": "agent-afe13c9acd701d299",
+  "fichier": "QUARANTAINE.md",
+  "plus": 0,
+  "moins": 0,
+  "etat": "NON SUIVI",
+  "preuve": true,
+  "rubriques": 6
+ }
+]
