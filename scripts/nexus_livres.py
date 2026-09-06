@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import argparse
+import datetime
 from pathlib import Path
 
 # 6164 entrées perdues sur trois index à six colonnes
@@ -37,6 +38,28 @@ def _iter_index(idx_path):
     except Exception as e:
         print(f"Fichier illisible {idx_path}: {e}", file=sys.stderr)
 
+def _log_consultation(mode, query_or_id, count, bytes_read=0):
+    """Trace a consultation in .nexus/consultations.jsonl (JSON lines).
+    POURQUOI: un chapitre attendait pendant qu'on concevait de memoire;
+    sans trace, aucun controle ne sait si le corpus a ete consulte.
+    L'ecriture ne doit jamais faire echouer l'outil."""
+    try:
+        log_dir = Path(__file__).resolve().parent.parent / ".nexus"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "consultations.jsonl"
+        entry = {
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "mode": mode,
+            "query": query_or_id if mode == "recherche" else None,
+            "id": query_or_id if mode == "lecture" else None,
+            "count": count,
+            "bytes": bytes_read,
+        }
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("query", nargs="*", help="Mots a chercher")
@@ -70,6 +93,7 @@ def main():
         sys.exit(1)
 
     if args.read:
+        bytes_read = 0
         for root, _, files in os.walk(ref_dir):
             if "symbols.jsonl" in files:
                 sym_path = Path(root).joinpath("symbols.jsonl")
@@ -88,10 +112,15 @@ def main():
                                 data = json.loads(f.read(length).decode("utf-8"))
                                 print(f"Cout: {length} / {f_size} octets")
                                 print(data.get("texte", ""))
+                                bytes_read = length
+                                _log_consultation("lecture", args.read, 1, bytes_read)
                                 return 0
                 except Exception as e:
                     print(f"Erreur lecture fragment {args.read}: {e}", file=sys.stderr)
+        _log_consultation("lecture", args.read, 0, 0)
         return 1
+
+    _log_consultation("recherche", args.query, len(matches))
 
     if not matches:
         return 1
