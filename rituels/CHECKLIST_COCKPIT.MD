@@ -21498,3 +21498,93 @@ lecture fausse — et la verification l'a prise.
 **4 210 s pour deux rendus, tous deux rejetes.** Soixante-dix minutes de
 machine pour zero ligne applicable. La valeur correcte sur le plan local est
 **1**, et le contrat le disait deja (§131).
+
+
+---
+
+## 134. L'ARBRE DU PROJET EST PROPRE — 3 733 Mo dehors, et un pointeur qui le dit
+
+> *« est ce fait ? »* — l'operateur, 2026-09-06. La reponse etait **non**, et
+> elle l'est restee jusqu'a ce tour.
+
+### 134.1 L'etat final, mesure
+
+```
+suivi par git (ce qu'un clone recoit)     305 fichiers      44,9 Mo
+present dans le dossier                 21 974 fichiers   2 837,6 Mo
+SORTI vers hors-projet                   5 693 fichiers   3 733,1 Mo
+```
+
+Destination : **`C:\local-llm-docker-hors-projet\`** — repertoire **frere**
+du projet, donc hors de son arbre. C'etait le defaut de la quarantaine
+precedente, qui isolait **dans** le projet plutot que **du** projet.
+
+### 134.2 Rien n'est sorti sans que la question soit posee
+
+Chaque candidat a ete verifie **individuellement**, en cherchant son **chemin
+reel** dans le code (`.nexus/<nom>`), et non son nom seul — un nom commun comme
+`audit`, `plans` ou `quarantaine` matche partout et produit un faux *« il est
+lu »*.
+
+**Le contre-exemple qui justifie la methode** : `.nexus/quarantaine`
+(2 624,3 Mo) semblait lu par `nexus_quarantaine.py`. Verification : ce script
+vise `<racine>/rituels/QUARANTAINE`. Le mot matchait le **nom du script**,
+rien d'autre. Sans cette verification, 2,6 Go seraient restes par erreur.
+
+**Et l'inverse** : `.nexus/livres_code` (1 443,8 Mo) est **reste**, parce que
+`nexus_conformite.py:1654`, `nexus_indexer_code.py` et `nexus_test.py` le lisent
+vraiment. Le sortir aurait casse un controle de conformite et un test.
+
+### 134.3 Les deux epreuves, a chaque deplacement
+
+```
+EPREUVE          git status -> 0 fichier supprime du depot
+EPREUVE INVERSE  chaque chemin deplace -> absent du projet, present dehors
+REFUS            un fichier SUIVI par git dans le lot arrete le script
+```
+
+**Deplace, jamais supprime.** Deux manifestes JSON portent, pour chaque entree,
+son `origine` et sa `destination` : revenir en arriere consiste a deplacer
+l'une vers l'autre.
+
+### 134.4 Le pointeur, dans l'arbre propre
+
+> *« dans l'arbre propre du projet tu te mets des pointeurs et marqueurs, ainsi
+> tu sais ce qui est sain »* — l'operateur.
+
+`rituels/_POINTEUR_HORS_PROJET.md`, **2 785 octets**, **non ignore par git** —
+verifie par `git check-ignore`, parce qu'un pointeur ignore ne dit rien a
+personne (§130 : 2 pointeurs sur 12 seulement etaient suivis).
+
+Il est **derive des manifestes**, jamais ecrit a la main : un chiffre grave a
+la main ment des le lendemain (§0.5). Il porte ce qui est sorti, ou, pourquoi,
+ce qui est **reste** et **qui le lit**.
+
+C'est exactement la convention que le depot avait deja ecrite pour ses corpus :
+
+> *« leur POINTEUR pese 5 Ko et c'est le seul artefact qui dit a un autre
+> projet CE QUI EXISTE et CE QUI MANQUE. »*
+
+### 134.5 Ce qui reste incertain, et n'est pas maquille
+
+Une mesure intermediaire donnait `.nexus/livres_code` a 5 778 fichiers /
+2 388,8 Mo ; la mesure finale donne 5 175 / 1 443,8. **L'ecart n'est pas
+explique.** Ce qui est verifie : le depot ne porte aucune suppression, le
+dossier `livres_code` contient bien ses 23 depots de code source, et rien
+portant ce nom n'est parti hors-projet. L'ecart est donc **signale, non
+resolu**.
+
+### 134.6 Au passage — quatrieme conclusion fausse tiree d'une vue tronquee
+
+*« aucun processus `nexus_agent` ne tourne, la vague 24 a echoue »* : **faux**.
+Le listing etait tronque. La vague tourne (PID 3948), et elle fait la queue
+derriere **deux pairs** :
+
+```
+10:47  ea-mt5     nexus_agent.py --lot ... --parallele 1
+11:06  sovereign  nexus_agent.py --lot ... --parallele 1
+11:28  nexus      nexus_agent.py --lot v24.json --parallele 1
+```
+
+**Trois projets, chacun poliment a `--parallele 1`, un seul moteur.** Le
+verrou fait exactement son travail ; la machine est le goulot, pas le code.
