@@ -22157,3 +22157,80 @@ OUI.
 
 **Ce qui manque pour dire OUI** : neuf lignes a arbitrer ou corriger, et
 `scripts/nexus_separation.py` a poser. Le second est au banc.
+
+
+---
+
+## 141. LE CONTROLE DE SEPARATION, RENDU PUIS REJETE — cinq defauts, tous prouves par execution
+
+Le livrable bloquant est revenu du banc : `separation_controlee`, 285 s,
+4 196 jetons, `REFUS=aucun` — la piece n'a pas ete refusee, la mesure inline a
+donc bien voyage.
+
+**Il a ete rejete.** Non par lecture, mais par execution de chacun de ses
+mecanismes contre le code reel.
+
+### 141.1 Defaut 1, fatal a lui seul : le controle ne peut RIEN detecter
+
+```python
+untracked = set(subprocess.run(['git','ls-files','--others', ...]).stdout.splitlines())
+for f in glob.glob(os.path.join(root, pattern)):
+    if f in untracked:
+```
+
+**Mesure, executee :**
+
+```
+git ls-files rend des chemins RELATIFS   'scripts/x.py'
+glob.glob   rend des chemins ABSOLUS     'C:\local-llm-docker\scripts\x.py'
+INTERSECTION                              0
+```
+
+La condition **ne peut jamais etre vraie**. Le controle rend VERT en toutes
+circonstances.
+
+> **Un controle qui ne peut pas detecter est pire qu'aucun controle : il se lit
+> comme une protection.**
+
+### 141.2 Defaut 2 : plantage a la lecture du pointeur
+
+```python
+with open(pointer_path, 'r', encoding='ascii') as f:
+```
+
+**Mesure, executee sur le vrai pointeur :**
+
+```
+UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 543
+```
+
+La regle du depot est **ASCII strict dans ce qui est EMIS**, jamais dans ce qui
+est **LU**. La consigne a ete comprise a l'envers — et c'est ma consigne qui
+etait ambigue.
+
+### 141.3 Defauts 3 a 5
+
+| # | defaut | mesure |
+| --- | --- | --- |
+| 3 | `root = os.path.dirname(os.path.abspath(__file__))` | rend `…/scripts`, pas la racine du depot. Un cran de remontee manque |
+| 4 | `dehors = os.path.join(root, "outils")` | le repertoire d'isolation est un **frere** du depot. Le controle ne le trouve pas, se declare *desactive* et sort en **0** : **il se desarme tout seul** |
+| 5 | cherche les depots d'outil parmi les **non suivis** | la question etait : un depot d'outil est-il **SUIVI** ? Il repond a l'inverse |
+
+Le defaut 4 est le plus insidieux apres le premier : **un controle qui se
+desactive parce qu'un chemin par defaut est absent ne dit jamais rien**, et
+son silence se lit comme un vert.
+
+### 141.4 Ce que l'arbitrage a coute, et ce qu'il a evite
+
+Cinq minutes de mesure. Sans elles, un fichier nomme `nexus_separation.py`
+serait entre dans `scripts/`, aurait rendu 0 a chaque appel, et la separation
+aurait ete declaree **gardee** alors que rien ne la gardait.
+
+C'est exactement le troisieme temps du §0.7.1 : *audit -> correction par un
+tiers -> **audit de la correction***. Le troisieme est celui qu'on saute, et
+c'est celui qui porte la garantie.
+
+### 141.5 Recommande, avec les cinq defauts nommes
+
+La correction repart au banc — l'orchestrateur a audite, il ne corrige pas.
+Chaque defaut part avec **sa mesure d'execution**, pas avec une opinion.
