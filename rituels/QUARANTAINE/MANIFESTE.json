@@ -1,0 +1,4452 @@
+{
+  "genere_le": "2026-09-06T14:17:58Z",
+  "outil": "scripts/nexus_quarantaine.py",
+  "gabarit_audit": "rituels/GABARIT_QUARANTAINE.md",
+  "racine": "C:\\local-llm-docker",
+  "arbre_principal": "C:/local-llm-docker",
+  "arbre_principal_erreur": null,
+  "cible": "C:\\local-llm-docker\\rituels\\QUARANTAINE",
+  "worktrees_dir": "C:\\local-llm-docker\\.claude\\worktrees",
+  "simulation": false,
+  "resume": {
+    "worktrees_examines": 45,
+    "worktrees_en_erreur": 0,
+    "fichiers_total": 157,
+    "comptes_preuve": {
+      "SANS_PREUVE": {
+        "fichiers": 99,
+        "worktrees": 30
+      },
+      "PREUVE_PARTIELLE": {
+        "fichiers": 58,
+        "worktrees": 15
+      },
+      "PREUVE_COMPLETE": {
+        "fichiers": 0,
+        "worktrees": 0
+      }
+    }
+  },
+  "worktrees": [
+    {
+      "nom": "agent-a03ce1f4953606cae",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a03ce1f4953606cae",
+      "branche": "worktree-agent-a03ce1f4953606cae",
+      "tete": "196e761",
+      "retard_commits": 116,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "competences/relire-code.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1078,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1078,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/mesure_rendu_vide.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 7932,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7932,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a084add637786a142",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a084add637786a142",
+      "branche": "worktree-agent-a084add637786a142",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": true,
+          "reverse": true,
+          "forward": true
+        },
+        "couleur_proposee": "JAUNE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 10266,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/GABARIT_QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 5846,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 5846,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_quarantaine.py",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 43895,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 43895,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a0b07e433b871704d",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a0b07e433b871704d",
+      "branche": "worktree-agent-a0b07e433b871704d",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/epreuve_charge_derive.py",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 5256,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_reglages_moteur.py",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 4320,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_charge.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 14270,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 8094,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_reglages_moteur.py",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 20086,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 172074,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a0b2638a810ecfdd4",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a0b2638a810ecfdd4",
+      "branche": "worktree-agent-a0b2638a810ecfdd4",
+      "tete": "323aff4",
+      "retard_commits": 115,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a0bb278a9ee2836a5",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a0bb278a9ee2836a5",
+      "branche": "worktree-agent-a0bb278a9ee2836a5",
+      "tete": "ea8be64",
+      "retard_commits": 93,
+      "commits_agent": 2,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 5,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "JAUNE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 21624,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/outillage_reference.json",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 526,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 578,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_orphelines.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 4643,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3677,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_progres.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 9119,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 5602,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_cablage.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 20787,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 19757,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_checklist_progres.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 10989,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 9381,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_conformite.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 89835,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 92142,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_outillage.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 34519,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 32787,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_progres.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 8636,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7798,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_rituel.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 21784,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 21397,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a11923e06ae11d5df",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a11923e06ae11d5df",
+      "branche": "worktree-agent-a11923e06ae11d5df",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 6,
+        "trois_epreuves": {
+          "test": true,
+          "reverse": true,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 31630,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_agent.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 74399,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 74721,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_disjoncteur.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 10567,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11129,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a13026bc69d52eaf0",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a13026bc69d52eaf0",
+      "branche": "worktree-agent-a13026bc69d52eaf0",
+      "tete": "27bf53f",
+      "retard_commits": 127,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "README.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 15264,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 15567,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "UTILISER_NEXUS.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3859,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4079,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a1b41eff010c12245",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a1b41eff010c12245",
+      "branche": "worktree-agent-a1b41eff010c12245",
+      "tete": "5701a60",
+      "retard_commits": 113,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/architecture/Drift-detection.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1392,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1392,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a1f14f9783bcb3e7f",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a1f14f9783bcb3e7f",
+      "branche": "worktree-agent-a1f14f9783bcb3e7f",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 3,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 14784,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 3,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_armer_garde.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3403,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3063,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 3,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_garde_ecriture.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 5423,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3159,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 3,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_garde_lecture.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 7300,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6260,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 3,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_garde_shell.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2454,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2539,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 3,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a268d2e8fe1dc957c",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a268d2e8fe1dc957c",
+      "branche": "worktree-agent-a268d2e8fe1dc957c",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "competences/arbitrer.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2862,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2862,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Agent-Contracts.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3231,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3231,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Architecture_documentaire.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3266,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3266,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Conformance-Tests.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3928,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3928,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Policy-as-code.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2148,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2148,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Routing-unit-tests.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2355,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2355,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Secrets-Gateway.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2582,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2582,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/budget-aware-execution.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2884,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2884,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a2b921b2e5443e3f3",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a2b921b2e5443e3f3",
+      "branche": "worktree-agent-a2b921b2e5443e3f3",
+      "tete": "6b2285b",
+      "retard_commits": 104,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "tools/nexus-mcp/epreuve_protocole.js",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 6701,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6701,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a3666d882218a276d",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a3666d882218a276d",
+      "branche": "worktree-agent-a3666d882218a276d",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 10791,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 172446,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "tools/nexus-mcp/epreuve_perte_map.js",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 9611,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "tools/nexus-mcp/server.js",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 156998,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 152490,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a3a373ce61c0f6d6f",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a3a373ce61c0f6d6f",
+      "branche": "worktree-agent-a3a373ce61c0f6d6f",
+      "tete": "27bf53f",
+      "retard_commits": 127,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a415cd08dccd3fd97",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a415cd08dccd3fd97",
+      "branche": "worktree-agent-a415cd08dccd3fd97",
+      "tete": "0da3a82",
+      "retard_commits": 105,
+      "commits_agent": 5,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 6,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": true,
+          "forward": true
+        },
+        "couleur_proposee": "JAUNE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "commite",
+          "statut_git": "A",
+          "octets": 46522,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "fichier.txt",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 28765,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_filet.py",
+          "etat": "commite",
+          "statut_git": "A",
+          "octets": 22581,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 22581,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a50cbf7c79394206d",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a50cbf7c79394206d",
+      "branche": "worktree-agent-a50cbf7c79394206d",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "rituels/BOUSSOLE.csv",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 400763,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 13663046,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/CHECKLIST_COCKPIT.MD",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 952614,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1066903,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/CHECKLIST_LIVRE_VS_CODE.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 33312,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 33312,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/CHECKLIST_PROGRESS.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1509,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1509,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/GABARIT_QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 5846,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 5846,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/INVENTAIRE_OUTILS.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 6416,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6416,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/LECONS_PARTAGEES.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 60078,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 60078,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/SURVIE_SANS_ABONNEMENT.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 11855,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11855,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/VAGUES_REPARATION.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 94466,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 205112,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/cablage_reference.json",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 593,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 791,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/orphelines_reference.json",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 19,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 19,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/outillage_reference.json",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 578,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 578,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a5415ae7306cee00e",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a5415ae7306cee00e",
+      "branche": "worktree-agent-a5415ae7306cee00e",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "rituels/DOSSIER_MANDAT_AGENT.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 14167,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a54e8dae802fa4a1b",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a54e8dae802fa4a1b",
+      "branche": "worktree-agent-a54e8dae802fa4a1b",
+      "tete": "27bf53f",
+      "retard_commits": 127,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "Set-ClaudeModel.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 12771,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 12771,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/Initialize-Nexus.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 10598,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 10598,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/restore.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 7779,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7779,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/stop.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 4119,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4119,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a55bdfccf377cfffa",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a55bdfccf377cfffa",
+      "branche": "worktree-agent-a55bdfccf377cfffa",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 16238,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_garde_ecriture.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 11660,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7011,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a66668e1a379333b5",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a66668e1a379333b5",
+      "branche": "worktree-agent-a66668e1a379333b5",
+      "tete": "a2a3aa0",
+      "retard_commits": 111,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a676d0352359b0253",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a676d0352359b0253",
+      "branche": "worktree-agent-a676d0352359b0253",
+      "tete": "6b2285b",
+      "retard_commits": 104,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": []
+    },
+    {
+      "nom": "agent-a697c9b31ea2b75e4",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a697c9b31ea2b75e4",
+      "branche": "worktree-agent-a697c9b31ea2b75e4",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 12176,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/cablage_reference.json",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 554,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 791,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 171916,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a6d8fb7354cc50b30",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a6d8fb7354cc50b30",
+      "branche": "worktree-agent-a6d8fb7354cc50b30",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "JAUNE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 15763,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_conformite.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 93278,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 92142,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_socle.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 5378,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 5683,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 173033,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a7a78c2da71438fd9",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a7a78c2da71438fd9",
+      "branche": "worktree-agent-a7a78c2da71438fd9",
+      "tete": "5701a60",
+      "retard_commits": 113,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/architecture/Router-versioning.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1463,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1463,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/model-registry.yaml",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3565,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4187,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a803b8dbb3c35914b",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a803b8dbb3c35914b",
+      "branche": "worktree-agent-a803b8dbb3c35914b",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/architecture/Adaptive-Inference-Controller.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 11862,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11862,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Agent-loops.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 4543,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4543,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Confidence-uncertainty.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2287,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2287,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Cost-budget.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2012,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2012,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Reproductible-execution.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3716,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3716,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Scientific-quantitative-evaluation-layer.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2962,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2962,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/agent-planner.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3879,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3879,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/tool-registry.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 4362,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4362,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a8a7d862bd3f37091",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a8a7d862bd3f37091",
+      "branche": "worktree-agent-a8a7d862bd3f37091",
+      "tete": "323aff4",
+      "retard_commits": 115,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a8ddf6cc4a6aec704",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a8ddf6cc4a6aec704",
+      "branche": "worktree-agent-a8ddf6cc4a6aec704",
+      "tete": "fa47fa7",
+      "retard_commits": 114,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": ".scratch_patch/",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": null,
+          "copie_erreur": "absent du worktree (supprime depuis ?)",
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_generate.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 77230,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 80018,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a925f543aaa6e4d34",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a925f543aaa6e4d34",
+      "branche": "worktree-agent-a925f543aaa6e4d34",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 6,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "ROUGE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 19183,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "ROUGE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_repli_epuise.py",
+          "etat": "non_commite",
+          "statut_git": " A",
+          "octets": 9158,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "ROUGE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_reprise_avant_repli.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 6151,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4159,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "ROUGE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_agent.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 75964,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 74721,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "ROUGE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 171885,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "ROUGE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a95744881ae0492ff",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a95744881ae0492ff",
+      "branche": "worktree-agent-a95744881ae0492ff",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "AUDIT_TIERS.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 23177,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a95a4421aa8062ff1",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a95a4421aa8062ff1",
+      "branche": "worktree-agent-a95a4421aa8062ff1",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "JAUNE",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 10345,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_disjoncteur.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 16857,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11129,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "JAUNE",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a96910bce09e87b38",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a96910bce09e87b38",
+      "branche": "worktree-agent-a96910bce09e87b38",
+      "tete": "29f3d78",
+      "retard_commits": 105,
+      "commits_agent": 1,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_quarantaine.py",
+          "etat": "commite",
+          "statut_git": "A",
+          "octets": 24980,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 43895,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a9bae5bcacf5d3042",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a9bae5bcacf5d3042",
+      "branche": "worktree-agent-a9bae5bcacf5d3042",
+      "tete": "be40d1f",
+      "retard_commits": 105,
+      "commits_agent": 1,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 5,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 15392,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/CHECKLIST_LIVRE_VS_CODE.md",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 38308,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 33312,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "rituels/cablage_reference.json",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 553,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 791,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/epreuve_rendu_vide.py",
+          "etat": "commite",
+          "statut_git": "A",
+          "octets": 6108,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_test.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 172187,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 175825,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 5,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-a9fe6d8711708973c",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-a9fe6d8711708973c",
+      "branche": "worktree-agent-a9fe6d8711708973c",
+      "tete": "abf6406",
+      "retard_commits": 284,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_garde_production.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 4459,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4564,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-aaafb81b13e76c172",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-aaafb81b13e76c172",
+      "branche": "worktree-agent-aaafb81b13e76c172",
+      "tete": "5701a60",
+      "retard_commits": 113,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/MANUEL.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 19672,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 19310,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/README.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 6724,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6724,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/pont-local-abonnement.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 16770,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 16770,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/set-claude-model.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3026,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3026,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-ab941411343b29376",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-ab941411343b29376",
+      "branche": "worktree-agent-ab941411343b29376",
+      "tete": "c271935",
+      "retard_commits": 129,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-abbea6f5f883f4469",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-abbea6f5f883f4469",
+      "branche": "worktree-agent-abbea6f5f883f4469",
+      "tete": "27bf53f",
+      "retard_commits": 127,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_agent.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 73315,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 74721,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_appliquer.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 10320,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 10903,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_disjoncteur.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 9839,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11129,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_essaim.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 30884,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 30884,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "tmp/",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": null,
+          "copie_erreur": "absent du worktree (supprime depuis ?)",
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-abfe13fb0c58da618",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-abfe13fb0c58da618",
+      "branche": "worktree-agent-abfe13fb0c58da618",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "AUDIT_TIERS_FILET.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 24341,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-acb34a9bbc8199d49",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-acb34a9bbc8199d49",
+      "branche": "worktree-agent-acb34a9bbc8199d49",
+      "tete": "323aff4",
+      "retard_commits": 115,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-acbd763084f29adf5",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-acbd763084f29adf5",
+      "branche": "worktree-agent-acbd763084f29adf5",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 6962,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_valide.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 37884,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 33502,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-acef566b4e8c5392f",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-acef566b4e8c5392f",
+      "branche": "worktree-agent-acef566b4e8c5392f",
+      "tete": "6b2285b",
+      "retard_commits": 104,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": []
+    },
+    {
+      "nom": "agent-ad2d06940ef00ceb7",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-ad2d06940ef00ceb7",
+      "branche": "worktree-agent-ad2d06940ef00ceb7",
+      "tete": "6b2285b",
+      "retard_commits": 104,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "Start-Claude.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 7924,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7924,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/Register-NexusDemarrage.ps1",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 6096,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6096,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-ad3f0e991a26eb4ce",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-ad3f0e991a26eb4ce",
+      "branche": "worktree-agent-ad3f0e991a26eb4ce",
+      "tete": "27bf53f",
+      "retard_commits": 127,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docker-compose.yml",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 5979,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 6402,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "requirements.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 14,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 15,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_doc.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 40700,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 40700,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-ade9a13af3736b1a3",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-ade9a13af3736b1a3",
+      "branche": "worktree-agent-ade9a13af3736b1a3",
+      "tete": "5701a60",
+      "retard_commits": 113,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/architecture/Escalation-policy.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1270,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1270,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Event-log.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1608,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1608,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Final-target-architecture.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 7362,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 7362,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Latency-budget.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 924,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 924,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/MCP-external-tool-layer.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1552,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1552,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/MCP-ne-doit-pas-bypasser-la-policy.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 871,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 871,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Mission-P0.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 21506,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 21506,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Model-lifecycle-automation.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1220,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1220,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Multi-agent-orchestration.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2121,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2121,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/execution-policy.yaml.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1367,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1367,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/execution-profiles.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1455,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1455,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/missions/INGEST-001-platform-integration.md",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 10933,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 10933,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/model-registry.yaml",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2455,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4187,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-ae2755c603728d190",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-ae2755c603728d190",
+      "branche": "worktree-agent-ae2755c603728d190",
+      "tete": "32c9175",
+      "retard_commits": 66,
+      "commits_agent": 2,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 7,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "commite",
+          "statut_git": "A",
+          "octets": 21255,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_agent.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 74556,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 74721,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_disjoncteur.py",
+          "etat": "commite",
+          "statut_git": "M",
+          "octets": 11130,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 11129,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 7,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-aec47b54a536e6499",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-aec47b54a536e6499",
+      "branche": "worktree-agent-aec47b54a536e6499",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": null,
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": false,
+        "rubriques_remplies": 0,
+        "trois_epreuves": {
+          "test": false,
+          "reverse": false,
+          "forward": false
+        },
+        "couleur_proposee": null,
+        "audit_tiers_rempli": false
+      },
+      "classification": "SANS_PREUVE",
+      "fichiers": [
+        {
+          "chemin": "docs/architecture/Agent-Trace-Schema.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 2138,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 2138,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Bayesian-routing-evolution-future.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1676,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1676,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Context-cache.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1434,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1434,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Prompt-registry.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1451,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1451,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/SKILLS.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3553,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3553,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/Verification-Agent.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 1871,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 1871,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "docs/architecture/provider-registry.txt",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 3004,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 3004,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/console_tools.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 4039,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 4039,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": false,
+            "rubriques_remplies": 0,
+            "trois_epreuves": {
+              "test": false,
+              "reverse": false,
+              "forward": false
+            },
+            "couleur_proposee": null,
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    },
+    {
+      "nom": "agent-afe13c9acd701d299",
+      "chemin": "C:\\local-llm-docker\\.claude\\worktrees\\agent-afe13c9acd701d299",
+      "branche": "worktree-agent-afe13c9acd701d299",
+      "tete": "a149320",
+      "retard_commits": 105,
+      "commits_agent": 0,
+      "erreur": null,
+      "preuve_fichier": "QUARANTAINE.md",
+      "preuve_erreur": null,
+      "verification": {
+        "preuve_presente": true,
+        "rubriques_remplies": 6,
+        "trois_epreuves": {
+          "test": true,
+          "reverse": true,
+          "forward": true
+        },
+        "couleur_proposee": "VERT",
+        "audit_tiers_rempli": false
+      },
+      "classification": "PREUVE_PARTIELLE",
+      "fichiers": [
+        {
+          "chemin": "QUARANTAINE.md",
+          "etat": "non_commite",
+          "statut_git": "??",
+          "octets": 26297,
+          "copie_erreur": null,
+          "original_present": false,
+          "original_octets": null,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_capability.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 30590,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 30590,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_conformite.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 89957,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 92142,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        },
+        {
+          "chemin": "scripts/nexus_validate.py",
+          "etat": "non_commite",
+          "statut_git": " M",
+          "octets": 34170,
+          "copie_erreur": null,
+          "original_present": true,
+          "original_octets": 34209,
+          "original_erreur": null,
+          "verification": {
+            "preuve_presente": true,
+            "rubriques_remplies": 6,
+            "trois_epreuves": {
+              "test": true,
+              "reverse": true,
+              "forward": true
+            },
+            "couleur_proposee": "VERT",
+            "audit_tiers_rempli": false
+          }
+        }
+      ]
+    }
+  ]
+}
