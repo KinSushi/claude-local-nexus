@@ -26505,3 +26505,25 @@ puissance-60 a MECANISE PLAFOND_PARALLELE=3 en dur (sa regle sociale a 4 ne l
 avait pas retenue -- de la prose). Le semaphore mecanisera la meme borne, cote
 machine, sans dependre du souvenir de chacun. Chacun reste sur son depot ; copie
 par redescente §0 quand eprouve.
+
+### §189 — A11 incr.2 : les lots CLOUD prennent le semaphore ; le defaut coeur est clos
+
+nexus_agent (commit d17db48, les deux jumeaux). Un bloc symetrique au mutex
+est_local : tout lot portant une tache -cloud acquiert semaphore('inference', N)
+machine-wide (N=3 defaut, env), et rend 75 si plein apres attente -- contention
+VISIBLE, jamais un gel. Nom AURUM_MACHINE_SEM_INFERENCE, distinct du mutex banc.
+
+PROUVE (reverse + forward, les deux jumeaux identiques) :
+  reverse : semaphore tenu de l exterieur (N=1) -> lot cloud rend 75 ;
+  forward : semaphore libre -> lot cloud l ACQUIERT (« inference OBTENU ») et
+            procede. Insertion propre (0 ruff neuf).
+
+A11, ETAT : incr.1 (primitive semaphore prouvee) + incr.2 (lots cloud cables) =
+le defaut COEUR est clos -- avant, un lot cloud passait SANS aucun verrou
+(nexus_agent:1583, est_local). RESTE incr.3, non bloquant : --etat montrant l
+occupation du semaphore PAR PROJET + annonce de la duree d attente avant de la
+subir (idee ea-mt5, 3e mode d echec : attente 12min44 indiscernable d un gel).
+Et la RACINE de l amplification, mesuree par cloud-quota : les replis cloud->cloud
+vers un alias du MEME compte visent la ressource epuisee, ne peuvent pas reussir
+et triplent la charge -- ne garder que le cross-FOURNISSEUR reduirait les chaines
+sans rien perdre (fil separe, generateur nexus_generate).
