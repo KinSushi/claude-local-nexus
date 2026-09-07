@@ -26334,3 +26334,29 @@ du contenu produit par le banc et audite.
 Gap mecanisme note : nexus_appliquer ne CREE pas de fichier neuf (il patche
 l existant) ; ajouter un nouvel outil passe donc par une copie I/O. A cabler un
 jour dans nexus_appliquer (mode --nouveau), pour ne pas dependre d un cp.
+
+### §184 — Concurrence adaptative posee ; et nexus_grounding a revele SON PROPRE bug par l usage
+
+Amelioration mesuree (contrat : « borner la concurrence cloud »). Sous saturation
+du banc partage, le parallele fait tout expirer, le sequentiel passe (mesure ce
+soir : v22 4/5 vides, v24 1/14, sequentiel ok). Pose (996d5f6) : apres la passe
+parallele, si largeur > 1, les taches _manquante sont rejouees UNE FOIS en
+sequentiel. No-op au succes ; banc auteur ; applique par nexus_appliquer ;
+jumeau aligne ; cliquet 0 ; smoke ok. Reserve : le declenchement reel est dur a
+injecter deterministe -- verifie par inspection + no-op, a eprouver a la
+prochaine saturation.
+
+=== L OUTIL nexus_grounding (§183) a montre SON defaut en le driant (§0.1.4) ===
+
+Premiere utilisation en production, pour bâtir le lot adaptatif : le banc a
+REFUSE (« je n ai pas acces au fichier »). Cause : nexus_grounding copie les
+pieces dans un TEMP DIR (tempfile) et attend --racine = ce dir ; l appelant a
+tire avec --racine scratchpad -> nexus_agent:313 a refuse la piece hors racine,
+EN SILENCE. Contourne pour aller vite (methode eprouvee : copies sous
+scratchpad/va/, --racine scratchpad). Le DEFAUT du tool reste :
+
+  A CORRIGER dans nexus_grounding : soit il copie sous un sous-dossier de la
+  racine que l appelant passe (pas un temp dir independant), soit il RETOURNE
+  la racine a utiliser et refuse un --racine incoherent -- jamais un refus
+  silencieux. Le defaut a ete trouve en 1 usage, pas par un audit : exactement
+  la doctrine temoin-mainteneur.
