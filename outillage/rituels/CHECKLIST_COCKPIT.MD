@@ -26471,3 +26471,37 @@ d inference couvrant AUSSI le cloud reglerait les trois projets. Construit ICI
 EMPRUNT note (puissance-60) : chercher les constantes dont le NOM porte un nombre
 -- son SENTINEL_32 faisait 28 octets, le controle echouait toujours. Le genre de
 defaut que rien n attrape.
+
+### §188 — A11 incrément 1 : primitive semaphore() prouvee ; l amplification mesuree change le N
+
+PRIMITIVE (commit 54383fd, les deux jumeaux). nexus_verrou_machine ne faisait
+qu un mutex (1 detenteur). semaphore(classe, n, ...) borne l inference a N :
+semaphore nomme du noyau Windows, libere a la mort du process comme le mutex.
+Prouve OBJECTIVEMENT : forward n=2 -> deux slots concurrents obtenus ; reverse
+n=1 -> 2e acquire (attente 0) REFUSE. Le banc avait ecrit _run_epreuve SANS
+jamais l appeler (code mort) ; --epreuve cablee ensuite, code 0.
+
+L AMPLIFICATION, mesuree par cloud-quota et relayee par puissance-60, et
+VERIFIEE ici (§112.4, pas recopiee) : la passerelle rend ~40 connexions
+sortantes pour 3 appels clients -- les places qu on COMPTE ne sont pas celles
+qu on OCCUPE. Cause : les chaines de repli cloud (fallbacks litellm_config:1550,
+80 refs -cloud). Nuance mesuree ICI : num_retries n apparait que 2 fois dans MA
+config (sans valeur), pas le num_retries:2 generalise du voisin -- mon
+amplification vient de la cascade de repli, moindre que la sienne. Consequence :
+le semaphore doit borner ce qu on OCCUPE. Chiffre de depart MESURE (puissance-60,
+zone utile 8-16, effondrement 64) : plafond global 9 = 3 par session x 3
+sessions.
+
+INCREMENT 2 -- PROCHAIN, pour clore A11 : cabler semaphore() dans l executeur de
+nexus_agent, PAR APPEL, classe 'inference', N=9. Le defaut mesure : nexus_agent
+ne prend le verrou que si est_local (ligne 1583) ; un lot cloud passe SANS aucun
+verrou. Plus l idee d ea-mt5 (3e mode d echec : attente 12min44 sur mutex banc
+tenu par un voisin, code 75) : exposer un --etat qui distingue LIBRE de TENU-par-
+projet, et ANNONCER la duree d attente AVANT de la subir -- une attente
+silencieuse est indiscernable d un gel.
+
+COORDINATION. Les 3 sessions se sont accordees sur la passerelle partagee :
+puissance-60 a MECANISE PLAFOND_PARALLELE=3 en dur (sa regle sociale a 4 ne l
+avait pas retenue -- de la prose). Le semaphore mecanisera la meme borne, cote
+machine, sans dependre du souvenir de chacun. Chacun reste sur son depot ; copie
+par redescente §0 quand eprouve.
