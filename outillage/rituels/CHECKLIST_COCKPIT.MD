@@ -27052,3 +27052,42 @@ Commit e27c258 (correctif) + celui-ci (test).
 mesurée dans nexus_agent (ligne 602) : le cloud accepte 4-20 connexions sans refus
 ni 429, latence p95 qui BAISSE — donc N=3 est prudent, pas physique (cf §199, le
 plafond 3 est une convention de partage). Piste de réglage, pas urgente.
+
+### §205 — Sémaphore death-safe : conçu, bâti sur COPIE, et une subtilité trouvée avant tout déploiement
+
+Seul item A11 réel restant (§200) : le sémaphore `inference` de nexus_verrou_machine
+n'est pas death-safe. CONFIRMÉ en lisant le code : `CreateSemaphoreW(None, n, n, nom)`
+— un sémaphore Windows n'a PAS de propriétaire, donc un détenteur tué avant son
+`finally` (ReleaseSemaphore) fuit sa place À JAMAIS ; et si le sémaphore existe, le
+`n` (max) passé est ignoré. C'est la cause des places fantômes qui m'ont bloqué mes
+propres lots plus tôt.
+
+**Conception (proven-pattern) :** remplacer le sémaphore unique par N MUTEX nommés
+(`..._0.._{n-1}`). Un mutex A un propriétaire ; à la mort du détenteur l'OS le marque
+ABANDONNÉ, et le prochain `WaitForSingleObject` rend `WAIT_ABANDONED` (0x80) EN
+ACQUÉRANT — la place est récupérée. Règle death-safety ET max (chaque process essaie
+ses N mutex indépendamment, pas de « premier créateur fige le max »).
+
+**Bâti sur une COPIE (fichier partagé critique → PLAN-avant-CODE, jamais le vivant).**
+Le banc a produit le patch (4 blocs), appliqué à la copie, py_compile OK.
+
+**Subtilité TROUVÉE par l'épreuve sur la copie (la raison même de bâtir sur copie) :**
+les mutex Windows sont RÉ-ENTRANTS par thread. Les tests FORWARD/REVERSE hérités
+acquièrent plusieurs slots dans le MÊME process → la ré-entrance accorde le 2e, le
+test échoue. ARBITRAGE : l'implémentation est CORRECTE pour l'invariant réel (cap
+CROSS-PROCESS ; chaque process nexus_agent prend 1 slot, jamais 2 → ré-entrance
+jamais déclenchée). Ce sont les tests same-process qui ne conviennent pas au mutex ;
+ils doivent devenir cross-process (subprocess tenant un slot vivant). Le test
+DEATH-SAFETY, lui, est déjà cross-process (subprocess qui meurt) et c'est le bon.
+
+**Reste, et pourquoi ce n'est PAS un tick :**
+1. adapter FORWARD/REVERSE en cross-process (subprocess qui acquiert + tient, avec
+   synchronisation « a acquis » avant que le parent vérifie) — une itération banc ;
+2. DÉPLOIEMENT COORDONNÉ : c'est le verrou PARTAGÉ des 4 sessions. Changer le
+   mécanisme (noms d'objets kernel : mutex vs sémaphore) pendant que les autres
+   l'utilisent stranderait leurs lots en vol. Le déploiement doit être annoncé,
+   tag `avant-*` posé, appliqué aux 2 jumeaux, à un moment calme. Réversible d'abord.
+
+Conception juste + build fait + subtilité trouvée : progrès réel. Rusher le déploiement
+d'un verrou partagé en fin de longue session serait le bricolage interdit (§0.6). Prêt
+à finir (test cross-process) puis déployer coordonné, sur go.
