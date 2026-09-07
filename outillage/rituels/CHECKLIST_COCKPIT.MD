@@ -26892,3 +26892,27 @@ audité (LOI 1), après feu vert.
 §197), pas de dérive déployé/dépôt (§198). L'item config « urgent » de P1 est
 mort ; à sa place, une piste health-check cloud mesurée. Le plan gagne en vérité
 ce qu'il perd en dramaturgie.
+
+### §200 — Vérification symétrique : les défauts A11 des pairs sont downstream, ma SOURCE les a déjà
+
+Après avoir réfuté le claim config d'un pair (§197-199), honnêteté §112.4 : vérifier
+AUSSI le claim verrou, plutôt que l'accepter parce qu'il est moins commode à lire.
+Lu dans le vrai code de CE dépôt :
+
+| claim des pairs | vérité mesurée dans ma source |
+| --- | --- |
+| « `banc` pas déclaré dans CLASSES → --etat aveugle » | FAUX ici : `nexus_verrou_machine.py:91` déclare `banc` ; `:94` déclare le sémaphore `inference` ; `--etat` énumère les deux (:365, :371). Vrai pour la copie `workspace/tools/verrou_machine.py` de cloud-quota — SON dépôt. |
+| « lots cloud ne prennent pas le verrou (agent:1583 `if est_local:`) » | Incomplet : `:1583 est_local` prend le mutex `banc` (:1588) ; `:1595 est_cloud` prend le sémaphore `inference` (:1601). Les lots cloud SONT bornés (mon A11 incr.2). |
+
+Ce projet est la SOURCE (§0) ; les mécanismes descendent vers les voisins. Les pairs
+lisaient une copie antérieure. Rien à « corriger » côté câblage : c'est fait.
+
+**Le vrai reliquat A11**, trouvé par l'usage et non par un pair : durcir le
+sémaphore `inference` — death-safety (un détenteur tué fuit une place, à la
+différence d'un mutex) et max fiable (N figé par le premier créateur). C'est le
+seul item A11 réel de P1. Le reste du « fil A11 » signalé par les pairs est un
+reflet de leurs copies, pas un défaut de la source.
+
+Leçon répétée : un claim de pair, comme un rendu de modèle, est un signal ; deux
+fois ce tour, la lecture du vrai code a changé la conclusion — une fois en
+réfutant (config), une fois en montrant « déjà fait » (verrou).
