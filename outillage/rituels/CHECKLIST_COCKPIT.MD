@@ -26391,3 +26391,44 @@ scripts/nexus_conformite.py » est propose alors que nexus_conformite.py, comme
 nexus_rituel.py et nexus_valide.py, est dans scripts/. Chemin mort, trouve en le
 lancant (temoin-mainteneur). Le hook SessionStart et les GESTES du cockpit le
 repetent = OUVERT.
+
+### §186 — nexus_chemins livre et cable ; deepseek-r1 installe ; le darwin verifie sur lui
+
+GARDE NEUVE (commit 7a2235d). nexus_chemins.py detecte toute reference morte
+(scripts|outillage)/nexus_*.py, distingue CORRIGEABLE (deplacement, --corriger
+repare, bloquant) de SANS CANDIDAT (prose/exemple, non bloquant). Trouve 78
+corrigeables reelles, toutes reparees ; cablee dans nexus_rituel (chemins_tenus).
+CINQ defauts du banc pris par l audit OBJECTIF, jamais par relecture : regex a
+groupe `name` AVALE par un backslash final de commentaire en mode re.VERBOSE
+(2 groupes au lieu de 3) ; fixture reverse creant la cible des DEUX cotes ;
+ancres non uniques (except Exception present 7x) ; et un FAUX defaut que J AI
+cru voir — « --epreuve rend 0 sur un crash » — qui etait un artefact de MA
+mesure : `python … | tail ; echo $?` rend le code de tail, pas de python.
+
+MODELE (demande operateur : « un agent qui complete la stack, auto-install, ne
+pas forcer »). `ollama pull deepseek-r1:8b` (raisonnement dedie, gap de la
+stack) : installe, exit 0. Test d inference : TIMEOUT (>170 s puis >100 s meme
+sur 120 jetons) — l iGPU partage est sature par 3 sessions, ce n est pas un
+defaut du modele. Exposition (nexus_generate + restart litellm) DIFFEREE : un
+restart perturberait les 3 sessions en cours.
+
+DARWIN VERIFIE, sur ce modele meme. `nexus_capability` :
+  Memoire moteur 66.2 Go | Disque libre 252.9 Go
+  deepseek-r1:8b  ->  ACCEPT (5.2 Go, dans le budget)
+Le « refus si ca ne rentre pas (cpu/gpu/ram/disque) » EXISTE deja : la mesure
+mecanisee sur disque, pas une intention. capability.verdict() gate la
+declaration et les pools (nexus_generate:489, REJECT/UNKNOWN exclus) ; disque
+garde par MARGE_DISQUE_GO dans nexus_maj_modeles ; l iGPU partage la RAM, donc
+la memoire couvre le GPU ; le CPU est force, non gatant. La tache quotidienne
+`Update-NexusModels -SyncLocal -SyncWeights -Validate -Restart` enchaine pull +
+regeneration gatee. GAP OUVERT, mineur : nexus_maj_modeles tire l update AVANT
+de consulter le verdict RAM (seul le disque est verifie pre-pull) ; impact
+faible car il ne met a jour que des modeles DEJA installes, donc deja ajustes.
+
+INTER-SESSIONS (consigne operateur). 3 pairs coordonnes sur la saturation de la
+passerelle partagee : mesure d un pair, 1 appel isole 35 s / 8-16 en vol OK /
+64 en vol = effondrement, 0 rendu — la cause est la CONCURRENCE, pas un quota.
+J ai retire une accusation FAUSSE (« c est toi la charge dominante ») refutee
+par la mesure PID d un pair (PID 2268 = Puissance_60+). Emprunts notes pour
+MON depot : un mouchard sitecustomize pour l epreuve de FUITE (§0.1.4.1), et un
+garde de lot « denoncer tout controle qui accuse >70 % ».
