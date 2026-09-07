@@ -25847,3 +25847,129 @@ venait proteger.
 
 > Un cliquet ne protege que si l'on regarde CE QU'IL DIT, ligne a ligne.
 > Une justification qui couvre tout ne verifie rien.
+
+
+---
+
+## 174. LA DERIVE NOMMEE, ET LA PORTE QUI LA CLOT
+
+### 174.1 La question, et la reponse qui s'imposait
+
+L'operateur : *le projet vit-il dans son propre arbre, independant de tes
+outils ?* Mesure : non. Un seul `.git`, et l'outillage pese 63 % du depot.
+*Si la reponse est non, tu derives. Remede = mecaniser.*
+
+### 174.2 Le livre d'abord, puis ses codes sources
+
+**Le livre.** *Generative AI with LangChain*, ch. 1 : un depot, `docs/` et
+`libs/`, des paquets separes a dependances propres, le coeur etant ce dont
+tout depend. Le critere de classement est la DIRECTION DE DEPENDANCE.
+
+**Les codes sources**, sur disque, corrigent la lecture : les depots des
+livres sont des dossiers de chapitres, pas des produits -- chercher chez eux
+comment separer serait chercher au mauvais endroit. Sauf trois :
+`Denis2054` a un `commons/` que 156 symboles importent ;
+`Agentic-Coding-with-Claude-Code` porte un `pyproject.toml` ; et
+`references/CODE_ENZO/ai-trader` est un produit reel, paquete :
+
+```
+[tool.setuptools.packages.find]
+include = ["ai_trader*"]
+exclude = ["tests*", "docs*", "notebooks*"]
+[project.scripts]
+ai-trader = "ai_trader.cli:cli"
+```
+
+**La frontiere vit dans le manifeste, et c'est le paqueteur qui l'impose.**
+Notre `nexus.ps1` est l'analogue de ce `[project.scripts]` -- et c'est lui
+qui mele cinq commandes produit a six d'orchestration.
+
+Les liens vers ces depots sont dans les `.txt` du corpus, 236 liens
+dedoublonnes ; le depot du livre LangChain, `benman1/`, est lui aussi en
+chapitres avec un `pyproject.toml` a la racine.
+
+### 174.3 La mesure, que le livre ne pouvait pas savoir
+
+```
+scripts/*.py   -> outillage/    0
+outillage/     -> scripts/      2      sens autorise
+scripts/*.ps1  -> outillage/   15 executions, 7 mentions
+server.js      -> outillage/    4      le pont MCP EST le produit
+nexus_valide, nexus_garde_production -> outillage/   2
+```
+
+**Vingt et une executions.** Le produit ne tourne pas sans dix-sept outils
+ranges dans `outillage/` : `nexus_conformite` sans lequel `start.ps1` ne
+demarre pas, `nexus_generate`, `nexus_releve`, `nexus_state`,
+`nexus_switch_engine`, `nexus_pull_host`, `nexus_validate`,
+`nexus_maj_modeles`, `nexus_sujets`, `nexus_appliquer`, `nexus_charge`,
+`nexus_savings`, `nexus_livres_semantique`, `nexus_verrou_tenir`, et le
+doublon `nexus_capability`.
+
+> J'avais classe 137 fichiers par leur AUTEUR -- moi -- et non par leur
+> APPELANT. C'est la derive, nommee.
+
+Et aucune porte n'existait : `nexus_portee_import.py`, seul candidat,
+detecte les imports locaux mal places -- la classe F823 --, pas les
+frontieres.
+
+### 174.4 La porte, posee et cablee
+
+`outillage/nexus_frontiere.py` reconnait les appels dans les trois langages
+sous leurs formes reelles, distingue EXECUTION et MENTION, et porte un
+CLIQUET : une reference fige les executions connues ; toute execution NEUVE
+fait echouer et est nommee ; `--rebaseline` exige `--motif`. Le rituel la
+lance : `frontiere tenue`.
+
+```
+reference               21 connues, chacune avec son motif
+porte                   code 0 -- 21 connues, 0 neuves, 0 disparues
+rituel                  frontiere tenue OK, cablage tenu OK
+cablage / integrite     0 / 0
+cliquet outillage       0   (ruff 95, la porte n'apporte rien)
+```
+
+Ce compte ne peut que descendre. Le rangement des dix-sept viendra ; la
+porte garantit qu'il ne se defera pas sans que personne le voie.
+
+### 174.5 Ce qu'il a fallu, dit sans arrondir
+
+**Un caractere.** Trois rendus complets ont echoue au meme endroit : la
+regex exigeait un separateur de chemin apres `outillage`, la ou dix-huit
+sites ont un guillemet. Trouve en lisant le code -- pas en recommandant une
+quatrieme fois.
+
+**L'oracle corrige par l'outil, trois fois.** 3 executions JavaScript
+annoncees, 4 reelles ; 17 produits annonces, 14 -- deux ne sont que
+mentionnes ; et la 21e execution est une reference que mon grep de verite
+terrain EXCLUAIT. Un outil qui retrouve exactement ce qu'on attend n'est
+pas prouve juste : il est prouve conforme a l'attente.
+
+**Cinq defauts de mon applicateur**, tous trouves en le lancant : cle JSON
+supposee ; liste lue comme dictionnaire, deux fois ; rendu tronque POSE A
+MOITIE parce que seuls les triplets complets etaient comptes ; cloture
+markdown au milieu d'une ancre ; et l'installateur, qui a plante APRES les
+ecritures et AVANT les portes -- sans retour arriere, parce que le plantage
+a contourne le retour arriere. Aucun n'a atteint le depot ; le dernier a
+laisse un etat intact et non juge, qu'il a fallu juger a la main.
+
+**Le banc omet `<<<FIN>>>`** un rendu sur trois, sans que le rendu soit
+tronque. Le bloc suivant ou la fin du texte le borne ; tolere sous garde --
+zero FIN dans tout le rendu, autant d'AVANT que d'APRES --, jamais en
+general.
+
+### 174.6 CE QUI RESTE OUVERT — remplace SS173.5
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| **19** | l'arbre n'a pas son propre `.git` | **PORTE POSEE** ; le rangement reste a faire |
+| **23** | **dix-sept outils du produit dans `outillage/`** | **NOMMES, non deplaces** ; reference figee |
+| 24 | classificateur d'appartenance | 14/14, mais 6 gardes orphelines : marqueur `hook` sans suffixe, un token, commande |
+| 25 | `pyproject.toml` a la forme d'ai-trader | apres le rangement, jamais avant |
+| 26 | `--sortie-brute` ecrit les clotures markdown | signale par une session voisine, verifie, commande |
+| 27 | `--sortie-brute` ne sait pas ecrire DEPUIS un rendu existant | commande |
+| 16 | `nexus_appliquer.py` : tolerance au retrait | ecarte 3 fois |
+| 21 | 25 occurrences de SIM105 | ouvert |
+| 22 | le cliquet de cablage sans porte de rebasement | ouvert |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+| 19b | `rituels/STATE.md`, residu a la racine | non retire |

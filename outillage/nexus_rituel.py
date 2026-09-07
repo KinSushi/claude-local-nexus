@@ -369,6 +369,31 @@ def cablage_tenu(racine: Path) -> tuple[str, str]:
         return IGNORE, str(exc).splitlines()[0][:60]
 
 
+def frontiere_tenue(racine: Path) -> tuple[str, str]:
+    """
+    Empêche que le produit se remette à dépendre de l'outillage sans que
+    personne le voie -- dix‑sept outils ont été rangés du mauvais côté à la
+    main, et rien ne l'a dit pendant un jour.
+    """
+    try:
+        r = subprocess.run(
+            [sys.executable, "outillage/nexus_frontiere.py"],
+            cwd=racine,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            encoding="utf-8",
+            errors="replace",
+        )
+        lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+        if r.returncode == 0:
+            return OK, (lignes[0] if lignes else "")
+        return MANQUE, " | ".join(lignes[:2])[:90]
+    except subprocess.TimeoutExpired:
+        return IGNORE, "nexus_frontiere n'a pas repondu en 180 s"
+    except Exception as exc:
+        return IGNORE, str(exc).splitlines()[0][:60]
+
 def outillage_tenu(racine) -> tuple[str, str]:
     """
     La dette que les linters mesurent a-t-elle AUGMENTE ce tour ?
@@ -502,6 +527,7 @@ def main() -> int:
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
         ("cablage tenu", lambda: cablage_tenu(racine)),
+        ("frontiere tenue", lambda: frontiere_tenue(racine)),
         ("appelant recent", lambda: appelant_recent(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),
         ("redaction declaree", lambda: redaction_declaree(racine)),
