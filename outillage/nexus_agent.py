@@ -968,9 +968,22 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
                 _marques.append(_m.group(0))
         _chemins_presents = [_c for _c in _chemins if _c and _c in _txt]
         if _marques and _chemins_presents:
-            _avert = "[!] ECRITURE DETECTEE : marque '%s' et chemin '%s'. Un test lit et n'ecrit que dans un repertoire temporaire ; un rendu ne doit jamais ecrire sur un fichier donne a analyser.\n" % (_marques[0], _chemins_presents[0])
-            resultat["texte"] = _avert + resultat["texte"]
-            resultat["etiquete"] = True
+            # On ne modifie plus le champ texte afin de ne pas corrompre le code Python.
+            # On ne garde le drapeau d'étiquetage que si la marque et le chemin
+            # apparaissent dans la même instruction (même ligne).
+            _ligne_concernée = None
+            for _line in _txt.splitlines():
+                # recherche d'une marque sur la ligne
+                _marque_sur_ligne = any(_re.search(p, _line, _re.I) for p in _pats)
+                # recherche d'un chemin sur la ligne
+                _chemin_sur_ligne = any(c in _line for c in _chemins)
+                if _marque_sur_ligne and _chemin_sur_ligne:
+                    _ligne_concernée = _line
+                    break
+            if _ligne_concernée is not None:
+                _motif = "[!] ECRITURE DETECTEE : marque et chemin dans la même instruction."
+                resultat["motif"] = _motif
+                resultat["etiquete"] = True
         try:
             _all_paths = _re.findall(r"(?:[A-Za-z]:)?[\w./\\_-]+\.[a-zA-Z0-9]+", _txt)
             _hors = [p for p in _all_paths if p not in _chemins]

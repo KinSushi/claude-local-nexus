@@ -164,12 +164,18 @@ def controle_gardes_accordes(racine):
     # 3. lecture de chaque garde et verification
     nb_gardes = len(scripts_routes)
     for nom_fichier, outils_routes in scripts_routes.items():
-        garde_path = os.path.join(racine, "scripts", nom_fichier)
+        # recherche du fichier garde d'abord dans scripts, puis dans outillage
+        path_scripts = os.path.join(racine, "scripts", nom_fichier)
+        path_outillage = os.path.join(racine, "outillage", nom_fichier)
         try:
-            with open(garde_path, "r", encoding="utf-8") as f:
+            with open(path_scripts, "r", encoding="utf-8") as f:
                 source = f.read()
-        except Exception as e:
-            return ("ALERTE", f"{nom_fichier} : impossible de lire le fichier ({e})")
+        except Exception as e1:
+            try:
+                with open(path_outillage, "r", encoding="utf-8") as f:
+                    source = f.read()
+            except Exception as e2:
+                return ("ALERTE", f"{nom_fichier} : impossible de lire le fichier (recherché dans {path_scripts} et {path_outillage} : {e2})")
 
         # parsing avec ast
         try:
@@ -586,13 +592,13 @@ def controle_hooks_cables() -> None:
         for bloc in blocs or []:
             for h in bloc.get("hooks") or []:
                 commande = str(h.get("command") or "")
-                trouve = re.search(r"scripts[/\\](\w+\.py)", commande)
+                trouve = re.search(r"(scripts|outillage|epreuves)[/\\](\w+\.py)", commande)
                 if not trouve:
                     continue
                 comptes += 1
-                script = os.path.join(ROOT, "scripts", trouve.group(1))
+                script = os.path.join(ROOT, trouve.group(1), trouve.group(2))
                 if not os.path.isfile(script):
-                    manquants.append("%s -> %s" % (evenement, trouve.group(1)))
+                    manquants.append("%s -> %s" % (evenement, trouve.group(2)))
 
     if not comptes:
         return noter("hooks cables", False, BLOQUANT,

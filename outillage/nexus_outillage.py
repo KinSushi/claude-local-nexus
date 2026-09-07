@@ -468,7 +468,7 @@ def _run_psscriptanalyzer() -> Dict[str, Any]:
             "$ErrorActionPreference='Stop'; "
             "Import-Module PSScriptAnalyzer; "
             "$cibles = @(Get-ChildItem -Path . -File -Filter *.ps1) + "
-            "@(Get-ChildItem -Path scripts, tools -Recurse -File "
+            "@(Get-ChildItem -Path scripts, tools, outillage -Recurse -File "
             "-Include *.ps1, *.psm1, *.psd1 -ErrorAction SilentlyContinue); "
             "$cibles | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName "
             f"-IncludeRule {','.join(PS_ANALYZER_RULES)} }} "

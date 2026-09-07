@@ -3490,10 +3490,14 @@ def test_garde_lecture() -> None:
 
     print("\n--- LECTURE AVANT ECRITURE : le garde refuse-t-il ? ---")
 
-    script = os.path.join(ROOT, "outillage", "nexus_garde_lecture.py")
-    if not os.path.isfile(script):
-        skip("garde de lecture", "nexus_garde_lecture.py introuvable")
-        return
+    # Recherche du garde de lecture dans scripts/ puis outillage/
+    script_paths = [
+        os.path.join(ROOT, "scripts", "nexus_garde_lecture.py"),
+        os.path.join(ROOT, "outillage", "nexus_garde_lecture.py"),
+    ]
+    script = next((p for p in script_paths if os.path.isfile(p)), None)
+    if script is None:
+        raise FileNotFoundError("nexus_garde_lecture.py introuvable dans scripts/ ou outillage/")
     readme = os.path.join(ROOT, "README.md")
     if not os.path.isfile(readme):
         skip("garde de lecture", "README.md absent")
