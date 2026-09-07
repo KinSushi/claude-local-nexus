@@ -26151,3 +26151,38 @@ Reste du plan : Vague 1 (lint SIM105/ruff/W292), Vague 2 (gardes/porte), Vague 3
 (mesurer d abord les items A). Pieges nommes (appliquer, classificateur) : ne pas
 re-frapper. Observe ce tour : le verrou `banc` est partage entre sessions et
 peut etre contendu -- les audits attendent qu il se libere, ce n est pas un defaut.
+
+### §179 — Trou mesure : les reverse-tests des gardes ne testent pas un vrai refus
+
+Trouve par l USAGE ce tour, en gate-ant SIM105 : 3 epreuves de gardes echouent
+sur l arbre propre (pre-existant, PAS cause par SIM105 -- baseline identique).
+Deux defauts EMPILES, l un masquait l autre :
+
+  1. CHEMIN PERIME. epreuve_garde_ecriture:8 calcule
+     `dirname(__file__)/scripts/...` = `epreuves/scripts/...` (manque la
+     remontee a la racine). epreuve_garde_lecture:12,23 pointe
+     `outillage/nexus_garde_lecture.py` alors que le garde est sous `scripts/`.
+     -> l epreuve ne TROUVE pas le garde (code 1/3).
+  2. CHEMIN CIBLE SYNTHETIQUE. Une fois le chemin corrige, l epreuve tourne et
+     le cas « refus ecriture protegee » ECHOUE : elle teste
+     `/protected/file.txt` et `/var/nexus/hook.json`, qui ne sont PAS dans l ACL
+     reelle (deny de settings.json). Le garde les AUTORISE, a juste titre. Le
+     reverse-test ne valide donc AUCUN vrai refus -- un controle muet qui se lit
+     comme une protection (§ contre-epreuve obligatoire).
+
+Consequence : les gardes ecriture/lecture n ont PAS de reverse-test effectif.
+C est exactement le trou que la doctrine « forward + reverse + fuite » existe
+pour fermer.
+
+CORRECTIF (Vague 2, gardes -- delibere, pas baclé) : deriver le chemin du garde
+de la racine (dirname(dirname(abspath(__file__)))) vers `scripts/` ; ET faire
+porter le cas refus sur un chemin REELLEMENT dans l ACL (une regle deny de
+settings.json, ou une ACL temporaire montee pour l epreuve), pour que le refus
+soit un vrai refus. NE PAS committer un demi-correctif (chemin seul) qui laisse
+l epreuve rouge sur une attente periMee -- ce tour a REVERT le chemin seul pour
+cette raison.
+
+Aussi rouge, cause distincte a mesurer : epreuve_avec_verrou (le lanceur
+outillage/nexus_avec_verrou.py EXISTE, l echec est ailleurs) ; « modules
+importables sans effet de bord » sur nexus_migration_plan/boussole/preserve
+(pre-existant).
