@@ -328,8 +328,7 @@ def etat() -> dict:
     fichiers = suivis()
     textes = contenus(fichiers)
     cibles = [f for f in fichiers
-              if (f.startswith("scripts/") or f.startswith("outillage/") or f.startswith("epreuves/"))
-              and f.lower().endswith((".py", ".ps1"))]
+              if f.startswith("scripts/") and f.lower().endswith((".py", ".ps1"))]
     resultat = {"cable": [], "appele": [], "preuve_seule": [], "orphelin": []}
     details = {}
     for cible in sorted(cibles):

@@ -26,11 +26,11 @@ Exploitation;scripts/start.ps1;Démarrage de la pile;13142;2026-09-06;1d05414317
 Exploitation;scripts/stop.ps1;Arrêt de la pile;4119;2026-09-02;ea4e8f7b82abfa83
 Rituel;outillage/nexus_boussole.py;Régénère cette boussole;12263;2026-09-06;cd2bccae51acf48b
 Rituel;outillage/nexus_state.py;Régénère STATE.md par mesure;23691;2026-09-06;0f961469143e0bbf
-Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1625302;2026-09-06;1e75779725f3866e
-Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1238316;2026-09-06;377a7481e1953d92
+Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1625302;2026-09-06;24116095625b3a50
+Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1244549;2026-09-06;c4f9c3eed6ed0fcf
 Rituel;outillage/rituels/PROGRESS.md;Historique des décisions et des erreurs;17296;2026-09-06;242c817f63c2aa2f
 Rituel;outillage/rituels/RESUME.ps1;Reprise de session;2878;2026-09-06;770e25b546079761
-Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3170;2026-09-06;61c7e5735751259d
+Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3171;2026-09-06;3db84bd5b3ae1798
 Documentation;README.md;Vue d'ensemble et installation;15254;2026-09-06;8633b42e4281334f
 Documentation;docs/pont-local-abonnement.md;Associer modèles locaux et abonnement;16774;2026-09-06;ee756cc3eb305c0c
 Architecture;.claude/agents/nexus-delegue.md;;4131;2026-08-29;103b5dbd0d19550c
@@ -43,7 +43,7 @@ Architecture;.github/workflows/verification.yml;;4608;2026-09-02;e4f4ae182cdf723
 Architecture;.gitignore;;5138;2026-09-06;9da579653d6593fb
 Architecture;.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
 Architecture;.ruff_cache/0.16.5/10030628807976243294;;3492;2026-09-05;e8cab144b47357fc
-Architecture;.ruff_cache/0.16.5/10108054744112579873;;8844;2026-09-06;0b58e31448dcfb97
+Architecture;.ruff_cache/0.16.5/10108054744112579873;;8844;2026-09-06;0afb74a93c83b7ba
 Architecture;.ruff_cache/0.16.5/10177341371865747424;;156;2026-09-01;3aa6f83eb4902b70
 Architecture;.ruff_cache/0.16.5/10179678212708851550;;4412;2026-09-01;799d8bfe9a949736
 Architecture;.ruff_cache/0.16.5/10270260337176019032;;588;2026-09-02;39c83b623861f0c1
@@ -121,7 +121,7 @@ Architecture;.ruff_cache/0.16.5/9691695313051288092;;212;2026-09-02;f851ae4f28ff
 Architecture;.ruff_cache/0.16.5/9885323605378818116;;8572;2026-09-05;6e9f70fedc08b31b
 Architecture;.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;LICENSE;;34523;2026-08-29;0d96a4ff68ad6d4b
-Architecture;PROGRESS.MD;;1126;2026-09-06;dd14363c606d9404
+Architecture;PROGRESS.MD;;1107;2026-09-06;f7f62245f2ce3243
 Architecture;Start-Claude.ps1;;7924;2026-09-02;1e0f9aacea9185a2
 Architecture;UTILISER_NEXUS.md;;4015;2026-09-06;74950f16ad22f5f5
 Architecture;docker-compose.gpu.yml;;941;2026-08-29;d8cb0679e22c2e51
@@ -269,7 +269,7 @@ Architecture;outillage/nexus_indexer_code.py;;20126;2026-09-06;8b40fe0e1bbfbf33
 Architecture;outillage/nexus_indexer_node.py;;7133;2026-09-06;10a7973214344567
 Architecture;outillage/nexus_ingerer.py;;17966;2026-09-06;0e5a088957505b26
 Architecture;outillage/nexus_libs.py;;3231;2026-09-06;d2512ab99673d731
-Architecture;outillage/nexus_livres.py;;8589;2026-09-06;890fbcc137a8d261
+Architecture;outillage/nexus_livres.py;;10412;2026-09-06;533583fd81df1306
 Architecture;outillage/nexus_livres_semantique.py;;9353;2026-09-06;1aeb9cd5f58692f9
 Architecture;outillage/nexus_loi1.py;;7273;2026-09-06;2b809f39def7783c
 Architecture;outillage/nexus_maj_modeles.py;;17352;2026-09-06;50f3e9131de6561d
@@ -300,7 +300,7 @@ Architecture;outillage/nexus_sonde_aveugle.py;;3778;2026-09-06;4610bca9b80adb96
 Architecture;outillage/nexus_stats_jsonl.py;;5894;2026-09-06;9bf65a3f349486af
 Architecture;outillage/nexus_sujets.py;;23495;2026-09-06;5ecf28d06ca8ae32
 Architecture;outillage/nexus_test_outillage.py;;25098;2026-09-06;52036273fe934bba
-Architecture;outillage/nexus_traque.py;;15635;2026-09-06;876e7556473353f8
+Architecture;outillage/nexus_traque.py;;15920;2026-09-06;190a7162e5a70142
 Architecture;outillage/nexus_verbatim.py;;10790;2026-09-06;6ec91fbea334f3ad
 Architecture;outillage/nexus_verifie_rendu.py;;7143;2026-09-06;24cf94e640252313
 Architecture;outillage/nexus_verrou_machine.py;;15077;2026-09-06;a60f534393dbb2ef
@@ -310,7 +310,7 @@ Architecture;outillage/nexus_worktree.py;;21217;2026-09-06;c7958f47442f4d43
 Architecture;outillage/rituels/ACHEVEMENT.md;;4895;2026-09-06;865fc5ff076ca1b7
 Architecture;outillage/rituels/A_POSER_global.json;;7953;2026-09-06;d33a9cd20d953d7d
 Architecture;outillage/rituels/A_POSER_local.json;;2266;2026-09-06;ab47a83210e121bb
-Architecture;outillage/rituels/BOUSSOLE.csv;;1424574;2026-09-06;8763544a1b632183
+Architecture;outillage/rituels/BOUSSOLE.csv;;1424574;2026-09-06;8f7f6749beaa7505
 Architecture;outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md;;38355;2026-09-06;1f94b6bf8244d354
 Architecture;outillage/rituels/CHECKLIST_PROGRESS.md;;1574;2026-09-06;93e29435ac217652
 Architecture;outillage/rituels/CORPUS_LIVRES.md;;6232;2026-09-06;7a297119dcca2efd
@@ -351,6 +351,9 @@ Architecture;outillage/rituels/_QUARANTAINE_BRICOLAGE/_temoin_bricolage.py;;88;2
 Architecture;outillage/rituels/cablage_reference.json;;201;2026-09-06;6d19bf14707bf2c3
 Architecture;outillage/rituels/orphelines_reference.json;;17;2026-09-06;19f6520b84322b8e
 Architecture;outillage/rituels/outillage_reference.json;;440;2026-09-06;2b33083950875be5
+Architecture;outillage/rituels/plans_sources/PLAN_A_isolation_et_frappes_cloud.md;;13785;2026-09-06;011f2a85b814dde0
+Architecture;outillage/rituels/plans_sources/PLAN_B_unifie_corpus_ouvert.md;;9828;2026-09-06;9545ac7dbb527041
+Architecture;outillage/rituels/plans_sources/_SOURCES.md;;1058;2026-09-06;5426164eb4d6e8c7
 Architecture;references/CODE_ENZO/OS_Pipeline_MT5_forge/.dockerignore;;96;2026-08-22;7d249627df3cd118
 Architecture;references/CODE_ENZO/OS_Pipeline_MT5_forge/.gitattributes;;93;2026-08-22;59ac1b0bb6f8859b
 Architecture;references/CODE_ENZO/OS_Pipeline_MT5_forge/.github/workflows/ci.yml;;2345;2026-08-22;e488d8cb3fffd21f
@@ -9930,7 +9933,7 @@ Architecture;rituels/STATE.md;;3159;2026-09-06;f51af9386104272f
 Architecture;scripts/.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
 Architecture;scripts/.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;scripts/Compact-NexusDisk.ps1;;7508;2026-09-06;564219d23ef82777
-Architecture;scripts/Initialize-Nexus.ps1;;10610;2026-09-06;efd71e15406efd0a
+Architecture;scripts/Initialize-Nexus.ps1;;10632;2026-09-06;052891fdd2e49001
 Architecture;scripts/Install-NexusCommande.ps1;;4054;2026-08-31;5e0850f51dbbc5fd
 Architecture;scripts/Register-NexusDemarrage.ps1;;6096;2026-09-02;ea7149bfe4d7be05
 Architecture;scripts/console_tools.py;;4044;2026-09-06;a03b80e03bdd69bf
