@@ -83,7 +83,7 @@ def build_index(args):
     # Determine repository root and data directory
     _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     _data_root = os.path.join(_repo_root, "references", "livres")
-    for root, dirs, files in os.walk(_data_root):
+    for root, _dirs, files in os.walk(_data_root):
         if "index.tsv" not in files or "symbols.jsonl" not in files:
             continue
         index_path = os.path.join(root, "index.tsv")

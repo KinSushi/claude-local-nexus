@@ -157,9 +157,7 @@ class CircuitBreaker:
 
             self._transition_if_needed(target)
             entry = self._state[target]
-            if entry["state"] == "open":
-                return False
-            return True
+            return entry["state"] != "open"
 
     def record_success(self, target):
         """Record a successful call for the target.

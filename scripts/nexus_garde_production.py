@@ -48,9 +48,7 @@ def refuse(chemin: str) -> bool:
         return False
     if _is_temp_path(chemin):
         return False
-    if os.environ.get("NEXUS_PRODUCTION_LIBRE") == "1":
-        return False
-    return True
+    return os.environ.get("NEXUS_PRODUCTION_LIBRE") != "1"
 
 
 def _handle_tool(charge: dict) -> int:

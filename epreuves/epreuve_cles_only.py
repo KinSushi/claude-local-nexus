@@ -56,10 +56,7 @@ def main() -> int:
 
     # On lit le bloc entre accolades après --only car argparse n'entoure pas les clés de guillemets
     m = re.search(r'--only\s*\{([^}]*)\}', texte)
-    if m:
-        cles = {k.strip() for k in m.group(1).split(',') if k.strip()}
-    else:
-        cles = set()
+    cles = {k.strip() for k in m.group(1).split(',') if k.strip()} if m else set()
     manquantes = [c for c in testees if c not in cles]
     if manquantes:
         for c in manquantes:

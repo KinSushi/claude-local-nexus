@@ -41,7 +41,7 @@ def _run_guard(guard_path, payload):
 def main():
     # Determine repository root (parent of this script's directory)
     script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-    repo_root = os.path.abspath(os.path.join(script_dir, ".."))
+    os.path.abspath(os.path.join(script_dir, ".."))
     # Find guard scripts
     guard_files = [
         f for f in os.listdir(script_dir)

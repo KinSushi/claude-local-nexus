@@ -788,6 +788,7 @@ def main():
         if bascule:
             print("  (bascule de plan : %s)" % bascule)
         return 0
+    return None
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -449,9 +449,7 @@ def main() -> int:
                     tgt_model, tgt_api = alias_to_pair[target]
 
                     # Ignorer les mécanismes de routeur et les alias sans api_base.
-                    if src_model.startswith("auto_router/") or tgt_model.startswith("auto_router/"):
-                        pass
-                    elif not src_api or not tgt_api:
+                    if src_model.startswith("auto_router/") or tgt_model.startswith("auto_router/") or not src_api or not tgt_api:
                         pass
                     elif src_model == tgt_model and src_api == tgt_api:
                         errors.append(

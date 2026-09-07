@@ -100,10 +100,7 @@ def extraire_chemin(regle):
         valeur_chemin = regle.get("path") or regle.get("chemin")
         if isinstance(valeur_chemin, str):
             m = re.search(r'\((.*?)\)', valeur_chemin)
-            if m:
-                valeur_chemin = m.group(1).strip()
-            else:
-                valeur_chemin = valeur_chemin.strip()
+            valeur_chemin = m.group(1).strip() if m else valeur_chemin.strip()
         else:
             valeur_chemin = None
 
@@ -119,15 +116,11 @@ def normaliser_relatif(chemin):
     Normalise un chemin en forme relative à la racine du dépôt,
     avec des séparateurs uniformes '/' et en minuscules.
     """
-    if os.path.isabs(chemin):
-        rel = os.path.relpath(chemin, ROOT)
-    else:
-        rel = chemin
+    rel = os.path.relpath(chemin, ROOT) if os.path.isabs(chemin) else chemin
     rel = rel.replace('\\', '/')
     rel = rel.lower()
     rel = re.sub(r'^\./+', '', rel)
-    rel = re.sub(r'/+', '/', rel)
-    return rel
+    return re.sub(r'/+', '/', rel)
 
 
 def refuser(chemin_affiche):

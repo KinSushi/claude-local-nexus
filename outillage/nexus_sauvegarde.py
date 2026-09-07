@@ -23,7 +23,7 @@ import sys
 
 def run_git_command(args, cwd, timeout):
     """Run a git command with given arguments, cwd and timeout."""
-    result = subprocess.run(
+    return subprocess.run(
         ["git"] + args,
         cwd=cwd,
         stdout=subprocess.PIPE,
@@ -31,7 +31,6 @@ def run_git_command(args, cwd, timeout):
         text=True,
         timeout=timeout,
     )
-    return result
 
 def create_bundle(repo_root, dest_dir):
     """Create a git bundle and return its path, or raise RuntimeError."""

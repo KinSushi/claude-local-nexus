@@ -170,7 +170,7 @@ def controle_gardes_accordes(racine):
         try:
             with open(path_scripts, "r", encoding="utf-8") as f:
                 source = f.read()
-        except Exception as e1:
+        except Exception:
             try:
                 with open(path_outillage, "r", encoding="utf-8") as f:
                     source = f.read()
@@ -555,6 +555,7 @@ def controle_verrou_machine() -> None:
     noter("verrou machine", True, AVERTISSEMENT,
           "prefixe %s partage avec %d depot(s) voisin(s)"
           % (PREFIXE_ATTENDU, vus))
+    return None
 
 
 def controle_hooks_cables() -> None:
@@ -608,6 +609,7 @@ def controle_hooks_cables() -> None:
                      "script absent : " + " ; ".join(manquants[:3])) and None
     noter("hooks cables", True, BLOQUANT,
           "%d hook(s) pointent sur un script present" % comptes)
+    return None
 
 
 def controle_imports() -> None:
@@ -644,6 +646,7 @@ def controle_imports() -> None:
                      lignes[-1] if lignes else "aucun echec") and None
     noter("import des scripts", False, BLOQUANT,
           " | ".join(lignes[:3])[:200])
+    return None
 
 
 def controle_cablage() -> None:
@@ -679,6 +682,7 @@ def controle_cablage() -> None:
         return noter("cablage des scripts", True, AVERTISSEMENT, resume) and None
     noter("cablage des scripts", False, AVERTISSEMENT,
           " | ".join(lignes[:3])[:200])
+    return None
 
 
 def controle_pont_lecture_seule() -> None:
@@ -716,6 +720,7 @@ def controle_pont_lecture_seule() -> None:
           detail + " -- le pont pourrait reecrire une source avec une sortie "
           "de modele. Ajouter la destination a RESERVE_ECRITURE si elle est "
           "legitime, plutot que de desactiver le controle.")
+    return None
 
 
 def controle_travail_sur_original() -> None:
@@ -768,6 +773,7 @@ def controle_travail_sur_original() -> None:
           detail + " -- chaque reste est un cycle interrompu : la cible peut "
           "porter du texte ecrit par un modele et jamais relu. Verifier "
           "« git status » avant de supprimer.")
+    return None
 
 
 def controle_releves_lisibles() -> None:
@@ -1324,6 +1330,7 @@ def controle_portee_import() -> None:
     autres = [l for l in lignes if not l.startswith("DEFAUTS:")]
     noter("portee des imports", False, BLOQUANT,
           "%s defaut(s) : %s" % (compte, " | ".join(autres[:2])))
+    return None
 
 def controle_doc_python() -> None:
     """
@@ -1361,6 +1368,7 @@ def controle_doc_python() -> None:
         return noter("doc python", False, AVERTISSEMENT,
                      "index suspect : %d symboles seulement" % lignes)
     noter("doc python", True, AVERTISSEMENT, "%d symboles consultables" % lignes)
+    return None
 
 def controle_encodage_sortie() -> None:
     """

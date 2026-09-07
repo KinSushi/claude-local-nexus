@@ -273,17 +273,11 @@ def main():
         brief_path = ecrire_brief(cible, resultat.get("texte", ""))
 
         # 4. CORRECTION
-        if not args.simuler:
-            ok_corr = corriger_cible(cible, brief_path)
-        else:
-            ok_corr = True
+        ok_corr = corriger_cible(cible, brief_path) if not args.simuler else True
         supprimer_brief(brief_path)
 
         # 5. VALIDATION
-        if ok_corr and not args.simuler:
-            ok_val = valider_cible()
-        else:
-            ok_val = ok_corr
+        ok_val = valider_cible() if ok_corr and not args.simuler else ok_corr
 
         # 6. GESTION DES RESULTATS
         if ok_val:

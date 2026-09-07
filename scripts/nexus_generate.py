@@ -1039,7 +1039,7 @@ def render_chain(groups: dict, indent: int, width: int = 2,
     """
     pad = " " * indent
     out: list[str] = []
-    for cle, chain in sorted(groups.items()):
+    for _cle, chain in sorted(groups.items()):
         # Le terminal est composé de modèles locaux TEXTUELS. Le greffer sur
         # une chaîne d'embeddings ou de vision produirait exactement le
         # franchissement de modalité que la plateforme interdit ailleurs :

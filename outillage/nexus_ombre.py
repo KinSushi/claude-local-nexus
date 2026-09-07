@@ -126,8 +126,8 @@ def main():
         sys.exit(1)
 
     new_lines = simulate_replacement(target_lines, blocks)
-    added_lines = sum(len(blocks[m]) for m in markers)
-    removed_lines = sum(occurrences[m] for m in markers)
+    sum(len(blocks[m]) for m in markers)
+    sum(occurrences[m] for m in markers)
 
     for m in markers:
         print(f"{build_marker(m)}: occurrences={occurrences[m]}, lines_added={len(blocks[m])}, lines_removed={occurrences[m]}")

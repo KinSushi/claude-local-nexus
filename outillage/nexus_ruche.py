@@ -423,10 +423,7 @@ def main() -> int:
     print(f"Racine utilisee : {racine}")
 
     # Charger ou reinitialiser le journal d'etat
-    if args.tout_refaire:
-        etat = {}
-    else:
-        etat = charger_etat()
+    etat = {} if args.tout_refaire else charger_etat()
 
     # Decouverte, priorisation, puis plafond optionnel.
     cibles = decouvrir_cibles(racine)
