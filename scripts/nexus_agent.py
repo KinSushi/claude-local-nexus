@@ -1591,6 +1591,18 @@ def main() -> int:
             pile_verrou.close()
             print('banc: contention detectee', file=sys.stderr)
             return 75
+    est_cloud = any(str(t.get('modele', '')).endswith('-cloud') for t in taches)
+    if est_cloud:
+        from nexus_verrou_machine import semaphore
+        try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', 3))
+        except ValueError: n_inf = 3
+        try: attente_inf = float(os.getenv('NEXUS_SEMAPHORE_INFERENCE_ATTENTE_S', 120))
+        except ValueError: attente_inf = 120
+        ctx_inf = pile_verrou.enter_context(semaphore('inference', n_inf, projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_inf, bavard=True))
+        if not ctx_inf.obtenu:
+            pile_verrou.close()
+            print('inference: semaphore cloud plein (contention machine)', file=sys.stderr)
+            return 75
     depart = time.time()
     resultats: List[dict] = []
     # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
