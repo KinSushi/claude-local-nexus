@@ -96,11 +96,23 @@ def run_git(args):
 
 def get_modified_files_from_base(base):
     """
-    Retourne la liste des fichiers modifiés entre <base> et HEAD.
+    Retourne la liste des fichiers modifiés entre <base> et HEAD,
+    en excluant les fichiers supprimés (statut D).
     Utilisé lorsque l’on compare deux commits déjà existants.
     """
-    out = run_git(["diff", "--name-only", f"{base}..HEAD"])
-    return [f for f in out.splitlines() if f]
+    out = run_git(["diff", "--name-status", f"{base}..HEAD"])
+    fichiers = []
+    for ligne in out.splitlines():
+        if not ligne:
+            continue
+        # le format est «<statut>\t<chemin>», par ex. «M\tsrc/foo.py» ou «D\told.py».
+        parts = ligne.split("\t", 1)
+        if len(parts) != 2:
+            continue
+        statut, chemin = parts
+        if statut.upper() != "D":
+            fichiers.append(chemin)
+    return fichiers
 
 def _tete_existe():
     """Vrai si le depot a au moins un commit."""
@@ -113,20 +125,38 @@ def _tete_existe():
 
 def get_modified_files_uncommitted():
     """
-    Fichiers modifies depuis HEAD : index ET arbre de travail.
+    Fichiers modifiés depuis HEAD : index ET arbre de travail,
+    en excluant les fichiers supprimés (statut D).
 
-    `git diff` seul compare l'arbre a l'INDEX, pas a HEAD. Consequence
-    mesuree : apres un `git add` -- le geste naturel avant de valider --
-    le diff devenait vide, le script basculait sur un perimetre de commits
-    lui aussi vide, et concluait qu'il n'y avait rien a juger. Indexer son
-    travail desarmait donc le validateur.
+    `git diff` seul compare l'arbre à l'INDEX, pas à HEAD. Conséquence
+    mesurée : après un `git add` – le geste naturel avant de valider –
+    le diff devenait vide, le script basculait sur un périmètre de commits
+    lui‑aussi vide, et concluait qu'il n'y avait rien à juger. Indexer son
+    travail désarmait donc le validateur.
 
-    Les fichiers neufs jamais indexes sont ajoutes a part : aucun diff ne
-    les contient, mais la batterie mecanique peut au moins verifier qu'ils
+    Les fichiers neufs jamais indexés sont ajoutés à part : aucun diff ne
+    les contient, mais la batterie mécanique peut au moins vérifier qu'ils
     tiennent debout.
     """
-    portee = ["diff", "--name-only", "HEAD"] if _tete_existe() else ["diff", "--name-only"]
-    fichiers = [f for f in run_git(portee).splitlines() if f]
+    if _tete_existe():
+        # HEAD existe : comparer l'index + l'arbre de travail à HEAD.
+        portee = ["diff", "--name-status", "HEAD"]
+    else:
+        # Aucun commit : comparer l'arbre de travail à rien.
+        portee = ["diff", "--name-status"]
+    lignes = run_git(portee).splitlines()
+    fichiers = []
+    for ligne in lignes:
+        if not ligne:
+            continue
+        # format «<statut>\t<chemin>»
+        parts = ligne.split("\t", 1)
+        if len(parts) != 2:
+            continue
+        statut, chemin = parts
+        if statut.upper() != "D":
+            fichiers.append(chemin)
+    # Ajouter les fichiers non suivis (untracked) qui ne figurent pas dans le diff.
     neufs = run_git(["ls-files", "--others", "--exclude-standard"]).splitlines()
     for f in neufs:
         if f and f not in fichiers:
