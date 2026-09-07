@@ -70,7 +70,8 @@ def main():
             # Mesure: l'appelant recoit « verrou machine [banc] OBTENU (ep) » au lieu de PRIS.
             # 3. Verifier si le verrou a été obtenu
             if not v:
-                sys.stderr.write(f"[!] {args.classe}\n")
+                sys.stdout.write(f"REFUS {args.classe} : verrou non obtenu\n")
+                sys.stdout.flush()
                 sys.exit(75)
 
             # 4. Verrou obtenu : informer l'appelant

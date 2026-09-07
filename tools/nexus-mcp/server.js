@@ -3537,10 +3537,26 @@ async function tenirVerrou(classe) {
       const parts = buffer.split('\n')
       buffer = parts.pop() // conserve le morceau incomplet
       for (const line of parts) {
-        if (line.trim() === 'PRIS') {
+        const trimmed = line.trim()
+        if (trimmed === 'PRIS') {
           pris = true
           clearTimeout(timer)
           resolve({ relacher: () => { child.stdin.end() } })
+          child.stdout.removeListener('data', onData)
+          return
+        }
+        if (trimmed.startsWith('REFUS')) {
+          clearTimeout(timer)
+          // texte complet après le préfixe REFUS
+          const texte = trimmed.slice('REFUS'.length).trim()
+          reject(new Error(`Refus verrou pour la classe ${classe} : ${texte}`))
+          child.stdout.removeListener('data', onData)
+          return
+        }
+        if (trimmed.startsWith('ERREUR')) {
+          clearTimeout(timer)
+          const texte = trimmed.slice('ERREUR'.length).trim()
+          reject(new Error(`Erreur verrou pour la classe ${classe} : ${texte}`))
           child.stdout.removeListener('data', onData)
           return
         }
@@ -3559,7 +3575,7 @@ async function tenirVerrou(classe) {
     child.on('close', (code) => {
       if (!pris) {
         clearTimeout(timer)
-        reject(new Error(`Verrou non pris pour la classe ${classe}, code 75 (CONTENTION)`))
+        reject(new Error(`Fermeture du processus sans réponse pour la classe ${classe}, code 75 (CONTENTION)`))
       }
     })
 
