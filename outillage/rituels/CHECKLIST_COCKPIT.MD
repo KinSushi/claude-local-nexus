@@ -26231,3 +26231,41 @@ Corollaire pour la liquidation cloud : plusieurs items du plan Vague 2 sont
 DEJA FAITS, decouvert en mesurant (175.2 la porte ignore deja les commentaires
 purs, nexus_frontiere:86 ; garde_agent ecrit deja le motif sur stderr,
 nexus_garde_agent:110). Mesurer AVANT de faire produire, toujours.
+
+### §181 — Revue massive GROUNDED du coeur (v23) : le cceur est PROPRE
+
+Vague cloud v23, 6 tranches du coeur, chaque tache ANCREE (fichier + doc
+docs/architecture/ + extrait de livre via nexus_livres) -- la lecon de
+l operateur : sans les ressources du disque, le banc DERIVE. Copies seulement
+(§0.4 : 21 pieces, 0 original). Resultat :
+
+  23-agent, 23-conformite : AUCUN BUG SUR
+  23-frontiere, 23-routage : rien
+  23-verrou  : FAUX POSITIF -- audite objectivement, rejete
+  23-gardes  : reel mais discutable -- non applique (jugement)
+
+Le grounding a MARCHE : 4 tranches saines la ou un survol nu aurait rendu des
+dizaines de faux positifs. Zero bug confirme a corriger. Le coeur est sain.
+
+=== LECON : la COPIE aplatie fait halluciner le banc ===
+
+23-verrou a « trouve » un ImportError : nexus_verrou_tenir importe
+`from nexus_verrou_machine import verrou` alors que « le fichier s appelle
+scripts_nexus_verrou_machine ». FAUX : c est le nom de la COPIE envoyee au banc
+(copie() aplatit scripts/nexus_verrou_machine.py -> PIECE_scripts_nexus_...).
+Le banc a lu le nom de la copie et deduit une structure de module fausse.
+L import reel (l.35) marche (verrou_tenir teste ce tour : PRIS).
+
+§0.4 impose la copie ; mais la copie doit GARDER le basename reel
+(nexus_verrou_machine.py), pas un nom aplati, sinon le banc hallucine les
+imports. Amelioration a porter aux builders de vagues : nommer la copie par son
+basename, pas par son chemin aplati.
+
+=== 23-gardes, note pour l operateur (non applique) ===
+
+nexus_garde_ecriture.py:202-205 : une regle deny en glob `*` a prefixe VIDE
+(ex. Edit(*)) refuserait TOUTE ecriture (cible.startswith('') est toujours
+vrai). Le banc propose d ignorer un prefixe vide. Mais Edit(*) = « verrouiller
+toutes les ecritures » peut etre VOULU ; le patch en ferait un no-op. Aucune
+config actuelle n utilise Edit(*). Decision d effet de bord laissee a
+l operateur, pas appliquee unilateralement.
