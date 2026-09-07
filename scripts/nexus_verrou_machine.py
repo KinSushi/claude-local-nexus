@@ -90,6 +90,9 @@ CLASSES = {
     "hachage": "un hachage massif d'arborescence (contention d'E/S disque)",
     "banc": "une inference locale sur le banc de modeles, la memoire du moteur etant partagee",
 }
+SEMAPHORES = {
+    "inference": "les lots cloud partagent la passerelle (plafond machine-wide)",
+}
 
 
 def _kernel32():
@@ -363,6 +366,12 @@ def main(argv=None) -> int:
         with verrou(classe, projet="sonde", attente_s=0.0, bavard=False) as v:
             libre = "LIBRE " if v.obtenu else "TENU  "
             print(f"  {libre} {classe:<10} {quoi}")
+
+    print("\n  SEMAPHORES (plafond, non exclusif) :")
+    for classe, quoi in SEMAPHORES.items():
+        with semaphore(classe, 1, projet="sonde", attente_s=0.0, bavard=False) as s:
+            etat = "LIBRE" if s.obtenu else "PLEIN"
+        print(f"  {etat:<6} SEM_{classe:<10} {quoi}")
 
     procs = processus_concurrents()
     print(f"\n  diagnostic (non autoritaire) — {len(procs)} processus concurrent(s) :")
