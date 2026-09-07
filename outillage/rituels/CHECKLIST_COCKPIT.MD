@@ -26581,3 +26581,38 @@ de git. Aucun push/fetch HTTPS possible. 157 commits saufs LOCALEMENT, pas sur
 GitHub. Action OPERATEUR : lever la politique sur libcurl-4.dll, ou passer le
 remote en SSH. Recoupe le /install-github-app annule. Rien a corriger dans le
 depot -- la vitrine a bien REFUSE de mentir sur un push qui n a pas eu lieu.
+
+### §192 — EXPLOITER LE DISQUE : inventaire MESURE, et les 102 livres enfin cherchables
+
+Consigne operateur repetee : « ne lache pas le disque, note au fur et a mesure,
+epuise TOUTES les ressources ». Mesure sur references/ (pas depuis le plan, qui
+mentait) :
+
+INDEXE (a un index.tsv, lu par nexus_livres) : livres/{code,epub,packt},
+CODE_ENZO, lecons, securite_confinement. CODE_LIVRES (305M) est atteint via
+livres/code.
+ATTEINT PAR UN AUTRE OUTIL : python_libs_docs (136M) -> nexus_doc (166 511
+symboles, index .nexus/index_doc_libs.tsv). Donc PAS invisible -- verifie avant
+de re-mecaniser (§0.6).
+INDEX SEMANTIQUE : couvre code/epub/packt (partiel), rien d autre.
+
+GENUINEMENT INVISIBLE (aucun index, aucun outil) -- le vrai gisement :
+  - livres_texte (114M, 102 livres pre-maches) -> FAIT ce tour ;
+  - python_ast_local (75M, ~234k symboles d API Python) -> A FAIRE ;
+  - node_docs (12M), shell_docs (12M) -> A FAIRE (le plan les disait indexes :
+    FAUX, aucun index.tsv mesure) ;
+  - python_libs_docs_eamt5 (149M), python_ast_eamt5 (68K) -> corpus du VOISIN
+    EA-MT5, hors de ce projet (chacun son depot).
+
+FAIT (commit outillage/nexus_indexer_texte.py) : convertisseur pre-mache ->
+index.tsv + symbols.jsonl (format nexus_livres). 86 livres, 29300 unites
+verbatim indexees. FORWARD REEL prouve : nexus_livres --texte "stable matching"
+-> livtexte.optimisation, livtexte.algorithmique_fondamentale. Bug rattrape par
+le CONSOMMATEUR (en-tete index.tsv manquant -> nexus_livres refusait) : l epreuve
+en isolation ne l avait pas vu. Index gitignore (derive, local). Cable dans
+nexus_test (patron des indexeurs).
+
+PROCHAIN, pour epuiser : indexer python_ast_local (234k symboles Python -- haute
+valeur anti-hallucination, complement de nexus_doc), puis node_docs et shell_docs.
+Chaque format demande son convertisseur (grounder le format AVANT). PLAN avant
+CODE, banc auteur, epreuve via le CONSOMMATEUR reel a chaque fois.
