@@ -112,6 +112,8 @@ def main():
     parser.add_argument("-l", "--limit", type=int, default=10,
                         help="Limite resultats")
     parser.add_argument("-r", "--read", help="ID du fragment a lire")
+    parser.add_argument("--texte", action="store_true",
+                        help="Recherche dans le texte complet du fragment au lieu du resume")
     args = parser.parse_args()
 
     ref_dir = Path(Path(__file__).parent).parent.joinpath("references")
@@ -126,10 +128,41 @@ def main():
         if "index.tsv" in files:
             found_any_corpus = True
             idx_path = Path(root).joinpath("index.tsv")
+            # Si l'option --texte est demandée, on charge le fragment pour
+            # rechercher dans son contenu (texte, implementation, docstring_brut, …)
+            # Sinon on conserve le comportement historique (id, type, resume).
             for row in _iter_index(idx_path):
                 if not row:
                     continue
-                keep, score = _score_entry(row, args.query)
+                if args.texte:
+                    # Lecture du fragment correspondant
+                    sym_path = Path(root).joinpath("symbols.jsonl")
+                    try:
+                        with open(sym_path, "rb") as f:
+                            off = int(row["offset_octets"])
+                            length = int(row["longueur_octets"])
+                            f.seek(off)
+                            data = json.loads(f.read(length).decode("utf-8"))
+                    except Exception:
+                        # En cas d'erreur de lecture, on ignore ce fragment
+                        continue
+                    # Construction du texte searchable à partir des champs disponibles
+                    searchable_parts = []
+                    for key in ("texte", "implementation", "docstring_brut", "resume"):
+                        if key in data and data[key]:
+                            searchable_parts.append(str(data[key]))
+                    searchable = " ".join(searchable_parts).lower()
+                    # Evaluation de la requête
+                    keep = True
+                    score = 0
+                    for term in args.query:
+                        t = term.lower()
+                        if t not in searchable:
+                            keep = False
+                            break
+                        score += searchable.count(t)
+                else:
+                    keep, score = _score_entry(row, args.query)
                 if keep:
                     matches.append((Path(root).name, row["id"], row["resume"],
                                     row["offset_octets"], row["longueur_octets"],

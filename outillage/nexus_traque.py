@@ -288,14 +288,19 @@ def analyser(chemin):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--racine", default="scripts")
+    p.add_argument("--racine", default="scripts",
+                   help="Répertoire racine à analyser (par défaut 'scripts').")
     p.add_argument("--classe", type=int, choices=range(1, 7))
     p.add_argument("--muet", action="store_true",
                    help="N'afficher que les totaux.")
     a = p.parse_args()
 
-    fichiers = [os.path.join(r, f) for r, _, fs in os.walk(a.racine)
-                for f in fs if f.endswith(".py")]
+    # Étendre le périmètre aux répertoires 'outillage' et 'epreuves' en plus du racine spécifiée.
+    racines = {a.racine, "outillage", "epreuves"}
+    fichiers = []
+    for racine in racines:
+        for r, _, fs in os.walk(racine):
+            fichiers.extend(os.path.join(r, f) for f in fs if f.endswith(".py"))
     total = collections.Counter()
     lignes = []
     for f in sorted(fichiers):

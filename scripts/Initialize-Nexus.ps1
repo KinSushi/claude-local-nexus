@@ -162,7 +162,7 @@ if (Test-Path $envFile) {
 # 3. Profil materiel
 # ------------------------------------------------------------
 Write-Etape "Profil materiel"
-$capabilityScript = Join-Path $Scripts "nexus_capability.py"
+$capabilityScript = Join-Path $RepoRoot "outillage\nexus_capability.py"
 if (Test-Path $capabilityScript) {
     python "`"$capabilityScript`"" | Select-Object -First 16
 } else {
@@ -204,7 +204,7 @@ if ($CheckOnly) {
 # 5. Moteur d'inference
 # ------------------------------------------------------------
 Write-Etape "Moteur d'inference"
-$switchEngineScript = Join-Path $Scripts "nexus_switch_engine.py"
+$switchEngineScript = Join-Path $RepoRoot "outillage\nexus_switch_engine.py"
 if (Test-Path $switchEngineScript) {
     python "`"$switchEngineScript`"" --status | Select-Object -First 6
 } else {
