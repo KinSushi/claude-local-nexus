@@ -26132,3 +26132,22 @@ Decision (doctrine §0 : ne pas adopter un mecanisme qui duplique/concurrence ce
 qui existe ici) : token_meter n est PAS adopte. La note l.489 « a comparer avant
 de reprendre » est close par cette mesure. Si un rapport total_agents est voulu,
 sa source est nexus_agent:1714, jamais un journal.
+
+### §178 — Plan Vague 0 close : 11 (faux-vert de valide) et 13 (motif du verrou)
+
+Suite au plan reorganise (PLAN_UNIQUE, vagues cloud). Les deux rendus deja en
+attente, poses, audites tiers (banc : aucune regression), commites.
+
+  [x] 11  `nexus_valide.py` : git diff passe a --name-status, statut D EXCLU ;
+          plus d erreur « fichier introuvable » sur une plage qui supprime
+          (cockpit 175.1). Bloc 3 du rendu ecarte (ancre inventee, no-op).
+          Contre-epreuve deterministe : D exclu, M/A/untracked gardes. `039a999`.
+  [x] 13  `nexus_verrou_tenir.py` ecrit « REFUS <classe> : ... » sur STDOUT (non
+          [!] sur stderr, perdu) ; server.js le lit et rejette avec classe+motif.
+          Bug d echappement du banc (\n litteral) corrige avant la pose.
+          Forward : REFUS sur stdout, code 75 ; reverse : chemin PRIS intact. `5b00ab1`.
+
+Reste du plan : Vague 1 (lint SIM105/ruff/W292), Vague 2 (gardes/porte), Vague 3
+(mesurer d abord les items A). Pieges nommes (appliquer, classificateur) : ne pas
+re-frapper. Observe ce tour : le verrou `banc` est partage entre sessions et
+peut etre contendu -- les audits attendent qu il se libere, ce n est pas un defaut.
