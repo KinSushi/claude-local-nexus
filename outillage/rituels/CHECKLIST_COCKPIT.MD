@@ -25321,3 +25321,121 @@ correctifs ecartes     6                     tous pour raison verifiable
 cecites levees         2                     hooks 5->8, gardes ALERTE->OK
 defauts de MES outils  7                     tous trouves en les lancant
 ```
+
+
+---
+
+## 169. J'AI CRU UN AUDIT SUR LE POINT QU'IL FALLAIT VERIFIER
+
+**Corrige SS166.3, qui est FAUX.** Une accusation portee au cockpit et dans
+un message de commit ne se reproduit pas.
+
+### 169.1 Ce que SS166.3 affirmait
+
+> *Le correctif celebre rend dix faux positifs sur dix. Aucun des dix ne
+> contient l'expression.*
+
+### 169.2 Ce qui est mesure, fragment par fragment
+
+```
+python outillage/nexus_livres.py --texte "quality gate"
+  puis, pour CHACUN des dix identifiants rendus :
+python outillage/nexus_livres.py -r <id> | grep -oci "quality gate"
+
+  1  epub.30-agents-every-ai-engineer-must-b.5d3bf6af#314
+  1  epub.30-agents-every-ai-engineer-must-b.5d3bf6af#350
+  1  epub.30-agents-every-ai-engineer-must-b.ee2dd604#472
+  1  epub.architecting-ai-software-systems.235a31f1#207
+  1  epub.architecting-ai-software-systems.718b19a6#161
+  1  epub.generative-ai-with-langchain.b73a5117#237
+  1  packt.30-agents-every-ai-engineer-must-build#200
+  1  packt.30-agents-every-ai-engineer-must-build#222
+  1  packt.architecting-ai-software-systems#094
+  1  packt.architecting-ai-software-systems#118
+```
+
+**Dix sur dix contiennent l'expression. Zero faux positif.** Le premier
+resultat porte la phrase en toutes lettres : *they integrate test synthesis
+and quality gates into their CI pipelines*.
+
+### 169.3 LA FAUTE, et elle est exactement celle que SS166 documentait
+
+L'audit disait : *le premier resultat, `packt.artificial-intelligence-for-
+cybersecurity#124`, contient douze fois << quality >> et << gate >> une
+fois, dans propagate*.
+
+J'ai verifie le CONTENU de ce fragment -- et le compte etait juste. **Je
+n'ai jamais verifie qu'il etait le premier resultat.** Il ne l'est pas.
+
+J'ai donc pris pour acquis le seul element qui portait la conclusion, et
+j'ai vérifié celui qui ne portait rien. Puis je l'ai ecrit au cockpit et
+dans un commit, sous le titre << le correctif celebre rend dix faux
+positifs sur dix >>.
+
+> Un audit tiers est un signal, jamais une preuve -- y compris quand il
+> vient de contredire douze de vos affirmations, et **surtout** alors. La
+> credibilite gagnee sur un point ne se reporte pas sur le suivant.
+
+### 169.4 Le defaut existe dans le code, et ne se manifeste pas
+
+La correspondance reste une sous-chaine sans frontiere de mot. Mais le
+classement par comptes fait remonter les vrais :
+
+```
+--texte "gate", les trois premiers :
+  mot entier "gate" : 22, 21, 21
+  mots contenant gate (propagate, delegate, mitigate...) : 0, 0, 0
+```
+
+Un fragment portant vingt-deux fois le mot entier bat un fragment portant
+une occurrence incidente. **Le rang 5 n'est donc pas un defaut vivant** :
+la frontiere de mot serait un raffinement, pas une reparation.
+
+Ce qui reste vrai de SS166.3 : le verdict negatif ment toujours sur les
+champs qu'il a interroges.
+
+### 169.5 Le cablage a de nouveau casse la porte, et le garde-fou l'a rendu
+
+Le correctif du rang 0 a ete pose avec consigne EXPLICITE d'exclure
+`outillage/rituels/`. Resultat mesure :
+
+```
+Cablage : 14 REGRESSION(S).   code 1
+```
+
+Meme compte qu'a la premiere tentative. L'exclusion n'a pas ete faite, ou
+pas au bon endroit. **Le garde-fou a ramene les deux fichiers
+automatiquement**, et l'arbre est reste propre -- c'est la premiere fois du
+jour qu'une casse est annulee sans qu'un humain ait a la voir.
+
+### 169.6 La sonde qui a rendu ce tour utile
+
+L'applicateur portait cette fois une sonde de JUSTESSE et non de quantite :
+
+```python
+# combien de resultats CONTIENNENT reellement l'expression cherchee ?
+ids = re.findall(r"\| ID: (\S+) \|", sortie)
+justes = sum(1 for f in ids[:10] if "quality gate" in lire(f).lower())
+```
+
+Elle a rendu `10 justes / 10 rendus` AVANT tout correctif -- et c'est ce
+chiffre, contredisant ce que j'avais ecrit, qui a declenche la
+verification. Une sonde qui compte des lignes n'aurait rien dit.
+
+### 169.7 CE QUI RESTE OUVERT — remplace SS168.4
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 0 | perimetre `nexus_cablage` + `CABLEURS` | ECARTE 3x ; casse la porte |
+| 1 | `nexus_traque` racines | POSE ET FAUX ; correctif ecarte (U+2019) |
+| 5 | `--texte` frontiere de mot | **N'EST PAS UN DEFAUT VIVANT** (169.4) |
+| 5b | verdict negatif qui ment sur ses champs | ouvert, reel |
+| 3 | perimetre ruff | ECARTE |
+| 4 | 5 skips restants de `nexus_test.py` | non faits |
+| 6 | outil de frontiere dans le depot | hors depot |
+| 8 | retirer `pyproject` du plan | a arbitrer |
+| 9 | 98 litteraux, `nexus.ps1` | methode a declarer |
+| 10 | `nexus_avant_apres.py` | POSE, SANS APPELANT |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+| 12 | `--sortie` ecrase sans avertir | ouvert |
+| **13** | **verifier le RANG d'un resultat, pas seulement son contenu** | **NOUVEAU** |
