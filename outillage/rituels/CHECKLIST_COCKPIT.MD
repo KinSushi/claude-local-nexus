@@ -26287,3 +26287,27 @@ Parcours conforme prouve de bout en bout : banc auteur, copies nommees basename
 (§181), applique par nexus_appliquer (la voie que le garde production impose),
 verifie en EXECUTANT le vrai garde. epreuve_avec_verrou n etait pas casse (4/4
 au re-test, l echec initial etait la contention du verrou).
+
+### §182 — Revue exhaustive (v23 coeur + v24 sequentiel) : ZERO bug vivant, projet propre
+
+Rafale sequentielle (parallele=1, car sous saturation le parallele fait tout
+expirer -- v22 4/5 vides, v24 1/14 ; en sequence « ca passe tout »). Grounded :
+copies basename + vrais chemins declares + doc d architecture par tranche.
+
+Audit objectif de CHAQUE trouvaille (execute/grep, jamais sur parole) :
+  - verrou_machine « json/Path sans import »  -> grep VIDE, invente. REJET.
+  - verrou_machine « obtenu sur echec »        -> degrade INTENTIONNEL (l.100). REJET.
+  - pull_host « NameError re »                 -> re importe l.33. REJET.
+  - pull_host « chemin outillage/ »            -> il est sous scripts/. FAUX.
+  - pull_host « yaml.YAMLError avant import »  -> reel mais MORT (yaml installe). Note.
+  - livres_semantique:45 / extraire_livres:165 -> lignes inexistantes. REJET.
+
+Sur ~6 trouvailles (7/14 tranches) : ZERO bug vivant. Le coeur (v23) etait deja
+0 bug. Conclusion mesuree : le projet est PROPRE.
+
+Doctrine confirmee A GRANDE ECHELLE (§180, §112.4) : meme GROUNDED (doc + vrais
+chemins joints), le banc HALLUCINE des bugs plausibles -- architecture inventee,
+numeros de ligne faux, design intentionnel pris pour un defaut. Le grounding
+REDUIT le volume de faux positifs, il ne les supprime pas. Seul l audit objectif
+(executer le code, grep l usage reel) protege. Un audit qui ACCUSE se verifie
+autant qu un audit qui RASSURE.
