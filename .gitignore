@@ -140,3 +140,6 @@ outillage/rituels/QUARANTAINE/agent-*/
 # Index derives de python_ast_local (machine-local, comme livres_texte / CODE_ENZO)
 references/python_ast_local/index.tsv
 references/python_ast_local/symbols.jsonl
+
+# Index derive des concepts (machine-local, comme livres_texte / CODE_ENZO)
+references/livres_texte_concepts/

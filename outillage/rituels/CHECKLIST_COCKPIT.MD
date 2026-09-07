@@ -26916,3 +26916,42 @@ reflet de leurs copies, pas un défaut de la source.
 Leçon répétée : un claim de pair, comme un rendu de modèle, est un signal ; deux
 fois ce tour, la lecture du vrai code a changé la conclusion — une fois en
 réfutant (config), une fois en montrant « déjà fait » (verrou).
+
+### §201 — « Au-delà du minimum » livré : les 26 995 concepts cherchables ; et un patch-à-patch qui corrompt
+
+Sur directive opérateur (« ne te contente pas du minimum ; exploite le disque »),
+la dernière couche disque non exploitée — `livres_texte/*/*__PRE_MACHE/concepts.tsv`
+— est indexée. Corps : concept | nb_occurrences | unit_ids | types. Nouveau rayon
+`references/livres_texte_concepts/` (machine-local, gitignoré), 26 995 concepts.
+
+**Le banc a tout écrit (LOI 1), en trois tours, et le 3ᵉ enseigne quelque chose :**
+1. Jet complet : indexeur correct, MAIS il écrivait sa sortie dans
+   `references/livres_texte/` — le dossier de l'index VERBATIM (29 300 unités) qu'il
+   aurait ÉCRASÉ. L'épreuve verte ne le voyait pas (temp isolé, sans verbatim à
+   écraser) : faux vert classique, attrapé en LISANT le code, pas en le lançant.
+2. Patch de correction (sortie → `livres_texte_concepts` + contre-épreuve
+   anti-écrasement) : le correctif principal bon, mais un `mkdir` manquant faisait
+   planter la contre-épreuve.
+3. Micro-patch du `mkdir` : le banc a SUPPRIMÉ deux affectations et dupliqué une
+   ligne → NameError. **Leçon : itérer des patchs fragiles sur un fichier corrompt.**
+   Décision d'orchestrateur : REGÉNÉRER le fichier entier en un jet, avec toutes les
+   exigences dès le départ. Un jet propre > trois patchs.
+
+**Vérifié, indépendamment du banc (LOI 1, 3ᵉ temps) :**
+- non-écrasement du verbatim PROUVÉ par empreinte md5 identique avant/après
+  (`fe8da58…` / `e30ccb0…`, inchangées) — pas sur la foi de la contre-épreuve ;
+- 26 995 concepts, cherchables via le VRAI consommateur : `nexus_livres --texte
+  "3-coloring"` → `Rayon: livres_texte_concepts` ; lecture par ID → le lien
+  concept→unité (`unites: U0209`) fonctionne ;
+- épreuve exit 0 (forward + reverse + anti-écrasement), py_compile OK ;
+- câblé dans nexus_test (:1430), rebaseline « 0 orphelin, 19 preuve-seule ».
+
+**Disque : ÉPUISÉ, couche « au-delà du minimum » comprise.** 14 rayons cherchables
+désormais (concepts inclus). Reste, hors épuisement : l'index sémantique sur `texte`
+(§ plan B.4) et l'investigation health-check cloud (§199) — items de plan.
+
+**Lead à vérifier (usage) :** `nexus_appliquer` a appliqué un patch alors que ruff
+signalait « Found 10 errors » sur nexus_test.py. À confirmer : gate-t-il sur ruff
+(delta vs préexistant) ou seulement sur py_compile ? Si ruff n'est qu'indicatif,
+le dire ; sinon, un patch introduisant une erreur ruff passerait — à mesurer avant
+d'affirmer (§112.4).
