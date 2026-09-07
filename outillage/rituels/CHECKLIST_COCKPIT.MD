@@ -25212,3 +25212,112 @@ Dixieme occurrence de << instrument exact, conclusion fausse >>.
 | 9 | 98 litteraux, decoupage `nexus.ps1` | methode a declarer |
 | **10** | **un applicateur qui exerce l'outil qu'il modifie** | **NOUVEAU** |
 | 11 | fusion du plan unique | point de retour `95715b3` pose |
+
+
+---
+
+## 168. CORRIGER PAR CONSTRUCTION
+
+### 168.1 La chasse aux caracteres a echoue quatre fois ; une ligne l'a close
+
+Quatre outils ecrits ce jour ont plante sur un caractere typographique en
+console cp1252 : U+202F, puis U+2011, puis U+2192. A chaque fois la consigne
+au banc a ete durcie -- liste des caracteres interdits, rappel qu'un
+docstring s'imprime -- et a chaque fois un caractere neuf est passe.
+
+L'audit tiers avait donne le remede, et le depot le portait deja :
+
+```python
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+```
+
+`nexus_cablage.py:375-378`, `nexus_agent.py:69-70`, et une bibliotheque
+partagee complete, `outillage/console_tools.py`, qui gere en plus le flux
+redirige n'exposant pas `reconfigure`.
+
+**Mesure decisive** : avec cette ligne et U+2011 TOUJOURS PRESENT dans le
+fichier, `--help` est passe de `UnicodeEncodeError` a code 0, douze lignes.
+La classe entiere est close par construction, sans qu'aucun caractere ait
+ete traque.
+
+> On ne corrige pas une classe en interdisant ses membres un a un. La
+> quatrieme tentative a reussi parce qu'elle a change le TERRAIN, pas la
+> liste.
+
+### 168.2 `nexus_avant_apres.py` -- l'outil qui aurait vu la degradation
+
+Pose ce tour. Il existe parce qu'un applicateur a laisse passer un
+correctif dont le CODE DE SORTIE s'ameliorait pendant que sa SORTIE se
+vidait (SS167.2).
+
+Sa regle centrale : **une sortie qui perd plus de la moitie de sa substance
+est DEGRADE, quel que soit son code de sortie.** Un code meilleur ne rachete
+jamais une sortie videe.
+
+Il porte quatre verdicts -- IDENTIQUE, AMELIORE, DEGRADE, INDECIS -- et
+INDECIS n'est pas un echec : c'est le verdict honnete quand la comparaison
+ne tranche pas, par exemple sur une expiration.
+
+Les trois epreuves, sur copie avant toute pose :
+
+```
+py_compile                OK
+--epreuve                 code 0, DETECTE les deux sens
+--help                    code 0, 12 lignes
+caracteres hors Latin-1   aucun
+```
+
+Il a fallu TROIS rendus. Le premier a rendu un patch la ou un fichier etait
+demande -- ma consigne exigeait les deux formes a la fois, faute de ma
+part. Le deuxieme plantait sur --help. Le troisieme laissait --epreuve hors
+du groupe d'arguments requis, donc **impossible a lancer seul, c'est-a-dire
+jamais**.
+
+### 168.3 UN VERT QUI NE VAUT RIEN, et il le prouve lui-meme
+
+Apres la pose, le cliquet de cablage a rendu :
+
+```
+Cablage : aucune regression.     code 0
+```
+
+**Ce vert ne vaut rien.** Le nouvel outil est dans `outillage/`, et le
+perimetre du cliquet est reste `scripts/` -- le correctif qui l'elargissait a
+ete ecarte ce tour, son ancre etant introuvable.
+
+Le cliquet ne peut donc pas signaler que `nexus_avant_apres.py` **n'a aucun
+appelant**. Il est orphelin, et l'outil charge de le dire ne le voit pas.
+
+C'est la demonstration la plus nette du jour : *un controle muet sur un
+perimetre reduit rend exactement le meme silence qu'un controle satisfait.*
+
+### 168.4 CE QUI RESTE OUVERT — remplace SS167.5
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 0 | perimetre `nexus_cablage` + `CABLEURS` | ECARTE 2x, ancre introuvable |
+| 1 | `nexus_traque` racines | POSE ET FAUX ; correctif ECARTE |
+| 2 | hooks 5->8 et `gardes accordes` | **FAIT ET MESURE** |
+| 3 | perimetre ruff | ECARTE ; PSA **FAIT** |
+| 4 | 6 skips de `nexus_test.py` | 1 sur 6 fait (skips-c) |
+| 5 | `--texte` frontiere de mot | POSE ET FAUX ; bloc non ferme |
+| 6 | outil de frontiere dans le depot | hors depot |
+| 7 | `nexus_agent.py:971` | **FAIT**, jumeau aligne |
+| 8 | retirer `pyproject` du plan | a arbitrer |
+| 9 | 98 litteraux, `nexus.ps1` | methode a declarer |
+| 10 | `nexus_avant_apres.py` | **POSE, SANS APPELANT** |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+| **12** | **`--sortie` ecrase sans avertir** | **NOUVEAU** -- un second lot a detruit onze rendus |
+
+### 168.5 Le compte du tour
+
+```
+lots au banc          12 (v39 a frappe12c)   jetons ~280 000   cout 0
+correctifs poses       6                     retires 2
+correctifs ecartes     6                     tous pour raison verifiable
+cecites levees         2                     hooks 5->8, gardes ALERTE->OK
+defauts de MES outils  7                     tous trouves en les lancant
+```
