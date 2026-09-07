@@ -24803,3 +24803,144 @@ vitrine                            ne bloque plus sur un fichier absent
 Et le prix, dit sans l'arrondir : **cinq classes de chemin assemble** ont casse
 quelque chose aujourd'hui, dont trois n'ont ete trouvees que par un auditeur
 tiers.
+
+
+---
+
+## 165. LE CORPUS ETAIT FERME PAR UN CHAMP
+
+L'operateur a repete quatre fois, ce tour : exploiter les livres et le code
+source deja sur le disque, ne pas concevoir de memoire. La raison pour
+laquelle cela n'etait pas fait est enfin mesuree, et elle n'etait pas la
+paresse.
+
+### 165.1 Ce qui rendait le corpus muet
+
+La recherche interrogeait le champ `resume`, c'est-a-dire des TITRES DE
+SECTION. Jamais le texte. Cinq requetes sur des sujets que les livres
+traitent rendaient donc zero.
+
+```
+nexus_livres.py "quality gate"           ->  Verdict negatif: aucun resultat
+nexus_livres.py --texte "quality gate"   ->  10 fragments reels
+```
+
+Le corpus n'etait pas pauvre. Il etait ferme par un champ.
+
+Le correctif `--texte` est pose, et la contre-epreuve ci-dessus le prouve :
+zero sans l'option, dix avec. 70 fragments et 235 Ko de texte ont ensuite
+ete recoltes et synthetises par le banc.
+
+**Defaut residuel** : le verdict negatif annonce encore chercher << dans id,
+type ou resume >> meme avec `--texte`. Le message n'a pas suivi le
+correctif -- et c'est un message trompeur qui a fait durer la cecite.
+
+### 165.2 LA CAUSE RACINE, et elle invalide mon propre diagnostic
+
+`nexus_agent.py:313` refuse tout fichier hors de la racine de travail. Le
+scratchpad de l'orchestrateur est hors du depot. **Aucun extrait n'est
+jamais arrive au banc.**
+
+| lot | mauvaise racine | avec `--racine` |
+| --- | --- | --- |
+| v42, 5 taches | 4 523 jetons, 5 refus honnetes | **57 565 jetons**, 5 syntheses |
+
+J'avais accuse les numeros de ligne des extraits de rendre l'ancre
+impossible a copier. C'etait faux. Les sept << AUCUN DEFAUT SUR >> du lot
+v39 n'etaient pas de la prudence : c'etait le vide.
+
+**La garde nommait pourtant l'issue** : << --racine pour en designer une
+autre, ou copier le fichier sous la racine >>. Sa liste de refus n'a pas
+ete lue. Prix : **13 taches** produites dans le vide.
+
+C'est la neuvieme occurrence documentee de << instrument exact, conclusion
+fausse >>, et la premiere ou l'instrument DISAIT le remede.
+
+### 165.3 Ce que les livres ont rendu, une fois ouverts
+
+Le principe qui commande tout le reste, et il decrit le defaut du depot :
+
+> **<< Les quality-gates doivent etre recalcules a chaque execution ; un
+> seuil fixe une fois devient invalide des que les donnees ou le perimetre
+> changent. >>** -- *Architecting AI Software Systems*
+
+Corollaire du meme corpus : le controle porte sur les fichiers listes ou
+sur le diff de la CI -- donc **le perimetre se derive, il ne se grave pas**.
+
+Idee que je n'avais pas : declarer les paquets dans `pyproject.toml`, pour
+que les imports transversaux soient **bloques par le gestionnaire de
+paquets** plutot que verifies apres coup. Une frontiere structurelle vaut
+mieux qu'un controle.
+
+**Et ce que le corpus ne couvre PAS, dit par le banc lui-meme** : aucune
+methode de detection des dependances croisees ; aucune de reperer qu'un
+test s'est execute en silence ; aucun critere pour dire quand une
+reecriture coute plus que la dette ; **et la separation producteur/auditeur
+-- la LOI 1 -- n'est couverte par aucun extrait recu.**
+
+Cette derniere est la plus utile : la regle qui gouverne ce depot ne vient
+d'aucun livre. Elle n'a pas meme de plancher (SS0.8), et ne s'appuie donc
+que sur la mesure.
+
+### 165.4 Un defaut de la plateforme, trouve en s'en servant
+
+`nexus_agent.py:971` insere son avertissement DANS le texte du rendu :
+
+```python
+resultat["texte"] = _avert + resultat["texte"]
+resultat["etiquete"] = True
+```
+
+Un fichier Python complet et valide est devenu incompilable, sa premiere
+ligne etant une phrase francaise. Un champ portait deja l'information.
+
+Sa preuve est en outre faible : elle correle deux faits independants --
+une marque d'ecriture quelque part, un nom de fichier joint quelque part --
+sans exiger que le second soit DANS le premier. Faux positif mesure.
+
+`nexus_agent.py` existe en DEUX exemplaires identiques, `scripts/` et
+`outillage/`, 74 763 octets, et rien ne garde cette identite.
+
+### 165.5 La contre-epreuve qui ne prouvait rien
+
+`nexus_frontiere.py`, commande ce tour, portait un `--epreuve` qui
+annoncait << repertoire scripts/ absent, aucun intrus detecte >> et sortait
+1. Elle ne testait pas la DETECTION : elle testait la presence d'un
+repertoire. Elle aurait ete verte le jour ou la detection serait tombee en
+panne, pourvu que `scripts/` existe.
+
+Trouve en la LANCANT. Illisible autrement : un controle muet sur un arbre
+sain et un controle casse rendent exactement le meme silence.
+
+**Et l'orchestrateur a lui-meme pose 2 blocs sur 5 sans verifier d'abord
+les cinq ancres**, dans un script en ligne ecrit vite -- la discipline a
+lache des que la cadence a monte. C'etait sur une copie du scratchpad ;
+le depot n'a rien pris.
+
+### 165.6 CE QUI RESTE OUVERT — remplace SS164.5
+
+| sujet | etat |
+| --- | --- |
+| **audit tiers du plan unifie** | EN VOL, Fable 5.1 en arbre isole |
+| verdict negatif de `nexus_livres` | ment sur ce qu'il a cherche |
+| refus de piece jointe invisible | 13 taches perdues ; rien ne l'affiche |
+| `nexus_agent.py:971` | patch rendu, NON pose |
+| `nexus_agent.py` en double | identiques, aucun controle d'identite |
+| `nexus_frontiere.py` | contre-epreuve refaite, NON eprouvee |
+| `nexus_plan.py` | compile, contre-epreuve a 0, NON pose |
+| `frontiere_tenue` / `plan_tenu` | rendues, NON posees |
+| hooks cables | annonce **5**, le settings en declare **8** |
+| `gardes accordes` | ALERTE sur `nexus_garde_edition.py` |
+| perimetres ruff / PSScriptAnalyzer | `scripts` + `tools` seulement |
+| 6 skips silencieux | `nexus_test.py`, verifies ligne a ligne |
+| U+2011 U+2013 U+2019 U+202F U+2192 | subsistent dans `nexus_frontiere.py` |
+| Smart App Control | bloque `libcurl` ; **85 commits ne partent pas** |
+
+### 165.7 Ce que le tour a coute et rendu
+
+```
+lots au banc          6 (v39 a v43)      jetons  ~170 000      cout  0
+taches perdues au vide      13           cause trouvee au 5e lot
+patchs poses et commites     6           regressions jugees : aucune
+defauts nouveaux trouves     5           tous par l'EXECUTION, aucun par lecture
+```
