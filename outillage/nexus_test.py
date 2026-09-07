@@ -1426,6 +1426,7 @@ def main() -> int:
         jouer_epreuve_python("epreuve_rendu_vide.py", "rendu vide")
     if args.only in (None, "index_livres"):
         jouer_epreuve_python("nexus_index_livres.py", "index des livres")
+        jouer_epreuve_python("nexus_indexer_texte.py", "index des livres_texte (102 livres)")
     if args.only in (None, "livres"):
         jouer_epreuve_python("nexus_livres.py", "corpus de livres")
     if args.only in (None, "sauvegarde"):
