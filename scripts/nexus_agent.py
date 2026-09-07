@@ -1417,6 +1417,18 @@ def charger_competence(nom: str) -> str:
         return fh.read()
 
 
+def _ecrire_refus_sortie(sortie_path, taches, cause):
+    if not sortie_path:
+        return
+    try:
+        with io.open(sortie_path, 'w', encoding='utf-8', newline='\n') as fh:
+            for t in taches:
+                fh.write(json.dumps({'nom': t.get('nom', ''), 'refus': cause,
+                    'texte': '', 'vide': True, 'cause_vide': 'refus_verrou', 'tokens': 0},
+                    ensure_ascii=False) + '\n')
+    except Exception as exc:
+        print('refus non ecrit dans %s : %s' % (sortie_path, exc), file=sys.stderr)
+
 def main() -> int:
     with contextlib.suppress(Exception):
         # Premiere ligne a 11,6s sur 11,7s; run long indiscernable d'un run gele
@@ -1590,6 +1602,7 @@ def main() -> int:
             # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
             pile_verrou.close()
             print('banc: contention detectee', file=sys.stderr)
+            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'banc: contention detectee')
             return 75
     est_cloud = any(str(t.get('modele', '')).endswith('-cloud') for t in taches)
     if est_cloud:
@@ -1602,6 +1615,7 @@ def main() -> int:
         if not ctx_inf.obtenu:
             pile_verrou.close()
             print('inference: semaphore cloud plein (contention machine)', file=sys.stderr)
+            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'inference: semaphore cloud plein (contention machine)')
             return 75
     depart = time.time()
     resultats: List[dict] = []
