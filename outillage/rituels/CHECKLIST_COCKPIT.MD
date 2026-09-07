@@ -26645,3 +26645,34 @@ a tort. Il ne restait vraiment que livres_texte (fait) et python_ast_local (en
 cours). Apres quoi : EPUISE. Lecon : mesurer avant de conclure « invisible » --
 un index.tsv profond ne se voit pas a maxdepth 3, et un corpus atteint par
 nexus_doc n est pas un gap meme sans index.tsv sous nexus_livres.
+
+### §194 — La STRATEGIE d ensemble (operateur), et les defauts A11 qu elle revele
+
+STRATEGIE, dictee ce tour : (1) parcourir TOUT le disque, EPUISER les ressources
+(indexer/exploiter) ; (2) alors seulement, elaborer LE plan d une traite ; (3)
+envoyer des SALVES MASSIVES par le cloud (<=15 agents), de maniere acharnee, pour
+liquider et finir le projet ; (4) tests + reverse + forward, PAS seulement le
+code mais le PROJET COMPLET eprouve, pour valider la qualite. Ne jamais s arreter
+avant epuisement ; avant de s arreter, verifier l epuisement ET demander
+confirmation.
+
+DEFAUTS A11 TROUVES PAR L USAGE (le semaphore d inference), et ils CONTREDISENT
+la phase 3 (salves massives) -- FIL PRIORITAIRE avant les vagues :
+  1. DEATH-SAFETY : un semaphore Windows ne libere PAS son slot a la mort du
+     detenteur (contrairement au mutex, kernel-libere). Un lot tue (TaskStop,
+     crash) FUIT son slot ; le semaphore se bloque PLEIN et refuse tout. Mesure :
+     3 lots zombies tenaient le semaphore ; il a fallu les tuer par leur chemin
+     (C:\local-llm-docker) pour le liberer.
+  2. MAX FIGE PAR LE 1er CREATEUR : CreateSemaphoreW ignore le compte si le nom
+     existe. Un NEXUS_SEMAPHORE_INFERENCE_N=9 n a AUCUN effet si le semaphore a
+     deja ete cree a N=3 (ou N=1 par la sonde --etat). Le plafond n est donc pas
+     fiable.
+  3. PORTEE PAR LOT, pas par appel : un lot a --parallele 15 prend 1 slot mais
+     fait 15 appels. N=3 lots => 45 appels => au-dela de l effondrement (64).
+     Le semaphore ne borne donc PAS ce qu il devrait.
+  4. N=3 bloque MES propres lots sequentiels des qu une fuite survient, alors
+     qu il ne borne PAS les pairs (leur code n a pas ce semaphore).
+CONSEQUENCE : avant les salves massives, REVOIR A11 -- soit death-safe + par
+appel + max fiable, soit le retirer du chemin de MES lots tant que les pairs ne
+le partagent pas. A ARBITRER. En attendant, je RESET le semaphore (tuer les
+zombies C:\local-llm-docker) quand il colle, et je poursuis l epuisement.

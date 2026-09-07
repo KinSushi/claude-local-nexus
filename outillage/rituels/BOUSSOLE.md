@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-07 15:34.
+> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-07 15:45.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -33,8 +33,8 @@
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-09-02 | `ea4e8f7b82abfa83` |
 | Rituel | `PROGRESS.MD` | Historique des décisions et des erreurs | 2 Ko | 2026-09-07 | `f14ea8da7e86aadb` |
 | Rituel | `outillage/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-07 | `f4b942bab7a8e4cc` |
-| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1591 Ko | 2026-09-07 | `6898b1a2680b3738` |
-| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1322 Ko | 2026-09-07 | `cf77bce058d72c27` |
+| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1591 Ko | 2026-09-07 | `592a2e871856a767` |
+| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1324 Ko | 2026-09-07 | `c528f65af5f8b892` |
 | Rituel | `outillage/rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-09-06 | `770e25b546079761` |
 | Rituel | `outillage/rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-07 | `84168657551e5f43` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 24 Ko | 2026-09-07 | `4027c4d837b6f1b1` |
@@ -334,7 +334,7 @@
 | Architecture | `outillage/rituels/ACHEVEMENT.md` | — | 5 Ko | 2026-09-07 | `2f5c4b7dbab00f84` |
 | Architecture | `outillage/rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-06 | `d33a9cd20d953d7d` |
 | Architecture | `outillage/rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-07 | `dc5e0c6fa0b788d2` |
-| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1394 Ko | 2026-09-07 | `ea8536f618a644d9` |
+| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1394 Ko | 2026-09-07 | `efe1b9b5972a0e3d` |
 | Architecture | `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | — | 37 Ko | 2026-09-06 | `1f94b6bf8244d354` |
 | Architecture | `outillage/rituels/CORPUS_LIVRES.md` | — | 6 Ko | 2026-09-06 | `7a297119dcca2efd` |
 | Architecture | `outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md` | — | 7 Ko | 2026-09-06 | `8fb3057f414f2e54` |
