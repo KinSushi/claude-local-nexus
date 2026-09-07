@@ -26311,3 +26311,26 @@ numeros de ligne faux, design intentionnel pris pour un defaut. Le grounding
 REDUIT le volume de faux positifs, il ne les supprime pas. Seul l audit objectif
 (executer le code, grep l usage reel) protege. Un audit qui ACCUSE se verifie
 autant qu un audit qui RASSURE.
+
+### §183 — Le grounding est un OUTIL portable, plus une prose : nexus_grounding.py
+
+Directive operateur : « apporte en copie l amelioration au MCP/A2A dans son propre
+dossier, attention aux pollutions ». Fait : tools/nexus-mcp/grounding/nexus_grounding.py
+-- son propre sous-dossier, server.js intact, par COPIE.
+
+Ce qu il mecanise (les deux lecons anti-hallucination, §181/§182) en UN outil
+reutilisable au lieu d un batir_v*.py jetable par vague :
+  construire_lot(fichiers, tache, docs, racine) -> lot nexus_agent avec
+  (1) copies nommees BASENAME (pas de chemin aplati), (2) vrais chemins DECLARES
+  dans la tache, (3) docs joints. Portable §0.5 : 0 chemin absolu, racine derivee
+  de __file__, degrade (LotConstructionError) si un fichier manque.
+
+Parcours : banc AUTEUR (rendu FICHIER) ; audite INDEPENDAMMENT (forward = basename
++ vrais chemins dans la tache ; reverse = fichier absent refuse) ; py_compile OK ;
+2 nits ruff (F401, B905) corriges a la source ; cliquet 0 ; installe par I/O (comme
+nexus_appliquer), sans l override -- le garde interdit d AUTHORER, pas d installer
+du contenu produit par le banc et audite.
+
+Gap mecanisme note : nexus_appliquer ne CREE pas de fichier neuf (il patche
+l existant) ; ajouter un nouvel outil passe donc par une copie I/O. A cabler un
+jour dans nexus_appliquer (mode --nouveau), pour ne pas dependre d un cp.

@@ -26,7 +26,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 __all__ = ["LotConstructionError", "construire_lot"]
 
@@ -216,7 +216,7 @@ def _run_epreuve() -> int:
             assert len(fichiers_copies) == 2, "Nombre de copies inattendu."
 
             # Les copies doivent être nommées par basename (ou préfixées en cas de collision)
-            for src_name, copy_rel in zip([file_a.name, file_b.name], fichiers_copies):
+            for src_name, copy_rel in zip([file_a.name, file_b.name], fichiers_copies, strict=False):
                 copy_name = Path(copy_rel).name
                 if copy_name != src_name:
                     # collision improbable dans ce test, mais on accepte le préfixe numérique
