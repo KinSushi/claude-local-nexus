@@ -26616,3 +26616,32 @@ PROCHAIN, pour epuiser : indexer python_ast_local (234k symboles Python -- haute
 valeur anti-hallucination, complement de nexus_doc), puis node_docs et shell_docs.
 Chaque format demande son convertisseur (grounder le format AVANT). PLAN avant
 CODE, banc auteur, epreuve via le CONSOMMATEUR reel a chaque fois.
+
+### §193 — INVENTAIRE DISQUE FINAL, mesure et corrige : presque tout est deja indexe
+
+Correction de §192 (mon find maxdepth 3 avait rate des index.tsv PROFONDS ; ne
+pas noter de memoire). Etat REEL, mesure (find references -name index.tsv + les
+sources de nexus_doc) :
+
+CHERCHABLE PAR nexus_livres (a un index.tsv + symbols.jsonl) :
+  references/livres/{code,epub,packt}, CODE_ENZO, lecons, securite_confinement,
+  node_docs/node/22.23.2 (Node.js 22 -- DEJA indexe, je le croyais a faire),
+  et livres_texte (102 livres, 29300 unites) AJOUTE ce tour.
+CHERCHABLE PAR nexus_doc (son propre index a offsets) :
+  python_libs_docs (166 511 symboles), shell_docs/bash/5.3 (61 primitives),
+  shell_docs/powershell/7.5 (306 cmdlets), lecons (306 lecons). shell_docs
+  n etait PAS un gap.
+ATTEINT VIA UN RAYON : CODE_LIVRES (305M) via livres/code.
+
+DERNIER GAP REEL, en cours : python_ast_local (362 fichiers _api_ast.md, ~234k
+symboles Python extraits par AST, complement des 166k de nexus_doc). Indexeur
+nexus_indexer_ast delegue (meme format que livres_texte).
+
+HORS PROJET (corpus du voisin EA-MT5, chacun son depot) : python_libs_docs_eamt5
+(149M), python_ast_eamt5 (68K).
+
+CONCLUSION : le disque etait deja exploite a ~90 % ; le PLAN le disait invisible
+a tort. Il ne restait vraiment que livres_texte (fait) et python_ast_local (en
+cours). Apres quoi : EPUISE. Lecon : mesurer avant de conclure « invisible » --
+un index.tsv profond ne se voit pas a maxdepth 3, et un corpus atteint par
+nexus_doc n est pas un gap meme sans index.tsv sous nexus_livres.
