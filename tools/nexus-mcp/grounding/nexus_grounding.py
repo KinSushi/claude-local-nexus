@@ -100,10 +100,22 @@ def construire_lot(
         échoue.
     """
     # ------------------------------------------------------------------ #
-    # 1. Détermination de la racine et du répertoire de travail temporaire
+    # 1. Détermination de la racine et du répertoire de travail
     # ------------------------------------------------------------------ #
     root_path = Path(racine).resolve() if racine is not None else _derive_root()
-    work_dir = Path(tempfile.mkdtemp(prefix="nexus_grounding_"))
+    # Le répertoire où seront écrits le lot JSON et les copies de fichiers.
+    # Si *cible_lot* est fourni, les copies sont placées dans le même répertoire
+    # que le fichier JSON (ou dans un sous‑répertoire de celui‑ci).  Sinon, on
+    # crée un répertoire temporaire comme auparavant.
+    if cible_lot:
+        json_path = Path(cible_lot).resolve()
+        copy_dir = json_path.parent
+        temporary_dir: Optional[Path] = None
+    else:
+        temporary_dir = Path(tempfile.mkdtemp(prefix="nexus_grounding_"))
+        json_path = temporary_dir / "lot.json"
+        copy_dir = temporary_dir
+
     try:
         # ------------------------------------------------------------------ #
         # 2. Copie des fichiers demandés
@@ -116,7 +128,7 @@ def construire_lot(
             if not src.is_file():
                 raise LotConstructionError(f"Fichier manquant : {src}")
 
-            rel_copie = _copy_with_basename(src, work_dir)
+            rel_copie = _copy_with_basename(src, copy_dir)
             fichiers_copies.append(str(rel_copie).replace(os.sep, "/"))
             correspondances.append(f"  {rel_copie.name}  =  {rel_path}")
 
@@ -129,7 +141,7 @@ def construire_lot(
                 if not src.is_file():
                     raise LotConstructionError(f"Document de grounding manquant : {src}")
 
-                rel_copie = _copy_with_basename(src, work_dir)
+                rel_copie = _copy_with_basename(src, copy_dir)
                 fichiers_copies.append(str(rel_copie).replace(os.sep, "/"))
                 # Les docs ne sont pas ajoutés aux correspondances, conformément
                 # à la spécification.
@@ -155,17 +167,20 @@ def construire_lot(
         # ------------------------------------------------------------------ #
         # 6. Écriture du fichier JSON
         # ------------------------------------------------------------------ #
-        json_path = Path(cible_lot) if cible_lot else work_dir / "lot.json"
-        json_path = json_path.resolve()
         json_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(
             json.dumps(lot, ensure_ascii=False, indent=1), encoding="utf-8"
         )
+        # Retour du chemin absolu du lot.  Les copies se trouvent dans le même
+        # répertoire que le lot (ou dans un sous‑dossier de celui‑ci).  L’appelant
+        # doit donc utiliser « --racine = dirname(lot_path) » lorsqu’il invoque
+        # nexus_agent.
         return str(json_path)
 
     except Exception as exc:
-        # Nettoyage du répertoire de travail en cas d’erreur
-        shutil.rmtree(work_dir, ignore_errors=True)
+        # Nettoyage du répertoire temporaire en cas d’erreur
+        if temporary_dir:
+            shutil.rmtree(temporary_dir, ignore_errors=True)
         if isinstance(exc, LotConstructionError):
             raise
         raise LotConstructionError(str(exc)) from exc
@@ -220,7 +235,10 @@ def _run_epreuve() -> int:
                 copy_name = Path(copy_rel).name
                 if copy_name != src_name:
                     # collision improbable dans ce test, mais on accepte le préfixe numérique
-                    assert copy_name.endswith(src_name), f"Nom de copie incorrect : {copy_name}"
+                    # Vérification d'utilisabilité : chaque copie doit exister sous le répertoire du lot
+                    lot_dir = Path(lot_path).parent
+                    for copy_rel in fichiers_copies:
+                        assert (lot_dir / copy_rel).is_file(), f"Copie introuvable sous la racine: {copy_rel}"
         except AssertionError as ae:
             print(f"Vérification du lot (forward) échouée : {ae}")
             return 1
