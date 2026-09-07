@@ -25625,3 +25625,120 @@ Passe outre EN LE DISANT, plutot qu'en l'ecartant.
 | **18** | **les 110 constats comptent 17 doublons** | **mesure, non traite** |
 | 10 | `nexus_avant_apres.py` sans appelant | ouvert |
 | 11 | fusion du plan unique | point de retour `95715b3` |
+
+
+---
+
+## 172. UN IMPORT LOCAL TUAIT LES LOTS DES AUTRES
+
+### 172.1 Le defaut, et pourquoi il etait invisible
+
+```
+File "scripts/nexus_agent.py", line 1513, in main
+  try: attente_verrou = float(os.getenv(...))
+UnboundLocalError: cannot access local variable os
+```
+
+Ligne 1540, **dans** main : un import de os et datetime. Python decide de la
+portee d'un nom a la COMPILATION de la fonction. Un import de os n'importe ou
+dans main rend donc os LOCAL a TOUTE la fonction -- y compris a la ligne
+1513, qui s'execute AVANT et qui appelle os.getenv.
+
+Le module etait pourtant importe au niveau du fichier, ligne 57. **Rien dans
+le fichier ne signale le conflit** : deux lignes eloignees de 1483 lignes, et
+un interpreteur qui les relie en silence.
+
+Le chemin n'est emprunte que lorsque le verrou du banc est demande, donc
+quand une inference LOCALE tient le mutex pendant qu'un autre lot demarre.
+Une session voisine l'a mesure 1 fois sur 1, en s'en servant.
+
+### 172.2 L'epreuve : statique, parce que la reproduire serait fragile
+
+Reproduire la contention aurait demande de tenir le mutex pendant qu'un
+autre lot demarre -- fragile, lent, et non concluant en cas de silence.
+L'epreuve analyse l'arbre syntaxique et pose une question plus simple :
+**quels modules main() importe-t-il localement ?**
+
+```
+avant   ['datetime', 'os']
+apres   ['datetime']
+```
+
+Elle verifie les DEUX sens : que os a disparu, ET que datetime subsiste --
+il n'est importe nulle part ailleurs, le retirer aurait casse le code
+suivant. Si os revient dans cette liste, le bug est revenu.
+
+### 172.3 Deux defauts d'encodage, fermes
+
+```
+antislash-n LITTERAL dans un message   True  -> False
+espace insecable dans le meme message  True  -> False
+--help en ASCII                        code 1 -> code 0
+```
+
+Le troisieme confirme SS168 : `sys.stdout.reconfigure` etait pose APRES
+`parse_args`, or argparse imprime avant. **Une classe n'est close que si
+elle l'est aussi pour --help.**
+
+### 172.4 L'ARBRE N'EST PAS SEPARE, ET C'EST MESURE
+
+L'operateur a demande verification. Mesure a l'instant :
+
+```
+UN SEUL .git
+
+315 fichiers suivis, dont
+  outillage/   131      orchestration
+  epreuves/     67      orchestration
+  --------------------  198, soit 63 % du depot
+  scripts/      29      produit
+  docs/         41
+  tools/         8
+  racine       ~15      docker-compose, litellm_config, model_list
+```
+
+**L'outillage pese deux fois le produit, dans le depot du produit, et dans
+son historique.** La demande etait << son propre .git >> ; ce qui a ete livre
+est une separation en REPERTOIRES. Ce n'est pas la meme chose.
+
+Ce qui est propre, en revanche : aucun fichier de session -- lots, scripts
+d'application, rendus -- n'est suivi. Le scratchpad vit hors du depot.
+
+Deux residus mesures : `rituels/STATE.md` traine a la racine, non suivi ; et
+deux fichiers de `docs/` portent un nom mutile par l'encodage
+(`Cache-policy-avanc\303\251e.txt`).
+
+**La separation en deux depots n'est PAS faite d'office** : elle casserait
+les cinq gardes epinglees par chemin absolu dans le settings global, quatre
+taches planifiees, `.mcp.json`, et le point d'entree `nexus.ps1` qui mele
+cinq commandes produit et six d'orchestration. La contrainte posee par
+l'operateur -- reversibilite avant fusion -- vaut ici aussi.
+
+### 172.5 CE QUI RESTE OUVERT — remplace SS171.5
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 17 | UnboundLocalError sur os | **FAIT ET PROUVE** |
+| 6 | reconfigure avant parse_args, antislash-n, NBSP | **FAIT** |
+| 16 | tolerance au retrait dans `nexus_appliquer.py` | **ECARTE 3 FOIS**, meme cause |
+| **19** | **l'arbre n'a pas son propre .git** | **ARBITRAGE OPERATEUR** |
+| 19b | `rituels/STATE.md` residu a la racine | non retire |
+| 19c | deux noms de fichiers mutiles dans docs/ | non traite |
+| 4 | sauts silencieux de `nexus_test.py` | 3 sur 6 faits |
+| 14 | 100 violations ruff | comptees, non corrigees |
+| 15 | 14 outils sans appelant | nommes, non cables |
+| 18 | 17 doublons dans le compte de 110 | mesure, non traite |
+| 10 | `nexus_avant_apres.py` sans appelant | ouvert |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+
+### 172.6 Ce que la journee mesure sur l'origine des trouvailles
+
+```
+defauts trouves par un AUDIT           7
+defauts trouves par L USAGE            9   dont les 2 plus graves
+defauts trouves dans MES OUTILS        9   tous en les lancant, aucun en les lisant
+```
+
+Les deux plus graves du jour -- le lot qui meurt sur le verrou, et la garde
+qui nomme un outil absent -- viennent tous deux de quelqu'un qui se servait
+de la plateforme pour de vrai, et aucun d'une relecture.
