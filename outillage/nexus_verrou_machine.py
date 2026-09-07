@@ -174,10 +174,10 @@ def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool 
 
     if bavard:
         etat = "OBTENU " if v.obtenu else "REFUSÉ "
-        print(f"  verrou machine [{classe}] {etat}({projet}) — {v.motif}")
+        print(f"  verrou machine [{classe}] {etat}({projet}) — {v.motif}", file=sys.stderr)
         if v.abandonne:
             print("    ⚠ le détenteur précédent a été tué : vérifier qu'il n'a pas laissé un "
-                  "travail à moitié fait")
+                  "travail à moitié fait", file=sys.stderr)
     try:
         yield v
     finally:
@@ -237,7 +237,7 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
 
     if bavard:
         etat = "OBTENU " if v.obtenu else "REFUSÉ "
-        print(f"  semaphore [{classe}] {etat}({projet}) — {v.motif}")
+        print(f"  semaphore [{classe}] {etat}({projet}) — {v.motif}", file=sys.stderr)
 
     try:
         yield v
