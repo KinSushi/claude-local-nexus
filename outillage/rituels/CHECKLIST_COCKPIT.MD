@@ -24944,3 +24944,162 @@ taches perdues au vide      13           cause trouvee au 5e lot
 patchs poses et commites     6           regressions jugees : aucune
 defauts nouveaux trouves     5           tous par l'EXECUTION, aucun par lecture
 ```
+
+
+---
+
+## 166. L'AUDIT TIERS A REFUTE TREIZE AFFIRMATIONS
+
+**Corrige la section 165, ne la remplace pas.** Une trace qu'on reecrit perd
+sa lecon avec sa faute.
+
+Audit mene par Fable 5.1, tiers n'ayant ecrit ni le plan ni les correctifs.
+317 568 jetons, 87 appels d'outil, 29 minutes. Il declare son arbre --
+l'arbre PRINCIPAL a `3f53f2d` plus quatre fichiers non commites -- parce que
+son propre worktree etait 84 commits en arriere et n'avait meme pas
+`outillage/nexus_livres.py`. Sans cette phrase, ses sections A et B
+n'auraient pas ete interpretables.
+
+Verdict : **13 refutees, 16 confirmees, 7 inverifiables, 10 defauts manques**.
+
+### 166.1 LA CASSE — j'avais brise la porte du rituel
+
+L'elargissement de perimetre de `nexus_cablage.py`, pose au commit `f85168d`
+et **declare verifie**, produisait :
+
+```
+python outillage/nexus_cablage.py   ->  Cablage : 14 REGRESSION(S).  rc=1
+python outillage/nexus_rituel.py    ->  [MANQUE] cablage tenu
+                                        VERDICT : le tour n'est pas clos
+```
+
+**Pourquoi ma verification ne l'a pas vu.** `nexus_valide.py` avait rendu
+<< aucune regression detectee, 3 fonctions touchees >>. Il juge les FONCTIONS
+DU DIFF ; il ne lance pas l'outil et ne regarde jamais son code de sortie.
+Faux vert dans l'instrument meme de la LOI 1.
+
+Et `py_compile` ne prouve rien d'un outil dont la LOGIQUE change de verdict.
+Le plan l'ecrivait -- << aucun py_compile ne compte comme preuve >> -- et ne
+l'a applique a aucun des quatre correctifs.
+
+Retour arriere au commit `5fdd5c4`. La porte tient de nouveau.
+
+**Les 14 regressions n'etaient pas du bruit.** Ce sont des trouvailles :
+douze outils d'`outillage/` cites seulement par le cockpit -- dont
+`nexus_livres.py` lui-meme --, `epreuves/epreuve_cles_only.py`, et le TEMOIN
+de quarantaine `outillage/rituels/_QUARANTAINE_BRICOLAGE/_temoin_bricolage.py`,
+balaye par un perimetre qui aurait du l'exclure.
+
+### 166.2 TROIS FABRICATIONS, ecrites en citant la regle qui les interdit
+
+**A. Une citation inventee.** La section 165 attribue a *Architecting AI
+Software Systems* la phrase :
+
+> << Les quality-gates doivent etre recalcules a chaque execution ; un seuil
+> fixe une fois devient invalide des que les donnees ou le perimetre
+> changent. >>
+
+**Elle n'existe pas.** Le texte reel, `garde.txt` ligne 53, dit :
+*Automated model validation pipelines ensure that models meet quality
+thresholds before deployment.* La phrase citee est le << principe 2 >>
+SYNTHETISE par le banc, promu au rang de citation d'ouvrage.
+
+```
+grep -i "recomput|recalcul|every run|each run" corpus_recolte/*.txt   -> rien
+```
+
+**B. Une source inventee.** << Declarer les paquets dans `pyproject.toml`,
+les imports transversaux sont bloques par le gestionnaire de paquets >>,
+attribue a deux ouvrages. `pyproject` et `setup.cfg` : **0 occurrence** dans
+la recolte. Le plan en faisait une << frontiere structurelle >> : ni livre ni
+mesure derriere, exactement ce que SS0.8 interdit.
+
+**C. Une generalisation.** << La LOI 1 n'est couverte par aucun livre. >> Le
+corpus la couvre : `packt.context-engineering-for-multi-agent-systems#052`
+decrit un Writer et un Validator distincts avec boucle de renvoi ;
+`packt.30-agents...#086` un agent de revue separe, << trusted first-pass
+filter >>. Le banc avait dit << aucun extrait RECU >> ; j'ai generalise
+235 Ko recus aux 24 Mo du corpus.
+
+Nuance que l'audit ajoute et qui vaut mieux que ma phrase : le corpus porte
+AUSSI le motif inverse, l'auto-revue. **La LOI 1 est un choix entre deux
+motifs documentes, pas un vide.**
+
+### 166.3 LE CORRECTIF CELEBRE REND DIX FAUX POSITIFS SUR DIX
+
+La section 165 presente comme preuve : `--texte "quality gate"` rend dix
+fragments la ou l'ancienne recherche rendait zero.
+
+**Aucun des dix ne contient l'expression.** La correspondance est un ET de
+SOUS-CHAINES, sans frontiere de mot, classe par comptes bruts. Le premier
+resultat contient douze fois << quality >> et une fois << gate >> -- dans
+*propagate*.
+
+```
+nexus_livres.py -r "packt.artificial-intelligence-for-cybersecurity#124"
+    | grep -ci "quality gate"      ->  0
+```
+
+Le correctif est POSE. Il n'est pas PROUVE. Ma contre-epreuve comparait la
+presence d'un resultat a son absence, jamais sa JUSTESSE -- un controle qui
+ne verifie que la non-vacuite.
+
+### 166.4 LES AUTRES REFUTATIONS, en bref
+
+| affirmee | mesuree |
+| --- | --- |
+| U+202F fait planter `nexus_frontiere` | **U+2011** (aide) et **U+2192** (message d'intrus) ; U+202F est dans un commentaire, jamais imprime |
+| `Initialize-Nexus.ps1` : 2 chemins morts | **un seul** ; `scripts/nexus_capability.py` existe et est le meme blob. Un 3e chemin perime subsiste ligne 282 |
+| 13 taches perdues dans le vide | le total melange deux methodes : refus = 14, rendus vides = 12. **13 n'est ni l'un ni l'autre** |
+| le refus etait invisible | il figure DEUX fois : champ `refus` de chaque rendu, et `[refuse]` imprime a la console. Le defaut est dans MON lecteur |
+| 194 fichiers Python hors perimetre | **147** suivis hors `scripts/` et `tools/` |
+| `nexus.ps1` : 5 produit / 6 orchestration | **9 etiquettes** au switch, pas 11 |
+| `nexus_plan.py --epreuve` -> 0 | mesure sur `plan_sans_etiquette.py`, **un autre fichier** ; l'original a une SyntaxError ligne 1 |
+| ruff 21 -> ~99 | ordre juste, exact **21 -> 93** ; PSA **14 -> 16** |
+
+### 166.5 CE QUE L'AUDIT A TROUVE ET QUE PERSONNE N'AVAIT VU
+
+1. **`CABLEURS` dit encore `scripts/Register-*.ps1`** alors que les deux
+   enregistreurs sont sous `outillage/` : `nexus_traque`, `nexus_vitrine` et
+   `nexus_state` sont classes << appele >> au lieu de << cable >>.
+2. **Le cliquet par NOM est aveugle aux doublons.** `outillage/nexus_agent.py`
+   passe pour cable parce que `nexus.ps1` appelle son JUMEAU de `scripts/`.
+   **Un doublon herite des appelants de son jumeau : il ne peut jamais
+   devenir orphelin.**
+3. **`nexus_livres.py` n'est appele par rien en production.** Le pont MCP
+   lance `nexus_livres_semantique.py`, sur un index du 2 septembre bati sur
+   les resumes. Le << corpus ouvert >> ouvre une CLI que personne n'emprunte.
+4. **`nexus_traque.py` grave ses racines relatives au repertoire COURANT** :
+   lance d'ailleurs, il analyse **0 fichier et rend 0**. Contraire a SS0.5, et
+   au principe que le plan enoncait lui-meme.
+5. **Les quatre << ambigus >> ne le sont pas** : chacun a des appelants
+   verifiables. La vraie question est << un paquet ou deux racines d'import >>.
+6. **`cause_vide: "contenu_present"`** sur cinq rendus VIDES : le champ decrit
+   la non-vacuite de la reponse et se lit comme son contraire, au moment
+   precis ou le contenu manquait.
+
+### 166.6 CE QUI RESTE OUVERT — remplace SS165.6
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 0 | perimetre de `nexus_cablage` **hors** `outillage/rituels/`, `CABLEURS` corrige | RETIRE, a refaire |
+| 1 | `nexus_traque.py` racines derivees de `__file__` | POSE ET FAUX |
+| 2 | hooks 5/8 et repli `gardes accordes` | patch v39/02 **deja rendu**, a arbitrer |
+| 3 | perimetres ruff 21->93, PSA 14->16, rebasement motive | non fait |
+| 4 | 6 chemins de `nexus_test.py`, en worktree | non fait |
+| 5 | `--texte` : frontiere de mot, classement, verdict honnete | **POSE ET FAUX** |
+| 6 | outil de frontiere DANS le depot, `reconfigure(errors=...)` | hors depot |
+| 7 | `nexus_agent.py:971` et **un seul foyer** pour la paire | non fait |
+| 8 | retirer `pyproject` du plan ; `nexus_portee_import.py` **existe deja** | a arbitrer |
+| 9 | 98 litteraux et decoupage de `nexus.ps1`, methode declaree | chiffres non reproductibles |
+
+### 166.7 LA LECON, et elle porte sur l'instrument
+
+Cinq de mes treize erreurs ont la meme forme : **un controle qui verifie la
+NON-VACUITE au lieu de la JUSTESSE**. Dix resultats valent mieux que zero ;
+un fichier qui compile vaut mieux qu'un fichier qui casse ; trois fonctions
+sans regression valent mieux qu'une regression. Aucun de ces trois ne dit
+que la chose est JUSTE.
+
+C'est la meme faute que le corpus ferme sur `resume` : une recherche qui
+rendait des resultats, donc paraissait marcher.
