@@ -69,7 +69,7 @@ import ctypes
 import os
 import sys
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 
 # ── Constantes Win32 ───────────────────────────────────────────────────────────────────────────
@@ -233,10 +233,8 @@ def processus_concurrents() -> list[dict]:
 def main(argv=None) -> int:
     f = sys.stdout
     if (getattr(f, "encoding", "") or "").lower().replace("-", "") != "utf8":
-        try:
+        with suppress(AttributeError, ValueError, OSError):
             f.reconfigure(encoding="utf-8", errors="replace")
-        except (AttributeError, ValueError, OSError):
-            pass
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     # `--etat` EST le comportement, il ne le declenche pas.
     #

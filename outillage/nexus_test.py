@@ -3415,10 +3415,8 @@ def test_isolation() -> None:
             reste = fh.read()
         check("reecrire la copie laisse l'original intact",
               reste == "ORIGINAL\n", repr(reste[:40]))
-        try:
+        with contextlib.suppress(OSError):
             os.remove(str(copie))
-        except OSError:
-            pass
 
     # -- 2. Le cycle passe bien la COPIE aux outils qui ecrivent.
     #
@@ -3593,10 +3591,8 @@ def test_garde_lecture() -> None:
             check("Write sur un fichier que la session vient de creer => autorise",
                   r.stdout == "", (r.stdout or "").strip()[:70] or "silence")
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(neuf)
-            except OSError:
-                pass
 
         # 4 ter. Le symetrique, qui prouve que la memoire n'est pas devenue
         # une passoire : une AUTRE session n'a rien ecrit, donc rien vu.

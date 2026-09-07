@@ -29,6 +29,7 @@ import logging
 import os
 import sys
 import tempfile
+import contextlib
 
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
@@ -215,10 +216,8 @@ def _atomic_write(path: str, write_func) -> None:
     except Exception:
         # La suppression ne doit pas masquer l'erreur d'origine : si le
         # temporaire a deja disparu, on laisse remonter la vraie cause.
-        try:
+        with contextlib.suppress(OSError):
             os.remove(tmp.name)
-        except OSError:
-            pass
         raise
 
 

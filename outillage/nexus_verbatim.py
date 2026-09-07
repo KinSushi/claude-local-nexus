@@ -53,6 +53,7 @@ import re
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
+import contextlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAGASIN = os.path.join(ROOT, ".nexus", "verbatim")
@@ -180,10 +181,8 @@ def purger(jours: int) -> tuple:
         if quand >= limite:
             gardees.append(e)
             continue
-        try:
+        with contextlib.suppress(OSError):
             os.remove(os.path.join(MAGASIN, e["id"] + ".txt"))
-        except OSError:
-            pass
         supprimes += 1
 
     # Les fichiers qu'aucune ligne d'index ne nomme sont les plus difficiles a
@@ -214,10 +213,8 @@ def purger(jours: int) -> tuple:
 
 
 def main() -> int:
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
 
     p = argparse.ArgumentParser(description=__doc__)
     g = p.add_mutually_exclusive_group()

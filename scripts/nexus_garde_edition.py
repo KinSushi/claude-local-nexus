@@ -35,6 +35,7 @@ import io
 import json
 import os
 import sys
+import contextlib
 
 
 def chemin_ecrit(charge) -> str:
@@ -106,10 +107,8 @@ def main() -> int:
         message = ("Syntaxe invalide dans %s ligne %s : %s"
                    % (os.path.basename(chemin), exc.lineno or "?",
                       str(exc.msg)[:100]))
-        try:
+        with contextlib.suppress(Exception):
             print(json.dumps({"systemMessage": message}, ensure_ascii=False))
-        except Exception:
-            pass
     except Exception:
         # Un fichier qui n'est pas du Python valide pour une autre raison
         # (encodage exotique, valeur hors bornes) ne justifie pas d'alerter.

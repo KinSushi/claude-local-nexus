@@ -36,6 +36,7 @@ import json
 import os
 import re
 import sys
+import contextlib
 
 # Racine ABSOLUE. `CLAUDE_PROJECT_DIR` quand le hook est lance par Claude
 # Code ; sinon, deduite de la position de ce fichier -- jamais du repertoire
@@ -106,14 +107,12 @@ def refuser(chemin_affiche: str) -> None:
              "ete lu dans cette session : ecrire dessus ecraserait un contenu "
              "suppose. Le lire d'abord (outil Read), puis ecrire."
              % os.path.basename(chemin_affiche))
-    try:
+    with contextlib.suppress(Exception):
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": motif,
         }}, ensure_ascii=False))
-    except Exception:
-        pass
 
 
 # CE GARDE EST AGNOSTIQUE A L'OUTIL : il se cale sur la presence d'un

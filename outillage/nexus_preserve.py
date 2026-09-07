@@ -33,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+import contextlib
 
 # La sortie est souvent redirigée : journaux, STATE.md, sous‑processus.
 # Sans cette ligne, Python écrit dans la page de codes locale de Windows
@@ -212,10 +213,8 @@ def inventory() -> list[dict]:
     tracked = tracked.splitlines()
     total = 0.0
     for relative in tracked:
-        try:
+        with contextlib.suppress(Exception):
             total += os.path.getsize(os.path.join(ROOT, relative)) / (1024 ** 3)
-        except Exception:
-            pass
     if tracked:
         items.append(
             {
@@ -233,10 +232,8 @@ def inventory() -> list[dict]:
         taille = 0.0
         for base, _, files in os.walk(git_dir):
             for name in files:
-                try:
+                with contextlib.suppress(Exception):
                     taille += os.path.getsize(os.path.join(base, name))
-                except Exception:
-                    pass
         taille /= 1024 ** 3
 
         remote = run(["git", "-C", ROOT, "remote"])

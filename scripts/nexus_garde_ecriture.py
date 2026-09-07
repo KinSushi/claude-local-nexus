@@ -62,10 +62,8 @@ def charger_chemins_proteges():
     for regle in deny:
         chemin = extraire_chemin(regle)
         if chemin:
-            try:
+            with contextlib.suppress(Exception):
                 chemins.add(normaliser_relatif(chemin))
-            except Exception:
-                pass
     return chemins
 
 
@@ -139,7 +137,7 @@ def refuser(chemin_affiche):
     motif = ("REFUS -- CHEMIN PROTÉGÉ. Le fichier %s est protégé et toute "
              "modification doit passer par une décision explicite."
              % os.path.basename(chemin_affiche))
-    try:
+    with contextlib.suppress(Exception):
         print(json.dumps({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
@@ -147,8 +145,6 @@ def refuser(chemin_affiche):
                 "permissionDecisionReason": motif,
             }
         }, ensure_ascii=False))
-    except Exception:
-        pass
 
 
 def main():

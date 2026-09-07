@@ -18,6 +18,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import contextlib
 
 # ------------------------------------------------------------
 # Configuration globale
@@ -97,10 +98,8 @@ def ecrire_brief(cible, audit_texte):
 
 def supprimer_brief(brief_path):
     """Supprime le fichier de brief même en cas d’échec."""
-    try:
+    with contextlib.suppress(Exception):
         brief_path.unlink()
-    except Exception:
-        pass
 
 def executer_audit(cible, plan):
     """Appelle nexus_agent.executer avec la consigne d’audit."""

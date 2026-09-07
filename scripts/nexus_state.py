@@ -25,6 +25,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+import contextlib
 
 # --------------------------------------------------------------------------- #
 # Constantes de configuration
@@ -287,10 +288,8 @@ def _ecrire_atomique(chemin, lignes):
         os.replace(chemin_temp, chemin)
     except (IOError, OSError):
         # Nettoyage en cas d'erreur
-        try:
+        with contextlib.suppress(IOError, OSError):
             os.remove(chemin_temp)
-        except (IOError, OSError):
-            pass
         raise
 
 

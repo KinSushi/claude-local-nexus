@@ -63,6 +63,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+import contextlib
 
 PLAFOND = 2 * 1024 * 1024
 LISIBLES = (".py", ".ps1", ".json", ".md", ".yaml", ".yml", ".js")
@@ -374,10 +375,8 @@ def main() -> int:
     # La console Windows est en cp1252 : sans cela, tout tiret cadratin ou
     # accent devient « ? » des que la sortie est redirigee -- et elle l'est,
     # puisque ce script est appele par la conformite.
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--rapport", action="store_true")
     p.add_argument("--rebaseline", action="store_true")

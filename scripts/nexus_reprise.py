@@ -58,6 +58,7 @@ import os
 import re
 import subprocess
 import sys
+import contextlib
 
 # Le separateur d'un tableau Markdown, reconnu a sa FORME et non a un prefixe
 # devine : ce depot ecrit « |---|---| » sans espace, et un test sur « | --- »
@@ -355,10 +356,8 @@ def main() -> int:
     # fidelite y est le sujet. Sans cette ligne, tout caractere hors cp1252
     # devient « ? » des que stdout est redirige -- ce qui est precisement le
     # cas quand un hook est capture.
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
     print("#" * 72)
     print("#  CLAUDE-LOCAL-NEXUS — REPRISE DE SESSION (hook SessionStart)")
     print("#  Tout ci-dessous est RELU maintenant, jamais memorise.")

@@ -39,6 +39,7 @@ import urllib.error
 from statistics import median
 from datetime import datetime, timezone
 from pathlib import Path
+import contextlib
 
 # ----- fonctions utilitaires -------------------------------------------------
 def charger_env(racine: Path) -> dict:
@@ -345,10 +346,8 @@ def mesurer_binaire(gateway: str, alias: str, timeout: float,
             reponse = _appel(QUESTIONS_BINAIRES[i % len(QUESTIONS_BINAIRES)])
             durees.append(int((time.monotonic() - depart) * 1000))
             texte = ""
-            try:
+            with contextlib.suppress(KeyError, IndexError, TypeError):
                 texte = reponse["choices"][0]["message"]["content"] or ""
-            except (KeyError, IndexError, TypeError):
-                pass
             # Tolerant a la ponctuation et a la casse, strict sur le reste :
             # « OUI. » compte, « Oui, parce que... » non.
             net = re.sub(r"[^a-zA-Z]", "", texte).upper()

@@ -35,6 +35,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import contextlib
 
 def _hash_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -179,10 +180,8 @@ def _executer_epreuve():
 
 def main():
     # Securite encodage sortie
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
 
     parser = argparse.ArgumentParser(
         description="Mesure et comparaison d'executions."

@@ -29,6 +29,7 @@ import collections
 import os
 import re
 import sys
+import contextlib
 
 ACTIONS = {"write", "write_text", "writelines", "dump", "makedirs", "mkdir",
            "copy", "copy2", "move", "remove", "unlink", "rename", "replace",
@@ -294,10 +295,8 @@ def main():
     p.add_argument("--muet", action="store_true",
                    help="N'afficher que les totaux.")
     # Configuration sûre de l'encodage de la sortie standard
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
 
     a = p.parse_args()
 
