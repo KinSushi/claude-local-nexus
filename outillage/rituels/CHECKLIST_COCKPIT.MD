@@ -27019,3 +27019,36 @@ corpus courant. Job iGPU lourd (~60k fragments), donc à COORDONNER (concertatio
 fenêtre local libre) et à CHIFFRER avant lancement, pas à lancer dans un tick. Il
 reste un item de plan, pas un trou d'épuisement : la recherche LEXICALE couvre
 déjà les 15 rayons, contenu compris.
+
+### §204 — Défaut trouvé par l'USAGE (ea-mt5) : le refus du verrou/sémaphore invisible dans --sortie ; corrigé, mécanisé, câblé
+
+Classe « vide lu comme panne », la plus fréquente du dépôt. ea-mt5, en utilisant
+mon sémaphore d'inférence, a mesuré que ses lots refusés rendaient un fichier
+`--sortie` VIDE — indiscernable d'un rendu vide. Cause : dans nexus_agent, le refus
+(mutex `banc` ET sémaphore `inference`) fait `print(stderr)` + `return 75` AVANT
+que `--sortie` soit ouvert. Il a cru ses lots « lents » 30 min ; ils étaient refusés.
+
+Aucun audit ne l'avait vu — c'est l'usage d'un TIERS qui l'a révélé (§0.1.4).
+
+**Corrigé (écrit par le banc, LOI 1) :** helper `_ecrire_refus_sortie(sortie_path,
+taches, cause)` + un appel à chacun des 2 sites de refus. Écrit une ligne JSON par
+tâche : {"nom", "refus": cause, "texte": "", "vide": true, "cause_vide":
+"refus_verrou"}. Dégrade sans planter. Sur les DEUX jumeaux (scripts/ + outillage/).
+
+**La garde a joué (§0.1.4.1, reverse-test réel) :** ma 1re version était un patch à
+6 blocs qui cassait la syntaxe ; `nexus_appliquer` l'a REFUSÉ (« produirait un
+fichier syntaxiquement invalide, line 102 ») et n'a rien touché au fichier critique.
+Le chemin interdit a échoué proprement. La v2 (3 blocs, sans toucher argparse) est
+passée. Leçon : sur un gros fichier critique, patch MINIMAL + module de test séparé
+> patch large multi-blocs.
+
+**Mécanisé ET câblé (le contrat exige les deux) :** `outillage/nexus_epreuve_refus.py`
+importe `_ecrire_refus_sortie` et vérifie forward (2 lignes lisibles avec la cause)
++ reverse (sortie_path None → no-op sans crash) ; si la fonction disparaît (régression),
+--epreuve rend non nul. Câblé dans nexus_test (:1432), rebaseline « 21 preuve-seule ».
+Commit e27c258 (correctif) + celui-ci (test).
+
+**Plafond sémaphore communiqué à ea-mt5 : 3** (NEXUS_SEMAPHORE_INFERENCE_N). Note
+mesurée dans nexus_agent (ligne 602) : le cloud accepte 4-20 connexions sans refus
+ni 429, latence p95 qui BAISSE — donc N=3 est prudent, pas physique (cf §199, le
+plafond 3 est une convention de partage). Piste de réglage, pas urgente.

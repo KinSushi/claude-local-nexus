@@ -1,5 +1,5 @@
 {
-  "mesure_le": "2026-09-07T22:45:00.782475+00:00",
+  "mesure_le": "2026-09-07T23:17:25.823962+00:00",
   "categories": {
     "orphelin": [],
     "preuve_seule": [
@@ -8,6 +8,7 @@
       "outillage/nexus_avant_apres.py",
       "outillage/nexus_checklist_progres.py",
       "outillage/nexus_decouper_livres.py",
+      "outillage/nexus_epreuve_refus.py",
       "outillage/nexus_extraire_livres.py",
       "outillage/nexus_filet.py",
       "outillage/nexus_index_livres.py",
