@@ -26723,3 +26723,70 @@ et `CODE_ENZO`. Arbre propre.
 **Verdict.** Épuisement de la recherche disque : ATTEINT. Les deux items
 ci-dessus sont des plus-values « pas le minimum », à porter dans la salve de
 production, pas des trous qui interdisent de clore l'inventaire.
+
+### §196 — ÉPUISEMENT FINAL sur les DEUX angles morts ; concertation à 4 ; défauts mesurés par les pairs, dans CE dépôt
+
+Le 2026-09-07. L'opérateur a exigé un dernier tour d'épuisement en avertissant
+que « les lignes de commande bash/shell/pwsh parfois ne peuvent pas voir ce qui
+est caché ». Deux angles morts distincts existaient, et les DEUX sont couverts.
+
+**Angle mort 1 — le filesystem lui-même (mes Glob ciblés).** Sweep pwsh `-Force`
+(voit les attributs Hidden/System que bash rate) :
+- 0 répertoire de corpus caché (seuls les `.git` portent l'attribut Hidden) ;
+- 0 corpus hors `references/` (tout le reste = docs/code du projet) ;
+- **896 notebooks `.ipynb` VÉRIFIÉS indexés** — l'inquiétude « un indexeur AST
+  saute les .ipynb » était infondée : `nexus_indexer_code.py:429` traite bien
+  `.ipynb` via `_collect_from_notebook`. Preuve : rayon `code` = 11 898 symboles,
+  dont 30-Agents 4360, Deep-RL 1090, Adversarial 813, Graph-ML 218 (dépôts
+  notebook-lourds). Les fichiers bruts restants (apple/tsla.pdf, bbc.zip…) sont
+  des DONNÉES d'exemple de livres, pas du corpus d'enseignement — non indexés à
+  dessein.
+
+**Angle mort 2 — les artefacts git, qu'AUCUN `ls`/`find`/parcours d'arbre ne
+voit** (insight mesuré chez lui par ea-mt5 : 17 worktrees, 10 stashs, 238
+branches, 5 tags, dont un tag portant un verdict décisif). Ses 4 commandes
+appliquées à CE dépôt :
+- `git worktree list` → 2 : `main` + `C:/local-llm-docker-audit-fable` (HEAD
+  détaché 8c4c473, **0 commit d'avance, 0 ligne non-commitée** → propre) ;
+- `git stash list` → 0 ;
+- `git tag` → 3 tags de sûreté « avant-* » (points réversibles voulus par
+  l'opérateur, pas du corpus) ;
+- `git branch -a` → 2 branches `worktree-agent-*` avec 1 et 2 commits « d'avance »
+  sur main — MAIS le diff révèle `{outillage => scripts}` : elles sont
+  ANTÉRIEURES au rangement, et leur travail (disjoncteur + QUARANTAINE) est
+  **déjà dans main** (`c08fc40`, `97b8b7b`, `207ac49 reconciliation 2/6`).
+  **Verdict : branches périmées, AUCUN travail perdu.**
+
+Le check valait la peine (c'était le bon geste, le seul qui voit ce plan) ; le
+résultat pour ce dépôt est « déjà récolté ». Hygiène possible : élaguer les 2
+branches worktree-agent périmées + retirer le worktree audit-fable — À OFFRIR à
+l'opérateur, non automatique (destructif léger ; les tags gardent la réversibilité).
+
+**Concertation à 4 (demande opérateur : ne pas se concurrencer sur l'iGPU/banc).**
+Règle proposée et ADOPTÉE par ea-mt5 et cloud-quota : « un seul lot bench local
+toutes sessions confondues + annonce-avant-lot-local » ; cloud parallélisable
+mais ≤3 concurrent/session. État mesuré par cloud-quota : Puissance_60+ tient le
+banc (PID 24848, deepseek-coder:33b résident 19,6 Go) ; les deux autres à zéro.
+Je TIENS le local sans lancer tant que le banc n'est pas libre.
+
+**Défauts mesurés par les pairs — DANS CE DÉPÔT, donc à MOI de les porter** (la
+plateforme est la source des mécanismes qui redescendent) :
+1. **litellm_config.yaml : 37 chaînes de repli `-cloud → -cloud` même-compte**
+   contre 4 vers `-local`, `num_retries: 2`. Un appel visible → jusqu'à NEUF,
+   tous vers le compte déjà saturé. Un repli même-compte ne PEUT pas réussir et
+   TRIPLE la charge → effondrement (mode non gradué : au-delà du seuil le débit
+   tombe à ZÉRO, il faut une charge STRICTEMENT NULLE pour retomber). Le §108
+   interdit déjà `local→cloud` (fuite) ; ceci est l'autre bord (amplification
+   inutile). ⇒ plan de production : replis DÉRIVÉS, jamais même-compte cloud→cloud.
+2. **`nexus_agent.py:1583 if est_local:` englobe la prise du verrou `banc`** →
+   les lots CLOUD ne le prennent pas ; et la classe `banc` (mutex
+   `AURUM_MACHINE_BANC`) n'est pas déclarée dans `CLASSES` → `--etat` aveugle
+   (ea-mt5 a attendu 12 min 44 sur un verrou sans nom). ⇒ fil A11.
+3. **Local : le coût n'est pas l'inférence, c'est le CHANGEMENT DE MODÈLE.**
+   Lire `/api/ps`, employer le RÉSIDENT plutôt que son préféré. (Mon
+   one-liner api/ps a échoué au parse — à fiabiliser quand je lancerai.)
+
+**VERDICT D'ÉPUISEMENT : ATTEINT sur les deux angles morts.** Restent seulement
+les enrichissements « au-delà du minimum » (concepts.tsv 26 995 ; sémantique sur
+`texte`) et les 3 défauts ci-dessus — tous des ITEMS DE PLAN, pas des trous
+d'inventaire. Prêt pour le plan de production d'une traite.
