@@ -26186,3 +26186,21 @@ Aussi rouge, cause distincte a mesurer : epreuve_avec_verrou (le lanceur
 outillage/nexus_avec_verrou.py EXISTE, l echec est ailleurs) ; « modules
 importables sans effet de bord » sur nexus_migration_plan/boussole/preserve
 (pre-existant).
+
+### §179 suite — nexus_garde_ecriture : reverse-test reel POSE, garde prouve sain
+
+  [x] epreuve_garde_ecriture : 4 bugs empiles corriges (chemin racine ; cible
+      lue dans settings.json deny ; format tool_input.command ; critere
+      permissionDecision deny au lieu du code, raison ASCII « REFUS » contre le
+      piege Unicode). Le garde REFUSE bien un vrai chemin protege via deny JSON
+      (mesure : .claude/CLAUDE.md -> deny, code 0). FORWARD/REVERSE verts, audit
+      tiers OK. Commit `94e0884`. Banc auteur (2 tours) ; corrections mesurees
+      par l orchestrateur.
+  [ ] epreuve_garde_lecture : memes 4 classes de bug, a poser de meme.
+  [ ] epreuve_avec_verrou : cause distincte (lanceur present), a mesurer.
+
+Lecon : un reverse-test peut etre casse SANS que le garde le soit. Ici 4 bugs
+faisaient croire le garde defaillant alors qu il protege correctement. « Un
+controle muet se lit comme une protection » vaut dans les deux sens : muet-vert
+(rassure a tort) ET muet-rouge (accuse a tort). Seul le test qui DETECTE
+tranche.
