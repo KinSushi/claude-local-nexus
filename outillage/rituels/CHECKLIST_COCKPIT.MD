@@ -25973,3 +25973,84 @@ general.
 | 22 | le cliquet de cablage sans porte de rebasement | ouvert |
 | 11 | fusion du plan unique | point de retour `95715b3` |
 | 19b | `rituels/STATE.md`, residu a la racine | non retire |
+
+---
+
+## §175 — La separation est faite ; la garde qui la protegerait defairait la separation
+
+Redige par l'orchestrateur, sur mesures. Le banc a produit huit rendus
+(agent, verrou, hooks, appliquer, classificateur, rituel) ; l'arbitrage en a
+retenu la moitie et REFUSE le reste — dont une garde qui se donnait l'air de
+mecaniser la separation et l'aurait detruite.
+
+### Ce qui est fait, commite, mesure
+
+| commit | ce qu'il pose | preuve |
+| --- | --- | --- |
+| `864e45b` | agent : `--sortie-brute` decape la cloture, `--depuis-jsonl` ecrit sans re-tirer | FORWARD .py compile, REVERSE markdown intact, ABSENT code 1 |
+| `c7de0b9` | 18 fichiers du produit reviennent de `outillage/` vers `scripts/` | hooks 8/8, py_compile 17/17, integrite 0, verrou_tenir PRIS depuis scripts/ |
+| `d8dc141` | reparation des 5 chemins morts que le deplacement s'etait laisses | py_compile OK, porte 0 |
+
+La cause du deplacement n'etait pas une preference : mesure par l'usage, une
+session voisine appelait `scripts/nexus_charge.py`, declare portable au
+contrat §0.5, et le trouvait ABSENT — mon rangement (`bc17ebf`) l'avait mis
+sous `outillage/`.
+
+### La regression que le deplacement a introduite, et sa cause exacte
+
+`deplacer.py` reecrivait les appelants EXTERNES des fichiers deplaces, mais
+s'excluait ces fichiers EUX-MEMES de la passe de reecriture
+(`suivis = [f for f in suivis if f not in a_deplacer]`). Un fichier deplace
+vers `scripts/` gardait donc, dans son corps, des references `outillage/`
+vers d'AUTRES fichiers deplaces. `controle_config_valide` lancait
+`os.path.join(ROOT, "outillage", "nexus_validate.py")` — absent. Sans repli :
+panne. Cinq chemins morts (validate x3, releve, savings), repares en
+`d8dc141`, pilotes par la PORTE et bornes a ce que le disque prouve.
+
+### La garde qu'il NE FAUT PAS cabler — et pourquoi (le coeur du tour)
+
+Le classificateur `nexus_appartenance.py`, avec le rendu 09, classe **19
+fichiers de plus** comme « PRODUIT sous outillage/ » — dont `nexus_frontiere`
+(la porte elle-meme), `nexus_traque`, `nexus_cablage`, `nexus_test`,
+`nexus_worktree`, `nexus_vitrine`, `nexus_boussole`, `nexus_outillage` : de
+l'outillage PUR.
+
+**La cascade transitive** : `conformite.py` est appele par `start.ps1`
+(produit), donc classe produit ; il appelle `cablage`, `traque`, `import`,
+`portee_import` ; ceux-ci deviennent produit a leur tour ; et de proche en
+proche, la moitie de l'outillage bascule. Une garde du rituel cablee sur ce
+verdict aurait rendu MANQUE sur 19 fichiers et exige de les deplacer dans
+`scripts/` — **elle aurait defait la separation qu'elle pretendait proteger.**
+
+La lecon, §112.4 en acte : l'analyse du banc est un signal, jamais une
+preuve. Le classificateur — mon outil, aide du banc — donnait une reponse
+confiante et FAUSSE. L'instinct de l'operateur (« tu vas tout casser »)
+portait.
+
+**La borne juste de la separation** : un fichier est du produit ssi un point
+d'entree du produit (start.ps1, Update-NexusModels, nexus.ps1,
+docker-compose, server.js, un hook) l'execute DIRECTEMENT. Pas la cloture
+transitive. Les 17 deplaces etaient les cas directs et non ambigus. La garde
+de separation reste NON CABLEE tant que le classificateur ne distingue pas
+« appele au demarrage » de « fait partie du produit ».
+
+### Defauts trouves par l'usage ce tour, non encore corriges
+
+| # | defaut | ou |
+| --- | --- | --- |
+| 175.1 | `nexus_valide.py` bute sur un fichier SUPPRIME dans la plage et sort **0** (faux vert) | `outillage/nexus_capability.py` introuvable |
+| 175.2 | la porte compte une EXECUTION sur un commentaire `# outillage/` (garde_production:73) | faux positif de mention |
+| 175.3 | le classificateur : cascade transitive (ci-dessus) ; garde non cablee | `nexus_appartenance.py` |
+| 175.4 | 6 dependances produit -> outillage subsistent (conformite -> cablage/traque/...) : conception a arbitrer | reference de la porte |
+| 175.5 | `nexus_appliquer.py` ne sait pas absorber les rendus du banc (dedent, FIN absent, clotures) : 6 applicateurs prives compensent (bricolage) | rendu 05b a poser |
+
+### Verrou du banc : signalement d'une session voisine, tranche
+
+Elle a cru le banc casse (`nexus_ask` code 75, classe `banc` « libre »). Verifie :
+`nexus_verrou_tenir.py` ecrit `[!] banc` sur stderr (perdu dans le journal) et
+sort 75 ; le message de `server.js` ne nommait pas la classe. Contention REELLE
+mais transitoire (4 serveurs MCP node partagent le banc). Corrige en partie
+(`04`, commite avec la separation) : le message nomme desormais la classe. Le
+motif complet (`REFUS <classe> : <motif>` remonte a l'appelant) reste a poser
+(rendu `08`, bloc server.js non ancre).
+
