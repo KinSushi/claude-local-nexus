@@ -1220,6 +1220,17 @@ def executer(tache: dict, cle: str) -> dict:
             if not motif and trace:
                 motif = trace[-1]
             resultat["motif_bascule"] = motif
+        if resultat.get("tronque"):
+            # Un rendu NON VIDE mais tronque (finish_reason == length) ne doit pas
+            # etre livre incomplet : meme reprise que la troncature vide (banc, v20).
+            new_plafond = min(plafond * 2, PLAFOND_REPRISE)
+            if new_plafond > plafond and not tache.get("_reprise"):
+                copie = dict(tache)
+                copie["max_tokens"] = new_plafond
+                copie["_reprise"] = True
+                resultat = executer(copie, cle)
+                resultat["reprise_plafond"] = "%s -> %s" % (plafond, new_plafond)
+                return resultat
         return etiqueter_ecritures(resultat, tache, consigne)
 
     # Enregistrement de tous les échecs dans le disjoncteur (c'est le seul endroit où l'échec total est constaté)
