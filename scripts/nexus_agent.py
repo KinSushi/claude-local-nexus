@@ -70,6 +70,36 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
+
+def decaper_cloture_englobante(texte: str) -> str:
+    """
+    Retourne *texte* après avoir éventuellement retiré les balises de bloc
+    Markdown.
+
+    - Si la première ligne non vide est exactement une ouverture de bloc
+      (trois accents graves, éventuellement suivis d’un nom de langage) **et**
+      que la dernière ligne non vide est exactement une fermeture de bloc
+      (trois accents graves), les deux lignes sont supprimées.
+    - Sinon le texte est renvoyé tel quel.
+    """
+    lignes = texte.splitlines()
+    # Recherche de la première ligne non vide
+    i = 0
+    while i < len(lignes) and not lignes[i].strip():
+        i += 1
+    # Recherche de la dernière ligne non vide
+    j = len(lignes) - 1
+    while j >= 0 and not lignes[j].strip():
+        j -= 1
+    if i < j:
+        debut = lignes[i].strip()
+        fin = lignes[j].strip()
+        if debut.startswith("```") and fin == "```":
+            # Retirer les deux lignes de délimitation
+            return "\n".join(lignes[i + 1 : j])
+    return texte
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
 
@@ -1414,6 +1444,12 @@ def main() -> int:
         help="Ecrire le seul champ texte du rendu, une ligne par tache, "
              "des qu'elle aboutit. Independant de --sortie : les deux "
              "peuvent etre demandes ensemble.")
+    parseur.add_argument(
+        "--depuis-jsonl", default=None, metavar="FICHIER",
+        help="Lire les taches depuis un fichier JSONL.")
+    parseur.add_argument(
+        "--nom", default=None, metavar="NOM_TACHE",
+        help="Nom de la tache a extraire pour sortie brute.")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
     parseur.add_argument("--modeles", action="store_true",
@@ -1463,8 +1499,26 @@ def main() -> int:
                                    else TEMPERATURE_DEFAUT),
                    "racine": args.racine}]
     else:
-        parseur.print_help()
-        return 1
+        if args.depuis_jsonl:
+            if not args.nom:
+                print("L'option --nom est obligatoire avec --depuis-jsonl.", file=sys.stderr)
+                return 2
+            try:
+                with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
+                    for ligne in src:
+                        obj = json.loads(ligne)
+                        if obj.get("nom") == args.nom:
+                            taches = [obj]
+                            break
+                    else:
+                        print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                        return 1
+            except Exception as exc:
+                print("[!] erreur lors de la lecture du jsonl : %s" % exc, file=sys.stderr)
+                return 1
+        else:
+            parseur.print_help()
+            return 1
 
     # La competence s'applique ici, et non plus haut : `taches` n'existe pas
     # avant ce point, quelle que soit la branche empruntee.
@@ -1568,6 +1622,23 @@ def main() -> int:
     # juste.
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
+            if args.sortie_brute and args.depuis_jsonl and args.nom:
+                try:
+                    with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
+                        for ligne in src:
+                            obj = json.loads(ligne)
+                            if obj.get("nom") == args.nom:
+                                texte = obj.get("texte") or ""
+                                texte = decaper_cloture_englobante(texte)
+                                mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
+                                with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
+                                    dst.write(texte + "\n")
+                                sys.exit(0)
+                    print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                    sys.exit(1)
+                except Exception as exc:
+                    print("[!] erreur lors de la sortie brute depuis jsonl : %s" % exc, file=sys.stderr)
+                    sys.exit(1)
             futurs = {pool.submit(executer, t, cle): t for t in taches}
             for futur in concurrent.futures.as_completed(futurs):
                 r = futur.result()
@@ -1580,7 +1651,7 @@ def main() -> int:
                     try:
                         with io.open(args.sortie_brute, "a", encoding="utf-8",
                                      newline="\n") as fbrut:
-                            fbrut.write((r.get("texte") or "") + "\n")
+                            fbrut.write(decaper_cloture_englobante(r.get("texte") or "") + "\n")
                     except Exception as exc:
                         print("[!] sortie brute impossible : %s" % exc,
                               file=sys.stderr)
