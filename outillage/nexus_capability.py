@@ -335,7 +335,7 @@ def model_store_free_gb(location: dict) -> tuple[str, float | None]:
     else:
         # Le volume Docker vit dans le disque virtuel de la VM WSL2, donc
         # sur le disque système : c'est sa place libre qui commande.
-        store = os.environ.get("SystemDrive", "C:") + os.sep
+        store = os.environ.get("SYSTEMDRIVE", "C:") + os.sep
     probe = store
     while probe and not os.path.exists(probe):
         parent = os.path.dirname(probe)

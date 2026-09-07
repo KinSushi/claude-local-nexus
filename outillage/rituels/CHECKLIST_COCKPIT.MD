@@ -26054,3 +26054,22 @@ mais transitoire (4 serveurs MCP node partagent le banc). Corrige en partie
 motif complet (`REFUS <classe> : <motif>` remonte a l'appelant) reste a poser
 (rendu `08`, bloc server.js non ancre).
 
+
+### §175bis — Vague v18 : ce qui a atterri, ce qui reste
+
+Meme tour, apres la fermeture des deux regressions. Vague cloud de quatre
+taches (banc, cout 0), arbitrage :
+
+| tache | verdict | suite |
+| --- | --- | --- |
+| 14 agent (audit de 864e45b) | **pose** `97b8b7b` ; forward/reverse verts | audit tiers de 14 a faire |
+| 11 valide (faux vert sur fichier supprime) | rendu, 3 blocs propres | a poser + eprouver sur une plage qui supprime |
+| 13 verrou (motif remonte a l appelant) | rendu, 3 blocs propres | a poser sur server.js + verrou_tenir |
+| 12 appliquer (absorber les tics du banc) | **inutilisable** : fichier entier, 0 bloc | 175.5 reste ; l outil attend un PATCH, pas un fichier |
+
+Le 12 confirme 175.5 : faire produire par le banc le correctif de
+`nexus_appliquer` echoue parce que le rendu est gros et le banc rend un
+fichier entier. Les six applicateurs prives restent une dette, consignee.
+
+Housekeeping du tour : SIM112 de la copie-paire `nexus_capability.py` corrige
+a la source (1 -> 0), boussole regeneree.
