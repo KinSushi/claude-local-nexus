@@ -27091,3 +27091,29 @@ DEATH-SAFETY, lui, est déjà cross-process (subprocess qui meurt) et c'est le b
 Conception juste + build fait + subtilité trouvée : progrès réel. Rusher le déploiement
 d'un verrou partagé en fin de longue session serait le bricolage interdit (§0.6). Prêt
 à finir (test cross-process) puis déployer coordonné, sur go.
+
+### §206 — Sémaphore death-safe : ENTIÈREMENT PROUVÉ sur copie ; prêt au déploiement COORDONNÉ
+
+Suite §205. Tests convertis en cross-process (subprocess tenant un slot vivant,
+synchronisation par fichier ready, jamais un sleep aveugle). `python
+nexus_verrou_machine.py --epreuve` sur la copie : **FORWARD OK (2 slots accordés
+cross-process), CAP OK (n+1 refusé), DEATH-SAFETY OK, exit 0**. La death-safety :
+un subprocess acquiert puis os._exit EN TENANT le slot ; le parent le récupère
+via WAIT_ABANDONED. Prouvé, pas supposé.
+
+Artefacts (scratchpad) : vsem/nexus_verrou_machine.py (copie patchée + prouvée),
+rendu_sem.md (impl N-mutex) + rendu_semtests.md (tests cross-process).
+
+**Le déploiement reste COORDONNÉ — c'est le verrou PARTAGÉ, pas un fix local :**
+- appliquer les 8 blocs à scripts/nexus_verrou_machine.py (ancres prouvées) ET
+  adapter pour le jumeau outillage/ (qui DIFFÈRE — ancres à revérifier) ;
+- tag `avant-*` d'abord (réversible) ;
+- risque de transition MESURÉ FAIBLE : pendant que certaines sessions ont l'ancien
+  sémaphore et d'autres les N mutex, les objets kernel diffèrent (noms distincts)
+  → cap transitoirement doublé. Mais le cloud tolère 4-20 connexions sans 429
+  (mesure nexus_agent:602), et le seuil d'effondrement est ~64 : un dépassement
+  transitoire à 6 est absorbé. Les pairs prennent le nouveau mécanisme quand ils
+  re-synchronisent leur copie (§0.4).
+
+Décision d'arbitrage OPÉRATEUR (il possède les 4 sessions) : quand déployer, et
+annoncer aux pairs. Le fix est prêt ; je ne touche pas le verrou vivant sans go.
