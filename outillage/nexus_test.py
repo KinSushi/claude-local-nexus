@@ -2339,9 +2339,15 @@ def test_doc_annexe() -> None:
     survecu a la copie. On ne le suppose pas.
     """
     print("\n--- DOC ANNEXE : bash, PowerShell et lecons sont-ils lisibles ? ---")
-    epreuve = os.path.join(ROOT, "scripts", "epreuve_doc_annexe.py")
-    if not os.path.isfile(epreuve):
-        skip("doc annexe", "epreuve_doc_annexe.py introuvable")
+    # Recherche de l’épreuve d’abord dans « epreuves/ », puis dans « scripts/ ».
+    _candidates = [
+        os.path.join(ROOT, "epreuves", "epreuve_doc_annexe.py"),
+        os.path.join(ROOT, "scripts",  "epreuve_doc_annexe.py"),
+    ]
+    epreuve = next((p for p in _candidates if os.path.isfile(p)), None)
+    if epreuve is None:
+        # Le fichier est réellement absent : l’épreuve doit échouer, pas être sautée.
+        check("doc annexe", False, "epreuve_doc_annexe.py introuvable")
         return
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
@@ -2424,9 +2430,15 @@ def test_sonde_mcp() -> None:
     doit passer -- y compris le resume d'un fichier qui PARLE de timeouts.
     """
     print("\n--- SONDE MCP : un echec du pont rend-il non nul ? ---")
-    epreuve = os.path.join(ROOT, "scripts", "epreuve_sonde_mcp.py")
-    if not os.path.isfile(epreuve):
-        skip("sonde mcp", "epreuve_sonde_mcp.py introuvable")
+    # Recherche de l’épreuve d’abord dans « epreuves/ », puis dans « scripts/ ».
+    _candidates = [
+        os.path.join(ROOT, "epreuves", "epreuve_sonde_mcp.py"),
+        os.path.join(ROOT, "scripts",  "epreuve_sonde_mcp.py"),
+    ]
+    epreuve = next((p for p in _candidates if os.path.isfile(p)), None)
+    if epreuve is None:
+        # Le fichier est réellement absent : l’épreuve doit échouer, pas être sautée.
+        check("sonde mcp", False, "epreuve_sonde_mcp.py introuvable")
         return
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,

@@ -66,11 +66,30 @@ def _handle_tool(charge: dict) -> int:
         return 0
 
     if refuse(chemin):
+        # Recherche du script nexus_appliquer.py dans scripts/ puis outillage/
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        possible_paths = [
+            os.path.join(os.path.dirname(__file__), "nexus_appliquer.py"),          # scripts/
+            os.path.join(repo_root, "outillage", "nexus_appliquer.py"),           # outillage/
+        ]
+        appliquer_path = None
+        for p in possible_paths:
+            if os.path.isfile(p):
+                appliquer_path = p
+                break
+
+        # Construction du message avec le chemin trouvé ou un avis d'absence
+        appliquer_msg = (
+            f"Appliquer le patch avec {appliquer_path}\n"
+            if appliquer_path
+            else "Appliquer le patch : fichier nexus_appliquer.py introuvable.\n"
+        )
+
         raison = (
             f"Le chemin '{chemin}' est refuse car il s'agit d'un fichier code source en production. "
             "Regle: tu ne produis pas, tu orchestres et tu audites.\n"
             f"Faire produire le patch avec {os.path.abspath(os.path.join(os.path.dirname(__file__), 'nexus_agent.py'))} --tache <tache> --fichiers <fichiers>\n"
-            f"Appliquer le patch avec {os.path.abspath(os.path.join(os.path.dirname(__file__), 'nexus_appliquer.py'))}\n"
+            f"{appliquer_msg}"
             "Si la production directe est vraiment voulue, definir NEXUS_PRODUCTION_LIBRE=1 avant l'appel."
         )
         sortie = {

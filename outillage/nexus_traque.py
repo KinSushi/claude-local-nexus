@@ -14,7 +14,7 @@ souvent recommise apres avoir ete corrigee ailleurs :
   5  refus rendu en code de sortie 0        un echec deguise en succes
   6  print d'echec suivi d'un retour 0      idem, dans une fonction
 
-Rapport, jamais porte : le code de sortie est toujours 0. Un outil qui
+Rapport sans portée sur les constats, MAIS code non nul si aucun fichier n'a pu être analysé. Un outil qui
 bloque sur des heuristiques finit desactive, et c'est la pire des issues.
 
 Ecrit par le banc gratuit sur consigne, puis reduit : sa classe « clef lue
@@ -28,7 +28,6 @@ import ast
 import collections
 import os
 import re
-import sys
 import sys
 
 ACTIONS = {"write", "write_text", "writelines", "dump", "makedirs", "mkdir",
