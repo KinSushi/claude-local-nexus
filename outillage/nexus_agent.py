@@ -1658,10 +1658,14 @@ def main() -> int:
                 except Exception as exc:
                     print("[!] erreur lors de la sortie brute depuis jsonl : %s" % exc, file=sys.stderr)
                     sys.exit(1)
+            # Collecte des tâches associées aux résultats pour pouvoir les rejouer si besoin.
             futurs = {pool.submit(executer, t, cle): t for t in taches}
+            # Liste parallèle pour garder l'ordre d'arrivée des résultats.
+            taches_par_futur = []
             for futur in concurrent.futures.as_completed(futurs):
                 r = futur.result()
                 resultats.append(r)
+                taches_par_futur.append(futurs[futur])
                 faits += 1
                 if flux is not None:
                     flux.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -1680,6 +1684,29 @@ def main() -> int:
                 print("  [%d/%d] %s" % (faits, len(taches),
                                         r.get("nom") or r.get("modele") or "?"),
                       file=sys.stderr)
+
+            # Si on était en mode parallèle et que certaines fenêtres sont manquantes,
+            # les rejouer une seule fois en séquentiel (une par une) afin de récupérer
+            # les résultats perdus sans boucler indéfiniment.
+            if largeur > 1:
+                for idx, (res, t) in enumerate(zip(resultats, taches_par_futur, strict=False)):
+                    if _manquante(res):
+                        # Rejouer la tâche séquentiellement.
+                        new_res = executer(t, cle)
+                        # Remplacer le résultat vide par le nouveau.
+                        resultats[idx] = new_res
+                        # Écrire le nouveau résultat dans le flux de sortie si nécessaire.
+                        if flux is not None:
+                            flux.write(json.dumps(new_res, ensure_ascii=False) + "\n")
+                            flux.flush()
+                        if args.sortie_brute:
+                            try:
+                                with io.open(args.sortie_brute, "a", encoding="utf-8",
+                                             newline="\n") as fbrut:
+                                    fbrut.write(decaper_cloture_englobante(new_res.get("texte") or "") + "\n")
+                            except Exception as exc:
+                                print("[!] sortie brute impossible : %s" % exc,
+                                      file=sys.stderr)
     finally:
         # Un fichier sans marque de fin est indiscernable d'un fichier tronque.
         # L'absence de cette ligne signifie EN COURS ou INTERROMPU.
