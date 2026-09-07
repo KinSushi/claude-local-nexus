@@ -26432,3 +26432,42 @@ J ai retire une accusation FAUSSE (« c est toi la charge dominante ») refutee
 par la mesure PID d un pair (PID 2268 = Puissance_60+). Emprunts notes pour
 MON depot : un mouchard sitecustomize pour l epreuve de FUITE (§0.1.4.1), et un
 garde de lot « denoncer tout controle qui accuse >70 % ».
+
+### §187 — Garde darwin pre-pull mecanisee et cablee ; 3 tailles math + r1 exposees
+
+GARDE (commits 0c6cd56 + 744b4d6). can_download (disque + verdict memoire)
+existait dans nexus_capability mais personne ne l appelait -- un fichier, pas un
+mecanisme. nexus_pull_garde.py l active : il interroge la TAILLE DISTANTE au
+manifeste du registre ollama, puis tranche AVANT tout telechargement. Prouve sur
+donnees REELLES :
+  qwen2-math:1.5b (0.9 Go) -> AUTORISE (code 0)
+  qwen2-math:72b  (41 Go)  -> AUTORISE mais DEGRADED (chargeable, sans marge)
+  qwen2-math:72b-instruct-fp16 (145 Go) -> REFUSE (code 2) AVANT de tirer 145 Go
+Cablee dans nexus_maj_modeles (decision(taille, build_profile()) avant chaque
+rafraichir_modele ; REFUSE -> saute) : cliquet cablage AUCUNE regression.
+
+MODELES (demande operateur : maths + autres, auto-install, darwin accepte/rejette
+en auto). Pulles : qwen2-math 1.5b/7b/72b + deepseek-r1:8b. Le darwin a
+auto-classe : 1.5b/7b ACCEPT (routables), 72b DEGRADED (adressable, hors pools).
+L operateur a diagnostique juste le vrai defaut : installes mais PAS exposes. Il
+fallait REGENERER la config (nexus_generate) + REDEMARRER litellm ; un --dry-run
+ne suffit pas. Apres restart (config validee 87 modeles, ~20 s d interruption,
+pair prevenu) : math-1.5b/7b/72b-local et deepseek-r1-8b-local exposes.
+
+MA MESURE FAUSSE, encore le meme piege : `python … | tail ; echo $?` rend le code
+de tail, pas de python. Les vrais codes (sans pipe) : 1.5b -> 0, fp16 -> 2. Un
+correctif du banc a aussi ete pris par la garde de SYNTAXE de nexus_appliquer
+(un bloc de-indente) : la garde a refuse un fichier invalide, le 2e essai est
+passe.
+
+A11 -- FIL OUVERT, releve par sovereign via l operateur, et deja mesure ici : le
+verrou machine a un verrou `banc`, mais nexus_agent ne le prend QUE pour les
+modeles locaux (-local), PAS pour les lots cloud. Les lots cloud contendent donc
+la passerelle partagee SANS verrou -- c est la cause de la saturation inter-
+sessions (mesure d un pair : effondrement a 64 appels concurrents). Une classe
+d inference couvrant AUSSI le cloud reglerait les trois projets. Construit ICI
+(source §0), redescend. PROCHAIN FIL.
+
+EMPRUNT note (puissance-60) : chercher les constantes dont le NOM porte un nombre
+-- son SENTINEL_32 faisait 28 octets, le controle echouait toujours. Le genre de
+defaut que rien n attrape.
