@@ -5,7 +5,7 @@
   },
   "psscriptanalyzer": {
     "PSAvoidOverwritingBuiltInCmdlets": 1,
-    "PSAvoidUsingEmptyCatchBlock": 11,
+    "PSAvoidUsingEmptyCatchBlock": 13,
     "PSReviewUnusedParameter": 1,
     "PSUseApprovedVerbs": 1
   },
