@@ -26360,3 +26360,34 @@ scratchpad/va/, --racine scratchpad). Le DEFAUT du tool reste :
   la racine a utiliser et refuse un --racine incoherent -- jamais un refus
   silencieux. Le defaut a ete trouve en 1 usage, pas par un audit : exactement
   la doctrine temoin-mainteneur.
+
+### §185 — nexus_grounding CORRIGE : les copies suivent le lot, prouve par un tir reel
+
+Suite directe du §184. Le defaut (copies dans un temp dir non communique, refus
+silencieux de nexus_agent:313) est CORRIGE (a5e357c). Fix produit par le banc,
+applique par nexus_appliquer, jamais ecrit ici (LOI 1).
+
+  construire_lot(cible_lot=...) : les copies vont desormais dans le repertoire
+  du lot (co-localisees) ; l appelant tire avec --racine = dirname(lot). Sans
+  cible_lot, comportement temp-dir inchange (lot ET copies dans le meme temp).
+
+AUDIT DE LA CORRECTION, objectif (temps 3, §0.7.1) : un TIR REEL, pas ma
+relecture. construire_lot sur scripts/nexus_charge.py, cible_lot en scratchpad,
+puis nexus_agent --racine = dirname(lot) -> le banc a RECU le fichier (empreinte
+non-nulle, taille > 0), repondu « AUDIT-OK », zero refus. C est le tir qui
+prouve ; la structure du lot que mon 1er audit avait verifiee ne prouvait rien
+-- exactement §184 / §0.1.4.
+
+TROU NOMME, pas masque (§0.2.1 : ne pas revendiquer une garde incomplete).
+L epreuve integree verifie l usabilite (chaque copie existe sous la racine du
+lot) MAIS ne l exerce que sur le chemin temp-dir : _run_epreuve appelle
+construire_lot SANS cible_lot, donc le chemin ou le bug vivait n est pas couvert
+par --epreuve. Prouve par lecture (l appel omet cible_lot). Le banc a rendu 3
+fois de suite une ancre non conforme pour cabler ce second test (§112.4) ;
+couverture --epreuve du chemin cible_lot = OUVERT.
+
+DEFAUT DE CHEMIN, cockpit / hook de reprise : « python
+outillage/nexus_conformite.py » est propose alors que nexus_conformite.py, comme
+nexus_rituel.py et nexus_valide.py, est dans scripts/. Chemin mort, trouve en le
+lancant (temoin-mainteneur). Le hook SessionStart et les GESTES du cockpit le
+repetent = OUVERT.
