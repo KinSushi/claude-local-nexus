@@ -7,6 +7,8 @@ import sys
 import shutil
 import json
 import tempfile
+import nexus_capability as capability
+import nexus_pull_garde
 
 # La marge de disque est une POLITIQUE et non une mesure, elle depend de la machine et se regle donc sans toucher au code.
 # Le delai de telechargement depend du debit reseau, qui n'est pas une propriete du depot.
@@ -371,9 +373,14 @@ def main():
 
     changes = []
 
-    for name, _taille in models_to_update:
+    for name, taille in models_to_update:
 
         print(f"Traitement de : {name}")
+        _etat_g, _ok_g, _motif_g = nexus_pull_garde.decision(taille, capability.build_profile())
+        if _etat_g == "REFUSE":
+            print(f"  REFUSE (ne rentre pas) : {_motif_g}")
+            failed += 1
+            continue
         etat = rafraichir_modele(name, DELAI_PULL_S)
         if etat == 'a_jour':
             up_to_date += 1
