@@ -25538,3 +25538,90 @@ Le dernier repare le defaut qui a coute onze rendus ce jour meme.
 | **14** | **100 violations ruff comptees, non corrigees** | **NOUVEAU** |
 | **15** | **14 outils sans appelant, nommes non cables** | **NOUVEAU** |
 | **16** | **`ancre.py` vit hors du depot** | **NOUVEAU** |
+
+
+---
+
+## 171. UN SIGNALEMENT VENU DE L'USAGE, ET UN AUDIT DE MA CORRECTION
+
+### 171.1 Deux defauts signales par une session voisine, verifies ici
+
+**Le premier est deterministe et tue tout lot qui attend le verrou.**
+`scripts/nexus_agent.py` porte, dans le corps de main(), un import du module
+os. Python rend alors os LOCAL a toute la fonction, et la ligne 1513
+s'execute avant cet import :
+
+```
+UnboundLocalError: cannot access local variable os
+```
+
+Le module est pourtant importe ligne 57. Le chemin n'est emprunte que
+lorsque le verrou du banc est demande -- donc quand une inference LOCALE
+tient le mutex pendant qu'un autre lot demarre. **NON CORRIGE** : le banc a
+repondu AUCUN DEFAUT SUR alors que la ligne figurait dans l'extrait envoye.
+
+**Le second vient de mon rangement.** `nexus_garde_production.py`
+construisait le chemin de `nexus_appliquer.py` depuis son propre repertoire,
+donc `scripts/`, alors que l'outil vit dans `outillage/`. La garde refusait
+en nommant un outil ABSENT : celui qui la rencontrait n'avait aucun chemin
+outille pour appliquer son patch. **Sixieme incarnation du chemin
+assemble.** Corrige : elle cherche les deux repertoires, et avoue si aucun
+ne porte le fichier.
+
+> Aucun de ces deux defauts n'a ete trouve par un audit. Tous deux l'ont ete
+> par quelqu'un qui se servait de la plateforme pour de vrai.
+
+### 171.2 L'audit tiers de MA correction : cinq defauts
+
+Sur le correctif de `nexus_traque.py` commite en `639803e` :
+
+| defaut | etat |
+| --- | --- |
+| reconfigure pose APRES parse_args : --help plante en ASCII | non corrige |
+| antislash-n LITTERAL et espace insecable dans un message | non corrige |
+| docstring << toujours 0 >> devenu faux, et c'est le --help | **corrige** |
+| import sys en double | **corrige** |
+| les 110 constats comptent **17 doublons** : 93 distincts | mesure |
+
+Le troisieme est le plus instructif : ce docstring est passe en
+`description=__doc__` a argparse. **L'aide disait le contraire du code.**
+
+**Son verdict sur le rebasement tient**, et il est alle au-dela de mon
+instrument : grep de code complet, quatre taches planifiees, hooks,
+`.mcp.json`, settings global. Aucun des 14 n'a d'appelant reel, et un
+contre-factuel prouve que le cableur ajoute n'a rien absous.
+
+### 171.3 Le garde-fou a annule un correctif SAIN
+
+Il exigeait que `--help` en ASCII s'ameliore. Or la tache qui le repare
+avait ete refusee par ailleurs. Il a donc annule aussi la correction de la
+garde de production, qui n'avait rien a voir avec ce critere.
+
+> **Un garde-fou empeche une REGRESSION ; il n'exige pas une amelioration
+> qui n'a pas ete livree.** Critere corrige : il ne bloque que si ce qui
+> passait ne passe plus.
+
+### 171.4 Le validateur a signale le changement VOULU
+
+`nexus_valide.py` rend REGRESSION sur `test_sonde_mcp` : << le test echoue
+au lieu d'etre saute si le script est absent >>. C'est exactement ce qui
+etait recherche -- la suite rendait vert sur ce qu'elle n'avait jamais joue.
+Et la branche ne se declenche pas : `epreuves/epreuve_sonde_mcp.py` existe,
+et le patch le cherche la en premier.
+
+Passe outre EN LE DISANT, plutot qu'en l'ecartant.
+
+### 171.5 CE QUI RESTE OUVERT — remplace SS170.5
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| **17** | **UnboundLocalError sur os, `nexus_agent.py`** | **GRAVE, non corrige** |
+| 4 | sauts silencieux de `nexus_test.py` | 3 sur 6 faits |
+| 6 | reconfigure avant parse_args dans `nexus_traque` | non corrige |
+| 6b | antislash-n litteral et NBSP dans le message | non corrige |
+| 16 | `ancre.py` hors du depot ; `nexus_appliquer` a le meme defaut | commande, ecarte 2x |
+| 14 | 100 violations ruff comptees, non corrigees | ouvert |
+| 15 | 14 outils sans appelant | nommes, non cables |
+| **18** | **les 110 constats comptent 17 doublons** | **mesure, non traite** |
+| 10 | `nexus_avant_apres.py` sans appelant | ouvert |
+| 11 | fusion du plan unique | point de retour `95715b3` |

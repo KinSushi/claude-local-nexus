@@ -12,7 +12,7 @@ Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;152500;20
 Génération;outillage/nexus_generate.py;Régénère les zones AUTOGEN;80038;2026-09-06;3641616be40d2756
 Génération;scripts/Update-NexusModels.ps1;Orchestrateur de mise à jour;13751;2026-09-06;9cf0c815fc0ca5b8
 Vérification;outillage/nexus_mcp_probe.py;Sonde les outils du pont MCP;16290;2026-09-06;413c9545c06d6797
-Vérification;outillage/nexus_test.py;Suite forward / reverse / policy / code;177058;2026-09-06;087bd09b7a676278
+Vérification;outillage/nexus_test.py;Suite forward / reverse / policy / code;177753;2026-09-06;0330d277e6695842
 Vérification;outillage/nexus_validate.py;Intégrité — bloque tout redémarrage douteux;34221;2026-09-06;168a59275d0a2c96
 Vérification;scripts/Test-NexusConfig.ps1;Enveloppe du validateur;4976;2026-09-06;9083a6c4834b5d33
 Vérification;scripts/Test-NexusSmoke.ps1;Smoke test runtime;9241;2026-09-02;3a0e8d637cb715aa
@@ -26,11 +26,11 @@ Exploitation;scripts/start.ps1;Démarrage de la pile;13142;2026-09-06;1d05414317
 Exploitation;scripts/stop.ps1;Arrêt de la pile;4119;2026-09-02;ea4e8f7b82abfa83
 Rituel;outillage/nexus_boussole.py;Régénère cette boussole;12263;2026-09-06;cd2bccae51acf48b
 Rituel;outillage/nexus_state.py;Régénère STATE.md par mesure;23691;2026-09-06;0f961469143e0bbf
-Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1625784;2026-09-06;8ca46b694343cc91
-Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1271018;2026-09-06;97c538e7012f354a
+Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1670429;2026-09-06;b16ec199d54bb954
+Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1275016;2026-09-06;8114505e8455fabf
 Rituel;outillage/rituels/PROGRESS.md;Historique des décisions et des erreurs;17296;2026-09-06;242c817f63c2aa2f
 Rituel;outillage/rituels/RESUME.ps1;Reprise de session;2878;2026-09-06;770e25b546079761
-Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3171;2026-09-06;fa15322c7a874737
+Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3172;2026-09-06;a55aef6c93ed8f4b
 Documentation;README.md;Vue d'ensemble et installation;15254;2026-09-06;8633b42e4281334f
 Documentation;docs/pont-local-abonnement.md;Associer modèles locaux et abonnement;16774;2026-09-06;ee756cc3eb305c0c
 Architecture;.claude/agents/nexus-delegue.md;;4131;2026-08-29;103b5dbd0d19550c
@@ -38,312 +38,6 @@ Architecture;.claude/scheduled_tasks.lock;;124;2026-09-05;ef8876960b9fa80e
 Architecture;.claude/settings.json;;5680;2026-09-06;7046e12828b9f09a
 Architecture;.claude/settings.json.avant_socle_20260901-190654;;3425;2026-09-06;44f99227a7175251
 Architecture;.claude/settings.local.json;;1571;2026-09-06;8781bb3cf9a01b07
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.claude/CLAUDE.md;;122159;2026-09-06;29837f7ec42b0d41
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.claude/agents/nexus-delegue.md;;4131;2026-09-06;103b5dbd0d19550c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.claude/settings.json;;5654;2026-09-06;9e91ef6ad661d3d5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.claude/settings.json.avant_socle_20260901-190654;;3419;2026-09-06;6ea8ccd9d99d91db
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.claude/settings.local.json;;1571;2026-09-06;8781bb3cf9a01b07
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.env.example;;3051;2026-09-06;f70ad0c51a6d67ab
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.git;;67;2026-09-06;d1f5cff6fa7b3a29
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.gitattributes;;1895;2026-09-06;a33d55fd8833a77b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.github/workflows/verification.yml;;4496;2026-09-06;81e8e10d7aa3ba39
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.gitignore;;4351;2026-09-06;20dbf4bd0cdd41b0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/.mcp.json;;246;2026-09-06;2622bc6acf81e922
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/AGENTS.md;;3292;2026-09-06;e21cd2bae8539810
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/LICENSE;;34523;2026-09-06;0d96a4ff68ad6d4b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/README.md;;15216;2026-09-06;f19a7a7fea16cb11
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/Set-ClaudeModel.ps1;;12771;2026-09-06;cd68d2299da2ed40
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/Start-Claude.ps1;;7924;2026-09-06;1e0f9aacea9185a2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/UTILISER_NEXUS.md;;4011;2026-09-06;8a77f22435764c85
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/cloud_models.txt;Note d'architecture;551;2026-09-06;8126b079ecf7807f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/competences/arbitrer.txt;Note d'architecture;2862;2026-09-06;e712f6e2103957fa
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/competences/relire-code.txt;Note d'architecture;1078;2026-09-06;74ac48948ff2445d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/competences/repondre-court.txt;Note d'architecture;614;2026-09-06;65d3d5329a4babd3
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docker-compose.gpu.yml;;941;2026-09-06;d8cb0679e22c2e51
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docker-compose.yml;;6261;2026-09-06;2bcf84ef8fb1486f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/MANUEL.md;;19310;2026-09-06;adcf68e304a2b353
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Adaptive-Inference-Controller.md;;11862;2026-09-06;82a82da2715cef66
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Agent-Contracts.txt;Note d'architecture;3231;2026-09-06;56e261343a5454c4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Agent-Trace-Schema.txt;Note d'architecture;2138;2026-09-06;71686fd25a2d442d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Agent-loops.txt;Note d'architecture;4543;2026-09-06;3daed6bac282d7a5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Architecture_documentaire.md;;3266;2026-09-06;ff3055cf8e382662
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Bayesian-routing-evolution-future.txt;Note d'architecture;1676;2026-09-06;3604374361cedb31
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Cache-policy-avancée.txt;Note d'architecture;425;2026-09-06;206024bed62b61e8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Confidence-uncertainty.txt;Note d'architecture;2287;2026-09-06;99c475c3f237f212
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Conformance-Tests.txt;Note d'architecture;3928;2026-09-06;2a9b32f67e8834f4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Context-cache.txt;Note d'architecture;1434;2026-09-06;aa1e095be46fdb75
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Cost-budget.txt;Note d'architecture;2012;2026-09-06;1336fdd8fafce444
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Drift-detection.txt;Note d'architecture;1392;2026-09-06;74818755f1b43d10
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Escalation-policy.txt;Note d'architecture;1270;2026-09-06;efbc3469310e2ebe
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Event-log.txt;Note d'architecture;1608;2026-09-06;1910de03ba2da6f7
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Final-target-architecture.txt;Note d'architecture;7362;2026-09-06;35cf2b9d896cf15e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Latency-budget.txt;Note d'architecture;924;2026-09-06;b3d141e586db52b5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/MCP-external-tool-layer.txt;Note d'architecture;1552;2026-09-06;fe698bb690b50d58
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/MCP-ne-doit-pas-bypasser-la-policy.txt;Note d'architecture;871;2026-09-06;13cceb1c2a4fdc75
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Mission-P0.txt;Note d'architecture;21506;2026-09-06;cb4162e242285a99
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Model-lifecycle-automation.txt;Note d'architecture;1220;2026-09-06;c2152b18fad7dd62
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Multi-agent-orchestration.txt;Note d'architecture;2121;2026-09-06;92dc3f0013a3c520
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Policy-as-code.txt;Note d'architecture;2148;2026-09-06;dec21b685614762d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Prompt-registry.txt;Note d'architecture;1451;2026-09-06;e25260a7a1211189
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/README.md;;6724;2026-09-06;6fd179ab258bbb7e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Reproductible-execution.txt;Note d'architecture;3716;2026-09-06;c3f2647b9873e99d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Router-versioning.txt;Note d'architecture;1463;2026-09-06;00f016b45252ee55
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Routing-unit-tests.txt;Note d'architecture;2355;2026-09-06;b0b1e3fa17f4a444
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/SKILLS.txt;Note d'architecture;3553;2026-09-06;f62f74a91f214af0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Scientific-quantitative-evaluation-layer.txt;Note d'architecture;2962;2026-09-06;6fe9d091247b690a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Secrets-Gateway.txt;Note d'architecture;2582;2026-09-06;893fae037d79045a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Self-critique-contrôlée.txt;Note d'architecture;430;2026-09-06;1b39c21a48488342
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/Verification-Agent.txt;Note d'architecture;1871;2026-09-06;b8ffa1495c33307c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/agent-planner.txt;Note d'architecture;3879;2026-09-06;a04cd85d04c0ce08
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/budget-aware-execution.txt;Note d'architecture;2884;2026-09-06;2a8b2470352eee81
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/execution-policy.yaml.txt;Note d'architecture;1367;2026-09-06;6d4426a649f2c461
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/execution-profiles.txt;Note d'architecture;1455;2026-09-06;e97eeda0c6d87173
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/missions/INGEST-001-platform-integration.md;;10933;2026-09-06;c2367cdcf5c4b0fd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/model-registry.yaml;;4187;2026-09-06;1db332e6c138ef0b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/provider-registry.txt;Note d'architecture;3004;2026-09-06;fbea88cd71cf1d95
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/architecture/tool-registry.txt;Note d'architecture;4362;2026-09-06;7acf7aaa1a8b63c4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/pont-local-abonnement.md;;16770;2026-09-06;3444b19249e6d4ec
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/docs/set-claude-model.md;;3026;2026-09-06;11f01fa402651f7a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/litellm_config.yaml;;61228;2026-09-06;d0e145983ff78f4b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/model_list.host.txt;Note d'architecture;246;2026-09-06;7027cc533c390fa7
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/model_list.txt;Note d'architecture;561;2026-09-06;f71b122ec0e6090a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/patch_lot.py;;3131;2026-09-06;ea789631c299b4f0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/livres/_POINTEUR_CORPUS.md;;6220;2026-09-06;1a9b4bf5026d11dc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/node_docs/node/22.23.2/all.json;;7589201;2026-09-06;f1f469d83339966d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/node_docs/node/22.23.2/index.tsv;;650394;2026-09-06;f2b7ed9f28cae41f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/node_docs/node/22.23.2/symbols.jsonl;;4029218;2026-09-06;25dcfefde769759b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/python_ast_eamt5/_outils/cabler_corpus_ast.py;;7600;2026-09-06;e201f657ca0da1e3
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/python_ast_eamt5/_outils/couvrir_toutes_les_libs.py;;9180;2026-09-06;2154c06e5b3fb677
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/python_ast_eamt5/_outils/extraire_api_par_ast.py;;12936;2026-09-06;d455efe782661c14
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/python_ast_eamt5/_outils/test_extraire_api_par_ast.py;;7312;2026-09-06;06aeae8ac5207a74
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/python_libs_docs/_POINTEUR_CORPUS.md;;1510;2026-09-06;f068f79e586be0d4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/_INDEX.md;;1386;2026-09-06;4fd6927dd384018d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/cibles_shell.py;;5814;2026-09-06;7a97c43d990a07ef
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/flat.txt;Note d'architecture;3600;2026-09-06;caa83c0288040459
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/fragments/securite_0001.md;;3948;2026-09-06;1ac9b4e12bed03c1
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/fragments/securite_0002.md;;337;2026-09-06;5c54a7bf9dd792f5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/index.tsv;;2382;2026-09-06;f610cfc818a2515b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/references/securite_confinement/symbols.jsonl;;18325;2026-09-06;169531e65d3c78cc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/requirements.txt;Note d'architecture;14;2026-09-06;0969da99a0bc2a1b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/ACHEVEMENT.md;;4893;2026-09-06;2f5c4b7dbab00f84
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/A_POSER_global.json;;7943;2026-09-06;5a6eb0b606bb975e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/A_POSER_local.json;;2248;2026-09-06;8a022c08429aaef5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/BOUSSOLE.csv;;13577454;2026-09-06;8e440144ac85832d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/BOUSSOLE.md;;15363421;2026-09-06;43317fb721fd70c6
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/CHECKLIST_COCKPIT.MD;;1057408;2026-09-06;3b8d240d392cda0f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/CHECKLIST_LIVRE_VS_CODE.md;;33003;2026-09-06;54a16e8189515d3c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/CHECKLIST_PROGRESS.md;;1416;2026-09-06;cad43552d7ad5057
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/CORPUS_LIVRES.md;;6226;2026-09-06;cd9fbd0f73f6e932
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/DECHARGE_EA_MT5_2026-09-02.md;;7364;2026-09-06;8fb3057f414f2e54
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/EVALUATION-LOCALE.md;;12079;2026-09-06;f16830fca4479937
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/GABARIT_QUARANTAINE.md;;5846;2026-09-06;570cebfadf230933
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/INVENTAIRE_OUTILS.md;;6327;2026-09-06;eaebc83b331bd4bd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/LECONS_PARTAGEES.md;;59167;2026-09-06;7e02ba2a230078a6
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/LIVRES_UTILES_AU_PROJET.md;;8080;2026-09-06;21a49ff72fcb1bf4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/LOT_NUIT_LISTE.md;;3112;2026-09-06;8fb726051783d8a8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/PLAN_MAITRE_2026-09-01.md;;19032;2026-09-06;05e63645415c2f0d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/PROGRESS.md;;17296;2026-09-06;242c817f63c2aa2f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/MANIFESTE.json;;132260;2026-09-06;bd55f7b67c1b9a17
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/MANIFESTE.md;;30220;2026-09-06;d694eaf765bb7d99
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/MESURE_BASE_FUSION.json;;5039;2026-09-06;16589b12a3a6297e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/MESURE_NON_COMMITE.json;;27071;2026-09-06;aae4855ae976707f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/RECONCILIATION.md;;7494;2026-09-06;9d0ea9c565e5e694
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/QUARANTAINE/_POINTEUR_QUARANTAINE.md;;1423;2026-09-06;e8b5eb22ebc45ac2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/README.md;;1756;2026-09-06;dac6503c1883887f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/RESTE-A-FAIRE.md;;21725;2026-09-06;0f83d7dec3ff8486
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/RESUME.ps1;;2848;2026-09-06;7714dfe8b4c7c548
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md;;13028;2026-09-06;344040aae24ac709
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/README.md;;2970;2026-09-06;576579692f15d46a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/ea-mt5_REPRISE_gouvernance.md;;9106;2026-09-06;f8fe5193ade31610
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/ea-mt5_lot1_mesures.md;;8870;2026-09-06;4e00a263bbbda7f8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/ea-mt5_lot2_source_et_outils.md;;9557;2026-09-06;9994a91bdf4fe292
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/ea-mt5_lot3_diagnostic_panne.md;;4169;2026-09-06;26850a07cdb5ccd4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/inventaire_des_pertes.md;;8022;2026-09-06;d61ce20a5dfcc399
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/sovereign_garde_aveugle_au_MCP.md;;5458;2026-09-06;e41c4d710ce5884a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SAUVETAGE_2026-09-01/sovereign_vidage_complet.md;;14417;2026-09-06;ad0c3e5c0d9348fb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SOCLE_LOCAL_local-llm-docker.json;;5383;2026-09-06;43d6301c4beb4acc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SOCLE_SECURITE_GLOBAL.json;;16927;2026-09-06;5e107c8aad502c39
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SOCLE_UNIVERSEL.json;;6506;2026-09-06;cef66586c7fbebfb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/SURVIE_SANS_ABONNEMENT.md;;11534;2026-09-06;dcd47dac3db4af3c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/VAGUES_REPARATION.md;;205112;2026-09-06;5ec69c2a28fb80af
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/VERBATIM_2026-09-01_CATALOGUE_OLLAMA.md;;18431;2026-09-06;3d8b5b832a915bce
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/_QUARANTAINE_BRICOLAGE/_temoin_bricolage.py;;88;2026-09-06;f97ccab961edbc67
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/cablage_reference.json;;766;2026-09-06;4c9cc47f3c99d63c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/orphelines_reference.json;;17;2026-09-06;19f6520b84322b8e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/rituels/outillage_reference.json;;550;2026-09-06;1694dc2b1a799cbc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Compact-NexusDisk.ps1;;7504;2026-09-06;28d2c045ebfd3d55
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Initialize-Nexus.ps1;;10598;2026-09-06;23ce1a10fd9d5b10
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Install-NexusCommande.ps1;;4054;2026-09-06;5e0850f51dbbc5fd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Register-NexusAutoUpdate.ps1;;9837;2026-09-06;5e53c6c931772afd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Register-NexusDemarrage.ps1;;6096;2026-09-06;ea7149bfe4d7be05
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Register-NexusTraque.ps1;;4712;2026-09-06;9153708cec0a97ca
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Register-NexusVitrine.ps1;;5966;2026-09-06;05feb2eb0f834853
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Test-NexusConfig.ps1;;4931;2026-09-06;7cec45315d3a73b1
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Test-NexusSmoke.ps1;;9023;2026-09-06;53245ef943d6edda
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/Update-NexusModels.ps1;;13469;2026-09-06;1fedad75868f29c9
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/backup.ps1;;9763;2026-09-06;682a8cec1359fe76
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/console_tools.py;;4039;2026-09-06;22f0798d3ea83b2d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_applicateur_maison.py;;3269;2026-09-06;e26470f8494b6ad7
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_appliquer.py;;3520;2026-09-06;00e2c08818c697de
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_armer_garde.py;;2983;2026-09-06;4f104b047f03593c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_avec_verrou.py;;3101;2026-09-06;44976132e5d1d3c2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_avertir_rendu.py;;3956;2026-09-06;3d104956f8a8803b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_bascule.py;;4239;2026-09-06;ca5e7e1a1a07d49d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_bascule_contre.py;;2425;2026-09-06;5255fbe0021fff78
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_budget_lot.py;;4362;2026-09-06;abe0aee09e64d878
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_cablage.py;;5232;2026-09-06;eb5045b9abe28687
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_charge.py;;3569;2026-09-06;ae786b96c942aefc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_chemins_annonces.py;;4152;2026-09-06;b7444525464e2974
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_cibles_shell.py;;7439;2026-09-06;eadb0e0ac966346f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_cles_only.py;;3032;2026-09-06;6b163679c3b52fea
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_commande_nexus.py;;3283;2026-09-06;2f23daa8b2804041
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_concentration_routage.py;;4277;2026-09-06;87fbe9d1e0ea6c4f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_conformite_sources.py;;11786;2026-09-06;acdd3261cf5605ff
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_corpus.py;;3848;2026-09-06;9719123808f31d31
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_couverture_gardes.py;;3459;2026-09-06;a29664c7028b706e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_dire_troncature.py;;2142;2026-09-06;889e21a138383bc2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_doc_annexe.py;;8511;2026-09-06;3cb365702624935d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_fonctions.py;;3765;2026-09-06;88ceb681f63042d4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_fuite_repli.py;;4562;2026-09-06;0f652e8fd7a5f768
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_agent.py;;2552;2026-09-06;cf2992ddba086c70
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_ecriture.py;;3070;2026-09-06;2a22982d9a3e821b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_encodage.py;;1872;2026-09-06;57e9826a98da3812
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_heredoc.py;;3538;2026-09-06;b60b10abd859d92f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_isolation.py;;2446;2026-09-06;1a31807c88280457
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_lecture.py;;6077;2026-09-06;ae0a7a6a9b304907
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_plan.py;;5197;2026-09-06;e4969f5083797323
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_production.py;;2553;2026-09-06;c9f123df039a031f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_quote.py;;3939;2026-09-06;eda3f6d112c14c27
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_shell.py;;2457;2026-09-06;12116c4108392c67
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_garde_shell_ps.py;;5659;2026-09-06;cd2e156840e95a23
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_gardes_accordes.py;;6402;2026-09-06;f1c534a9f2640ef0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_import.py;;3118;2026-09-06;d4cc885716407eed
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_ingerer.py;;9912;2026-09-06;41c15b93d2aebc11
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_journal_disjoncteur.py;;3366;2026-09-06;12922b6e9d36c853
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_libs.py;;3147;2026-09-06;6ac25a2372cae27f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_maj_modeles.py;;9740;2026-09-06;18cfc2dd451be1ef
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_manuel_vivant.py;;4467;2026-09-06;a1c84080b590290c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_offsets_annexes.py;;6095;2026-09-06;2042973900a7420c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_options_lot.py;;2946;2026-09-06;53e6b1c143d5eec8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_orphelines.py;;3677;2026-09-06;1f0d61e0c62b828e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_outillage.py;;2699;2026-09-06;6492990dcd02096e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_part_raisonnement.py;;4194;2026-09-06;1d747409da5c8f56
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_plafond_sortie.py;;5526;2026-09-06;e5be9c18d65dd6a8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_posterior.py;;3017;2026-09-06;853ae64cfe0ee982
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_preload.py;;2176;2026-09-06;067bc2e79f16b5a8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_progres.py;;5423;2026-09-06;99b228d10b34601a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_quota_partage.py;;3445;2026-09-06;a76f775f26a7ecd3
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_registre_epreuves.py;;3153;2026-09-06;698fe9e52cd31e26
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_relais.py;;3003;2026-09-06;c8637e1873c7a0bd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_reprise.py;;1047;2026-09-06;10e5d7ef1ac950b0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_reprise_avant_repli.py;;4159;2026-09-06;de1e3a7e6adc16a4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_resumer.py;;5533;2026-09-06;8c14e5b88a394bd9
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_ruche.py;;3314;2026-09-06;7a582cb4727fea19
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_schema.py;;2254;2026-09-06;3c3f2a43f7e9364f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_secours.py;;5042;2026-09-06;e9fe236c4c173e2c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_sonde_aveugle.py;;5441;2026-09-06;5835b5eb80c1e59a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_sonde_mcp.py;;4647;2026-09-06;427c58ad99731a49
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_stats_jsonl.py;;4153;2026-09-06;7ef0d6ac0f4dc0c7
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_sujets_filtre.py;;5088;2026-09-06;5af8b4dfc63295a2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_verdict_rassurant.py;;4234;2026-09-06;f0110f1c2e92004a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_verdicts_rituel.py;;4717;2026-09-06;a22e1856784ded50
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_verifie_rendu.py;;2691;2026-09-06;540e1d17263cc203
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/epreuve_verrou_banc.py;;5347;2026-09-06;b06048fb38650e8c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/mesure_rendu_vide.py;;7932;2026-09-06;6fbe547079976463
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus.ps1;;12264;2026-09-06;fd0f13706df494d8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_agent.py;;74721;2026-09-06;d3d73071d6fbf800
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_appliquer.py;;10903;2026-09-06;da84c20c396b7ecc
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_armer_garde.py;;13008;2026-09-06;bc7d7a6ed16ecaf5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_armer_hook.py;;7711;2026-09-06;6f3e2b64df18a3bb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_avec_verrou.py;;3137;2026-09-06;85f2741bf1deabb2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_bench.py;;37139;2026-09-06;d95d1fb66349aca1
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_boussole.py;;12137;2026-09-06;b4a0ccc8e23077af
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_cablage.py;;19757;2026-09-06;33f800e805811ccf
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_capability.py;;30590;2026-09-06;5914bd87ce48ec43
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_charge.py;;8094;2026-09-06;747c5ad7e21eb5a1
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_checklist_progres.py;;9381;2026-09-06;583965a2e505c169
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_conformite.py;;92142;2026-09-06;83f3f4e3b06e8f28
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_corpus.py;;3411;2026-09-06;6b5d900057662f3d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_decouper_livres.py;;9504;2026-09-06;41dab5620b21c215
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_disjoncteur.py;;11129;2026-09-06;7b77a8745010acd0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_doc.py;;39900;2026-09-06;da3fc555bcc5341b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_epreuve_vide.py;;3468;2026-09-06;5d2c831a0c7b1ffa
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_essaim.py;;30884;2026-09-06;1b2876b0bf1dacdb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_extraire_livres.py;;4560;2026-09-06;05d333f5b466e963
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_filet.py;;22175;2026-09-06;617d13f542aafe1f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_fonctions.py;;9876;2026-09-06;2ba1bece318f7134
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_agent.py;;9950;2026-09-06;716e907f0027d58a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_ecriture.py;;7011;2026-09-06;8e83b8bb9616a580
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_edition.py;;5100;2026-09-06;a8c5480c1edcf1e5
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_isolation.py;;5732;2026-09-06;a9f07e624e220f1a
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_lecture.py;;20997;2026-09-06;f5388622cfdd5ff1
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_production.py;;4564;2026-09-06;1530a72d31cdee36
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_garde_shell.py;;12388;2026-09-06;d49adafec02a5eef
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_generate.py;;80018;2026-09-06;f29c16a2361518a3
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_import.py;;6282;2026-09-06;e6477fe5ccdc7993
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_index_livres.py;;7540;2026-09-06;daa97c03e76a27fe
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_indexer_code.py;;20124;2026-09-06;6ca1bf51e9b2d9bb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_indexer_node.py;;7133;2026-09-06;10a7973214344567
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_ingerer.py;;17960;2026-09-06;979b50e85a6a8d88
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_libs.py;;3231;2026-09-06;d2512ab99673d731
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_livres.py;;8589;2026-09-06;890fbcc137a8d261
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_livres_semantique.py;;9353;2026-09-06;1aeb9cd5f58692f9
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_loi1.py;;7273;2026-09-06;2b809f39def7783c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_maj_modeles.py;;17352;2026-09-06;50f3e9131de6561d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_mcp_probe.py;;16290;2026-09-06;413c9545c06d6797
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_migration_plan.py;;14036;2026-09-06;fcb4d2aa31d11c21
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_ombre.py;;4756;2026-09-06;25652d52d3b0c154
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_outillage.py;;32787;2026-09-06;f45f57aa2cbb1965
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_patch.py;;19598;2026-09-06;829eac012190db19
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_porte_rituel.py;;9042;2026-09-06;ffd852e6b00a180c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_portee_import.py;;15662;2026-09-06;853e2d540c6b25fd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_poser_socle.py;;10073;2026-09-06;d5a8fe5deca5bddd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_posterior.py;;5997;2026-09-06;7737b49c4efa58ef
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_preload.py;;2960;2026-09-06;42d31a42683052b8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_preserve.py;;21588;2026-09-06;b18ef48adab50f89
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_progres.py;;7798;2026-09-06;6200accea21b2c94
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_pull_host.py;;17192;2026-09-06;f465a81280bb3910
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_quarantaine.py;;43895;2026-09-06;2d6d690e3be4107b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_redaction.py;;15688;2026-09-06;47474ac5594899e4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_relais.py;;12302;2026-09-06;d8dd6cba54e903d7
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_releve.py;;37766;2026-09-06;e61eccc3add7eb69
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_reprise.py;;18546;2026-09-06;671db7acbd59b86d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_rituel.py;;21397;2026-09-06;961c1f5f18b46e25
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_ruche.py;;22186;2026-09-06;313220a6029d6e07
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_sauvegarde.py;;4582;2026-09-06;840d8add41a6aadd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_savings.py;;21606;2026-09-06;9404f626f1ef705c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_schema.py;;13323;2026-09-06;2635807478ff99e4
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_secours.py;;6928;2026-09-06;88abae30523bea91
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_socle.py;;5683;2026-09-06;91ce05a21bfba42e
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_sonde_aveugle.py;;3778;2026-09-06;4610bca9b80adb96
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_state.py;;23630;2026-09-06;03b74fbf4a5704f0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_stats_jsonl.py;;5894;2026-09-06;9bf65a3f349486af
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_sujets.py;;23482;2026-09-06;72083efc47d61f43
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_switch_engine.py;;14423;2026-09-06;2874f28944fdcf11
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_test.py;;175825;2026-09-06;90a4d65ac4d2c5e9
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_test_outillage.py;;25094;2026-09-06;f81da04dcd695fa2
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_traque.py;;15635;2026-09-06;876e7556473353f8
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_validate.py;;34209;2026-09-06;8b0241724b3fbe8d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_valide.py;;33502;2026-09-06;8913807140189c17
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_verbatim.py;;10790;2026-09-06;6ec91fbea334f3ad
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_verifie_rendu.py;;7143;2026-09-06;24cf94e640252313
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_verrou_machine.py;;15077;2026-09-06;a60f534393dbb2ef
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_verrou_tenir.py;;3734;2026-09-06;ca5efa8bab8c6460
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_vitrine.py;;15121;2026-09-06;51274e97f334d904
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/nexus_worktree.py;;21201;2026-09-06;d877e85a61ebe484
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/restore.ps1;;7779;2026-09-06;3d7c3f18eff18380
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/start.ps1;;13048;2026-09-06;fb1e3d96f893b748
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/stop.ps1;;4119;2026-09-06;ea4e8f7b82abfa83
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/update_cloud_models.ps1;;7965;2026-09-06;c223ca5b4c78389f
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/scripts/update_local_models.ps1;;5009;2026-09-06;12c17cd0a3246cbb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_decoupage.js;;4353;2026-09-06;283938068ee8ec4c
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_mentions.js;;4587;2026-09-06;c56a5df8e7c9eedb
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_noms_js.js;;6131;2026-09-06;e3178ae07a52f85b
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_perte_index.js;;7410;2026-09-06;c01cc0b06df0aefd
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_protocole.js;;6701;2026-09-06;9166bc57c030353d
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_reveil.js;;5671;2026-09-06;cdb34f4042b75ba6
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/epreuve_semaphore.js;;9040;2026-09-06;9c5f094c861a8dd0
-Architecture;.claude/worktrees/agent-a12a1552bc265d111/tools/nexus-mcp/server.js;;152490;2026-09-06;d8474627f5a282fb
 Architecture;.gitattributes;;1925;2026-09-06;7db83417e446929a
 Architecture;.github/workflows/verification.yml;;4608;2026-09-02;e4f4ae182cdf7235
 Architecture;.gitignore;;5138;2026-09-06;9da579653d6593fb
@@ -371,7 +65,7 @@ Architecture;.ruff_cache/0.16.5/13454085944863612442;;2380;2026-08-31;f702be4df2
 Architecture;.ruff_cache/0.16.5/13577033435700752088;;164;2026-08-31;90b3a9eaab976eae
 Architecture;.ruff_cache/0.16.5/13954307803360208894;;7908;2026-09-02;dfea66ee31123b3c
 Architecture;.ruff_cache/0.16.5/14194984766851969492;;2196;2026-08-31;759366fc70225fa5
-Architecture;.ruff_cache/0.16.5/14237619000490327463;;4228;2026-09-06;d6d082f6f3585a55
+Architecture;.ruff_cache/0.16.5/14237619000490327463;;4228;2026-09-06;99f728a7ea94cc35
 Architecture;.ruff_cache/0.16.5/14366030611415331262;;164;2026-09-02;381fbaee07b24519
 Architecture;.ruff_cache/0.16.5/14460625026626173624;;6116;2026-09-02;2129f69dde498714
 Architecture;.ruff_cache/0.16.5/14806885345892221928;;172;2026-09-01;319a6dc35d704950
@@ -391,7 +85,7 @@ Architecture;.ruff_cache/0.16.5/18020274015270293044;;788;2026-09-02;6c8bafd4785
 Architecture;.ruff_cache/0.16.5/1947831033818117483;;164;2026-09-01;c5e23c2832476b0c
 Architecture;.ruff_cache/0.16.5/1948825395730465212;;2788;2026-08-31;68925897b19fe0a6
 Architecture;.ruff_cache/0.16.5/2069055596582012559;;2196;2026-08-31;fe0a1dd9b4cb3a86
-Architecture;.ruff_cache/0.16.5/2303348206548155947;;876;2026-09-06;af68014f503ed5e4
+Architecture;.ruff_cache/0.16.5/2303348206548155947;;876;2026-09-06;68c75f1fd14b0ac1
 Architecture;.ruff_cache/0.16.5/2555769582492602664;;3316;2026-08-31;9fa6dc66e9ece1dc
 Architecture;.ruff_cache/0.16.5/3611732672678976494;;2196;2026-08-31;a48b186dfbe7c798
 Architecture;.ruff_cache/0.16.5/3919405602604285951;;172;2026-08-31;7eb576b2c3027ed6
@@ -418,7 +112,7 @@ Architecture;.ruff_cache/0.16.5/7436670238545905122;;3004;2026-08-31;c4bf0d367e3
 Architecture;.ruff_cache/0.16.5/7560987962123106106;;212;2026-09-01;8553ab6d0509a048
 Architecture;.ruff_cache/0.16.5/780373741907484047;;7596;2026-09-02;a37e69c21e248f9a
 Architecture;.ruff_cache/0.16.5/8312566181075956486;;164;2026-08-31;886dab384e91bfee
-Architecture;.ruff_cache/0.16.5/8436410294004708296;;4092;2026-09-06;e91d72e11ccaf1bd
+Architecture;.ruff_cache/0.16.5/8436410294004708296;;4092;2026-09-06;b02d4d07ba7f4e9f
 Architecture;.ruff_cache/0.16.5/8454446969772004509;;3436;2026-08-31;0fdc1b9f0aba6fee
 Architecture;.ruff_cache/0.16.5/8488712595213057124;;7540;2026-09-02;4732ba20e4d264b1
 Architecture;.ruff_cache/0.16.5/8768928107327455551;;380;2026-08-31;2243344eb325bb26
@@ -430,7 +124,7 @@ Architecture;.ruff_cache/0.16.5/9691695313051288092;;212;2026-09-02;f851ae4f28ff
 Architecture;.ruff_cache/0.16.5/9885323605378818116;;8572;2026-09-05;6e9f70fedc08b31b
 Architecture;.ruff_cache/CACHEDIR.TAG;;43;2026-08-31;5953156d7e0c564a
 Architecture;LICENSE;;34523;2026-08-29;0d96a4ff68ad6d4b
-Architecture;PROGRESS.MD;;1674;2026-09-06;ecf801232235c557
+Architecture;PROGRESS.MD;;1666;2026-09-06;8be5f4f7566f923f
 Architecture;Start-Claude.ps1;;7924;2026-09-02;1e0f9aacea9185a2
 Architecture;UTILISER_NEXUS.md;;4015;2026-09-06;74950f16ad22f5f5
 Architecture;docker-compose.gpu.yml;;941;2026-08-29;d8cb0679e22c2e51
@@ -610,7 +304,7 @@ Architecture;outillage/nexus_sonde_aveugle.py;;3778;2026-09-06;4610bca9b80adb96
 Architecture;outillage/nexus_stats_jsonl.py;;5894;2026-09-06;9bf65a3f349486af
 Architecture;outillage/nexus_sujets.py;;23495;2026-09-06;5ecf28d06ca8ae32
 Architecture;outillage/nexus_test_outillage.py;;25098;2026-09-06;52036273fe934bba
-Architecture;outillage/nexus_traque.py;;16720;2026-09-06;98596af158aec3e5
+Architecture;outillage/nexus_traque.py;;16748;2026-09-06;1a78cd065725a463
 Architecture;outillage/nexus_verbatim.py;;10790;2026-09-06;6ec91fbea334f3ad
 Architecture;outillage/nexus_verifie_rendu.py;;7143;2026-09-06;24cf94e640252313
 Architecture;outillage/nexus_verrou_machine.py;;15077;2026-09-06;a60f534393dbb2ef
@@ -620,7 +314,7 @@ Architecture;outillage/nexus_worktree.py;;21217;2026-09-06;c7958f47442f4d43
 Architecture;outillage/rituels/ACHEVEMENT.md;;4895;2026-09-06;865fc5ff076ca1b7
 Architecture;outillage/rituels/A_POSER_global.json;;7953;2026-09-06;d33a9cd20d953d7d
 Architecture;outillage/rituels/A_POSER_local.json;;2266;2026-09-06;ab47a83210e121bb
-Architecture;outillage/rituels/BOUSSOLE.csv;;1424975;2026-09-06;0e307bebefaba3ce
+Architecture;outillage/rituels/BOUSSOLE.csv;;1463526;2026-09-06;40428ee3bd6de5b3
 Architecture;outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md;;38355;2026-09-06;1f94b6bf8244d354
 Architecture;outillage/rituels/CHECKLIST_PROGRESS.md;;1574;2026-09-06;93e29435ac217652
 Architecture;outillage/rituels/CORPUS_LIVRES.md;;6232;2026-09-06;7a297119dcca2efd
@@ -660,7 +354,7 @@ Architecture;outillage/rituels/_POINTEUR_HORS_PROJET.md;;3659;2026-09-06;4b3a745
 Architecture;outillage/rituels/_QUARANTAINE_BRICOLAGE/_temoin_bricolage.py;;88;2026-09-06;f97ccab961edbc67
 Architecture;outillage/rituels/cablage_reference.json;;781;2026-09-06;8b7c9a29a77cba11
 Architecture;outillage/rituels/orphelines_reference.json;;17;2026-09-06;19f6520b84322b8e
-Architecture;outillage/rituels/outillage_reference.json;;574;2026-09-06;d485025391400b45
+Architecture;outillage/rituels/outillage_reference.json;;558;2026-09-06;527839eb6b88d170
 Architecture;outillage/rituels/plans_sources/PLAN_A_isolation_et_frappes_cloud.md;;13785;2026-09-06;011f2a85b814dde0
 Architecture;outillage/rituels/plans_sources/PLAN_B_unifie_corpus_ouvert.md;;9828;2026-09-06;9545ac7dbb527041
 Architecture;outillage/rituels/plans_sources/_SOURCES.md;;1058;2026-09-06;5426164eb4d6e8c7
@@ -10257,7 +9951,7 @@ Architecture;scripts/nexus_garde_agent.py;;9950;2026-09-02;716e907f0027d58a
 Architecture;scripts/nexus_garde_ecriture.py;;7011;2026-09-01;8e83b8bb9616a580
 Architecture;scripts/nexus_garde_isolation.py;;5732;2026-09-01;a9f07e624e220f1a
 Architecture;scripts/nexus_garde_lecture.py;;20998;2026-09-06;1803dffa3d71167b
-Architecture;scripts/nexus_garde_production.py;;4564;2026-09-02;1530a72d31cdee36
+Architecture;scripts/nexus_garde_production.py;;5302;2026-09-06;94bd1734c8e90633
 Architecture;scripts/nexus_garde_shell.py;;12388;2026-09-06;d49adafec02a5eef
 Architecture;scripts/nexus_valide.py;;33504;2026-09-06;13c0cdcdecea1aa6
 Architecture;scripts/nexus_verbatim.py;;10790;2026-09-06;6ec91fbea334f3ad
