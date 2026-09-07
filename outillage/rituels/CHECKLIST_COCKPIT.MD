@@ -26554,3 +26554,30 @@ ne garder que le cross-FOURNISSEUR (generateur nexus_generate). (b) DERIVER les
 compteurs du README (contrat : hard-code nothing) sinon 'chiffres du README'
 re-bloquera a chaque modele. (c) nexus_chemins PORTABLE (§0.5). (d) audit qualite
 de fin de livraison (PROGRESS.MD).
+
+### §191 — Un bug que seul un TIERS pouvait voir ; et la sauvegarde bloquee cote machine
+
+STDERR (commit 6d74d64, deux jumeaux). puissance-60, consommant nexus_agent --json,
+a mesure que le bandeau « semaphore [inference] OBTENU » sortait sur STDOUT et
+corrompait le JSON redirige (son parseur trouvait le crochet dans « [inference] »
+-> 3 lots perdus « banc illisible »). Le MUTEX verrou() portait le MEME defaut
+latent. Fix : file=sys.stderr sur les bandeaux bavard de verrou() et semaphore()
+(les print de --etat et --epreuve restent sur stdout : leur sortie EST le
+resultat). Prouve : bandeaux captures -> stdout VIDE, stderr les porte.
+
+LA LECON, la plus forte du jour : ce defaut n aurait ete attrape par AUCUN
+controle de forme, ni chez moi ni chez le pair (son test_isolation juge un outil
+seul, mon py_compile juge la syntaxe). Il ne se voit QUE quand un tiers consomme
+la sortie. C est l argument mesure des EPREUVES CROISEES entre depots : la valeur
+que ni l un ni l autre ne peut produire seul. Le semaphore etait mon bug neuf,
+mais le mutex le portait depuis toujours -- personne ne redirigeait --json avant.
+
+SAUVEGARDE VITRINE BLOQUEE, cote MACHINE (pas le contenu). Les 7 controles de
+forme passent (arbre propre, .env non suivi, aucun secret, conformite, rituel,
+amont) SAUF le push : « fatal: remote helper https aborted session ». Cause
+racine mesuree par git ls-remote : « une strategie de controle d application a
+bloque libcurl-4.dll » -- Windows (WDAC/AppLocker) bloque la bibliotheque HTTPS
+de git. Aucun push/fetch HTTPS possible. 157 commits saufs LOCALEMENT, pas sur
+GitHub. Action OPERATEUR : lever la politique sur libcurl-4.dll, ou passer le
+remote en SSH. Recoupe le /install-github-app annule. Rien a corriger dans le
+depot -- la vitrine a bien REFUSE de mentir sur un push qui n a pas eu lieu.
