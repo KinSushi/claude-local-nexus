@@ -26204,3 +26204,30 @@ faisaient croire le garde defaillant alors qu il protege correctement. « Un
 controle muet se lit comme une protection » vaut dans les deux sens : muet-vert
 (rassure a tort) ET muet-rouge (accuse a tort). Seul le test qui DETECTE
 tranche.
+
+### §180 — nexus_valide peut rendre un FAUX verdict REGRESSION : le verifier objectivement
+
+Mesure du tour, en liquidant le lint par ruff (commit e6039c5). nexus_valide a
+rendu VERDICT_FINAL: REGRESSION avec deux griefs PRECIS et plausibles -- les
+deux FAUX, refutes en executant le code :
+
+  grief 1 : « controle_gardes_accordes : return None rompt le depaquetage
+            (etat, detail) ». FAUX : les fonctions RET503 touchees sont
+            annotees -> None (noter(), pas de tuple). PREUVE : conformite
+            « Conforme », code 0.
+  grief 2 : « epreuve_chemins_annonces : repo_root -> NameError ». FAUX :
+            repo_root n est reference nulle part. PREUVE : epreuve code 0.
+
+§112.4 en acte : « le banc se trompe souvent, et de facon plausible ; l analyse
+est un signal, jamais une preuve ». Ici le banc a INVENTE une architecture
+(tuple) et un usage (repo_root) qui n existent pas. Sans verification, 27
+corrections saines etaient annulees sur une hallucination.
+
+REGLE : un verdict REGRESSION de nexus_valide se VERIFIE objectivement --
+executer les fonctions/epreuves touchees -- avant d y croire. Un audit qui
+ACCUSE se verifie autant qu un audit qui RASSURE ; les deux peuvent mentir.
+
+Corollaire pour la liquidation cloud : plusieurs items du plan Vague 2 sont
+DEJA FAITS, decouvert en mesurant (175.2 la porte ignore deja les commentaires
+purs, nexus_frontiere:86 ; garde_agent ecrit deja le motif sur stderr,
+nexus_garde_agent:110). Mesurer AVANT de faire produire, toujours.
