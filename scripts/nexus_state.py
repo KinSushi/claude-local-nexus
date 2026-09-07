@@ -353,7 +353,7 @@ def main() -> int:
     # tout le processus et que la cause soit clairement indiquée.
     try:
         validation = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
             capture_output=True,
             text=True,
             timeout=TIMEOUT_RUN,

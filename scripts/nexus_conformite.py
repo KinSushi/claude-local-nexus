@@ -235,7 +235,7 @@ def controle_gardes_accordes(racine):
 def controle_config_valide() -> None:
     """Le validateur d'intégrité, tel quel : il est déjà la référence."""
     r = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
+        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -1917,7 +1917,7 @@ def controle_runtime(avant_demarrage: bool) -> None:
         return
     try:
         r = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "outillage", "nexus_releve.py")],
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_releve.py")],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -1965,7 +1965,7 @@ def controle_delegation(avant_demarrage: bool) -> None:
         r = subprocess.run(
             [
                 sys.executable,
-                os.path.join(ROOT, "outillage", "nexus_savings.py"),
+                os.path.join(ROOT, "scripts", "nexus_savings.py"),
                 "--jours",
                 "7",
                 "--json",

@@ -1663,7 +1663,7 @@ def main() -> int:
         fh.write("\n".join(lines).rstrip() + "\n")
 
     verdict = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py"),
+        [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py"),
          "--config", candidat],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=600)

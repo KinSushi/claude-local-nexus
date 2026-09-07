@@ -1,128 +1,38 @@
 [
   {
-    "file": "scripts\\Initialize-Nexus.ps1",
-    "line": 165,
-    "tool": "nexus_capability.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "file": "scripts\\nexus_conformite.py",
+    "line": 529,
+    "tool": "nexus_verrou_machine.py",
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   },
   {
-    "file": "scripts\\Initialize-Nexus.ps1",
-    "line": 207,
-    "tool": "nexus_switch_engine.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "file": "scripts\\nexus_conformite.py",
+    "line": 630,
+    "tool": "nexus_import.py",
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   },
   {
-    "file": "scripts\\nexus.ps1",
-    "line": 91,
-    "tool": "nexus_conformite.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "file": "scripts\\nexus_conformite.py",
+    "line": 667,
+    "tool": "nexus_cablage.py",
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   },
   {
-    "file": "scripts\\nexus.ps1",
-    "line": 247,
-    "tool": "nexus_sujets.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\nexus.ps1",
-    "line": 251,
-    "tool": "nexus_appliquer.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\nexus.ps1",
-    "line": 267,
-    "tool": "nexus_maj_modeles.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\start.ps1",
-    "line": 201,
-    "tool": "nexus_conformite.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\start.ps1",
-    "line": 282,
-    "tool": "nexus_releve.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Test-NexusConfig.ps1",
-    "line": 71,
-    "tool": "nexus_validate.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 121,
-    "tool": "nexus_pull_host.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 148,
-    "tool": "nexus_maj_modeles.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 169,
-    "tool": "nexus_generate.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 198,
-    "tool": "nexus_conformite.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 272,
-    "tool": "nexus_releve.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "scripts\\Update-NexusModels.ps1",
-    "line": 298,
-    "tool": "nexus_state.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "file": "scripts\\nexus_conformite.py",
+    "line": 1306,
+    "tool": "nexus_portee_import.py",
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   },
   {
     "file": "scripts\\nexus_garde_production.py",
     "line": 73,
     "tool": "nexus_appliquer.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   },
   {
-    "file": "scripts\\nexus_valide.py",
-    "line": 191,
-    "tool": "nexus_conformite.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "tools\\nexus-mcp\\server.js",
-    "line": 3228,
-    "tool": "nexus_savings.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "tools\\nexus-mcp\\server.js",
-    "line": 3232,
-    "tool": "nexus_charge.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "tools\\nexus-mcp\\server.js",
-    "line": 3241,
-    "tool": "nexus_livres_semantique.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
-  },
-  {
-    "file": "tools\\nexus-mcp\\server.js",
-    "line": 3524,
-    "tool": "nexus_verrou_tenir.py",
-    "motif": "point de depart : 21 executions produit -> outillage, connues et assumees. Dix-sept outils du produit sont ranges dans outillage/, classes par auteur et non par appelant (mesure 2026-09-07, source-code des livres : le coeur est ce dont tout depend). Les deplacements viendront ; ce compte ne peut que descendre."
+    "file": "scripts\\nexus_state.py",
+    "line": 506,
+    "tool": "nexus_traque.py",
+    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
   }
 ]
