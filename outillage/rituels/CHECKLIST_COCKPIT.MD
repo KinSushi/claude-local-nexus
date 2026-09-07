@@ -26269,3 +26269,21 @@ vrai). Le banc propose d ignorer un prefixe vide. Mais Edit(*) = « verrouiller
 toutes les ecritures » peut etre VOULU ; le patch en ferait un no-op. Aucune
 config actuelle n utilise Edit(*). Decision d effet de bord laissee a
 l operateur, pas appliquee unilateralement.
+
+### §179 CLOS — les deux reverse-tests de gardes posent, les deux gardes sont sains
+
+  [x] epreuve_garde_ecriture  (commit 94e0884) -- ecriture protegee, deny JSON.
+  [x] epreuve_garde_lecture   (commit 1f99f40) -- read-before-write, deny JSON.
+
+Les deux gardes REFUSENT correctement (mesure sur le vrai garde, forward/reverse
+verts) ; ils ont d ailleurs refuse MES propres actions (read-before-write faute
+de Read, production faute de delegation). Le trou etait dans les EPREUVES (4
+classes de bug empilees : chemin, cible synthetique/memoire, format d entree,
+critere), jamais dans les gardes. Lecon : un reverse-test casse n implique pas
+un garde casse -- « un controle muet se lit comme une protection » dans les deux
+sens, muet-vert ET muet-rouge.
+
+Parcours conforme prouve de bout en bout : banc auteur, copies nommees basename
+(§181), applique par nexus_appliquer (la voie que le garde production impose),
+verifie en EXECUTANT le vrai garde. epreuve_avec_verrou n etait pas casse (4/4
+au re-test, l echec initial etait la contention du verrou).
