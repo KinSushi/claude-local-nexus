@@ -26823,3 +26823,37 @@ ici), mais « (a) comparer le config déployé au fichier dépôt — trancher l
 dérive ; (b) si le chemin `adaptive-router-cloud` fait 2 sauts même-compte avant
 le local, le DÉRIVER pour qu'un échec descende directement au local ». Beaucoup
 plus petit, et ancré sur une mesure réelle.
+
+### §198 — Dérive déployé/dépôt : ABSENTE, mesurée ; l'item config de P1 se dégonfle
+
+Suite de §197, résolu indépendamment (LOI 1 : ne pas dépendre de la seule
+mesure du pair). Chronologie mesurée le 2026-09-07 (heure locale -0500) :
+
+| instant | événement | source |
+| --- | --- | --- |
+| 13:34:56 | `litellm_config.yaml` écrit (mtime, inchangé depuis) | `stat` |
+| 13:37:51 | litellm-proxy redémarré (charge le fichier tel qu'écrit) | `docker inspect .State.StartedAt` = 18:37:51Z |
+| 13:49:15 | commit be9fe17 « restart applique » (même état de fichier) | `git log` |
+
+Le redémarrage (13:37:51) est postérieur à la dernière écriture du fichier
+(13:34:56), et le fichier n'a pas bougé depuis. **Donc déployé == dépôt : aucune
+dérive.** Vérifié à l'instant : `docker ps` = « Up 3 hours », cohérent (21:41Z −
+18:37Z ≈ 3 h).
+
+**Conséquence sur le « 37 cloud→cloud » de cloud-quota :** ce n'est NI mon
+fichier dépôt (18 cloud→local + 1 chemin routeur 2 sauts, cf. §197) NI mon
+déployé (identique). C'est donc une autre source — son propre dépôt, un config
+généré ailleurs, ou un comptage pool×retries. Question posée, réponse en attente ;
+mais mon config est propre dans les deux lectures.
+
+**Le seul cloud→cloud réel** = `adaptive-router-cloud → qwen3.5-397b-cloud →
+deepseek-v4-pro-0813-cloud → adaptive-router-local`. Ce n'est PAS une violation
+§108 : même provider (Ollama Cloud), donc ni fuite ni dépense nouvelle — l'appelant
+a déjà choisi le cloud en visant un routeur cloud. Au pire une inefficacité mineure
+(2 replis même-compte ne peuvent aider si le compte est saturé). À DÉRIVER en P1
+si on veut, pas à « réparer en urgence ».
+
+**⇒ L'item config de P1 se dégonfle : OPTIONNEL.** La substance réelle de P1 reste
+l'unification du verrou A11 (banc local-only ligne 1583 + sémaphore cloud) et les
+contrôles aveugles de la Partie A — en attente du feu vert opérateur. Le plan
+gagne à être ancré sur ce qui EST, pas sur un chiffre de pair non vérifié.
