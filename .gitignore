@@ -136,3 +136,7 @@ references/python_ast_local/rapport.csv
 # que les worktrees sont la, et ils y sont tous (45 sur 45, verifie).
 # Le MANIFESTE, lui, EST versionne : il porte la mesure et l'index d'audit.
 outillage/rituels/QUARANTAINE/agent-*/
+
+# Index derives de python_ast_local (machine-local, comme livres_texte / CODE_ENZO)
+references/python_ast_local/index.tsv
+references/python_ast_local/symbols.jsonl

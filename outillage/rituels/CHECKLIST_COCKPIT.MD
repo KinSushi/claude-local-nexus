@@ -26676,3 +26676,50 @@ CONSEQUENCE : avant les salves massives, REVOIR A11 -- soit death-safe + par
 appel + max fiable, soit le retirer du chemin de MES lots tant que les pairs ne
 le partagent pas. A ARBITRER. En attendant, je RESET le semaphore (tuer les
 zombies C:\local-llm-docker) quand il colle, et je poursuis l epuisement.
+
+### §195 — DISQUE ÉPUISÉ pour la recherche : 13 rayons, les 3 « invisibles » clos, et un sous-comptage corrigé PAR LA MESURE
+
+Verdict mesuré le 2026-09-07, jamais de mémoire. Tout corpus sous `references/`
+porte désormais un `index.tsv` ; `nexus_livres` (os.walk récursif, ligne 127)
+les atteint tous.
+
+**Les 13 rayons cherchables**, relevés par Glob récursif `references/**/index.tsv` :
+
+| rayon | ce qu'il rend | quand |
+| --- | --- | --- |
+| `livres/epub` · `packt` · `code` | 29 973 fragments (dont CODE_LIVRES par `code`) | antérieur |
+| `node_docs` · `python_libs_docs` (+`_eamt5`) · `shell_docs` (ps+bash) | doc des runtimes | antérieur |
+| `lecons` · `securite_confinement` | leçons internes, ACL | antérieur |
+| **`livres_texte`** | **29 300 unités verbatim** (102 livres FR pré-mâchés) | **cette session** |
+| **`CODE_ENZO/code_enzo`** | **4 930 symboles** (5 dépôts quant : ai-trader, crucible-quant, backtest-overfitting-lab, quant-intelligence-platform, OS_Pipeline_MT5_forge) | **aujourd'hui 05:20** |
+| **`python_ast_local`** | **234 211 symboles** d'API Python | **cette session** |
+
+**Le sous-comptage, et pourquoi il est instructif.** Le résumé de reprise
+disait « seuls deux gaps (livres_texte, python_ast_local) ». FAUX : le plan
+unifié en listait **trois**, CODE_ENZO compris. La cause de l'erreur est une
+MESURE trop étroite — un Glob plat `references/*/index.tsv` (un seul niveau) qui
+ne voit pas les index à deux niveaux (`references/CODE_ENZO/code_enzo/index.tsv`).
+`nexus_livres`, lui, fait un `os.walk` RÉCURSIF : il voyait CODE_ENZO alors que
+mon inventaire ne le voyait pas. La leçon §112.4 tient : l'inventaire de mémoire
+est un signal, jamais une preuve ; c'est la mesure au bon outil qui tranche.
+Preuve directe : `nexus_livres --texte cmaes` → `Rayon: code_enzo | ...
+test_mho_nsga2`, `test_cmaes_csa` — le code métaheuristique que le §0 demande de
+miner.
+
+**Hygiène git réglée.** L'index de `python_ast_local` (dérivé, machine-local
+comme tous les autres) était non-ignoré et faisait échouer le rituel
+(« travail commité »). Ajouté à `.gitignore`, à l'identique de `livres_texte`
+et `CODE_ENZO`. Arbre propre.
+
+**AU-DELÀ DU MINIMUM — ce qui reste, et ce n'est PAS un gap d'épuisement :**
+
+1. `livres_texte/*/concepts.tsv` — **26 995 concepts**, 2ᵉ couche d'accès PAR LE
+   CONTENU. Non indexée comme fragments cherchables. Enrichissement, pas manque.
+2. Index sémantique (`.nexus/fragments_embeddings.jsonl`, 215 Mo) construit sur
+   `resume` (des TITRES), et couvrant le rayon `code` à 19,3 % seulement
+   (§ plan B.4). Rebâtir sur `texte` améliorerait la QUALITÉ de recherche —
+   distinct de l'épuisement.
+
+**Verdict.** Épuisement de la recherche disque : ATTEINT. Les deux items
+ci-dessus sont des plus-values « pas le minimum », à porter dans la salve de
+production, pas des trous qui interdisent de clore l'inventaire.
