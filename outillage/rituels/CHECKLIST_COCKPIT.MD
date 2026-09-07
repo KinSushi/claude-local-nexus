@@ -26527,3 +26527,30 @@ Et la RACINE de l amplification, mesuree par cloud-quota : les replis cloud->clo
 vers un alias du MEME compte visent la ressource epuisee, ne peuvent pas reussir
 et triplent la charge -- ne garder que le cross-FOURNISSEUR reduirait les chaines
 sans rien perdre (fil separe, generateur nexus_generate).
+
+### §190 — A11 CLOS (incr.1+2+3) ; et un faux depart rattrape par la LOI 1
+
+A11 incr.3 (commit 534de7d, deux jumeaux) : --etat montre desormais le semaphore
+d inference (sonde non bloquante attente_s=0 : LIBRE = un slot libre, PLEIN = un
+lancement attendrait). Prouve forward (LIBRE SEM_inference) + reverse (tenu de l
+exterieur -> PLEIN), --epreuve code 0. Repond au 3e mode d echec d ea-mt5 : une
+attente silencieuse est indiscernable d un gel ; on peut maintenant MESURER avant
+de lancer.
+
+A11 EST CLOS : incr.1 (primitive semaphore prouvee) + incr.2 (les lots cloud la
+prennent, le defaut coeur nexus_agent:1583 corrige) + incr.3 (visibilite). Le
+verrou d inference cloud, absent, existe, est borne machine-wide, et se mesure.
+
+RATTRAPE PAR LA LOI 1 CE TOUR : le controle 'chiffres du README' a BLOQUE -- le
+README disait 56 alias locaux, la config en declarait 60 apres exposition de math
++ r1. Ce n etait PAS un bug A11 (les commits A11 : aucune regression) mais une
+STALENESS que seul l audit tiers voit. Corrige (60, fait mesure). C est la valeur
+meme de la LOI 1 : jamais valider son propre travail.
+
+FILS SEPARES OUVERTS, non bloquants : (a) REDUIRE l amplification des replis --
+cloud-quota a mesure ~40 sortants pour 3 appels ; un repli cloud->cloud vers le
+MEME compte vise la ressource epuisee et triple la charge sans pouvoir reussir ;
+ne garder que le cross-FOURNISSEUR (generateur nexus_generate). (b) DERIVER les
+compteurs du README (contrat : hard-code nothing) sinon 'chiffres du README'
+re-bloquera a chaque modele. (c) nexus_chemins PORTABLE (§0.5). (d) audit qualite
+de fin de livraison (PROGRESS.MD).
