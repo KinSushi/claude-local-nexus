@@ -184,6 +184,106 @@ def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool 
             k.CloseHandle(handle)
 
 
+@contextmanager
+def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
+              bavard: bool = True):
+    """Acquiert un sémaphore nommé du noyau Windows.
+
+    Le sémaphore porte le nom ``PREFIXE + 'SEM_' + classe.upper()`` et possède
+    un compte initial **et** maximum égal à *n*.  Le comportement est analogue
+    à :func:`verrou` : il rend un objet ``Verrou`` avec les attributs
+    ``.obtenu``, ``.classe`` et ``.motif``.  Sur les plateformes où
+    ``kernel32`` n’est pas disponible, le sémaphore est considéré comme
+    toujours acquis (``obtenu=True``) avec le motif indiquant la dégradation.
+    """
+    k = _kernel32()
+    nom = PREFIXE + "SEM_" + classe.upper()
+    handle = None
+    obtenu = True
+    motif = "aucun semaphore disponible sur cette plateforme -- on continue sans"
+
+    if k is not None:
+        # Définition des signatures Windows
+        k.CreateSemaphoreW.restype = ctypes.c_void_p
+        k.CreateSemaphoreW.argtypes = [ctypes.c_void_p, ctypes.c_long,
+                                       ctypes.c_long, ctypes.c_wchar_p]
+        k.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        k.WaitForSingleObject.restype = ctypes.c_uint32
+        k.ReleaseSemaphore.argtypes = [ctypes.c_void_p, ctypes.c_long,
+                                       ctypes.POINTER(ctypes.c_long)]
+        k.CloseHandle.argtypes = [ctypes.c_void_p]
+
+        # Création / ouverture du sémaphore
+        handle = k.CreateSemaphoreW(None, n, n, nom)
+        if handle:
+            timeout_ms = int(max(0.0, attente_s) * 1000)
+            r = k.WaitForSingleObject(handle, timeout_ms)
+            if r == WAIT_OBJECT_0:
+                obtenu = True
+                motif = "obtenu"
+            elif r == WAIT_TIMEOUT:
+                obtenu = False
+                motif = f"semaphore plein, aucun slot disponible après {attente_s:.0f}s"
+            else:
+                # Tout autre code d’erreur : on continue comme si le sémaphore était
+                # disponible, mais on indique le problème.
+                obtenu = True
+                motif = f"attente en échec (code {r:#x}) — on continue sans"
+
+    v = Verrou(classe, obtenu, motif)
+
+    if bavard:
+        etat = "OBTENU " if v.obtenu else "REFUSÉ "
+        print(f"  semaphore [{classe}] {etat}({projet}) — {v.motif}")
+
+    try:
+        yield v
+    finally:
+        if handle:
+            if obtenu:
+                # Relâche exactement une unité du sémaphore.
+                k.ReleaseSemaphore(handle, 1, None)
+            k.CloseHandle(handle)
+
+
+def _run_epreuve() -> int:
+    """Test autonome du nouveau gestionnaire ``semaphore``.
+
+    - **FORWARD** : avec ``n=2`` on acquiert deux slots simultanément ; les deux
+      acquisitions doivent réussir.
+    - **REVERSE** : avec ``n=1`` on tient un slot puis on tente une seconde
+      acquisition non bloquante ; celle‑ci doit échouer.
+    - Sur une plateforme sans ``kernel32`` le test est déclaré NON APPLICABLE
+      et renvoie 0.
+    Retourne 0 si tout passe, sinon un entier >0.
+    """
+    if _kernel32() is None:
+        print("semaphore test : NON APPLICABLE (pas de kernel32)")
+        return 0
+
+    # FORWARD
+    with semaphore("test_fwd", 2, projet="epreuve", attente_s=0.0, bavard=False) as s1:
+        if not s1.obtenu:
+            print("FORWARD : première acquisition échouée")
+            return 1
+        with semaphore("test_fwd", 2, projet="epreuve", attente_s=0.0, bavard=False) as s2:
+            if not s2.obtenu:
+                print("FORWARD : deuxième acquisition échouée")
+                return 1
+
+    # REVERSE
+    with semaphore("test_rev", 1, projet="epreuve", attente_s=0.0, bavard=False) as s1:
+        if not s1.obtenu:
+            print("REVERSE : acquisition du premier slot échouée")
+            return 1
+        with semaphore("test_rev", 1, projet="epreuve", attente_s=0.0, bavard=False) as s2:
+            if s2.obtenu:
+                print("REVERSE : deuxième acquisition a été accordée alors qu’elle ne devait pas l’être")
+                return 1
+
+    return 0
+
+
 # ── Diagnostic humain — SÉPARÉ, et jamais autoritaire ──────────────────────────────────────────
 
 def processus_concurrents() -> list[dict]:
@@ -249,7 +349,11 @@ def main(argv=None) -> int:
                     help="sans effet : ce script n'affiche que l'etat, "
                          "avec ou sans ce drapeau. Conserve pour les "
                          "appelants qui le passent deja.")
-    ap.parse_args(argv)
+    ap.add_argument("--epreuve", action="store_true",
+                    help="lance l'épreuve interne forward+reverse et sort")
+    args = ap.parse_args(argv)
+    if args.epreuve:
+        return _run_epreuve()
 
     horodatage = datetime.now().astimezone().replace(microsecond=0).isoformat()
     print(f"VERROUS DE SESSION — {horodatage}")
