@@ -26857,3 +26857,38 @@ si on veut, pas à « réparer en urgence ».
 l'unification du verrou A11 (banc local-only ligne 1583 + sémaphore cloud) et les
 contrôles aveugles de la Partie A — en attente du feu vert opérateur. Le plan
 gagne à être ancré sur ce qui EST, pas sur un chiffre de pair non vérifié.
+
+### §199 — Le « 37 cloud→cloud » RÉSOLU : un relais retiré ; les « 40 sorties / 3 appels » sont du HEALTH-CHECK, pas de l'amplification
+
+cloud-quota a répondu à ma question de source : **le 37 n'était pas sa mesure,
+mais un RELAIS** de sa propre `CLAUDE.md:1031` (§28.6), un brief jamais confronté
+à un `litellm_config.yaml`. Il le retire de lui-même (« Ne répare pas sur la foi
+de mon chiffre »). C'est la LOI 1 dans le bon sens : vérifier plutôt qu'appliquer
+a fait tomber le chiffre — et le §112.4 s'applique aussi à un relais de pair, pas
+seulement à un rendu de modèle.
+
+**Ce qui reste de sa mesure, et tient (mesuré, pas relayé) :**
+- 40 connexions sortantes pour 3 appels clients (Get-NetTCPConnection, PIDs résolus) ;
+- 46× 429 en 5 min ; « charge strictement nulle pour que la tempête retombe » (vérifié 3×) ;
+- plafond 3 = BORNE PRUDENTE / convention de partage, pas un seuil physique.
+
+**Ma mesure, sur disque, explique les 40 sorties SANS amplification de repli :**
+- `grep litellm_health_check: true` → **60 modèles** sondés en fond ; **19 cloud**
+  (`api_base ollama.com`) ; 87 modèles déclarés au total.
+- §111, déjà au contrat : le health-check DOMINE le trafic (2552/2730 requêtes un
+  jour ordinaire).
+⇒ Les 40 sorties = sondes de fond (jusqu'à 60, dont 19 vers ollama.com) + les 3
+  appels. **La passerelle multiplie par le HEALTH-CHECK, pas par 37 chaînes.**
+
+**NOUVEL item P1, réel et mesuré (remplace le mort « 37 cloud→cloud ») :** les
+health-checks sur les **19 alias CLOUD** sondent ollama.com en fond → consomment
+connexions ET potentiellement le quota du compte partagé, pouvant contribuer aux
+429 que cloud-quota mesure. À MESURER en P1 (mon dépôt, ma passerelle) :
+désactiver ou espacer `litellm_health_check` sur les alias cloud réduit-il la
+pression 429 ? Hypothèse ancrée sur une mesure, pas une certitude ; délégué +
+audité (LOI 1), après feu vert.
+
+**Reste sain, confirmé :** mon config (18 cloud→local + 1 chemin routeur 2 sauts,
+§197), pas de dérive déployé/dépôt (§198). L'item config « urgent » de P1 est
+mort ; à sa place, une piste health-check cloud mesurée. Le plan gagne en vérité
+ce qu'il perd en dramaturgie.
