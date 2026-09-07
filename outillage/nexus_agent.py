@@ -1534,11 +1534,25 @@ def main() -> int:
     # jamais.
     flux = None
     if getattr(args, "sortie", None):
-        try:
-            flux = io.open(args.sortie, "w", encoding="utf-8", newline="\n")
-        except Exception as exc:
-            print("[!] sortie incrementale impossible : %s" % exc,
-                  file=sys.stderr)
+        # Protection contre l'écrasement silencieux du fichier de sortie.
+        # Si le fichier existe déjà et n'est pas vide, on le renomme avec un
+        # horodatage avant d'ouvrir le nouveau fichier en écriture.
+        import os, datetime
+        sortie_path = getattr(args, "sortie")
+        if sortie_path:
+            try:
+                if os.path.isfile(sortie_path) and os.path.getsize(sortie_path) > 0:
+                    ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+                    nouveau_nom = f"{sortie_path}.{ts}"
+                    os.rename(sortie_path, nouveau_nom)
+                    print(f"[i] fichier de sortie existant renommé en {nouveau_nom}",
+                          file=sys.stderr)
+                flux = io.open(sortie_path, "w", encoding="utf-8", newline="\n")
+            except Exception as exc:
+                print("[!] sortie incrémentale impossible : %s" % exc,
+                      file=sys.stderr)
+                flux = None
+        else:
             flux = None
     faits = 0
     # LA FERMETURE EST GARANTIE, ET NE L'ETAIT PAS.

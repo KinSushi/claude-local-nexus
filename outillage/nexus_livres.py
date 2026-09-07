@@ -227,8 +227,13 @@ def main():
     matches.sort(key=lambda m: m[5], reverse=True)
 
     if not matches:
-        print("Verdict negatif: aucun resultat. Les termes de la requete "
-              "n'ont ete trouves dans id, type ou resume.", file=sys.stderr)
+        # Ajustement du message en fonction des champs réellement interrogés
+        if getattr(args, 'texte', False):
+            fields = "id, type, texte, implementation, docstring_brut et resume"
+        else:
+            fields = "id, type ou resume"
+        print(f"Verdict negatif: aucun resultat. Les termes de la requete "
+              f"n'ont ete trouves dans {fields}.", file=sys.stderr)
         return 2
 
     for m in matches[:args.limit]:

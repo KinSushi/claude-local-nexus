@@ -2959,9 +2959,12 @@ def test_quota_partage() -> None:
     ne repare rien aujourd'hui, il empeche le retour d'un etat qui a existe.
     """
     print("\n--- QUOTA PARTAGE : un repli peut-il viser un plafond epuise ? ---")
-    epreuve = os.path.join(ROOT, "scripts", "epreuve_quota_partage.py")
+    # Recherche d'abord dans epreuves/, puis dans scripts/ en secours.
+    epreuve = os.path.join(ROOT, "epreuves", "epreuve_quota_partage.py")
     if not os.path.isfile(epreuve):
-        skip("quota partage", "epreuve_quota_partage.py introuvable")
+        epreuve = os.path.join(ROOT, "scripts", "epreuve_quota_partage.py")
+    if not os.path.isfile(epreuve):
+        check("quota partage", False, "epreuve_quota_partage.py introuvable")
         return
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
@@ -3002,9 +3005,12 @@ def test_cablage_epreuves() -> None:
     defaut, au lieu de se taire sur un depot sain.
     """
     print("\n--- CABLAGE : une epreuve jouee est-elle vue comme cablee ? ---")
-    epreuve = os.path.join(ROOT, "scripts", "epreuve_cablage.py")
+    # Recherche d'abord dans epreuves/, puis dans scripts/ en secours.
+    epreuve = os.path.join(ROOT, "epreuves", "epreuve_cablage.py")
     if not os.path.isfile(epreuve):
-        skip("cablage des epreuves", "epreuve_cablage.py introuvable")
+        epreuve = os.path.join(ROOT, "scripts", "epreuve_cablage.py")
+    if not os.path.isfile(epreuve):
+        check("cablage des epreuves", False, "epreuve_cablage.py introuvable")
         return
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
@@ -3056,9 +3062,12 @@ def test_garde_plan_paye() -> None:
     """
     print("\n--- PLAN PAYE : le garde refuse-t-il par defaut ? ---")
 
-    epreuve = os.path.join(ROOT, "scripts", "epreuve_garde_plan.py")
+    # Recherche d'abord dans epreuves/, puis dans scripts/ en secours.
+    epreuve = os.path.join(ROOT, "epreuves", "epreuve_garde_plan.py")
     if not os.path.isfile(epreuve):
-        skip("garde de plan", "epreuve_garde_plan.py introuvable")
+        epreuve = os.path.join(ROOT, "scripts", "epreuve_garde_plan.py")
+    if not os.path.isfile(epreuve):
+        check("garde de plan", False, "epreuve_garde_plan.py introuvable")
         return
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
