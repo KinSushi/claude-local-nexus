@@ -25439,3 +25439,102 @@ verification. Une sonde qui compte des lignes n'aurait rien dit.
 | 11 | fusion du plan unique | point de retour `95715b3` |
 | 12 | `--sortie` ecrase sans avertir | ouvert |
 | **13** | **verifier le RANG d'un resultat, pas seulement son contenu** | **NOUVEAU** |
+
+
+---
+
+## 170. LE BANC DE-INDENTE — et trois perimetres s'ouvrent
+
+### 170.1 La cause de huit patchs refuses, trouvee en comparant des octets
+
+Huit patchs avaient ete refuses en une journee, ancre introuvable. Aucune
+refrappe n'y changeait rien. La cause :
+
+```
+fichier   "    cibles = [f for f in fichiers\n              if ..."
+rendu     "cibles = [f for f in fichiers\n          if ..."
+```
+
+**Le banc DE-INDENTE** : il conserve l'indentation RELATIVE et supprime le
+retrait COMMUN. Ce n'est pas une erreur aleatoire, c'est une transformation
+deterministe -- donc reversible.
+
+`ancre.localiser()` repose un retrait commun et cherche a nouveau. Sa
+contre-epreuve verifie les DEUX sens : elle retrouve une ancre de-indentee
+ET refuse une ancre ambigue -- sans quoi une fonction qui accepte tout
+passerait.
+
+Trois patchs bloques sont passes au premier essai qui l'employait.
+
+### 170.2 Le faux vert de la traque est mort
+
+```
+avant   depuis le depot    110 constats, code 0
+        depuis ailleurs      0 constat,  code 0
+apres   depuis les deux    110 constats
+```
+
+L'outil annoncait << rien a signaler >> quand il n'avait rien regarde : ses
+racines etaient gravees relativement au repertoire COURANT. Seule l'option
+`-WorkingDirectory` de la tache planifiee le sauvait.
+
+**L'epreuve d'acceptation etait explicite** -- memes constats depuis deux
+repertoires -- et c'est elle qui a commande la pose. Un premier correctif,
+tente plus tot, rendait ZERO partout et serait passe sans elle.
+
+### 170.3 Trois perimetres ouverts, et ce qu'ils revelent
+
+| cliquet | avant | apres | ce que cela revele |
+| --- | --- | --- | --- |
+| `nexus_cablage` | scripts/ | + outillage/ epreuves/ | **14** outils sans appelant |
+| `ruff` | 29 fichiers | **224** | **21 -> 100** violations |
+| `PSScriptAnalyzer` | scripts tools | + outillage | 14 -> 16 |
+
+Le detail de ruff dit que ce n'est pas du bruit :
+
+```
+SIM115  fichier non ferme            4 -> 27
+SIM105  try/except/pass              8 -> 25
+RET503  retour implicite manquant    1 ->  9
+F841    variable assignee inutile    0 ->  4   regle JAMAIS declenchee avant
+F823    variable locale non liee     0 ->  2   regle JAMAIS declenchee avant
+```
+
+**Six regles ne s'etaient jamais declenchees.** Elles ne pouvaient pas :
+il n'y avait pas de fichiers a regarder.
+
+Les trois rebasements portent leur raison dans leur commit. Si un seul de
+ces arbitrages est faux, les constats absous ne reviendront pas.
+
+### 170.4 Ce qui est pose ce tour
+
+```
+nexus_traque.py     racines derivees de __file__, perimetre vide = code non nul
+nexus_cablage.py    perimetre elargi, outillage/Register-*.ps1 dans CABLEURS
+nexus_outillage.py  ruff sur outillage/ et epreuves/
+nexus_test.py       une epreuve absente ECHOUE au lieu de sauter
+nexus_livres.py     le verdict negatif nomme les champs REELLEMENT interroges
+nexus_agent.py      --sortie n'ecrase plus un rendu en silence
+```
+
+Le dernier repare le defaut qui a coute onze rendus ce jour meme.
+
+### 170.5 CE QUI RESTE OUVERT — remplace SS169.7
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 0 | perimetre cablage | **FAIT**, rebase |
+| 1 | `nexus_traque` racines | **FAIT ET PROUVE** |
+| 3 | perimetre ruff et PSA | **FAIT**, rebase |
+| 4 | sauts de `nexus_test.py` | 2 sur 6 faits ; une ancre reste introuvable |
+| 5b | verdict negatif | **FAIT** |
+| 12 | `--sortie` ecrase | **FAIT** |
+| 6 | outil de frontiere dans le depot | hors depot |
+| 8 | retirer `pyproject` du plan | a arbitrer |
+| 9 | 98 litteraux, `nexus.ps1` | methode a declarer |
+| 10 | `nexus_avant_apres.py` | POSE, SANS APPELANT |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+| 13 | verifier le RANG d'un resultat | lecon, non mecanisee |
+| **14** | **100 violations ruff comptees, non corrigees** | **NOUVEAU** |
+| **15** | **14 outils sans appelant, nommes non cables** | **NOUVEAU** |
+| **16** | **`ancre.py` vit hors du depot** | **NOUVEAU** |
