@@ -87,7 +87,7 @@ ROLES = {
     "scripts/stop.ps1": ("Exploitation", "Arrêt de la pile"),
     "docs/pont-local-abonnement.md": ("Documentation", "Associer modèles locaux et abonnement"),
     "outillage/rituels/STATE.md": ("Rituel", "État mesuré — généré, ne pas éditer"),
-    "outillage/rituels/PROGRESS.md": ("Rituel", "Historique des décisions et des erreurs"),
+    "PROGRESS.MD": ("Rituel", "Historique des décisions et des erreurs"),
     "outillage/rituels/CHECKLIST_COCKPIT.MD": ("Rituel", "Sujets ouverts"),
     "outillage/rituels/RESUME.ps1": ("Rituel", "Reprise de session"),
     "outillage/rituels/BOUSSOLE.md": ("Rituel", "Cet index"),
@@ -271,7 +271,7 @@ def main() -> int:
         "",
         "État mesuré : [STATE.md](STATE.md) · "
         "Sujets ouverts : [CHECKLIST_COCKPIT.MD](CHECKLIST_COCKPIT.MD) · "
-        "Historique : [PROGRESS.md](PROGRESS.md)",
+        "Historique : [PROGRESS.MD](../../PROGRESS.MD)",
     ]
 
     # Écriture atomique du fichier Markdown.
