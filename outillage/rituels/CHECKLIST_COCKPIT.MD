@@ -26955,3 +26955,37 @@ signalait « Found 10 errors » sur nexus_test.py. À confirmer : gate-t-il sur 
 (delta vs préexistant) ou seulement sur py_compile ? Si ruff n'est qu'indicatif,
 le dire ; sinon, un patch introduisant une erreur ruff passerait — à mesurer avant
 d'affirmer (§112.4).
+
+### §202 — DISQUE PLEINEMENT ÉPUISÉ : les 3 couches de contenu du pré-mâché indexées ; structure = navigation, sautée
+
+Dernière couche de CONTENU du pré-mâché indexée : `resumes_sections.tsv` (3914
+résumés de section : titre_section, resume_mecanique, verbatim). Nouveau rayon
+`references/livres_texte_resumes/` (machine-local, gitignoré).
+
+**Écrit par le banc (LOI 1)**, avec le patron = l'indexeur concepts ÉPROUVÉ (pour
+fiabilité). Même classe de bug d'épreuve que concepts : la boucle round-trip
+FORWARD référençait `verbatim` hors scope (NameError) → corrigé par patch ciblé
+(dict titre→verbatim de la fixture). Leçon reconduite : ces indexeurs sont bons
+sur le fond, fragiles sur le scope de leur épreuve.
+
+**Vérifié indépendamment (LOI 1, 3ᵉ temps) :**
+- non-écrasement du verbatim PROUVÉ par md5 identique avant/après (`fe8da58…`) ;
+- 3914 résumés, cherchables via le vrai consommateur : `nexus_livres --texte
+  "Representative Problems"` → `Rayon: livres_texte_resumes` ; `--read` d'un ID
+  rend `titre :: resume_mecanique :: verbatim` (round-trip OK) ;
+- épreuve exit 0 (forward + reverse + anti-écrasement), py_compile OK ;
+- câblé nexus_test (:1431), rebaseline « 0 orphelin, 20 preuve-seule ».
+
+**Câblage économe :** délégué SANS attacher le gros nexus_test.py (ancre exacte
+dans la consigne, nexus_appliquer vérifie contre le vrai fichier) → 735 jetons /
+6 s, contre 49 698 / 199 s en attachant le fichier. À reconduire pour tout câblage.
+
+**`structure.tsv` (5076) : SAUTÉE, justifié.** Métadonnées de navigation
+(hiérarchie de sections, numéros, pages, confiance) ; son seul contenu, `titre`,
+est déjà dans `resumes_sections.titre_section`. Pas du corpus de recherche.
+
+**DISQUE PLEINEMENT ÉPUISÉ.** 15 rayons cherchables. Les TROIS couches de contenu
+du pré-mâché des 102 livres — unités verbatim (29 300), concepts (26 995), résumés
+de section (3914) — toutes indexées et cherchables. Reste hors épuisement :
+l'index sémantique sur `texte` (§ plan B.4, local/iGPU, bloqué tant que ea-mt5
+tient le plan local) et l'investigation health-check cloud (§199) — items de plan.

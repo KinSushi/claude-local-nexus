@@ -143,3 +143,6 @@ references/python_ast_local/symbols.jsonl
 
 # Index derive des concepts (machine-local, comme livres_texte / CODE_ENZO)
 references/livres_texte_concepts/
+
+# Index derive des resumes de section (machine-local)
+references/livres_texte_resumes/

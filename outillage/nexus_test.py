@@ -1428,6 +1428,7 @@ def main() -> int:
         jouer_epreuve_python("nexus_index_livres.py", "index des livres")
         jouer_epreuve_python("nexus_indexer_ast.py", "index AST Python (python_ast_local)")
         jouer_epreuve_python("nexus_indexer_concepts.py", "index des concepts (livres_texte_concepts)")
+        jouer_epreuve_python("nexus_indexer_resumes.py", "index des resumes de section (livres_texte_resumes)")
     if args.only in (None, "livres"):
         jouer_epreuve_python("nexus_livres.py", "corpus de livres")
     if args.only in (None, "sauvegarde"):
