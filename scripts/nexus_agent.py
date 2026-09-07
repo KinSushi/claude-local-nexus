@@ -1538,7 +1538,7 @@ def main() -> int:
         # Si le fichier existe déjà et n'est pas vide, on le renomme avec un
         # horodatage avant d'ouvrir le nouveau fichier en écriture.
         import datetime
-        sortie_path = getattr(args, "sortie")
+        sortie_path = args.sortie
         if sortie_path:
             try:
                 if os.path.isfile(sortie_path) and os.path.getsize(sortie_path) > 0:

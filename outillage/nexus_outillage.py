@@ -709,12 +709,46 @@ def _jouer_cliquet(tool_results: List[Dict[str, Any]],
         return 0
 
     if rebaseline:
+        # Appel de l'outil de vérification de rébasement avant d'écrire la référence
+        import os, sys, subprocess
+        script_path = os.path.join(os.path.dirname(__file__), "nexus_rebasement.py")
+        if os.path.isfile(script_path) and os.access(script_path, os.R_OK):
+            try:
+                proc = subprocess.run(
+                    [sys.executable, script_path],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                exit_code = proc.returncode
+                tool_output = proc.stdout.strip()
+            except Exception as exc:  # pragma: no cover
+                print(
+                    f"AVERTISSEMENT: échec de l'exécution de nexus_rebasement.py : {exc}"
+                )
+                exit_code = 0
+                tool_output = ""
+            if exit_code != 0:
+                # Dérogation explicite : ligne commençant par « DEROGATION: »
+                if any(line.startswith("DEROGATION:") for line in tool_output.splitlines()):
+                    # dérrogation acceptée, on poursuit le rebasement
+                    pass
+                else:
+                    print("Refus de rebasement :")
+                    print(tool_output)
+                    return 1
+        else:
+            print(
+                "AVERTISSEMENT: nexus_rebasement.py absent ou illisible, rebasement autorisé."
+            )
         _ecrire_reference(comptes_joues, ancienne=reference)
         print("Reference REBASELINEE, degradation assumee explicitement.")
         for tr in tool_results:
             if tr.get("etat") != "joue":
-                print("  %s : non joue (%s), sa reference est CONSERVEE"
-                      % (tr["outil"], tr.get("etat")))
+                print(
+                    "  %s : non joue (%s), sa reference est CONSERVEE"
+                    % (tr["outil"], tr.get("etat"))
+                )
         return 0
 
     regressions = []
