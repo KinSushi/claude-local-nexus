@@ -92,14 +92,17 @@ def decaper_cloture_englobante(texte: str) -> str:
     while j >= 0 and not lignes[j].strip():
         j -= 1
     if i < j:
-        debut = lignes[i].strip()
-        fin = lignes[j].strip()
-        if debut.startswith("```") and fin == "```":
-            # Retirer les deux lignes de délimitation
-            return "\n".join(lignes[i + 1 : j])
+        # Vérifier que les délimiteurs sont à la toute première colonne
+        debut_ok = lignes[i].startswith("```")
+        fin_ok = lignes[j].startswith("```") and lignes[j].strip() == "```"
+        if debut_ok and fin_ok:
+            # Conserver toutes les lignes sauf les deux délimiteurs
+            nouvelles = lignes[:i] + lignes[i + 1 : j] + lignes[j + 1 :]
+            return "\n".join(nouvelles)
     return texte
 
 
+import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSERELLE = os.environ.get("NEXUS_GATEWAY", "http://localhost:4000")
 
@@ -1457,6 +1460,11 @@ def main() -> int:
     parseur.add_argument("--json", action="store_true",
                          help="Sortie machine au lieu du rapport lisible.")
     args = parseur.parse_args()
+
+    # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
+    if args.depuis_jsonl and not args.nom:
+        print("Erreur : l'option --nom est obligatoire avec --depuis-jsonl.", file=sys.stderr)
+        sys.exit(2)
 
     cle = cle_maitre()
 
