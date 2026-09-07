@@ -26989,3 +26989,33 @@ du pré-mâché des 102 livres — unités verbatim (29 300), concepts (26 995),
 de section (3914) — toutes indexées et cherchables. Reste hors épuisement :
 l'index sémantique sur `texte` (§ plan B.4, local/iGPU, bloqué tant que ea-mt5
 tient le plan local) et l'investigation health-check cloud (§199) — items de plan.
+
+### §203 — §B.4 RÉFUTÉ par lecture du code : le sémantique embarque du CONTENU, pas des titres ; le vrai manque est la COUVERTURE
+
+Directive « ne pas agir de mémoire, exploiter le disque » appliquée à ma PROPRE
+plan : avant de rebâtir l'index sémantique « pour qu'il cherche le texte », j'ai
+LU le constructeur (`scripts/nexus_livres_semantique.py`). §B.4 disait « il
+embarque `resume`, donc des titres, jamais le texte ». MESURÉ dans le code :
+
+* ligne 68 : `for key in ("texte", "text", "implementation"):` → il prend le champ
+  `texte` du fragment ;
+* ligne 106 : `embed_input = resume + "\n" + fragment_text[:2000]`.
+
+Donc il embarque le titre **ET les 2000 premiers caractères du contenu**. Le
+sémantique cherche DÉJÀ dans le contenu (tronqué à 2000 car.). §B.4 est faux —
+troisième assertion de plan réfutée ce jour par la lecture du vrai code, après le
+« 37 cloud→cloud » (§197-199) et le « verrou banc non câblé » (§200).
+
+**Le vrai manque, lui, tient — mais c'est la COUVERTURE, pas le design :**
+* l'index `.nexus/fragments_embeddings.jsonl` (215 Mo) date du **2 sept.**, donc
+  AVANT les 5 rayons ajoutés depuis (livres_texte, concepts, resumes,
+  python_ast_local, CODE_ENZO) ;
+* couverture code mesurée à 19,3 % (§B.4, cette part-là non réfutée) ;
+* troncature à 2000 car. (le contenu au-delà n'est pas embarqué).
+
+**Conséquence sur le plan :** le rebâti sémantique n'est pas un « passage de resume
+à texte » (déjà fait) mais un RAFRAÎCHISSEMENT DE COUVERTURE — réembarquer tout le
+corpus courant. Job iGPU lourd (~60k fragments), donc à COORDONNER (concertation,
+fenêtre local libre) et à CHIFFRER avant lancement, pas à lancer dans un tick. Il
+reste un item de plan, pas un trou d'épuisement : la recherche LEXICALE couvre
+déjà les 15 rayons, contenu compris.
