@@ -26073,3 +26073,39 @@ fichier entier. Les six applicateurs prives restent une dette, consignee.
 
 Housekeeping du tour : SIM112 de la copie-paire `nexus_capability.py` corrige
 a la source (1 -> 0), boussole regeneree.
+
+### §176 — Un seul nombre : le defaut max_tokens du LOT etait 1500, pas 4096
+
+Signale par une session voisine, verifie sur le disque, corrige, audite par un
+tiers (banc via nexus_valide : « aucune regression, 1 fonction touchee »).
+
+`nexus_agent.py:1049` (branche --lot) plafonnait a `int(tache.get("max_tokens")
+or 1500)` ; la branche --tache (l.1505) defaut a 4096. Un lot sans max_tokens
+recevait 1500 jetons (~4000-5000 car) -- exactement la ou les rendus se
+coupaient, et ce que les familles a raisonnement bruleaient en reflexion (rendu
+VIDE). Un defaut, N symptomes. Aligne sur 4096 (valeur DEJA dans le fichier),
+copie-paire scripts/ + outillage/ identiques. Forward : lot sans max_tokens ->
+4096 ; reverse : valeur explicite conservee. Commit `edf78a5`.
+
+Reste (note, non fait) : deux 4096 en dur (l.1049, l.1505) -> une constante
+unique serait le vrai « derive tout, ne grave rien ».
+
+### §176bis — Zero troncature dans l aller-retour : la reprise vise TOUT tronque
+
+Suite de §176, exigence de l operateur : « pas de bug entre l envoi et la
+reception, pas de troncature ». Verifie sur le disque, corrige, audite tiers.
+
+Le doublement de plafond + reprise unique ne visait que la troncature VIDE ; un
+rendu NON VIDE mais coupe (finish_reason == length) etait livre incomplet,
+seulement signale. Corrige (commit `d2ef66b`) : la meme reprise s applique avant
+le retour du chemin succes non vide ; si le plafond double (cap PLAFOND_REPRISE)
+ne suffit pas, tronque=True est CONSERVE et signale -- jamais silencieux.
+
+Design derive du disque, pas de memoire : call_llm_robust (corpus Denis2054
+Context-Engineering) montre qu un appel robuste mise sur budget + reprise, pas
+sur une continuation infinie. Reutilise le mecanisme deja present.
+
+Forward : budget 40, 1->60 -> reprise 40->80 DECLENCHEE (avant : jamais).
+Reverse : budget 4096 -> complet, aucune fausse reprise. Audit banc : aucune
+regression. Auteur logique : banc (v20) ; placement a l ancre reelle :
+orchestrateur (le banc avait invente l ancre). LOI 1 tenue.
