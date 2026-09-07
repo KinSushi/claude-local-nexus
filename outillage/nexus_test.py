@@ -264,7 +264,7 @@ def run_validator_on(config: dict) -> tuple[int, str]:
     try:
         os.replace(temp, original)
         result = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
+            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
             capture_output=True, text=True, timeout=180,
         )
         return result.returncode, result.stdout + result.stderr
@@ -1042,7 +1042,7 @@ def test_code() -> None:
         # sur les droits du compte. Valider ici rendrait le resultat
         # dependant d'un quota qui peut varier entre les deux executions.
         generate = [sys.executable,
-                    os.path.join(ROOT, "outillage", "nexus_generate.py"),
+                    os.path.join(ROOT, "scripts", "nexus_generate.py"),
                     "--no-validate"]
         first = subprocess.run(generate, capture_output=True, text=True, timeout=300)
         with io.open(CONFIG, encoding="utf-8") as fh:
@@ -1063,7 +1063,7 @@ def test_code() -> None:
             fh.write(snapshot)
 
     # Le validateur doit accepter la configuration reellement deployee.
-    result = subprocess.run([sys.executable, os.path.join(ROOT, "outillage", "nexus_validate.py")],
+    result = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
                             capture_output=True, text=True, timeout=180)
     if not SECRETS_ABSENTS:
         check("configuration deployee valide", result.returncode == 0,
@@ -2158,7 +2158,7 @@ def test_registre_epreuves() -> None:
 
         # Le critere du code REEL, et non une reformulation : si quelqu'un
         # remet `adresse` dans la condition, ce controle doit tomber.
-        with io.open(os.path.join(ROOT, "outillage", "nexus_releve.py"),
+        with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
                      encoding="utf-8") as fh:
             code = fh.read()
         check("le critere ne s'appuie plus sur l'adresse",
@@ -2241,7 +2241,7 @@ def test_registre_epreuves() -> None:
 
     # Le saut doit etre DIT : une reprise muette se lirait comme « tout a ete
     # mesure », ce qui est exactement le contraire.
-    with io.open(os.path.join(ROOT, "outillage", "nexus_releve.py"),
+    with io.open(os.path.join(ROOT, "scripts", "nexus_releve.py"),
                  encoding="utf-8") as fh:
         code_releve = fh.read()
     check("la reprise annonce ce qu'elle saute",

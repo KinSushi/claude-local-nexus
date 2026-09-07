@@ -20,7 +20,7 @@ partage du travail : **le local détecte, l'orchestrateur arbitre.**
 
 ---
 
-## 2026-08-29 — `qwen3-coder:30b` sur `outillage/nexus_savings.py`
+## 2026-08-29 — `qwen3-coder:30b` sur `scripts/nexus_savings.py`
 
 271 lignes, 3 appels successifs, 52 à 78 s chacun, coût 0.
 
@@ -121,7 +121,7 @@ parallèle.
 
 ---
 
-## 2026-08-29 — `qwen3-coder:30b` sur `outillage/nexus_state.py` : le piège de la bonne pratique
+## 2026-08-29 — `qwen3-coder:30b` sur `scripts/nexus_state.py` : le piège de la bonne pratique
 
 Trois corrections proposées, **une seule retenue**. Les deux autres
 portaient l'apparence d'une bonne pratique et étaient l'une une

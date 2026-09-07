@@ -198,7 +198,7 @@ Write-Host ""
 Write-Host "Controle de conformite avant demarrage..." -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $conformiteScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_conformite.py"
+    $conformiteScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_conformite.py"
     if (-not (Test-Path $conformiteScript)) {
         Write-Error "Fichier manquant : $conformiteScript"
         exit 1
@@ -279,7 +279,7 @@ Write-Host "  Passerelle prete sur $HealthUrl" -ForegroundColor Green
 # ------------------------------------------------------------
 Push-Location $RepoRoot
 try {
-    $releveScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_releve.py"
+    $releveScript = Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_releve.py"
     if (-not (Test-Path $releveScript)) {
         Write-Error "Fichier manquant : $releveScript"
         exit 1
@@ -289,7 +289,7 @@ try {
         Write-Host "  Releve locale operationnelle." -ForegroundColor Green
     } else {
         Write-Host "  RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement." -ForegroundColor Red
-        Write-Host "  Diagnostic : python outillage/nexus_releve.py --tous" -ForegroundColor Yellow
+        Write-Host "  Diagnostic : python scripts/nexus_releve.py --tous" -ForegroundColor Yellow
         exit $LASTEXITCODE
     }
 } finally { Pop-Location }
@@ -313,5 +313,5 @@ if ($Verifier) {
 }
 
 Write-Host ""
-Write-Host "Modeles manquants : python outillage/nexus_pull_host.py --manquants" -ForegroundColor Gray
+Write-Host "Modeles manquants : python scripts/nexus_pull_host.py --manquants" -ForegroundColor Gray
 Write-Host ""

@@ -150,8 +150,8 @@ conversation avec un `HTTP 400`. `nexus_secours` les écarte et affiche les deux
 ## 4. Vérifier que la machine peut travailler
 
 ```powershell
-python outillage/nexus_charge.py
-python outillage/nexus_charge.py --json
+python scripts/nexus_charge.py
+python scripts/nexus_charge.py --json
 ```
 
 **Code de retour observé : 0.** Distingue trois états du moteur, jamais deux :
@@ -312,8 +312,8 @@ consigne explicite.
 
 ```powershell
 python outillage/nexus_test.py        # les épreuves câblées
-python outillage/nexus_rituel.py      # le tour est-il clos ?
-python outillage/nexus_conformite.py  # peut-on démarrer ?
+python scripts/nexus_rituel.py      # le tour est-il clos ?
+python scripts/nexus_conformite.py  # peut-on démarrer ?
 ```
 
 ~7 200 lignes de contrôles qui n'appellent **aucun modèle** et ne peuvent donc pas halluciner.

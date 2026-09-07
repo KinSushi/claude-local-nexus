@@ -31,7 +31,7 @@ champ : c'est FAUX pour deux des quatre — router_version ET git_commit
 existent réellement, à un niveau différent de celui que ce document propose.
 
 router_version — VÉRIFIÉ, PARTIEL (niveau système, pas par exécution)
-  outillage/nexus_generate.py:1596-1603 calcule une empreinte SHA-256 sur la
+  scripts/nexus_generate.py:1596-1603 calcule une empreinte SHA-256 sur la
   politique de routage effective (pools cloud, chaînes de secours, budget de
   pool) :
       signature = "|".join([...])
@@ -39,13 +39,13 @@ router_version — VÉRIFIÉ, PARTIEL (niveau système, pas par exécution)
   Elle est écrite dans litellm_config.yaml en commentaire :
       # NEXUS-ROUTER-VERSION: r19be7650d1        (litellm_config.yaml:26,
                                                    valeur mesurée ce jour)
-  et relue par outillage/nexus_state.py:384-390 pour l'afficher dans
+  et relue par scripts/nexus_state.py:384-390 pour l'afficher dans
   outillage/rituels/STATE.md. C'est une version de la POLITIQUE (un hash de ce qui
   décide), pas un champ attaché à chaque exécution individuelle — la nuance
   que ce document réclame (un identifiant par tâche) n'est pas couverte.
 
 git_commit — VÉRIFIÉ, PARTIEL (même niveau : rapport d'état, pas par tâche)
-  outillage/nexus_state.py:394 : `commit = run(["git", "rev-parse", "--short",
+  scripts/nexus_state.py:394 : `commit = run(["git", "rev-parse", "--short",
   "HEAD"])`, également reporté dans outillage/rituels/STATE.md. Réel, mais c'est le
   commit du DÉPÔT au moment où l'état est généré, jamais associé à une
   exécution d'agent précise.

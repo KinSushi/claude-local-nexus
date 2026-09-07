@@ -28,7 +28,7 @@ Chaque transition peut avoir un gate.
 deploye pour la promotion au pool (Claude.md §105.2) ne suit pas ce pipeline a
 9 etapes : il compare deux mesures — `.nexus/latences.json`, ecrit par
 `outillage/nexus_bench.py` (demarrage), et `.nexus/epreuves.json`, ecrit par
-`outillage/nexus_releve.py` (capacite reelle) — et promeut un modele si
+`scripts/nexus_releve.py` (capacite reelle) — et promeut un modele si
 ACCEPT-materiel ET sous `SEUIL_POOL_MS`, OU passage complet des epreuves. Le
 livre "30 Agents Every AI Engineer Must Build" couvre une "Governance and
 lifecycle management" comparable en esprit (monitoring, audit des logs,

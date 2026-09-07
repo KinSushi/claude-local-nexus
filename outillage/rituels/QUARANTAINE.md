@@ -366,7 +366,7 @@ outillage/rituels/cablage_reference.json est la ligne de base du cliquet de cabl
   3 worktrees : scripts/nexus_agent.py                (travail reel plausible, laisse tel quel)
   3 worktrees : scripts/nexus_disjoncteur.py          (travail reel plausible, laisse tel quel)
   2 worktrees : outillage/rituels/cablage_reference.json        (confirme genere, voir ci-dessus)
-  2 worktrees : outillage/nexus_conformite.py           (travail reel plausible, laisse tel quel)
+  2 worktrees : scripts/nexus_conformite.py           (travail reel plausible, laisse tel quel)
   2 worktrees : docs/architecture/model-registry.yaml (travail reel plausible, laisse tel quel)
 
 === Recherche specifique des candidats "generes" ===
@@ -504,8 +504,8 @@ exit=1
 
 **Confirmé : orphelin, 0 citant.** Aucun autre fichier du dépôt (hors `.nexus/dossier_agent`, hors documentation) ne nomme `nexus_filet.py` en dehors de lui-même.
 
-Proposition, par argument et par précédent mesuré dans le dépôt — jamais par préférence : `outillage/nexus_rituel.py` câble déjà `nexus_cablage.py` lui-même selon exactement ce schéma (`cablage_tenu`, ligne ~266-280 : `subprocess.run` avec timeout 180 s, `IGNORE` sur timeout/exception, jamais bloquant) et porte même déjà un contrôle voisin mais distinct, `arbres_en_attente` (qui demande à `nexus_worktree.py --lister` si des worktrees traînent — pas s'ils contiennent un travail récoltable). Ajouter un contrôle `("recolte disponible", lambda: recolte_disponible(racine))` au même tableau `controles`, appelant `nexus_filet.py` **en dry-run seulement** (jamais `--appliquer`) et rapportant `MANQUE` dès que `Conflits`, `Erreurs de lecture` ou `Commits non recoltes` est non nul, `OK` sinon :
-- rendrait le fichier `cable` (au sens strict du dépôt : nommé par un mécanisme qui tourne sans qu'on ait à y penser) puisque `nexus_rituel.py` fait partie des `CABLEURS` reconnus (`outillage/nexus_rituel.py` n'est pas lui-même dans `CABLEURS`, mais **le devient** de fait pour tout script qu'il invoque, par le même mécanisme que `nexus_cablage.py` — à vérifier par le tiers plutôt qu'affirmé ici, voir rubrique 6) ;
+Proposition, par argument et par précédent mesuré dans le dépôt — jamais par préférence : `scripts/nexus_rituel.py` câble déjà `nexus_cablage.py` lui-même selon exactement ce schéma (`cablage_tenu`, ligne ~266-280 : `subprocess.run` avec timeout 180 s, `IGNORE` sur timeout/exception, jamais bloquant) et porte même déjà un contrôle voisin mais distinct, `arbres_en_attente` (qui demande à `nexus_worktree.py --lister` si des worktrees traînent — pas s'ils contiennent un travail récoltable). Ajouter un contrôle `("recolte disponible", lambda: recolte_disponible(racine))` au même tableau `controles`, appelant `nexus_filet.py` **en dry-run seulement** (jamais `--appliquer`) et rapportant `MANQUE` dès que `Conflits`, `Erreurs de lecture` ou `Commits non recoltes` est non nul, `OK` sinon :
+- rendrait le fichier `cable` (au sens strict du dépôt : nommé par un mécanisme qui tourne sans qu'on ait à y penser) puisque `nexus_rituel.py` fait partie des `CABLEURS` reconnus (`scripts/nexus_rituel.py` n'est pas lui-même dans `CABLEURS`, mais **le devient** de fait pour tout script qu'il invoque, par le même mécanisme que `nexus_cablage.py` — à vérifier par le tiers plutôt qu'affirmé ici, voir rubrique 6) ;
 - est SANS RISQUE d'écriture : le dry-run ne modifie jamais rien, contrairement à `--appliquer` ;
 - résout directement le défaut nommé dans la mission : *« il était orphelin, appelé par personne, donc invisible »* — le rituel tourne à chaque tour (§0.2 du contrat), rendant l'existence de l'outil et ses trouvailles impossibles à manquer.
 
@@ -516,7 +516,7 @@ Alternative plus légère, cumulable : une sous-commande `nexus recolte` sur `sc
 ## 6. Non vérifié par l'auteur
 
 ```
-[NON VERIFIE] Que outillage/nexus_rituel.py devienne effectivement "cableur" pour tout ce qu'il
+[NON VERIFIE] Que scripts/nexus_rituel.py devienne effectivement "cableur" pour tout ce qu'il
               invoque, par le mecanisme de nexus_cablage.py -- affirme par analogie avec
               cablage_tenu/outillage_tenu, jamais mesure directement sur nexus_filet.py lui-meme
               (impossible sans cabler pour de vrai, ce que je me suis interdit).

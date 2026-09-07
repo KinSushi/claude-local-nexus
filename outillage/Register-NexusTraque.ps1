@@ -79,7 +79,7 @@ $rac = $racine.Replace("'", "''")
 $lg = $log.Replace("'", "''")
 $commande = "Set-Location '$rac'; " +
             "& '$py' outillage/nexus_traque.py --muet; " +
-            "& '$py' outillage/nexus_state.py"
+            "& '$py' scripts/nexus_state.py"
 $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
              "-Command ""& { $commande } *> '$lg'"""
 

@@ -18,7 +18,7 @@ def _find_repo_root(start_path):
         current = parent
 
 def _load_nexus_module(repo_root):
-    module_path = os.path.join(repo_root, 'outillage', 'nexus_rituel.py')
+    module_path = os.path.join(repo_root, 'scripts', 'nexus_rituel.py')
     if not os.path.isfile(module_path):
         raise FileNotFoundError(f"Cannot find nexus_rituel.py at expected location: {module_path}")
     spec = importlib.util.spec_from_file_location('nexus_rituel', module_path)

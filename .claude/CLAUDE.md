@@ -4680,7 +4680,7 @@ subscription.
 
 # 111. Measuring what delegation saves
 
-`outillage/nexus_savings.py` reports volume by plane and the counterfactual
+`scripts/nexus_savings.py` reports volume by plane and the counterfactual
 cost on Claude.
 
 Two honesty constraints, both learned the hard way:
@@ -4714,7 +4714,7 @@ before it was wired in.
 ```
 
 Law 1 paid for itself on first use. It found a real regression: `switch()` in
-`outillage/nexus_switch_engine.py` still treated an unreachable engine as an
+`scripts/nexus_switch_engine.py` still treated an unreachable engine as an
 engine with no models, and printed that claim as the last message before
 rewriting the configuration.
 
@@ -4744,7 +4744,7 @@ free ones**.
 | `scripts/nexus_garde_agent.py` | `PreToolUse` hook. Refuses a subagent whose `model` is absent or not allowed, and refuses `subagent_type: fork`, whose parent model is inherited whatever is requested — letting it through while believing it capped would be a false guarantee, worse than none. Any anomaly (unreadable JSON, missing field) passes: a guard that crashes must never stop work. Override: `NEXUS_AGENT_LIBRE=1`. |
 | `.claude/settings.json` | Wires the hook. |
 | `.claude/agents/nexus-delegue.md` | The economical agent, cheap by construction: fixed model, delegation protocol, caps on tool calls and report length. |
-| `controle_delegation` in `outillage/nexus_conformite.py` | Measures the delegated share over 7 days. Floor 90%, WARNING and never BLOCKING — a falling share does not prevent starting, and refusing to start would punish the operator who came to fix it. Reports `anthropic` requests separately: they alone are billed per token, and a flattering average is carried by free volume. |
+| `controle_delegation` in `scripts/nexus_conformite.py` | Measures the delegated share over 7 days. Floor 90%, WARNING and never BLOCKING — a falling share does not prevent starting, and refusing to start would punish the operator who came to fix it. Reports `anthropic` requests separately: they alone are billed per token, and a flattering average is carried by free volume. |
 
 ## 112.3 The bench, as measured
 
@@ -4784,7 +4784,7 @@ The measured order of the bench, sorted, refutes the parameter count outright:
 
 A threshold on parameter count would have excluded `codestral-22b` and admitted
 `gemma4-12b` — exactly backwards. Hence `outillage/nexus_bench.py`, and hence
-`SEUIL_POOL_MS` in `outillage/nexus_generate.py` gating on the reading rather
+`SEUIL_POOL_MS` in `scripts/nexus_generate.py` gating on the reading rather
 than on the size.
 
 **What this measurement does not say.** The bench asks for sixteen tokens. It

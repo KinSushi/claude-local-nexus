@@ -71,7 +71,7 @@ a rien de reel.
 
 CAPACITE VISION - CONCEPT DEJA APPLIQUE AILLEURS. La regle "vision: true"
 attendue pour une tache image est deja mise en oeuvre, hors de tout jeu de
-tests unitaires nomme : `outillage/nexus_validate.py` (autour de la ligne 463,
+tests unitaires nomme : `scripts/nexus_validate.py` (autour de la ligne 463,
 "un embedding ne retombe que sur un embedding" et son pendant vision) et
 `scripts/Test-NexusConfig.ps1:10` ("compatibilité de modalité des fallbacks
 (embedding, vision)").

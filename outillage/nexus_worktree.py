@@ -34,7 +34,7 @@ Usage
 -----
     python outillage/nexus_worktree.py \
         --nom validateur \
-        --fichier outillage/nexus_validate.py \
+        --fichier scripts/nexus_validate.py \
         --modele qwen3-coder-30b-local \
         --consigne "Signale et corrige les gestions d'erreur trop larges." \
         --verifier "python -c \"import ast,io;ast.parse(io.open('{fichier}',encoding='utf-8').read())\""

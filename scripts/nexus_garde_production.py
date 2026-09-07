@@ -70,7 +70,7 @@ def _handle_tool(charge: dict) -> int:
         repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         possible_paths = [
             os.path.join(os.path.dirname(__file__), "nexus_appliquer.py"),          # scripts/
-            os.path.join(repo_root, "outillage", "nexus_appliquer.py"),           # outillage/
+            os.path.join(repo_root, "scripts", "nexus_appliquer.py"),           # outillage/
         ]
         appliquer_path = None
         for p in possible_paths:

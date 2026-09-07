@@ -118,7 +118,7 @@ if ($SyncLocal) {
     #     de sorte que "ce que le validateur declare manquant" et "ce que
     #     l'on telecharge" ne peuvent plus diverger.
     Write-Log "Rapatriement des modeles declares mais absents"
-    $pullArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_pull_host.py"), "--manquants")
+    $pullArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_pull_host.py"), "--manquants")
     if ($DryRun) { $pullArgs += "--dry-run" }
     & $python @pullArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
     if ($LASTEXITCODE -ne 0) {
@@ -145,7 +145,7 @@ if ($SyncLocal) {
 # pire qu'aucune, parce qu'elle se lit comme valide.
 if ($SyncWeights) {
     Write-Log "Rafraichissement des poids des modeles installes"
-    $majArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_maj_modeles.py"))
+    $majArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_maj_modeles.py"))
     if (-not $DryRun) { $majArgs += "--appliquer" }
     & $python @majArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
     if ($LASTEXITCODE -ne 0) {
@@ -166,7 +166,7 @@ if (-not $DryRun) {
     Write-Log "Sauvegarde : $backup" "OK"
 }
 
-$genArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_generate.py"))
+$genArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_generate.py"))
 if ($DryRun)  { $genArgs += "--dry-run" }
 # La validation des droits est le comportement par defaut du generateur.
 # On ne la desactive que sur demande explicite : generer sans elle
@@ -195,7 +195,7 @@ if ($DryRun) {
 # parfaitement valide, et les dix modeles rendaient 404 un par un sans
 # que rien ne relie ces echecs entre eux.
 Write-Log "Controle de conformite"
-& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_conformite.py") --avant-demarrage 2>&1 |
+& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_conformite.py") --avant-demarrage 2>&1 |
     Tee-Object -FilePath $LogPath -Append
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Non conforme : LiteLLM n'a PAS ete redemarre" "ERROR"
@@ -269,14 +269,14 @@ if ($Restart) {
     # qu'elle fonctionne est pire qu'une releve absente -- on ne s'apercoit
     # de rien jusqu'au jour ou l'abonnement s'arrete.
     Write-Log "Verification de la releve locale"
-    & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_releve.py") 2>&1 |
+    & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_releve.py") 2>&1 |
         Tee-Object -FilePath $LogPath -Append
     if ($LASTEXITCODE -ne 0) {
         # Avertissement et non arret : la passerelle reste utilisable, et
         # bloquer la mise a jour laisserait une configuration a moitie
         # appliquee. Mais le message doit etre sans ambiguite.
         Write-Log "RELEVE INOPERANTE : le travail s'arreterait avec l'abonnement" "ERROR"
-        Write-Log "Diagnostic : python outillage/nexus_releve.py --tous" "ERROR"
+        Write-Log "Diagnostic : python scripts/nexus_releve.py --tous" "ERROR"
     } else {
         Write-Log "Releve operationnelle" "OK"
     }
@@ -295,7 +295,7 @@ if ($Restart) {
 # vraiment. Non bloquant : perdre une mise a jour reussie pour un rapport
 # serait un mauvais echange.
 Write-Log "Regeneration du cockpit"
-& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "outillage") "nexus_state.py") 2>&1 |
+& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_state.py") 2>&1 |
     ForEach-Object { Write-Log "  $_" }
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Cockpit non regenere : outillage/rituels/STATE.md reste date" "WARN"

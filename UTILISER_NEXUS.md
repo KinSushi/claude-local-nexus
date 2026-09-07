@@ -56,9 +56,9 @@ Pour les cas non couverts par le MCP, utilisez les scripts via leur **chemin abs
 
 Les quatre scripts les plus utiles pour un projet tiers :
 - `C:/local-llm-docker/scripts/nexus_agent.py --tache "analyse" --fichiers "src/" --modele gemma4-31b-cloud --racine "C:/projet"`
-- `C:/local-llm-docker/outillage/nexus_charge.py --json`
+- `C:/local-llm-docker/scripts/nexus_charge.py --json`
 - `C:/local-llm-docker/scripts/nexus_verrou_machine.py --etat`
-- `C:/local-llm-docker/outillage/nexus_appliquer.py resultats.jsonl "tache_01" cible.txt`
+- `C:/local-llm-docker/scripts/nexus_appliquer.py resultats.jsonl "tache_01" cible.txt`
 
 Le code de sortie doit être lu SANS tube (voir le piège de la section 5).
 

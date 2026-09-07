@@ -45,7 +45,7 @@ Le role EST tenu, mais par un ensemble d'outils distincts plutot que par un
 agent unique -- tous les trois confirmes presents par `test -f` :
   - `scripts/nexus_valide.py` (existe) -- validation d'un correctif, cout
     facture nul, cf. CLAUDE.md §0.2 point 1 et §105.4 ;
-  - `outillage/nexus_conformite.py` (existe) -- controles bloquants (dont
+  - `scripts/nexus_conformite.py` (existe) -- controles bloquants (dont
     `controle_delegation`, cf. CLAUDE.md §112.2) ;
   - `scripts/Test-NexusConfig.ps1` (existe) -- porte d'integrite sur
     litellm_config.yaml, cf. CLAUDE.md §18.

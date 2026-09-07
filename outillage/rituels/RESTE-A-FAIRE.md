@@ -34,7 +34,7 @@ par le `except Exception` et le test **échoue**. L'assertion doit devenir
 `unknown["error"]["code"] == -32602`, la survie du serveur restant vérifiée par
 `tools/list`. Non corrigé ici : ce fichier est hors du périmètre de cette passe.
 
-## Génération — `outillage/nexus_generate.py`
+## Génération — `scripts/nexus_generate.py`
 
 | # | Défaut | Gravité | Correction |
 |---|---|---|---|
@@ -46,7 +46,7 @@ par le `except Exception` et le test **échoue**. L'assertion doit devenir
 | G6 | `local_context()` devine la fenêtre depuis le **nombre de paramètres lu dans le nom**, alors que le poids réel est dans `sizes`. `mixtral:8x7b` → « 7 » ≤ 9 → 16 384 pour un modèle de 26 Go classé DEGRADED | FAIBLE | Budgéter depuis le poids mesuré et la mémoire du moteur |
 | G7 | `if len(targets) >= width + 1` au lieu de `>= width` : l'éventail vaut 2, **3**, 2 selon les successeurs restants | FAIBLE | Corriger l'indice |
 
-## Validation — `outillage/nexus_validate.py`
+## Validation — `scripts/nexus_validate.py`
 
 | # | Défaut | Gravité | Correction |
 |---|---|---|---|
@@ -111,7 +111,7 @@ s'en chargera :
   trouve plus et journalise « synchronisation ignoree ». Le téléchargement
   non arbitré est masqué, pas supprimé — il reviendra avec la réécriture du
   bloc ;
-* `outillage/nexus_pull_host.py` contrôle déjà le disque, mais avec sa propre
+* `scripts/nexus_pull_host.py` contrôle déjà le disque, mais avec sa propre
   arithmétique en Gio et sans passer par `can_download()`. Deux
   arithmétiques pour une même décision finiront par diverger.
 
@@ -245,8 +245,8 @@ cd C:\local-llm-docker
 Ensuite, et sans intervention :
 
 ```powershell
-python outillage/nexus_pull_host.py --manquants
-python outillage/nexus_conformite.py
+python scripts/nexus_pull_host.py --manquants
+python scripts/nexus_conformite.py
 ```
 
 Six alias restent déclarés sans poids d'ici là : `gemma4-31b`,

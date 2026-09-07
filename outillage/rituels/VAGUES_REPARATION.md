@@ -1454,7 +1454,7 @@ RAM DISQUE »*, *« ADAPTATIF »*.
 
 #### Ce qui est surveillé aujourd'hui
 
-`outillage/nexus_charge.py` — sortie réelle mesurée :
+`scripts/nexus_charge.py` — sortie réelle mesurée :
 
 ```
 RAM Libre: 23.41 Go / Modeles residents: 20.45 Go / Disponible pour inference: 43.86 Go / Totale: 61.62 Go
@@ -1900,7 +1900,7 @@ Les quatre bloquants, et **aucun ne concerne le code réparé** :
 
 ### La cause exacte, lue dans le code réel
 
-`outillage/nexus_conformite.py:791-803`. Le contrôle est bien raisonné : il
+`scripts/nexus_conformite.py:791-803`. Le contrôle est bien raisonné : il
 n'assimile pas l'absence à une panne. Il cherche un **témoin** pour distinguer
 « jamais mesuré » de « mesuré puis effacé » :
 
@@ -3231,15 +3231,15 @@ sous-processus là où la garde l'avait bloqué.
 ### La démonstration, sur le même fichier
 
 ```
-$ Edit outillage/nexus_generate.py
+$ Edit scripts/nexus_generate.py
   -> code 2, DENY
-     « Le chemin 'outillage/nexus_generate.py' est refuse car il s'agit d'un
+     « Le chemin 'scripts/nexus_generate.py' est refuse car il s'agit d'un
        fichier code source en production. Regle : tu ne produis pas, tu
        orchestres et tu audites. »
      + la voie nommee (nexus_agent.py puis nexus_appliquer.py)
      + l echappatoire nommee (NEXUS_PRODUCTION_LIBRE=1)
 
-$ echo casse > outillage/nexus_generate.py      (via Bash)
+$ echo casse > scripts/nexus_generate.py      (via Bash)
   -> code 0, sortie VIDE. Autorise.
 ```
 
@@ -3276,7 +3276,7 @@ garde présente sur TOUS les chemins.*
 
 ### Pourquoi le remède n'est PAS « bloquer les écritures Bash »
 
-`outillage/nexus_appliquer.py` est la voie **sanctionnée** pour écrire un fichier
+`scripts/nexus_appliquer.py` est la voie **sanctionnée** pour écrire un fichier
 de production — c'est elle que la garde nomme dans son propre message de
 refus — et elle écrit depuis un processus lancé par Bash. Interdire Bash
 casserait le chemin correct tout en laissant intacts vingt autres détours.
@@ -3307,7 +3307,7 @@ lignes contenant « [worktree-agent- »                                  : 45
 worktrees d'agents reellement presents sur le disque                   : 45
 ```
 
-`outillage/nexus_rituel.py`, dans `arbres_en_attente()` :
+`scripts/nexus_rituel.py`, dans `arbres_en_attente()` :
 
 ```python
 if "[agent/" not in texte:
@@ -3460,7 +3460,7 @@ Sixième du même genre, et le plus nu : il ne mesure pas la mauvaise chose, il
 
 ### La preuve, en trois lignes
 
-`outillage/nexus_rituel.py`, liste des contrôles :
+`scripts/nexus_rituel.py`, liste des contrôles :
 
 ```python
 ("progres",  lambda: progres(racine)),
@@ -3758,7 +3758,7 @@ Mes quatre poses ont **ajouté deux violations** :
 
 ```
 ruff : SIM105 21 -> 22
-outillage/nexus_appliquer.py:32:20 : SIM115
+scripts/nexus_appliquer.py:32:20 : SIM115
 ```
 
 Je ne les ai pas vues en vérifiant. C'est le **cliquet d'outillage** qui me les
@@ -3990,7 +3990,7 @@ Constat de départ : `qwen3-coder:30b` et `codestral:22b` tournaient à
 dur, et j'allais l'écrire.
 
 Vérifié : `litellm_config.yaml` porte **70** valeurs de `num_ctx`, et
-`outillage/nexus_generate.py:local_context()` les produit. Sa docstring dit
+`scripts/nexus_generate.py:local_context()` les produit. Sa docstring dit
 exactement le contraire de ce que je m'apprêtais à affirmer :
 
 > *« Elle suit le matériel plutôt qu'une constante. […] Avec une VRAM dédiée,

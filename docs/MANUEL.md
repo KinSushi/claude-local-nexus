@@ -268,7 +268,7 @@ mieux ne rien affirmer que répéter une comparaison qui ne tient pas.
 **Le tuyau.** Un troisième piège, celui-ci sur la *lecture* de la mesure :
 
 ```bash
-timeout 600 python outillage/nexus_releve.py 2>&1 | tail -8   # NON
+timeout 600 python scripts/nexus_releve.py 2>&1 | tail -8   # NON
 ```
 
 Deux défauts en une ligne. Le code de sortie observé est celui de `tail`, pas
@@ -281,7 +281,7 @@ Observé ici : une relève expirée a rendu « code 0 » et zéro ligne. Rien ne
 distinguait ce cas d'une relève qui n'aurait eu rien à dire.
 
 ```bash
-timeout 1500 python -u outillage/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
+timeout 1500 python -u scripts/nexus_releve.py > sortie.txt 2>&1; echo $?  # OUI
 ```
 
 `-u` désactive le buffer, la redirection remplace le tuyau, et le `$?` lu
@@ -307,7 +307,7 @@ python "C:/local-llm-docker/outillage/nexus_ruche.py" `
 
 ## 📊 Mesurer ce que cela rapporte  
 ```powershell
-python "C:/local-llm-docker/outillage/nexus_savings.py" `
+python "C:/local-llm-docker/scripts/nexus_savings.py" `
     --jours 7
 ```
 Affiche la part de travail déléguée et le coût évité. **À lancer dès le premier jour** d’un nouveau projet ; sans mesure initiale, on ne sait jamais si le dispositif tient ses promesses.
