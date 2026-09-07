@@ -71,7 +71,7 @@ LISIBLES = (".py", ".ps1", ".json", ".md", ".yaml", ".yml", ".js")
 # nommé là est appelé sans que personne ait à y penser — c'est la définition
 # retenue par le contrat, et la seule qui compte.
 CABLEURS = (".claude/settings.json", "scripts/nexus.ps1",
-            "scripts/Register-*.ps1")
+            "scripts/Register-*.ps1", "outillage/Register-*.ps1")
 
 # CE QUI NOMME TOUT SCRIPT PAR CONSTRUCTION, et ne prouve donc rien : les
 # inventaires generes du depot, et la memoire de ce cliquet lui-meme.
@@ -328,7 +328,9 @@ def etat() -> dict:
     fichiers = suivis()
     textes = contenus(fichiers)
     cibles = [f for f in fichiers
-              if f.startswith("scripts/") and f.lower().endswith((".py", ".ps1"))]
+              if (f.startswith("scripts/") or f.startswith("outillage/") or f.startswith("epreuves/"))
+                 and not f.startswith("outillage/rituels/")
+                 and f.lower().endswith((".py", ".ps1"))]
     resultat = {"cable": [], "appele": [], "preuve_seule": [], "orphelin": []}
     details = {}
     for cible in sorted(cibles):

@@ -29,6 +29,7 @@ import collections
 import os
 import re
 import sys
+import sys
 
 ACTIONS = {"write", "write_text", "writelines", "dump", "makedirs", "mkdir",
            "copy", "copy2", "move", "remove", "unlink", "rename", "replace",
@@ -288,19 +289,46 @@ def analyser(chemin):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--racine", default="scripts",
-                   help="Répertoire racine à analyser (par défaut 'scripts').")
+    p.add_argument("--racine", default=None,
+                   help="Chemin absolu du répertoire racine du dépôt à analyser (par défaut dérivé du fichier).")
     p.add_argument("--classe", type=int, choices=range(1, 7))
     p.add_argument("--muet", action="store_true",
                    help="N'afficher que les totaux.")
     a = p.parse_args()
 
-    # Étendre le périmètre aux répertoires 'outillage' et 'epreuves' en plus du racine spécifiée.
-    racines = {a.racine, "outillage", "epreuves"}
+    # Configuration sûre de l'encodage de la sortie standard
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+    # Détermination du répertoire racine du dépôt
+    if a.racine:
+        depot_root = os.path.abspath(a.racine)
+    else:
+        depot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+    # Sous‑arbres à analyser
+    racines = {
+        os.path.join(depot_root, "scripts"),
+        os.path.join(depot_root, "outillage"),
+        os.path.join(depot_root, "epreuves"),
+    }
+
+    # Exclusion du répertoire outillage/rituels
+    excl = os.path.join(depot_root, "outillage", "rituels")
+
     fichiers = []
     for racine in racines:
         for r, _, fs in os.walk(racine):
+            if os.path.commonpath([r, excl]) == excl:
+                continue
             fichiers.extend(os.path.join(r, f) for f in fs if f.endswith(".py"))
+
+    if not fichiers:
+        sys.stderr.write(f"Aucune source .py trouvée dans le dépôt racine : {depot_root}\\n")
+        sys.exit(1)
+
     total = collections.Counter()
     lignes = []
     for f in sorted(fichiers):
