@@ -26109,3 +26109,26 @@ Forward : budget 40, 1->60 -> reprise 40->80 DECLENCHEE (avant : jamais).
 Reverse : budget 4096 -> complet, aucune fausse reprise. Audit banc : aucune
 regression. Auteur logique : banc (v20) ; placement a l ancre reelle :
 orchestrateur (le banc avait invente l ancre). LOI 1 tenue.
+
+### §177 — token_meter : rejete par la mesure, pas corrige (l instrument existe deja)
+
+Signale par l operateur : « token_meter rend total_agents=0, ce chiffre vient
+des journaux, pas d un instrument ». Verifie sur le disque avant d agir.
+
+token_meter.py n est PAS un fichier du projet. Il n apparait que dans
+`.nexus/verbatim/*.txt` (rendus du banc du 2026-09-02, jamais commités) et la
+note cockpit l.489. C est un outil PROPOSE, jamais adopte, qui lit un
+`token_ledger.json` ; son total_agents=0 vient d un ledger vide -- l anti-pattern
+meme (compter par journal).
+
+Le projet instrumente DEJA ce compte, sans journal :
+  - `nexus_agent.py:1714` emet « N tache(s) : X reussie(s)... » en comptant
+    directement len(resultats) -- l instrument, a la source ;
+  - `nexus_savings.py` lit le spend-log de la passerelle LiteLLM (/spend/logs),
+    un instrument, et avertit s il tronque a 5000.
+token_meter recoupe nexus_savings (la note l.489 le dit) et le fait moins bien.
+
+Decision (doctrine §0 : ne pas adopter un mecanisme qui duplique/concurrence ce
+qui existe ici) : token_meter n est PAS adopte. La note l.489 « a comparer avant
+de reprendre » est close par cette mesure. Si un rapport total_agents est voulu,
+sa source est nexus_agent:1714, jamais un journal.
