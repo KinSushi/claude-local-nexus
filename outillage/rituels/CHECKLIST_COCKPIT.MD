@@ -27117,3 +27117,32 @@ rendu_sem.md (impl N-mutex) + rendu_semtests.md (tests cross-process).
 
 Décision d'arbitrage OPÉRATEUR (il possède les 4 sessions) : quand déployer, et
 annoncer aux pairs. Le fix est prêt ; je ne touche pas le verrou vivant sans go.
+
+### §207 — Health-check cloud investigué (§199 affiné) : léger à 900s, sauf overrun de cycle ; l'inefficacité est de sonder hors pool
+
+Mesuré dans litellm_config.yaml : `background_health_checks: true`,
+`health_check_interval: 900` (15 min), `enable_health_check_routing: true`, sur 60
+modèles portant `litellm_health_check: true` (dont 19 cloud, api_base ollama.com).
+
+**Ce que ça dit sur l'hypothèse §199** (health-check = cause des 429) : à 900s
+d'intervalle, 19 sondes cloud toutes les 15 min = charge LÉGÈRE, PAS un marteau
+continu. L'hypothèse « health-check nourrit les 429 » est donc largement REFROIDIE
+pour le régime nominal. cloud-quota mesurait 40 sorties/3 appels — un cycle de
+health-check a pu coïncider, mais ce n'est pas un contributeur continu à 900s.
+
+**MAIS un vrai défaut mesurable subsiste, documenté ligne 1954 du config** : le
+`background_health_check_cycle_duration_exceeded_interval` — le cycle de sonde des
+60 modèles a DÉJÀ dépassé les 900s. Cause plausible : sonder des modèles LOCAUX
+lents à charger (glm 61s, gemma4 51s…) fait déborder le cycle → les sondes
+s'enchaînent en continu au lieu d'être périodiques. C'est là que la charge devient
+réelle.
+
+**Inefficacité de fond : on sonde 60 modèles, dont beaucoup HORS des pools de
+routage.** Un modèle non routé n'a pas besoin d'être health-checké. Fix proposé
+(NON appliqué, attend go — c'est un changement de GÉNÉRATEUR + regen + restart
+litellm, donc coordonné) : `nexus_generate` ne met `litellm_health_check: true` que
+sur les modèles réellement dans un pool. Le cycle repasse alors sous 900s →
+sondes périodiques, pas continues. À MESURER après : le cycle ne déborde plus.
+
+Statut : investigation READ-ONLY faite (aucun changement) ; le remède touche le
+générateur et redémarre la passerelle partagée → arbitrage opérateur.
