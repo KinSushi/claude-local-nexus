@@ -20,9 +20,9 @@ Le script est relançable : ce qui est déjà présent est ignoré, ce qui a
 échoué est retenté au passage suivant.
 
 Usage :
-    python outillage/nexus_pull_host.py               # comble ce qui manque
-    python outillage/nexus_pull_host.py --dry-run     # simule
-    python outillage/nexus_pull_host.py --liste model_list.host.txt
+    python scripts/nexus_pull_host.py               # comble ce qui manque
+    python scripts/nexus_pull_host.py --dry-run     # simule
+    python scripts/nexus_pull_host.py --liste model_list.host.txt
 """
 from __future__ import annotations
 
@@ -406,7 +406,7 @@ def main() -> int:
         print(
             """
   Suite, dans cet ordre :
-    1. python outillage/nexus_switch_engine.py --to host
+    1. python scripts/nexus_switch_engine.py --to host
     2. .\\scripts\\Update-NexusModels.ps1 -Restart
     3. python outillage/nexus_test.py
     4. SEULEMENT si tout passe : retirer COMPOSE_PROFILES de .env,
@@ -417,15 +417,15 @@ def main() -> int:
         print(
             """
   Suite :
-    python outillage/nexus_conformite.py        ce qui manque encore
-    python outillage/nexus_pull_host.py         relancer apres liberation
+    python scripts/nexus_conformite.py        ce qui manque encore
+    python scripts/nexus_pull_host.py         relancer apres liberation
 """
         )
     else:
         print(
             """
   Suite :
-    python outillage/nexus_validate.py
+    python scripts/nexus_validate.py
     .\\scripts\\Update-NexusModels.ps1 -Restart
 """
         )

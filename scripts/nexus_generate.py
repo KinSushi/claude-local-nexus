@@ -18,7 +18,7 @@ donc acycliques par construction (chaîne strictement descendante) et ne
 franchissent jamais une frontière de modalité ni de fournisseur (§17, §65, §66).
 
 Usage :
-    python outillage/nexus_generate.py [--dry-run] [--no-validate]
+    python scripts/nexus_generate.py [--dry-run] [--no-validate]
 
 La validation des droits est active par defaut.
 """
@@ -683,7 +683,7 @@ def latences_relevees() -> dict:
 
 def epreuves_relevees() -> dict:
     """
-    Registre des epreuves reelles, ecrit par outillage/nexus_releve.py.
+    Registre des epreuves reelles, ecrit par scripts/nexus_releve.py.
 
     Meme contrat que latences_relevees() : ne leve jamais. Un registre absent
     rend simplement la derogation inoperante, donc le seuil de latence seul
@@ -1691,7 +1691,7 @@ def main() -> int:
     # Rien n'est à décommenter à la main — la prochaine validation les
     # réintègre d'elle-même.
     inventory = [
-        "# Catalogue Ollama Cloud — généré le %s par outillage/nexus_generate.py"
+        "# Catalogue Ollama Cloud — généré le %s par scripts/nexus_generate.py"
         % datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "# Actifs : exécutables avec l'abonnement Ollama Cloud actuel.",
         "# Commentés : publiés mais non autorisés — ils redeviendront actifs",

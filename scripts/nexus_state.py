@@ -11,7 +11,7 @@ Il est donc reproductible, auditable et localisable, conformément au
 contrat des rituels.
 
 Usage :
-    python outillage/nexus_state.py
+    python scripts/nexus_state.py
 """
 from __future__ import annotations
 
@@ -78,8 +78,8 @@ TRACKED = [
     ".mcp.json",
     "Set-ClaudeModel.ps1",
     "tools/nexus-mcp/server.js",
-    "outillage/nexus_generate.py",
-    "outillage/nexus_validate.py",
+    "scripts/nexus_generate.py",
+    "scripts/nexus_validate.py",
     "scripts/nexus_capability.py",
     "outillage/nexus_test.py",
     "scripts/Update-NexusModels.ps1",
@@ -405,7 +405,7 @@ def main() -> int:
     lines = [
         "# État de la plateforme",
         "",
-        f"> Généré par `python outillage/nexus_state.py` le {now}.",
+        f"> Généré par `python scripts/nexus_state.py` le {now}.",
         "> **Ne pas éditer à la main** : ce fichier décrit ce qui a été mesuré,",
         "> pas ce que l'on croit installé. Le régénérer vaut mieux que le corriger.",
         "",
@@ -563,7 +563,7 @@ def main() -> int:
     # reecriture. Le motif vise le format de `docker ps`, ou l'etat est
     # separe du nom par des tabulations.
     VOLATILES = (
-        "Généré par `python outillage/nexus_state.py`",
+        "Généré par `python scripts/nexus_state.py`",
         "| Commit |",
         "| Arbre de travail |",
         "\tUp ",

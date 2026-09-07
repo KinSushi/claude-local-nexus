@@ -11,8 +11,8 @@ un rituel oublié.
 Il constate et rapporte ; il ne corrige rien. Un MANQUE n'est pas une
 erreur du script : c'est son résultat.
 
-    python outillage/nexus_rituel.py
-    python outillage/nexus_rituel.py --json
+    python scripts/nexus_rituel.py
+    python scripts/nexus_rituel.py --json
 
 Écrit par le banc gratuit sur consigne, intégré après correction d'un
 défaut : il traitait `par_plan` comme un dictionnaire de listes, alors que
@@ -163,7 +163,7 @@ def part_deleguee(racine: Path) -> tuple[str, str]:
     plateforme existe pour déléguer.
     """
     try:
-        r = subprocess.run([sys.executable, "outillage/nexus_savings.py",
+        r = subprocess.run([sys.executable, "scripts/nexus_savings.py",
                             "--jours", "1", "--json"], cwd=racine,
                            capture_output=True, text=True, timeout=120,
                            encoding="utf-8", errors="replace")
@@ -369,6 +369,28 @@ def cablage_tenu(racine: Path) -> tuple[str, str]:
         return IGNORE, str(exc).splitlines()[0][:60]
 
 
+def chemins_tenus(racine: Path) -> tuple[str, str]:
+    """Exécute outillage/nexus_chemins.py pour détecter les références mortes."""
+    try:
+        r = subprocess.run(
+            [sys.executable, 'outillage/nexus_chemins.py'],
+            cwd=racine,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            encoding='utf-8',
+            errors='replace',
+        )
+        lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
+        if r.returncode == 0:
+            return OK, (lignes[0] if lignes else "aucune reference morte")
+        return MANQUE, " | ".join(lignes[:2])[:90]
+    except subprocess.TimeoutExpired:
+        return IGNORE, "nexus_chemins n a pas repondu en 180 s"
+    except Exception as exc:
+        return IGNORE, str(exc).splitlines()[0][:60]
+
+
 def frontiere_tenue(racine: Path) -> tuple[str, str]:
     """
     Empêche que le produit se remette à dépendre de l'outillage sans que
@@ -526,7 +548,7 @@ def main() -> int:
         ("boucle armee", boucle_armee),
         ("part deleguee", lambda: part_deleguee(racine)),
         ("releves lisibles", lambda: releves_lisibles(racine)),
-        ("cablage tenu", lambda: cablage_tenu(racine)),
+        ("chemins tenus", lambda: chemins_tenus(racine)),
         ("frontiere tenue", lambda: frontiere_tenue(racine)),
         ("appelant recent", lambda: appelant_recent(racine)),
         ("outillage tenu", lambda: outillage_tenu(racine)),

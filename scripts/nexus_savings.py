@@ -18,7 +18,7 @@ litellm_config.yaml pour les modèles Anthropic — la même source que celle
 qu'utilise le routeur, pour que les deux chiffres restent comparables.
 
 Usage :
-    python outillage/nexus_savings.py [--jours 7] [--json]
+    python scripts/nexus_savings.py [--jours 7] [--json]
 """
 from __future__ import annotations
 

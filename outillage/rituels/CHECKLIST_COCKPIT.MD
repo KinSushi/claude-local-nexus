@@ -178,7 +178,7 @@
 | Deux fois le meme modele ne donne NI contexte NI 2x de debit | mesure : une seule entree dans `/api/ps`, 5,86 Go, caches KV separes. Gain reel 1,24x, paye en latence. Pour le contexte d un million, la voie reste MAP-REDUCE |
 | APPLIQUER un correctif, c est CORRIGER : l auditeur ne peut plus etre le poseur | quatre correctifs du lot cloud reclasses « poses, en attente du temps 3 ». Preuve mecanique : mes poses ont ajoute 2 violations que le cliquet a vues, pas moi |
 | RECTIFIE : 15 DIAGNOSTICS faux, mais **6** travaux reellement en peril | 9 des 15 etaient deja dans main : un faux « conflit » sur du travail deja integre coute de la confiance, pas du travail. Mon titre confondait diagnostic faux et travail en peril |
-| La GARDE DE PRODUCTION est contournable par un simple `>` | `Edit outillage/nexus_generate.py` -> code 2 DENY ; `echo casse > outillage/nexus_generate.py` -> code 0, AUTORISE. Deux agents, meme mandat : l un a contourne, l autre a refuse. Le remede n est PAS « bloquer Bash » — `nexus_appliquer.py` ecrit par la |
+| La GARDE DE PRODUCTION est contournable par un simple `>` | `Edit scripts/nexus_generate.py` -> code 2 DENY ; `echo casse > scripts/nexus_generate.py` -> code 0, AUTORISE. Deux agents, meme mandat : l un a contourne, l autre a refuse. Le remede n est PAS « bloquer Bash » — `nexus_appliquer.py` ecrit par la |
 | LOI 1 est ROUGE : **188 lignes** ecrites par un modele FACTURE | `nexus_loi1.py` : 194 retenues, 6 deleguees, 188 manuel sur `nexus_filet.py`. Neuf agents factures cette nuit. `--reference` existe pour assumer ; NON employe, taire l instrument le viderait de son sens |
 | Le banc gratuit sur une question de JUGEMENT : abstraction bonne, ancrage INVENTE | critere general utilisable rendu en 19 s pour zero ; mais 6 ancrages cites sur 7 n existent pas dans le depot, et il se trompe sur le seul cas prouve |
 | CINQ defauts sur `nexus_filet.py`, UN SEUL trouve par les epreuves de son auteur | trois par l audit externe, un par sa reverse-test, un par lui en cherchant sur la flotte. Une epreuve valide ce que son auteur a pense a eprouver |
@@ -1700,9 +1700,9 @@ Trois commandes suffisent à savoir où l'on en est. Aucune ne suppose quoi
 que ce soit :
 
 ```powershell
-python outillage/nexus_conformite.py    # peut-on démarrer ? et sinon, pourquoi
-python outillage/nexus_releve.py        # le local remplace-t-il l'orchestrateur ?
-python outillage/nexus_pull_host.py     # ce qui manque encore, relançable
+python scripts/nexus_conformite.py    # peut-on démarrer ? et sinon, pourquoi
+python scripts/nexus_releve.py        # le local remplace-t-il l'orchestrateur ?
+python scripts/nexus_pull_host.py     # ce qui manque encore, relançable
 ```
 
 **La seule action qui vous revient** : approuver le serveur MCP
@@ -1760,7 +1760,7 @@ est supprimé, le disque virtuel est compacté.
 | 1.4 | Vérification post-bascule | `FAIT` | forward 11/0, reverse 15/0, policy 5/0, relève 5/0 |
 | 1.5 | Suppression du volume Docker | `FAIT` — irréversible | 541 Go, après vérification que les 17 modèles restants sont publiés au registre |
 | 1.6 | Compaction du disque virtuel | `FAIT` | 553 Go → 12,9 Go, **540 Go rendus** |
-| 1.7 | Retéléchargement des 6 modèles reportés | `EN COURS` | `python outillage/nexus_pull_host.py` — relançable, il reprend où il s'est arrêté |
+| 1.7 | Retéléchargement des 6 modèles reportés | `EN COURS` | `python scripts/nexus_pull_host.py` — relançable, il reprend où il s'est arrêté |
 
 **Ce qu'il reste à voir arriver seul** : les 4 derniers modèles
 (`deepseek-coder:33b`, `codestral`, `qwen2.5:32b`, `llava:34b`). Tant
@@ -5360,7 +5360,7 @@ bloque son auteur trois fois dans la journee.
 
 ### 54.3 La seule confirmee, et elle vise la famille du jour
 
-`outillage/nexus_maj_modeles.py` portait :
+`scripts/nexus_maj_modeles.py` portait :
 
 ```python
 MARGE_DISQUE_GO = 50
@@ -6148,7 +6148,7 @@ de `.nexus/`, les sauvegardes, et **toutes** les sections de ce cockpit.
 
 ### 62.2 CE QUI A ETE SAUVE DU BAC A SABLE
 
-`outillage/nexus_appliquer.py` — l'outil qui a pose une quarantaine de patchs
+`scripts/nexus_appliquer.py` — l'outil qui a pose une quarantaine de patchs
 dans la session et qui en a **refuse cinq** parce que le bloc a remplacer ne
 correspondait pas aux octets reels du fichier. C'est lui qui a empeche des
 fichiers d'etre mutiles.
@@ -7205,7 +7205,7 @@ mauvaise raison »*.
 Le tour precedent avait inscrit la regle apres avoir retire une mesure fausse.
 Un paragraphe ne protege personne : le deliverable est un controle.
 
-`outillage/nexus_charge.py` repond a UNE question — la machine est-elle assez
+`scripts/nexus_charge.py` repond a UNE question — la machine est-elle assez
 libre pour qu'une duree mesuree ici soit interpretable ? Code de sortie 0 au
 repos, 1 si chargee, `--json` pour un appelant.
 
@@ -8269,7 +8269,7 @@ est de 177 s pour 20 Go.
 **La voie tranchee.** Le verrou est un mutex Windows nomme, cote Python ; le
 pont est en Node. Plutot qu'une reimplementation — donc deux verrous qui ne
 se voient pas, ce qui serait pire que rien — un TENEUR :
-`outillage/nexus_verrou_tenir.py` prend le mutex, annonce `PRIS`, puis bloque
+`scripts/nexus_verrou_tenir.py` prend le mutex, annonce `PRIS`, puis bloque
 sur son stdin. Le pont le lance, attend l'annonce, travaille, ferme le tube.
 
 > Si le pont meurt, le tube se ferme et le **noyau** relache. Aucun chemin,
@@ -8572,7 +8572,7 @@ docstrings, fixtures d'epreuve, exemples. **Deux comptent :**
 | ou | quoi | pourquoi cela compte |
 | --- | --- | --- |
 | `scripts/backup.ps1:16` | un chemin de sauvegarde sur le disque de l'hote | l'operateur vient d'INTERDIRE l'ecriture sur ce volume |
-| `outillage/nexus_conformite.py:457,1539` | les chemins des depots voisins, en dur | le contrat §0.4 interdit de dependre du chemin d'un voisin |
+| `scripts/nexus_conformite.py:457,1539` | les chemins des depots voisins, en dur | le contrat §0.4 interdit de dependre du chemin d'un voisin |
 
 ### 78.3 LE FIL QUE LA MIGRATION OUVRE, ET QU'IL FAUT NOMMER
 
@@ -10449,7 +10449,7 @@ NexusVitrine (tache planifiee, PT6H, tourne SANS session)
         -> nexus_rituel.py  ->  nexus_cablage.py
 
 hook Stop, .claude/settings.json:103
-  -> python "$CLAUDE_PROJECT_DIR/outillage/nexus_rituel.py" --json
+  -> python "$CLAUDE_PROJECT_DIR/scripts/nexus_rituel.py" --json
 ```
 
 Deux armements independants, dont **un qui ne depend d'aucune session** — ce
@@ -10765,7 +10765,7 @@ MEME branche que le cas**, sinon il certifie autre chose que ce qu'on mesure.
 anti-controle   SAM, ntoskrnl.exe                             REFUSE
 temoin positif  README.md                                     POSSIBLE
 cibles          .claude/settings.json   (declare le hook Stop)
-                outillage/nexus_rituel.py (l armeur)
+                scripts/nexus_rituel.py (l armeur)
                 outillage/nexus_cablage.py (le cliquet)
                 outillage/nexus_test.py   (35 epreuves)
                 .claude/CLAUDE.md       (le contrat)          TOUS POSSIBLE
@@ -12577,7 +12577,7 @@ n'est mesure. »*
 chemin :
 
 ```
-Bash  ->  python outillage/nexus_appliquer.py <rendus.jsonl> <tache> scripts/nexus_garde_agent.py
+Bash  ->  python scripts/nexus_appliquer.py <rendus.jsonl> <tache> scripts/nexus_garde_agent.py
 ```
 
 `nexus_appliquer.py` ouvre le fichier cible en ecriture et y applique les blocs
@@ -12657,10 +12657,10 @@ travail non commite** — tout le sien est dans `626710a` et les 116 commits qui
 precedent. Les huit fichiers sales sont tous de cette session.
 
 ```
-outillage/nexus_conformite.py    controle_secrets_documentes + controle_exemple_present
+scripts/nexus_conformite.py    controle_secrets_documentes + controle_exemple_present
 scripts/nexus_agent.py         saut de ligne terminal, --sortie-brute
 scripts/nexus_garde_agent.py   hookEventName + motif sur stderr + commentaire de cause corrige
-outillage/nexus_sujets.py        encodage utf-8 (son --help plantait)
+scripts/nexus_sujets.py        encodage utf-8 (son --help plantait)
 outillage/nexus_armer_hook.py    chemin derive de __file__ au lieu d'etre grave
 outillage/rituels/CHECKLIST_COCKPIT.MD   section 115
 outillage/rituels/PLAN_MAITRE_2026-09-01.md               (nouveau)
@@ -12967,7 +12967,7 @@ disponibles, aucun lu.
 **(2) `nexus_appliquer.py` echoue par TRACEBACK NU sur une ligne de commande mal formee.**
 
 ```
-python outillage/nexus_appliquer.py --patch <fichier> --fichier <cible>
+python scripts/nexus_appliquer.py --patch <fichier> --fichier <cible>
   -> FileNotFoundError: [Errno 2] No such file or directory: '--patch'
 ```
 
@@ -13138,7 +13138,7 @@ Signale au §116.4(2) : `nexus_appliquer.py` echoue par traceback nu sur une lig
 formee.
 
 ```
-python outillage/nexus_appliquer.py --patch foo --fichier bar
+python scripts/nexus_appliquer.py --patch foo --fichier bar
   -> FileNotFoundError ... line 26, in main
      with io.open(jsonl_path, encoding="utf-8") as fh:
 ```
@@ -13172,7 +13172,7 @@ defaut signale.
 Mesure sur `1ba0080`, apres le correctif :
 
 ```
-python outillage/nexus_appliquer.py --patch foo --fichier bar
+python scripts/nexus_appliquer.py --patch foo --fichier bar
   -> FileNotFoundError ... line 26 ... '--patch'      rc=1
 ```
 
@@ -13993,7 +13993,7 @@ python scripts/nexus_verrou_machine.py --etat
     TENU   hachage        <- la copie miroir de sovereign, 38,8 Go
     LIBRE  banc           <- « une inference locale sur le banc de modeles »
 
-python outillage/nexus_charge.py
+python scripts/nexus_charge.py
     RAM Libre: 20.85 Go / Totale: 61.62 Go
     machine CHARGEE : RAM insuffisante
 ```
@@ -15807,7 +15807,7 @@ Defaut mesure sur l'orchestrateur, en mode simulation :
     Cibles traitees cette execution : 6
     Echecs                          : 5
     Cibles en echec (a corriger) :
-    - outillage/nexus_conformite.py : Erreur: aucun bloc @@FONCTION@@ trouve dans la reponse
+    - scripts/nexus_conformite.py : Erreur: aucun bloc @@FONCTION@@ trouve dans la reponse
 
 **Un operateur qui lit ce rapport conclut que cinq cibles ont echoue.** Le titre, les
 compteurs et les libelles sont identiques a ceux d'une execution reelle. Seules deux lignes
@@ -15885,7 +15885,7 @@ Le document pose les commandes reelles, et **chacune a ete lancee avant d'y etre
 avec son code de retour observe :
 
     python outillage/nexus_secours.py                 code 0
-    python outillage/nexus_charge.py                  code 0
+    python scripts/nexus_charge.py                  code 0
     python outillage/nexus_ruche.py --help            code 0
     python outillage/nexus_verifie_rendu.py --help    code 0
     python outillage/nexus_sonde_aveugle.py <cible>   code 1  <- normal : des occurrences trouvees
@@ -17631,7 +17631,7 @@ scratchpad lit des marqueurs de patch et ecrit sur le disque sans passer par `ne
 un `Get-NetTCPConnection` par PowerShell, un compte de processus, deux sondes reseau. **Quinze
 lignes.**
 
-**`outillage/nexus_charge.py` existe, il est portable (§0.5), et il rend PLUS :**
+**`scripts/nexus_charge.py` existe, il est portable (§0.5), et il rend PLUS :**
 
     PID    CPU(min)  RAM(Mo)   PROJET   COMMAND LINE
     18416  3,75      42,71     SAS      mirror.py --verify
@@ -18287,11 +18287,11 @@ consulte »*. Les quatre correctifs ci-dessous attendaient, audites, pendant que
 l'orchestrateur ecrivait de la doctrine.
 
 Chacun a ete produit par le banc gratuit, audite par un tiers d'une AUTRE
-famille AVANT la pose, et applique par `outillage/nexus_appliquer.py`.
+famille AVANT la pose, et applique par `scripts/nexus_appliquer.py`.
 
 ## 121.1 Un correctif NUL ne peut plus passer
 
-`outillage/nexus_appliquer.py` ne comparait jamais le bloc APRES au bloc AVANT.
+`scripts/nexus_appliquer.py` ne comparait jamais le bloc APRES au bloc AVANT.
 Un modele en a rendu un identique, caractere pour caractere, avec une
 contre-epreuve redigee comme si un changement avait eu lieu. Il se serait
 applique sans erreur et aurait ete rapporte comme pose.
@@ -18308,7 +18308,7 @@ Les trois criteres du contrat pour un refus propre sont tenus.
 
 ## 121.2 Les controles aveugles apparaissent au verdict
 
-`outillage/nexus_rituel.py` ne distinguait pas IGNORE de OK. Mesure du jour :
+`scripts/nexus_rituel.py` ne distinguait pas IGNORE de OK. Mesure du jour :
 `part deleguee` rendait IGNORE sur une erreur de parsing JSON, `redaction
 declaree` sur « mesure impossible », pendant que le verdict annoncait
 seulement « 2 manques ». Les IGNORE sont desormais comptes a part et affiches.
@@ -18320,8 +18320,8 @@ tour.
 Il vivait dans DEUX fichiers, et le second est la garde :
 
 ```
-outillage/nexus_generate.py:139   EMBED_HINT
-outillage/nexus_validate.py:72    EMBED       <- le VALIDATEUR
+scripts/nexus_generate.py:139   EMBED_HINT
+scripts/nexus_validate.py:72    EMBED       <- le VALIDATEUR
 ```
 
 Un modele de plongement non reconnu passait pour du texte, donc un repli
@@ -20014,7 +20014,7 @@ de `backoff` invisibles.
 
 1. **Enrichir le `resume` a l'indexation** avec les termes saillants du
    contenu. Cout paye une fois, index un peu plus gros, recherche inchangee.
-2. **Construire l'index semantique** — `outillage/nexus_livres_semantique.py`
+2. **Construire l'index semantique** — `scripts/nexus_livres_semantique.py`
    propose `build` et `search`, et **aucun index n'existe sur le disque**.
    L'outil est ecrit, cable a rien, jamais lance.
 
@@ -20659,7 +20659,7 @@ jugement, et un jugement se discute. Ce qui est mecanique, c'est de
 **Une seule citation du corpus dans tout le code.** Elle est ici :
 
 ```
-outillage/nexus_generate.py:1084
+scripts/nexus_generate.py:1084
   # ... On signale au lieu d'interdire parce que vider ces chaines
   # laisserait leurs modeles source SANS AUCUN repli
   # (chapitre_degradation.md, "Design agents to detect...").
@@ -22023,7 +22023,7 @@ chemins absolus en dur dans scripts/*.py          0
 ```
 outillage/nexus_socle.py         L7    "C:/local-llm-docker/rituels/SOCLE_UNIVERSEL.json"
                                L8    "D:/SAS/sovereign-ai-system/v1.104/..."
-outillage/nexus_conformite.py    L468  r"D:\SAS\sovereign-ai-system\v1.104\..."
+scripts/nexus_conformite.py    L468  r"D:\SAS\sovereign-ai-system\v1.104\..."
                                L470  r"D:\EA MT5 PYTHON RENTABLE ROBUSTE"
 patch_lot.py                   L5    chemin = r"C:\local-llm-docker\scripts\nexus_agent.py"
 outillage/rituels/QUARANTAINE/MANIFESTE.json   49 occurrences, SUIVI par git
@@ -22053,7 +22053,7 @@ Un controle qui les compterait toutes crierait au loup et serait desarme.
 | --- | --- |
 | `patch_lot.py` L5 | **code executable**, chemin en dur vers `scripts/nexus_agent.py` — il suffit de le deriver |
 | `outillage/nexus_socle.py` L7-8 | table de chemins vers d'autres depots, gravee |
-| `outillage/nexus_conformite.py` L468-470 | chemins des depots voisins, graves |
+| `scripts/nexus_conformite.py` L468-470 | chemins des depots voisins, graves |
 | `outillage/rituels/QUARANTAINE/MANIFESTE.json` | 49 chemins de machine, **suivis par git** |
 | `outillage/rituels/A_POSER_*.json` | chemins vers `settings.json` d'un utilisateur nomme |
 
@@ -23111,7 +23111,7 @@ Claude-Local-Nexus - Mise a jour
    & 'C:\local-llm-docker\scripts\Update-NexusModels.ps1' -SyncLocal ...
 NexusTraque
    Set-Location 'C:\local-llm-docker'
-   python.exe outillage/nexus_traque.py --muet ; python.exe outillage/nexus_state.py
+   python.exe outillage/nexus_traque.py --muet ; python.exe scripts/nexus_state.py
 NexusVitrine
    Set-Location 'C:\local-llm-docker' ; python.exe outillage/nexus_vitrine.py
 ```
@@ -23658,7 +23658,7 @@ File "outillage/nexus_test.py", line 1343, in main
 File "outillage/nexus_test.py", line 1846, in test_terminal_repli
     rendu = cibles_de(gen.render_chain({"cloud": chaine}, 4,
                                         width=2, terminal=TERMINAL))
-File "outillage/nexus_generate.py", line 1087, in render_chain
+File "scripts/nexus_generate.py", line 1087, in render_chain
     if (target_entry and target_entry.ctx is not None and
 AttributeError: 'types.SimpleNamespace' object has no attribute 'ctx'
 ```
@@ -24366,9 +24366,9 @@ mesure est au §160.1.
 Trois des quatre chemins que l'operateur cite a chaque tour ne resolvent plus :
 
 ```
-scripts/nexus_livres.py   MORT -> outillage/nexus_livres.py
-scripts/nexus_doc.py      MORT -> outillage/nexus_doc.py
-scripts/nexus_rituel.py   MORT -> outillage/nexus_rituel.py
+outillage/nexus_livres.py   MORT -> outillage/nexus_livres.py
+outillage/nexus_doc.py      MORT -> outillage/nexus_doc.py
+scripts/nexus_rituel.py   MORT -> scripts/nexus_rituel.py
 scripts/nexus_valide.py   OK   (epingle par le settings global)
 ```
 
@@ -24969,7 +24969,7 @@ et **declare verifie**, produisait :
 
 ```
 python outillage/nexus_cablage.py   ->  Cablage : 14 REGRESSION(S).  rc=1
-python outillage/nexus_rituel.py    ->  [MANQUE] cablage tenu
+python scripts/nexus_rituel.py    ->  [MANQUE] cablage tenu
                                         VERDICT : le tour n'est pas clos
 ```
 
@@ -26161,7 +26161,7 @@ Deux defauts EMPILES, l un masquait l autre :
   1. CHEMIN PERIME. epreuve_garde_ecriture:8 calcule
      `dirname(__file__)/scripts/...` = `epreuves/scripts/...` (manque la
      remontee a la racine). epreuve_garde_lecture:12,23 pointe
-     `outillage/nexus_garde_lecture.py` alors que le garde est sous `scripts/`.
+     `scripts/nexus_garde_lecture.py` alors que le garde est sous `scripts/`.
      -> l epreuve ne TROUVE pas le garde (code 1/3).
   2. CHEMIN CIBLE SYNTHETIQUE. Une fois le chemin corrige, l epreuve tourne et
      le cas « refus ecriture protegee » ECHOUE : elle teste
@@ -26387,7 +26387,7 @@ fois de suite une ancre non conforme pour cabler ce second test (§112.4) ;
 couverture --epreuve du chemin cible_lot = OUVERT.
 
 DEFAUT DE CHEMIN, cockpit / hook de reprise : « python
-outillage/nexus_conformite.py » est propose alors que nexus_conformite.py, comme
+scripts/nexus_conformite.py » est propose alors que nexus_conformite.py, comme
 nexus_rituel.py et nexus_valide.py, est dans scripts/. Chemin mort, trouve en le
 lancant (temoin-mainteneur). Le hook SessionStart et les GESTES du cockpit le
 repetent = OUVERT.

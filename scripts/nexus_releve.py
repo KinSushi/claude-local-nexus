@@ -27,10 +27,10 @@ relève dont on croit à tort qu’elle fonctionne est pire qu’une relève
 absente : on ne s’aperçoit de rien jusqu’au jour où l’on en a besoin.
 
 Usage :
-    python outillage/nexus_releve.py                     # modèle de relève déclaré
-    python outillage/nexus_releve.py --modele <alias>    # un autre candidat
-    python outillage/nexus_releve.py --tous              # tous les candidats locaux
-    python outillage/nexus_releve.py --json
+    python scripts/nexus_releve.py                     # modèle de relève déclaré
+    python scripts/nexus_releve.py --modele <alias>    # un autre candidat
+    python scripts/nexus_releve.py --tous              # tous les candidats locaux
+    python scripts/nexus_releve.py --json
 """
 from __future__ import annotations
 
@@ -711,7 +711,7 @@ def candidats_locaux(cle: str) -> list[str]:
             donnees = json.loads(reponse.read().decode("utf-8")).get("data", [])
     except urllib.error.URLError as exc:
         print("  Catalogue injoignable sur %s : %s" % (PASSERELLE, exc))
-        print("  Verifier la passerelle : python outillage/nexus_conformite.py")
+        print("  Verifier la passerelle : python scripts/nexus_conformite.py")
         return []
     except json.JSONDecodeError as exc:
         print("  Reponse JSON invalide du catalogue : %s" % exc)

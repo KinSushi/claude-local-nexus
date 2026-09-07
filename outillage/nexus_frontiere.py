@@ -58,8 +58,8 @@ _TOOL_PATTERN = re.compile(r"nexus_[a-z_]+\.py", re.IGNORECASE)
 def _extract_tool(line: str) -> str:
     """
     Retourne le nom du fichier visé après ``outillage``.
-    Fonctionne pour les formes « outillage/nexus_x.py » ainsi que pour les
-    formes où « outillage » et le nom du script sont séparés (ex. Join‑Path … "outillage") "nexus_x.py").
+    Fonctionne pour les formes « outillage/nexus_<nom>.py » ainsi que pour les
+    formes où « outillage » et le nom du script sont séparés (ex. Join‑Path … "outillage") "nexus_<nom>.py").
     """
     # Recherche du premier « outillage » (quel que soit le séparateur)
     if re.search(r"outillage(?:[\\/]|['\"])", line, re.IGNORECASE) is None:

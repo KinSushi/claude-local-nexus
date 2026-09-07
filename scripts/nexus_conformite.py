@@ -25,9 +25,9 @@ Trois niveaux, et la distinction compte :
     IGNORE        non vérifiable dans l'état actuelle — jamais « réussi »
 
 Usage :
-    python outillage/nexus_conformite.py            # verdict complet
-    python outillage/nexus_conformite.py --json
-    python outillage/nexus_conformite.py --avant-demarrage   # ignore le runtime
+    python scripts/nexus_conformite.py            # verdict complet
+    python scripts/nexus_conformite.py --json
+    python scripts/nexus_conformite.py --avant-demarrage   # ignore le runtime
 
 Codes de sortie :
     0  conforme (des avertissements restent possibles)
@@ -1937,7 +1937,7 @@ def controle_runtime(avant_demarrage: bool) -> None:
         ignorer("releve operationnelle", "releve operationnelle injoignable : %s" % exc)
         return
     ligne = next((l.strip() for l in r.stdout.splitlines() if "epreuves reussies" in l), "")
-    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT, ligne or "voir python outillage/nexus_releve.py")
+    noter("releve operationnelle", r.returncode == 0, AVERTISSEMENT, ligne or "voir python scripts/nexus_releve.py")
 
 
 def controle_delegation(avant_demarrage: bool) -> None:

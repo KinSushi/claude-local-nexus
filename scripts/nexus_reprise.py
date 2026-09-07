@@ -283,8 +283,8 @@ def bloc_sujets() -> None:
 
 def bloc_gestes() -> None:
     titre("LES GESTES, ET CE QU'ILS COUTENT")
-    print("  python outillage/nexus_conformite.py     peut-on demarrer ? (~1 min)")
-    print("  python outillage/nexus_rituel.py         le tour est-il clos ?")
+    print("  python scripts/nexus_conformite.py     peut-on demarrer ? (~1 min)")
+    print("  python scripts/nexus_rituel.py         le tour est-il clos ?")
     print("  python outillage/nexus_vitrine.py --simulation   publierait-on ?")
     print("  python scripts/nexus_valide.py --base HEAD~1   LOI 1, cout zero")
     print("  python outillage/nexus_test.py --only isolation  regle 0.4 tenue ?")

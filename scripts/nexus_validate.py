@@ -7,7 +7,7 @@ aucune référence pendante, aucun cycle de fallback, aucune incompatibilité
 de modalité, aucun secret manquant.
 
 Usage :
-    python outillage/nexus_validate.py [--config <fichier>]
+    python scripts/nexus_validate.py [--config <fichier>]
 
 Codes de sortie :
     0  configuration valide (des avertissements restent possibles)
