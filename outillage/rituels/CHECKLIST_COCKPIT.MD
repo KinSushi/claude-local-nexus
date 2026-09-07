@@ -25742,3 +25742,108 @@ defauts trouves dans MES OUTILS        9   tous en les lancant, aucun en les lis
 Les deux plus graves du jour -- le lot qui meurt sur le verrou, et la garde
 qui nomme un outil absent -- viennent tous deux de quelqu'un qui se servait
 de la plateforme pour de vrai, et aucun d'une relecture.
+
+
+---
+
+## 173. LE CLIQUET AVAIT PREVENU, UNE PHRASE GLOBALE L'A FAIT TAIRE
+
+### 173.1 La chaine complete, et elle est entierement de mon fait
+
+```
+d9fdf40   mon commit ajoute  import os, datetime  dans main()
+          -- dans le patch qui corrigeait l'ecrasement de --sortie
+
+          le cliquet signale, DANS CE MEME COMMIT :  F823 : 0 -> 2
+
+          je rebase en ecrivant : << toutes viennent de l'elargissement
+          du perimetre, aucune d'une degradation du code >>
+
+~1 h      une session voisine perd un lot entier sur ce defaut
+7990222   corrige, apres signalement EXTERNE
+```
+
+**Mon propre cliquet m'avait prevenu, dans le commit meme qui introduisait
+le defaut.** Je l'ai absous par une justification GLOBALE au lieu
+d'examiner ligne a ligne ce qui apparaissait.
+
+J'avais ecrit dans ce commit : *si l'arbitrage est faux, seize constats
+viennent d'etre absous et rien ne le dira plus*. C'est exactement ce qui
+s'est produit.
+
+### 173.2 Le reexamen, et le compte exact
+
+```
+reference d'avant, perimetre etroit (scripts, tools)    21
+aujourd'hui, MEME perimetre etroit                      22
+aujourd'hui, perimetre elargi                           98
+attribuable a l'elargissement                           76
+```
+
+**DEUX regressions, pas seize** :
+
+| regle | ce que c'etait |
+| --- | --- |
+| `F823` | `import os, datetime` dans main -> UnboundLocalError |
+| `B009` | `getattr(args, "sortie")` au lieu de `args.sortie` |
+
+Les deux venaient du MEME patch, dans le commit qui rebasait.
+
+Ma phrase precedente -- *au moins une, rien ne dit que c'etait la seule* --
+est remplacee par une mesure.
+
+### 173.3 La distinction, mecanisee
+
+> Une regle qui augmente sur le perimetre **INCHANGE** est une REGRESSION :
+> elle ne vient pas de l'elargissement. Une regle qui n'apparait que sur les
+> repertoires **ajoutes** en vient bien.
+
+`outillage/nexus_rebasement.py` fait cette distinction, et
+`nexus_outillage.py` le CONSULTE avant de reecrire une reference. Un
+rebasement qui absoudrait une regression est desormais refuse -- et le refus
+NOMME la regle, sans quoi il se ferait contourner.
+
+La porte degrade si elle est absente, et une derogation reste possible : elle
+s'ECRIT dans la sortie.
+
+### 173.4 Le cliquet a refuse ma premiere version de la porte
+
+Elle apportait deux violations : un `typing.Tuple` inutilise, et un
+`try/except/pass`. Le garde-fou a tout retire.
+
+**Le second est instructif** : `try/except/pass` EST l'idiome de sortie sure
+du depot, celui de `nexus_cablage.py:375-378`, celebre en SS168 comme la
+correction par construction.
+
+> **L'idiome de securite du depot viole une regle que le depot fait
+> respecter.** C'est pourquoi SIM105 compte 25 occurrences.
+
+La porte emploie desormais `contextlib.suppress(Exception)` : meme effet,
+sans dette. Les 25 autres occurrences restent, et deviennent un sujet.
+
+### 173.5 CE QUI RESTE OUVERT — remplace SS172.5
+
+| rang | sujet | etat |
+| --- | --- | --- |
+| 9 | distinguer regression et elargissement au rebasement | **FAIT ET CABLE** |
+| 17 | UnboundLocalError sur os | **FAIT ET PROUVE** |
+| 20 | B009 `getattr` constant | **FAIT** |
+| **21** | **25 occurrences de SIM105 : l'idiome sur du depot** | **NOUVEAU** |
+| **22** | **le cliquet de CABLAGE n'a pas d'equivalent** | **NOUVEAU** |
+| 19 | l'arbre n'a pas son propre `.git` | **ARBITRAGE OPERATEUR** |
+| 16 | tolerance au retrait dans `nexus_appliquer.py` | ECARTE 3 fois |
+| 4 | sauts silencieux de `nexus_test.py` | 3 sur 6 faits |
+| 14 | 95 violations ruff | comptees, non corrigees |
+| 15 | 14 outils sans appelant | nommes, non cables |
+| 18 | 17 doublons dans le compte de 110 | mesure, non traite |
+| 10 | `nexus_avant_apres.py` sans appelant | ouvert |
+| 11 | fusion du plan unique | point de retour `95715b3` |
+
+### 173.6 Ce que ce tour etablit
+
+Le mecanisme le plus utile de la journee existe parce que je l'ai enfreint
+le matin meme. Et sa premiere version a ete refusee par le cliquet qu'elle
+venait proteger.
+
+> Un cliquet ne protege que si l'on regarde CE QU'IL DIT, ligne a ligne.
+> Une justification qui couvre tout ne verifie rien.
