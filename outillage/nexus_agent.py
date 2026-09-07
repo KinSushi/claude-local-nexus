@@ -1046,7 +1046,7 @@ def executer(tache: dict, cle: str) -> dict:
     contenu = consigne if not corpus else "%s\n\n%s" % (consigne, corpus)
     messages = [{"role": "system", "content": systeme},
                 {"role": "user", "content": contenu}]
-    plafond = int(tache.get("max_tokens") or 1500)
+    plafond = int(tache.get("max_tokens") or 4096)
     temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
 
     if corpus and len(corpus) > FENETRE_CARACTERES:
