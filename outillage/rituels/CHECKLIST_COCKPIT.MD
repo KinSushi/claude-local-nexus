@@ -26790,3 +26790,36 @@ plateforme est la source des mécanismes qui redescendent) :
 les enrichissements « au-delà du minimum » (concepts.tsv 26 995 ; sémantique sur
 `texte`) et les 3 défauts ci-dessus — tous des ITEMS DE PLAN, pas des trous
 d'inventaire. Prêt pour le plan de production d'une traite.
+
+### §197 — CORRECTION de §196 : « 37 replis cloud→cloud » NON confirmé dans mon vrai code (§112.4 en acte)
+
+§196 a inscrit, sur la mesure du pair cloud-quota, « 37 chaînes de repli
+`cloud→cloud` dans litellm_config.yaml » comme prérequis de P1. VÉRIFIÉ dans le
+fichier réel (lecture directe, pas de mémoire) — c'est FAUX pour ce dépôt :
+
+| zone | contenu RÉEL mesuré | cloud→cloud ? |
+| --- | --- | --- |
+| `CLOUD_FALLBACKS` (1754-1809) | 18 alias cloud, TOUS → `glm-4.7-flash-local` | NON — cloud→LOCAL, autorisé §108, cible unique |
+| `ROUTER_FALLBACKS` (1811-1830) | `adaptive-router-cloud` → qwen3.5-397b-cloud → deepseek-v4-pro-0813-cloud → adaptive-router-local | 2 sauts même-compte, UN routeur |
+| `num_retries` | 2 (cooldown 120, allowed_fails 2) | — |
+
+Donc l'amplificateur réel, s'il existe, est CE chemin de 2 sauts dans le routeur
+cloud, PAS « 37 chaînes ». Aucune des 37 n'existe dans mon fichier.
+
+**La faute est mienne, et elle est exactement celle que §112.4 nomme :** j'ai
+propagé un chiffre de pair dans un plan sans le vérifier dans le vrai code. Le
+relevé d'un pair est un signal ; seule la lecture du fichier prouve. Corrigé le
+jour même, avec la mesure.
+
+**Deux hypothèses à trancher en P1, aucune supposée :**
+1. DÉRIVE déployé vs dépôt (§81, §82) : cloud-quota mesure la passerelle en cours
+   (:4000). Si le config DÉPLOYÉ diffère de mon fichier dépôt, la dérive est le
+   défaut, pas le fichier — et c'est une trouvaille en soi. À vérifier par
+   comparaison déployé/dépôt (question posée à cloud-quota).
+2. Comptage différent (pool cloud × retries lu comme « chaînes »).
+
+**P1 re-scopé, honnêtement :** non pas « supprimer 37 cloud→cloud » (inexistants
+ici), mais « (a) comparer le config déployé au fichier dépôt — trancher la
+dérive ; (b) si le chemin `adaptive-router-cloud` fait 2 sauts même-compte avant
+le local, le DÉRIVER pour qu'un échec descende directement au local ». Beaucoup
+plus petit, et ancré sur une mesure réelle.
