@@ -293,13 +293,13 @@ def main():
     p.add_argument("--classe", type=int, choices=range(1, 7))
     p.add_argument("--muet", action="store_true",
                    help="N'afficher que les totaux.")
-    a = p.parse_args()
-
     # Configuration sûre de l'encodage de la sortie standard
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
+
+    a = p.parse_args()
 
     # Détermination du répertoire racine du dépôt
     if a.racine:
@@ -325,7 +325,7 @@ def main():
             fichiers.extend(os.path.join(r, f) for f in fs if f.endswith(".py"))
 
     if not fichiers:
-        sys.stderr.write(f"Aucune source .py trouvée dans le dépôt racine : {depot_root}\\n")
+        sys.stderr.write(f"Aucune source .py trouvée dans le dépôt racine : {depot_root}\n")
         sys.exit(1)
 
     total = collections.Counter()

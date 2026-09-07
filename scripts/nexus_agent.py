@@ -1537,7 +1537,7 @@ def main() -> int:
         # Protection contre l'écrasement silencieux du fichier de sortie.
         # Si le fichier existe déjà et n'est pas vide, on le renomme avec un
         # horodatage avant d'ouvrir le nouveau fichier en écriture.
-        import os, datetime
+        import datetime
         sortie_path = getattr(args, "sortie")
         if sortie_path:
             try:
