@@ -29,6 +29,8 @@ def main():
     # Racine derivee de __file__
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     scripts_dir = os.path.join(root_dir, "scripts")
+    epreuves_dir = os.path.join(root_dir, "epreuves")
+    outillage_dir = os.path.join(root_dir, "outillage")
     progress_path = os.path.join(root_dir, "PROGRESS.MD")
     
     lines = []
@@ -65,7 +67,11 @@ def main():
     try:
         all_scripts = os.listdir(scripts_dir)
         nexus_count = len([f for f in all_scripts if f.startswith("nexus_")])
-        epreuve_count = len([f for f in all_scripts if f.startswith("epreuve_")])
+        try:
+            epreuve_files = os.listdir(epreuves_dir)
+        except Exception:
+            epreuve_files = []
+        epreuve_count = len([f for f in epreuve_files if f.startswith("epreuve_") and f.endswith(".py")])
         
         # LES CLES --only SE DERIVENT COMME nexus_test.py LES DERIVE.
         #
@@ -77,7 +83,7 @@ def main():
         # un zero faux, pire qu'un inconnu, sur un depot qui en compte
         # plusieurs dizaines. On lit desormais le meme motif que
         # nexus_test.py (son main, variable `pattern`).
-        test_file_path = os.path.join(scripts_dir, "nexus_test.py")
+        test_file_path = os.path.join(outillage_dir, "nexus_test.py")
         choices_count = "inconnu"
         if os.path.exists(test_file_path):
             with open(test_file_path, 'r', encoding='utf-8') as f:
