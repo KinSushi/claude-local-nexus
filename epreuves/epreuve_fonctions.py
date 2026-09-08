@@ -36,8 +36,19 @@ def verify(name, args, expected_code, check_msg=None, stdin_data=None):
     success = (code == expected_code)
     if check_msg and success and check_msg not in out and check_msg not in err:
         success = False
-    marker = "[OK]" if success else "[FAIL]"
-    print(f"{marker} {name}")
+    # Build the output line respecting the launcher format
+    if success:
+        # Detail can be minimal; keep compatibility with existing messages
+        detail = "ok"
+        prefix = "[OK  ]"
+    else:
+        # Include return code and optional check_msg for debugging
+        detail_parts = [f"code {code}"]
+        if check_msg:
+            detail_parts.append(f"msg '{check_msg}'")
+        detail = " ".join(detail_parts)
+        prefix = "[RATE]"
+    print(f"{prefix} {name} : {detail}")
     return success
 
 def write_file(path, content):

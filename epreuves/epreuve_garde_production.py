@@ -56,16 +56,19 @@ def main():
         else:
             ok = (not out)
 
-        print(f"[{'OK' if ok else 'RATE'}] {name}")
+        tag = "[OK  ]" if ok else "[RATE]"
+        # Détail : vide en cas de succès, sinon on utilise la sortie ou l'erreur brute
+        detail = "" if ok else (out.strip() or err.strip())
+        print(f"{tag} {name} : {detail}")
         if not ok:
             sys.exit(1)
 
     # CAS REND_LA_MAIN: verifier que l'outil rend la main avant le delai
     rc, out, err = run_tool(payload=None, args=["--help"])
     ok_six = (rc != -1)  # rc == -1 indique un timeout
-    if not ok_six:
-        print("outil n'a pas rendu la main")
-    print(f"[{'OK' if ok_six else 'RATE'}] REND_LA_MAIN")
+    detail = "" if ok_six else "outil n'a pas rendu la main"
+    tag = "[OK  ]" if ok_six else "[RATE]"
+    print(f"{tag} REND_LA_MAIN : {detail}")
     if not ok_six:
         sys.exit(1)
 

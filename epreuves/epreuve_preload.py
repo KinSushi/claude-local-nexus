@@ -30,31 +30,31 @@ def main():
     # On verifie que l'outil tente l'appel et rend un message specifique
     rc, out, err = run_test(["my-model-local"])
     if rc == 0 and "my-model-local: erreur" in out and "Passerelle inaccessible" in out:
-        results.append("[NOMINAL] OK")
+        results.append("[OK  ] NOMINAL : OK")
     else:
-        results.append(f"[NOMINAL] FAIL: rc={rc} out={out[:50]}")
+        results.append(f"[RATE] NOMINAL : rc={rc} out={out[:50]}")
 
     # CAS INVERSE: Modèle cloud doit etre refuse sans appel reseau
     rc, out, err = run_test(["my-model-cloud"])
     if rc == 0 and "Modèle distant (pas de poids locaux à précharger)" in out:
-        results.append("[INVERSE] OK")
+        results.append("[OK  ] INVERSE : OK")
     else:
-        results.append(f"[INVERSE] FAIL: rc={rc} out={out[:50]}")
+        results.append(f"[RATE] INVERSE : rc={rc} out={out[:50]}")
 
     # CAS MALFORME: Entree vide ou bizarre (ici on teste un alias vide via shell)
     # L'outil accepte n'importe quelle chaine comme alias
     rc, out, err = run_test([""])
     if rc == 0 and ": erreur" in out:
-        results.append("[MALFORME] OK")
+        results.append("[OK  ] MALFORME : OK")
     else:
-        results.append(f"[MALFORME] FAIL: rc={rc} out={out[:50]}")
+        results.append(f"[RATE] MALFORME : rc={rc} out={out[:50]}")
 
     # CAS USAGE: Aucun argument
     rc, out, err = run_test([])
     if rc != 0 and ("usage:" in err.lower() or "the following arguments are required" in err.lower()):
-        results.append("[USAGE] OK")
+        results.append("[OK  ] USAGE : OK")
     else:
-        results.append(f"[USAGE] FAIL: rc={rc} err={err[:50]}")
+        results.append(f"[RATE] USAGE : rc={rc} err={err[:50]}")
 
     for r in results:
         print(r)
