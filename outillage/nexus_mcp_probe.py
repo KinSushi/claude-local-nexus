@@ -318,6 +318,12 @@ def _probe_success(output: str, exige_modele: bool = False) -> bool:
     return True
 
 
+def _agreger(paires: list[tuple[str, bool]]) -> int:
+    """Retourne 0 si la liste n'est pas vide et que tous les booléens sont True, sinon 1."""
+    if not paires:
+        return 1
+    return 0 if all(ok for _, ok in paires) else 1
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -443,6 +449,41 @@ def main() -> int:
         out = call_tool("nexus_verrou", {})
         print(out)
         exit_code = 0 if _probe_success(out) else 1
+    elif action == "tous":
+        resultats = []
+
+        out = call_tool("nexus_models", {})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_models")
+        resultats.append(("nexus_models", ok))
+
+        out = call_tool("nexus_charge", {})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_charge")
+        resultats.append(("nexus_charge", ok))
+
+        out = call_tool("nexus_savings", {})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_savings")
+        resultats.append(("nexus_savings", ok))
+
+        out = call_tool("nexus_profile", {})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_profile")
+        resultats.append(("nexus_profile", ok))
+
+        out = call_tool("nexus_verrou", {})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_verrou")
+        resultats.append(("nexus_verrou", ok))
+
+        out = call_tool("nexus_livres", {"question": "algorithme et structure de donnees"})
+        ok = _probe_success(out)
+        print(f"  [{'OK' if ok else 'RATE'}] nexus_livres")
+        resultats.append(("nexus_livres", ok))
+
+        exit_code = _agreger(resultats)
+
     else:
         print(__doc__)
         return 1
