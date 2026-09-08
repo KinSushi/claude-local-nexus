@@ -213,3 +213,25 @@ RIEN reconstruire — il faut RÉUTILISER ce `CircuitBreaker`. Le vrai manque de
 de chercher l'existant — exactement le §0.6 que l'opérateur martèle
 (« EXPLOITER LE DÉJÀ EXISTANT SUR DISQUE AVANT »). Reverté sans dégât. Un
 réflexe manquant : `grep`/`ls` de l'existant AVANT toute création de module.
+
+---
+
+## GROUNDING 2026-09-08 (2) — pièces réutilisables confirmées, blocage isolé
+
+Vérifié dans le code (pas de mémoire) :
+- `CircuitBreaker.get_state()` et `.is_available(target)` existent et sont
+  DÉJÀ appelés par `nexus_agent` (~L1076 filtrage des candidats, L1086
+  `etat_dj = _dj.get_state()`). Le « détecteur d'état par plan » est donc
+  ACQUIS — #11 le réutilise, ne le réécrit pas.
+- MAIS ces circuits suivent les **candidats du banc** (alias de modèles),
+  pas l'abonnement **Claude** (le plan de l'orchestrateur lui-même, qui
+  n'est pas un candidat de nexus_agent).
+
+**Blocage isolé, à l'arbitrage opérateur** : comment détecter que
+l'abonnement CLAUDE est épuisé ? Claude Code TOURNE sur cet abonnement ;
+un script tiers ne peut pas l'interroger directement. Options à trancher
+(ne pas inventer) : (a) capter le signal d'erreur quota que Claude Code
+émet lui-même et déclencher la bascule ; (b) un témoin externe
+(compteur d'usage, date de reset) ; (c) bascule MANUELLE assumée.
+Tant que ce point n'est pas tranché, bâtir la boucle locale reviendrait
+à inventer son déclencheur — ce que §112.4 interdit.
