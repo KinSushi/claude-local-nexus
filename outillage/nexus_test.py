@@ -1430,6 +1430,7 @@ def main() -> int:
         jouer_epreuve_python("nexus_indexer_concepts.py", "index des concepts (livres_texte_concepts)")
         jouer_epreuve_python("nexus_indexer_resumes.py", "index des resumes de section (livres_texte_resumes)")
         jouer_epreuve_python("nexus_epreuve_refus.py", "refus verrou/semaphore ecrit dans --sortie")
+        jouer_epreuve_python("nexus_plan.py", "plan de production derive du cockpit")
     if args.only in (None, "livres"):
         jouer_epreuve_python("nexus_livres.py", "corpus de livres")
     if args.only in (None, "sauvegarde"):
