@@ -253,25 +253,26 @@ def recover_swapped_config() -> None:
 
 def run_validator_on(config: dict) -> tuple[int, str]:
     """Écrit une configuration temporaire et lui applique le validateur."""
-    recover_swapped_config()
-    temp = os.path.join(ROOT, "backups", "_test_config.yaml")
-    os.makedirs(os.path.dirname(temp), exist_ok=True)
-    with io.open(temp, "w", encoding="utf-8", newline="\n") as fh:
-        yaml.safe_dump(config, fh, allow_unicode=True, sort_keys=False)
-    original = CONFIG
-    backup = original + ".testswap"
-    os.replace(original, backup)
+    import tempfile
+    temp_dir = tempfile.mkdtemp()
     try:
-        os.replace(temp, original)
+        config_path = os.path.join(temp_dir, "config.yaml")
+        with io.open(config_path, "w", encoding="utf-8", newline="\n") as fh:
+            yaml.safe_dump(config, fh, allow_unicode=True, sort_keys=False)
         result = subprocess.run(
-            [sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
-            capture_output=True, text=True, timeout=180,
+            [
+                sys.executable,
+                os.path.join(ROOT, "scripts", "nexus_validate.py"),
+                "--config",
+                config_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
         )
         return result.returncode, result.stdout + result.stderr
     finally:
-        if os.path.exists(original):
-            os.remove(original)
-        os.replace(backup, original)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 # ----------------------------------------------------------------------
