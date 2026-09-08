@@ -49,6 +49,12 @@ def _check_conditions(source: str) -> list[str]:
     if 'open(TMP_FILE, "a"' not in source:
         missing.append("écriture en mode ajout sur TMP_FILE")
 
+    # e. vérifie que le .tmp n'est pas tronqué
+    if 'open(TMP_FILE, "w"' in source:
+        missing.append(".tmp file is truncated, breaking resumability.")
+    # f. vérifie la présence du saut des fragments déjà faits
+    if 'in deja' not in source:
+        missing.append("Missing skip of already processed fragments (resumability).")
     return missing
 
 def main() -> None:
