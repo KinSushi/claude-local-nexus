@@ -15,7 +15,7 @@ FAUTES = {
 
 def _main() -> int:
     src_agent = (RACINE / "nexus_agent.py").read_text(encoding="utf-8")
-    motif = re.compile(r"^REPLIS_GRATUITS = \[[^\]]*\]", re.M)
+    motif = re.compile(r"^REPLIS_GRATUITS_PLANCHER = \[[^\]]*\]", re.M)
     if not motif.search(src_agent):
         print("  <<< liste des replis introuvable, contre-epreuve impossible")
         raise SystemExit(2)
@@ -26,10 +26,10 @@ def _main() -> int:
             faux = pathlib.Path(td) / "scripts"
             shutil.copytree(RACINE, faux)
             (faux / "nexus_agent.py").write_text(
-                motif.sub("REPLIS_GRATUITS = " + remplacement, src_agent, count=1),
+                motif.sub("REPLIS_GRATUITS_PLANCHER = " + remplacement, src_agent, count=1),
                 encoding="utf-8")
             r = subprocess.run(
-                [sys.executable, "-B", str(faux / "epreuve_bascule.py")],
+                [sys.executable, "-B", str(pathlib.Path(__file__).resolve().parent / "epreuve_bascule.py")],
                 cwd=td,
                 capture_output=True,
                 text=True,
@@ -39,7 +39,7 @@ def _main() -> int:
             )
             mord = r.returncode != 0
             print(
-                f"  [{'OK ' if mord else 'RATE'}] {nom:<24} code={r.returncode} "
+                f"  [{'OK  ' if mord else 'RATE'}] {nom:<24} code={r.returncode} "
                 f"{'-> elle MORD' if mord else '<<< ELLE LAISSE PASSER'}"
             )
             if not mord:
@@ -56,7 +56,7 @@ def _main() -> int:
         timeout=180,
     )
     ok = r.returncode == 0
-    print(f"  [{'OK ' if ok else 'RATE'}] depot REEL inchange       code={r.returncode}")
+    print(f"  [{'OK  ' if ok else 'RATE'}] depot REEL inchange       code={r.returncode}")
     if not ok:
         echecs += 1
 
