@@ -34,7 +34,7 @@ def main():
     resultats = []
     echec = False
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=nexus_path.parent.parent) as tmp:
         base = pathlib.Path(tmp)
 
         # ---------- cas A ----------
