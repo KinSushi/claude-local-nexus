@@ -6,7 +6,7 @@ Test harness for outillage/nexus_libs.py
 import sys, json, subprocess, tempfile, pathlib
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-TOOL_PATH = SCRIPT_DIR / "nexus_libs.py"
+TOOL_PATH = SCRIPT_DIR.parent / "outillage" / "nexus_libs.py"
 
 def run_tool(doc_dir, cfg_path):
     return subprocess.run(
@@ -17,14 +17,14 @@ def run_tool(doc_dir, cfg_path):
     )
 
 def report(tag, ok, detail=""):
-    prefix = "[OK]" if ok else "[FAIL]"
+    prefix = "[OK  ]" if ok else "[RATE]"
     print(f"{prefix} {tag}{' : ' + detail if detail else ''}")
     return ok
 
 def main():
     # verify tool exists
     if not TOOL_PATH.is_file():
-        print(f"[FAIL] TOOL_NOT_FOUND : {TOOL_PATH}")
+        print(f"[RATE] TOOL_NOT_FOUND : {TOOL_PATH}")
         sys.exit(2)
 
     failures = 0
