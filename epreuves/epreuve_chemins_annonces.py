@@ -108,6 +108,10 @@ def main():
             # No paths found, but JSON was valid
             print(f"[OK  ] {guard} : chemins annonces presents")
 
+    if total_fail == 0:
+        print(f"[OK  ] chemins : {total_fail} echec(s)")
+    else:
+        print(f"[RATE] chemins : {total_fail} echec(s)")
     print(f"Total: {total_fail} echec(s)")
     sys.exit(0 if total_fail == 0 else 1)
 

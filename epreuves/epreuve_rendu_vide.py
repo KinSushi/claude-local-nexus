@@ -38,7 +38,7 @@ import tempfile
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
-OUTIL = RACINE / "scripts" / "nexus_epreuve_vide.py"
+OUTIL = RACINE / "outillage" / "nexus_epreuve_vide.py"
 
 # Une epreuve qui ne lance rien, n'importe rien, et ne peut pas echouer.
 MUETTE = 'print("bonjour")\n'
