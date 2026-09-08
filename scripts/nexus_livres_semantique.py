@@ -96,7 +96,7 @@ def build_index(args):
             continue
         index_path = os.path.join(root, "index.tsv")
         symbols_path = os.path.join(root, "symbols.jsonl")
-        rayon = os.path.relpath(root, _references)
+        rayon = os.path.basename(root)
 
         with open(index_path, newline="", encoding="utf-8") as idx_file:
             reader = csv.reader(idx_file, delimiter="\t")
