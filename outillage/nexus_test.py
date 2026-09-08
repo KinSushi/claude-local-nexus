@@ -1434,6 +1434,7 @@ def main() -> int:
         jouer_epreuve_python("epreuve_sonde_mcp_couverture.py", "agregation de la sonde MCP (tous)")
     if args.only in (None, "livres"):
         jouer_epreuve_python("nexus_livres.py", "corpus de livres")
+        jouer_epreuve_python("epreuve_selection_top.py", "selection top-N heap sur scores egaux")
     if args.only in (None, "sauvegarde"):
         jouer_epreuve_python("nexus_sauvegarde.py", "sauvegarde locale")
     if args.only in (None, "rassurant"):

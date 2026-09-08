@@ -168,6 +168,20 @@ def cosine_similarity(v1, v2):
     return dot / (norm1 * norm2)
 
 
+def _selectionner_top(paires, top_n):
+    """Return the top_n (score, record) pairs sorted by descending score."""
+    if top_n <= 0:
+        return []
+    heap = []
+    for compteur, (score, record) in enumerate(paires):
+        if len(heap) < top_n:
+            heapq.heappush(heap, (score, compteur, record))
+        else:
+            heapq.heappushpop(heap, (score, compteur, record))
+    return [(s, r) for s, _, r in sorted(heap, key=lambda x: x[0], reverse=True)]
+
+
+
 def search_index(args):
     if not os.path.isfile(OUTPUT_FILE):
         sys.stderr.write("Embedding file does not exist. Run build first.\n")
@@ -195,29 +209,23 @@ def search_index(args):
         sys.exit(1)
 
     top_n = args.top
-    heap = []  # min-heap of (score, record)
-    compteur = 0  # monotonic counter for tie-breaking
 
-    processed = 0
-    with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-        for line in f:
-            if args.max_fragments and processed >= args.max_fragments:
-                break
-            record = json.loads(line)
-            vec = record.get("vector")
-            if not isinstance(vec, list):
-                continue
-            score = cosine_similarity(query_vec, vec)
-            if len(heap) < top_n:
-                heapq.heappush(heap, (score, compteur, record))
-                compteur += 1
-            else:
-                heapq.heappushpop(heap, (score, compteur, record))
-                compteur += 1
-            processed += 1
+    def _gen():
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            processed = 0
+            for line in f:
+                if args.max_fragments and processed >= args.max_fragments:
+                    break
+                record = json.loads(line)
+                vec = record.get("vector")
+                if not isinstance(vec, list):
+                    continue
+                score = cosine_similarity(query_vec, vec)
+                yield (score, record)
+                processed += 1
 
-    results = sorted(heap, key=lambda x: x[0], reverse=True)
-    for score, _compteur, rec in results:
+    results = _selectionner_top(_gen(), top_n)
+    for score, rec in results:
         print(f"Score: {score:.4f}")
         print(f"Resume: {rec.get('resume')}")
         print(f"Path: {rec.get('path')} (offset {rec.get('offset')}, length {rec.get('length')})")
