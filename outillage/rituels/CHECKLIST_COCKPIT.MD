@@ -27329,3 +27329,32 @@ locale + a fait échouer mon nexus_route en code 75).
 
 Chacun sur son projet (ta consigne, réaffirmée par Puissance_60). Rien touché chez
 personne, aucun process tué, dépôt PROPRE (arbre commité).
+
+### §213 — Clôture de nuit : dépôt PRO et PROPRE, machine consignée à l'opérateur
+
+L'opérateur part pour la nuit avec une consigne répétée : dossier PRO et PROPRE,
+zéro pollution, zéro bricolage, ne rien casser. État de clôture, mesuré :
+
+**PROPRE :** arbre propre (tout commité) ; ratchet outillage VERT (les régressions
+ruff des outils écrits par le banc — F401, C401, SIM109 — nettoyées par l'auto-fix
+du linter, chaque épreuve RE-VÉRIFIÉE verte après fix, y compris le death-safe sur
+le fichier critique) ; scratchpad hors du projet (dans Temp), zéro fichier de
+travail dans le dépôt. Environnements isolés (.venv/.uv/docker) pour toute
+expérimentation, jamais le dossier projet (consigne opérateur notée).
+
+**MESURÉ cette session :** disque épuisé (15 rayons + 3 couches pré-mâché), fix
+« refus dans --sortie » trouvé par l'usage, sémaphore death-safe déployé et validé
+sur cas réel, 5 assertions de plan réfutées par lecture du code, et — sur la phase
+production — quatre tests convergents (audit code, minage livres, audit livraison,
+nexus_route) qui MESURENT un codebase MATURE, au/au-dessus du plancher des livres.
+Seul vrai ouvert : le bandit adaptatif (§240, R&D).
+
+**CONSIGNÉ pour le réveil (§212) :** la machine est chargée par 2 process runaway
+de CETTE session (PID 20228/8328, 47 CPU-h, boucles mortes — 0 connexion, 1 thread,
+RAM plate, vérifié). NON tués (décision opérateur, consensus des 4 sessions, aucune
+urgence car les pairs sont cloud-only). Ils bloquent l'inférence locale → l'audit
+MCP/A2A des outils d'inférence et l'épuisement local attendent leur terminaison.
+
+**Reste à faire au retour :** libérer la machine (PID ci-dessus), finir l'audit
+MCP/A2A des outils d'inférence, et le lead bandit en conception. Rédaction déclarée
+(30/43 muets) : historique, non corrigeable sans réécrire l'historique.
