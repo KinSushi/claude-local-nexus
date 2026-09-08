@@ -224,7 +224,7 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
                 if not h:
                     continue
                 r = k.WaitForSingleObject(h, 0)   # non bloquant
-                if r == WAIT_OBJECT_0 or r == WAIT_ABANDONED:
+                if r in (WAIT_OBJECT_0, WAIT_ABANDONED):
                     # Slot obtenu (ou récupéré après abandon)
                     handle = h
                     obtenu = True
