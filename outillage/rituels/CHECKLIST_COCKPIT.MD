@@ -27642,3 +27642,28 @@ une machine libre — c'est-à-dire la terminaison des 2 PID runaway (à l'opér
 chacun) ne gaspillent pas seulement du CPU : ils **bloquent** le seul vrai gain
 disque restant (recherche sémantique FR) et tout rebuild/inférence local. Cloud
 reste fluide. À tuer au réveil → le rebuild devient une simple commande.
+
+### §224 — Un contrôle qui SUR-compte : encodage crédite maintenant forcer_utf8
+
+En cherchant a corriger les 16 « exposés » du contrôle encodage, un défaut du
+CONTRÔLE lui-même est apparu (0.1.4 : un contrôle qui sur-compte est un défaut
+comme celui qui sous-compte). `controle_encodage_sortie` ne créditait que le
+littéral `sys.stdout.reconfigure`, ratant le helper du dépôt `forcer_utf8()`
+(console_tools). Donc `console_tools.py` et `mesure_rendu_vide.py` — qui
+APPELLENT forcer_utf8() (l.8-9/81 et l.183) et sont donc SÛRS — étaient flagués
+à tort.
+
+**Corrigé (redigé par le banc, audit SAINE).** La ligne 1406 crédite désormais
+`forcer_utf8` en plus du littéral. Forward+reverse via la logique réelle : **16 →
+14** exposés, les 2 faux positifs disparaissent, `nexus_charge` (vrai exposé)
+reste flagué. nexus_valide code 0. Commit `a4109d5`.
+
+**Trouvé par l'usage, pas par un audit.** Le défaut ne se voyait qu'en voulant
+corriger les scripts : deux d'entre eux étaient déjà sûrs via le helper. Sans
+cette vérification (§112.4), j'aurais ajouté un bloc redondant à 2 scripts déjà
+protégés.
+
+**Reste : 14 vrais exposés.** Cycle suivant — une vague qui leur ajoute la
+reconfiguration (bloc standard ou appel forcer_utf8). §0.6 : un script de
+migration vaut mieux que 14 agents pour un geste identique. Alors conformité
+100% verte.
