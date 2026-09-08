@@ -92,7 +92,7 @@ def _check_forward(tmp_dir: Path) -> bool:
 def _check_reverse(tmp_dir: Path) -> bool:
     """Exécute le volet REVERSE de l’épreuve."""
     # Aucun fichier ne doit être créé ; on mémorise la liste initiale.
-    before = set(p.name for p in tmp_dir.iterdir())
+    before = {p.name for p in tmp_dir.iterdir()}
 
     try:
         _ECRIRE_REFUS_SORTIE(None, [{"nom": "z"}], "y")
@@ -100,7 +100,7 @@ def _check_reverse(tmp_dir: Path) -> bool:
         sys.stderr.write(f"[REVERSE] Exception inattendue : {e}\n")
         return False
 
-    after = set(p.name for p in tmp_dir.iterdir())
+    after = {p.name for p in tmp_dir.iterdir()}
     new_files = after - before
     if new_files:
         sys.stderr.write(f"[REVERSE] Des fichiers inattendus ont été créés : {new_files}\n")

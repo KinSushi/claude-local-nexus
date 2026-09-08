@@ -70,7 +70,6 @@ import os
 import sys
 import time
 import subprocess
-import tempfile
 import pathlib
 from contextlib import contextmanager, suppress
 from datetime import datetime
