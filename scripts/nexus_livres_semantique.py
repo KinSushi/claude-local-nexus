@@ -34,6 +34,7 @@ import urllib.error
 import heapq
 import itertools
 import time
+import contextlib
 
 API_URL_DEFAULT = "http://127.0.0.1:11434/api/embed"
 MODEL_DEFAULT = "nomic-embed-text"
@@ -42,6 +43,7 @@ BATCH_SIZE = 32
 # Un chemin relatif depend du repertoire courant, donc casse des qu un appelant lance le script d ailleurs.
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".nexus")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "fragments_embeddings.jsonl")
+TMP_FILE = OUTPUT_FILE + ".tmp"
 
 
 def embed_texts(texts, model, api_url):
@@ -93,7 +95,7 @@ def build_index(args):
 
     # Tronque l'index : un rebuild REMPLACE, il n'appende pas. Sans cela,
     # write_batch (mode "a") dupliquait tout le contenu existant a chaque build.
-    open(OUTPUT_FILE, "w", encoding="utf-8").close()
+    open(TMP_FILE, "w", encoding="utf-8").close()
 
     total_indexed = 0
     failures = 0
@@ -172,12 +174,24 @@ def build_index(args):
             sys.stderr.write(f"Final batch error: {e}\n")
 
     sys.stderr.write(f"Indexed {total_indexed} fragments, failures: {failures}\n")
-    sys.exit(1 if total_indexed == 0 else 0)
+    # Un build incomplet ne doit jamais remplacer un index de travail complet.
+    if total_indexed > 0 and failures == 0 and not args.max_fragments:
+        os.replace(TMP_FILE, OUTPUT_FILE)  # promotion atomique
+        sys.stderr.write(f"Index promoted with {total_indexed} fragments.\n")
+        sys.exit(0)
+    else:
+        with contextlib.suppress(OSError):
+            os.remove(TMP_FILE)
+        sys.stderr.write(
+            f"Build incomplete (indexed={total_indexed}, failures={failures}); "
+            "preserving existing index.\n"
+        )
+        sys.exit(1)
 
 
 def write_batch(vectors, metas):
     """Append a batch of results to the output JSONL file."""
-    with open(OUTPUT_FILE, "a", encoding="utf-8") as out_f:
+    with open(TMP_FILE, "a", encoding="utf-8") as out_f:
         # Un zip sans strict tronque en silence et un index incomplet serait indiscernable d un index complet
         # Ce correctif ajoute strict=True pour lever une erreur en cas de longueur differente
         for vec, meta in zip(vectors, metas, strict=True):
