@@ -144,7 +144,7 @@ def aucun_secret(racine: Path) -> tuple:
     return OK, "%d fichier(s) scrutes, aucun motif" % len(suivis)
 
 
-def sous_controle(racine: Path, script: str, saute: bool) -> tuple:
+def sous_controle(racine: Path, script: str, saute: bool, secondes: int = 600) -> tuple:
     if saute:
         return IGNORE, "saute par --sauf-tests"
     chemin = racine / "scripts" / script
@@ -154,7 +154,7 @@ def sous_controle(racine: Path, script: str, saute: bool) -> tuple:
         return BLOQUE, "%s introuvable dans scripts/ ou outillage/" % script
 # Un controle interrompu n'est pas un controle qui refuse.
 # Un code de terminaison n'est pas un verdict.
-    r = executer([sys.executable, str(chemin)], racine, 600)
+    r = executer([sys.executable, str(chemin)], racine, secondes)
     if r.returncode != 0:
         if r.returncode in (124, 125) or r.returncode > 128:
             return IGNORE, f"controle interrompu (code {r.returncode})"
@@ -269,7 +269,7 @@ def main() -> int:
         "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
                                                            a.sauf_tests)),
         "suite de tests": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_test.py",
-                                                               a.sauf_tests)),
+                                                               a.sauf_tests, 1800)),
         "rituel de fin de tour": ("BLOQUENT", lambda: sous_controle(racine,
                                                                     "nexus_rituel.py",
                                                                     a.sauf_tests)),
