@@ -27178,3 +27178,43 @@ nexus_agent:602 + cloud-quota). Le happy-path (signature, refus propre à N=3) e
 inchangé ; seule s'ajoute la récupération après mort.
 
 Réversibilité : `git checkout avant-semaphore-deathsafe-20260907 -- scripts/nexus_verrou_machine.py outillage/nexus_verrou_machine.py` annule tout.
+
+### §209 — Garde Bash-écriture : disque exploité, garde heredoc existante trouvée, design grondé — mais le WIRING est haut-risque
+
+5ᵉ item émergé (signalé par cloud-quota depuis le rayon `securite_confinement`,
+que j'ai indexé). Exploitation du disque AVANT toute conception :
+
+**Il existe DÉJÀ `nexus_garde_shell.py`** — mais c'est le garde HEREDOC (mangling
+d'échappement, éprouvé 8/8), PAS un garde d'écriture générale. Les 21 vecteurs
+d'écriture indirecte passent à travers lui ET l'ACL Edit/Write (qui ne couvre que
+les OUTILS Edit/Write, pas Bash). Gap CONFIRMÉ par lecture, pas de mémoire — et il
+recoupe mon « trou Bash » déjà connu.
+
+**Les 21 vecteurs sont déjà analysés finement** (rayon securite_confinement +
+`cibles_shell.py` = table d'épreuve prête) : classés VU/AVEUGLE et, surtout,
+**A FERMER** (accident-prone : `echo>`, `curl -o`, `wget -O`, `rsync` vers /etc,
+`git --work-tree`, `./install.sh`) vs **A DECLARER** (adversarial : `tar -C /`).
+La distinction est le cœur du design : on ferme les ACCIDENTS, pas l'adversarial
+(Turing-complet, impossible à fermer).
+
+**Design grondé :** un garde PreToolUse Bash qui détecte les motifs d'écriture/
+téléchargement COMMUNS (`>`, `>>`, `tee`, `curl -o`, `wget -O`, `cp/mv`, `sed -i`,
+`rsync` dest, `git --work-tree`) CIBLANT des chemins PROTÉGÉS (la deny-list ACL) —
+et refuse. Étroit (protégés seulement), accident-focalisé.
+
+**LE RISQUE, et pourquoi ce n'est PAS un patch à la volée :** un garde PreToolUse
+sur Bash gate CHAQUE commande shell. La philosophie de `nexus_garde_shell.py` le
+dit (ligne 35) : « un garde qui refuserait le travail normal serait désarmé le jour
+de sa pose. » Un faux positif = Bash bloqué = session halte, et je ne pourrais même
+plus lancer Bash pour le retirer. Le WIRING est donc catastrophique-si-faux.
+
+**Plan (PLAN avant CODE) :** BUILD le garde (banc) + ÉPREUVE exhaustive contre
+`cibles_shell.py` (les vecteurs A FERMER bloqués) ET un large corpus de commandes
+LÉGITIMES (aucun faux positif, y compris écritures vers chemins NON protégés) — sur
+un module autonome, NON câblé. Le WIRING live (hook PreToolUse) est le geste
+haut-risque à décider explicitement (opérateur), avec un `NEXUS_GARDE_LIBRE=1`
+d'échappement obligatoire au cas où.
+
+Statut : disque exploité, design prêt, table d'épreuve identifiée. Reste à
+arbitrer : investir dans le build (risque/valeur — accidents rares vs garde
+fragile) ? Je peux bâtir+prouver le module (sans câbler) sur go.
