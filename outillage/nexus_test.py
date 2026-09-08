@@ -1164,8 +1164,8 @@ def test_code() -> None:
     for name in py_modules:
         result = subprocess.run(
             [sys.executable, "-c",
-             "import sys; sys.path.insert(0, r'%s'); import %s"
-             % (os.path.join(ROOT, "scripts"), name)],
+             "import sys; sys.path.insert(0, r'%s'); sys.path.insert(0, r'%s'); import %s"
+             % (os.path.join(ROOT, "scripts"), os.path.join(ROOT, "outillage"), name)],
             capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             broken_imports.append(name)
