@@ -247,12 +247,34 @@ MAP_SYSTEME = (
 
 TEMPERATURE_DEFAUT = float(os.getenv("NEXUS_TEMPERATURE", "0.2"))
 
-# Ordre de repli entre plans GRATUITS uniquement. Aucun alias Claude n'y
-# figure et aucun ne doit y figurer : retomber sur le paye reviendrait a
-# facturer au jeton ce qui devait etre gratuit, sans que personne l'ait
-# decide. Plusieurs candidats locaux y figurent deliberement, afin que la
-# coupure des deux abonnements laisse toujours une voie ouverte.
-REPLIS_GRATUITS = ["gpt-oss-120b-cloud", "glm-4.7-flash-local", "qwen3-coder-30b-local", "llama3.2-3b-local"]
+# PLANCHER de repli gratuit, dernier recours (jamais moins d'options, meme
+# abonnements coupes ; aucun alias Claude). La chaine REELLE est DERIVEE par
+# replis_gratuits() : cloud d'abord par latence mesuree, puis local.
+REPLIS_GRATUITS_PLANCHER = ["gpt-oss-120b-cloud", "glm-4.7-flash-local", "qwen3-coder-30b-local", "llama3.2-3b-local"]
+
+def replis_gratuits(cle: str) -> List[str]:
+    """Derive la chaine de repli gratuite : cloud d'abord puis local, tries par latence mesuree, capacite prouvee (epreuves), puis le plancher. Degrade gracieusement."""
+    try:
+        plans = plans_par_alias(cle)
+        with io.open(os.path.join(ROOT, ".nexus", "epreuves.json"), encoding="utf-8") as f:
+            epreuves = json.load(f)
+        with io.open(os.path.join(ROOT, ".nexus", "latences.json"), encoding="utf-8") as f:
+            latences = json.load(f)
+        capable = [a for a, info in epreuves.get("modeles", {}).items() if info.get("complet")]
+        def latence(alias):
+            lat = latences.get("modeles", {}).get(alias, {})
+            if lat.get("ok"):
+                return lat.get("latence_etablie_ms") or lat.get("latence_ms") or float("inf")
+            return float("inf")
+        cloud = sorted([a for a in capable if plans.get(a) == "cloud"], key=latence)
+        local = sorted([a for a in capable if plans.get(a) == "local"], key=latence)
+        # GARDE : ne renvoyer la chaine derivee QUE si au moins un cloud capable y
+        # figure ; sinon le plancher (cloud-first : gpt-oss d'abord). Jamais local-first.
+        if cloud:
+            return list(dict.fromkeys(cloud + local + REPLIS_GRATUITS_PLANCHER))
+        return list(REPLIS_GRATUITS_PLANCHER)
+    except Exception:
+        return list(REPLIS_GRATUITS_PLANCHER)
 
 # Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
 # sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier
@@ -1071,7 +1093,7 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs, ecartes = [], [], []
     troncatures = set()
-    candidats = list(dict.fromkeys([modele] + REPLIS_GRATUITS))
+    candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
     _dj = None
     try:
         from nexus_disjoncteur import CircuitBreaker
