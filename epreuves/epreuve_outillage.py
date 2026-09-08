@@ -45,11 +45,11 @@ def main():
     else:
         print("[OK  ] Execution duoutil terminee")
 
-    # 3. verify output contains reference creation message
-    if "Reference absente" in out:
-        print("[OK  ] Message reference absente present")
+    # 3. verify that no bootstrap message appears when reference is present
+    if "Reference absente" not in out:
+        print("[OK  ] pas de bootstrap errone (reference presente, comparaison faite)")
     else:
-        print("[RATE] Message reference absente absent")
+        print("[RATE] bootstrap errone : Reference absente alors que la reference existe")
         failures += 1
 
     # 4. verify output contains status line for at least one linter
