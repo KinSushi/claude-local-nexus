@@ -196,6 +196,7 @@ def search_index(args):
 
     top_n = args.top
     heap = []  # min-heap of (score, record)
+    compteur = 0  # monotonic counter for tie-breaking
 
     processed = 0
     with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
@@ -208,13 +209,15 @@ def search_index(args):
                 continue
             score = cosine_similarity(query_vec, vec)
             if len(heap) < top_n:
-                heapq.heappush(heap, (score, record))
+                heapq.heappush(heap, (score, compteur, record))
+                compteur += 1
             else:
-                heapq.heappushpop(heap, (score, record))
+                heapq.heappushpop(heap, (score, compteur, record))
+                compteur += 1
             processed += 1
 
     results = sorted(heap, key=lambda x: x[0], reverse=True)
-    for score, rec in results:
+    for score, _compteur, rec in results:
         print(f"Score: {score:.4f}")
         print(f"Resume: {rec.get('resume')}")
         print(f"Path: {rec.get('path')} (offset {rec.get('offset')}, length {rec.get('length')})")
