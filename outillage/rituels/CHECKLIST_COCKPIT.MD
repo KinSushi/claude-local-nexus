@@ -27667,3 +27667,34 @@ protégés.
 reconfiguration (bloc standard ou appel forcer_utf8). §0.6 : un script de
 migration vaut mieux que 14 agents pour un geste identique. Alors conformité
 100% verte.
+
+### §225 — Encodage bouclé : 12 migrations + un contrôle rendu robuste (3 angles morts)
+
+Fin du thread encodage. Le contrôle `controle_encodage_sortie` avait TROIS angles
+morts, tous du meme type (il ne detectait qu'une forme littérale de
+reconfiguration), et chacun ne s'est vu qu'en AGISSANT (§0.1.4) :
+
+| angle mort | forme ratée | trouvé en |
+| --- | --- | --- |
+| 1 (§224) | `forcer_utf8()` (helper) | cherchant à corriger les 16 |
+| 2 (§225) | `_flux.reconfigure(` (nexus_sujets) | MIGRANT un faux positif |
+| 3 (§225) | `f.reconfigure(` (nexus_verrou_machine) | comptant apres le fix robuste |
+
+**Contrôle final, robuste** : credite `.reconfigure(` (toute forme) OU
+`forcer_utf8`. Vérifié : aucun `.reconfigure(` du depot n'est un faux credit.
+**Compte : 14 → 0. Encodage 100% vert.**
+
+**12 vraies migrations** (scripts sans AUCUNE reconfiguration) : bloc standard
+ajouté par un script de migration AST (banc), audit indépendant SAINE (sur
+fichiers COMPLETS ; le 1er audit et nexus_valide, sur le diff seul, criaient
+NameError à tort faute de voir l'`import sys` en contexte — §112.4, deux fois).
+
+**Deux débordements de mon script de migration, attrapés par vérification :**
+* `nexus_garde_isolation.py` (ASCII, non flaggé) — reverti ;
+* `nexus_sujets.py` (déjà sûr via _flux.reconfigure) — bloc redondant reverti.
+Mon critère (« pas de reconfigure ») était plus large que le contrôle
+(non-ASCII + print). Sans les reverts, deux blocs inutiles seraient passés.
+
+**nexus_verrou_machine** : copie conforme byte-exacte (§0.4), exclue — et de
+toute façon déjà sûre (f.reconfigure). Le contrôle robuste la crédite désormais
+sans qu'on ait à la toucher.
