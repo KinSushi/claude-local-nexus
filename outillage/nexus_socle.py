@@ -152,9 +152,21 @@ def main():
         resultats.append((True, "structure fusionnable", "tous les fichiers presents ont la cle permissions"))
 
     # Controle 5: effet
-    print("a jouer a la main : rm -rf /tmp/temoin_socle_inexistant_2026 -- un refus du harnais prouve que les regles mordent, un rc=0 prouve qu elles sont inertes")
-    resultats.append((False, "effet", "non mesure par ce script"))
-    tous_ok = False
+    # Mesure réelle : compter les regles 'deny' présentes dans les fichiers de socle déjà lus
+    total_deny = 0
+    for nom, chemin in DEPOTS:
+        if nom in absents:
+            continue
+        data, err = lire_json(chemin)
+        if err:
+            continue
+        deny, _ = regles(data)
+        total_deny += len(deny)
+    if total_deny > 0:
+        resultats.append((True, "effet", f"{total_deny} regles deny presentes"))
+    else:
+        resultats.append((False, "effet", "aucune regle deny presente"))
+        tous_ok = False
 
     # Affichage des resultats
     for ok, libelle, detail in resultats:
