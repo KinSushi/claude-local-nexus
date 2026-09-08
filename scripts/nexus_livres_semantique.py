@@ -33,6 +33,7 @@ import urllib.request
 import urllib.error
 import heapq
 import itertools
+import time
 
 API_URL_DEFAULT = "http://127.0.0.1:11434/api/embed"
 MODEL_DEFAULT = "nomic-embed-text"
@@ -46,7 +47,11 @@ OUTPUT_FILE = os.path.join(OUTPUT_DIR, "fragments_embeddings.jsonl")
 def embed_texts(texts, model, api_url):
     """Send a batch of texts to the Ollama embed API.
 
-    Returns a list of vectors (list of floats) or raises an exception.
+    The shared Ollama server may become temporarily unavailable; without a
+    timeout ``urlopen`` would block indefinitely, freezing the build.  This
+    implementation uses a generous 120 s timeout per request and retries with
+    exponential back‑off (capped at 30 s).  If all attempts fail the last
+    exception is raised; an empty list is never returned.
     """
     payload = json.dumps({"model": model, "input": texts}).encode("utf-8")
     req = urllib.request.Request(
@@ -55,9 +60,19 @@ def embed_texts(texts, model, api_url):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req) as resp:
-        data = json.load(resp)
-    return data.get("embeddings", [])
+    max_attempts = 5
+    attempt = 0
+    while True:
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.load(resp)
+            return data.get("embeddings", [])
+        except Exception:
+            attempt += 1
+            if attempt >= max_attempts:
+                raise
+            backoff = min(30, 2 ** attempt)
+            time.sleep(backoff)
 
 
 def read_fragment(path, offset, length):
