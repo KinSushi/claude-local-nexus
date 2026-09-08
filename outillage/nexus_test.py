@@ -1316,7 +1316,7 @@ def main() -> int:
         jouer_epreuve_python("epreuve_concentration_routage.py",
                              "coherence des deux chemins d'appel")
     if args.only in (None, "socle"):
-        jouer_epreuve_python("nexus_socle.py",
+        jouer_epreuve_python("epreuve_socle.py",
                              "socle de securite : meme niveau dans les trois depots")
     if args.only in (None, "code"):
         test_code()
@@ -1434,19 +1434,11 @@ def main() -> int:
         # arguments, sur des fichiers fabriques, et traduit ses codes de sortie.
         jouer_epreuve_python("epreuve_rendu_vide.py", "rendu vide")
     if args.only in (None, "index_livres"):
-        jouer_epreuve_python("nexus_index_livres.py", "index des livres")
-        jouer_epreuve_python("nexus_indexer_ast.py", "index AST Python (python_ast_local)")
-        jouer_epreuve_python("nexus_indexer_concepts.py", "index des concepts (livres_texte_concepts)")
-        jouer_epreuve_python("nexus_indexer_resumes.py", "index des resumes de section (livres_texte_resumes)")
-        jouer_epreuve_python("nexus_epreuve_refus.py", "refus verrou/semaphore ecrit dans --sortie")
-        jouer_epreuve_python("nexus_plan.py", "plan de production derive du cockpit")
+        jouer_epreuve_python("epreuve_refus_verrou.py", "refus verrou/semaphore ecrit dans --sortie")
         jouer_epreuve_python("epreuve_sonde_mcp_couverture.py", "agregation de la sonde MCP (tous)")
     if args.only in (None, "livres"):
-        jouer_epreuve_python("nexus_livres.py", "corpus de livres")
         jouer_epreuve_python("epreuve_selection_top.py", "selection top-N heap sur scores egaux")
         jouer_epreuve_python("epreuve_index_semantique.py", "index semantique : pas de sur-duplication (garde anti-append)")
-    if args.only in (None, "sauvegarde"):
-        jouer_epreuve_python("nexus_sauvegarde.py", "sauvegarde locale")
     if args.only in (None, "rassurant"):
         jouer_epreuve_python("epreuve_verdict_rassurant.py", "verdict rassurant")
     if args.only in (None, "fuite"):
