@@ -17,6 +17,12 @@ import argparse
 import tempfile
 from threading import RLock
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 _STATE_DIR = ".nexus"
 _STATE_FILE = "circuit_state.json"
 MAX_RETRIES = 5

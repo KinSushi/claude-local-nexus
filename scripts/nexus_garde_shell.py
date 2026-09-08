@@ -61,6 +61,11 @@ import json
 import re
 import sys
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 
 def lire_entree():
     """Retourne None si l'entrée est vide,

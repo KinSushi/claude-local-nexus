@@ -34,6 +34,11 @@ PLATEFORME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PLATEFORME, "scripts"))
 import nexus_agent as agent  # noqa: E402
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 
 def _racine_de_travail() -> str:
     """

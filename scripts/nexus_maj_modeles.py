@@ -10,6 +10,11 @@ import tempfile
 import nexus_capability as capability
 import nexus_pull_garde
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # La marge de disque est une POLITIQUE et non une mesure, elle depend de la machine et se regle donc sans toucher au code.
 # Le delai de telechargement depend du debit reseau, qui n'est pas une propriete du depot.
 MARGE_DISQUE_GO = int(os.getenv('NEXUS_MARGE_DISQUE_GO', '50'))

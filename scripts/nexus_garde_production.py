@@ -19,6 +19,11 @@ import sys
 import os
 import json
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 TEMP_SUBSTRINGS = ("scratchpad", "temp", "tmp", "AppData")
 CODE_EXTENSIONS = {".py", ".js", ".mjs", ".cjs", ".ts", ".ps1"}
 TARGET_TOOLS = {"Edit", "Write", "NotebookEdit"}

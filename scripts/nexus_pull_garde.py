@@ -36,6 +36,11 @@ from typing import Tuple, Optional
 # Import du module existant sans le modifier.
 import nexus_capability as capability
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # ----------------------------------------------------------------------
 # Constantes
 # ----------------------------------------------------------------------

@@ -38,6 +38,11 @@ import re
 import sys
 import contextlib
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # Racine ABSOLUE. `CLAUDE_PROJECT_DIR` quand le hook est lance par Claude
 # Code ; sinon, deduite de la position de ce fichier -- jamais du repertoire
 # courant, qui n'est pas celui du projet des qu'un outil change de dossier.

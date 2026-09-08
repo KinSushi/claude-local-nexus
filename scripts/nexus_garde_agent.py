@@ -42,6 +42,11 @@ import re
 import sys
 from typing import Any, Dict, Tuple
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # Modeles factures connus. Leur presence doit etre justifiee.
 MODELES_FACTURES = {"haiku", "sonnet", "opus", "fable"}
 

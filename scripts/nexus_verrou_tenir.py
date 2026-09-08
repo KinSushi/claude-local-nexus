@@ -25,6 +25,11 @@ import os
 import sys
 import argparse
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # 1. Ajouter le répertoire du script au début de sys.path
 script_dir = os.path.abspath(os.path.dirname(__file__))
 if script_dir not in sys.path:
