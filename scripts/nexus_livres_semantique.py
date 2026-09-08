@@ -32,6 +32,7 @@ import argparse
 import urllib.request
 import urllib.error
 import heapq
+import itertools
 
 API_URL_DEFAULT = "http://127.0.0.1:11434/api/embed"
 MODEL_DEFAULT = "nomic-embed-text"
@@ -80,15 +81,22 @@ def build_index(args):
     batch = []
     batch_meta = []
 
-    # Determine repository root and data directory
+    # Determine repository root and data directories (prose corpora)
     _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    _data_root = os.path.join(_repo_root, "references", "livres")
-    for root, _dirs, files in os.walk(_data_root):
+    _references = os.path.join(_repo_root, "references")
+    _data_roots = [
+        os.path.join(_references, "livres"),
+        os.path.join(_references, "livres_texte"),
+    ]
+    _walks = itertools.chain.from_iterable(
+        os.walk(r) for r in _data_roots if os.path.isdir(r)
+    )
+    for root, _dirs, files in _walks:
         if "index.tsv" not in files or "symbols.jsonl" not in files:
             continue
         index_path = os.path.join(root, "index.tsv")
         symbols_path = os.path.join(root, "symbols.jsonl")
-        rayon = os.path.relpath(root, _data_root)
+        rayon = os.path.relpath(root, _references)
 
         with open(index_path, newline="", encoding="utf-8") as idx_file:
             reader = csv.reader(idx_file, delimiter="\t")
