@@ -1399,6 +1399,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_applicateur_maison.py", "applicateur maison")
     if args.only in (None, "resilience"):
         jouer_epreuve_python("epreuve_embed_resilience.py", "resilience embed")
+    if args.only in (None, "atomique"):
+        jouer_epreuve_python("epreuve_rebuild_atomique.py", "rebuild atomique")
     if args.only in (None, "chemins"):
         jouer_epreuve_python("epreuve_chemins_annonces.py", "chemins annonces")
     if args.only in (None, "lecture"):
