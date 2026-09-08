@@ -27588,3 +27588,33 @@ motif identique pour les 16.
 2. Encodage sortie : 16 scripts (rendre la conformité 100% verte).
 3. Partie B : corpus `CODE_ENZO`, `python_ast_local` (indexation).
 4. nexus_patch §0.6 (§214a). 5. bandit §240 (R&D).
+
+### §222 — Cartographie réelle du disque : Partie B faite, et TROIS prémisses périmées corrigées
+
+Directive #1 (exploiter le disque), mesuré ce tour — jamais de mémoire :
+
+**Tout est indexé lexicalement.** 15 `index.tsv` sous references/. Les corpus que
+le plan appelait « invisibles, 271 Mo » sont TOUS indexés : CODE_ENZO (935 Ko),
+python_ast_local (35 Mo), livres_texte (3,6 Mo) + ses concepts (4,7 Mo) et resumes
+(462 Ko). **La Partie B du plan est faite** (comme la A était périmée).
+
+**Trois prémisses du plan, corrigées par la mesure :**
+1. « Produit à terre » (Partie A) → FAUX, produit sain (§221).
+2. « 271 Mo invisibles » (Partie B) → FAUX, tout a un index.tsv.
+3. « La recherche sémantique ne cherche que les TITRES » (B.4) → FAUX :
+   `build_index` fait `embed_input = resume + fragment_text[:2000]` — elle embarque
+   le CONTENU (2000 car). C'est pourquoi mes requêtes bandit/algo marchaient.
+
+**Le SEUL vrai gain restant, mesuré.** L'index sémantique (`nexus_livres` MCP,
+`.nexus/fragments_embeddings.jsonl`) couvre exactement 3 rayons — epub 11377,
+packt 6698, code 2291 = 20366 — car `build_index` code en dur
+`_data_root = references/livres`. Les **102 livres FRANÇAIS** de `livres_texte`
+(prose, idéale pour le sémantique) en sont donc absents : atteignables
+lexicalement (index.tsv) mais pas sémantiquement. C'est un vrai manque, pas un
+choix — le build n'a pas suivi l'ajout du corpus.
+
+**Prochain cycle.** Étendre le périmètre de `build_index` à `livres_texte`
+(changement de code LÉGER, validable par un mini-build test), PUIS un rebuild
+complet du sémantique — mais le rebuild est LOURD (passage nomic-embed-text local,
+~20k+ fragments) : à faire machine LIBRE, pas sous la contention des 2 PID.
+Le code d'abord (prêt + testé), le rebuild déliberé ensuite.
