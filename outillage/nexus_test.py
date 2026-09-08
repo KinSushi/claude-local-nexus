@@ -3368,7 +3368,7 @@ def test_vitrine() -> None:
             # Quoi qu'il arrive, la vraie configuration revient. Ce finally-ci
             # est en dernier ressort : le controle ci-dessus existe justement
             # parce qu'un finally ne suffit pas.
-            with io.open(CONFIG, "w", encoding="utf-8") as fh:
+            with io.open(CONFIG, "w", encoding="utf-8", newline="\n") as fh:
                 fh.write(vraie)
             if os.path.exists(swapped):
                 os.remove(swapped)
