@@ -3,10 +3,12 @@ import sys
 import json
 import hashlib
 
+# les depots voisins sont des entrees configurables, valeurs par defaut = cette machine
+_ICI = os.path.dirname(os.path.abspath(__file__))
 DEPOTS = [
-    ("local-llm-docker", "C:/local-llm-docker/rituels/SOCLE_UNIVERSEL.json"),
-    ("sovereign", "D:/SAS/sovereign-ai-system/v1.104/sovereign-ai-system/SOCLE_UNIVERSEL.json"),
-    ("ea-mt5", "D:/EA MT5 PYTHON RENTABLE ROBUSTE/SOCLE_UNIVERSEL.json"),
+    ("local-llm-docker", os.path.join(_ICI, "rituels", "SOCLE_UNIVERSEL.json")),
+    ("sovereign", os.environ.get("NEXUS_SOCLE_SOVEREIGN", "D:/SAS/sovereign-ai-system/v1.104/sovereign-ai-system/SOCLE_UNIVERSEL.json")),
+    ("ea-mt5", os.environ.get("NEXUS_SOCLE_EAMT5", "D:/EA MT5 PYTHON RENTABLE ROBUSTE/SOCLE_UNIVERSEL.json")),
 ]
 
 MOTIFS = [
