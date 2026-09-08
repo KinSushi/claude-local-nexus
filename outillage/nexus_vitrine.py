@@ -268,6 +268,8 @@ def main() -> int:
         "amont de la branche": ("BLOQUENT", lambda: amont_present(racine)),
         "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
                                                            a.sauf_tests)),
+        "suite de tests": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_test.py",
+                                                               a.sauf_tests)),
         "rituel de fin de tour": ("BLOQUENT", lambda: sous_controle(racine,
                                                                     "nexus_rituel.py",
                                                                     a.sauf_tests)),
