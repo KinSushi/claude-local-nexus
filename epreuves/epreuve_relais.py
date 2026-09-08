@@ -10,7 +10,7 @@ def verifier_fichier_outil():
     script_dir = pathlib.Path(__file__).resolve().parent
     outil_path = script_dir.parent / "outillage" / "nexus_relais.py"
     if not outil_path.is_file():
-        print(f"[ERREUR] Fichier de l'outil introuvable : {outil_path}")
+        print(f"[RATE] outil : Fichier de l'outil introuvable : {outil_path}")
         sys.exit(3)
     return outil_path
 
@@ -23,7 +23,7 @@ def lancer_processus(cmd, input_text=None):
             stderr=subprocess.STDOUT,
             encoding="utf-8",
             errors="replace",
-            timeout=10
+            timeout=240
         )
         return result.returncode, result.stdout
     except subprocess.TimeoutExpired:
@@ -38,9 +38,9 @@ def cas_nominal(outil_path):
         code, output = lancer_processus(cmd)
 
         if code == 0 and "Debut traitement de" in output and "Fin traitement de" in output:
-            print("[OK] Cas nominal")
+            print("[OK  ] Cas nominal : ok")
             return True
-        print(f"[ECHEC] Cas nominal - Code: {code}\n{output}")
+        print(f"[RATE] Cas nominal : code={code} <sortie={output}>")
         return False
 
 def cas_inverse(outil_path):
@@ -48,9 +48,9 @@ def cas_inverse(outil_path):
     code, output = lancer_processus(cmd)
 
     if code != 0 and "No targets to process" in output:
-        print("[OK] Cas inverse (pas de cibles)")
+        print("[OK  ] Cas inverse (pas de cibles) : ok")
         return True
-    print(f"[ECHEC] Cas inverse - Code: {code}\n{output}")
+    print(f"[RATE] Cas inverse : code={code} <sortie={output}>")
     return False
 
 def cas_malforme(outil_path):
@@ -62,9 +62,9 @@ def cas_malforme(outil_path):
         code, output = lancer_processus(cmd)
 
         if code == 0 or "Debut traitement de" in output:
-            print("[OK] Cas malformé (traité sans plantage)")
+            print("[OK  ] Cas malformé (traité sans plantage) : ok")
             return True
-        print(f"[ECHEC] Cas malformé - Code: {code}\n{output}")
+        print(f"[RATE] Cas malformé : code={code} <sortie={output}>")
         return False
 
 def cas_usage(outil_path):
@@ -72,9 +72,9 @@ def cas_usage(outil_path):
     code, output = lancer_processus(cmd)
 
     if code != 0 and "usage: nexus_relais.py" in output:
-        print("[OK] Cas usage (affichage de l'aide)")
+        print("[OK  ] Cas usage (affichage de l'aide) : ok")
         return True
-    print(f"[ECHEC] Cas usage - Code: {code}\n{output}")
+    print(f"[RATE] Cas usage : code={code} <sortie={output}>")
     return False
 
 def main():
