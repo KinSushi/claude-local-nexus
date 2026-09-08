@@ -45,17 +45,14 @@ def _has_timeout_call(func_node: ast.FunctionDef) -> tuple[bool, int | None]:
             # fonction peut être urllib.request.urlopen ou simplement urlopen
             func = node.func
             is_urlopen = False
-            if isinstance(func, ast.Attribute):
+            if isinstance(func, ast.Attribute) and func.attr == "urlopen":
                 # ex: urllib.request.urlopen
-                if func.attr == "urlopen":
-                    # vérifier la chaîne d'attributs (urllib.request)
-                    value = func.value
-                    if isinstance(value, ast.Attribute):
-                        if value.attr == "request" and isinstance(value.value, ast.Name) and value.value.id == "urllib":
-                            is_urlopen = True
-            elif isinstance(func, ast.Name):
-                if func.id == "urlopen":
+                # vérifier la chaîne d'attributs (urllib.request)
+                value = func.value
+                if isinstance(value, ast.Attribute) and value.attr == "request" and isinstance(value.value, ast.Name) and value.value.id == "urllib":
                     is_urlopen = True
+            elif isinstance(func, ast.Name) and func.id == "urlopen":
+                is_urlopen = True
 
             if not is_urlopen:
                 continue
