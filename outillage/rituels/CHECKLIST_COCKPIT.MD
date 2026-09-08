@@ -27384,3 +27384,35 @@ serait destructif (« ne pas casser ») ; falsifier une déclaration violerait
 §112.4 ; le banc ne peut tourner (machine bloquée §212). C'est un taux à fenêtre
 glissante qui se redresse à mesure que des commits déclarés s'accumulent — pas
 un défaut à corriger, un compteur qui suit la discipline dans le temps.
+
+### §215 — Mesure fraîche via MCP `nexus_charge` (jamais de mémoire)
+
+Mesuré, non affirmé de mémoire (directive centrale : NE PAS AGIR DE MÉMOIRE) :
+
+```
+PID 20228 : 2893 CPU-min (~48,2 CPU-h), 12,16 Mo RAM  -- spin loop, en croissance
+PID 8328  : 2879 CPU-min (~48,0 CPU-h), 12,29 Mo RAM  -- spin loop, en croissance
+RAM libre 36,70 Go / 0 modèle résident / moteur joignable / total 61,62 Go
+verdict outil : machine CHARGEE (processus significatifs)
+```
+
+**Ce que la mesure corrige (vs §214c).** Le blocage est **CPU**, pas mémoire :
+36,70 Go sont libres et le moteur répond. Donc le plan **cloud** du banc
+(gpt-oss-120b-cloud, exécuté sur ollama.com) n'est **PAS** bloqué — seul le plan
+**local** (iGPU/CPU partagés) souffre de la contention des 2 spin loops. Écrire
+« le banc ne peut tourner » était une généralisation de mémoire ; le cloud reste
+disponible.
+
+**Ce que la mesure NE change pas.** Les 2 PID sont à MOI (attribution « ? »,
+issus de tentatives de banc suspendues plus tôt), toujours vivants et croissants.
+NON tués : attribution incertaine + opérateur endormi + consensus des 4 sessions
+(« coordonnez-vous, ne tuez pas sans accord »). `rm`/kill = geste destructif à
+confirmer au réveil (§212). Ils gaspillent du CPU mais 12 Mo chacun : pas d'urgence.
+
+**Conséquence pour la boucle.** Pas de salve cloud nocturne : le codebase est
+mesuré mûr (audit=bruit, minage 2/3 rejeté), aucune file de volume ne la
+justifierait, et le seul correctif trouvé (§214a, nexus_patch) touche l'outillage
+de patch lui-même — à faire produire par le banc PUIS arbitrer avec l'opérateur
+présent (effets de bord, §0.7.1). Aux prochains ticks : forward-tests des outils
+MCP **sans inférence** (charge/models/savings/verrou/profile), qui avancent
+l'audit de livraison sans concurrencer aucune ressource.
