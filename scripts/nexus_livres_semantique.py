@@ -76,6 +76,10 @@ def build_index(args):
     if not os.path.isdir(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+    # Tronque l'index : un rebuild REMPLACE, il n'appende pas. Sans cela,
+    # write_batch (mode "a") dupliquait tout le contenu existant a chaque build.
+    open(OUTPUT_FILE, "w", encoding="utf-8").close()
+
     total_indexed = 0
     failures = 0
     batch = []
