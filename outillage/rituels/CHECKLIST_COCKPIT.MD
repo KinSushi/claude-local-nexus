@@ -27531,3 +27531,32 @@ du réseau ni du CPU contendu.
 boucle de sélection top-N de `search_index` en fonction pure `_selectionner_top`,
 et une épreuve la testant sur des scores ÉGAUX (le cas qui plantait) — câblée.
 Inférence-free, donc propre même sous contention.
+
+### §220 — Thread §216 clos : le fix heapq a enfin sa contre-épreuve mécanisée
+
+Le fix du §216 (compteur de départage) marchait mais n'avait **aucune
+contre-épreuve** : rien n'échouerait si la régression revenait — « le livrable
+est un contrôle qui échoue, pas un paragraphe ». On la pose.
+
+* `_selectionner_top(paires, top_n)` — la boucle de sélection top-N extraite de
+  `search_index` en **fonction pure** (compteur via enumerate, aucune comparaison
+  de dict). Testable en isolation.
+* `search_index` l'appelle via un générateur `_gen()` qui **préserve** streaming
+  et comptage max_fragments (comportement identique, audité).
+* `epreuves/epreuve_selection_top.py` — contre-épreuve **déterministe** : le cas
+  des scores ÉGAUX (celui qui plantait) → top_n sans crash. Câblée dans nexus_test.
+
+**Validé.** Forward (épreuve 4/4 ; livres via MCP 5 fragments triés), reverse
+(scores égaux → 2 sans crash), audit banc indépendant « CORRECTION SAINE »,
+cliquet « aucune régression » (après nettoyage de 4 F841 + 1 SIM113 que le
+refactor avait introduits — le cliquet les a attrapés), nexus_valide LOI 1.
+Commit `86f332e`.
+
+**Leçon §112.4 du tour.** Le PREMIER audit indépendant a faussement crié « import
+cassé, faux-vert critique » — trompé par les noms de COPIE que je lui avais
+donnés (`final_*.py`). Vérifié faux en EXÉCUTANT l'épreuve (4/4), puis re-audité
+avec les vrais noms → SAINE. Un audit est un signal ; quand il est faux, on
+redresse son entrée, on ne s'auto-valide pas.
+
+**Threads restants.** Sonde : `batch`/`compare` (→15/15), `vision`/`index_build`.
+Plus : nexus_patch §0.6 (§214a), bandit §240.
