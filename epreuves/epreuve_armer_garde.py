@@ -33,7 +33,6 @@ def run_test(args, temp_config=None, expect_success=True):
     return success
 
 def main():
-    tests = []
     all_passed = True
 
     # Préparation: créer un script de garde fictif
@@ -41,36 +40,63 @@ def main():
     with open(guard_script, "w", encoding="utf-8") as f:
         f.write("# Fichier fictif pour les tests\n")
 
-    # Cas 1: Appel sans arguments requis
-    tests.append(("Appel sans arguments", lambda: run_test([], expect_success=False)))
-
-    # Cas 2: Cible inexistante
-    tests.append(("Script de garde inexistant", lambda: run_test(["nexus_garde_inexistant.py", "Bash", "--simulation"], expect_success=False)))
-
-    # Cas 3: Chemin nominal (simulation)
-    temp_dir, temp_config = create_temp_config()
-    tests.append(("Chemin nominal (simulation)", lambda: run_test(["nexus_garde_fictif.py", "Bash", "--simulation"], temp_config=temp_config)))
-    cleanup(temp_dir)
-
-    # Cas 4: Refus d'armement double (simulation)
-    temp_dir, temp_config = create_temp_config()
-    run_test(["nexus_garde_fictif.py", "Bash", "--armer"], temp_config=temp_config)  # Premier armement
-    tests.append(("Refus armement double", lambda: run_test(["nexus_garde_fictif.py", "Bash", "--armer"], temp_config=temp_config, expect_success=False)))
-    cleanup(temp_dir)
-
-    # Cas 5: Restauration sans sauvegarde
-    temp_dir, temp_config = create_temp_config()
-    tests.append(("Restauration sans sauvegarde", lambda: run_test(["--restaurer"], temp_config=temp_config, expect_success=False)))
-    cleanup(temp_dir)
-
-    # Exécution des tests
-    for _name, test_func in tests:
-        if not test_func():
+    try:
+        # Cas 1: Appel sans arguments requis
+        if not run_test([], expect_success=False):
             all_passed = False
 
-    # Nettoyage du script fictif
-    if os.path.exists(guard_script):
-        os.remove(guard_script)
+        # Cas 2: Script de garde inexistant
+        if not run_test(
+            ["nexus_garde_inexistant.py", "Bash", "--simulation"],
+            expect_success=False,
+        ):
+            all_passed = False
+
+        # Cas 3: Chemin nominal (simulation)
+        temp_dir, temp_config = create_temp_config()
+        try:
+            if not run_test(
+                ["nexus_garde_fictif.py", "Bash", "--simulation"],
+                temp_config=temp_config,
+            ):
+                all_passed = False
+        finally:
+            cleanup(temp_dir)
+
+        # Cas 4: Refus d'armement double (simulation)
+        temp_dir, temp_config = create_temp_config()
+        try:
+            # Premier armement (doit réussir)
+            run_test(
+                ["nexus_garde_fictif.py", "Bash", "--armer"],
+                temp_config=temp_config,
+            )
+            # Deuxième armement (doit échouer)
+            if not run_test(
+                ["nexus_garde_fictif.py", "Bash", "--armer"],
+                temp_config=temp_config,
+                expect_success=False,
+            ):
+                all_passed = False
+        finally:
+            cleanup(temp_dir)
+
+        # Cas 5: Restauration sans sauvegarde
+        temp_dir, temp_config = create_temp_config()
+        try:
+            if not run_test(
+                ["--restaurer"],
+                temp_config=temp_config,
+                expect_success=False,
+            ):
+                all_passed = False
+        finally:
+            cleanup(temp_dir)
+
+    finally:
+        # Nettoyage du script fictif
+        if os.path.exists(guard_script):
+            os.remove(guard_script)
 
     if not all_passed:
         sys.exit(1)
