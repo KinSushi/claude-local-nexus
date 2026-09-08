@@ -3709,7 +3709,8 @@ def test_garde_shell() -> None:
     ]
     for nom, commande, attendu, outil in cas:
         refuse, code = juger(commande, outil)
-        check(nom, refuse == attendu and code == 0,
+        # La doc des hooks indique qu'un deny-JSON bloque en exit 0 ou 1 ; seul exit 2 surcharge.
+        check(nom, refuse == attendu and code != 2,
               "%s, rc=%s" % ("refuse" if refuse else "autorise", code))
 
     # Une anomalie AUTORISE en silence : un garde qui plante empeche de

@@ -241,7 +241,8 @@ def main():
     if donnees is None:
         return
     if isinstance(donnees, dict) and donnees.get("__unreadable__"):
-        refuser("Entree non-JSON (illisible)")
+        # SS0.5 : autoriser en silence, ne pas bloquer le travail sur une entrée illisible
+        return
     if not isinstance(donnees, dict):
         return
     # LES DEUX OUTILS, ET DES REGLES CHOISIES SELON L'OUTIL.
