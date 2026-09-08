@@ -27358,3 +27358,29 @@ MCP/A2A des outils d'inférence et l'épuisement local attendent leur terminaiso
 **Reste à faire au retour :** libérer la machine (PID ci-dessus), finir l'audit
 MCP/A2A des outils d'inférence, et le lead bandit en conception. Rédaction déclarée
 (30/43 muets) : historique, non corrigeable sans réécrire l'historique.
+
+### §214 — Deux constats trouvés par l'usage (nettoyage nocturne)
+
+**a) Défaut de conception §0.6 — `nexus_patch.py` pollue le dossier projet.**
+`nexus_patch.py:58` écrit un backup `<fichier>.avant-patch` À CÔTÉ de la source
+avant d'appliquer un patch. Vérifié par grep : ces backups sont **write-only** —
+`nexus_patch.py:49,58` les ÉCRIT, aucun code du dépôt ne les RELIT. Ils sont
+gitignorés (`.gitignore:24 *.avant-patch`), donc invisibles au clone vitrine,
+mais ils s'accumulent dans le dossier de travail (2 datés du 30 août encore
+présents). C'est exactement le §0.6 : un outil qui laisse du cruft dans le
+projet. Correctif DÉLÉGABLE au banc (LOI 1, pas à la main) : écrire le backup
+sous scratchpad/`.nexus/`, ou le purger après commit réussi.
+
+**b) Cruft présent, suppression refusée (opérateur endormi).**
+`scripts/nexus_agent.py.avant-patch` et `scripts/nexus_conformite.py.avant-patch`
+(30 août, gitignorés, write-only, fichiers réels commités et intacts). `rm`
+refusé par la permission — non forcé. Sans effet sur la vitrine (gitignorés) ;
+à supprimer au réveil, ou automatiquement une fois (a) corrigé.
+
+**c) Dernier manque du rituel — `redaction declaree`, état accepté.**
+13/43 commits de code déclarent l'auteur-banc, 30 muets → le contrôle passe si
+declares≥muets. NON clôturable honnêtement cette nuit : réécrire l'historique
+serait destructif (« ne pas casser ») ; falsifier une déclaration violerait
+§112.4 ; le banc ne peut tourner (machine bloquée §212). C'est un taux à fenêtre
+glissante qui se redresse à mesure que des commits déclarés s'accumulent — pas
+un défaut à corriger, un compteur qui suit la discipline dans le temps.
