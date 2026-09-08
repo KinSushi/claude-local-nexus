@@ -1,5 +1,5 @@
 {
-  "mesure_le": "2026-09-07T23:17:25.823962+00:00",
+  "mesure_le": "2026-09-08T00:50:13.818028+00:00",
   "categories": {
     "orphelin": [],
     "preuve_seule": [
@@ -19,6 +19,7 @@
       "outillage/nexus_indexer_texte.py",
       "outillage/nexus_livres.py",
       "outillage/nexus_ombre.py",
+      "outillage/nexus_plan.py",
       "outillage/nexus_poser_socle.py",
       "outillage/nexus_quarantaine.py",
       "outillage/nexus_sauvegarde.py",
