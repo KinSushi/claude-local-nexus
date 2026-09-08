@@ -27258,3 +27258,40 @@ défauts d'audit = design intentionnel. La voie vers « la fin » n'est pas 15 a
 sur du code stale, c'est l'audit de livraison complet (éprouver chaque
 fonctionnalité MCP/A2A) + de rares raffinements grondés, faits en fichier-entier
 ou patch NARROW, jamais en masse.
+
+### §211 — Minage des livres (plancher) : 2 sujets sur 3 REJETÉS (projet au/au-dessus du plancher), 1 vrai ouvert (bandit)
+
+Sur consigne opérateur (« les livres sont le plancher, mine-les, ajoute les
+améliorations à la checklist »), salve de minage : 3 agents, chacun un chapitre de
+livre (standard) + le code projet réel (copie §0.4). Arbitrage §112.4 :
+
+**circuit-breaker — REJETÉ, projet DÉJÀ au plancher.** L'agent (voyant nexus_agent
+qui importe `_retry_delay`, mais PAS le module `nexus_disjoncteur`) a proposé
+exponentiel+jitter et tri transitoire/permanent. Or `nexus_disjoncteur._retry_delay`
+fait déjà `0.1*2**attempt`, cap 30 s, + jitter (l.24-34), et `echec_transitoire`
+(l.80-93) reconnaît déjà 429/503/timeout/connection/unavailable — avec une mesure
+du 2026-09-02 corrigeant « seul 503 reconnu ». Circuit avec recovery + seuil.
+
+**métaheuristique-pool — REJETÉ, projet AU-DESSUS du plancher.** L'agent a proposé
+un solveur de planification (OR-Tools) + une boucle RL à la place de l'énumération
+exacte du sac-à-dos. Mais §106.2 a MESURÉ que l'énumération exacte rend l'optimum
+GARANTI en 0,00 s ; un solveur approché serait strictement pire. Le livre est le
+plancher ; ici le projet le dépasse. C'est la démonstration exacte de « plancher
+pas plafond » dans les deux sens.
+
+**bandit adaptatif — RÉEL et OUVERT (§240).** Pas de politique UCB/Thompson, pas de
+persistance des stats (tirages/succès par bras), pas de budget d'exploration. Le
+livre (Bandit Problems) + le `run_bandit` de code_enzo donnent le plancher. C'est le
+seul vrai item — mais c'est du R&D (§106.2 : optimisation en ligne bruitée et
+coûteuse, exige intervalles de confiance + budget d'évaluation + le magasin
+d'observations, brique AIC 8, qui est le prérequis). Pas un correctif de salve : un
+projet. Reste OUVERT comme lead.
+
+**Corollaire mesuré de la leçon « donner le standard » :** le standard (livre) ne
+suffit pas ; il faut AUSSI le module projet pertinent. L'agent avait le livre mais
+pas nexus_disjoncteur → a cru manquant ce qui existait. Pour un minage juste :
+chapitre + TOUS les modules concernés (pas seulement le point d'appel).
+
+**Convergence :** audit code (14 fichiers) = bruit ; minage livres (3 chapitres) =
+2/3 rejetés ; audit livraison = surface fonctionnelle. Le projet est au/au-dessus
+du plancher des livres, sauf le lead bandit. La maturité est MESURÉE, trois fois.
