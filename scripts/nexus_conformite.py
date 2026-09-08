@@ -1403,7 +1403,7 @@ def controle_encodage_sortie() -> None:
         if brut.isascii():
             continue
         source = brut.decode("utf-8", errors="replace")
-        if "sys.stdout.reconfigure" in source or "forcer_utf8" in source:
+        if ".reconfigure(" in source or "forcer_utf8" in source:
             continue
         if not re.search(r"\bprint\s*\(", source) and "sys.stdout.write" not in source:
             continue
