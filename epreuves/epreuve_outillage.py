@@ -32,49 +32,49 @@ def main():
     # 1. verify tool existence
     tool_path = _find_tool()
     if not tool_path:
-        print("[FAIL] Outil introuvable")
+        print("[RATE] Outil introuvable")
         sys.exit(3)
     else:
-        print("[OK] Outil trouve")
+        print("[OK  ] Outil trouve")
 
     # 2. execute tool without arguments
     retcode, out, err = _run_tool(tool_path)
     if retcode is None:
-        print("[FAIL] Execution duoutil impossible :", err)
+        print("[RATE] Execution duoutil impossible :", err)
         sys.exit(4)
     else:
-        print("[OK] Execution duoutil terminee")
+        print("[OK  ] Execution duoutil terminee")
 
     # 3. verify output contains reference creation message
     if "Reference absente" in out:
-        print("[OK] Message reference absente present")
+        print("[OK  ] Message reference absente present")
     else:
-        print("[FAIL] Message reference absente absent")
+        print("[RATE] Message reference absente absent")
         failures += 1
 
     # 4. verify output contains status line for at least one linter
     if any(name in out for name in ("ruff :", "eslint :", "psscriptanalyzer :")):
-        print("[OK] Ligne d'etat d'au moins un linter presente")
+        print("[OK  ] Ligne d'etat d'au moins un linter presente")
     else:
-        print("[FAIL] Aucune ligne d'etat de linter trouvee")
+        print("[RATE] Aucune ligne d'etat de linter trouvee")
         failures += 1
 
     # 5. verify exit code is 2 (no tool played) or 0/1 with matching content
     if retcode == 2:
-        print("[OK] Code de sortie 2 comme attendu")
+        print("[OK  ] Code de sortie 2 comme attendu")
     else:
         # check that content matches the code when not 2
         if retcode in (0, 1):
-            print("[OK] Code de sortie", retcode, "compatible avec le contenu")
+            print("[OK  ] Code de sortie", retcode, "compatible avec le contenu")
         else:
-            print("[FAIL] Code de sortie inattendu :", retcode)
+            print("[RATE] Code de sortie inattendu :", retcode)
             failures += 1
 
     # 6. verify that stderr is empty
     if err.strip() == "":
-        print("[OK] Stderr vide")
+        print("[OK  ] Stderr vide")
     else:
-        print("[FAIL] Stderr non vide :", err.strip())
+        print("[RATE] Stderr non vide :", err.strip())
         failures += 1
 
     sys.exit(0 if failures == 0 else 1)

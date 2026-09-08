@@ -75,9 +75,9 @@ def main() -> int:
     try:
         deny_forward = envoyer("Write", tmp_fwd_path)
         if not deny_forward:
-            print("[FORWARD] Échec : le garde n’a pas refusé l’écriture d’un fichier inconnu.")
+            print("[RATE] forward : le garde n’a pas refusé l’écriture d’un fichier inconnu.")
             return 1
-        print("[FORWARD] OK")
+        print("[OK  ] forward : garde refuse bien l ecriture d un fichier inconnu")
     finally:
         if os.path.isfile(tmp_fwd_path):
             os.unlink(tmp_fwd_path)
@@ -95,9 +95,9 @@ def main() -> int:
         # Tentative d’écriture après lecture
         deny_reverse = envoyer("Write", tmp_rev_path)
         if deny_reverse:
-            print("[REVERSE] Échec : le garde a refusé l’écriture après lecture.")
+            print("[RATE] reverse : le garde a refusé l’écriture après lecture.")
             return 1
-        print("[REVERSE] OK")
+        print("[OK  ] reverse : garde autorise l ecriture apres lecture")
     finally:
         if os.path.isfile(tmp_rev_path):
             os.unlink(tmp_rev_path)

@@ -70,10 +70,10 @@ def run_self_test(base_dir: Path) -> bool:
 
         # Check expectations
         if file_both not in detected:
-            print("Echec du test: fichier contenant le marqueur et l'ecriture n'a pas ete detecte.")
+            print("[RATE] applicateur : Echec du test: fichier contenant le marqueur et l'ecriture n'a pas ete detecte.")
             return False
         if file_marker_only in detected:
-            print("Echec du test: fichier ne contenant qu'un seul signe a ete detecte comme fautif.")
+            print("[RATE] applicateur : Echec du test: fichier ne contenant qu'un seul signe a ete detecte comme fautif.")
             return False
     return True
 
@@ -89,10 +89,10 @@ def main() -> None:
         for f in faulty_files:
             rel = f.relative_to(repo_root)
             print(f"Fichier fautif: {rel}")
-        print("Verdict: fichiers fautifs trouves.")
+        print("[RATE] applicateur : fichiers fautifs trouves.")
         sys.exit(1)
     else:
-        print("Verdict: aucun fichier fautif.")
+        print("[OK  ] applicateur : aucun fichier fautif.")
         sys.exit(0)
 
 

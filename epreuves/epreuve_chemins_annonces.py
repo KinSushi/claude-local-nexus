@@ -95,7 +95,7 @@ def main():
             norm_path = os.path.normpath(p)
             if os.path.isabs(norm_path):
                 if not os.path.exists(norm_path):
-                    print(f"{guard}: Echec - {p}")
+                    print(f"[RATE] {guard} : {p}")
                     guard_failed = True
                     total_fail += 1
                 else:
@@ -106,7 +106,7 @@ def main():
 
         if not guard_failed and not paths:
             # No paths found, but JSON was valid
-            print(f"{guard}: OK")
+            print(f"[OK  ] {guard} : chemins annonces presents")
 
     print(f"Total: {total_fail} echec(s)")
     sys.exit(0 if total_fail == 0 else 1)
@@ -117,10 +117,10 @@ if __name__ == "__main__":
     test_without_path = "No path here"
 
     if not extract_script_paths(test_with_path):
-        print("Controle muet echoue: path not detected")
+        print("[RATE] controle muet : path not detected")
         sys.exit(1)
     if extract_script_paths(test_without_path):
-        print("Controle muet echoue: false positive")
+        print("[RATE] controle muet : false positive")
         sys.exit(1)
 
     main()
