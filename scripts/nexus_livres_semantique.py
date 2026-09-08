@@ -95,7 +95,24 @@ def build_index(args):
 
     # Tronque l'index : un rebuild REMPLACE, il n'appende pas. Sans cela,
     # write_batch (mode "a") dupliquait tout le contenu existant a chaque build.
-    open(TMP_FILE, "w", encoding="utf-8").close()
+    # Reprise après interruption : on lit les fragments déjà écrits dans TMP_FILE
+    # et on saute ceux déjà présents (identifiés par (path, offset)).
+    deja = set()
+    if os.path.isfile(TMP_FILE):
+        with open(TMP_FILE, "r", encoding="utf-8") as tmp_f:
+            for line in tmp_f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    path = rec.get("path")
+                    offset = rec.get("offset")
+                    if path is not None and offset is not None:
+                        deja.add((path, offset))
+                except Exception:
+                    # ligne illisible, on ignore pour robustesse
+                    continue
 
     total_indexed = 0
     failures = 0
@@ -129,6 +146,9 @@ def build_index(args):
                     offset = int(offset_str)
                     length = int(length_str)
                 except ValueError:
+                    continue
+
+                if (symbols_path, offset) in deja:
                     continue
 
                 fragment_text = read_fragment(symbols_path, offset, length)
@@ -175,7 +195,7 @@ def build_index(args):
 
     sys.stderr.write(f"Indexed {total_indexed} fragments, failures: {failures}\n")
     # Un build incomplet ne doit jamais remplacer un index de travail complet.
-    if total_indexed > 0 and failures == 0 and not args.max_fragments:
+    if os.path.isfile(TMP_FILE) and os.path.getsize(TMP_FILE) > 0 and failures == 0 and not args.max_fragments:
         os.replace(TMP_FILE, OUTPUT_FILE)  # promotion atomique
         sys.stderr.write(f"Index promoted with {total_indexed} fragments.\n")
         sys.exit(0)
