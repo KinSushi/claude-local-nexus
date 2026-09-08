@@ -69,6 +69,9 @@ import ctypes
 import os
 import sys
 import time
+import subprocess
+import tempfile
+import pathlib
 from contextlib import contextmanager, suppress
 from datetime import datetime
 
@@ -190,48 +193,54 @@ def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool 
 @contextmanager
 def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
               bavard: bool = True):
-    """Acquiert un sémaphore nommé du noyau Windows.
+    """Acquiert un sémaphore nommé du noyau Windows, implémenté de façon death‑safe.
 
-    Le sémaphore porte le nom ``PREFIXE + 'SEM_' + classe.upper()`` et possède
-    un compte initial **et** maximum égal à *n*.  Le comportement est analogue
-    à :func:`verrou` : il rend un objet ``Verrou`` avec les attributs
-    ``.obtenu``, ``.classe`` et ``.motif``.  Sur les plateformes où
-    ``kernel32`` n’est pas disponible, le sémaphore est considéré comme
-    toujours acquis (``obtenu=True``) avec le motif indiquant la dégradation.
+    Le sémaphore est simulé par *n* mutex nommés
+    ``PREFIXE + 'SEM_' + classe.upper() + '_' + str(i)``.  L’acquisition parcourt les
+    mutex et récupère le premier disponible (ou abandonné).  Si aucun n’est libre,
+    on attend brièvement puis on recommence jusqu’à expiration du délai ``attente_s``.
+    Le comportement de retour (objet :class:`Verrou`) et les messages restent
+    compatibles avec l’ancienne version.
     """
     k = _kernel32()
-    nom = PREFIXE + "SEM_" + classe.upper()
-    handle = None
-    obtenu = True
+    obtenu = False
     motif = "aucun semaphore disponible sur cette plateforme -- on continue sans"
+    handle = None
 
     if k is not None:
-        # Définition des signatures Windows
-        k.CreateSemaphoreW.restype = ctypes.c_void_p
-        k.CreateSemaphoreW.argtypes = [ctypes.c_void_p, ctypes.c_long,
-                                       ctypes.c_long, ctypes.c_wchar_p]
+        # Signatures Windows
+        k.CreateMutexW.restype = ctypes.c_void_p
+        k.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_long, ctypes.c_wchar_p]
         k.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
         k.WaitForSingleObject.restype = ctypes.c_uint32
-        k.ReleaseSemaphore.argtypes = [ctypes.c_void_p, ctypes.c_long,
-                                       ctypes.POINTER(ctypes.c_long)]
+        k.ReleaseMutex.argtypes = [ctypes.c_void_p]
         k.CloseHandle.argtypes = [ctypes.c_void_p]
 
-        # Création / ouverture du sémaphore
-        handle = k.CreateSemaphoreW(None, n, n, nom)
-        if handle:
-            timeout_ms = int(max(0.0, attente_s) * 1000)
-            r = k.WaitForSingleObject(handle, timeout_ms)
-            if r == WAIT_OBJECT_0:
-                obtenu = True
-                motif = "obtenu"
-            elif r == WAIT_TIMEOUT:
+        deadline = time.monotonic() + max(0.0, attente_s)
+        while True:
+            # Essai d’acquisition sur chaque mutex
+            for i in range(n):
+                nom_i = PREFIXE + "SEM_" + classe.upper() + "_" + str(i)
+                h = k.CreateMutexW(None, False, nom_i)
+                if not h:
+                    continue
+                r = k.WaitForSingleObject(h, 0)   # non bloquant
+                if r == WAIT_OBJECT_0 or r == WAIT_ABANDONED:
+                    # Slot obtenu (ou récupéré après abandon)
+                    handle = h
+                    obtenu = True
+                    motif = "obtenu"
+                    break
+                # Sinon le mutex est occupé : on le ferme et on passe au suivant
+                k.CloseHandle(h)
+            if obtenu:
+                break
+            # Aucun mutex libre
+            if time.monotonic() >= deadline:
                 obtenu = False
                 motif = f"semaphore plein, aucun slot disponible après {attente_s:.0f}s"
-            else:
-                # Tout autre code d’erreur : on continue comme si le sémaphore était
-                # disponible, mais on indique le problème.
-                obtenu = True
-                motif = f"attente en échec (code {r:#x}) — on continue sans"
+                break
+            time.sleep(0.1)   # petite pause avant nouvelle tentative
 
     v = Verrou(classe, obtenu, motif)
 
@@ -244,47 +253,100 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
     finally:
         if handle:
             if obtenu:
-                # Relâche exactement une unité du sémaphore.
-                k.ReleaseSemaphore(handle, 1, None)
+                k.ReleaseMutex(handle)
             k.CloseHandle(handle)
 
 
 def _run_epreuve() -> int:
-    """Test autonome du nouveau gestionnaire ``semaphore``.
+    """Exécute les trois volets d’épreuve demandés par le sujet.
 
-    - **FORWARD** : avec ``n=2`` on acquiert deux slots simultanément ; les deux
-      acquisitions doivent réussir.
-    - **REVERSE** : avec ``n=1`` on tient un slot puis on tente une seconde
-      acquisition non bloquante ; celle‑ci doit échouer.
-    - Sur une plateforme sans ``kernel32`` le test est déclaré NON APPLICABLE
-      et renvoie 0.
-    Retourne 0 si tout passe, sinon un entier >0.
+    - **FORWARD** : deux processus distincts acquièrent chacun un slot sur la classe
+      ``epreuveF`` (n=2).  La présence simultanée de leurs fichiers *ready* prouve que
+      les slots sont accordés **cross‑process**.
+    - **CAP** : un processus tient un slot sur ``epreuveC`` (n=1).  Le parent tente d’en
+      acquérir un second (attente = 1 s) ; il doit échouer tant que le premier processus
+      ne libère pas.
+    - **DEATH‑SAFETY** : un sous‑processus acquiert un slot via ``--tenir-slot`` puis meurt.
+      Le parent doit récupérer le slot grâce à l’attente normale (le mutex a été libéré).
+
+    Retourne 0 si les trois volets réussissent, sinon un entier >0.
     """
     if _kernel32() is None:
         print("semaphore test : NON APPLICABLE (pas de kernel32)")
         return 0
 
-    # FORWARD
-    with semaphore("test_fwd", 2, projet="epreuve", attente_s=0.0, bavard=False) as s1:
-        if not s1.obtenu:
-            print("FORWARD : première acquisition échouée")
-            return 1
-        with semaphore("test_fwd", 2, projet="epreuve", attente_s=0.0, bavard=False) as s2:
-            if not s2.obtenu:
-                print("FORWARD : deuxième acquisition échouée")
-                return 1
+    import pathlib, tempfile
 
-    # REVERSE
-    with semaphore("test_rev", 1, projet="epreuve", attente_s=0.0, bavard=False) as s1:
-        if not s1.obtenu:
-            print("REVERSE : acquisition du premier slot échouée")
-            return 1
-        with semaphore("test_rev", 1, projet="epreuve", attente_s=0.0, bavard=False) as s2:
-            if s2.obtenu:
-                print("REVERSE : deuxième acquisition a été accordée alors qu’elle ne devait pas l’être")
-                return 1
+    # Répertoire temporaire pour les fichiers ready
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = pathlib.Path(tmpdir)
 
-    return 0
+        # ---------- FORWARD ----------
+        r1 = tmp / "forward1"
+        r2 = tmp / "forward2"
+        proc_f1 = subprocess.Popen(
+            [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r1), '4'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc_f2 = subprocess.Popen(
+            [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r2), '4'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        deadline = time.time() + 10
+        while time.time() < deadline and not (r1.exists() and r2.exists()):
+            time.sleep(0.1)
+
+        if not (r1.exists() and r2.exists()):
+            print("FORWARD : ECHEC – timeout d’attente des deux ready files")
+            proc_f1.terminate()
+            proc_f2.terminate()
+            proc_f1.wait()
+            proc_f2.wait()
+            return 1
+
+        proc_f1.wait()
+        proc_f2.wait()
+        print("FORWARD : OK")
+
+        # ---------- CAP ----------
+        rcap = tmp / "cap"
+        proc_c = subprocess.Popen(
+            [sys.executable, __file__, '--tenir-vivant', 'epreuveC', '1', str(rcap), '4'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        deadline = time.time() + 10
+        while time.time() < deadline and not rcap.exists():
+            time.sleep(0.1)
+
+        if not rcap.exists():
+            print("CAP : ECHEC – ready file non créé")
+            proc_c.terminate()
+            proc_c.wait()
+            return 2
+
+        # Le parent tente d’obtenir un second slot, ce qui doit échouer
+        with semaphore('epreuveC', 1, projet='epreuve', attente_s=1, bavard=False) as s:
+            if s.obtenu:
+                print("CAP : ECHEC – le parent a obtenu le slot alors qu’il devait être plein")
+                proc_c.terminate()
+                proc_c.wait()
+                return 3
+
+        proc_c.wait()
+        print("CAP : OK")
+
+        # ---------- DEATH‑SAFETY ----------
+        proc_d = subprocess.Popen(
+            [sys.executable, __file__, '--tenir-slot', 'epreuveD', '1'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc_d.wait()
+
+        with semaphore('epreuveD', 1, projet='epreuve', attente_s=5, bavard=False) as s:
+            if not s.obtenu:
+                print("DEATH‑SAFETY : ECHEC – le slot n’a pas été récupéré après la mort du processus")
+                return 4
+
+        print("DEATH‑SAFETY : OK")
+        return 0
 
 
 # ── Diagnostic humain — SÉPARÉ, et jamais autoritaire ──────────────────────────────────────────
@@ -354,7 +416,34 @@ def main(argv=None) -> int:
                          "appelants qui le passent deja.")
     ap.add_argument("--epreuve", action="store_true",
                     help="lance l'épreuve interne forward+reverse et sort")
+    ap.add_argument("--tenir-slot", nargs=2, metavar=('CLASSE', 'N'),
+                    help="acquiert un slot du semaphore puis meurt sans le relâcher (test death‑safety)")
+    ap.add_argument("--tenir-vivant", nargs=4, metavar=('CLASSE', 'N', 'READY_FILE', 'SECS'),
+                    help="acquiert un slot, crée le fichier READY_FILE, attend SECS secondes puis libère")
     args = ap.parse_args(argv)
+
+    # Gestion du mode « tenir‑slot » : acquisition d’un slot puis sortie brutale
+    if args.tenir_slot:
+        classe_ts, n_str = args.tenir_slot
+        n_ts = int(n_str)
+        # On acquiert le slot puis on quitte immédiatement via os._exit,
+        # ce qui empêche le bloc finally du context manager de s’exécuter.
+        with semaphore(classe_ts, n_ts, projet="death_test", attente_s=0.0, bavard=False) as _:
+            os._exit(0)
+
+    # Gestion du mode « tenir‑vivant » : acquisition, création de fichier, attente, sortie normale
+    if args.tenir_vivant:
+        classe_tv, n_str, ready_path, secs_str = args.tenir_vivant
+        n_tv = int(n_str)
+        secs_tv = float(secs_str)
+        with semaphore(classe_tv, n_tv, projet="vivant_test", attente_s=5.0, bavard=False) as v:
+            if v.obtenu:
+                pathlib.Path(ready_path).touch()
+                time.sleep(secs_tv)
+                sys.exit(0)
+            else:
+                sys.exit(1)
+
     if args.epreuve:
         return _run_epreuve()
 
