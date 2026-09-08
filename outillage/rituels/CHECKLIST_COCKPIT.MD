@@ -27218,3 +27218,43 @@ d'échappement obligatoire au cas où.
 Statut : disque exploité, design prêt, table d'épreuve identifiée. Reste à
 arbitrer : investir dans le build (risque/valeur — accidents rares vs garde
 fragile) ? Je peux bâtir+prouver le module (sans câbler) sur go.
+
+### §210 — L'expérience « salve massive » a MESURÉ que le codebase est mature, pas qu'il est cassé
+
+Sur go opérateur (« unifie un plan, envoie du massif, liquide »), j'ai mené
+l'expérience jusqu'au bout et j'en tire une mesure, pas une impression.
+
+**1. Plan mécanique dérivé (nexus_plan.py, câblé).** Le cockpit rend CODE 296,
+AUTRE 547, DECISION 42, MESURE 6, RECHERCHE 3 (~900). Mais c'est un JOURNAL
+append-only : doublons, items barrés/faits comptés ouverts. Le compte 977 n'est
+pas un backlog de travail, c'est l'historique.
+
+**2. Salve 1 = 14 audits parallèles (banc, sur COPIES §0.4).** Arbitrage §112.4 :
+**100 % rejeté.** garde_edition « rend 0 sur erreur » = fail-open INTENTIONNEL
+(contrat) ; `call()` « (0,err)=succès » = 0 est une SENTINELLE d'échec ;
+`nexus_cablage` « faux positif » = critère large DOCUMENTÉ et mesuré (un critère
+strict donnait 18 faux négatifs). Mesuré : **un audit sans le standard de
+conception flagge le design comme un bug** — exactement l'avertissement opérateur.
+
+**3. Audit de livraison (la 3e jambe : usage concret du MCP/A2A).** models ✓
+livres ✓ savings ✓ profile ✓ verrou ✓ ; search lent sous charge (embedding sur
+machine occupée). Un seul item réel : 19,4 % de requêtes cloud vides (budget de
+sortie serré) — mais nexus_agent GÈRE déjà les modèles à raisonnement
+(`_sans_raisonnement`, `num_predict` vs `max_tokens`, `part_raisonnement`) ; c'est
+un raffinement marginal, pas un bug.
+
+**4. Un cas réel a VALIDÉ le fix death-safe** : j'ai tué la salve 1, ses 3 places
+sémaphore ont fui, `--etat` a montré PLEIN à 0 processus — et le lot suivant les a
+RÉCUPÉRÉES (WAIT_ABANDONED). Sans le fix : PLEIN à jamais. La sonde `--etat`
+nettoie même les fuites en les reprenant+relâchant.
+
+**5. Patch sur le gros nexus_agent = fragile** (dosage : bloc 2 ancre absente). Le
+banc est fiable en FICHIER ENTIER (indexeurs, nexus_plan), fragile en multi-blocs
+sur gros fichier existant.
+
+**VERDICT.** Le modèle « salve massive pour liquider un backlog » suppose du code
+cassé/manquant. Ici la mesure dit l'inverse : code mature, surface fonctionnelle,
+défauts d'audit = design intentionnel. La voie vers « la fin » n'est pas 15 agents
+sur du code stale, c'est l'audit de livraison complet (éprouver chaque
+fonctionnalité MCP/A2A) + de rares raffinements grondés, faits en fichier-entier
+ou patch NARROW, jamais en masse.
