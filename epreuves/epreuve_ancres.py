@@ -24,7 +24,7 @@ def _run_tool(rendu: Path, nom: str, cible: Path, extra_args=None):
     return result.stdout, result.stderr, result.returncode, None
 
 def _case_forward():
-    name = "FORWARD"
+    _name = "FORWARD"
     with tempfile.TemporaryDirectory() as td:
         td_path = Path(td)
         cible = td_path / "cible.txt"
@@ -49,7 +49,7 @@ def _case_forward():
         return True, "reparation detected"
 
 def _case_reverse():
-    name = "REVERSE"
+    _name = "REVERSE"
     with tempfile.TemporaryDirectory() as td:
         td_path = Path(td)
         cible = td_path / "cible.txt"
@@ -72,7 +72,7 @@ def _case_reverse():
         return True, "ambiguity correctly detected"
 
 def _case_fuite():
-    name = "FUITE"
+    _name = "FUITE"
     with tempfile.TemporaryDirectory() as td:
         td_path = Path(td)
         cible = td_path / "cible.txt"
