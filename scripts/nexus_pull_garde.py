@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import urllib.error
 import urllib.request
@@ -47,14 +46,6 @@ if hasattr(sys.stdout, "reconfigure"):
 _ACCEPTED = "AUTORISE"
 _REFUSED = "REFUSE"
 _UNKNOWN = "INDETERMINE"
-
-# ----------------------------------------------------------------------
-# Helpers
-# ----------------------------------------------------------------------
-def _root_dir() -> str:
-    """Répertoire racine dérivé de ce fichier (sans effets de bord)."""
-    return os.path.abspath(os.path.dirname(__file__))
-
 
 # ----------------------------------------------------------------------
 # API publique
