@@ -12,7 +12,7 @@ CODE_ECHEC_TEST = 1
 def verifier_existence_outil():
     chemin = Path("outillage/nexus_secours.py")
     if not chemin.exists():
-        print(f"[ERREUR] Outil introuvable : {chemin.absolute()}")
+        print(f"[RATE] Outil introuvable : {chemin.absolute()}")
         return False
     return True
 
@@ -36,15 +36,15 @@ def executer_test(args, timeout=90, capture_sortie=True):
 def test_1_sortie_non_vide():
     code, stdout, stderr = executer_test([])
     if code != 0:
-        print("[FAIL] Test 1 - Code retour non nul sans argument")
+        print("[RATE] Test 1 - Code retour non nul sans argument")
         return False
     if not stdout.strip():
-        print("[FAIL] Test 1 - Sortie vide sans argument")
+        print("[RATE] Test 1 - Sortie vide sans argument")
         return False
     if "moteur" not in stdout.lower():
-        print("[FAIL] Test 1 - Sortie ne mentionne pas le moteur")
+        print("[RATE] Test 1 - Sortie ne mentionne pas le moteur")
         return False
-    print("[OK] Test 1 - Sortie non vide mentionnant le moteur")
+    print("[OK  ] Test 1 - Sortie non vide mentionnant le moteur")
     return True
 
 def test_2_moteur_injoignable():
@@ -65,19 +65,19 @@ def test_2_moteur_injoignable():
             else:
                 os.environ.pop(var, None)
     else:
-        print("[INFO] Test 2 - Outil ne semble pas accepter d'adresse detournee")
+        print("[OK  ] Test 2 - Outil ne semble pas accepter d'adresse detournee (non applicable)")
         return True  # On ne peut pas tester, mais ce n'est pas un echec
 
     if code == 0:
-        print("[FAIL] Test 2 - Code retour nul avec moteur injoignable")
+        print("[RATE] Test 2 - Code retour nul avec moteur injoignable")
         return False
     if not stdout.strip() and not stderr.strip():
-        print("[FAIL] Test 2 - Aucune sortie avec moteur injoignable")
+        print("[RATE] Test 2 - Aucune sortie avec moteur injoignable")
         return False
     if "injoignable" not in stdout.lower() and "injoignable" not in stderr.lower():
-        print("[FAIL] Test 2 - Sortie ne mentionne pas l'injoignabilite")
+        print("[RATE] Test 2 - Sortie ne mentionne pas l'injoignabilite")
         return False
-    print("[OK] Test 2 - Moteur injoignable correctement rapporte")
+    print("[OK  ] Test 2 - Moteur injoignable correctement rapporte")
     return True
 
 def test_3_aucun_fichier_ecrit():
@@ -88,16 +88,16 @@ def test_3_aucun_fichier_ecrit():
 
     if fichiers_avant != fichiers_apres:
         nouveaux = fichiers_apres - fichiers_avant
-        print(f"[FAIL] Test 3 - Fichiers ecrits : {', '.join(str(f) for f in nouveaux)}")
+        print(f"[RATE] Test 3 - Fichiers ecrits : {', '.join(str(f) for f in nouveaux)}")
         return False
 
     # Verifier aussi les dates de modification
     for f in fichiers_avant:
         if f.stat().st_mtime > time.time() - 10:  # Modifie dans les 10 dernieres secondes
-            print(f"[FAIL] Test 3 - Fichier modifie : {f}")
+            print(f"[RATE] Test 3 - Fichier modifie : {f}")
             return False
 
-    print("[OK] Test 3 - Aucun fichier ecrit ou modifie")
+    print("[OK  ] Test 3 - Aucun fichier ecrit ou modifie")
     return True
 
 def test_4_delai_respecte():
@@ -109,13 +109,13 @@ def test_4_delai_respecte():
         code, stdout, stderr = executer_test(["--delai", delai_court], timeout=15)
         duree = time.time() - debut
         if duree > 10:
-            print(f"[FAIL] Test 4 - Delai non respecte : {duree:.1f}s")
+            print(f"[RATE] Test 4 - Delai non respecte : {duree:.1f}s")
             return False
     else:
-        print("[INFO] Test 4 - Outil ne semble pas accepter d'option de delai")
+        print("[OK  ] Test 4 - Outil ne semble pas accepter d'option de delai (non applicable)")
         return True  # On ne peut pas tester, mais ce n'est pas un echec
 
-    print("[OK] Test 4 - Delai respecte")
+    print("[OK  ] Test 4 - Delai respecte")
     return True
 
 def main():

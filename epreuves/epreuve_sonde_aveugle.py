@@ -133,8 +133,7 @@ def main():
             rc, out, err = run_tool(tool_path, target)
             ok = (rc != 0) if expect_nonzero else (rc == 0)
             overall_ok = overall_ok and ok
-            status = "OK" if ok else "FAIL"
-            print(f"[{tag}] {status} {desc} (rc={rc})")
+            print(f"[{'OK  ' if ok else 'RATE'}] {tag} : {desc} (rc={rc})")
             # optional debug output can be uncommented
             # if out: print("STDOUT:", out.strip())
             # if err: print("STDERR:", err.strip())

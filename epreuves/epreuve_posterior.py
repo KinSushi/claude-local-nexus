@@ -23,7 +23,7 @@ def run(args, input_str=None):
 def main():
     tool = "outillage/nexus_posterior.py"
     if not os.path.isfile(tool):
-        print(f"Outil absent : {tool}")
+        print(f"[RATE] Outil absent : {tool}")
         sys.exit(42)
 
     tmpdir = tempfile.mkdtemp()
@@ -39,9 +39,9 @@ def main():
         
         rc, out, err = run(["--observations", obs_path, "--json"])
         if rc == 0 and '"confiance": "mesuree"' in out and '"model": "m1"' in out:
-            results.append("[NOMINAL] OK")
+            results.append("[OK  ] NOMINAL")
         else:
-            results.append(f"[NOMINAL] FAIL: rc={rc} out={out[:50]}")
+            results.append(f"[RATE] NOMINAL: rc={rc} out={out[:50]}")
 
         # CAS INVERSE (Insuffisant)
         obs_path_low = os.path.join(tmpdir, "low.jsonl")
@@ -50,9 +50,9 @@ def main():
         
         rc, out, err = run(["--observations", obs_path_low, "--json"])
         if rc == 0 and '"confiance": "insuffisante"' in out:
-            results.append("[INVERSE] OK")
+            results.append("[OK  ] INVERSE")
         else:
-            results.append(f"[INVERSE] FAIL: rc={rc} out={out[:50]}")
+            results.append(f"[RATE] INVERSE: rc={rc} out={out[:50]}")
 
         # ENTREE MALFORMEE
         obs_path_bad = os.path.join(tmpdir, "bad.jsonl")
@@ -62,17 +62,17 @@ def main():
         
         rc, out, err = run(["--observations", obs_path_bad, "--json"])
         if rc == 0 and '"lignes_ignorees": 1' in out:
-            results.append("[MALFORMEE] OK")
+            results.append("[OK  ] MALFORMEE")
         else:
-            results.append(f"[MALFORMEE] FAIL: rc={rc} out={out[:50]}")
+            results.append(f"[RATE] MALFORMEE: rc={rc} out={out[:50]}")
 
         # USAGE (Arguments manquants / invalides)
         # L'outil n'a pas d'arguments requis, mais on teste un argument inconnu
         rc, out, err = run(["--unknown-arg"])
         if rc != 0 and "usage:" in err.lower():
-            results.append("[USAGE] OK")
+            results.append("[OK  ] USAGE")
         else:
-            results.append(f"[USAGE] FAIL: rc={rc} err={err[:50]}")
+            results.append(f"[RATE] USAGE: rc={rc} err={err[:50]}")
 
     finally:
         shutil.rmtree(tmpdir)

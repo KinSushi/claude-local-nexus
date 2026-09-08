@@ -80,7 +80,7 @@ def main():
     for t in tests:
         code, out, err = run_tool(t["input"])
         success = (code == t["expected_code"]) and t["check_out"](out)
-        print(f"[{'OK' if success else 'FAIL'}] {t['id']}")
+        print(f"[{'OK  ' if success else 'RATE'}] {t['id']}")
         if not success:
             failed = True
 
