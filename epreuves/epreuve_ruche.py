@@ -10,7 +10,7 @@ TIMEOUT = 10
 
 def verifier_script_existe():
     if not NEXUS_RUCHE.is_file():
-        print(f"[ERREUR] Script introuvable: {NEXUS_RUCHE}")
+        print(f"[RATE] ERREUR : Script introuvable: {NEXUS_RUCHE}")
         return False
     return True
 
@@ -34,7 +34,9 @@ def lancer_ruche(args, input_text=None):
 def cas_nominal():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-        test_file = tmp_path / "test.py"
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        test_file = scripts_dir / "test.py"
         test_file.write_text("# Test\n" * 30, encoding="utf-8")
 
         code, out, err = lancer_ruche([
@@ -44,23 +46,23 @@ def cas_nominal():
         ])
 
         if code != 0:
-            print(f"[NOMINAL] Echec code={code} err={err}")
+            print(f"[RATE] NOMINAL : Echec code={code} err={err}")
             return False
         if "Simuler essaim sur 1 cible(s)" not in out:
-            print(f"[NOMINAL] Sortie inattendue: {out}")
+            print(f"[RATE] NOMINAL : Sortie inattendue: {out}")
             return False
-    print("[NOMINAL] OK")
+    print("[OK  ] NOMINAL : ok")
     return True
 
 def cas_inverse():
     code, out, err = lancer_ruche(["--racine", "/inexistant"])
     if code == 0:
-        print("[INVERSE] Devrait echouer")
+        print("[RATE] INVERSE : Devrait echouer")
         return False
     if "Aucune cible a traiter" not in out:
-        print(f"[INVERSE] Message inattendu: {out}")
+        print(f"[RATE] INVERSE : Message inattendu: {out}")
         return False
-    print("[INVERSE] OK")
+    print("[OK  ] INVERSE : ok")
     return True
 
 def cas_malforme():
@@ -74,24 +76,24 @@ def cas_malforme():
             "--simuler"
         ])
 
-        if code != 0:
-            print(f"[MALFORME] Devrait reussir code={code}")
+        if code == 0:
+            print(f"[RATE] MALFORME : 0 cible doit ECHOUER, code={code}")
             return False
         if "0 cibles decouvertes" not in out:
-            print(f"[MALFORME] Sortie inattendue: {out}")
+            print(f"[RATE] MALFORME : Sortie inattendue: {out}")
             return False
-    print("[MALFORME] OK")
+    print("[OK  ] MALFORME : ok")
     return True
 
 def cas_usage():
-    code, out, err = lancer_ruche([])
+    code, out, err = lancer_ruche(["--option-inexistante"])
     if code == 0:
-        print("[USAGE] Devrait echouer")
+        print("[RATE] USAGE : Devrait echouer")
         return False
     if "usage:" not in err.lower():
-        print(f"[USAGE] Message d'usage manquant: {err}")
+        print(f"[RATE] USAGE : Message d'usage manquant: {err}")
         return False
-    print("[USAGE] OK")
+    print("[OK  ] USAGE : ok")
     return True
 
 def main():
@@ -113,7 +115,7 @@ def main():
             else:
                 codes.append(0)
         except Exception as e:
-            print(f"[{nom}] Exception: {str(e)}")
+            print(f"[RATE] {nom} : Exception: {str(e)}")
             codes.append(1)
 
     if any(codes):
