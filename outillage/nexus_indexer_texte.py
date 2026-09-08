@@ -114,9 +114,13 @@ def index_texte(root: Path) -> Tuple[int, int, int, int]:
     for tsv_path in base_dir.glob(pattern):
         # Dérivation du nom du livre et du slug
         pre_mache_dir = tsv_path.parent
-        book_dir = pre_mache_dir.parent
-        book_name = book_dir.name
-        slug = _slugify(book_name)
+        # Le nom du LIVRE est dans le dossier "<livre>__PRE_MACHE" lui-meme, PAS
+        # dans son parent (la CATEGORIE). L'ancien code prenait le parent : 102
+        # livres -> 18 slugs, 52% d'ids en collision (mesure), et --read casse.
+        categorie = pre_mache_dir.parent.name
+        nom_dossier = pre_mache_dir.name
+        book_name = nom_dossier[:-len("__PRE_MACHE")] if nom_dossier.endswith("__PRE_MACHE") else nom_dossier
+        slug = _slugify(categorie + "_" + book_name)
 
         rows, skipped = _read_tsv(tsv_path)
         nb_lignes_sautées += skipped
