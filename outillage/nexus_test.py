@@ -1435,6 +1435,7 @@ def main() -> int:
     if args.only in (None, "livres"):
         jouer_epreuve_python("nexus_livres.py", "corpus de livres")
         jouer_epreuve_python("epreuve_selection_top.py", "selection top-N heap sur scores egaux")
+        jouer_epreuve_python("epreuve_index_semantique.py", "index semantique : pas de sur-duplication (garde anti-append)")
     if args.only in (None, "sauvegarde"):
         jouer_epreuve_python("nexus_sauvegarde.py", "sauvegarde locale")
     if args.only in (None, "rassurant"):
