@@ -484,6 +484,22 @@ def main() -> int:
 
         exit_code = _agreger(resultats)
 
+    elif action == "batch":
+        if len(sys.argv) < 4:
+            print(f"ERROR: usage batch <prompt> <model> (SERVER={SERVER})", file=sys.stderr)
+            return 1
+        out = call_tool("nexus_batch", {"tasks": [{"prompt": sys.argv[2]}], "model": sys.argv[3]})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+
+    elif action == "compare":
+        if len(sys.argv) < 4:
+            print(f"ERROR: usage compare <prompt> <model1,model2> (SERVER={SERVER})", file=sys.stderr)
+            return 1
+        out = call_tool("nexus_compare", {"prompt": sys.argv[2], "models": sys.argv[3].split(",")})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+
     else:
         print(__doc__)
         return 1
