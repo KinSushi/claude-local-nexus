@@ -1501,7 +1501,7 @@ def test_portee_import() -> None:
 
     outil = os.path.join(ROOT, "outillage", "nexus_portee_import.py")
     if not os.path.isfile(outil):
-        skip("portee des imports", "nexus_portee_import.py introuvable")
+        check("portee des imports", False, "nexus_portee_import.py introuvable : dispatch sans fichier")
         return
 
     dangereux = (
@@ -3480,7 +3480,7 @@ def test_isolation() -> None:
 
     pont = os.path.join(ROOT, "tools", "nexus-mcp", "server.js")
     if not os.path.isfile(pont):
-        skip("pont en lecture seule", "server.js introuvable")
+        check("pont en lecture seule", False, "server.js introuvable : dispatch sans fichier")
         return
     with io.open(pont, encoding="utf-8", errors="replace") as fh:
         source_pont = fh.read()
@@ -3664,7 +3664,7 @@ def test_garde_shell() -> None:
 
     garde = os.path.join(ROOT, "scripts", "nexus_garde_shell.py")
     if not os.path.isfile(garde):
-        skip("garde shell", "nexus_garde_shell.py introuvable")
+        check("garde shell", False, "nexus_garde_shell.py introuvable : dispatch sans fichier")
         return
 
     barre = chr(92)
@@ -3729,9 +3729,9 @@ def test_garde_shell() -> None:
         ("epreuve garde heredoc", "epreuve_garde_heredoc.py"),
         ("epreuve garde encodage", "epreuve_garde_encodage.py"),
     ):
-        chemin = os.path.join(ROOT, "scripts", script)
+        chemin = os.path.join(ROOT, "epreuves", script)
         if not os.path.isfile(chemin):
-            skip(nom, "%s introuvable" % script)
+            check(nom, False, "%s introuvable : dispatch sans fichier" % script)
             continue
         r = subprocess.run([sys.executable, chemin], cwd=ROOT,
                            capture_output=True, text=True, timeout=60,
