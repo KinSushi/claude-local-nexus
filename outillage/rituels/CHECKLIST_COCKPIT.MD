@@ -27472,3 +27472,33 @@ l'APPELANT : ajouter un agrégateur `tous` qui exerce toute la surface légère 
 rend non nul si UN outil échoue, le CÂBLER dans le rituel/nexus_test comme
 porte de livraison, et étendre `epreuve_sonde_mcp` pour prouver que l'agrégateur
 DÉTECTE une panne. Restent aussi les 2 actions d'inférence (batch, compare).
+
+### §218 — L'appelant posé : la sonde MCP devient une porte de livraison
+
+**Le lien manquant (§0.2.1), posé.** Le §217 avait ajouté 5 actions mais sans
+appelant — « un outil qu'aucun mécanisme n'appelle est un fichier ». Cycle 2
+(vague de 3 tâches parallèles au banc) pose l'appelant :
+
+* `_agreger(paires)` — fonction pure : 0 si non vide et tous vrais, 1 sinon
+  (vide compris) ;
+* action `tous` — exerce les 6 outils légers (models, charge, savings, profile,
+  verrou, livres) via le VRAI serveur JSON-RPC et agrège ;
+* `epreuves/epreuve_sonde_mcp_couverture.py` — contre-épreuve DÉTERMINISTE de
+  `_agreger` (une seule panne → non nul), **câblée** dans nexus_test par
+  `jouer_epreuve_python` (ligne 1434).
+
+**Validé cinq fois.** Forward (épreuve 3/3 ; `probe tous` 6/6 exit 0 via serveur),
+reverse (épreuve cas 2 : panne → 1), audit banc indépendant « CORRECTION SAINE »,
+cliquet outillage « aucune régression », nexus_valide LOI 1. Commit `73a87a5`.
+
+**Leçon §112.4 mesurée ce tour.** Le cliquet nu (`nexus_outillage.py`) sort en
+code 1 dès qu'il EXISTE des violations (45 pré-existantes) ; le vrai verdict de
+RÉGRESSION est `--cliquet` (delta vs référence versionnée) → « aucune
+régression », code 0. Vérifier la sémantique RÉELLE d'une porte, pas son code de
+sortie apparent. Et : les 3 ruff de l'épreuve (UP009/UP031/BLE001) copient le
+style du gabarit `epreuve_charge.py` et ne sont PAS dans les règles contrôlées —
+les « corriger » romprait la cohérence avec 30 autres épreuves.
+
+**Threads restants.** Sonde : actions `batch`/`compare` (inférence) = 15/15.
+Regroupement optionnel de l'épreuve sous `--only sonde`. Plus : contre-épreuve
+heap (§216), nexus_patch §0.6 (§214a), bandit §240.
