@@ -44,14 +44,17 @@ def cas_nominal(outil_path):
         return False
 
 def cas_inverse(outil_path):
-    cmd = [sys.executable, str(outil_path), "--plans", "cloud", "--simuler"]
-    code, output = lancer_processus(cmd)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        vide = pathlib.Path(tmpdir) / "aucune_cible.txt"
+        vide.write_text("", encoding="utf-8")
+        cmd = [sys.executable, str(outil_path), "--file", str(vide), "--simuler"]
+        code, output = lancer_processus(cmd)
 
-    if code != 0 and "No targets to process" in output:
-        print("[OK  ] Cas inverse (pas de cibles) : ok")
-        return True
-    print(f"[RATE] Cas inverse : code={code} <sortie={output}>")
-    return False
+        if code != 0 and "No targets to process" in output:
+            print("[OK  ] Cas inverse (pas de cibles) : ok")
+            return True
+        print(f"[RATE] Cas inverse : code={code} <sortie={output}>")
+        return False
 
 def cas_malforme(outil_path):
     with tempfile.TemporaryDirectory() as tmpdir:
