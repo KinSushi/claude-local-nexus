@@ -27737,7 +27737,7 @@ liquidation apparaît dans progress.md via son commit.
 | 1 | Corpus disque fiable — recherche sémantique sur les 4 corpus, 102 livres FR inclus | HAUTE | orchestrateur | rebuild EN COURS + contre-épreuve à poser |
 | 2 | Contre-épreuve append CORRECTE : index total ≤ somme des sources (59270), PAS « zéro doublon » (la source EN A — le banc l'avait inventé) | HAUTE (§0.1.4.1) | orchestrateur | à refaire, groundée |
 | 2b | ~~Ids non-uniques livres_texte (15211, 52%)~~ **LIQUIDÉ** : indexeur prenait la catégorie au lieu du livre → fix (catégorie+livre), re-indexé, 29300 ids UNIQUES, rebuild picore la version corrigée | MOYENNE (données) | orchestrateur | ✅ clos |
-| 2c | Ids non-uniques dans l'indexeur CODE (1073 dups, 9%) — autre indexeur, plus petit | BASSE (données) | orchestrateur | à faire (même patron que 2b) |
+| 2c | Ids non-uniques indexeur CODE (1073 dups, 9%) — code DÉJÀ embarqué dans le rebuild courant, donc fix future-only (bénéficie au prochain re-build seulement) | BASSE (données) | orchestrateur | différé (faible valeur, pas de re-build pour ça) |
 | 3 | Sonde MCP 15/15 câblée en PORTE avant-publication (probe tous → nexus_vitrine) | HAUTE | orchestrateur | à faire |
 | 4 | A2A — registre de ressources partagé (locks, process, orphelins ; l'incident PID de la nuit le prouve) | HAUTE (cap A2A) | opérateur + orchestrateur | à concevoir |
 | 5 | Bandit §240 — inférence adaptative (température/modèle appris, pas figés) | HAUTE (R&D) | opérateur (signal de qualité) | conçu §106.2, non bâti |
