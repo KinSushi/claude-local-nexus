@@ -531,8 +531,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             texte, modele,
             (messages[-1].get("content", "") if messages else "")[:120],
             plan_de(entetes.get("x-litellm-model-api-base", "")))
-    except Exception:
-        pass
+    except Exception as exc:
+        print("lecture de la tracabilite du plan ratee : %s" % exc, file=sys.stderr)
 
     return {
         "texte": texte,
@@ -1047,8 +1047,8 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
             resultat["mentions_hors_perimetre"] = len(_hors)
         except Exception:
             resultat["mentions_hors_perimetre"] = 0
-    except Exception:
-        pass
+    except Exception as exc:
+        print("comptage des mentions hors perimetre rate : %s" % exc, file=sys.stderr)
     return resultat
 
 def executer(tache: dict, cle: str) -> dict:
@@ -1225,8 +1225,8 @@ def executer(tache: dict, cle: str) -> dict:
                     if len(parts) == 2:
                         cible, motif = parts
                         _dj.record_failure(cible, motif)
-        except Exception:
-            pass
+        except Exception as exc:
+            print("enregistrement de la panne au disjoncteur rate : %s" % exc, file=sys.stderr)
         resultat.update({"nom": nom, "modele": candidat, "refus": refus,
                          "fichiers_joints": joints,
                          "plan": plan_de(resultat["adresse"]), "demande_initiale": modele})
@@ -1267,8 +1267,8 @@ def executer(tache: dict, cle: str) -> dict:
                 if len(parts) == 2:
                     cible, motif = parts
                     _dj.record_failure(cible, motif)
-        except Exception:
-            pass
+        except Exception as exc:
+            print("enregistrement de la panne au disjoncteur rate : %s" % exc, file=sys.stderr)
     # Aucun candidat n'a produit de texte.
     if trunc_failure:
         # Retourner le premier échec par troncature comme refus de plafond.
