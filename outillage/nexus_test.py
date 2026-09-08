@@ -1406,6 +1406,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_paires_copiees.py", "paires copiees")
     if args.only in (None, "chemins"):
         jouer_epreuve_python("epreuve_chemins_annonces.py", "chemins annonces")
+    if args.only in (None, "creer"):
+        jouer_epreuve_python("epreuve_creer.py", "creation de fichier")
     if args.only in (None, "lecture"):
         jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
     if args.only in (None, "shell"):
