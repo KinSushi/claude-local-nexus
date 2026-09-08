@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 nexus_indexer_resumes.py
@@ -39,7 +38,6 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 # --------------------------------------------------------------------------- #
 # Helpers (sans effets de bord à l'import)
@@ -58,12 +56,12 @@ def _slugify(text: str) -> str:
     return text[:_SLUG_MAX_LEN]
 
 
-def _read_tsv(path: Path) -> Tuple[List[List[str]], int]:
+def _read_tsv(path: Path) -> tuple[list[list[str]], int]:
     """
     Lit un TSV en mode texte, renvoie la liste des lignes (listes de champs)
     et le nombre de lignes ignorées (mal formées ou < 5 colonnes).
     """
-    rows: List[List[str]] = []
+    rows: list[list[str]] = []
     skipped = 0
     try:
         with path.open(newline='', encoding='utf-8') as f:
@@ -91,7 +89,7 @@ def _write_atomic(target: Path, data: bytes) -> None:
     os.replace(tmp, target)
 
 
-def _write_atomic_text(target: Path, lines: List[str]) -> None:
+def _write_atomic_text(target: Path, lines: list[str]) -> None:
     """Écrit une liste de lignes texte (sans \\n) de façon atomique."""
     tmp = target.with_suffix('.tmp')
     with tmp.open('w', encoding='utf-8', newline='\n') as f:
@@ -104,7 +102,7 @@ def _write_atomic_text(target: Path, lines: List[str]) -> None:
 # Core indexing logic
 # --------------------------------------------------------------------------- #
 
-def index_resumes(root: Path) -> Tuple[int, int, int, int]:
+def index_resumes(root: Path) -> tuple[int, int, int, int]:
     """
     Parcourt les résumés sous *root*/references/livres_texte,
     crée symbols.jsonl et index.tsv dans *root*/references/livres_texte_resumes.
@@ -118,10 +116,10 @@ def index_resumes(root: Path) -> Tuple[int, int, int, int]:
     symbols_path = dst_base / 'symbols.jsonl'
     index_path = dst_base / 'index.tsv'
 
-    index_lines: List[str] = []
+    index_lines: list[str] = []
     symbols_bytes = bytearray()
 
-    uid_counts: Dict[str, int] = {}
+    uid_counts: dict[str, int] = {}
 
     nb_files = 0
     nb_resumes = 0

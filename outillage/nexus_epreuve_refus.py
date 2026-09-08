@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """outillage/nexus_epreuve_refus.py
 
@@ -17,7 +16,6 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, List
 
 # --------------------------------------------------------------------------- #
 # 1.  Préparation du sys.path
@@ -35,7 +33,7 @@ for _p in (_ROOT, _SCRIPTS):
 _ECRIRE_REFUS_SORTIE = None  # type: ignore[var-annotated]
 
 try:
-    from nexus_agent import _ecrire_refus_sortie as _ECRIRE_REFUS_SORTIE  # noqa: F401
+    from nexus_agent import _ecrire_refus_sortie as _ECRIRE_REFUS_SORTIE
 except Exception as exc:  # ImportError, AttributeError, etc.
     _IMPORT_ERROR = exc
 else:
@@ -44,7 +42,7 @@ else:
 # --------------------------------------------------------------------------- #
 # 3.  Fonctions utilitaires
 # --------------------------------------------------------------------------- #
-def _read_jsonl(path: Path) -> List[dict]:
+def _read_jsonl(path: Path) -> list[dict]:
     """Lit un fichier JSON‑Lines et renvoie la liste des objets décodés."""
     lines = []
     with path.open("r", encoding="utf-8") as fh:

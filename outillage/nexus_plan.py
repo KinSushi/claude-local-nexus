@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 outillage/nexus_plan.py
@@ -28,12 +27,10 @@ Fonctionnement :
 
 import argparse
 import json
-import os
 import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Tuple
 
 # --------------------------------------------------------------------------- #
 #   Constantes de classification
@@ -68,7 +65,7 @@ class Item:
     def __init__(self,
                  section_idx: int,
                  raw_line: str,
-                 cells: List[str],
+                 cells: list[str],
                  closed: bool = False):
         self.section_idx = section_idx          # numéro de section d’origine (1‑based)
         self.raw_line = raw_line                # ligne brute du tableau
@@ -120,7 +117,7 @@ class Item:
 #   Parsing du markdown
 # --------------------------------------------------------------------------- #
 
-def split_into_sections(lines: List[str]) -> List[Tuple[str, List[str]]]:
+def split_into_sections(lines: list[str]) -> list[tuple[str, list[str]]]:
     """
     Découpe le texte en sections.
     Retourne une liste de tuples (titre, corps) où le titre inclut le(s) '#'.
@@ -147,7 +144,7 @@ def split_into_sections(lines: List[str]) -> List[Tuple[str, List[str]]]:
 
 def extract_items_from_section(section_idx: int,
                               title: str,
-                              body: List[str]) -> List[Item]:
+                              body: list[str]) -> list[Item]:
     """
     Extrait les items d’une section dont le titre contient « ouvert ».
     """
@@ -184,7 +181,7 @@ def extract_items_from_section(section_idx: int,
     return items
 
 
-def parse_checklist(path: Path) -> List[Item]:
+def parse_checklist(path: Path) -> list[Item]:
     """
     Parse le fichier markdown et renvoie la liste de tous les items ouverts.
     """
@@ -203,9 +200,9 @@ def parse_checklist(path: Path) -> List[Item]:
 #   Génération de rapports
 # --------------------------------------------------------------------------- #
 
-def group_by_category(items: List[Item]) -> Dict[str, List[Item]]:
+def group_by_category(items: list[Item]) -> dict[str, list[Item]]:
     """Regroupe les items par catégorie (exclut CLOS)."""
-    groups: Dict[str, List[Item]] = {}
+    groups: dict[str, list[Item]] = {}
     for it in items:
         if it.category == "CLOS":
             continue
@@ -213,7 +210,7 @@ def group_by_category(items: List[Item]) -> Dict[str, List[Item]]:
     return groups
 
 
-def report_text(groups: Dict[str, List[Item]]) -> str:
+def report_text(groups: dict[str, list[Item]]) -> str:
     """Construit le rapport lisible."""
     order = ["CODE", "MESURE", "DECISION", "RECHERCHE", "AUTRE"]
     lines = []
@@ -236,7 +233,7 @@ def report_text(groups: Dict[str, List[Item]]) -> str:
     return "\n".join(lines)
 
 
-def report_json(groups: Dict[str, List[Item]]) -> str:
+def report_json(groups: dict[str, list[Item]]) -> str:
     """Construit le rapport JSON."""
     data = {
         "categories": {cat: [it.text() for it in items]
@@ -247,7 +244,7 @@ def report_json(groups: Dict[str, List[Item]]) -> str:
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
-def output_report(items: List[Item], args: argparse.Namespace) -> None:
+def output_report(items: list[Item], args: argparse.Namespace) -> None:
     """Affiche le rapport selon les options."""
     groups = group_by_category(items)
 
