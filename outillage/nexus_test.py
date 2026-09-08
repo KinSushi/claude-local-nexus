@@ -1410,6 +1410,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_creer.py", "creation de fichier")
     if args.only in (None, "repli"):
         jouer_epreuve_python("epreuve_repli_adaptatif.py", "repli gratuit cloud-first")
+    if args.only in (None, "dispatch"):
+        jouer_epreuve_python("epreuve_dispatch_sain.py", "cablage sain : aucun dispatch sans fichier")
     if args.only in (None, "lecture"):
         jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
     if args.only in (None, "shell"):
@@ -1726,7 +1728,7 @@ def jouer_epreuve_node(fichier: str, etiquette: str, titre: str) -> None:
 
     epreuve = os.path.join(ROOT, "tools", "nexus-mcp", fichier)
     if not os.path.isfile(epreuve):
-        skip(etiquette, "%s introuvable" % fichier)
+        check(etiquette, False, "%s introuvable : dispatch sans fichier" % fichier)
         return
     try:
         r = subprocess.run(["node", epreuve], cwd=ROOT, capture_output=True,
@@ -2899,7 +2901,7 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
     """
     epreuve = os.path.join(ROOT, "epreuves", fichier)
     if not os.path.isfile(epreuve):
-        skip(etiquette, "%s introuvable" % fichier)
+        check(etiquette, False, "%s introuvable : dispatch sans fichier" % fichier)
         return
 
     # LE BYTECODE EST PURGE AVANT DE JOUER, ET CE N'EST PAS UNE PRECAUTION
