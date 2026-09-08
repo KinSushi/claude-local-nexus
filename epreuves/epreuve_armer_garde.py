@@ -22,7 +22,7 @@ def run_test(args, temp_config=None, expect_success=True):
     cmd = [sys.executable, "outillage/nexus_armer_garde.py"] + args
     if temp_config:
         env = os.environ.copy()
-        env["USERPROFILE"] = temp_config.rsplit(os.sep, 2)[0]
+        env["NEXUS_SETTINGS_PATH"] = temp_config
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
     else:
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -37,7 +37,7 @@ def main():
     all_passed = True
 
     # Préparation: créer un script de garde fictif
-    guard_script = os.path.join("scripts", "nexus_garde_fictif.py")
+    guard_script = os.path.join("outillage", "nexus_garde_fictif.py")
     with open(guard_script, "w", encoding="utf-8") as f:
         f.write("# Fichier fictif pour les tests\n")
 
