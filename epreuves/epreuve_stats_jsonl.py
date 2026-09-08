@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 # Path to the tool relative to this file
-TOOL_PATH = os.path.join(os.path.dirname(__file__), "nexus_stats_jsonl.py")
+TOOL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "outillage", "nexus_stats_jsonl.py")
 
 if not os.path.isfile(TOOL_PATH):
     print("[ERROR] Tool not found at " + TOOL_PATH)
@@ -132,9 +132,9 @@ def main():
         for name, func in cases:
             ok, msg = func(td)
             if ok:
-                print(f"[{name}] OK")
+                print(f"[OK  ] {name} : ok")
             else:
-                print(f"[{name}] FAIL {msg}")
+                print(f"[RATE] {name} : {msg}")
                 overall_ok = False
 
     sys.exit(0 if overall_ok else 1)

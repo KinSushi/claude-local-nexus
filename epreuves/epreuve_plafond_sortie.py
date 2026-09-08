@@ -7,7 +7,8 @@ import sys
 def main() -> int:
     # Resolve the path to the target module relative to this file, never using cwd.
     _this_dir = os.path.abspath(os.path.dirname(__file__))
-    _target_path = os.path.join(_this_dir, "nexus_agent.py")
+    _root = os.path.dirname(_this_dir)
+    _target_path = os.path.join(_root, "scripts", "nexus_agent.py")
     if not os.path.isfile(_target_path):
         sys.stderr.write(f"Impossible de trouver {_target_path}\n")
         sys.exit(1)
