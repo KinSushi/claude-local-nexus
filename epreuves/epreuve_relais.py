@@ -8,7 +8,7 @@ import tempfile
 
 def verifier_fichier_outil():
     script_dir = pathlib.Path(__file__).resolve().parent
-    outil_path = script_dir / "nexus_relais.py"
+    outil_path = script_dir.parent / "outillage" / "nexus_relais.py"
     if not outil_path.is_file():
         print(f"[ERREUR] Fichier de l'outil introuvable : {outil_path}")
         sys.exit(3)

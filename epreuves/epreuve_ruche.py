@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-NEXUS_RUCHE = SCRIPT_DIR / "nexus_ruche.py"
+NEXUS_RUCHE = SCRIPT_DIR.parent / "outillage" / "nexus_ruche.py"
 TIMEOUT = 10
 
 def verifier_script_existe():
