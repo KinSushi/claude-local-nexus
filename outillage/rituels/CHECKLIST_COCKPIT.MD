@@ -27502,3 +27502,32 @@ les « corriger » romprait la cohérence avec 30 autres épreuves.
 **Threads restants.** Sonde : actions `batch`/`compare` (inférence) = 15/15.
 Regroupement optionnel de l'épreuve sous `--only sonde`. Plus : contre-épreuve
 heap (§216), nexus_patch §0.6 (§214a), bandit §240.
+
+### §219 — Balayage de livraison : 10/15 outils MCP prouvés par l'usage
+
+Devoir [[eprouver-toutes-fonctionnalites-avant-cloture]] : éprouver TOUTE la
+surface via le MCP réel. État mesuré ce tour (chaque appel à travers le vrai
+serveur JSON-RPC) :
+
+| outil | verdict | routé |
+| --- | --- | --- |
+| charge, savings, models, verrou, profile | livrent (exit 0) | local, sans inférence |
+| livres | livre (réparé §216) | embeddings locaux |
+| ask, route, summarize, context | livrent (exit 0), sortie réelle | **cloud** (contention CPU) |
+
+`ask` → « PRET » ; `route` → le routeur cloud choisit mistral-large-3-675b ;
+`summarize`/`context` rendent un vrai résumé. **Le chemin d'inférence est sain :
+aucun crash-par-l'usage** — contrairement à `livres`. C'est un résultat d'audit,
+pas une absence de résultat.
+
+**Restent à couvrir (5/15) :** `vision` (fixture image + modèle vision local),
+`batch` et `compare` (pas d'action sonde encore ; inférence), `index_build`
+(action existe, à éprouver sur une petite racine). `tous` reste volontairement
+LÉGER (6 outils, local, sans réseau) : les outils d'inférence s'éprouvent à la
+demande (avant publication), pas à chaque rituel — un gate ne doit pas dépendre
+du réseau ni du CPU contendu.
+
+**Prochain cycle mécanisé (thread §216).** Contre-épreuve heap : extraire la
+boucle de sélection top-N de `search_index` en fonction pure `_selectionner_top`,
+et une épreuve la testant sur des scores ÉGAUX (le cas qui plantait) — câblée.
+Inférence-free, donc propre même sous contention.
