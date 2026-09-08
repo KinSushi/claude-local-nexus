@@ -27295,3 +27295,37 @@ chapitre + TOUS les modules concernés (pas seulement le point d'appel).
 **Convergence :** audit code (14 fichiers) = bruit ; minage livres (3 chapitres) =
 2/3 rejetés ; audit livraison = surface fonctionnelle. Le projet est au/au-dessus
 du plancher des livres, sauf le lead bandit. La maturité est MESURÉE, trois fois.
+
+### §212 — BLOCAGE MACHINE consigné pour l'opérateur : 2 process runaway de CETTE session, non tués (décision opérateur)
+
+Coordination à 4 (sur demande opérateur) → attribution des 2 process qui chargent
+la machine et tiennent le verrou banc :
+
+**PID 20228 (47,7 CPU-h) et 8328 (47,5 CPU-h)** — `python.exe -` (AppData 3.14),
+créés le 05/09 à 20:37 et 20:51, mesurés par MOI (Win32_Process). Un `python -`
+sur stdin vide consomme 0 CPU ; 47 h = BOUCLE runaway (cloud-quota : CPU saturé +
+RAM plate = loop). ea-mt5 a remonté leurs bash parents jusqu'à MON scratchpad
+(session 1950c54b) — tâches hung de cette session le 05/09 (eprouver_ctrl.py +
+listage des livres sans code). Puissance_60 les attribue à `claude.exe` 15508
+(05/09 13:41), vraisemblablement le claude.exe originel de cette session.
+
+**NON TUÉS — décision opérateur, il dort.** Les 4 sessions s'accordent : ne jamais
+Stop-Process un process qu'on ne peut attribuer sans ambiguïté ; 47 CPU-h *peuvent*
+(improbable) porter un travail ; ea-mt5 a tué à tort ce soir sur diagnostic
+incomplet. **Aucune urgence** : les 3 pairs sont cloud-only cette nuit, le verrou
+banc ne bloque aucun d'eux ; seule la charge CPU pèse (et ralentit l'inférence
+locale + a fait échouer mon nexus_route en code 75).
+
+**POUR TOI AU RÉVEIL :**
+1. PID **20228** et **8328** sont des runaway de cette session (1950c54b) à
+   terminer pour libérer ~95 CPU-h : `Stop-Process -Id 20228,8328 -Force` (+ leurs
+   stubs WindowsApps 20236/4652). Vérifie d'abord qu'ils ne portent rien (sortie
+   >/dev/null, RAM plate → non).
+2. **3 sessions Claude du 05/09 non revendiquées** par aucun des 4 : PID **15508,
+   6256, 23948** (14–20 CPU-h). À investiguer — le banc restera sous pression
+   tant qu'elles vivent.
+3. Cause racine du runaway à trouver : un `python - <<'PYEOF'` (heredoc) qui, au
+   lieu de fermer sur stdin vide, boucle. Défaut à mécaniser si reproductible.
+
+Chacun sur son projet (ta consigne, réaffirmée par Puissance_60). Rien touché chez
+personne, aucun process tué, dépôt PROPRE (arbre commité).
