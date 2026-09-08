@@ -184,3 +184,32 @@ l'installer et VÉRIFIER, jamais supposer :
   téléchargement au pire moment (les deux abonnements morts, réseau peut-être
   coupé) doit avoir un plan B résident. Le bootstrap est lui-même à éprouver
   forward ET reverse (pilote absent → repli propre, pas de plantage).
+
+---
+
+## GROUNDING 2026-09-08 — le DÉTECTEUR existe déjà (leçon : vérifier l'existant AVANT)
+
+En voulant bâtir le détecteur, j'ai découvert (par le câblage de la suite) que
+le disjoncteur EXISTE DÉJÀ et est MÛR :
+
+- `scripts/nexus_disjoncteur.py` (+ paire `outillage/`) : `class CircuitBreaker`
+  (closed/open/half_open), **par target/plan**, thread-safe (RLock), persistance
+  atomique JSON, retry+jitter, distinction échec transitoire / permanent.
+- **Déjà utilisé par `nexus_agent`** (~ligne 1074) : filtre les candidats par
+  `is_available(c)`, enregistre `record_failure(cible, motif)` / `record_success`.
+  Un échec permanent (ex. 402) ouvre le circuit immédiatement.
+- Grounded dans le MÊME livre (30-Agents, ch.4) et déjà corrigé par mesure
+  (2026-09-02). Il y a même une `epreuve_journal_disjoncteur.py` câblée.
+
+**Conséquence** : le point 1 du plan (détecteur) est **DÉJÀ FAIT**. Il ne faut
+RIEN reconstruire — il faut RÉUTILISER ce `CircuitBreaker`. Le vrai manque de
+#11 se réduit à :
+1. le **déclencheur d'épuisement de l'abonnement CLAUDE** (distinct des plans
+   du banc que nexus_agent gère déjà) ;
+2. la **BOUCLE agentique locale** (plan→délègue→audite→décide, pilotée par
+   qwen3-coder:30b) qui prend le relais quand tous les plans payants sont OPEN.
+
+**Leçon (à mécaniser)** : j'ai commencé à écrire un doublon `Disjoncteur` avant
+de chercher l'existant — exactement le §0.6 que l'opérateur martèle
+(« EXPLOITER LE DÉJÀ EXISTANT SUR DISQUE AVANT »). Reverté sans dégât. Un
+réflexe manquant : `grep`/`ls` de l'existant AVANT toute création de module.
