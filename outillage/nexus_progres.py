@@ -108,7 +108,7 @@ def main():
                     if sections[i].startswith('#'):
                         last_title = sections[i].strip('# ').strip()
                         # Si le titre contient "ouvert", on compte les lignes de tableau dans la section suivante
-                        if "ouvert" in sections[i].lower() and i + 1 < len(sections):
+                        if "ouverts actuels" in sections[i].lower() and i + 1 < len(sections):
                             body = sections[i+1]
                             # Lignes de tableau commencent souvent par |
                             open_count += len([l for l in body.splitlines() if l.strip().startswith('|') and '---' not in l])

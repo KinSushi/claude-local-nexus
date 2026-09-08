@@ -27724,3 +27724,20 @@ l'orchestration cloud.
 **Migration critique vérifiée.** nexus_rituel et nexus_valide, migrés au lot
 encodage, TOURNENT (la reconfiguration n'a rien cassé sur l'infra dont je dépends
 chaque tour).
+
+## OUVERTS ACTUELS — la seule liste vivante (le reste du fichier est archive)
+
+Ajoutée le 2026-09-08. CETTE section est la checklist. Corrige le faux compteur
+« 977 sujets ouverts » : `nexus_progres` sommait les lignes de tableau des 18
+sections « ouvert » HISTORIQUES (closes depuis août). Désormais il ne compte QUE
+les lignes de ce tableau-ci. Un item se raye ici quand il est clos.
+
+| item | état | qui débloque |
+| --- | --- | --- |
+| Rebuild sémantique FR (102 livres, ~59k fragments) | EN COURS (~59%), réversible (backup pris) | se termine seul |
+| bandit §240 (température/modèle adaptatifs) | conçu (§106.2), non bâti | opérateur — décision du signal de qualité |
+| nexus_patch §0.6 (backups .avant-patch dans le projet) | différé | orchestrateur, outillage critique |
+
+Tout le reste de la session (conformité 100% verte, sonde MCP 15/15, encodage,
+contre-épreuve heap, crash recherche sémantique, périmètre sémantique FR) est
+CLOS et vérifié. Trois items ouverts, dont deux attendent l'opérateur.
