@@ -27448,3 +27448,27 @@ re-toucher le chemin que je viens de réparer dans le même geste.
 `batch`, `vision`, plus `index_build`. Note bénigne : `nexus_models` (chaud) et
 `nexus_charge` (0 résident) divergent sur un modèle en état `Stopping…` — course
 de timing sur le keep-alive, pas un défaut.
+
+### §217 — La sonde MCP étendue : le détecteur qui aurait attrapé le crash
+
+**Cause racine du §216, trouvée par lecture.** `nexus_mcp_probe.py` — le
+forward-test du pont, qui parle au VRAI serveur en JSON-RPC — ne couvrait que 8
+outils sur 15, et n'avait **aucune action `livres`**. Un forward-test de
+livraison qui n'appelle pas l'outil ne peut pas le protéger : c'est la raison
+mécanique pour laquelle le crash heapq est passé.
+
+**Corrigé (cycle à trois temps).** 5 branches ajoutées (livres, charge, savings,
+profile, verrou), rédigées par le banc, sur COPIE ; audit indépendant du banc →
+« CORRECTION SAINE » (vérifié ligne à ligne). Éprouvé à travers le vrai serveur :
+forward (les 5 rendent exit 0), reverse (`probe livres` sans arg → exit 1),
+py_compile, nexus_valide LOI 1. Commit `dadc737`. Couverture 8 → **13/15**.
+
+**Le duo §216+§217.** Le bug trouvé par l'usage a été corrigé (§216) PUIS le
+détecteur a été étendu pour qu'il ne repasse plus (§217) — « le livrable est un
+contrôle qui échoue quand la règle est enfreinte », pas un paragraphe.
+
+**Cycle 2 (thread ouvert, prochain tick).** Le lien le plus manquant (§0.2.1) est
+l'APPELANT : ajouter un agrégateur `tous` qui exerce toute la surface légère et
+rend non nul si UN outil échoue, le CÂBLER dans le rituel/nexus_test comme
+porte de livraison, et étendre `epreuve_sonde_mcp` pour prouver que l'agrégateur
+DÉTECTE une panne. Restent aussi les 2 actions d'inférence (batch, compare).
