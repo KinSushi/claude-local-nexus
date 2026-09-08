@@ -235,3 +235,44 @@ un script tiers ne peut pas l'interroger directement. Options à trancher
 (compteur d'usage, date de reset) ; (c) bascule MANUELLE assumée.
 Tant que ce point n'est pas tranché, bâtir la boucle locale reviendrait
 à inventer son déclencheur — ce que §112.4 interdit.
+
+---
+
+## PROTOTYPE ISOLÉ 2026-09-08 — le déclencheur FONCTIONNE sur les pièces existantes
+
+Autorisation opérateur : « tu peux bricoler dans un environnement isolé ». Fait,
+en isolation totale (une COPIE du disjoncteur dans le scratchpad → son état va
+dans `<scratchpad>/prototype_repli/.nexus/`, jamais le `.nexus/` réel — vérifié :
+0 pollution des 42 circuits de production).
+
+Cœur du prototype (`detecteur_repli.py`, réutilise le `CircuitBreaker` existant) :
+```
+def plans_payants_epuises(cb, plans):
+    return all(not cb.is_available(p) for p in plans)
+
+def decision_orchestrateur(cb, plans_payants):
+    return "local" if plans_payants_epuises(cb, plans_payants) else "claude"
+```
+
+Épreuve en isolation, les trois cas **[OK]** :
+- FORWARD : circuits frais → `'claude'` (plan payant disponible) ;
+- REVERSE : `record_failure('claude','usage_limit')` + `record_failure('ollama_cloud','402')`
+  → les deux circuits OPEN → `'local'` (bascule) ;
+- RECOVERY : après cooldown → `is_available` repasse half_open → `'claude'` (on rend la main).
+
+**Ce que ça établit** : le mécanisme de bascule automatique de #11 se construit
+ENTIÈREMENT sur le `CircuitBreaker` existant — aucun nouveau moteur d'état. La
+logique tient en deux fonctions, testées forward/reverse/recovery.
+
+**Lead grounded, nouveau** : le circuit RÉEL suit déjà une cible
+`claude-haiku-4-5` (plan Anthropic via le gateway). Donc un **probe** vers le
+plan Anthropic (par le gateway, `adaptive-router-anthropic`) pourrait alimenter
+un circuit `claude`, comme les autres candidats. ATTENTION : ce plan (crédits
+API, §106) est DISTINCT de l'abonnement claude.ai sur lequel tourne Claude Code.
+
+**Ce qui reste, et n'est PAS inventable — décision opérateur** : quel SIGNAL
+ouvre le circuit `claude` pour l'ABONNEMENT (pas les crédits API) ?
+(a) capter l'erreur de limite d'usage que Claude Code émet ; (b) témoin externe
+(compteur/reset) ; (c) probe du plan Anthropic (crédits API, proxy imparfait de
+l'abonnement) ; (d) bascule manuelle. Le prototype marche avec n'importe lequel :
+il suffit que la source appelle `record_failure('claude', motif)`.
