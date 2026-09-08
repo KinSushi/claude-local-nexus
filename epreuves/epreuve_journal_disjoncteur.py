@@ -78,10 +78,7 @@ def main():
     for cible, _, _ in CAS:
         e = par_cible.get(cible)
         # Verdict conforme au protocole de test
-        if cible in cibles_en_echec or e is None:
-            marque = "RATE"
-        else:
-            marque = "OK  "
+        marque = "RATE" if cible in cibles_en_echec or e is None else "OK  "
         detail = f"classe={e['classe']:11} etat={e['etat']}" if e else ""
         print(f"[{marque}] {cible:20} {detail}")
 
