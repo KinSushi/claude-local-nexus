@@ -27741,7 +27741,7 @@ liquidation apparaît dans progress.md via son commit.
 | 3 | Sonde MCP 15/15 câblée en PORTE avant-publication (probe tous → nexus_vitrine) | HAUTE | orchestrateur | à faire |
 | 4 | A2A — registre de ressources partagé (locks, process, orphelins ; l'incident PID de la nuit le prouve) | HAUTE (cap A2A) | opérateur + orchestrateur | à concevoir |
 | 5 | Bandit §240 — inférence adaptative (température/modèle appris, pas figés) | HAUTE (R&D) | opérateur (signal de qualité) | conçu §106.2, non bâti |
-| 6 | Observabilité souveraineté dans les réponses MCP (plan/modèle/donnée-sortie visibles) | MOYENNE | orchestrateur | à faire |
+| 6 | ~~Observabilité souveraineté dans les réponses MCP~~ **DÉJÀ FAIT** (groundé) : `planOf()` dérivé du modèle réel, en-tête `[modèle · plan · tokens]` sur ask/route/context/vision/summarize | MOYENNE | — | ✅ déjà en place |
 | 7 | nexus_patch §0.6 — backups .avant-patch hors du dossier projet | BASSE-MOY | orchestrateur | différé (outillage critique) |
 | 8 | Bench transport — entités HTML (`&amp;` pour `&`) dans un rendu (rapporté par sovereign) : code ne compilerait pas | ? à confirmer | orchestrateur + sovereign | NON reproduit dans mon code (nexus_agent CLI + server.js propres) ; besoin de la repro exacte de sovereign (modèle + prompt + quelle version du pont) |
 
