@@ -1837,6 +1837,7 @@ def test_terminal_repli() -> None:
         e = types.SimpleNamespace()
         e.alias = alias
         e.modality = modality
+        e.ctx = 0
         return e
 
 
