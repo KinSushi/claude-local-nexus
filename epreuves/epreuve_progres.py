@@ -45,7 +45,7 @@ import tempfile
 DELAI_S = 120
 
 ICI = os.path.dirname(os.path.abspath(__file__))
-GENERATEUR = os.path.join(ICI, "nexus_progres.py")
+GENERATEUR = os.path.join(os.path.dirname(ICI), "outillage", "nexus_progres.py")
 
 # Les rubriques que nexus_progres.py ecrit, dans son ordre. « *GENERE
 # AUTOMATIQUEMENT le » est le debut reel de sa ligne d'horodatage ;
@@ -79,7 +79,9 @@ def depot_jetable(avec_git, checklist=None):
     copie qui isole l'epreuve du depot reel (contrat §0.4 : une copie, jamais
     la source)."""
     racine = tempfile.mkdtemp(prefix="epreuve_progres_")
+    # créer les dossiers requis avant la copie du générateur
     os.makedirs(os.path.join(racine, "scripts"))
+    os.makedirs(os.path.join(racine, "outillage"))
     shutil.copy(GENERATEUR, os.path.join(racine, "outillage", "nexus_progres.py"))
     if checklist is not None:
         os.makedirs(os.path.join(racine, "outillage", "rituels"))
@@ -123,7 +125,7 @@ def cas_nominal():
     # Deux lignes de tableau sous un titre portant « ouvert », une sous un
     # titre qui ne le porte pas : le compte attendu est 2, et il prouve le
     # filtre sur le titre autant que le comptage.
-    checklist = ("# Cockpit\n\n## Sujets ouverts\n\n| 1 | a |\n| 2 | b |\n\n"
+    checklist = ("# Cockpit\n\n## OUVERTS ACTUELS\n\n| 1 | a |\n| 2 | b |\n\n"
                  "## Ferme\n\n| 9 | c |\n")
     try:
         racine = depot_jetable(avec_git=True, checklist=checklist)
