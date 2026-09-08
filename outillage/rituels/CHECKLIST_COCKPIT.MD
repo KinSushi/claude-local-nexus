@@ -27618,3 +27618,27 @@ choix — le build n'a pas suivi l'ajout du corpus.
 complet du sémantique — mais le rebuild est LOURD (passage nomic-embed-text local,
 ~20k+ fragments) : à faire machine LIBRE, pas sous la contention des 2 PID.
 Le code d'abord (prêt + testé), le rebuild déliberé ensuite.
+
+### §223 — Sémantique étendu aux 102 livres FR (code prêt, rebuild différé)
+
+Directive #1. `build_index` codait en dur `references/livres`, excluant
+`livres_texte` (102 livres FR, MÊME format, **29 300 fragments**) du sémantique.
+
+**Livré (validé, audité) :** périmètre → liste de racines prose
+[references/livres, references/livres_texte], aplaties par `itertools.chain`
+(corps de boucle inchangé). `rayon = os.path.basename(root)` : value-preserving
+(epub/packt/code inchangés) et nomme proprement livres_texte. Commits `91724db`
++ raffinement basename. Validé SUR COPIE (build test : « Indexed 20 fragments,
+failures: 0 », rayon=livres_texte), audit banc « CORRECTION SAINE », nexus_valide
+code 0. Rien ne lit `rayon` (grep) — changement sûr.
+
+**Rebuild DIFFÉRÉ, et pourquoi.** L'index de production est INCHANGÉ ; livres_texte
+ne devient cherchable qu'après un `build` complet. C'est LOURD (29 300 embeddings
+nomic-embed-text) et **mesuré infaisable cette nuit** : un build test de 5
+fragments a EXPIRÉ à 120 s sous la contention des 2 PID (§212). Le rebuild attend
+une machine libre — c'est-à-dire la terminaison des 2 PID runaway (à l'opérateur).
+
+**Ce que ça re-souligne pour l'opérateur.** Les 2 PID (20228/8328, ~49 CPU-h
+chacun) ne gaspillent pas seulement du CPU : ils **bloquent** le seul vrai gain
+disque restant (recherche sémantique FR) et tout rebuild/inférence local. Cloud
+reste fluide. À tuer au réveil → le rebuild devient une simple commande.
