@@ -34,7 +34,7 @@ def cas_nominal(outil_path):
         cible_path = pathlib.Path(tmpdir) / "test_cible.py"
         cible_path.write_text("#!/usr/bin/env python3\nprint('Test')\n", encoding="utf-8")
 
-        cmd = [sys.executable, str(outil_path), "--file", str(cible_path)]
+        cmd = [sys.executable, str(outil_path), "--file", str(cible_path), "--simuler"]
         code, output = lancer_processus(cmd)
 
         if code == 0 and "Debut traitement de" in output and "Fin traitement de" in output:
@@ -44,7 +44,7 @@ def cas_nominal(outil_path):
         return False
 
 def cas_inverse(outil_path):
-    cmd = [sys.executable, str(outil_path), "--plans", "cloud"]
+    cmd = [sys.executable, str(outil_path), "--plans", "cloud", "--simuler"]
     code, output = lancer_processus(cmd)
 
     if code != 0 and "No targets to process" in output:
@@ -58,7 +58,7 @@ def cas_malforme(outil_path):
         cible_path = pathlib.Path(tmpdir) / "malforme.py"
         cible_path.write_text("print('Test sans shebang'", encoding="utf-8")
 
-        cmd = [sys.executable, str(outil_path), "--file", str(cible_path)]
+        cmd = [sys.executable, str(outil_path), "--file", str(cible_path), "--simuler"]
         code, output = lancer_processus(cmd)
 
         if code == 0 or "Debut traitement de" in output:
@@ -68,7 +68,7 @@ def cas_malforme(outil_path):
         return False
 
 def cas_usage(outil_path):
-    cmd = [sys.executable, str(outil_path)]
+    cmd = [sys.executable, str(outil_path), "--option-inexistante"]
     code, output = lancer_processus(cmd)
 
     if code != 0 and "usage: nexus_relais.py" in output:
