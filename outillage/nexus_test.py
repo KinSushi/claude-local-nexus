@@ -1420,8 +1420,6 @@ def main() -> int:
         jouer_epreuve_python("epreuve_progres.py", "progres")
     if args.only in (None, "relais"):
         jouer_epreuve_python("epreuve_relais.py", "relais local")
-    if args.only in (None, "reprise"):
-        jouer_epreuve_python("epreuve_reprise.py", "hook de reprise")
     if args.only in (None, "ruche"):
         jouer_epreuve_python("epreuve_ruche.py", "ruche")
     if args.only in (None, "vide"):
