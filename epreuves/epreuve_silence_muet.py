@@ -7,7 +7,7 @@ from pathlib import Path
 # ce chiffre est la mesure du jour faite par cette epreuve elle-meme
 # il ne doit bouger qu a la BAISSE
 # ruff en compte 56 seulement parce qu il ne detecte pas les memes formes
-PLAFOND = 74
+PLAFOND = 66
 
 # Chemin racine du dépôt (deux niveaux au-dessus du fichier)
 RACINE = Path(__file__).resolve().parent.parent
