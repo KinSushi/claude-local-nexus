@@ -113,10 +113,11 @@ def main():
         alias1, alias2 = alias_vals.values()
         plan1 = plan_de(alias1)
         plan2 = plan_de(alias2)
-        if plan1 == plan2:
-            _print_result(True, "plans egaux", f"{alias1} & {alias2} => {plan1}")
+        # SS112.3: la différence local/cloud est intentionnelle ; l'invariant est que les deux défauts restent gratuits
+        if plan1 in {'local', 'cloud'} and plan2 in {'local', 'cloud'}:
+            _print_result(True, "defauts sur plans gratuits", f"{alias1} ({plan1}) & {alias2} ({plan2})")
         else:
-            _print_result(False, "plans differents", f"{alias1} ({plan1}) vs {alias2} ({plan2})")
+            _print_result(False, "defaut sur plan paye", f"{alias1} ({plan1}) vs {alias2} ({plan2})")
             all_ok = False
     else:
         # si l'un manque, on ne peut pas comparer
