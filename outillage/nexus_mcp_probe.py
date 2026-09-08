@@ -420,6 +420,29 @@ def main() -> int:
         print(out)
         exit_code = 0 if _probe_success(out) else 1
 
+    elif action == "livres":
+        if len(sys.argv) < 3:
+            print(f"ERROR: missing question argument for livres (SERVER={SERVER})", file=sys.stderr)
+            return 1
+        out = call_tool("nexus_livres", {"question": sys.argv[2]})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+    elif action == "charge":
+        out = call_tool("nexus_charge", {})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+    elif action == "savings":
+        out = call_tool("nexus_savings", {})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+    elif action == "profile":
+        out = call_tool("nexus_profile", {})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
+    elif action == "verrou":
+        out = call_tool("nexus_verrou", {})
+        print(out)
+        exit_code = 0 if _probe_success(out) else 1
     else:
         print(__doc__)
         return 1
