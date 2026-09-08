@@ -27560,3 +27560,31 @@ redresse son entrée, on ne s'auto-valide pas.
 
 **Threads restants.** Sonde : `batch`/`compare` (→15/15), `vision`/`index_build`.
 Plus : nexus_patch §0.6 (§214a), bandit §240.
+
+### §221 — Mesuré : le produit est SAIN. La Partie A du plan est périmée.
+
+Jamais de mémoire : le plan unifié `piped-finding-lynx` (Partie A) affirmait
+« le produit est à terre, Test-NexusConfig=1 ». **Mesuré ce tour, faux :**
+
+| porte | verdict | mesure |
+| --- | --- | --- |
+| `Test-NexusConfig.ps1` | **EXIT 0** | « Configuration valide » — 87 modèles, 4 routeurs, 107 arcs |
+| `nexus_conformite.py` | **EXIT 0** | « Conforme, avec 1 avertissement » — tous contrôles verts |
+
+La Partie A (« réparer l'isolation cassée ») est donc **stale** : le produit
+n'est pas cassé. Agir de sa prémisse aurait gaspillé un effort à réparer un
+produit sain — la raison même du « ne pas agir de mémoire ». Le plan reste UN
+seul plan ; sa Partie A est close par la mesure, restent B (corpus disque) et le
+polish.
+
+**Le seul item non-vert** (ALERTE, non bloquant) : `encodage sortie` — 16 scripts
+n'ont pas le motif `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`
+(présent dans ceux qui passent). C'est le défaut cp1252 que je heurte moi-même
+(erreurs `\u202f`). Portabilité §0.5, trouvé par l'usage. Mécanisable en vague ;
+motif identique pour les 16.
+
+**Threads réellement ouverts (plan reconcilié).**
+1. Sonde MCP : `batch`/`compare` → 15/15 ; `vision`/`index_build`.
+2. Encodage sortie : 16 scripts (rendre la conformité 100% verte).
+3. Partie B : corpus `CODE_ENZO`, `python_ast_local` (indexation).
+4. nexus_patch §0.6 (§214a). 5. bandit §240 (R&D).
