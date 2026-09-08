@@ -421,8 +421,11 @@ def _sans_raisonnement(texte):
                                   flags=re.IGNORECASE))
     if fermetures:
         s = s[fermetures[-1].end():]
-    # Conserver exactement un saut de ligne terminal (W292 ruff) après avoir retiré les blancs parasites
-    return s.rstrip() + "\n"
+    # Ne pas ajouter de saut de ligne pour ne pas fausser la mesure de part_raisonnement
+    if s == str(texte):
+        return s
+    else:
+        return s.rstrip()
 
 
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
