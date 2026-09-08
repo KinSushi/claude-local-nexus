@@ -27698,3 +27698,29 @@ Mon critère (« pas de reconfigure ») était plus large que le contrôle
 **nexus_verrou_machine** : copie conforme byte-exacte (§0.4), exclue — et de
 toute façon déjà sûre (f.reconfigure). Le contrôle robuste la crédite désormais
 sans qu'on ait à la toucher.
+
+### §226 — Conformité 100% verte + sonde MCP à 15/15
+
+Deux threads clos ce tour.
+
+**Conformité entièrement verte.** Le vrai `nexus_conformite` (forward-test via le
+mécanisme réel, pas une réplication) rapporte désormais `[OK] encodage sortie —
+tout script accentué reconfigure sa sortie` et **`=> Conforme.`** — sans le
+« avec 1 avertissement » qui traînait. Le thread encodage (§224-225) a fermé le
+dernier avertissement de la porte de conformité.
+
+**Sonde MCP complète — 15/15.** Ajout des 2 dernières actions (`batch`,
+`compare`, routées cloud), rédigées par le banc, forward+reverse via le vrai
+serveur, audit indépendant SAINE. Le dispatch de la sonde couvre les 15 outils
+exposés ; l'agrégateur `tous` reste léger (6 outils, sans inférence) comme porte
+de rituel, batch/compare/ask/etc. s'éprouvant à la demande.
+
+**Note outil.** `nexus_valide` (juge cloud) EXPIRE régulièrement sous la
+contention des 2 PID (§212) — plusieurs timeouts ce tour. Les audits banc
+indépendants (sur fichiers complets) tiennent lieu de tiers pour la LOI 1 en
+attendant. Mesure de plus que les 2 PID coûtent : ils ralentissent jusqu'à
+l'orchestration cloud.
+
+**Migration critique vérifiée.** nexus_rituel et nexus_valide, migrés au lot
+encodage, TOURNENT (la reconfiguration n'a rien cassé sur l'infra dont je dépends
+chaque tour).
