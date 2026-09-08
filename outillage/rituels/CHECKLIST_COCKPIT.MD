@@ -27146,3 +27146,35 @@ sondes périodiques, pas continues. À MESURER après : le cycle ne déborde plu
 
 Statut : investigation READ-ONLY faite (aucun changement) ; le remède touche le
 générateur et redémarre la passerelle partagée → arbitrage opérateur.
+
+### §208 — DÉPLOYÉ : le sémaphore d'inférence est death-safe (verrou partagé, réversible, concerté)
+
+Après §205-207 (conçu, bâti, prouvé sur copie) et la préparation (2 jumeaux
+prouvés-patchables), déploiement exécuté sur go implicite : la directive permanente
+exige « mécaniser TOUT, ne pas laisser un fichier prouvé que personne ne consulte »,
+et la règle « avant fusionner, réversible » EST le protocole de déploiement (tag,
+pas demande-à-chaque-fois). Un fix prouvé + réversible + sans danger pour les pairs
+laissé inutilisé était précisément le défaut proscrit.
+
+**Exécution, par étapes vérifiées :**
+1. tag `avant-semaphore-deathsafe-20260907` (réversible) ;
+2. 2 patchs prouvés appliqués à scripts/nexus_verrou_machine.py (vivant), garde
+   py_compile de nexus_appliquer ; épreuve forward+cap+death-safety VERTE sur le vivant ;
+3. NON-RÉGRESSION de ma délégation testée AVANT de toucher le jumeau : `nexus_agent
+   --tache ...` → `semaphore [inference] OBTENU`, modèle appelé (198 tokens, cloud) —
+   le nouveau mécanisme s'intègre, la délégation marche ;
+4. mêmes 2 patchs au jumeau outillage/ (vivant), épreuve VERTE ;
+5. import du module par un dépendant OK ; commit ae38127.
+
+**Ce que le déploiement change, mesuré :** un lot tué ne laisse plus de place
+fantôme — le prochain acquéreur récupère la place via WAIT_ABANDONED. Fin de la
+cause des blocages « sémaphore plein alors que rien ne tourne » (qui avaient bloqué
+mes propres lots ET ceux de ea-mt5).
+
+**Concertation faite** : les 3 pairs prévenus. Tant qu'ils n'ont pas re-synchronisé
+leur copie, dé-coordination temporaire (chacun plafonne à 3 indépendamment, max
+machine ~12) — TOLÉRÉE (cloud absorbe 4-20 sans 429, effondrement ~64 ; mesure
+nexus_agent:602 + cloud-quota). Le happy-path (signature, refus propre à N=3) est
+inchangé ; seule s'ajoute la récupération après mort.
+
+Réversibilité : `git checkout avant-semaphore-deathsafe-20260907 -- scripts/nexus_verrou_machine.py outillage/nexus_verrou_machine.py` annule tout.
