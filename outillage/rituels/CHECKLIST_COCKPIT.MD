@@ -27727,17 +27727,25 @@ chaque tour).
 
 ## OUVERTS ACTUELS — la seule liste vivante (le reste du fichier est archive)
 
-Ajoutée le 2026-09-08. CETTE section est la checklist. Corrige le faux compteur
-« 977 sujets ouverts » : `nexus_progres` sommait les lignes de tableau des 18
-sections « ouvert » HISTORIQUES (closes depuis août). Désormais il ne compte QUE
-les lignes de ce tableau-ci. Un item se raye ici quand il est clos.
+Ajoutée le 2026-09-08, enrichie en INVENTAIRE des améliorations à forte valeur
+(demande opérateur). CETTE section est la checklist ; `nexus_progres` ne compte
+QUE ses lignes de tableau. Un item se raye quand il est LIVRÉ et vérifié — sa
+liquidation apparaît dans progress.md via son commit.
 
-| item | état | qui débloque |
-| --- | --- | --- |
-| Rebuild sémantique FR (102 livres, ~59k fragments) | EN COURS (~59%), réversible (backup pris) | se termine seul |
-| bandit §240 (température/modèle adaptatifs) | conçu (§106.2), non bâti | opérateur — décision du signal de qualité |
-| nexus_patch §0.6 (backups .avant-patch dans le projet) | différé | orchestrateur, outillage critique |
+| # | amélioration à forte valeur ajoutée | valeur | qui | état |
+| --- | --- | --- | --- | --- |
+| 1 | Corpus disque fiable — recherche sémantique sur les 4 corpus, 102 livres FR inclus | HAUTE | orchestrateur | rebuild EN COURS + contre-épreuve à poser |
+| 2 | Contre-épreuve du build sémantique (le bug append/duplication n'avait AUCUN test) | HAUTE (§0.1.4.1) | orchestrateur | À FAIRE — prochaine |
+| 3 | Sonde MCP 15/15 câblée en PORTE avant-publication (probe tous → nexus_vitrine) | HAUTE | orchestrateur | à faire |
+| 4 | A2A — registre de ressources partagé (locks, process, orphelins ; l'incident PID de la nuit le prouve) | HAUTE (cap A2A) | opérateur + orchestrateur | à concevoir |
+| 5 | Bandit §240 — inférence adaptative (température/modèle appris, pas figés) | HAUTE (R&D) | opérateur (signal de qualité) | conçu §106.2, non bâti |
+| 6 | Observabilité souveraineté dans les réponses MCP (plan/modèle/donnée-sortie visibles) | MOYENNE | orchestrateur | à faire |
+| 7 | nexus_patch §0.6 — backups .avant-patch hors du dossier projet | BASSE-MOY | orchestrateur | différé (outillage critique) |
+
+Je porte seul 1, 2, 3, 6, 7 (aucune inférence lourde, non concurrents du rebuild) ;
+je liquide du plus haut au plus bas, un item par commit. 4 et 5 demandent ton
+arbitrage (protocole A2A ; définition du signal de qualité).
 
 Tout le reste de la session (conformité 100% verte, sonde MCP 15/15, encodage,
-contre-épreuve heap, crash recherche sémantique, périmètre sémantique FR) est
-CLOS et vérifié. Trois items ouverts, dont deux attendent l'opérateur.
+contre-épreuve heap, crash recherche sémantique réparé, truncate du build) est
+CLOS et vérifié.
