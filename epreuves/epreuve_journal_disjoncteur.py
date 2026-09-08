@@ -72,11 +72,18 @@ def main():
             if champ not in entree:
                 fautes.append(f"{cible} : champ '{champ}' absent")
 
+    # Détermination des cibles en échec à partir des messages d'erreur
+    cibles_en_echec = {f.split(' :')[0] for f in fautes}
+
     for cible, _, _ in CAS:
         e = par_cible.get(cible)
-        marque = "ok " if e else "MANQUE"
+        # Verdict conforme au protocole de test
+        if cible in cibles_en_echec or e is None:
+            marque = "RATE"
+        else:
+            marque = "OK  "
         detail = f"classe={e['classe']:11} etat={e['etat']}" if e else ""
-        print(f"  [{marque}] {cible:20} {detail}")
+        print(f"[{marque}] {cible:20} {detail}")
 
     if fautes:
         print()
@@ -85,7 +92,7 @@ def main():
         print(f"\n[X] {len(fautes)} faute(s) : le journal ne porte pas les trois classes")
         return 1
 
-    print(f"\n[OK] les {len(CAS)} classes sont journalisees avec leur POURQUOI")
+    print(f"\n[OK  ] les {len(CAS)} classes sont journalisees avec leur POURQUOI")
     return 0
 
 

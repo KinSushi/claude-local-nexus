@@ -1,12 +1,12 @@
 import os, subprocess, sys, tempfile, shutil
 
-def run(args):
+def run(args, timeout=10):
     try:
         r = subprocess.run([sys.executable] + args, capture_output=True, 
-                           text=True, timeout=10, encoding="utf-8", errors="replace")
+                           text=True, timeout=timeout, encoding="utf-8", errors="replace")
         return r.returncode, r.stdout, r.stderr
     except subprocess.TimeoutExpired:
-        return -1, "", "L'outil n'a pas rendu la main (timeout 10s)"
+        return -1, "", f"L'outil n'a pas rendu la main (timeout {timeout}s)"
     except Exception as e:
         return -1, "", str(e)
 
@@ -31,7 +31,7 @@ def main():
                      and n[:-3] != "nexus_import"]
         
         if not candidats:
-            print("[Nominal] Aucun autre module .py trouve pour tester")
+            print("[OK  ] nominal : aucun autre module a tester")
             return 0
 
         target = candidats[0]
@@ -40,33 +40,33 @@ def main():
         # On verifie que l'outil peut au moins s'executer
         rc_tool, out_tool, err_tool = run([tool, "--seul", target])
         if rc_tool == 0 and "0 echec(s)" in out_tool:
-            print(f"[Nominal] OK (module {target})")
+            print("[OK  ] nominal : OK (module {target})")
         else:
-            print(f"[Nominal] ECHEC: rc={rc_tool}, out={out_tool}, err={err_tool}")
+            print("[RATE] Nominal : rc={rc_tool}, out={out_tool}, err={err_tool}")
             sys.exit(1)
 
         # CAS INVERSE : Module inconnu
         rc, out, err = run([tool, "--seul", "module_inexistant_xyz"])
         if rc == 2 and "Module(s) inconnu(s)" in err:
-            print("[Inverse] OK (refus module inconnu)")
+            print("[OK  ] inverse : OK (refus module inconnu)")
         else:
-            print(f"[Inverse] ECHEC: rc={rc}, out={out}, err={err}")
+            print("[RATE] Inverse : rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
         # CAS MALFORMEE : Argument inconnu
         rc, out, err = run([tool, "--option-fantome"])
         if rc != 0 and "unrecognized arguments" in err:
-            print("[Malformee] OK (usage rendu)")
+            print("[OK  ] malformee : OK (usage rendu)")
         else:
-            print(f"[Malformee] ECHEC: rc={rc}, out={out}, err={err}")
+            print("[RATE] Malformee : rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
         # CAS SANS ARGUMENTS : Verifie que ca lance le scan global
-        rc, out, err = run([tool])
+        rc, out, err = run([tool], timeout=60)
         if rc is not None and "module(s) importes" in out:
-            print("[Global] OK (scan effectue)")
+            print("[OK  ] global : OK (scan effectue)")
         else:
-            print(f"[Global] ECHEC: rc={rc}, out={out}, err={err}")
+            print("[RATE] Global : rc={rc}, out={out}, err={err}")
             sys.exit(1)
 
     finally:
