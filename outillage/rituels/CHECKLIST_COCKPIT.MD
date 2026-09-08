@@ -27416,3 +27416,35 @@ de patch lui-même — à faire produire par le banc PUIS arbitrer avec l'opéra
 présent (effets de bord, §0.7.1). Aux prochains ticks : forward-tests des outils
 MCP **sans inférence** (charge/models/savings/verrou/profile), qui avancent
 l'audit de livraison sans concurrencer aucune ressource.
+
+### §216 — Défaut de livraison trouvé par l'usage et liquidé (recherche sémantique)
+
+**Le fait.** En éprouvant `nexus_livres` à travers le MCP réel (devoir d'audit de
+livraison), la recherche sémantique a **planté** : `heapq.heappush/heappushpop`
+sur des tuples `(score, record)` où record est un dict → `TypeError: '<' not
+supported between instances of 'dict' and 'dict'` dès qu'il y a **égalité de
+score** (fréquent en cosinus). La surface de recherche sémantique était cassée,
+invisible au `--epreuve` en code — visible seulement par l'usage.
+
+**Le cycle à trois temps, aucun n'étant l'orchestrateur (§0.7.1).** Trouvé par
+l'usage (traceback) → corrigé par le banc cloud (compteur entier de départage,
+tuples `(score, compteur, record)`) → **audité par un banc indépendant**
+(« CORRECTION SAINE »). Puis validé : forward-test MCP (la requête bandit rend 5
+fragments dont « Exploration vs exploitation »), nexus_valide LOI 1 (« aucune
+régression »), py_compile. Commit `4529ace`, auteur-banc déclaré.
+
+**Ce que ça avance du plan.** Partie B.4 de `piped-finding-lynx` s'inquiétait que
+la recherche sémantique ne rende rien d'utile — elle plantait, tout simplement.
+Elle fonctionne désormais de bout en bout.
+
+**Suite délégable (thread ouvert, honnête).** Contre-épreuve mécanisée sur
+égalité de score : demande d'extraire la boucle heap (aujourd'hui inline dans
+`search_index`) en fonction pure testable. À faire en cycle LOI 1 dédié — ne pas
+re-toucher le chemin que je viens de réparer dans le même geste.
+
+**Balayage MCP — état.** Éprouvés OK : `charge`, `savings`, `models`, `livres`
+(réparé). Restent, sans inférence : `verrou`, `profile`, `search`. Avec inférence
+(quand le CPU se libère) : `ask`, `route`, `summarize`, `context`, `compare`,
+`batch`, `vision`, plus `index_build`. Note bénigne : `nexus_models` (chaud) et
+`nexus_charge` (0 résident) divergent sur un modèle en état `Stopping…` — course
+de timing sur le keep-alive, pas un défaut.
