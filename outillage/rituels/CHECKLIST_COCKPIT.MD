@@ -27743,6 +27743,7 @@ liquidation apparaît dans progress.md via son commit.
 | 5 | Bandit §240 — inférence adaptative (température/modèle appris, pas figés) | HAUTE (R&D) | opérateur (signal de qualité) | conçu §106.2, non bâti |
 | 6 | Observabilité souveraineté dans les réponses MCP (plan/modèle/donnée-sortie visibles) | MOYENNE | orchestrateur | à faire |
 | 7 | nexus_patch §0.6 — backups .avant-patch hors du dossier projet | BASSE-MOY | orchestrateur | différé (outillage critique) |
+| 8 | Bench transport — entités HTML (`&amp;` pour `&`) dans un rendu (rapporté par sovereign) : code ne compilerait pas | ? à confirmer | orchestrateur + sovereign | NON reproduit dans mon code (nexus_agent CLI + server.js propres) ; besoin de la repro exacte de sovereign (modèle + prompt + quelle version du pont) |
 
 Je porte seul 1, 2, 3, 6, 7 (aucune inférence lourde, non concurrents du rebuild) ;
 je liquide du plus haut au plus bas, un item par commit. 4 et 5 demandent ton
