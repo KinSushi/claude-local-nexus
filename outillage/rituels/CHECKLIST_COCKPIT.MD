@@ -27763,3 +27763,32 @@ jusqu'où déléguer sans Claude).
 Tout le reste de la session (conformité 100% verte, sonde MCP 15/15, encodage,
 contre-épreuve heap, crash recherche sémantique réparé, truncate du build) est
 CLOS et vérifié.
+
+---
+
+### Tour 2026-09-08 (soir) — pont débloqué, salve L2, deux findings
+
+- **Bloqueur vitrine RÉSOLU** (commit 8235b3e) : le contrôle `controle_pont_lecture_seule`
+  bloquait la publication en voyant `fs.writeFileSync`/`unlinkSync` vers `tmpPath` dans le
+  handler `nexus_apply`. Or `tmpPath` vise `os.tmpdir()` (le PATCH déposé avant passage à
+  `nexus_creer`/`nexus_appliquer`, seuls à écrire la cible). Faux positif, mais contrôle de
+  SÉCURITÉ → non désactivé : `tmpPath`→`provisoirePath` active l'exemption « provisoire »
+  déjà prévue dans `RESERVE_ECRITURE`. Prouvé : forward 0 hors réserve, **REVERSE 2** (une
+  vraie écriture de source reste détectée — contrôle intact), `node --check` OK. Patch qwen
+  local, audit tiers gpt-oss-120b « aucune régression ». Vitrine republieée sur origin.
+- **L2 avance** : 5 épreuves d'outils rendues par le banc cloud (disjoncteur, boussole,
+  redaction, filet, savings) + 1 `AUCUNE_FONCTION_PURE` honnête (verrou_tenir). 8/8 fonctions
+  réelles, 24/24 sous-tests [OK] contre le code réel, câblées via `jouer_epreuve_python`,
+  RET505 résorbés, baseline outillage 35 tenue. **48 outils nus** (était 53). + faux-vert SKIP
+  `test_registre_epreuves` retiré (`sys.path.insert` manquant → 25 sous-cas s'exécutent).
+- **OUVERT — chantier #1 (lié à #11)** : le serveur MCP n'appelle JAMAIS
+  `nexus_verbatim.deposer` (seul `nexus_agent.py:530` CLI le fait) → `nexus_loi1` est
+  **structurellement aveugle** aux délégations via `nexus_ask`/`nexus_batch`, le chemin que
+  l'opérateur exige. Symptôme mesuré : le renommage pont, pourtant délégué à qwen, compté
+  « 3 lignes à la main ». Remède : faire déposer le pont (via `runPython`, pas `fs.writeFileSync`
+  qui rebloquerait le contrôle §0.4) ; envisager `_is_delegated` comparant les lignes STRIPPÉES.
+  Ne PAS déposer à la main (§0.6). Mémoire `mcp-n-alimente-pas-verbatim-loi1-aveugle`.
+- **OUVERT** : `nexus_vitrine --sauf-tests` marque IGNORE non seulement « suite de tests »
+  mais aussi **conformité** et **rituel** — un « OK » sous ce flag est un faux-vert (les secrets
+  et le pont ne sont pas vérifiés). Restreindre le flag au seul `nexus_test`. Mémoire
+  `vitrine-sauf-tests-saute-conformite`.
