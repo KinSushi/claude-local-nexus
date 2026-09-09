@@ -27928,7 +27928,16 @@ CLOS et vérifié.
   **Ce qui est désormais mécanisé pour le défi opérateur** : politique (`decider`) + signal
   (`pouls`, battu chaque tour) + pont (`--reel`, disjoncteur) + exécution autonome (boucle
   locale par tâche planifiée, propositions auditées, jamais l'arbre).
-- **RESTE (raffinements)** : (a) un forward RÉEL avec pouls forcé mort + une tâche factice dans
-  `.nexus/file_locale.jsonl` → vérifier qu'une proposition est déposée par le banc local ;
-  (b) `nexus_recolte` : quand Claude revient, lire `.nexus/propositions/` et les appliquer via
-  `nexus_appliquer` après audit ; (c) le grain opus/fable du pouls (signal de quota par modèle).
+- **(a) FORWARD RÉEL EN CONDITIONS — PROUVÉ (2026-09-09 00:00)** : machine au repos
+  (18,5 Go libres), `nexus_boucle_locale.py --tour --seuil 0` (pouls forcé mort) sur une
+  tâche factice → rapport `traitees=1, deposees=1, abandonnees=0` en **2 min 03 s**. Le pilote
+  `qwen3-coder-30b-local` a rendu le patch ancré exact (`total = 0` → `total = 0.0`, marqueurs
+  AVANT/APRES/FIN), l'auditeur `glm-4.7-flash-local` (distinct, LOI 1) a rendu `VERDICT: OK`,
+  la proposition JSON est déposée dans `.nexus/propositions/` — **l'arbre n'a pas bougé**.
+  Les deux appels passent par `nexus_agent.executer` (donc tracés au verbatim). Artefacts de
+  test supprimés. **La chaîne de succession du défi opérateur est prouvée de bout en bout,
+  en réel.**
+- **RESTE (raffinements)** : (b) `nexus_recolte` : quand Claude revient, lire
+  `.nexus/propositions/`, ré-auditer et appliquer via `nexus_appliquer` (jamais automatique :
+  §90) ; (c) le grain opus/fable du pouls (signal de quota par modèle) ; (d) alimenter
+  `.nexus/file_locale.jsonl` depuis les sujets ouverts (conversion prose → tâches, à la main).
