@@ -2569,6 +2569,47 @@ let pythonRetenu = null;
  * confondait les deux et annoncait « Python introuvable » alors que Python
  * fonctionnait ; la cause reelle etait dans stderr, que le code jetait.
  */
+// Trace la reponse d'un modele dans le magasin verbatim, via nexus_deposer.py.
+// Fire-and-forget : ni bloquant ni capable de casser l'appel -- tracer est
+// utile, jamais critique. Le fichier provisoire (nom exempte du controle
+// pont-lecture-seule) est ecrit ici et supprime cote Python apres depot.
+function deposerTrace(result, messages, plan) {
+    try {
+        const fs = require('node:fs');
+        const os = require('node:os');
+        const { spawn } = require('node:child_process');
+
+        const provisoireName = `nexus_verbatim_provisoire_${process.pid}_${Date.now()}_${Math.floor(Math.random()*1e9)}.txt`;
+        const provisoirePath = path.join(os.tmpdir(), provisoireName);
+
+        fs.writeFileSync(provisoirePath, String(result.text || ""), { encoding: 'utf8' });
+
+        let tache = "";
+        if (Array.isArray(messages) && messages.length > 0) {
+            const last = messages[messages.length - 1];
+            if (last && typeof last.content === 'string') {
+                tache = last.content.slice(0, 120);
+            }
+        }
+
+        const child = spawn(pythonRetenu || "python", [
+            path.join(INSTALL_ROOT, "scripts", "nexus_deposer.py"),
+            provisoirePath,
+            String(result.model),
+            String(plan),
+            tache
+        ], {
+            env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+            detached: true,
+            stdio: "ignore"
+        });
+
+        child.unref();
+    } catch (e) {
+        /* tracer must never break caller */
+    }
+}
+
 function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
   const { spawn } = require("node:child_process");
   const candidats = pythonRetenu ? [pythonRetenu] : ["python", "python3"];
@@ -2740,6 +2781,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     // sans etre dit rendrait un resultat inexplicable, ce qui est le
     // seul argument serieux contre l'adaptation automatique.
     const tAff = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
+    deposerTrace(result, messages, planOf(result.model));
     return `[${result.model} · ${planOf(result.model)}${note} · T=${tAff} · ${result.tokens} tokens${coupe}]\n\n${result.text}`;
   }
 
@@ -3187,6 +3229,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
           task.max_tokens || 1024
         );
         total += result.tokens;
+        deposerTrace(result, messages, planOf(result.model));
         parts.push(
           `### ${i + 1}. ${result.model} — ${((Date.now() - started) / 1000).toFixed(1)}s${mentionsReponse(result)}\n` +
           result.text.trim()
