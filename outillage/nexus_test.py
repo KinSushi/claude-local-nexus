@@ -1454,6 +1454,14 @@ def main() -> int:
         jouer_epreuve_python("epreuve_recolte.py", "recolte : une proposition a la fois via nexus_appliquer (injection, provisoire nettoye, archivage)")
     if args.only in (None, "rendu"):
         jouer_epreuve_python("epreuve_rendu.py", "rendu : entites HTML du banc de-encodees seulement sans marqueur brut (defaut #8)")
+    if args.only in (None, "garde-edition"):
+        jouer_epreuve_python("epreuve_garde_edition.py", "garde d edition : chemin ecrit extrait de la charge du hook, vide sinon")
+    if args.only in (None, "loi1-fonction"):
+        jouer_epreuve_python("epreuve_loi1.py", "loi1 : _is_delegated (presente, absente, traces None)")
+    if args.only in (None, "avant-apres"):
+        jouer_epreuve_python("epreuve_avant_apres.py", "avant/apres : empreinte sha256, comparaison de releves, code de sortie")
+    if args.only in (None, "verbatim"):
+        jouer_epreuve_python("epreuve_verbatim.py", "verbatim : _nom_sur ne laisse passer aucun separateur ni traversee")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
