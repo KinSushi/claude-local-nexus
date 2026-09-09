@@ -27867,8 +27867,39 @@ CLOS et vérifié.
   `epreuve_succession` 15/15. Le pont de décision est **complet** : politique (`decider`) +
   signal Claude (`pouls`) + disponibilité banc (`disjoncteur`). Rebaseline câblage assumé :
   `nexus_succession` est preuve_seule (CLI diagnostic + bibliothèque), consommateur = la boucle.
-- **RESTE #11 pas 2b partie 2b — LE GROS MORCEAU** : la **boucle agentique locale** (ReAct).
-  Quand le pouls est MORT (Claude épuisé), un processus local (piloté par qwen3-coder:30b) doit
-  lire la file de tâches, planifier, déléguer au banc, auditer (modèle local DISTINCT, LOI 1),
-  décider, boucler. Lire d'abord les chapitres ReAct et circuit-breaker du corpus (7 livres
-  agents + *Release it!*). Découper en sous-pas (squelette minimal d'abord).
+- **#11 pas 2b partie 2b — PLAN ARBITRÉ de la boucle agentique locale** (2026-09-08, nuit).
+  Ancré sur le corpus (`ReAct loop connecting the LLM to external tools`, `Relationship to
+  React Agents`, code `demo_langchain_react_agent`) lu via `nexus_livres` — la recherche a
+  rendu du pertinent cette fois (0,69). Conçu par le banc, **arbitré ici** (§112.4) :
+
+  **Le cycle** (un tour par tâche) — *Thought* : le PILOTE (`qwen3-coder-30b-local`) propose
+  un patch ancré via `nexus_agent` · *Action/Observation* : le patch rendu · *Audit* : un
+  AUDITEUR **distinct** (`glm-4.7-flash-local` ou `qwen2.5-coder-32b-local`, LOI 1) juge via
+  `nexus_agent` · *Décision* : OK → `nexus_appliquer` (ancre+compile+lint) ; sinon REPENSER
+  (max 5) ; N échecs → ABANDONNER la tâche. Disjoncteur `is_available(alias)` AVANT chaque
+  appel modèle, `record_success/failure` après.
+
+  **La file** — la source EXISTANTE : le format JSONL de `nexus_agent --lot` (`{tache, fichiers,
+  modele}`), fichier `.nexus/file_locale.jsonl`. Pas de `tasks_inbox` inventé. `nexus_sujets
+  --json` reste une source de PROSE (sujets), pas de tâches exécutables — à convertir à la main.
+
+  **Les gardes** (évaluées AVANT chaque itération) : pouls redevenu VIVANT → retrait immédiat
+  (Claude reprend) · file vide · 3 échecs consécutifs · disjoncteur ouvert sur pilote ET auditeur
+  · MAX_STEPS=5 par tâche · durée globale. `decider(disponibilites, sensibilite)` avant chaque
+  tâche : une tâche L3 ne sort jamais du local.
+
+  **Le découpage — UN module `scripts/nexus_boucle_locale.py`** (pas 10 fichiers) :
+  · A `decision_suivante(verdict, echecs, max)` PURE → APPLIQUER/REPENSER/ABANDONNER + épreuve ;
+  · B `un_cycle(tache, pilote, auditeur, appel_fn)` avec `appel_fn` INJECTÉ (mock en épreuve) ;
+  · C `boucle(file, lire_pouls_fn, gardes)` orchestration, épreuve reverse = pouls vivant dès le
+    départ → arrêt immédiat ; · D brancher `appel_fn` réel = `nexus_agent`, appelant réel = la
+    tâche planifiée `NexusTraque` (PT10M, tourne sans session) ou un `--daemon`.
+  A+B+C+D ensemble forment la boucle minimale CÂBLÉE ; livrés un par un mais commités
+  seulement câblés (pas de brique orpheline).
+
+  **Pièges tenus** : boucle infinie (MAX_STEPS + tronquer le contexte), auditeur ≠ pilote,
+  débordement de tokens, sensibilité (decider), activation intempestive (pouls vérifié chaque tour).
+
+  **Fabrications du banc REJETÉES** : `tasks_inbox/`+`task_loader.py`, `cb.reset_after()`,
+  `--check-anchor`, `is_available()` sans alias, « Nexus Scheduler », outils `calculator/websearch`
+  (recopiés de LangChain), 10 modules séparés.
