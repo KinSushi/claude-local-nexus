@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import tempfile
+import json
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -23,6 +24,16 @@ def _run_tool(rendu: Path, nom: str, cible: Path, extra_args=None):
         return None, None, 1, str(e)
     return result.stdout, result.stderr, result.returncode, None
 
+def _ecrire_rendu(rendu: Path, nom: str, ancre: str, remplacement: str):
+    # Les marqueurs sont construits par concatenation pour ne JAMAIS apparaitre
+    # litteralement dans ce fichier : un triplet litteral casserait tout patch
+    # qui manipulerait ensuite ce code.
+    a = chr(60) * 3 + "AVANT" + chr(62) * 3
+    p = chr(60) * 3 + "APRES" + chr(62) * 3
+    f = chr(60) * 3 + "FIN" + chr(62) * 3
+    bloc = a + "\n" + ancre + "\n" + p + "\n" + remplacement + "\n" + f + "\n"
+    rendu.write_text(json.dumps({"nom": nom, "texte": bloc}) + "\n", encoding='utf-8')
+
 def _case_forward():
     _name = "FORWARD"
     with tempfile.TemporaryDirectory() as td:
@@ -30,12 +41,11 @@ def _case_forward():
         cible = td_path / "cible.txt"
         rendu = td_path / "rendu.jsonl"
 
-        # cible: line indented with 4 spaces
+        # cible : ligne indentee de 4 espaces
         cible.write_text("    some text\n", encoding='utf-8')
 
-        # rendu: same line indented with 8 spaces, stored as JSONL
-        rendu_line = {"line": "        some text"}
-        rendu.write_text(f"{rendu_line}\n", encoding='utf-8')
+        # rendu : meme ligne indentee de 8 espaces (le defaut typique du banc)
+        _ecrire_rendu(rendu, "anchor", "        some text", "    some text")
 
         out, err, rc, exc = _run_tool(rendu, "anchor", cible)
         if exc is not None:
@@ -55,18 +65,17 @@ def _case_reverse():
         cible = td_path / "cible.txt"
         rendu = td_path / "rendu.jsonl"
 
-        # cible: same line appears twice
-        cible.write_text("duplicate line\nduplicate line\n", encoding='utf-8')
+        # cible : meme contenu a DEUX indentations differentes
+        cible.write_text("    ligne dup\n        ligne dup\n", encoding='utf-8')
 
-        # rendu: JSONL with the line
-        rendu_line = {"line": "duplicate line"}
-        rendu.write_text(f"{rendu_line}\n", encoding='utf-8')
+        # rendu : ancre sans indentation, donc PAS presente telle quelle -> ambigu par strip
+        _ecrire_rendu(rendu, "anchor", "ligne dup", "remplacement")
 
         out, err, rc, exc = _run_tool(rendu, "anchor", cible)
         if exc is not None:
             return False, f"exception {exc}"
         if rc == 0:
-            return False, "expected non‑zero return code"
+            return False, "expected non-zero return code"
         if "AMBIGU" not in out.upper():
             return False, "missing 'AMBIGU' in output"
         return True, "ambiguity correctly detected"
@@ -78,14 +87,13 @@ def _case_fuite():
         cible = td_path / "cible.txt"
         rendu = td_path / "rendu.jsonl"
 
-        # reparable content similar to case 1
+        # contenu reparable, comme le cas 1
         cible.write_text("    some text\n", encoding='utf-8')
-        rendu_line = {"line": "        some text"}
-        rendu.write_text(f"{rendu_line}\n", encoding='utf-8')
+        _ecrire_rendu(rendu, "anchor", "        some text", "    some text")
 
         before = rendu.read_bytes()
 
-        # run without '--ecrire' flag
+        # lance sans le drapeau --ecrire
         out, err, rc, exc = _run_tool(rendu, "anchor", cible, extra_args=[])
         if exc is not None:
             return False, f"exception {exc}"

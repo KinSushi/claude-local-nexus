@@ -82,8 +82,10 @@ def reparer_accents(avant_lines, cible_lines):
 def traiter_bloc(bloc_idx, avant, apres, cible_lines):
     avant_lines = avant.splitlines()
     apres_lines = apres.splitlines()
-    # test si avant déjà présent tel quel
-    if avant in ''.join(cible_lines):
+    # intact se juge sur des lignes entieres consecutives, pas par sous-chaine
+    cible_entieres = [l.rstrip(chr(10)) for l in cible_lines]
+    n = len(avant_lines)
+    if n and any(cible_entieres[i:i + n] == avant_lines for i in range(len(cible_entieres) - n + 1)):
         return 'intact', None, None, avant, apres
 
     # 1. indentation
@@ -98,6 +100,11 @@ def traiter_bloc(bloc_idx, avant, apres, cible_lines):
             repares_apres.append(ind + line.lstrip())
         nouveau_apres = '\n'.join(repares_apres)
         return 'reparation indentation', avant, nouveau_apres, avant, nouveau_apres
+
+    # une ambiguite d'indentation est deja un verdict : ne pas la masquer par
+    # une tentative sur les accents qui rendrait INTROUVABLE.
+    if err == 'AMBIGU':
+        return 'AMBIGU', None, None, avant, apres
 
     # 2. accents
     repares_avant, err2 = reparer_accents(avant_lines, cible_lines)
