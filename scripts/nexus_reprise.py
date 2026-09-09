@@ -179,6 +179,8 @@ def bloc_taches() -> None:
          "Register-NexusTraque.ps1"),
         ("NexusVitrine", "publication si sain, PT6H",
          "Register-NexusVitrine.ps1"),
+        ("NexusBoucleLocale", "boucle agentique locale si pouls Claude mort, PT10M",
+         "Register-NexusBoucleLocale.ps1"),
         ("Claude-Local-Nexus - Demarrage", "pile au logon",
          "Register-NexusDemarrage.ps1"),
         ("Claude-Local-Nexus - Mise a jour", "modeles, quotidien",
@@ -186,8 +188,8 @@ def bloc_taches() -> None:
     )
     # INTERROGER SANS FILTRE : Get-ScheduledTask sans -TaskName rend code 0
     # et la liste complete. Le code de retour devient non ambigu : 0 = j'ai
-    # pu regarder, non nul = je n'ai pas pu. Le filtrage sur les 4 noms se
-    # fait en Python, ce qui leve l'ambiguite structurelle de PowerShell.
+    # pu regarder, non nul = je n'ai pas pu. Le filtrage sur les noms de la
+    # liste se fait en Python, ce qui leve l'ambiguite structurelle de PowerShell.
     commande = (
         "Get-ScheduledTask -ErrorAction SilentlyContinue | "
         "ForEach-Object { \"$($_.TaskName)|$($_.State)\" }"
