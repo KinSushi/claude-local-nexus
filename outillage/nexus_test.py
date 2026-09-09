@@ -1480,6 +1480,20 @@ def main() -> int:
         jouer_epreuve_python("epreuve_decouper_livres.py", "decouper livres : is_title, split_chapters, cut_menu")
     if args.only in (None, "poser-socle"):
         jouer_epreuve_python("epreuve_poser_socle.py", "poser socle : merge_permissions (fusion sans doublon, neuf refus, cible None)")
+    if args.only in (None, "ombre"):
+        jouer_epreuve_python("epreuve_ombre.py", "ombre : build_marker, extract_blocks, count_anchor, simulate_replacement (marqueurs par concatenation)")
+    if args.only in (None, "checklist-progres"):
+        jouer_epreuve_python("epreuve_checklist_progres.py", "checklist progres : lire_regressions (compte, aucune -> 0, inconnu)")
+    if args.only in (None, "indexer-texte"):
+        jouer_epreuve_python("epreuve_indexer_texte.py", "indexer texte : _slugify (slug, sentinelle unknown, entier refuse)")
+    if args.only in (None, "migration-plan"):
+        jouer_epreuve_python("epreuve_migration_plan.py", "migration plan : _extract_size (4 formes normalisees, 5 sans taille -> None)")
+    if args.only in (None, "livres-semantique"):
+        jouer_epreuve_python("epreuve_livres_semantique.py", "livres semantique : cosine_similarity (zip strict), _selectionner_top (tas, top_n 0)")
+    if args.only in (None, "traque"):
+        jouer_epreuve_python("epreuve_traque.py", "traque : _texte, _charge_de_refus (variable imprimee suivie dans la portee)")
+    if args.only in (None, "indexer-resumes"):
+        jouer_epreuve_python("epreuve_indexer_resumes.py", "indexer resumes : _slugify (troncature a 50, None/entier/flottant refuses)")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
