@@ -27917,3 +27917,18 @@ CLOS et vérifié.
   Inoffensive tant que le pouls est vivant ou la file `.nexus/file_locale.jsonl` vide. Puis :
   un forward RÉEL (pouls forcé mort + une tâche factice → proposition déposée par le banc
   local), et le mode de récolte des propositions par Claude au retour.
+- **D LIVRÉ — LA CHAÎNE DE SUCCESSION EST CÂBLÉE DE BOUT EN BOUT** :
+  `outillage/Register-NexusBoucleLocale.ps1` (copie fidèle de `Register-NexusTraque.ps1`,
+  tâche dédiée `NexusBoucleLocale`, PT10M, journal `logs/boucle_locale.log`, `-Supprimer`
+  réversible). **Forward réel prouvé** : tâche Ready, lancée, journal
+  `{"retrait": true, "raison": "claude vivant"}`. Câblée au témoin `nexus_reprise`
+  (`[Ready] NexusBoucleLocale`). §112.4 : le banc avait cassé l'échappement `""`→`\"`
+  (argument mort, échec silencieux) — vu à l'audit, restauré. Catch vide du modèle résorbé
+  (`Write-Verbose`), cliquet PowerShell 16 tenu.
+  **Ce qui est désormais mécanisé pour le défi opérateur** : politique (`decider`) + signal
+  (`pouls`, battu chaque tour) + pont (`--reel`, disjoncteur) + exécution autonome (boucle
+  locale par tâche planifiée, propositions auditées, jamais l'arbre).
+- **RESTE (raffinements)** : (a) un forward RÉEL avec pouls forcé mort + une tâche factice dans
+  `.nexus/file_locale.jsonl` → vérifier qu'une proposition est déposée par le banc local ;
+  (b) `nexus_recolte` : quand Claude revient, lire `.nexus/propositions/` et les appliquer via
+  `nexus_appliquer` après audit ; (c) le grain opus/fable du pouls (signal de quota par modèle).
