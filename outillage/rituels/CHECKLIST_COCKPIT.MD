@@ -27837,3 +27837,14 @@ CLOS et vérifié.
   pilotée par qwen3-coder:30b) qui poursuit quand Claude est épuisé. Le PLAN_11 les décrit mais
   contient des fabrications (`$getWorkflowStaticData` n8n, `detecteur_repli.py` inexistant) à
   ignorer. Exploiter les livres (ReAct, circuit-breaker de *Release it!*) pour la boucle.
+- **#11 PAS 2a LIVRÉ** (commit f4eed09) : le **signal d'épuisement Claude** que le PLAN_11 disait
+  manquant. Le quota de l'abonnement claude.ai n'est PAS détectable depuis le pont (le pont ne
+  l'utilise pas) → un **témoin (pouls)** : `scripts/nexus_pouls.py` (`est_vivant` pur avec
+  tolérance au clock skew ; `battre` atomique tmp+os.replace+fsync, accepte str/Path).
+  **Câblé au rituel** : `nexus_rituel` bat le pouls à chaque tour (contrôle « pouls battu ») →
+  frais tant que Claude tourne, vieillit quand le quota s'épuise. `epreuve_pouls` 10/10 câblée
+  `--only pouls`. Audit tiers « aucune régression ».
+- **RESTE #11 pas 2b** : `disponibilites_reelles()` qui combine le pouls (Claude vivant ?) et le
+  disjoncteur `is_available` (cloud/local) → alimente `decider` ; puis la **boucle agentique
+  locale** (ReAct) qui lit le pouls MORT et poursuit. Le grain opus/fable (le pouls dit
+  « claude-code » générique) viendra avec un vrai signal de quota par modèle.
