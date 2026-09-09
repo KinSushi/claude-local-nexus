@@ -212,8 +212,13 @@ def main():
 
     print("APPLIQUE : %d bloc(s) dans %s" % (len(blocs), cible_path))
 
-    # Analyse ruff apres ecriture reussie
+    # Analyse ruff apres ecriture reussie -- Python UNIQUEMENT : ruff sur un .js
+    # parse du JavaScript comme du Python et rend des milliers de faux
+    # "invalid-syntax" qui saturaient la sortie (mesure : 2175 lignes sur un
+    # petit .js, 133 000 sur server.js).
     try:
+        if not cible_path.endswith(".py"):
+            return 0
         ruff_exe = None
         dir_actuel = os.path.dirname(os.path.abspath(cible_path))
         while dir_actuel != os.path.dirname(dir_actuel):

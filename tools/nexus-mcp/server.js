@@ -3273,7 +3273,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
       fs.writeFileSync(tmpPath, JSON.stringify({ nom, texte }) + "\n", { encoding: "utf8" });
       return await runPython(
         [
-          path.join(INSTALL_ROOT, "scripts", "nexus_appliquer.py"),
+          path.join(INSTALL_ROOT, "scripts", texte.includes("<".repeat(3) + "CREER" + ">".repeat(3)) ? "nexus_creer.py" : "nexus_appliquer.py"),
           tmpPath,
           nom,
           cible

@@ -76,4 +76,17 @@ if (handlerIdx !== -1) {
   report(false, 'nettoyage', 'section handler introuvable');
 }
 
+// 5. routage creation : un patch de creation doit partir vers nexus_creer
+if (handlerIdx !== -1) {
+  const lines = source.split(/\r?\n/);
+  const segment = lines.slice(handlerIdx + 1, handlerIdx + 31).join('\n');
+  if (segment.includes('nexus_creer.py')) {
+    report(true, 'routage creation', 'un patch de creation est route vers nexus_creer');
+  } else {
+    report(false, 'routage creation', 'nexus_creer.py absent : la creation retomberait sur nexus_appliquer');
+  }
+} else {
+  report(false, 'routage creation', 'section handler introuvable');
+}
+
 process.exit(failures ? 1 : 0);
