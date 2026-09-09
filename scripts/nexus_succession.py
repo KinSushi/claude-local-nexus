@@ -72,6 +72,22 @@ def decider(disponibilites, sensibilite="L1"):
     return {"niveau": chosen, "role": role, "raison": raison}
 
 
+def disponibilites_depuis_pouls(pouls_vivant, cloud_ok=True, local_ok=True):
+    """
+    Mappe le signal de presence Claude vers le dict de disponibilites de decider.
+    pouls_vivant (bool): la session Claude est-elle vivante (pouls frais) ?
+      -> opus et fable sont disponibles si et seulement si Claude est vivant.
+    cloud_ok, local_ok (bool): disponibilite du banc (defaut True, optimiste ;
+      le raffinement par disjoncteur viendra).
+    Retourne {"opus": pouls_vivant, "fable": pouls_vivant, "cloud": cloud_ok, "local": local_ok}.
+    """
+    return {
+        "opus": pouls_vivant,
+        "fable": pouls_vivant,
+        "cloud": cloud_ok,
+        "local": local_ok,
+    }
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Diagnostic de la politique de succession de l'orchestrateur."
@@ -86,14 +102,35 @@ if __name__ == "__main__":
         default="L1",
         help="Niveau de sensibilite (defaut L1)",
     )
+    parser.add_argument(
+        "--reel",
+        action="store_true",
+        help="Lire l'etat reel (pouls de presence Claude) au lieu des flags",
+    )
+    parser.add_argument(
+        "--seuil",
+        type=float,
+        default=900.0,
+        help="fraicheur du pouls en secondes",
+    )
     args = parser.parse_args()
 
-    disponibilites = {
-        "opus": not args.opus_epuise,
-        "fable": not args.fable_epuise,
-        "cloud": not args.cloud_epuise,
-        "local": not args.local_epuise,
-    }
+    if args.reel:
+        # Lecture du pouls reel de presence Claude
+        import time
+        import nexus_pouls
+
+        pouls = nexus_pouls.lire(nexus_pouls._chemin_defaut())
+        vivant = nexus_pouls.est_vivant(pouls, time.time(), args.seuil)
+        disponibilites = disponibilites_depuis_pouls(vivant)
+        print("Pouls Claude :", "VIVANT" if vivant else "MORT")
+    else:
+        disponibilites = {
+            "opus": not args.opus_epuise,
+            "fable": not args.fable_epuise,
+            "cloud": not args.cloud_epuise,
+            "local": not args.local_epuise,
+        }
 
     result = decider(disponibilites, sensibilite=args.sensibilite)
 

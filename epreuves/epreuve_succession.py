@@ -83,6 +83,21 @@ def main():
             _rate(nom_test, 'attendu=%s, obtenu=%s' % (attendu, obtenu))
             all_ok = False
 
+    # Test de disponibilites_depuis_pouls
+    vivant = ns.disponibilites_depuis_pouls(True)
+    if vivant == {"opus": True, "fable": True, "cloud": True, "local": True}:
+        _ok('depuis_pouls vivant', 'vivant=%s' % vivant)
+    else:
+        _rate('depuis_pouls vivant', 'obtenu=%s' % vivant)
+        all_ok = False
+
+    mort = ns.disponibilites_depuis_pouls(False)
+    if mort == {"opus": False, "fable": False, "cloud": True, "local": True}:
+        _ok('depuis_pouls mort', 'mort=%s' % mort)
+    else:
+        _rate('depuis_pouls mort', 'obtenu=%s' % mort)
+        all_ok = False
+
     return 0 if all_ok else 1
 
 
