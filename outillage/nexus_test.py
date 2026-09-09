@@ -1430,6 +1430,16 @@ def main() -> int:
         jouer_epreuve_python("epreuve_generate.py", "coeur du routage : pool exact, fallbacks, alias")
     if args.only in (None, "frontiere"):
         jouer_epreuve_python("epreuve_frontiere.py", "classement execution/mention des appels d outils")
+    if args.only in (None, "disjoncteur"):
+        jouer_epreuve_python("epreuve_disjoncteur.py", "disjoncteur : chemin d etat, echec transitoire")
+    if args.only in (None, "boussole"):
+        jouer_epreuve_python("epreuve_boussole.py", "boussole : echappement markdown")
+    if args.only in (None, "redaction"):
+        jouer_epreuve_python("epreuve_redaction.py", "redaction : fenetre et option json")
+    if args.only in (None, "filet"):
+        jouer_epreuve_python("epreuve_filet.py", "filet : suppressions dans un diff")
+    if args.only in (None, "savings"):
+        jouer_epreuve_python("epreuve_savings.py", "savings : nettoyage env, validation url, domaine")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
@@ -1997,6 +2007,9 @@ def test_registre_epreuves() -> None:
 
     print("\n--- REGISTRE DES EPREUVES : une mesure ratee efface-t-elle ? ---")
 
+    # scripts/ doit etre dans le path avant l'import, sinon --only registre (isole)
+    # echouait en "No module named nexus_releve" et le skip masquait un test mort.
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
     try:
         import nexus_releve as releve
     except Exception as exc:
