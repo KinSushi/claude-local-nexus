@@ -27848,3 +27848,15 @@ CLOS et vérifié.
   disjoncteur `is_available` (cloud/local) → alimente `decider` ; puis la **boucle agentique
   locale** (ReAct) qui lit le pouls MORT et poursuit. Le grain opus/fable (le pouls dit
   « claude-code » générique) viendra avec un vrai signal de quota par modèle.
+- **#11 PAS 2b PARTIE 1 LIVRÉE** (commit e21e6e5) : le **pont** entre le signal (pouls) et la
+  politique (`decider`). `disponibilites_depuis_pouls(pouls_vivant)` (pure) mappe « Claude
+  vivant ? » → `{opus, fable}` ; le mode `nexus_succession --reel` lit le pouls réel et décide
+  qui orchestre MAINTENANT. **Bascule réelle démontrée** : `--reel` pouls VIVANT → opus ;
+  `--reel --seuil 0` (pouls forcé MORT) → cloud prend le relais. `epreuve_succession` étendue
+  12/12. cloud/local optimistes par défaut.
+- **RESTE #11 pas 2b partie 2** : (a) raffiner cloud/local via le disjoncteur réel
+  (`nexus_disjoncteur.is_available` + `plans_par_alias`, qui fait une requête réseau — dégrader
+  si la passerelle est down) ; (b) la **boucle agentique locale** (ReAct) — le gros morceau —
+  qui lit le pouls MORT et poursuit le travail sans Claude, en respectant la LOI 1 (déléguer +
+  auditer avec des modèles locaux distincts). Exploiter *Release it!* (circuit-breaker) et les
+  7 livres sur les agents IA (ReAct) du corpus AVANT.
