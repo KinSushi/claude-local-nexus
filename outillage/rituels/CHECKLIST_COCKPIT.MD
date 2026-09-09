@@ -27982,3 +27982,41 @@ CLOS et vérifié.
   en échec) corrigé à la création. **35 nus** restants — reste ombre (marqueurs par
   concaténation), puis les moyens (checklist_progres 291, indexer_texte 309, migration_plan
   322, livres_semantique 335, traque 355, indexer_resumes 361, indexer_ast 365...).
+- **L2 — salve d (2026-09-09 ~01:45)** : 8 `nexus_ask` parallèles → **7 outils couverts, 26
+  sous-cas** contre le code réel (ombre 8 — marqueurs par concaténation, zéro chevron littéral
+  vérifié en octets ; checklist_progres 3 ; indexer_texte 3 ; migration_plan 2 ;
+  livres_semantique 4 ; traque 4 sur des nœuds AST construits ; indexer_resumes 2), câblés
+  `--only`. **1 honnête** (indexer_ast, `AUCUNE_FONCTION_PURE` — vérifié, tout lit le disque :
+  à ne plus cibler). **Une assertion du banc réfutée** : `build_marker(None)` ne lève pas, il
+  rend `None` entre chevrons (f-string). Exécutés AVANT installation (PYTHONPATH sur le code
+  réel), puis en place, puis via `nexus_test`. **Mesure des nus, méthode déclarée** (« nom de
+  l'outil cité dans une épreuve ») : 24 → **19** ; le « 35 » des tours précédents venait d'une
+  méthode par nom de fichier, et la méthode par import direct donne 63 en comptant comme nus
+  des outils éprouvés par sous-processus — aucune n'est LA mesure, celle-ci est nommée pour
+  être comparable au tour suivant.
+  **Défaut trouvé par l'usage** (`cmp` scratchpad/dépôt) : `nexus_creer` écrivait chaque
+  fichier SANS saut de ligne final sur le chemin réel (le MCP n'envoie pas de ligne vide avant
+  FIN) ; l'épreuve ne le voyait pas parce que son helper ajoutait lui-même la ligne vide —
+  faux-vert par le harnais. Cycle à trois temps tenu : correctif gpt-oss-120b-cloud, audit
+  qwen3-coder-30b-local (CONFORME ; il cite la ligne 147 pour `f.write` qui est en 197 —
+  signal, vérifié par grep), sous-cas `FORWARD_CHEMIN_REEL` qui **rougit sur l'ancien code**
+  (stash du correctif, exit 1) et verdit sur le nouveau (5/5). Validation tierce
+  b7f2821..HEAD : aucune régression (24 fonctions). Cliquets 35/8/16, câblage 0.
+  **Reste ouvert de ce tour** : (1) le cliquet ruff ne sélectionne pas `W292` — la classe
+  « fichier sans saut final » n'est pas mécanisée pour les autres scripteurs ; à ajouter au
+  select AVEC normalisation des ~30 épreuves déjà créées par `nexus_creer` (rebasement avec
+  raison, jamais l'inverse) ; (2) `epreuve_creer` imprime des libellés accentués, illisibles en
+  console cp1252 — cosmétique, ASCII à la prochaine retouche.
+  **19 « jamais cités »** restants : pull_host 436, releve 904, reprise 403, state 589,
+  switch_engine 369, verrou_tenir (honnête), essaim 752, extraire_livres 148, indexer_ast
+  (honnête), indexer_code 608, indexer_concepts 373, patch 524, plan 377, portee_import 404,
+  preserve 605, quarantaine 996, sauvegarde (honnête), test_outillage 553, worktree 536.
+  Prochain : extraire_livres, indexer_concepts, plan, portee_import, switch_engine, reprise,
+  patch, pull_host — même méthode.
+  **Le contrôle loi1 a mordu, à raison** (2026-09-09 ~01:55) : le rituel a rendu `MANQUE loi1
+  tenue : 1 ligne à la main`. C'était le commentaire du correctif `nexus_creer`, que
+  l'arbitrage avait TRADUIT en français au lieu de poser le rendu du banc tel quel — une ligne
+  retapée est une ligne à la main, même un commentaire, même pour une bonne raison
+  (`nexus_loi1` retient les lignes ≥ 24 caractères, strippées, contre 400 traces). Commentaire
+  ramené au verbatim (commit 6341a35) : 3 retenues, 3 déléguées, 0 à la main. Leçon
+  mécanisée par le contrôle lui-même ; rien à ajouter en prose.
