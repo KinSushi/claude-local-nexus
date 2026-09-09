@@ -27937,7 +27937,17 @@ CLOS et vérifié.
   Les deux appels passent par `nexus_agent.executer` (donc tracés au verbatim). Artefacts de
   test supprimés. **La chaîne de succession du défi opérateur est prouvée de bout en bout,
   en réel.**
-- **RESTE (raffinements)** : (b) `nexus_recolte` : quand Claude revient, lire
-  `.nexus/propositions/`, ré-auditer et appliquer via `nexus_appliquer` (jamais automatique :
-  §90) ; (c) le grain opus/fable du pouls (signal de quota par modèle) ; (d) alimenter
-  `.nexus/file_locale.jsonl` depuis les sujets ouverts (conversion prose → tâches, à la main).
+- **(b) `nexus_recolte` LIVRÉ — LA CHAÎNE EST FERMÉE** : `charger_propositions`, `cible_de` et
+  `vers_jsonl` pures, `appliquer` par injection (écrit le JSONL `{nom, texte}` de
+  `nexus_appliquer`, nettoie le provisoire en `finally`), `archiver`. CLI `--lister` /
+  `--appliquer <nom>` — UNE proposition à la fois, aucune option de masse (§90). **Forward
+  réel** : fixture sous la racine → `--appliquer` → `APPLIQUE : 1 bloc(s)`, fichier modifié,
+  proposition archivée. Câblé au hook `nexus_reprise` (`bloc_propositions` : « N en attente »
+  ou « aucune », information seulement) → appelant réel, câblage sans régression.
+  `epreuve_recolte` 6/6. §0.1.4 : le défaut #8 « entités HTML » (`&lt;nom&gt;`) est
+  **confirmé en usage réel** dans un rendu qwen local ; l'épreuve glm mélangeait Path/str.
+  **Boucle locale → proposition → récolte → `nexus_appliquer` : fermée de bout en bout.**
+- **RESTE (raffinements)** : (c) le grain opus/fable du pouls (signal de quota par modèle) ;
+  (d) alimenter `.nexus/file_locale.jsonl` depuis les sujets ouverts (prose → tâches, à la
+  main, avec `fichiers[0]` = la cible) ; (e) le défaut #8 entités HTML : un dé-encodage
+  `&lt;`/`&gt;` côté pont ou applicateur, mécanisé avec contre-épreuve.
