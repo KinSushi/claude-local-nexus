@@ -27792,3 +27792,21 @@ CLOS et vérifié.
   mais aussi **conformité** et **rituel** — un « OK » sous ce flag est un faux-vert (les secrets
   et le pont ne sont pas vérifiés). Restreindre le flag au seul `nexus_test`. Mémoire
   `vitrine-sauf-tests-saute-conformite`.
+
+### Tour 2026-09-08 (nuit) — chantier #1 mécanisé : le pont trace désormais
+
+- **Chantier #1 RÉSOLU (mécanisé)** (commits d45db77 + b0e7d6f) : le serveur MCP dépose
+  desormais chaque réponse de `nexus_ask`/`nexus_batch` dans le verbatim → `nexus_loi1` n'est
+  plus aveugle aux délégations MCP (le chemin exigé par l'opérateur). Nouveau
+  `scripts/nexus_deposer.py` (dépose depuis un fichier provisoire, ne lève jamais, exit 0,
+  portable §0.5), helper `deposerTrace` dans server.js (écrit un fichier PROVISOIRE dans
+  `os.tmpdir()` → exempté §0.4, `spawn` détaché `unref` = fire-and-forget), `epreuve_deposer`
+  (forward: trace + fichier supprimé ; reverse: fichier absent/args manquants → exit 0) câblée
+  `--only deposer`, 3/3. §0.4 intact (hors réserve 0, reverse=2 conservé), `node --check` OK,
+  cliquets ruff 35 / eslint 8 tenus. Code du banc (cloud + qwen local), câblage orchestrateur,
+  audit tiers gpt-oss « aucune régression ». **RESTE** : test runtime (délégation MCP réelle →
+  trace créée) après un **redémarrage du serveur MCP** (comme L6bis). Mémoire
+  `mcp-n-alimente-pas-verbatim-loi1-aveugle`.
+- Note LOI 1 : ce chantier INSTALLE le traçage, donc il n'est pas lui-même tracé
+  (chicken-and-egg) — `nexus_loi1` compte ses 39 lignes « à la main », attendu ; c'est le
+  dernier commit de code non traçable. Les délégations suivantes (MCP redémarré) le seront.
