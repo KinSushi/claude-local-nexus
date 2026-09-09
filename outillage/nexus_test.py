@@ -1462,6 +1462,24 @@ def main() -> int:
         jouer_epreuve_python("epreuve_avant_apres.py", "avant/apres : empreinte sha256, comparaison de releves, code de sortie")
     if args.only in (None, "verbatim"):
         jouer_epreuve_python("epreuve_verbatim.py", "verbatim : _nom_sur ne laisse passer aucun separateur ni traversee")
+    if args.only in (None, "rebasement"):
+        jouer_epreuve_python("epreuve_rebasement.py", "rebasement : les quatre verdicts de _classify_rule et le mapping _compare_counts")
+    if args.only in (None, "indexer-node"):
+        jouer_epreuve_python("epreuve_indexer_node.py", "indexer node : clean_html, is_valid_name, normalize_field")
+    if args.only in (None, "index-livres"):
+        jouer_epreuve_python("epreuve_index_livres.py", "index livres : batch_iter (lots, vide, taille non entiere sans lever)")
+    if args.only in (None, "armer-hook"):
+        jouer_epreuve_python("epreuve_armer_hook.py", "armer hook : find_groups_by_command (groupes citant la commande, None)")
+    if args.only in (None, "pull-garde"):
+        jouer_epreuve_python("epreuve_pull_garde.py", "pull garde : decision (AUTORISE, INDETERMINE) et profil factice")
+    if args.only in (None, "livres-fonctions"):
+        jouer_epreuve_python("epreuve_livres.py", "livres : _format_fragment (texte, code, vide) et _score_entry")
+    if args.only in (None, "porte-rituel"):
+        jouer_epreuve_python("epreuve_porte_rituel.py", "porte rituel : _should_block, message actionnable, mode epreuve allow/block/invalide")
+    if args.only in (None, "decouper-livres"):
+        jouer_epreuve_python("epreuve_decouper_livres.py", "decouper livres : is_title, split_chapters, cut_menu")
+    if args.only in (None, "poser-socle"):
+        jouer_epreuve_python("epreuve_poser_socle.py", "poser socle : merge_permissions (fusion sans doublon, neuf refus, cible None)")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
