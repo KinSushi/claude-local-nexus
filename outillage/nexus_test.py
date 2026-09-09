@@ -1422,6 +1422,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_chemins.py", "detection des references de chemins mortes")
     if args.only in (None, "generate"):
         jouer_epreuve_python("epreuve_generate.py", "coeur du routage : pool exact, fallbacks, alias")
+    if args.only in (None, "frontiere"):
+        jouer_epreuve_python("epreuve_frontiere.py", "classement execution/mention des appels d outils")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
