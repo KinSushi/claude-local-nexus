@@ -1418,6 +1418,9 @@ def main() -> int:
         jouer_epreuve_python("epreuve_vitrine_suite.py", "la porte de publication joue la suite")
     if args.only in (None, "silence"):
         jouer_epreuve_python("epreuve_silence_muet.py", "cliquet : les handlers muets n augmentent pas")
+    if args.only in (None, "apply"):
+        jouer_epreuve_node("epreuve_apply.js", "outil MCP nexus_apply",
+                           "NEXUS_APPLY : l'outil est-il cable dans le serveur ?")
     if args.only in (None, "lecture"):
         jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
     if args.only in (None, "shell"):

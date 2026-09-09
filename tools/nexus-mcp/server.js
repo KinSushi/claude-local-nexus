@@ -2382,6 +2382,20 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "nexus_apply",
+    title: "Appliquer un patch ancre rendu par un modele",
+    description: "Ferme la colle manuelle entre nexus_batch et nexus_appliquer et rend le verdict APPLIQUE ou REFUS tel quel.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        texte: { type: "string", description: "Le patch : blocs AVANT / APRES / FIN" },
+        cible: { type: "string", description: "Chemin du fichier a modifier, relatif a la racine du depot" },
+        nom: { type: "string", description: "Etiquette de la tache", default: "mcp" }
+      },
+      required: ["texte", "cible"]
+    }
+  },
+  {
     name: "nexus_livres",
     title: "Chercher dans les 24 livres par sens, en local",
     description:
@@ -3243,6 +3257,37 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
 
   if (name === "nexus_verrou") {
     return await runPython([path.join(INSTALL_ROOT, "scripts", "nexus_verrou_machine.py")]);
+  }
+
+  if (name === "nexus_apply") {
+    const texte = String(args.texte || "");
+    const cible = String(args.cible || "");
+    const nom = String(args.nom || "mcp");
+    if (!texte || !cible) {
+      return { content: [{ type: "text", text: "texte et cible requis" }] };
+    }
+    const fs = require("node:fs");
+    const os = require("node:os");
+    const tmpPath = path.join(os.tmpdir(), `nexus_apply_${process.pid}_${Date.now()}.jsonl`);
+    try {
+      fs.writeFileSync(tmpPath, JSON.stringify({ nom, texte }) + "\n", { encoding: "utf8" });
+      return await runPython(
+        [
+          path.join(INSTALL_ROOT, "scripts", "nexus_appliquer.py"),
+          tmpPath,
+          nom,
+          cible
+        ],
+        120000,
+        [0, 1]
+      );
+    } finally {
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch (e) {
+        // L'absence du temporaire n'est pas une erreur
+      }
+    }
   }
 
   if (name === "nexus_models") {
