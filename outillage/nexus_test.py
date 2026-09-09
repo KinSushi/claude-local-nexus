@@ -1442,6 +1442,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_savings.py", "savings : nettoyage env, validation url, domaine")
     if args.only in (None, "deposer"):
         jouer_epreuve_python("epreuve_deposer.py", "deposer : trace verbatim (forward), degrade proprement (reverse)")
+    if args.only in (None, "sauf-tests"):
+        jouer_epreuve_python("epreuve_sauf_tests.py", "vitrine : --sauf-tests ne saute que les tests, jamais conformite/rituel")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):

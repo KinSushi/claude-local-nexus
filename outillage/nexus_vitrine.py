@@ -244,7 +244,7 @@ def main() -> int:
                    help="tout verifier, n'annoncer le push que par ecrit")
     p.add_argument("--json", action="store_true")
     p.add_argument("--sauf-tests", action="store_true",
-                   help="sauter conformite et rituel (deconseille)")
+                   help="sauter la suite de tests longue ; conformite et rituel restent verifies")
     p.add_argument("--epreuve", action="store_true",
                    help="verifier que le detecteur de secrets detecte")
     a = p.parse_args()
@@ -267,12 +267,12 @@ def main() -> int:
         "remote origin": ("BLOQUENT", lambda: remote_present(racine)),
         "amont de la branche": ("BLOQUENT", lambda: amont_present(racine)),
         "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
-                                                           a.sauf_tests)),
+                                                           False)),
         "suite de tests": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_test.py",
                                                                a.sauf_tests, 1800)),
         "rituel de fin de tour": ("BLOQUENT", lambda: sous_controle(racine,
                                                                     "nexus_rituel.py",
-                                                                    a.sauf_tests)),
+                                                                    False)),
     }
 
     resultats = []
