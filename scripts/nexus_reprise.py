@@ -353,6 +353,26 @@ def bloc_boucle() -> None:
     print("  -> relancer /loop, ou rearmer ScheduleWakeup au premier tour.")
 
 
+def bloc_propositions() -> None:
+    # Information seulement : la boucle locale DEPOSE, ce hook AFFICHE, et
+    # l'application reste un geste explicite, une proposition a la fois (90).
+    titre("PROPOSITIONS DE LA BOUCLE LOCALE, EN ATTENTE DE RECOLTE")
+    try:
+        import nexus_recolte
+        dossier = os.path.join(nexus_recolte._racine(), ".nexus", "propositions")
+        props = nexus_recolte.charger_propositions(dossier)
+        if not props:
+            print("  aucune -- la boucle locale n'a rien depose (Claude etait vivant, ou file vide).")
+        else:
+            print("  %d proposition(s) en attente, a recolter UNE A LA FOIS :" % len(props))
+            for _chemin, prop in props:
+                print("    %-28s verdict %-6s cible %s" % (prop.get("nom", "-"), prop.get("verdict", "-"), nexus_recolte.cible_de(prop) or "-"))
+            print("  lister   : python scripts/nexus_recolte.py --lister")
+            print("  appliquer: python scripts/nexus_recolte.py --appliquer <nom>   (jamais en masse)")
+    except Exception as exc:
+        print("  [!] recolte indisponible : %s" % str(exc).splitlines()[0][:60])
+
+
 def main() -> int:
     # La sortie de ce hook est injectee dans le contexte d'une session : la
     # fidelite y est le sujet. Sans cette ligne, tout caractere hors cp1252
@@ -364,8 +384,8 @@ def main() -> int:
     print("#  CLAUDE-LOCAL-NEXUS — REPRISE DE SESSION (hook SessionStart)")
     print("#  Tout ci-dessous est RELU maintenant, jamais memorise.")
     print("#" * 72)
-    for bloc in (bloc_objectif, bloc_git, bloc_taches, bloc_sujets,
-                 bloc_gestes, bloc_boucle):
+    for bloc in (bloc_objectif, bloc_git, bloc_taches, bloc_propositions,
+                 bloc_sujets, bloc_gestes, bloc_boucle):
         try:
             bloc()
         except Exception as exc:
