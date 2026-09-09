@@ -27947,7 +27947,14 @@ CLOS et vérifié.
   `epreuve_recolte` 6/6. §0.1.4 : le défaut #8 « entités HTML » (`&lt;nom&gt;`) est
   **confirmé en usage réel** dans un rendu qwen local ; l'épreuve glm mélangeait Path/str.
   **Boucle locale → proposition → récolte → `nexus_appliquer` : fermée de bout en bout.**
-- **RESTE (raffinements)** : (c) le grain opus/fable du pouls (signal de quota par modèle) ;
+- **(e) DÉFAUT #8 « ENTITÉS HTML » RÉPARÉ À LA SOURCE** : reproduit avant fix (patch aux
+  marqueurs encodés → REFUS), puis `scripts/nexus_rendu.deencoder_si_entites` (pure ; règle
+  de prudence : un marqueur brut présent interdit le dé-encodage, un `&lt;` légitime reste
+  intact), câblé dans `nexus_appliquer` ET `nexus_creer` avec une NOTE annoncée. Contre-épreuve
+  après fix : la même fixture est APPLIQUÉE, un CREER encodé est CRÉÉ. `epreuve_rendu` 7/7.
+  Le sujet #8 de la liste vivante peut passer à ✅ (cause : le banc encode parfois les
+  entités ; remède à la source, pas dans le prompt).
+- **RESTE (raffinements #11)** : (c) le grain opus/fable du pouls (signal de quota par modèle) ;
   (d) alimenter `.nexus/file_locale.jsonl` depuis les sujets ouverts (prose → tâches, à la
-  main, avec `fichiers[0]` = la cible) ; (e) le défaut #8 entités HTML : un dé-encodage
-  `&lt;`/`&gt;` côté pont ou applicateur, mécanisé avec contre-épreuve.
+  main, `fichiers[0]` = la cible). Puis retour à **L2** (48 outils nus) et **L5** (SIM115
+  restants, subprocess sans `check=`).
