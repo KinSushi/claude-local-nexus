@@ -27903,3 +27903,17 @@ CLOS et vérifié.
   **Fabrications du banc REJETÉES** : `tasks_inbox/`+`task_loader.py`, `cb.reset_after()`,
   `--check-anchor`, `is_available()` sans alias, « Nexus Scheduler », outils `calculator/websearch`
   (recopiés de LangChain), 10 modules séparés.
+- **#11 pas 2b p2b — A+B+C LIVRÉS** (`scripts/nexus_boucle_locale.py`) : décision et verdict
+  purs, `un_cycle` par injection (LOI 1 mécanisée : pilote=auditeur → `ValueError`),
+  `boucle` avec gardes (pouls vivant → retrait, MAX_STEPS, N échecs), `tour_si_pouls_mort`
+  (ne fait rien si Claude vivant). **Précision de sécurité tranchée** : la boucle ne modifie
+  JAMAIS le dépôt, elle **dépose des propositions auditées** (`.nexus/propositions/`, JSON
+  atomique) — sinon R4 (§90). `epreuve_boucle_locale` 22/22 par mock (forward : proposition
+  déposée ; reverse : Claude vivant → traitees=0). CLI `--simuler` prouvé. Rebaseline câblage
+  assumé (preuve_seule).
+- **RESTE — D, le câblage réel** : une **tâche planifiée DÉDIÉE** (`Register-NexusBoucleLocale.ps1`,
+  sur le modèle de `Register-NexusAutoUpdate.ps1`) lançant `nexus_boucle_locale.py --tour`
+  toutes les 10 min — PAS une greffe dans `nexus_traque` (analyseur de défauts = bricolage).
+  Inoffensive tant que le pouls est vivant ou la file `.nexus/file_locale.jsonl` vide. Puis :
+  un forward RÉEL (pouls forcé mort + une tâche factice → proposition déposée par le banc
+  local), et le mode de récolte des propositions par Claude au retour.
