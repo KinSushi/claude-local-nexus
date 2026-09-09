@@ -27958,3 +27958,13 @@ CLOS et vérifié.
   (d) alimenter `.nexus/file_locale.jsonl` depuis les sujets ouverts (prose → tâches, à la
   main, `fichiers[0]` = la cible). Puis retour à **L2** (48 outils nus) et **L5** (SIM115
   restants, subprocess sans `check=`).
+- **L2 — salve de nuit (2026-09-09 ~00:50)** : 8 `nexus_ask` parallèles sur les nus les plus
+  petits. **4 couverts** (garde_edition `chemin_ecrit` 5 cas, loi1 `_is_delegated` 3 cas dont
+  « absente », avant_apres 6 cas, verbatim `_nom_sur` 4 cas) — 18/18 contre le code réel,
+  câblés. **2 honnêtes** `AUCUNE_FONCTION_PURE` (epreuve_vide, sauvegarde ; verrou_tenir idem
+  cette nuit) — à ne plus cibler. **2 rejetés à l'audit (§112.4)** : *ombre* (marqueurs de patch
+  en littéral dans l'épreuve → `nexus_creer` tronquerait, le piège documenté — à refaire par
+  concaténation) ; *rebasement* (3 verdicts sur 4 inventés : `ATTRIBUABLE`, `IMPROVEMENT`,
+  `UNCHANGED` ; seul `REGRESSION` existe — à refaire après lecture de `_classify_rule`). Deux
+  faux-verts du banc corrigés à la création : loi1 ne comptait que les exceptions (un `[RATE]`
+  passait), `all_ok and test()` court-circuitait les tests suivants. **44 nus** restants.
