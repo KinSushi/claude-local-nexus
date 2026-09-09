@@ -27964,7 +27964,21 @@ CLOS et vérifié.
   câblés. **2 honnêtes** `AUCUNE_FONCTION_PURE` (epreuve_vide, sauvegarde ; verrou_tenir idem
   cette nuit) — à ne plus cibler. **2 rejetés à l'audit (§112.4)** : *ombre* (marqueurs de patch
   en littéral dans l'épreuve → `nexus_creer` tronquerait, le piège documenté — à refaire par
-  concaténation) ; *rebasement* (3 verdicts sur 4 inventés : `ATTRIBUABLE`, `IMPROVEMENT`,
-  `UNCHANGED` ; seul `REGRESSION` existe — à refaire après lecture de `_classify_rule`). Deux
+  concaténation) ; *rebasement* — **rejet ANNULÉ le tour suivant** : mon grep d'audit
+  (`sort -u -t: -k3` sur une sortie à deux champs) ne gardait qu'une ligne et m'a fait croire
+  que 3 verdicts sur 4 étaient inventés ; la lecture directe de `_classify_rule` montre que
+  les quatre existent — **le banc avait raison, l'instrument mentait** (§0.1.4, « instrument
+  exact, conclusion fausse », neuvième cas). Recréé depuis le rendu, sans `_run_epreuve`
+  (impur, monkeypatch) et avec son reverse corrigé (`[]` ne lève pas, `None` oui). Deux
   faux-verts du banc corrigés à la création : loi1 ne comptait que les exceptions (un `[RATE]`
   passait), `all_ok and test()` court-circuitait les tests suivants. **44 nus** restants.
+- **L2 — salve c (2026-09-09 ~01:00)** : 8 `nexus_ask` + rebasement réhabilité → **9 outils
+  couverts, 57 sous-cas** contre le code réel (rebasement 7, indexer_node 6, index_livres 3,
+  armer_hook 2, pull_garde 4, livres 8, porte_rituel 7, decouper_livres 6, poser_socle 11),
+  câblés. **Trois assertions du banc réfutées par exécution** : `batch_iter` ne lève pas sur une
+  taille non entière (un seul lot) ; `split_chapters(None)` lève `AttributeError` ;
+  `nexus_poser_socle` imprime ses refus en `[RATE]` → le lanceur aurait vu un faux rouge
+  (sortie capturée par `redirect_stdout`). Un faux-vert structurel (decouper imprimait `[OK  ]`
+  en échec) corrigé à la création. **35 nus** restants — reste ombre (marqueurs par
+  concaténation), puis les moyens (checklist_progres 291, indexer_texte 309, migration_plan
+  322, livres_semantique 335, traque 355, indexer_resumes 361, indexer_ast 365...).
