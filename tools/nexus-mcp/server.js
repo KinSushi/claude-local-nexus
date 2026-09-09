@@ -2605,7 +2605,7 @@ function deposerTrace(result, messages, plan) {
         });
 
         child.unref();
-    } catch (e) {
+    } catch {
         /* tracer must never break caller */
     }
 }
