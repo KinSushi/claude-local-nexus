@@ -3268,13 +3268,13 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     }
     const fs = require("node:fs");
     const os = require("node:os");
-    const tmpPath = path.join(os.tmpdir(), `nexus_apply_${process.pid}_${Date.now()}.jsonl`);
+    const provisoirePath = path.join(os.tmpdir(), `nexus_apply_${process.pid}_${Date.now()}.jsonl`);
     try {
-      fs.writeFileSync(tmpPath, JSON.stringify({ nom, texte }) + "\n", { encoding: "utf8" });
+      fs.writeFileSync(provisoirePath, JSON.stringify({ nom, texte }) + "\n", { encoding: "utf8" });
       return await runPython(
         [
           path.join(INSTALL_ROOT, "scripts", texte.includes("<".repeat(3) + "CREER" + ">".repeat(3)) ? "nexus_creer.py" : "nexus_appliquer.py"),
-          tmpPath,
+          provisoirePath,
           nom,
           cible
         ],
@@ -3283,7 +3283,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
       );
     } finally {
       try {
-        fs.unlinkSync(tmpPath);
+        fs.unlinkSync(provisoirePath);
       } catch {
         // L'absence du temporaire n'est pas une erreur
       }
