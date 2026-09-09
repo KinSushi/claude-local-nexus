@@ -16,6 +16,7 @@ import os
 import sys
 import subprocess
 import contextlib
+import nexus_rendu
 
 with contextlib.suppress(Exception):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -137,6 +138,11 @@ def main() -> int:
                     return 1
                 if d.get("nom") == nom_tache:
                     texte = d.get("texte") or ""
+                    # Defaut #8 mesure : de-encode les entites HTML SEULEMENT sans
+                    # marqueur brut (sinon un &lt; legitime serait corrompu), et dit.
+                    texte, deencode = nexus_rendu.deencoder_si_entites(texte)
+                    if deencode:
+                        print("NOTE : rendu aux entites HTML encodees (defaut #8), de-encode avant analyse.")
                     break
     except (FileNotFoundError, PermissionError, OSError) as e:
         print(f"ERREUR : impossible d'ouvrir le fichier JSONL '{jsonl_path}' : {e}")

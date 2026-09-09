@@ -13,6 +13,7 @@ import sys
 import ast
 import os
 import subprocess
+import nexus_rendu
 import contextlib
 
 with contextlib.suppress(Exception):
@@ -51,6 +52,11 @@ def main():
                 return 1
             if d.get("nom") == nom_tache:
                 texte = d.get("texte") or ""
+                # Defaut #8 mesure : un rendu aux entites HTML encodees ne porte
+                # plus ses marqueurs. De-encode SEULEMENT sans marqueur brut, et dit.
+                texte, deencode = nexus_rendu.deencoder_si_entites(texte)
+                if deencode:
+                    print("NOTE : rendu aux entites HTML encodees (defaut #8), de-encode avant analyse.")
                 break
 
     if texte is None:

@@ -1452,6 +1452,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_boucle_locale.py", "boucle locale : decision, verdict, LOI 1, cycle et boucle par injection (retrait si Claude vivant)")
     if args.only in (None, "recolte"):
         jouer_epreuve_python("epreuve_recolte.py", "recolte : une proposition a la fois via nexus_appliquer (injection, provisoire nettoye, archivage)")
+    if args.only in (None, "rendu"):
+        jouer_epreuve_python("epreuve_rendu.py", "rendu : entites HTML du banc de-encodees seulement sans marqueur brut (defaut #8)")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
