@@ -1,21 +1,21 @@
 {
-  "mesure_le": "2026-09-08T00:50:13.818028+00:00",
+  "mesure_le": "2026-09-09T00:27:35.769951+00:00",
   "categories": {
-    "orphelin": [],
+    "orphelin": [
+      "outillage/nexus_indexer_ast.py",
+      "outillage/nexus_indexer_concepts.py",
+      "outillage/nexus_indexer_resumes.py"
+    ],
     "preuve_seule": [
       "epreuves/epreuve_cles_only.py",
       "outillage/nexus_armer_hook.py",
       "outillage/nexus_avant_apres.py",
       "outillage/nexus_checklist_progres.py",
       "outillage/nexus_decouper_livres.py",
-      "outillage/nexus_epreuve_refus.py",
       "outillage/nexus_extraire_livres.py",
       "outillage/nexus_filet.py",
       "outillage/nexus_index_livres.py",
-      "outillage/nexus_indexer_ast.py",
-      "outillage/nexus_indexer_concepts.py",
       "outillage/nexus_indexer_node.py",
-      "outillage/nexus_indexer_resumes.py",
       "outillage/nexus_indexer_texte.py",
       "outillage/nexus_livres.py",
       "outillage/nexus_ombre.py",

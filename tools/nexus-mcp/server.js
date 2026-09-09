@@ -3284,7 +3284,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     } finally {
       try {
         fs.unlinkSync(tmpPath);
-      } catch (e) {
+      } catch {
         // L'absence du temporaire n'est pas une erreur
       }
     }

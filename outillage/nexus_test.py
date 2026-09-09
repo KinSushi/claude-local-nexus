@@ -1412,6 +1412,10 @@ def main() -> int:
         jouer_epreuve_python("epreuve_repli_adaptatif.py", "repli gratuit cloud-first")
     if args.only in (None, "dispatch"):
         jouer_epreuve_python("epreuve_dispatch_sain.py", "cablage sain : aucun dispatch sans fichier")
+    if args.only in (None, "skip"):
+        jouer_epreuve_python("epreuve_skip_cablage.py", "garde : aucun skip d absence hors runtime node")
+    if args.only in (None, "ancres"):
+        jouer_epreuve_python("epreuve_ancres.py", "nexus_ancres repare les ancres mutilees")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):

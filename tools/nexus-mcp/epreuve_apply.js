@@ -5,7 +5,7 @@ const path = require('path');
 let source;
 try {
   source = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
-} catch (e) {
+} catch {
   console.log('[RATE] source : impossible de lire server.js');
   process.exit(1);
 }
