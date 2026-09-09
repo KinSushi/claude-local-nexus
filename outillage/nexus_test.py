@@ -1416,6 +1416,10 @@ def main() -> int:
         jouer_epreuve_python("epreuve_skip_cablage.py", "garde : aucun skip d absence hors runtime node")
     if args.only in (None, "ancres"):
         jouer_epreuve_python("epreuve_ancres.py", "nexus_ancres repare les ancres mutilees")
+    if args.only in (None, "capability"):
+        jouer_epreuve_python("epreuve_capability.py", "verdict materiel ACCEPT/DEGRADED/REJECT/INCONNU")
+    if args.only in (None, "chemins"):
+        jouer_epreuve_python("epreuve_chemins.py", "detection des references de chemins mortes")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
