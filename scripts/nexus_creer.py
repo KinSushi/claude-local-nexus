@@ -110,7 +110,11 @@ def _extraire_contenu(texte: str) -> str | None:
     if start_idx is None or end_idx is None or end_idx <= start_idx:
         return None
     # on exclut les lignes de marqueurs
-    return "\n".join(lines[start_idx + 1 : end_idx])
+    contenu = "\n".join(lines[start_idx + 1 : end_idx])
+    if contenu:
+        # un fichier texte se termine par exactement UN saut de ligne
+        contenu = contenu.rstrip("\n") + "\n"
+    return contenu
 
 
 def main() -> int:

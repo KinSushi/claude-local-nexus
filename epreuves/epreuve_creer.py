@@ -134,6 +134,27 @@ def main() -> int:
         if cible_syntaxe.exists():
             cible_syntaxe.unlink(missing_ok=True)
 
+        # -----------------------------------------------------------------
+        # 5. FORWARD chemin reel : le texte n'a PAS de ligne vide avant FIN
+        #    (forme envoyee par le serveur MCP). Avant le correctif, le
+        #    fichier cree n'avait aucun saut de ligne final : ce sous-cas
+        #    ECHOUE sur l'ancien nexus_creer et reussit sur le nouveau.
+        # -----------------------------------------------------------------
+        cible_forward_reel = Path(temp_dir) / "forward_reel.py"
+        contenu_forward_reel = "print('fin')"
+        jsonl_forward_reel = _creer_jsonl(contenu_forward_reel, "chemin_reel")
+        rc = _lancer_outil(outil, jsonl_forward_reel, "chemin_reel", cible_forward_reel)
+        ok = (
+            rc == 0
+            and _verifier_fichier(cible_forward_reel, contenu_forward_reel + "\n")
+        )
+        if ok:
+            _imprimer_ok("FORWARD_CHEMIN_REEL", "cree avec exactement un saut de ligne final")
+        else:
+            _imprimer_rate("FORWARD_CHEMIN_REEL", f"rc={rc}")
+            overall_ok = False
+        jsonl_forward_reel.unlink(missing_ok=True)
+
     finally:
         # Nettoyage du répertoire temporaire créé sous la racine
         shutil.rmtree(temp_dir, ignore_errors=True)
