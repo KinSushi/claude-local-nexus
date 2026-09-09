@@ -180,6 +180,12 @@ def served_endpoint(headers: dict) -> str:
     return lowered.get("x-litellm-model-api-base", "")
 
 
+def _charger_registre(chemin):
+    # Lecture du registre via un gestionnaire de contexte (ruff SIM115).
+    with io.open(chemin, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def check(name: str, condition: bool, detail: str = "") -> bool:
     if condition:
         PASSED.append(name)
@@ -2025,7 +2031,7 @@ def test_registre_epreuves() -> None:
         # est exactement la sequence qui a detruit la preuve en production.
         releve.consigner(rapport("glm-4.7-flash-local", "ollama_chat/glm-4.7-flash",
                                  4, "local", "http://host.docker.internal:11434"))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         check("une reussite s'inscrit",
                  reg.get("glm-4.7-flash-local", {}).get("complet") is True,
                  "noms inscrits : %s" % ", ".join(sorted(reg)))
@@ -2033,7 +2039,7 @@ def test_registre_epreuves() -> None:
         # 2. LE CAS REEL. Une tentative qui n'atteint pas le modele ne doit pas
         # effacer le 4/4 precedent.
         releve.consigner(rapport("glm-4.7-flash-local", "?", 0, "inconnu", "?"))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         garde = reg.get("glm-4.7-flash-local", {})
         check("une tentative vaine n'efface pas la preuve acquise",
                  garde.get("complet") is True and garde.get("reussies") == 4,
@@ -2046,7 +2052,7 @@ def test_registre_epreuves() -> None:
         # absence de verdict. Sans quoi un modele qui se degrade resterait promu.
         releve.consigner(rapport("glm-4.7-flash-local", "ollama_chat/glm-4.7-flash", 1,
                                  "local", "http://host.docker.internal:11434"))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         garde = reg.get("glm-4.7-flash-local", {})
         check("un echec REEL remplace bien le verdict precedent",
                  garde.get("reussies") == 1 and garde.get("complet") is False,
@@ -2075,7 +2081,7 @@ def test_registre_epreuves() -> None:
             {"epreuve": "chainage", "ok": None},
         ]
         releve.consigner(detaille)
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         d = reg.get("detail-local", {})
         check("l'epreuve ECHOUEE est nommee, pas seulement comptee",
                  d.get("epreuves_echouees") == ["usage du resultat"],
@@ -2099,7 +2105,7 @@ def test_registre_epreuves() -> None:
             releve.consigner(dict(rapport("variable-local", "ollama_chat/variable",
                                           score, "local",
                                           "http://host.docker.internal:11434")))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         h = reg.get("variable-local", {})
         check("le nombre de mesures est compte",
                  h.get("mesures") == 2, "mesures=%s" % h.get("mesures"))
@@ -2119,7 +2125,7 @@ def test_registre_epreuves() -> None:
         releve.consigner(dict(rapport("seule-local", "ollama_chat/seule", 4,
                                       "local",
                                       "http://host.docker.internal:11434")))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         u = reg.get("seule-local", {})
         check("une seule mesure n'est PAS dite stable",
                  u.get("stable") is False and u.get("mesures") == 1,
@@ -2137,14 +2143,14 @@ def test_registre_epreuves() -> None:
         ancienne = {"reussies": 4, "total": 4, "complet": True,
                     "concluante": True, "plan": "local",
                     "servi": "ollama_chat/amorce"}
-        reg_brut = json.load(io.open(chemin, encoding="utf-8"))
+        reg_brut = _charger_registre(chemin)
         reg_brut["modeles"]["amorce-local"] = ancienne
         with io.open(chemin, "w", encoding="utf-8") as fh:
             json.dump(reg_brut, fh, ensure_ascii=False)
         releve.consigner(dict(rapport("amorce-local", "ollama_chat/amorce", 4,
                                       "local",
                                       "http://host.docker.internal:11434")))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         am = reg.get("amorce-local", {})
         check("un score deja stocke amorce l'historique",
                  am.get("historique") == [4, 4] and am.get("mesures") == 2,
@@ -2158,7 +2164,7 @@ def test_registre_epreuves() -> None:
         releve.consigner(dict(rapport("constant-local", "ollama_chat/constant",
                                       4, "local",
                                       "http://host.docker.internal:11434")))
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         s = reg.get("constant-local", {})
         check("deux fois le meme verdict est dit stable",
                  s.get("stable") is True and s.get("mesures") == 2,
@@ -2183,7 +2189,7 @@ def test_registre_epreuves() -> None:
             servi_sans_adresse["servi"] and servi_sans_adresse["servi"] != "?"
             and servi_sans_adresse["plan"] != "inconnu")
         releve.consigner(servi_sans_adresse)
-        reg = json.load(io.open(chemin, encoding="utf-8"))["modeles"]
+        reg = _charger_registre(chemin)["modeles"]
         e = reg.get("adresse-inconnue-local", {})
         check("un modele qui a REPONDU est concluant, meme sans adresse",
                  e.get("concluante") is True,
