@@ -88,6 +88,29 @@ def disponibilites_depuis_pouls(pouls_vivant, cloud_ok=True, local_ok=True):
         "local": local_ok,
     }
 
+
+def plan_disponible(plans, est_dispo, plan_cible):
+    # Au moins un alias du plan cible est-il disponible ?
+    # est_dispo: callable(alias) -> bool (ex: CircuitBreaker.is_available).
+    return any(est_dispo(alias) for alias, plan in plans.items() if plan == plan_cible)
+
+
+def collecter_banc():
+    # Disponibilite reelle de cloud et local via la passerelle et le disjoncteur.
+    # Degrade en (True, True, True) si la passerelle est indisponible : dans ce cas
+    # cloud et local sont supposes disponibles (optimiste) plutot que de bloquer.
+    try:
+        import nexus_agent
+        import nexus_disjoncteur
+        plans = nexus_agent.plans_par_alias(nexus_agent.cle_maitre())
+        dj = nexus_disjoncteur.CircuitBreaker()
+        cloud_ok = plan_disponible(plans, dj.is_available, "cloud")
+        local_ok = plan_disponible(plans, dj.is_available, "local")
+        return (cloud_ok, local_ok, False)
+    except Exception:
+        return (True, True, True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Diagnostic de la politique de succession de l'orchestrateur."
@@ -122,7 +145,10 @@ if __name__ == "__main__":
 
         pouls = nexus_pouls.lire(nexus_pouls._chemin_defaut())
         vivant = nexus_pouls.est_vivant(pouls, time.time(), args.seuil)
-        disponibilites = disponibilites_depuis_pouls(vivant)
+        cloud_ok, local_ok, degrade = collecter_banc()
+        disponibilites = disponibilites_depuis_pouls(vivant, cloud_ok, local_ok)
+        if degrade:
+            print("(banc non mesure : passerelle indisponible, cloud/local supposes disponibles)")
         print("Pouls Claude :", "VIVANT" if vivant else "MORT")
     else:
         disponibilites = {

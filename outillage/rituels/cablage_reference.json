@@ -1,5 +1,5 @@
 {
-  "mesure_le": "2026-09-09T00:27:35.769951+00:00",
+  "mesure_le": "2026-09-09T04:13:54.327273+00:00",
   "categories": {
     "orphelin": [
       "outillage/nexus_indexer_ast.py",
@@ -24,7 +24,8 @@
       "outillage/nexus_quarantaine.py",
       "outillage/nexus_sauvegarde.py",
       "scripts/Compact-NexusDisk.ps1",
-      "scripts/Initialize-Nexus.ps1"
+      "scripts/Initialize-Nexus.ps1",
+      "scripts/nexus_succession.py"
     ]
   }
 }

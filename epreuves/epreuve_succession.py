@@ -98,6 +98,26 @@ def main():
         _rate('depuis_pouls mort', 'obtenu=%s' % mort)
         all_ok = False
 
+    # Test de plan_disponible
+    plans = {'a-cloud': 'cloud', 'b-local': 'local', 'c-cloud': 'cloud'}
+    if ns.plan_disponible(plans, lambda a: a != 'a-cloud', 'cloud'):
+        _ok('plan_disponible c-cloud dispo', 'True')
+    else:
+        _rate('plan_disponible c-cloud dispo', 'False')
+        all_ok = False
+
+    if not ns.plan_disponible(plans, lambda a: a.startswith('b'), 'cloud'):
+        _ok('plan_disponible b-* cloud non dispo', 'False')
+    else:
+        _rate('plan_disponible b-* cloud non dispo', 'True')
+        all_ok = False
+
+    if ns.plan_disponible(plans, lambda a: a.startswith('b'), 'local'):
+        _ok('plan_disponible b-* local dispo', 'True')
+    else:
+        _rate('plan_disponible b-* local dispo', 'False')
+        all_ok = False
+
     return 0 if all_ok else 1
 
 
