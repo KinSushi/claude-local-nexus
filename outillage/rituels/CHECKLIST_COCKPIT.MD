@@ -27860,3 +27860,15 @@ CLOS et vérifié.
   qui lit le pouls MORT et poursuit le travail sans Claude, en respectant la LOI 1 (déléguer +
   auditer avec des modèles locaux distincts). Exploiter *Release it!* (circuit-breaker) et les
   7 livres sur les agents IA (ReAct) du corpus AVANT.
+- **#11 PAS 2b PARTIE 2a LIVRÉE** (commit 04ef074) : `--reel` interroge désormais le
+  **disjoncteur réel** pour cloud/local (plus seulement le pouls). `plan_disponible(plans,
+  est_dispo, plan_cible)` PURE (injection de `is_available`) ; `collecter_banc()` interroge
+  `plans_par_alias` + le disjoncteur et **dégrade** proprement si la passerelle est down.
+  `epreuve_succession` 15/15. Le pont de décision est **complet** : politique (`decider`) +
+  signal Claude (`pouls`) + disponibilité banc (`disjoncteur`). Rebaseline câblage assumé :
+  `nexus_succession` est preuve_seule (CLI diagnostic + bibliothèque), consommateur = la boucle.
+- **RESTE #11 pas 2b partie 2b — LE GROS MORCEAU** : la **boucle agentique locale** (ReAct).
+  Quand le pouls est MORT (Claude épuisé), un processus local (piloté par qwen3-coder:30b) doit
+  lire la file de tâches, planifier, déléguer au banc, auditer (modèle local DISTINCT, LOI 1),
+  décider, boucler. Lire d'abord les chapitres ReAct et circuit-breaker du corpus (7 livres
+  agents + *Release it!*). Découper en sous-pas (squelette minimal d'abord).
