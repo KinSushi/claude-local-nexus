@@ -1448,6 +1448,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_succession.py", "succession orchestrateur : opus>fable>cloud>local selon disponibilite et sensibilite")
     if args.only in (None, "pouls"):
         jouer_epreuve_python("epreuve_pouls.py", "pouls de presence : est_vivant (fraicheur, skew) et battre atomique")
+    if args.only in (None, "boucle"):
+        jouer_epreuve_python("epreuve_boucle_locale.py", "boucle locale : decision, verdict, LOI 1, cycle et boucle par injection (retrait si Claude vivant)")
     if args.only in (None, "nexus"):
         jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
