@@ -27818,3 +27818,22 @@ CLOS et vérifié.
   rituel ET tests (faux-vert : secrets/pont non vérifiés). Corrigé — seule « suite de tests »
   reçoit `a.sauf_tests` ; conformité et rituel reçoivent `False` (toujours joués). Help corrigé.
   Mécanisé par `epreuve_sauf_tests` (analyse AST) câblée `--only sauf-tests`, 3/3.
+
+### Tour 2026-09-08 (nuit, suite) — #11 pas 1 : la politique de succession mécanisée
+
+- **Chantier #11 — PAS 1 LIVRÉ** (commit acd5861) : le défi de l'opérateur (« définir quel
+  modèle prend le relais dans TOUS les cas, toutes les situations ») devient
+  `scripts/nexus_succession.py`, fonction PURE `decider(disponibilites, sensibilite)` sur
+  deux dimensions : L0/L1 → opus>fable>cloud>local ; L2 (confidentiel) → opus>fable>local
+  (pas de cloud tiers) ; L3 → local seul (§35). **Le local est le PLANCHER** → il y a
+  toujours un orchestrateur. CLI diagnostic (`--opus-epuise --sensibilite L2` dit qui
+  orchestre). `epreuve_succession` 10/10 avec CONTRE-ÉPREUVE (même état : L1→cloud, L2→local),
+  câblée `--only succession`. Ne duplique PAS `replis_gratuits` (intra-banc). §112.4 en
+  action : 2 erreurs du banc (cas de test incohérent ; v2 comparait un dict à une chaîne)
+  trouvées par l'audit d'exécution, rejetées.
+- **RESTE — #11 pas 2** : (a) brancher `decider` sur les vraies disponibilités (disjoncteur
+  `nexus_disjoncteur` pour cloud/local + un signal d'épuisement du quota **Claude** distinct,
+  qui n'existe pas encore) ; (b) la **boucle agentique locale** (ReAct plan→délègue→audite→décide
+  pilotée par qwen3-coder:30b) qui poursuit quand Claude est épuisé. Le PLAN_11 les décrit mais
+  contient des fabrications (`$getWorkflowStaticData` n8n, `detecteur_repli.py` inexistant) à
+  ignorer. Exploiter les livres (ReAct, circuit-breaker de *Release it!*) pour la boucle.
