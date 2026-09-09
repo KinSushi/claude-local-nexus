@@ -535,6 +535,20 @@ def redaction_declaree(racine):
     return OK, detail[:90]
 
 
+def pouls_battu(racine):
+    try:
+        import os
+        import nexus_pouls
+        modele = os.getenv('NEXUS_POULS_MODELE', 'claude-code')
+        chemin = nexus_pouls._chemin_defaut()
+        ok = nexus_pouls.battre(chemin, modele)
+        if ok:
+            return (OK, f'pouls de presence battu : {modele}')
+        return (MANQUE, "echec d'ecriture du pouls")
+    except Exception as e:
+        return (IGNORE, f'exception pouls_battu: {e}')
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -564,6 +578,7 @@ def main() -> int:
         ("progres", lambda: progres(racine)),
         ("boussole", lambda: boussole_fraiche(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
+        ("pouls battu", lambda: pouls_battu(racine)),
     ]
 
     resultats = []
