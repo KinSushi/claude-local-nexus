@@ -27810,3 +27810,11 @@ CLOS et vérifié.
 - Note LOI 1 : ce chantier INSTALLE le traçage, donc il n'est pas lui-même tracé
   (chicken-and-egg) — `nexus_loi1` compte ses 39 lignes « à la main », attendu ; c'est le
   dernier commit de code non traçable. Les délégations suivantes (MCP redémarré) le seront.
+- **Chantier #1 VALIDÉ EN RUNTIME** (MCP redémarré par l'opérateur) : une vraie délégation
+  `nexus_ask` (qwen3-coder-30b-local) a créé une trace dans `.nexus/verbatim/` — le marqueur
+  unique est dans l'index `.nexus/verbatim/index.jsonl` que `nexus_loi1` lit, et dans un fichier
+  verbatim nommé du modèle. Le forward runtime qui manquait est fait. **Chantier #1 COMPLET.**
+- **Finding `--sauf-tests` RÉSOLU** (commit 87d7c72) : le flag marquait IGNORE conformité ET
+  rituel ET tests (faux-vert : secrets/pont non vérifiés). Corrigé — seule « suite de tests »
+  reçoit `a.sauf_tests` ; conformité et rituel reçoivent `False` (toujours joués). Help corrigé.
+  Mécanisé par `epreuve_sauf_tests` (analyse AST) câblée `--only sauf-tests`, 3/3.
