@@ -3797,7 +3797,49 @@ async function callTool(name, args) {
     }, 30000);
   }
 
-  // 4️⃣ acquisition du verrou
+  // 4️⃣ acquisition du verrou (détermination du besoin de verrou)
+  // Construction de la liste des modèles à utiliser
+  let modelList = [];
+  if (args && args.model) {
+    modelList = [args.model];
+  } else {
+    switch (name) {
+      case 'nexus_vision':
+        modelList = [DEFAULT_VISION_MODEL];
+        break;
+      case 'nexus_index_build':
+      case 'nexus_search':
+        modelList = [DEFAULT_EMBED_MODEL];
+        break;
+      case 'nexus_batch':
+        modelList = [DEFAULT_CHAT_MODEL];
+        break;
+      default:
+        // Pour les autres outils lourds, on utilise le modèle de chat par défaut
+        if (OUTILS_LOURDS.has(name)) {
+          modelList = [DEFAULT_CHAT_MODEL];
+        }
+        // Pour les outils dont la liste de modèles est indéterminée (router, profile, alias adaptive-router*),
+        // on laisse modelList vide afin de conserver le comportement actuel (verrou obligatoire).
+        break;
+    }
+  }
+
+  // Fonction utilitaire pour savoir si un modèle est cloud
+  const isCloudModel = (m) => {
+    if (!m) return false;
+    if (plansConnus && plansConnus.get(m) === "cloud") return true;
+    return m.endsWith("-cloud");
+  };
+
+  // Si la liste est déterminée, non vide et que tous les modèles sont cloud,
+  // on contourne le verrou.
+  if (modelList.length && modelList.every(isCloudModel)) {
+    log(`appel de ${name} sans verrou banc : modeles cloud (${modelList.join(", ")})`);
+    return callToolInterne(name, args);
+  }
+
+  // 4️⃣ acquisition du verrou (comportement standard)
   log(`Attente du verrou pour l'outil ${name}`);
   const start = Date.now();
   const verrou = await tenirVerrou('banc');
