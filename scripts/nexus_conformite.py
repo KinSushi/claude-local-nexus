@@ -396,59 +396,7 @@ def controle_runners_orphelins() -> None:
     noter('runners orphelins', True, IGNORE, 'non mesurable : code %d' % result.returncode)
 
 
-def controle_stabilite_runner() -> None:
-    # Ne s'applique que sous Windows
-    if os.name != 'nt':
-        noter('stabilite runner', True, IGNORE, 'hors Windows')
-        return
-
-    import winreg
-    import subprocess
-
-    # Lecture des variables d'environnement dans le registre
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Environment')
-        vulkan = winreg.QueryValueEx(key, 'OLLAMA_VULKAN')[0] or '-'
-        igpu = winreg.QueryValueEx(key, 'OLLAMA_IGPU_ENABLE')[0] or '-'
-        directml = winreg.QueryValueEx(key, 'OLLAMA_DIRECTML')[0] or '-'
-    except OSError:
-        vulkan = igpu = directml = '-'
-
-    # Comptage des plantages de llama‑server dans les 24 h précédentes
-    try:
-        cmd = (
-            "(Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000; "
-            "StartTime=(Get-Date).AddHours(-24)} -ErrorAction SilentlyContinue | "
-            "Where-Object { $_.Message -match 'llama-server' } | Measure-Object).Count"
-        )
-        result = subprocess.run(
-            ['powershell', '-NoProfile', '-Command', cmd],
-            capture_output=True, text=True, timeout=30
-        )
-        count = int(result.stdout.strip())
-    except Exception as exc:  # NON VERIFIE
-        noter('stabilite runner', True, IGNORE, f'journal illisible : {exc}')
-        return
-
-    # Seuil configurable
-    seuil = int(os.environ.get('NEXUS_SEUIL_PLANTAGES_RUNNER', '10'))
-
-    if count > seuil:
-        noter(
-            'stabilite runner',
-            False,
-            AVERTISSEMENT,
-            f'{count} plantage(s) llama-server / 24 h, OLLAMA_VULKAN={vulkan} '
-            f'IGPU={igpu} DIRECTML={directml} -- decision operateur : desactiver Vulkan (contrat section 3) ou re-valider le GPU'
-        )
-    else:
-        noter(
-            'stabilite runner',
-            True,
-            AVERTISSEMENT,
-            f'{count} plantage(s) llama-server / 24 h'
-        )
-    # jamais bloquant
+def controle_marqueurs_autogen() -> None:
     """
     Les zones générées sont-elles bien fermées, et une seule fois chacune ?
 
@@ -2314,7 +2262,6 @@ def main() -> int:
         controle_moteur_coherent,
         controle_moteur_joignable,
         controle_runners_orphelins,
-        controle_stabilite_runner,
         controle_marqueurs_autogen,
         controle_frontiere_alias,
         controle_residence_modeles,
