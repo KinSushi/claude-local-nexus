@@ -28877,3 +28877,37 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] file d'attente du verrou : épreuve v2 au harnais réparé, mais le forward ne discrimine pas un mutex simple et le cas « attente nulle » attend un refus sur un verrou libre : conception à reprendre avant tout nouveau rendu.
 
 **Délégué ce tour** : 43 tâches au banc cloud, 8 en vol au plus, gpt-oss-120b et mistral-large-3 seulement. **Arbitré ici** : cinq triages en worktree, deux commits, trois audits tiers lus et départagés.
+
+#### 18:05 — sept groupes posés sur main et rejoués avant chaque commit, garde des appels réels de la suite posée avant 20:10
+
+**Posé et éprouvé, épreuve rejouée sur main avant chaque commit :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| 1bbbd6b | `nexus_state` recale la ligne des trois nombres d'alias du README | forward 61 → 60, reverse ligne absente et README intact, fuite import sans écriture ; audit mistral |
+| de30a4e | épreuve de conformité : ALERTE attendue, conforme à la décision écrite du contrôle | 2 RATE → code 0 ; audit gpt-oss |
+| e7fbdeb | la suite de tests n'appelle aucun modèle sans option explicite | passerelle factice : fuite, reverse, forward ; contre-épreuve sur la suite non patchée ; audit gemma |
+| d86f305 | veille : lignes GIN en heure locale, règle d'échecs longs vivante | 87 contre 87 sur le vrai journal ; épreuve 22 sur 22 ; contre-épreuve sur la règle morte ; audit gemma |
+| 5206801 | agent : un 429 « usage limit » arrête le cloud du processus | épreuve 3 sur 3 ; contre-épreuve sur l'agent sans patch ; audit gemma |
+| feba75f | épreuve du pont : `disable_fallbacks` sur appel cloud seulement | 3 sur 3 ; contre-épreuve sur le pont d'avant d04416d ; audit gemma |
+| 8cda7ce | `nexus quota` : état du compte et usage en dollars, câblé à l'entrée unique | 29 sur 29 ; `nexus quota --etat` → SAIN ; audits gpt-oss et gemma |
+| 7b64269 | agent : `--echeance-s` et arrêt coopératif de lot | essais réels : échéance sans `--sortie`, arrêt avec `--sortie`, lot normal ; audit gemma |
+| 50c3f6c | `nexus_verrou_tenir --semaphore N` | `PRIS` avec et sans option ; audit gemma |
+
+**Trouvé par l'usage :**
+- `nexus_appliquer` accepte un AVANT d'une seule ligne comme SOUS-CHAÎNE au milieu d'une ligne indentée : deux ancres recopiées sans leur indentation ont doublé celle de l'APRES, et le garde de syntaxe a refusé avec « unexpected indent », qui envoie chercher au mauvais endroit ; correctif et épreuve en rafale 57 ;
+- `famille_de`, attendue par `epreuve_agent_familles`, n'a jamais existé, pas plus que `texteDegenere` : deux contre-épreuves posées en 091ea7d pour des fonctions jamais construites, rouges depuis leur pose ;
+- l'outil de pose v11 rend sur le lot 50 les onze décisions de la pose réelle en simulation ; il lui manque son épreuve, son appelant et son audit, en rafale 57 ;
+- le cliquet de câblage signale `epreuves/epreuve_veille_sonde_contexte.py` orpheline depuis 105b373, un commit de cette session ; enregistrement en rafale 57.
+
+**Erreurs d'arbitrage de ce tour, corrigées** : une contre-épreuve du pont jouée sur un worktree créé APRÈS le commit qu'elle devait précéder, refaite sur a2e2cd6 ; le paramètre `nom` de `nexus_appliquer` déduit du nom de fichier au lieu du JSON, deux poses ratées puis refaites ; un audit tiers qui attribuait à `datetime` des exceptions de pytz, écarté ; un audit tiers qui validait le détecteur de vision sans voir qu'il ne vérifiait pas la couverture de la boucle, refusé à la lecture du diff.
+
+**Coordination** : sovereign-ai-system a annulé ses audits hors liste. EA demande un protocole pour des compagnons locaux gardés chauds (bge-m3, granite4.1:8b) : position provisoire, `[banc]` obligatoire jusqu'à une règle mesurée et vérifiée par le code.
+
+**Ouverts :**
+- [ ] enregistrement des cinq épreuves (audit gpt-oss en cours), verrou de lot v8 et sémaphore strictement positif (audits mistral en cours), outil de pose v11 (épreuve, appelant `nexus poser`, audit) ;
+- [ ] vision v3 : couverture de la boucle, seuils nommés, message complet ; `nexus_appliquer` v2 et son épreuve ; `sans_repli` v4 ; créneau cloud du pont par `--semaphore` ;
+- [ ] `famille_de` à construire d'après son épreuve ; compagnons locaux : mesurer le moteur, puis une règle d'appel court ;
+- [ ] épreuves jouées par la suite qui appelleraient elles-mêmes un modèle : inventaire à faire.
+
+**Délégué ce tour** : rafales 56 et 57, 27 tâches au banc cloud, dont sept audits par une troisième famille, gemma4-31b-cloud. **Arbitré ici** : trois triages, sept commits scriptés sans retape, quatre rendus réancrés ou assemblés à l'arbitrage et dits comme tels dans leurs commits.
