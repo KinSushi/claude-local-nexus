@@ -88,11 +88,10 @@ with mock.patch.object(nvm, 'version_repond', return_value=True), \
           'journal absent legacy BLOQUE', f"verdict={result['verdict']}, relance_calls={mock_relance.call_count}, journal_avance={result['journal_avance']}")
 
 # Test journal advances during probe -> SUSPECT, no restart
-journal_avance_path = tempfile.NamedTemporaryFile(mode='w', delete=False)
-journal_avance_path.write('initial\n')
-journal_avance_path.close()
+with tempfile.NamedTemporaryFile(mode='w', delete=False, encoding='utf-8') as journal_avance_path:
+    journal_avance_path.write('initial\n')
 def sonder_modifie(url, modele, delai):
-    with open(journal_avance_path.name, 'a') as f:
+    with open(journal_avance_path.name, 'a', encoding='utf-8') as f:
         f.write('progression\n')
     return False
 with mock.patch.object(nvm, 'version_repond', return_value=True), \

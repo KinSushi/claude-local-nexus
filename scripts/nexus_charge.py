@@ -137,29 +137,89 @@ def verdict_charge(disponible_go: float, seuil_go: float) -> tuple:
     return etiquette, message
 
 
-def _extraire_age_minutes(creation_date):
+def _age_minutes(chaine, maintenant=None):
     """
-    Convertit une chaîne CIM ``yyyyMMddHHmmss.ffffff±UUU`` ou le format
-    ``/Date(ms)/`` en nombre de minutes écoulées depuis la création.
-    Retourne ``None`` si la chaîne est illisible.
+    Convertit une chaîne de date en âge (minutes) de façon pure.
+
+    1. Tente d’abord le format ISO‑8601 accepté par ``datetime.fromisoformat``.
+       - Gère les offsets (ex. ``-05:00``) et les microsecondes à 6 chiffres.
+       - Si la partie fractionnaire comporte 7 chiffres, on la tronque à 6 avant
+         le fuseau horaire.
+    2. Calcule l’écart en minutes :
+       - Si la date possède un fuseau (``tzinfo``), on compare à
+         ``datetime.now(datetime.timezone.utc)`` (ou à ``maintenant`` s’il est fourni).
+       - Sinon on compare à ``datetime.now()`` (ou ``maintenant``).
+    3. En repli, conserve les deux formats déjà supportés :
+       - CIM ``yyyyMMddHHmmss.ffffff±UUU`` (on ne garde que les 14 premiers caractères).
+       - JSON .NET ``/Date(ms)/``.
+    4. Retourne ``None`` uniquement si toutes les tentatives échouent.
     """
-    if not creation_date:
+    if not chaine:
         return None
+
+    # ------------------------------------------------------------------
+    # 1. Essai du format ISO‑8601
+    # ------------------------------------------------------------------
     try:
-        # Format CIM standard : on ne garde que les 14 premiers caractères
-        if isinstance(creation_date, str) and len(creation_date) >= 14:
-            dt = datetime.strptime(creation_date[:14], "%Y%m%d%H%M%S")
-            delta = datetime.now() - dt
-            return delta.total_seconds() / 60
-        # Format JSON .NET : /Date(1609459200000)/
-        if isinstance(creation_date, str) and creation_date.startswith("/Date("):
-            ms_part = creation_date[6:-2]
-            ts = int(ms_part) / 1000.0
-            dt = datetime.fromtimestamp(ts)
-            delta = datetime.now() - dt
+        iso_str = chaine
+        if isinstance(iso_str, str):
+            # Séparer la partie timezone éventuelle (+/-) pour pouvoir tronquer
+            # les microsecondes à 6 chiffres sans toucher au signe.
+            tz_pos = max(iso_str.find('+', 10), iso_str.find('-', 10))
+            if tz_pos != -1:
+                base_part = iso_str[:tz_pos]
+                tz_part = iso_str[tz_pos:]
+            else:
+                base_part = iso_str
+                tz_part = ''
+
+            # Troncature des microsecondes à 6 chiffres si nécessaire
+            if '.' in base_part:
+                sec, frac = base_part.split('.', 1)
+                if len(frac) > 6:
+                    frac = frac[:6]
+                base_part = f"{sec}.{frac}"
+
+            iso_clean = base_part + tz_part
+            dt = datetime.fromisoformat(iso_clean)
+
+            # 2. Calcul de l’âge en minutes
+            if dt.tzinfo is not None:
+                now = maintenant or datetime.now(datetime.timezone.utc)
+            else:
+                now = maintenant or datetime.now()
+            delta = now - dt
             return delta.total_seconds() / 60
     except Exception:
         pass
+
+    # ------------------------------------------------------------------
+    # 3. Repli – format CIM (yyyyMMddHHmmss...)
+    # ------------------------------------------------------------------
+    try:
+        if isinstance(chaine, str) and len(chaine) >= 14:
+            dt = datetime.strptime(chaine[:14], "%Y%m%d%H%M%S")
+            now = maintenant or datetime.now()
+            return (now - dt).total_seconds() / 60
+    except Exception:
+        pass
+
+    # ------------------------------------------------------------------
+    # 3. Repli – format JSON .NET (/Date(ms)/)
+    # ------------------------------------------------------------------
+    try:
+        if isinstance(chaine, str) and chaine.startswith("/Date("):
+            ms_part = chaine[6:-2]
+            ts = int(ms_part) / 1000.0
+            dt = datetime.fromtimestamp(ts)
+            now = maintenant or datetime.now()
+            return (now - dt).total_seconds() / 60
+    except Exception:
+        pass
+
+    # ------------------------------------------------------------------
+    # 4. Aucun format reconnu
+    # ------------------------------------------------------------------
     return None
 
 

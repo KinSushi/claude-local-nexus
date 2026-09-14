@@ -787,7 +787,7 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature) {
   const depart = Date.now();
   // Mesure 2026-08-31: max_tokens=12 rend 523 jetons ; num_predict=12 rend exactement 12 jetons avec finish_reason length ; les deux ensemble rendent 523, donc envoyer max_tokens annule la borne qui fonctionnait.
   // Sans cela toute borne de sortie du pont est inerte et une reprise a budget double ne changerait rien.
-  const corps = { model, messages };
+  const corps = { model, messages, ...(options || {}) };
   if (String(model).startsWith("claude-")) {
     corps.max_tokens = maxTokens || 2048;
   } else {
@@ -2207,6 +2207,14 @@ const TOOLS = [
             "Alias LiteLLM d'un modele multimodal. Defaut " + DEFAULT_VISION_MODEL +
             ". Alternatives : llama3.2-vision-11b-local, qwen3-vl-8b-local.",
         },
+        max_tokens: {
+          type: "integer",
+          description: "Budget de sortie en jetons, defaut 1024, borne 8192."
+        },
+        raisonnement: {
+          type: "boolean",
+          description: "false : demande au modele de ne pas raisonner (think:false, variantes 'thinking') ; defaut false."
+        },
       },
       required: ["path"],
     },
@@ -2967,6 +2975,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     // par chat() aligne aussi la resolution du modele : derriere un routeur
     // adaptatif, x-litellm-model-group ne rend que le nom du routeur, et
     // annoncer un plan faux est le pire defaut de cette plateforme.
+    const maxTokens = Math.min(Math.max(Number(args.max_tokens ?? 1024), 1), 8192);
     const messages = [{
       role: "user",
       content: [
@@ -2974,9 +2983,14 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
         { type: "image_url", image_url: { url: `data:image/${mime};base64,${encoded}` } },
       ],
     }];
-    const result = await chat(model, messages, 1024);
+    const options = args.raisonnement === false ? { think: false } : undefined;
+    const corps = { model, messages, ...(options || {}) };
+    const result = await chat(model, messages, maxTokens, undefined, undefined, options);
     const kb = Math.round(taille / 1024);
     const coupe = mentionsReponse(result);
+    if (!result.text?.trim()) {
+      return `REPONSE VIDE apres raisonnement — relancer avec raisonnement=false ou max_tokens plus grand\n[${result.model} · ${planOf(result.model)} · image ${kb} Ko${coupe}]`;
+    }
     return `[${result.model} · ${planOf(result.model)} · image ${kb} Ko${coupe}]\n\n${result.text}`;
   }
 
@@ -3737,21 +3751,72 @@ async function tenirVerrou(classe) {
   })
 }
 
-async function callTool(name, args) {
-  // appel direct si l'outil n'est pas dans le set bruyant
-  if (!OUTILS_LOURDS.has(name)) {
-    return callToolInterne(name, args)
+/* -------------------------------------------------------------
+   Validation pré-exécution des chemins (fichiers, images, racine)
+   ------------------------------------------------------------- */
+function pregardeChemins(name, args) {
+  // fs et path sont déjà importés en tête de server.js (vérifié dans les extraits)
+  if (Array.isArray(args?.paths)) {
+    for (const p of args.paths) {
+      const full = requireInsideRepo(resolvePath(p), "fichier", true);
+      if (!fs.existsSync(full)) throw new Error("fichier introuvable : " + p);
+    }
   }
-  log(`Attente du verrou pour l'outil ${name}`)
-  const start = Date.now()
-  const verrou = await tenirVerrou('banc')
-  const attente = Date.now() - start
-  log(`Temps d'attente ${attente} ms`)
+  if (typeof args?.path === "string") {
+    const full = requireInsideRepo(resolvePath(args.path), "image", true);
+    if (!fs.existsSync(full)) throw new Error("image introuvable : " + args.path);
+    const ext = path.extname(full).toLowerCase().replace(".", "");
+    const mime = { jpg: "jpeg", jpeg: "jpeg", png: "png", webp: "webp", gif: "gif" }[ext];
+    if (!mime) throw new Error("format non pris en charge : ." + ext);
+  }
+  if (typeof args?.root === "string") {
+    requireInsideRepo(resolvePath(args.root), "racine d'indexation");
+  }
+}
+
+/* -------------------------------------------------------------
+   appel d’un outil, avec pré-validation, suivi de verrou et
+   trace de progression pour nexus_vision
+   ------------------------------------------------------------- */
+async function callTool(name, args) {
+  // 1️⃣ pré-validation des chemins
+  pregardeChemins(name, args);
+
+  // 2️⃣ appel direct si l’outil n’est pas bruyant
+  if (!OUTILS_LOURDS.has(name)) {
+    return callToolInterne(name, args);
+  }
+
+  // 3️⃣ trace de progression uniquement pour nexus_vision
+  let progInterval = null;
+  const progStart = name === "nexus_vision" ? Date.now() : null;
+  if (progStart !== null) {
+    progInterval = setInterval(() => {
+      const secs = Math.round((Date.now() - progStart) / 1000);
+      process.stderr.write(`nexus_vision : en cours depuis ${secs} s (verrou tenu)\n`);
+    }, 30000);
+  }
+
+  // 4️⃣ acquisition du verrou
+  log(`Attente du verrou pour l'outil ${name}`);
+  const start = Date.now();
+  const verrou = await tenirVerrou('banc');
+  const attente = Date.now() - start;
+  log(`Temps d'attente ${attente} ms`);
+
   try {
-    return await callToolInterne(name, args)
+    return await callToolInterne(name, args);
   } finally {
+    // libération du verrou
     if (verrou && typeof verrou.relacher === 'function') {
-      verrou.relacher()
+      verrou.relacher();
+    }
+
+    // arrêt de la trace de progression (si activée)
+    if (progInterval) {
+      clearInterval(progInterval);
+      const total = Math.round((Date.now() - progStart) / 1000);
+      process.stderr.write(`nexus_vision : terminé en ${total} s\n`);
     }
   }
 }
