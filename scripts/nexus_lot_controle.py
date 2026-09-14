@@ -238,38 +238,40 @@ def main() -> None:
     import sys
 
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    subparsers = parser.add_subparsers(dest='commande', required=True)
-
-    # Commande arrester
-    arreter_parser = subparsers.add_parser('arreter', help='Demande un arrêt pour un lot.')
-    arreter_parser.add_argument('lot_id', help='Identifiant du lot au format <pid>-<epoch>.')
-    arreter_parser.add_argument('--motif', default='arrêt demandé via CLI',
-                                help='Motif de l’arrêt.')
-
-    # Commande effacer
-    effacer_parser = subparsers.add_parser('effacer', help='Efface un arrêt pour un lot.')
-    effacer_parser.add_argument('lot_id', help='Identifiant du lot au format <pid>-<epoch>.')
-
-    # Commande etat
-    subparsers.add_parser('etat', help='Affiche l’état des arrêts.')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--arreter', metavar='LOT_ID',
+                       help='Demande un arrêt pour le lot.')
+    group.add_argument('--effacer', metavar='LOT_ID',
+                       help='Efface un arrêt pour le lot.')
+    group.add_argument('--etat', action='store_true',
+                       help='Affiche l’état des arrêts.')
+    parser.add_argument('--motif', default='demande manuelle',
+                        help='Motif de l’arrêt (défaut « demande manuelle »).')
 
     args = parser.parse_args()
 
-    if args.commande == 'arreter':
+    # Validation du lot_id lorsqu’il est fourni
+    if args.arreter:
+        if not LOT_ID.fullmatch(args.arreter):
+            print("Erreur : lot_id invalide, doit être au format <pid>-<epoch>", file=sys.stderr)
+            sys.exit(2)
         try:
-            demander_arret(args.lot_id, args.motif)
-            print(f"Arrêt demandé pour le lot {args.lot_id}.")
+            demander_arret(args.arreter, args.motif)
+            print(f"Arrêt demandé pour le lot {args.arreter}.")
         except ValueError as e:
             print(f"Erreur : {e}", file=sys.stderr)
             sys.exit(2)
 
-    elif args.commande == 'effacer':
-        if effacer_arret(args.lot_id):
-            print(f"Arrêt effacé pour le lot {args.lot_id}.")
+    elif args.effacer:
+        if not LOT_ID.fullmatch(args.effacer):
+            print("Erreur : lot_id invalide, doit être au format <pid>-<epoch>", file=sys.stderr)
+            sys.exit(2)
+        if effacer_arret(args.effacer):
+            print(f"Arrêt effacé pour le lot {args.effacer}.")
         else:
-            print(f"Aucun arrêt trouvé pour le lot {args.lot_id}.", file=sys.stderr)
+            print(f"Aucun arrêt trouvé pour le lot {args.effacer}.", file=sys.stderr)
 
-    elif args.commande == 'etat':
+    elif args.etat:
         dossier = dossier_arrets()
         fichiers = []
         with suppress(FileNotFoundError):
