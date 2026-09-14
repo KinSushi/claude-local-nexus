@@ -65,7 +65,10 @@ def parse_arguments():
         type=int,
         help="Nombre de créneaux du sémaphore (entier > 0, sinon refus)",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.semaphore is not None and args.semaphore <= 0:
+        parser.error("--semaphore doit etre un entier strictement positif")
+    return args
 
 
 def main():
@@ -80,7 +83,10 @@ def main():
             # Mesure: l'appelant recoit « verrou machine [banc] OBTENU (ep) » au lieu de PRIS.
             # 3. Verifier si le verrou a été obtenu
             if not v:
-                sys.stdout.write(f"REFUS {args.classe} : verrou non obtenu\n")
+                if args.semaphore is not None:
+                    sys.stdout.write(f"REFUS {args.classe} : semaphore plein\n")
+                else:
+                    sys.stdout.write(f"REFUS {args.classe} : verrou non obtenu\n")
                 sys.stdout.flush()
                 sys.exit(75)
 
