@@ -1357,6 +1357,18 @@ def main() -> int:
     if args.only in (None, "agent-lot-id"):
         jouer_epreuve_python("epreuve_agent_lot_id.py",
                              "identifiant de lot porte par chaque ligne de --sortie")
+    if args.only in (None, "orphelins"):
+        jouer_epreuve_python("epreuve_orphelins.py",
+                             "runners llama-server orphelins : forward, reverse, fuite, PID reutilise, JSON objet")
+    if args.only in (None, "veille-orphelins"):
+        jouer_epreuve_python("epreuve_veille_orphelins.py",
+                             "purge des orphelins avant relance du moteur : forward, reverse, fuite")
+    # jouée SEULEMENT à la demande, car le serveur MCP attend le verrou machine « banc »
+    # avant même la garde de chemin, et un refus qui attend derrière une inférence voisine
+    # rend la suite aléatoire ; défaut du pont ouvert au cockpit
+    if args.only == "pont-racine-lecture":
+        jouer_epreuve_python("epreuve_pont_racine_lecture.py",
+                             "pont MCP : le scratchpad de session est lisible, Temp/autre et la traversee .. restent refuses")
     if args.only in (None, "agent-plafond-inference"):
         jouer_epreuve_python("epreuve_agent_plafond_inference.py",
                              "plafond du semaphore inference derive de la mesure")
@@ -3088,19 +3100,36 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
         check(etiquette, False, "pas de reponse en 300 s")
         return
 
+    # Mesure du 2026‑09‑14 : 9 épreuves n’émettent que « [OK] » (sans les deux espaces)
+    # → le lecteur doit accepter les deux formes « [OK  ] » et « [OK] » ainsi que « [RATE] ».
+    # Le message d'erreur nomme les trois prefixes attendus.
     vus = 0
     for ligne in (r.stdout or "").splitlines():
         ligne = ligne.strip()
-        if not (ligne.startswith("[OK  ]") or ligne.startswith("[RATE]")):
+        # tester les préfixes dans l’ordre indiqué
+        if ligne.startswith("[OK  ]"):
+            prefix = "[OK  ]"
+        elif ligne.startswith("[OK]"):
+            prefix = "[OK]"
+        elif ligne.startswith("[RATE]"):
+            prefix = "[RATE]"
+        else:
             continue
-        corps = ligne[6:].strip()
+        # le corps de la ligne est la partie qui suit le préfixe, sans espaces superflus
+        corps = ligne[len(prefix):].strip()
         nom, _, detail = corps.rpartition(" : ")
         if not nom:
             nom, detail = corps, ""
-        check(nom, ligne.startswith("[OK  ]"), detail[:70])
+        # succès si le préfixe commence par "[OK"
+        check(nom, prefix.startswith("[OK"), detail[:70])
         vus += 1
     if not vus:
-        check(etiquette, False, "aucun cas rendu par l'epreuve (code %s)" % r.returncode)
+        check(
+            etiquette,
+            False,
+            "aucun cas rendu par l'epreuve (code %s) -- attendu des lignes [OK  ] / [OK] / [RATE] nom : detail"
+            % r.returncode,
+        )
 
 
 def test_quota_partage() -> None:

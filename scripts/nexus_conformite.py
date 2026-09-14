@@ -358,6 +358,44 @@ def controle_moteur_joignable() -> None:
         )
 
 
+def controle_runners_orphelins() -> None:
+    """Runners orphelins : llama-server.exe sans processus parent.
+
+    Incident du 2026-09-14 : quatre runners dont le parent ollama.exe etait
+    mort tenaient 68 Go d'engagement, `ollama ps` etait vide et la RAM se
+    disait libre. Vulkan refusait alors toute allocation, le runner plantait
+    toutes les 8 s, et le terminal a fini par emporter toutes les consoles.
+
+    scripts/nexus_orphelins.py rend 0 (aucun), 1 (orphelins, JSON
+    {"orphelins": [...], "total_prive_octets": N, "tues": []}) ou 2
+    (enumeration impossible). AVERTISSEMENT et non BLOQUANT : refuser de
+    demarrer punirait l'operateur venu corriger (meme regle que la part
+    deleguee).
+    """
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nexus_orphelins.py')
+    try:
+        result = subprocess.run([sys.executable, script_path, '--json'],
+                                capture_output=True, text=True, timeout=20)
+    except Exception as exc:
+        noter('runners orphelins', True, IGNORE, 'non mesurable : %s' % exc)
+        return
+    if result.returncode == 0:
+        noter('runners orphelins', True, AVERTISSEMENT, 'aucun llama-server sans parent')
+        return
+    if result.returncode == 1:
+        try:
+            data = json.loads(result.stdout)
+            n = len(data.get('orphelins', []))
+            g = data.get('total_prive_octets', 0) / 1024 ** 3
+        except Exception:
+            n, g = 0, 0.0
+        noter('runners orphelins', False, AVERTISSEMENT,
+              '%d runner(s) orphelin(s), %.1f Go d engagement tenus pour rien'
+              ' -- remede : python scripts/nexus_orphelins.py --tuer' % (n, g))
+        return
+    noter('runners orphelins', True, IGNORE, 'non mesurable : code %d' % result.returncode)
+
+
 def controle_marqueurs_autogen() -> None:
     """
     Les zones générées sont-elles bien fermées, et une seule fois chacune ?
@@ -2223,6 +2261,7 @@ def main() -> int:
         controle_config_valide,
         controle_moteur_coherent,
         controle_moteur_joignable,
+        controle_runners_orphelins,
         controle_marqueurs_autogen,
         controle_frontiere_alias,
         controle_residence_modeles,

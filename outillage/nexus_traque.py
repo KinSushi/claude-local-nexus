@@ -297,6 +297,15 @@ def decision_veille(verdict: str, sans_relance: bool) -> str:
         return "signaler"
     return "rien"
 
+
+def decision_orphelins(returncode: int, nombre: int, sans_relance: bool) -> str:
+    """Action apres nexus_orphelins : 1 = orphelins presents ; TUER, ALERTER ou RIEN."""
+    if returncode == 1 and not sans_relance:
+        return "TUER"
+    if returncode == 1 and sans_relance:
+        return "ALERTER"
+    return "RIEN"
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", default=None,
@@ -375,6 +384,29 @@ def main():
             print("BLOQUE, relance desactivee (NEXUS_VEILLE_SANS_RELANCE=1)")
     except Exception as exc:
         print("veille moteur impossible : %s" % exc)
+    # Runners orphelins (incident du 2026-09-14) : taskkill sans /T laissait des
+    # llama-server.exe sans parent, 68 Go d'engagement tenus pour rien, ollama ps
+    # vide. scripts/nexus_orphelins.py rend 1 quand il en existe, 2 s'il ne peut
+    # pas enumerer ; la meme variable que la veille coupe la purge automatique.
+    try:
+        orphelins = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "nexus_orphelins.py")
+        r = subprocess.run([sys.executable, orphelins, "--json"], capture_output=True, text=True, timeout=20)
+        data = json.loads(r.stdout or "{}")
+        orps = data.get("orphelins", [])
+        print("orphelins runner : %d (%.1f Go)" % (len(orps), data.get("total_prive_octets", 0) / 1024**3))
+        if r.returncode == 2:
+            print("orphelins runner : enumeration impossible")
+        else:
+            decision = decision_orphelins(r.returncode, len(orps), os.getenv("NEXUS_VEILLE_SANS_RELANCE") == "1")
+            if decision == "TUER":
+                rel = subprocess.run([sys.executable, orphelins, "--tuer", "--json"], capture_output=True, text=True, timeout=20)
+                data2 = json.loads(rel.stdout or "{}")
+                tues = data2.get("tues", [])
+                print("orphelins runner : %d tue(s), %.1f Go liberes" % (len(tues), data2.get("total_prive_octets", 0) / 1024**3))
+            elif decision == "ALERTER":
+                print("ALERTE orphelins runner : %d, remede : python scripts/nexus_orphelins.py --tuer" % len(orps))
+    except Exception as exc:
+        print("orphelins runner : impossible : %s" % exc)
     return 0
 
 

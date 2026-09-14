@@ -222,8 +222,12 @@ def bloc_taches() -> None:
     # et la liste complete. Le code de retour devient non ambigu : 0 = j'ai
     # pu regarder, non nul = je n'ai pas pu. Le filtrage sur les noms de la
     # liste se fait en Python, ce qui leve l'ambiguite structurelle de PowerShell.
+    # Construction de l'argument -TaskName à partir de la source unique `taches`
+    # (échappement des apostrophes PowerShell en doublant)
+    noms = [nom.replace("'", "''") for nom, _, _, _ in taches]
+    task_names_ps = ",".join(f"'{n}'" for n in noms)
     commande = (
-        "Get-ScheduledTask -ErrorAction SilentlyContinue | "
+        f"Get-ScheduledTask -TaskName {task_names_ps} -ErrorAction SilentlyContinue | "
         "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
         "$a = $_.Actions | Select-Object -First 1; "
         "\"$($_.TaskName)|$($_.State)|$($i.LastTaskResult)|$($a.Execute)\" }"

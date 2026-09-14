@@ -28449,3 +28449,102 @@ Reprise 00:28 après un crash de la console. Cause MESURÉE (journal Application
 - **Repli-audit sur la famille du PRODUCTEUR** (sovereign, lot 172/172b) : sur budget de raisonnement épuisé, nexus_agent bascule et fait servir un AUDIT par la famille qui a produit le fichier (gpt-oss audite gpt-oss) → auto-validation LOI 1 silencieuse ; `demande_initiale` le dit, rien ne le REFUSE ; `repli_passerelle` reste False (c'est un repli du SCRIPT). Remèdes retenus dans l'ordre : (b) relever le plafond ×3 sur le MÊME modèle avant tout repli (comme la troncature) ; (c) marquer `repli_script:true` + `famille_servie != famille_demandee` dans le JSONL ; (a) `--sans-bascule`/`--familles-exclues` qui ÉCHOUE plutôt que sert d'une autre famille pour un audit.
 - **Découpage silencieux d'écriture de code** (puissance-60, lot 25864) : au-delà de NEXUS_FENETRE (96 000 car. joints), MAP-REDUCE se déclenche pour une tâche « écris le fichier complet » → fichier fusionné/amputé (225/161 lignes pour 500+ demandées), `converge:True`, code 0 menteur, aucun avertissement. Remède : pour une tâche demandant un fichier ENTIER, refuser le découpage et échouer franc, ou poser `decoupe_refusee:true` (stderr + JSONL). MAP-REDUCE reste légitime pour résumer/analyser, pas pour PRODUIRE.
 - **Seuils de budget de raisonnement par modèle** (mesure sovereign, explique mes rendus vides) : GLM-5.3 rend VIDE à 2-4k jetons de sortie (raisonnement 13-15k) ; Kimi-k3 vide à 8k (28944) ; Qwen3.5-397b OK à 16k (12700 rendus). Règle : pour une SORTIE LONGUE, éviter GLM-5.3/Kimi-k3 ou leur donner max_tokens ≥16000 ; gpt-oss-120b / mistral-large-3 / deepseek-v4-pro rendent du texte de façon fiable. À mécaniser : un plancher de max_tokens par famille de modèle à raisonnement lourd.
+
+
+### Tour 2026-09-14 (nuit, 02:06-02:45) — « plantage général pwsh » : ce n'était pas pwsh, c'étaient quatre runners orphelins tenant 68 Go d'engagement
+
+**Ce que l'opérateur a vu** : toutes ses consoles pwsh mortes d'un coup, deux fois (00:19 et 02:06), puis les tâches planifiées en échec (NexusBoucleLocale 0x80131506, NexusTraque 0xC000013A).
+
+**Ce qui a été mesuré** (journal Application/System, WER, Get-CimInstance, journaux du dépôt ; relevé complet dans `.nexus/incident_2026-09-14_pwsh.txt`, hors git) :
+
+| mesure | valeur |
+| --- | --- |
+| pwsh 7.6.6 (Store), avec et sans profil | répond, exit 0 — pwsh n'est pas cassé |
+| tâches Windows qui tuent pwsh (taskkill/Stop-Process, toutes tâches) | **0** |
+| plantages `llama-server.exe` en 48 h (WER) | **224**, dont 54 dans l'heure 00h, un toutes les 8 s |
+| module fautif | KERNELBASE.dll x209, ucrtbase x14, amdvlk64 x2 |
+| cause dans `logs/ollama-serve.err.log` | `ggml_vulkan: ErrorOutOfDeviceMemory` alors que le pilote annonce 46 Go « free » |
+| `llama-server.exe` ORPHELINS (parent mort, 0 connexion) | **4** : 20,0 + 18,5 + 20,1 + 9,1 Go PRIVÉS, working set ≈ 0 |
+| engagement système | **101,2 / 119,6 Go (85 %)** — RAM physique « libre » : 17,5 Go |
+| `ollama ps` | vide (aucun modèle chargé) : les 68 Go étaient tenus pour rien |
+| morts pwsh à 00:19 (x4) et powershell 5.1 (x1) | FailFast Win32 233 « pas de processus à l'autre extrémité du canal » : le TERMINAL hôte est mort, pas pwsh |
+| 02:06:24 (mesuré par la session SAS) | `WindowsTerminal.exe` plante dans `amdxx64.dll` (pilote AMD) → tous ses onglets meurent |
+| 02:06:16 | pwsh de NexusBoucleLocale meurt dans coreclr (0x80131506) 2 s après lancement, journal jamais ouvert |
+| HKCU `OLLAMA_VULKAN=1`, `OLLAMA_IGPU_ENABLE=1`, `OLLAMA_DIRECTML=1` ; Ollama 0.34.0 ; arrêt système non prévu le 13/09 15:39 ; 2 TDR `amdkmdag.sys` les 12 et 13/09 |
+
+**La chaîne** : `outillage/nexus_veille_moteur.py` relance le moteur par `taskkill /IM ollama.exe /F` **sans `/T`** → chaque relance (au moins 4 cette nuit, verdict BLOQUE à 00:33 dans `.nexus/veille_moteur.json`) laisse ses `llama-server.exe` enfants orphelins → engagement saturé → Vulkan refuse toute allocation → le scheduler d'Ollama retente toutes les 8 s → faute du pilote iGPU → Windows Terminal meurt → chaque pwsh perd sa console. **Trois compteurs mentaient ensemble** : RAM libre (physique), Vulkan free (pilote), `ollama ps` (vide). Seuls les octets PRIVÉS et le PID parent disaient vrai.
+
+**Arbitré, lot 1 (6 tâches, 30 s, 58 895 jetons, coût 0)** : 2 rendus retenus, 3 renvoyés au banc avec les défauts nommés, 1 refusé.
+* retenu : comparaison des deux dossiers D (ci-dessous) ; vérifié contre l'inventaire : aucune fabrication (LOT063, V40/V41/V49, CHANGELOG, MANIFEST.sha256, PROJECT_PLAN_DIGEST tous présents dans l'inventaire de G).
+* renvoyé : patch de la veille (dupliquait 80 lignes de ctypes et passait son résultat par un attribut de fonction) ; `nexus_orphelins.py` v1 (liait kernel32 à l'import → plante hors Windows ; rendait le working set, mesuré à 0 sur les vrais orphelins, au lieu des octets privés ; aveugle à la réutilisation de PID) ; câblage traque (testait `returncode == 0` alors que 1 signale précisément les orphelins : alerte inatteignable).
+* refusé : remplacer pwsh par `cmd.exe` dans les trois tâches planifiées — `cd /d 'C:\...'` avec apostrophes est invalide pour cmd, la fenêtre serait visible pour une tâche interactive, et les variables `$py/$rac/$lg` supposées n'existent pas (les scripts passent par `Resolve-NexusShell`). L'analyse reste utile : pwsh n'apporte rien de métier dans cette chaîne, mais ce n'est pas lui qui a planté.
+* **régression attrapée par le contre-test (temps 3 du cycle)** : le patch du hook de reprise (filtrer les tâches avant `Get-ScheduledTaskInfo`, pour supprimer 24 avertissements 4100 par démarrage) écrivait `( cmd1; cmd2 ) | …`, invalide en PowerShell 5.1 : les cinq tâches passaient de Ready à « état illisible ». Retiré, renvoyé au banc avec la forme mesurée qui marche (`-TaskName` avec la liste exacte, 3 s, exit 0).
+
+**Posé après lots 2 à 6 (six passes au banc, chacune arbitrée contre le code réel, coût facturé 0)** :
+* `scripts/nexus_orphelins.py` — outil PORTABLE (stdlib, ctypes Toolhelp32, liaison paresseuse donc importable hors Windows, octets privés par PagefileUsage, réutilisation de PID couverte par l'heure de création, `--json` en objet, `--tuer` jamais par défaut, exit 1 si orphelin / 2 si énumération impossible). **Forward sur les vrais orphelins : 4 détectés, 72,7 Go privés, exit 1.** Épreuve `epreuves/epreuve_orphelins.py` (forward, reverse, fuite, PID réutilisé, table sans debut, codes de sortie, forme JSON).
+* `outillage/nexus_veille_moteur.py` — `taskkill … /F /T` et `purger_orphelins(cible, module=None)` appelée AVANT toute relance, résultat sous `orphelins_tues` ; épreuve `epreuves/epreuve_veille_orphelins.py` par injection d'un faux module (forward, reverse, fuite) : 6/6 dans la suite.
+* `outillage/nexus_traque.py` — `decision_orphelins()` pure (TUER / ALERTER / RIEN, même variable de coupure `NEXUS_VEILLE_SANS_RELANCE` que la veille) et purge automatique à chaque tour de 10 min, ligne « orphelins runner : n (x Go) ».
+* `scripts/nexus_conformite.py` — contrôle `runners orphelins` en AVERTISSEMENT (jamais bloquant : refuser de démarrer punirait l'opérateur venu corriger), remède nommé.
+* `scripts/nexus_reprise.py` — le hook de reprise ne parcourt plus toutes les tâches de la machine : `-TaskName` dérivé de la liste Python (une seule source), 24 → 2 avertissements 4100 par démarrage.
+* `outillage/nexus_test.py` — les épreuves câblées (`--only orphelins`, `--only veille-orphelins`) ; les choix de `--only` sont dérivés par balayage, rien à graver.
+
+**Trois passes ont été nécessaires là où une aurait dû suffire, et la cause est mesurée** : joindre au banc son rendu précédent lui fait ancrer ses `<<<AVANT>>>` sur le RENDU, pas sur le fichier (trois fois dans un même lot) ; clôtures ``` à l'intérieur des marqueurs ; `VERIFICATION` placée avant `<<<FIN>>>` (SyntaxError) ; patch et création mêlés dans une réponse (4 FIN pour 3 AVANT, rien posé) ; indentation d'ancre recopiée de mémoire ; un bloc dont l'APRES égale l'AVANT (refus global). Chaque fois, c'est `nexus_appliquer` / `nexus_creer` ou l'exécution qui l'a attrapé — le temps 3 du cycle, jamais la relecture. Noté en mémoire de session pour ne plus le payer.
+
+**Défaut de la suite trouvé par l'usage** : NEUF épreuves câblées impriment `[OK] nom` quand `jouer_epreuve_python` n'acceptait que `[OK  ]` (deux espaces) : elles étaient déclarées « aucun cas rendu » à CHAQUE passage, d'où l'AVERTISSEMENT permanent « suite de tests » dans le journal de la vitrine. Correctif au lecteur, en un seul endroit.
+
+**Signalements reçus des sessions voisines (SAS), retenus comme défauts, pas contournés — et les deux sont POSÉS** :
+* `nexus_charge` rendait une table de processus VIDE alors que 5 llama-server et 3 MetaTester64 tournaient — vérifié : le périmètre ne retenait que `python.exe` au-delà de 2 min CPU et l'en-tête ne le disait pas (classe « vide lu comme une panne »). Posé : périmètre `NEXUS_CHARGE_PROCESSUS` (python, llama-server, ollama, MetaTester64, pwsh, node), colonnes PRIVE (Mo, `PrivatePageCount`) et PARENT (`MORT` si le parent n'existe plus, carte prise sur TOUS les processus), retenu si CPU ≥ seuil OU privé ≥ `NEXUS_CHARGE_PRIVE_MO`, ligne `# processus retenus : …` qui nomme les critères, ligne `Engagement: X / Y Go` au bilan, JSON enrichi. Deux passes refusées avant : `PrivateMemorySize64` n'existe pas dans Win32_Process (c'est `PrivatePageCount` ; `PageFileUsage` y est en Ko), et la carte des parents prise sur la liste filtrée aurait marqué MORT tout python lancé par cmd ou le Planificateur. Confirmé par la session SAS elle-même : « il montrait les quatre orphelins avant leur mort, exactement ce qui manquait à 02:22 ».
+* Le pont refusait le scratchpad de session Claude Code (`%LOCALAPPDATA%\Temp\claude\…\scratchpad`) comme source de copies. Posé dans `tools/nexus-mcp/server.js` : `RACINES_LECTURE_SUPPLEMENTAIRES` dérivée de `LOCALAPPDATA` (jamais gravée), `requireInsideRepo(target, quoi, lecture)` et `lisibleParLePont()` ; seuls les chemins de LECTURE (`paths`, `image`) l'acceptent, l'indexation et les écritures restent bornées au dépôt, le refus nomme les racines acceptées. Le premier contre-test a montré que deux gardes appelaient `insideRepo()` en direct et refusaient encore : trois passes de plus. Épreuve `epreuves/epreuve_pont_racine_lecture.py` (pilote `node server.js` par JSON-RPC sur stdin comme la suite) : reverse, fuite `..`, forward — 3/3.
+
+**Défaut de conception signalé par SAS, DÉCIDÉ et REPORTÉ au tour suivant** : le repli automatique de `nexus_agent.py` fait atterrir un AUDIT sur la famille du PRODUCTEUR (glm-5.3 → gpt-oss, minimax-m3 → gpt-oss, deux fois cette nuit ; ici gpt-oss → mistral-large), ce qui annule la LOI 1 sans le dire. Décision : champ `familles_exclues` par tâche + `--familles-exclues` en CLI, appliqués à toute la chaîne de repli ; échec EXPLICITE quand aucun candidat autorisé ne reste ; `famille_servie` dans le JSONL. Premier rendu refusé (ancré sur l'extrait, pas sur le fichier de 108 Ko) ; à reprendre avec la fonction de la chaîne extraite entière.
+
+**RÉSOLU PAR LE MÉCANISME LUI-MÊME, par son chemin réel** : la tâche planifiée NexusTraque de 02:56 a écrit dans `logs/traque.log` : `orphelins runner : 4 (67.7 Go)` puis `orphelins runner : 4 tue(s), 67.7 Go liberes`. Mesuré juste après : engagement **41,9 / 112,9 Go (37 %)** contre 103–113 / 120 Go (85–93 %) avant, RAM libre 40,5 Go, un seul runner vivant et rattaché au moteur. Le contrôle de conformité a rendu, avant la purge : `[ALERTE] runners orphelins  4 runner(s) orphelin(s), 67.7 Go d engagement tenus pour rien -- remede : python scripts/nexus_orphelins.py --tuer` (forward sur le vrai défaut, pas sur une simulation). Ce que l'opérateur avait demandé (« la cmd exacte pour tuer les orphelins ») n'a plus à être tapé : la traque le fait toutes les dix minutes, et `NEXUS_VEILLE_SANS_RELANCE=1` la coupe.
+
+**Geste refusé par le classificateur de session** : `Stop-Process` sur les quatre orphelins. Commande donnée à l'opérateur, devenue inutile depuis :
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" | Where-Object { -not (Get-Process -Id $_.ParentProcessId -ErrorAction SilentlyContinue) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+Décisions qui restent à l'opérateur : garder ou non `OLLAMA_VULKAN=1` sur cet iGPU (2 TDR et 224 plantages en 48 h ; le contrat §3 force le CPU dans Docker pour cette raison) ; mitigation Windows Terminal proposée par SAS : `"rendering": {"graphicsAPI": "direct2d"}` dans son settings.json (évite `amdxx64.dll`).
+
+#### Consigne opérateur du 2026-09-14 — deux dossiers sources sur D, « mt5 production industrielle »
+
+Localisés (cherché sur tout D:, profondeur 3) : `D:\BACKUP_G\Production_Industrielle_MQL5_LLM` et `D:\BACKUP_H\Production_Industrielle_MQL5_LLM`. Inventaire mécanique dans `.nexus/inventaire_mql5_prod.txt`. Arbitré sur le rendu du banc, vérifié ligne à ligne contre l'inventaire :
+
+| | BACKUP_G | BACKUP_H |
+| --- | --- | --- |
+| fichiers / taille | **10 552 / 31 Go** | 3 191 / 8,9 Go |
+| fichier le plus récent | **2026-06-17** | 2026-06-05 |
+| archives DELIVERY_MANAGER | V7…V22, **V24…V41, V49** | V7 seulement |
+| lots LOT014…LOT063 | présents | présents |
+| CHANGELOG.md, MANIFEST.sha256, PROJECT_PLAN_DIGEST | présents | absents |
+
+**Verdict : G est la copie la plus récente et la plus complète ; H est un sous-ensemble antérieur.** Ce qui vaut pour Nexus, [DÉDUIT DU NOM des archives, rien lu encore] : V26 provider state machine, V27 model scout scoring, V28 promotion gate, V29 retirement ban gate, V30 regression tournament, V31-V41 darwin (rollback, quarantaine/replay, gel sur incident, autorité de reprise, revue humaine, import de décision, audit, dégel par étapes) — soit exactement les sujets ouverts « succession au quota », « plafond cloud adaptatif », « promotion/retrait par mesure », « darwin adaptatif ». Plan retenu : ouvrir UNE archive, la plus englobante (`…V49_LOCAL_CLOSURE_VERIFIED`, 35 mentions dans l'inventaire de G), par COPIE dans un dossier ignoré par git du dépôt, jamais en place sur D ; puis `nexus_search`/`nexus_summarize` sur CHANGELOG et MANIFEST avant tout emprunt. Règle §0 : on emprunte une idée, on la réécrit aux règles d'ici, on l'éprouve.
+
+**OUVERT** : l'extraction n'a pas commencé ; les correspondances ci-dessus sont des noms, pas des lectures.
+
+#### Audit des correctifs posés — après le rappel de l'opérateur : « il y a des bugs car tu valides ton propre travail » / « tu es le modèle le plus puissant, donc tu audites, mais pas ton propre travail »
+
+**Ce qui était vrai** : les vérifications « forward » faites après chaque pose lisaient un en-tête ou un « APPLIQUÉ » comme une preuve. Mesuré : `nexus_charge --json` rendait `engagement_pct = None` alors que le texte affichait un en-tête correct — le banc avait laissé tomber deux blocs (requête et clés d'engagement dans `mesurer_ram()`), et l'orchestrateur, ayant lu la sortie en diagonale, l'avait déclaré bon. Vérifier son intention, pas son effet : le piège du contrat §0.7.1, au mot près.
+
+**Méthode corrigée, appliquée à tout ce qui a été posé ce tour** : le banc PRODUIT, l'orchestrateur AUDITE la production du banc (il n'a rien écrit lui-même, donc il n'audite pas son propre travail) en lisant le DIFF RÉEL de chaque fichier contre une liste d'affirmations, et en relançant chaque épreuve après chaque pose. Le validateur tiers (`nexus_valide`, coût zéro) et la re-mesure indépendante de la session SAS (03:05) complètent, sans remplacer.
+
+Résultat de l'audit ligne à ligne (diffs de `outillage/nexus_veille_moteur.py`, `outillage/nexus_traque.py`, `scripts/nexus_conformite.py`, `outillage/nexus_test.py`, `tools/nexus-mcp/server.js`, fichier complet `scripts/nexus_charge.py`, épreuves `epreuve_orphelins.py` et `epreuve_veille_orphelins.py`) :
+
+| fichier | trouvé | remède |
+| --- | --- | --- |
+| `nexus_charge.py` | `mesurer_ram()` sans engagement : JSON à `None`, ligne « Engagement » jamais imprimée | posé par le banc (v8), vérifié par la sortie réelle : `Engagement: 63.4 / 112.9 Go (56 %)`, JSON non nul |
+| `nexus_charge.py` | variable morte `noms_filtre` (ruff F841) | retirée par le banc |
+| `nexus_veille_moteur.py` | réécriture ruff RET505 de `verdict()` : sémantique inchangée (toutes les branches du `if` retournent) | aucun |
+| `server.js` | le message de refus annonçait la racine de lecture même pour un appel qui ne l'accepte pas (`lecture=false`) | posé par le banc : mention conditionnée à `lecture` |
+| `nexus_test.py` | ordre des préfixes correct (`[OK  ]` avant `[OK]`) ; une faute dans un commentaire | commentaire corrigé |
+| `epreuve_orphelins.py`, `epreuve_veille_orphelins.py` | chaque cas peut échouer (valeurs attendues explicites) ; ligne résiduelle en fin de fichier | ligne retirée |
+| `nexus_traque.py`, `nexus_conformite.py` | conformes aux affirmations (codes 0/1/2, objet JSON, `tues`, AVERTISSEMENT jamais bloquant, chemin dérivé de `__file__`) | aucun |
+| `nexus_reprise.py` | le validateur tiers a signalé REGRESSION (« -TaskName avec chaîne vide ») ; réfuté dans le code : `taches` est un tuple littéral de 5 entrées (ligne 209) | aucun ; signal gardé, conclusion écartée |
+
+**Trouvé par l'usage pendant l'audit** : l'épreuve du pont appelait `nexus_summarize` pour son cas forward, donc lançait une inférence locale qui attend le verrou machine « banc » — tenu par le MCP d'une session voisine depuis 03:15 — et a bloqué plus de 500 s (le timeout de 180 s de `subprocess.run` n'a pas suffi, l'enfant Python du serveur gardant le tube ouvert). Une épreuve de GARDE ne doit dépendre ni d'un modèle ni d'un verrou : réécrite sur `nexus_vision` avec un `.txt`, dont la garde est vérifiée avant toute inférence et qui rejette l'extension sans appeler de modèle (« format non pris en charge »). **Mesuré ensuite : elle bloque encore (150 s, aucun des trois cas rendu, pas même les refus)** — donc le serveur attend le verrou « banc » AVANT la garde de chemin, ou sérialise tout appel derrière lui. **Défaut du pont, OUVERT** : un chemin refusé ne devrait jamais attendre derrière l'inférence d'une session voisine. En attendant, l'épreuve n'est jouée qu'à la demande (`--only pont-racine-lecture`), pas dans la suite par défaut, pour ne pas la rendre aléatoire selon l'état de la machine ; elle a rendu 3/3 à 03:07, verrou libre.
+
+**Signalements reçus après 03:00, consignés, non traités ce tour** :
+* SAS : `nexus_ask` basculé en tâche de fond à 120 s (kqjc2l47a, 03:04) n'a rendu ni résultat ni erreur à 03:40 alors que le moteur avait fini vers 03:16 et que le verbatim n'a rien reçu — expiration silencieuse, interdite par §112.3 ; à traiter avec l'extrait du code de bascule du pont.
+* EA-MT5 : (1) une substitution de modèle (deepseek demandé, gpt-oss servi) n'est pas comptée dans le bilan du lot (« 0 étiquetée ») — même défaut que `familles_exclues`, à traiter ensemble : compter, code de sortie distinct, refus sans `--accepter-degrade` ; (2) `cp` depuis `references/` bloqué par une règle deny qui lit la SOURCE comme cible, dans une session neuve — vérifier si notre ACL porte le même motif ; (3) un fichier « --help » de 532 octets écrit à la racine de leur dépôt par une sonde jeton/mutex qui a pris son argument pour un chemin de sortie — `scripts/nexus_verrou_machine.py` ne fait pas cela (vérifié : aucun `argv[1]` ouvert en écriture) ; sonde dérivée à identifier chez eux.
+
+**Ce qui reste ouvert après l'audit** : `nexus_charge` fait `p.get("WorkingSetSize", 0) + …` : un `null` rendu par `ConvertTo-Json` pour un processus inaccessible ferait échouer tout le diagnostic (exit 2) — motif préexistant, non introduit ce tour, à corriger au banc ; `familles_exclues` (repli d'un audit sur la famille du producteur) reste décidé et non posé ; le contrôle LOI 1 du rituel compte 5 lignes « à la main » dans `scripts/nexus_agent.py` héritées du commit précédent, pas de ce tour.

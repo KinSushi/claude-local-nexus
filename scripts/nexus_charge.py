@@ -32,19 +32,23 @@ if hasattr(sys.stdout, "reconfigure"):
 def mesurer_ram() -> dict:
     """
     Mesure la RAM libre, totale et la consommation des modèles résidents.
-    Retourne un dict avec les clés 'libre_go', 'totale_go', 'residents_go'.
+    Retourne un dict avec les clés 'libre_go', 'totale_go', 'residents_go', 'engagement_go', 'total_vm', 'engagement_pct'.
     En cas d'échec de chaque mesure, la valeur correspondante est None.
     """
     ram_libre_go = None
     ram_totale_go = None
     ram_modeles_residents_go = None
+    total_vm = None
+    engagement_go = None
+    engagement_pct = None
 
     # Mesure de la RAM via PowerShell
     try:
         cmd_ram = (
             'powershell -NoProfile -NonInteractive -Command "'
             'Get-CimInstance Win32_OperatingSystem | '
-            'Select-Object FreePhysicalMemory, TotalVisibleMemorySize | ConvertTo-Json"'
+            'Select-Object FreePhysicalMemory, TotalVisibleMemorySize, '
+            'TotalVirtualMemorySize, FreeVirtualMemory | ConvertTo-Json"'
         )
         res_ram = subprocess.check_output(
             cmd_ram,
@@ -56,6 +60,10 @@ def mesurer_ram() -> dict:
         ram_data = json.loads(res_ram)
         ram_libre_go = ram_data.get("FreePhysicalMemory", 0) / (1024 * 1024)
         ram_totale_go = ram_data.get("TotalVisibleMemorySize", 0) / (1024 * 1024)
+        total_vm = ram_data.get("TotalVirtualMemorySize", 0) / (1024 * 1024)
+        free_vm = ram_data.get("FreeVirtualMemory", 0) / (1024 * 1024)
+        engagement_go = total_vm - free_vm
+        engagement_pct = (engagement_go / total_vm) * 100 if total_vm > 0 else 0
     except Exception:
         pass
 
@@ -90,6 +98,9 @@ def mesurer_ram() -> dict:
         "libre_go": ram_libre_go,
         "totale_go": ram_totale_go,
         "residents_go": ram_modeles_residents_go,
+        "engagement_go": engagement_go,
+        "total_vm": total_vm,
+        "engagement_pct": engagement_pct,
     }
 
 def verdict_charge(disponible_go: float, seuil_go: float) -> tuple:
@@ -115,14 +126,19 @@ def main():
     try:
         # Seuil CPU en minutes
         cpu_seuil_min = float(os.environ.get("NEXUS_CHARGE_SEUIL_MIN", 2))
+        # Seuil mémoire privée en Mo
+        prive_seuil_mo = float(os.environ.get("NEXUS_CHARGE_PRIVE_MO", 1024))
+        # Liste des processus surveillés
+        processus_surveilles = os.environ.get("NEXUS_CHARGE_PROCESSUS", "python.exe,llama-server.exe,ollama.exe,MetaTester64.exe,pwsh.exe,node.exe").split(",")
         # Seuil RAM libre en Go
         ram_seuil_go = float(os.environ.get("NEXUS_CHARGE_RAM_MIN", 30))
 
-        # 1. Interroger les processus Python
+        # 1. Interroger tous les processus puis filtrer
         cmd_proc = (
             'powershell -NoProfile -NonInteractive -Command "'
-            'Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'python.exe\' } | '
-            'Select-Object ProcessId, UserModeTime, KernelModeTime, WorkingSetSize, CommandLine | ConvertTo-Json"'
+            'Get-CimInstance Win32_Process | '
+            'Select-Object ProcessId, ParentProcessId, Name, UserModeTime, KernelModeTime, '
+            'WorkingSetSize, PrivatePageCount, PageFileUsage, CommandLine | ConvertTo-Json"'
         )
         res_proc = subprocess.check_output(cmd_proc, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8', errors='replace')
         procs_data = json.loads(res_proc)
@@ -143,19 +159,33 @@ def main():
 
         # Filtrage et calculs
         pid_courant = os.getpid()
-        
+        # Carte de tous les processus : pid -> parent pid
+        parent_map = {p.get("ProcessId"): p.get("ParentProcessId") for p in procs_data}
+
         significatifs = []
         for p in procs_data:
+            if p.get("Name") not in processus_surveilles:
+                continue
             pid = p.get("ProcessId")
             if pid == pid_courant:
                 continue
-            
+
             # CPU = (User + Kernel) en 100 nanosecondes
             cpu_total_ticks = p.get("UserModeTime", 0) + p.get("KernelModeTime", 0)
             cpu_min = (cpu_total_ticks / 10_000_000) / 60
             mem_mo = p.get("WorkingSetSize", 0) / (1024 * 1024)
-            
-            if cpu_min > cpu_seuil_min:
+
+            # Mémoire privée : PrivatePageCount (octets) ou PageFileUsage (KB)
+            prive_bytes = p.get("PrivatePageCount")
+            if prive_bytes is None:
+                prive_bytes = (p.get("PageFileUsage", 0) * 1024)
+            prive_mo = prive_bytes / (1024 * 1024)
+
+            # Statut du parent
+            parent_pid = p.get("ParentProcessId")
+            parent_statut = str(parent_pid) if parent_pid and parent_pid in parent_map else "MORT"
+
+            if cpu_min > cpu_seuil_min or prive_mo > prive_seuil_mo:
                 cmd_line = p.get("CommandLine") or ""
                 cmd_clean = cmd_line.replace('\r', ' ').replace('\n', ' ')
                 cmd_short = cmd_clean[-60:]
@@ -175,6 +205,8 @@ def main():
                     "pid": pid,
                     "cpu_min": cpu_min,
                     "mem_mo": mem_mo,
+                    "prive_mo": prive_mo,
+                    "parent": parent_statut,
                     "command_line": cmd_short,
                     "projet": projet
                 })
@@ -211,16 +243,23 @@ def main():
                 "ram_totale_go": ram_totale_go,
                 "ram_modeles_residents_go": ram_modeles_residents_go,
                 "ram_disponible_inference_go": ram_disponible_inference_go,
+                "criteres": {"noms_processus": processus_surveilles, "seuil_cpu_min": cpu_seuil_min, "seuil_prive_mo": prive_seuil_mo},
+                "engagement_go": _ram.get("engagement_go"),
+                "engagement_total_go": _ram.get("total_vm"),
+                "engagement_pct": _ram.get("engagement_pct"),
                 "etat_moteur": etat_moteur
             }))
         else:
-            print("%-10s %-15s %-15s %-10s %-60s" % ("PID", "CPU (min)", "RAM (Mo)", "PROJET", "COMMAND LINE"))
+            print("# processus retenus : noms=%s, cpu>=%.1f min ou prive>=%.0f Mo" % (",".join(processus_surveilles), cpu_seuil_min, prive_seuil_mo))
+            print("%-10s %-15s %-15s %-10s %-10s %-15s %-60s" % ("PID", "CPU (min)", "RAM (Mo)", "PRIVE (Mo)", "PARENT", "PROJET", "COMMAND LINE"))
             for s in significatifs:
-                print("%-10d %-15.2f %-15.2f %-10s %-60s" % (s["pid"], s["cpu_min"], s["mem_mo"], s["projet"], s["command_line"]))
+                print("%-10d %-15.2f %-15.2f %-10.0f %-10s %-15s %-60s" % (s["pid"], s["cpu_min"], s["mem_mo"], s["prive_mo"], s["parent"], s["projet"], s["command_line"]))
             if etat_moteur == "injoignable":
                 print("\nRAM Libre: %.2f Go / Modèles résidents: inconnu / Disponible pour inference: %.2f Go / Totale: %.2f Go" % (ram_libre_go, ram_disponible_inference_go, ram_totale_go))
             else:
                 print("\nRAM Libre: %.2f Go / Modèles résidents: %.2f Go / Disponible pour inference: %.2f Go / Totale: %.2f Go" % (ram_libre_go, ram_modeles_residents_go, ram_disponible_inference_go, ram_totale_go))
+            if _ram.get("engagement_go") is not None:
+                print("Engagement: %.1f / %.1f Go (%.0f %%)" % (_ram["engagement_go"], _ram["total_vm"], _ram["engagement_pct"]))
             print(verdict)
 
         return 0 if est_au_repos else 1

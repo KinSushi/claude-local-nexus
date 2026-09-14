@@ -2456,11 +2456,46 @@ function insideRepo(target) {
  * Le message indique la limite actuelle et invite à déclarer une autre racine
  * si l'appelant en a le droit.
  */
-function requireInsideRepo(target, quoi) {
-  if (!insideRepo(target)) {
+/* ------------------------------------------------------------------ */
+/*  Racines supplémentaires autorisées en lecture (temp/claude)        */
+/* ------------------------------------------------------------------ */
+const LOCALAPPDATA = process.env.LOCALAPPDATA || '';
+const RACINES_LECTURE_SUPPLEMENTAIRES = LOCALAPPDATA
+  ? [path.resolve(path.join(LOCALAPPDATA, 'Temp', 'claude'))]
+  : [];
+
+/**
+ * Retourne true si `target` se trouve sous `racine` (ou est égal à celle‑ci).
+ * Même logique que `insideRepo` mais paramétrée.
+ */
+function sousRacine(target, racine) {
+  const rel = path.relative(racine, path.resolve(target));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
+function lisibleParLePont(full) {
+  return insideRepo(full) || RACINES_LECTURE_SUPPLEMENTAIRES.some(r => sousRacine(full, r));
+}
+
+/**
+ * Vérifie que le chemin est dans le dépôt ou, en mode lecture,
+ * dans l’une des racines supplémentaires.
+ *
+ * @param {string} target – chemin à vérifier
+ * @param {string} quoi   – libellé utilisé dans le message d’erreur
+ * @param {boolean} [lecture=false] – mode lecture supplémentaire
+ */
+function requireInsideRepo(target, quoi, lecture = false) {
+  const okDepot = insideRepo(target);
+  const okSuppl = lecture && RACINES_LECTURE_SUPPLEMENTAIRES.some(r => sousRacine(target, r));
+
+  if (!okDepot && !okSuppl) {
+    const racines = (lecture && RACINES_LECTURE_SUPPLEMENTAIRES.length)
+      ? ' ou sous ' + RACINES_LECTURE_SUPPLEMENTAIRES.join(' ou ')
+      : '';
     throw new Error(
       quoi + ' hors du depot refuse : ' + target + '. ' +
-      'Le pont ne lit que sous ' + WORK_ROOT + ' ; ' +
+      'Le pont ne lit que sous ' + WORK_ROOT + racines + ' ; ' +
       'déclarez une autre racine si vous avez le droit.'
     );
   }
@@ -2752,7 +2787,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     if (args.paths !== undefined) {
       exigerTableau(args.paths, "paths");
       for (const raw of args.paths) {
-        const full = requireInsideRepo(resolvePath(raw), "fichier");
+        const full = requireInsideRepo(resolvePath(raw), "fichier", true);
         if (isSecretFile(path.basename(full))) continue;
         if (!fs.existsSync(full)) throw new Error("fichier introuvable : " + raw);
         const content = fs.readFileSync(full, "utf8");
@@ -2844,8 +2879,8 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     const sources = [];
     for (const raw of args.paths || []) {
       const full = resolvePath(raw);
-      if (!insideRepo(full)) {
-        sources.push(`${raw} (refuse : hors du depot)`);
+      if (!lisibleParLePont(full)) {
+        sources.push(`${raw} (refuse : hors du depot et hors de ${RACINES_LECTURE_SUPPLEMENTAIRES.join(' / ') || 'aucune racine de lecture'})`);
         continue;
       }
       if (isSecretFile(path.basename(full))) {
@@ -2908,7 +2943,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
 
   if (name === "nexus_vision") {
     exigerTexte(args.path, "path");
-    const full = requireInsideRepo(resolvePath(args.path), "image");
+    const full = requireInsideRepo(resolvePath(args.path), "image", true);
     if (!fs.existsSync(full)) throw new Error("image introuvable : " + args.path);
     const extension = path.extname(full).toLowerCase().replace(".", "") || "png";
     const mime = { jpg: "jpeg", jpeg: "jpeg", png: "png", webp: "webp", gif: "gif" }[extension];
@@ -2963,9 +2998,9 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
       const full = resolvePath(raw);
       // Meme interdiction que pour l'index : une synthese remonte vers
       // l'orchestrateur et quitte donc la machine.
-      if (!insideRepo(full)) {
+      if (!lisibleParLePont(full)) {
         parts.push(`### ${raw}
-(refuse : hors du depot)`);
+(refuse : hors du depot et hors de ${RACINES_LECTURE_SUPPLEMENTAIRES.join(' / ') || 'aucune racine de lecture'})`);
         continue;
       }
       if (isSecretFile(path.basename(full))) {

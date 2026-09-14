@@ -71,16 +71,15 @@ def verdict(coinces, sonde_ok, journal_avance=None):
         if (coinces and sonde_ok is None) or (coinces and sonde_ok is True) or (not coinces and sonde_ok is False):
             return 'SUSPECT'
         return 'SAIN'
-    else:
-        # new rule with journal liveness signal
-        if coinces and sonde_ok is False:
-            if journal_avance is False:
-                return 'BLOQUE'
-            else:  # journal_avance is True
-                return 'SUSPECT'
-        if (coinces and sonde_ok is None) or (coinces and sonde_ok is True) or (not coinces and sonde_ok is False):
-            return 'SUSPECT'
-        return 'SAIN'
+    # new rule with journal liveness signal
+    if coinces and sonde_ok is False:
+        if journal_avance is False:
+            return 'BLOQUE'
+        # journal_avance is True
+        return 'SUSPECT'
+    if (coinces and sonde_ok is None) or (coinces and sonde_ok is True) or (not coinces and sonde_ok is False):
+        return 'SUSPECT'
+    return 'SAIN'
 
 def version_repond(url):
     """Return True if GET /api/version succeeds within 5 seconds."""
@@ -155,7 +154,7 @@ def relancer_moteur(racine):
         return False
 
     # Kill existing process
-    subprocess.run(['taskkill', '/IM', 'ollama.exe', '/F'],
+    subprocess.run(['taskkill', '/IM', 'ollama.exe', '/F', '/T'],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(3)
 
@@ -180,6 +179,52 @@ def relancer_moteur(racine):
         time.sleep(1)
     return False
 
+def purger_orphelins(cible='llama-server.exe', module=None):
+    """Termine les processus orphelins ``cible`` laisses apres l'arret d'ollama.exe.
+
+    Sans l'option /T de taskkill, des llama-server.exe restaient vivants apres
+    la relance du moteur (4 cas mesures, 68 Go d'engagement, 2026-09-14).
+    Rend la liste des processus termines : [{'pid': ..., 'prive_octets': ...}].
+    Si ``module`` est fourni (epreuve), il est employe tel quel ; sinon
+    scripts/nexus_orphelins.py est charge par chemin derive de __file__, sans
+    inscription dans sys.modules. Absent, ou en erreur : liste vide, jamais
+    d'exception, car une purge qui plante bloquerait la relance qu'elle sert.
+    """
+    import importlib.util
+
+    if module is None:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_path = os.path.join(base_dir, 'scripts', 'nexus_orphelins.py')
+        if not os.path.isfile(script_path):
+            return []
+        try:
+            spec = importlib.util.spec_from_file_location('_nexus_orphelins', script_path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        except Exception:
+            return []
+    else:
+        mod = module
+
+    try:
+        table = mod.enumerer()
+        orps = mod.orphelins(table, cible)
+    except Exception:
+        return []
+
+    result = []
+    for o in orps:
+        pid = o.get('pid')
+        if pid is None:
+            continue
+        try:
+            mod._terminer(pid)
+            result.append({'pid': pid, 'prive_octets': o.get('prive_octets')})
+        except Exception:
+            pass
+    return result
+
+
 def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=None):
     """Run health check and optionally restart if BLOQUE.
 
@@ -191,7 +236,8 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
         'sonde_ok': None,
         'verdict': 'INJOIGNABLE',
         'relance': None,
-        'journal_avance': None
+        'journal_avance': None,
+        'orphelins_tues': []
     }
 
     if not version_repond(url):
@@ -240,6 +286,7 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
 
     if relancer and result['verdict'] == 'BLOQUE':
         racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        result['orphelins_tues'] = purger_orphelins()
         result['relance'] = relancer_moteur(racine)
         if result['relance'] is False:
             result['verdict'] = 'BLOQUE'  # remains BLOQUE if restart failed
