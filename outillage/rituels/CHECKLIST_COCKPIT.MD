@@ -28744,3 +28744,25 @@ Conséquences mesurées, et ce qu'elles changent :
 - [ ] file d'attente du banc, arrêt coopératif des lots, poseur de lot en outil, gabarit local : rafale 41 cloud, à la réinitialisation.
 
 **Délégué ce tour** : rien au banc, puisque le cloud était épuisé et le moteur local engorgé. Rafale 41 (15 tâches, modèles bon marché) et rafale 41L (4 correctifs courts, en local) préparées. **Arbitré ici** : diagnostic, arrêts, relance, coordination.
+
+#### 14:49 — les sondes de santé de fond de la passerelle bloquaient le moteur local : coupées, passerelle redémarrée, moteur relancé
+
+**Mesuré dans le journal du moteur** : à chaque cycle de 900 s, la passerelle envoyait une sonde à CHAQUE modèle local en même temps, hors verrou `banc`. On relève 40 lignes `invalid option provided option=litellm_health_check` à 14:35:15, et 8 à 14:19:15. Trois runners étaient chargés 35 s après la relance de 14:36, puis qwen3.6:27b est retombé en « Stopping... » à 14:38. Des générations lancées à 14:36:15 et 14:38:01 n'ont abouti qu'après 9 min 20 s et 7 min 57 s.
+
+**Geste, fait à la main puis vérifié** (le banc était indisponible, cloud épuisé et moteur bloqué) :
+
+| étape | résultat |
+| --- | --- |
+| `background_health_checks` et `enable_health_check_routing` passés à `false`, commentaire de mesure en tête | hors zone générée |
+| `Test-NexusConfig.ps1` avant et après | exit 0, « Configuration valide » |
+| préavis aux sessions voisines | 14:45:40 |
+| `docker compose restart litellm` | 14:47:48, vivante à 14:48:33, réglages lus dans `/app/config.yaml` |
+| relance du moteur par `relancer_moteur` | 14:48:45, aucun runner chargé, aucun orphelin |
+
+Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus rien à lire. Les pannes d'un modèle restent traitées par `allowed_fails` et `cooldown_time`.
+
+**À constater** : aucune rafale de sondes à 14:50:15, ni aux cycles suivants ; plus aucun runner en « Stopping... » sans générations en file.
+
+**Audit tiers demandé** (temps 3 de la LOI 1) : EA MT5 et SAS relisent ce commit en lecture seule.
+
+**Ouvert** : un runner de qwen3-coder:30b a été chargé à 14:46 avec une fenêtre de 262 144 jetons, soit 44 Go, alors que l'alias déclare `num_ctx: 8192`. Un appel sans `num_ctx` hérite du défaut du moteur, dimensionné sur la mémoire annoncée par Vulkan. Il faut trouver l'émetteur et borner le défaut (`OLLAMA_CONTEXT_LENGTH`) après mesure.

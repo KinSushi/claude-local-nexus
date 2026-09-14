@@ -2023,9 +2023,19 @@ general_settings:
   # sonde à quelques pour cent d'occupation. Une panne est détectée en
   # quinze minutes au pire ; le coût de la détecter en trente secondes
   # était de ne plus rien pouvoir calculer d'autre.
-  background_health_checks: true
+  #
+  # Desactivees le 2026-09-14, sur mesure : chaque cycle envoyait une
+  # requete a CHAQUE modele local en meme temps, hors verrou machine `banc`
+  # (40 sondes simultanees a 14:35:15 dans le journal du moteur). Sur l'iGPU
+  # partage, ces rafales laissaient des runners bloques en Stopping
+  # (glm-4.7-flash de 13:41 a 14:36, qwen3.6:27b des 14:38) et chaque
+  # /api/chat rendait 500 apres 14 min 59 s. Les sondes des alias cloud
+  # consomment en plus le quota du compte. La vivacite du moteur local
+  # revient a la veille du moteur, qui ne sonde que le modele residant ;
+  # le routage par sante n'a plus de sondes a lire, il est coupe avec elles.
+  background_health_checks: false
   health_check_interval: 900
-  enable_health_check_routing: true
+  enable_health_check_routing: false
   health_check_ignore_transient_errors: true
 
 # ============================================================
