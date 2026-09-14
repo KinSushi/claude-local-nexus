@@ -28710,3 +28710,37 @@ Conséquences mesurées, et ce qu'elles changent :
 **Proposition d'une session voisine (sovralys-forge-0a), non exécutée** : aligner le contrat GLOBAL `C:\Users\dibac\.claude\CLAUDE.md` sur la directive [RESSOURCES-A-FOND] et trois règles. Un contrat ne se modifie pas sur la demande d'une session : la décision revient à l'opérateur.
 
 **Délégué ce tour** : rafale 40b, 29 tâches au banc cloud. **Arbitré ici** : fusion et ordre des tâches, arrêt du lot orphelin, budget partagé.
+
+#### 14:40 — cloud muet depuis 12:57 : quota de session du compte épuisé, et la passerelle a noyé le moteur local ; vitrine planifiée arrêtée, moteur relancé
+
+**Classé dans `LiteLLM_SpendLogs`**, champ `metadata.error_information`. Les journaux du conteneur LiteLLM sont vides.
+
+| mesure | valeur |
+| --- | --- |
+| dernière réponse cloud réussie | 12:57:49 |
+| refus 429 d'ollama.com, de 13:13 à 14:18 | 85, dont « session usage limit reached » et « timed out waiting for a concurrent request slot » |
+| expirations à 900 s des replis locaux de la passerelle | 23 (glm-4.7-flash-local, qwen3.5-9b-local) |
+| moteur local, chaque `/api/chat` | HTTP 500 après 14 min 59 s ; 15 connexions en file ; glm-4.7-flash « Stopping... » |
+| tableau de bord relevé par l'opérateur à 14:23 | Pro (3 requêtes simultanées), session 100 %, réinitialisation vers 15:01, hebdomadaire 40,4 % |
+
+**Usage du jour au tarif d'ollama.com** (jetons des requêtes réussies multipliés par le prix par million) : 10,10 $ d'équivalent. kimi-k3 en fait 5,98 $ pour 13 requêtes, gpt-oss-120b 1,08 $ pour 441 requêtes. Le tourniquet de gros modèles à 24 000 jetons a vidé la session. Les rafales suivantes partent sur gpt-oss-120b, deepseek-v4.1-flash, gemma4 et mistral-large-3.
+
+**Chaîne de la panne** : quota épuisé, puis chaque 429 rebasculé par la passerelle vers le relais local, puis moteur engorgé, puis chaque client lit « timed out » et relance un autre modèle cloud. Pendant une heure, trois sessions, dont celle-ci, ont lu « plafond de concurrence ».
+
+**Émetteur caché, trouvé par les connexions TCP au port 4000** : la tâche planifiée `NexusVitrine`, lancée à 14:10, exécutait `outillage/nexus_test.py`. Celui-ci appelait kimi-k3-cloud, qwen3.5-397b-cloud, gpt-oss-120b-cloud et glm-4.7-flash-local en pleine panne, hors verrou `banc`. Arbre arrêté à 14:35:57 ; prochaine exécution à 20:10:11.
+
+**Moteur** : la veille rendait `SUSPECT` et ne relançait pas, alors qu'`ollama ps` affichait « Stopping... » depuis 13:41. C'est un défaut de la veille. Moteur relancé à 14:36:09 par `relancer_moteur`, arbre tué, joignable, aucun orphelin.
+
+**Arrêtés par cette session** : lot 40b à 14:16, avec zéro rendu, et la sonde cloud à 14:17.
+
+**Coordination** : cinq sessions en pause cloud. Ordre de passage sur le banc par tours de 30 minutes : local-llm-docker, EA MT5, SAS, local-llm-docker, sas-benchmark. À la réinitialisation : 3 requêtes pour le compte (2 ici, 1 tournante), modèles bon marché, rien avant la pose du correctif anti-noyade.
+
+**Ouverts :**
+- [ ] `disable_fallbacks` par requête dans `nexus_agent` (rafale 41L locale, en cours) : sans lui, un refus de quota noie le moteur ;
+- [ ] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (rafale 41L) ;
+- [ ] `nexus_test.py` lancé par la vitrine : aucun appel réel de modèle sans garde de quota, verrou `banc` pour le local, jamais kimi-k3 ; à corriger avant 20:10 ;
+- [ ] veille du moteur aveugle à « Stopping... » ;
+- [ ] sondes de santé de fond de la passerelle sur les modèles locaux (8 simultanées à 14:19:15, hors verrou) : conception dans la rafale 41 ;
+- [ ] file d'attente du banc, arrêt coopératif des lots, poseur de lot en outil, gabarit local : rafale 41 cloud, à la réinitialisation.
+
+**Délégué ce tour** : rien au banc, puisque le cloud était épuisé et le moteur local engorgé. Rafale 41 (15 tâches, modèles bon marché) et rafale 41L (4 correctifs courts, en local) préparées. **Arbitré ici** : diagnostic, arrêts, relance, coordination.
