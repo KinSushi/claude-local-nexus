@@ -58,10 +58,12 @@ def releve_commande(cmd):
         )
         stdout = result.stdout or b""
         code = result.returncode
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("nexus_avant_apres.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         # Expiration => verdict INDECIS, on encode cela dans le releve
         return {"code": None, "lignes": None, "empreinte": None}
-    except Exception:
+    except Exception as exc:
+        print("nexus_avant_apres.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return {"code": None, "lignes": None, "empreinte": None}
 
     lignes = stdout.decode("utf-8", errors="replace").splitlines()

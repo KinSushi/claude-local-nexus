@@ -294,8 +294,8 @@ def main():
                 print("[!] Violations detectees :\n%s" % stdout)
             if stderr:
                 print("[!] L'analyseur n'a PAS PU se prononcer :\n%s" % stderr)
-    except Exception:
-        pass
+    except Exception as exc:
+        print("nexus_appliquer.py : subprocess.Popen impossible : %s" % exc, file=sys.stderr)
 
     return 0
 

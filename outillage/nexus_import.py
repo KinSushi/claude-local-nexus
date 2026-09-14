@@ -77,11 +77,15 @@ def importer(module: str) -> tuple:
         r = subprocess.run([sys.executable, "-c", code_dimport(module)],
                            cwd=ROOT, capture_output=True, text=True,
                            timeout=60, encoding="utf-8", errors="replace")
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         # Un import qui ne rend pas la main FAIT quelque chose, et c'est
         # precisement ce qu'on interdit.
+        print("nexus_import.py : subprocess.run impossible : %s" % exc,
+              file=sys.stderr)
         return "ECHEC", "import bloque au-dela de 60 s"
     except Exception as exc:
+        print("nexus_import.py : subprocess.run impossible : %s" % exc,
+              file=sys.stderr)
         return "ECHEC", str(exc).splitlines()[0][:120]
 
     if r.returncode != 0:
@@ -104,9 +108,11 @@ def importer(module: str) -> tuple:
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
+    except Exception as exc:
         # Un flux qui ne supporte pas la reconfiguration ne doit pas empecher
         # la verification : c'est l'affichage qui souffre, pas le verdict.
+        print("nexus_import.py : sys.stdout.reconfigure impossible : %s" % exc,
+              file=sys.stderr)
         pass
 
     p = argparse.ArgumentParser(description=__doc__)

@@ -13,10 +13,12 @@ def run_test(args):
             timeout=10
         )
         return res.returncode, res.stdout, res.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("run_test : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", "Timeout after 10s"
-    except Exception as e:
-        return -2, "", str(e)
+    except Exception as exc:
+        print("run_test : subprocess.run impossible : %s" % exc, file=sys.stderr)
+        return -2, "", str(exc)
 
 def main():
     tool_path = os.path.join("outillage", "nexus_preload.py")

@@ -41,7 +41,8 @@ def _load_traces(base=None, plancher=400):
                 commit_dt = datetime.strptime(commit_dt_str, "%Y%m%d-%H%M%S")
                 seuil_dt = commit_dt - timedelta(hours=24)
                 seuil = seuil_dt.strftime("%Y%m%d-%H%M%S")
-        except Exception:
+        except Exception as exc:
+            print("nexus_loi1.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
             seuil = None
 
     if seuil is not None:

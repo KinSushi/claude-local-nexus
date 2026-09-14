@@ -20,7 +20,8 @@ def charger_propositions(dossier):
             with open(chemin, "r", encoding="utf-8") as f:
                 data = json.load(f)
             result.append((chemin, data))
-        except Exception:
+        except Exception as exc:
+            print("nexus_recolte.py : open impossible : %s" % exc, file=sys.stderr)
             continue
     result.sort(key=lambda t: t[1].get("timestamp", 0))
     return result
@@ -100,7 +101,8 @@ def archiver(chemin_prop, dossier_archive):
         dest = os.path.join(dossier_archive, os.path.basename(chemin_prop))
         os.replace(chemin_prop, dest)
         return dest
-    except Exception:
+    except Exception as exc:
+        print("nexus_recolte.py : archiver impossible : %s" % exc, file=sys.stderr)
         return None
 
 

@@ -28615,3 +28615,39 @@ Consigne opérateur : « liquide au maximum la checklist par le cloud, frappes m
 * Commits : 2495d41 (outils tolérants aux clôtures, gardes fail-closed, --remplacer), 071d1fc (nexus_charge réécrit, code de sortie des épreuves), c2eb572 (garde avant verrou, vision max_tokens/raisonnement, âge ISO), **92a5b75 : correctif d'un outil cassé PAR LE COMMIT PRÉCÉDENT** — nexus_charge rendait exit 2 (NameError) pendant une dizaine de minutes, vu par SAS-BENCHMARK via le MCP ; cause : fonction posée sous un nom, appelée sous un autre, et commise sans appel réel. La règle « un appel réel par outil touché avant de commettre » est écrite en mémoire de session ; elle n'est pas encore un contrôle.
 * Rituel : cliquet d'outillage en manque (SIM105 3→4, SIM115 18→19 : cosmétique, patch du banc refusé pour ancre non unique, à reprendre avec la fonction entière).
 * File du prochain tour, dans l'ordre : (1) nexus_agent.py — réécriture d'executer() ENTIÈRE avec familles_exclues, fichiers joints absents, bascule cloud→local déclarée, plafond de raisonnement, substitutions comptées = code de sortie ; (2) contrôles de conformité gardes globales / tâches planifiées / stabilité du runner, avec la fonction modèle recopiée dans la consigne et la fonction entière comme unique ancre ; (3) nexus_vision réponse dégénérée ; (4) creer tolérant aux clôtures ; (5) nexus_sujets sections historiques ; (6) --json-tolerant sur les rendus JSON (signalement EA-MT5 : 3 rendus sur 10 refusés par json.loads pour un caractère de contrôle ou un \d) ; (7) vitrine si sain. Parallélisme : 6, jamais 12 (mesuré).
+
+#### 05:15 — « l'intégration du parc est censée être automatique » (opérateur) : la chaîne mesurée, et où elle s'est cassée
+
+Le parc local a évolué (modèles plus performants) ; l'intégration EXISTE et a tourné : la tâche quotidienne « Mise a jour » a démarré à 04:00:01, régénéré `litellm_config.yaml` à 04:12:25 (60 alias locaux, 100 model_name), joué sa conformité à 04:12:40… et s'est arrêtée à 04:13:55 : « [ERROR] Non conforme : LiteLLM n'a PAS ete redemarre » (résultat 0x1). Cause unique : le contrôle **« chiffres du README »**, BLOQUANT, compare un chiffre ÉCRIT À LA MAIN dans README.md (« 56 alias ») au parc réel (60). Un chiffre de documentation a donc bloqué le déploiement d'une configuration valide, et le proxy a tourné huit heures sur l'ancienne (« configuration active » en alerte). Le contrat était violé par le README, pas par la tâche : §0.2.1 « dérive tout, ne grave rien », §41 « préférer l'inventaire généré ».
+
+Remède en cours (rafale 34, cloud) : `nexus_state.py` régénère la ligne des chiffres du README à chaque tour (dérivée de `litellm_config.yaml`) ; le contrôle passe en AVERTISSEMENT (un chiffre de doc ne bloque plus un redémarrage validé) ; la doc du pont perd ses onze alias périmés et un contrôle « alias pont » les traquera ; LiteLLM redémarré manuellement à 05:05 sur la configuration du jour (santé HTTP 200 après 3 min de chargement — pendant ce temps, une rafale entière de sept tâches est revenue vide : ne jamais lancer de lot pendant un redémarrage du proxy, et un contrôle devrait le dire).
+
+Reste à faire pour que ce soit VRAIMENT automatique : la tâche doit relancer la conformité après avoir régénéré le README (ordre : régénérer config → régénérer README/STATE → conformité → redémarrer), et son échec doit remonter au cockpit le matin même (le contrôle « tâches planifiées », rafale en cours, lit LastTaskResult 0x1).
+
+#### 11:15 — retour de quota : quatre poses retirées de l'arbre vivant, huit défauts trouvés par l'usage, rafale 37 (49 tâches)
+
+**Une pose non commitée est un déploiement** : les sessions voisines exécutent `scripts/` et le pont tels qu'ils sont sur disque. Retirées ce tour, diff gardé sous `.nexus/` :
+
+| pose retirée | défaut, et comment il a été vu | suite |
+| --- | --- | --- |
+| `familles_exclues v7` (nexus_agent) | nom servi non normalisé (`ollama_chat/gpt-oss:120b` compté autre famille que `gpt-oss-120b-cloud`) : code 3 sur tout lot conforme ; prouvé ici par deux appels réels, subi par EA-MT5 (4 substitutions annoncées, 2 réelles) ; code mort après le `return` (F821) | v8 + épreuve, rafale 37 |
+| alias périmés du pont (server.js) | `DEFAULT_EMBED_MODEL` remplacé par la phrase « un alias expose par nexus_models », mesure 9,5 s réattribuée à granite ; `node --check` vert, vu à la lecture du diff | à refrapper : descriptions seulement, jamais une constante |
+| gardes globales v4, tâches planifiées v4 (conformité) | NameError, ligne `def` suivante consommée — troisième occurrence | v5 ancrées en fin de fonction, rafale 37 |
+| chiffres du README en AVERTISSEMENT | le rendu renvoie le jeton `AVERTISSEMENT`, l'enveloppe attend `ALERTE` : le contrôle restait BLOQUANT sous une docstring qui dit l'inverse | à refrapper avec contre-épreuve |
+
+Défauts trouvés par l'usage :
+
+* **suite complète morte en HEAD** : `test_terminal_repli` plante (fausse entrée sans `physique` depuis 5e4ddca) ; rien de ce qui suit ne tourne ;
+* `--only pont-racine-lecture` injouable : choix dérivés par une regex qui ignore `args.only == "x"` ;
+* épreuve de la sonde de schéma : étiquette après le nom, le lanceur ne la lit pas (faux vert) ;
+* `controle_taches_planifiees` existe en HEAD et n'est appelé nulle part ; il ne voit pas le 0x1 de « Mise a jour » (04:00) ;
+* la sonde de la veille charge `llama3.2:1b` à ctx 131072 (6,4 Go) toutes les dix minutes (ollama ps 10:26 et 10:47) ; l'opérateur rappelle que ce modèle hallucine → audit des sites où un modèle de 3 B ou moins sert un contenu ;
+* rafale 35 : deux correctifs de handler lisent le vide comme une panne (file locale absente, pouls absent) → retenus hors commit ;
+* moteur : 6 « TerminateProcess: Access is denied » cette nuit (dernier 02:13:50) après des chargements Vulkan en OOM — Ollama ne tue pas le runner raté : source probable des orphelins et des « Stopping... » ;
+* la copie en lecture de la table `SERVI_par_tache` d'EA-MT5 a été refusée par les permissions : non contournée.
+
+Signalements des pairs, en file : EA-MT5 (`--depuis-jsonl` prend la première ligne, sortie vide en code 0 ; replis locaux « mémoire insuffisante 5 à 7 Go » quand nexus_charge dit 25 Go libres) ; sovereign (refus au nom de `secret_scanner.py` — filtre aligné sur le pont par `controle_filtres_accordes`, conception à deux étages ; message « refusés ou absents ») ; SAS (nexus_valide refuse tout un diff dès qu'un fichier de données dépasse 32 000 caractères — patch arbitré, jamais posé automatiquement).
+
+**Relai de l'opérateur (via SAS)** : Phase E (charges mixtes, contexte long sous concurrence, routage rapide) et formalisation RAG sont des chantiers NEXUS ; les 9 couches IA de `D:/BACKUP_G` et `D:/BACKUP_H` (`Production_Industrielle_MQL5_LLM`) sont à reprendre plus largement → rafale 38.
+
+Rafale 37 : 25 tâches ciblées (défauts ci-dessus) et 24 de la traque classe 1, avec deux exceptions nouvelles dans la consigne (le vide normal reste silencieux ; le rempart d'une garde ne se touche pas) ; cloud, douze en parallèle, lancée 11:11:19.

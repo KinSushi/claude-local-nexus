@@ -61,7 +61,8 @@ def _nettoyer_memoire():
     try:
         if os.path.isfile(memoire_path):
             os.unlink(memoire_path)
-    except Exception:
+    except Exception as exc:
+        print("epreuve_garde_lecture.py : unlink impossible : %s" % exc, file=sys.stderr)
         pass  # on ne veut pas interrompre le test à cause d’une erreur de nettoyage
 
 

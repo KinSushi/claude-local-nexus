@@ -183,7 +183,8 @@ all_ok &= check(4, 'forward', expect_refuse=False, expect_mention_claude=False)
 try:
     import shutil
     shutil.rmtree(TMP_ROOT)
-except Exception:
+except Exception as exc:
+    print("epreuve_pont_racine_lecture.py : rmtree impossible : %s" % exc, file=sys.stderr)
     pass
 
 sys.exit(0 if all_ok else 1)

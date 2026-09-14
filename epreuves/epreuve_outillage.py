@@ -22,8 +22,10 @@ def _run_tool(tool_path):
         )
         return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired as e:
+        print("epreuve_outillage.py : run impossible : %s" % e, file=sys.stderr)
         return None, "", f"timeout: {e}"
     except Exception as e:
+        print("epreuve_outillage.py : run impossible : %s" % e, file=sys.stderr)
         return None, "", f"exception: {e}"
 
 def main():

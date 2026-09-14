@@ -30,7 +30,8 @@ def executer_test(args, timeout=90, capture_sortie=True):
             check=False
         )
         return resultat.returncode, resultat.stdout, resultat.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("epreuve_secours.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", "Timeout"
 
 def test_1_sortie_non_vide():

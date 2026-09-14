@@ -71,7 +71,8 @@ def forcer_utf8() -> bool:
                 continue
             reconfigurer(encoding="utf-8", errors="replace")
             change = True
-        except Exception:
+        except Exception as exc:
+            print("forcer_utf8 : reconfigure impossible : %s" % exc, file=sys.stderr)
             continue
     return change
 

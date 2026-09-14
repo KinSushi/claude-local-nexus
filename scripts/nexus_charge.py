@@ -88,7 +88,9 @@ def mesurer_ram() -> dict:
 
         engagement_go = total_vm - free_vm
         engagement_pct = (engagement_go / total_vm) * 100 if total_vm > 0 else 0
-    except Exception:
+    except Exception as exc:
+        print("mesurer_ram : subprocess.check_output impossible : %s" % exc,
+              file=sys.stderr)
         pass
 
     # Interrogation des modèles résidents
@@ -114,7 +116,9 @@ def mesurer_ram() -> dict:
             if isinstance(m, dict):
                 taille = _nombre(m.get('size'), 0)
                 ram_modeles_residents_go += taille / (1024 ** 3)
-    except Exception:
+    except Exception as exc:
+        print("mesurer_ram : urllib.request.urlopen impossible : %s" % exc,
+              file=sys.stderr)
         ram_modeles_residents_go = None
 
     return {

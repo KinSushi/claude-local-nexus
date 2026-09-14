@@ -25,6 +25,10 @@ import os
 import sys
 from typing import List, Dict, Any
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # --------------------------------------------------------------------------- #
 # Constantes Windows (définies ici mais utilisées uniquement dans les fonctions
 # qui les chargent dynamiquement)

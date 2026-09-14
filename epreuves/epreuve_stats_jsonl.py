@@ -21,7 +21,8 @@ def run(args, input_data=None):
             timeout=10,
         )
         return result.returncode, result.stdout, result.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("run : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return None, "", "Timeout expired"
 
 def write_jsonl(path, lines):

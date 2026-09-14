@@ -15,9 +15,11 @@ def run(args, input_str=None):
             timeout=10
         )
         return res.returncode, res.stdout, res.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("epreuve_posterior.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", "Timeout"
     except Exception as e:
+        print("epreuve_posterior.py : subprocess.run impossible : %s" % e, file=sys.stderr)
         return -2, "", str(e)
 
 def main():

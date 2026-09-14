@@ -108,7 +108,8 @@ def _kernel32():
         return None
     try:
         return ctypes.WinDLL("kernel32", use_last_error=True)
-    except (OSError, AttributeError):            # pragma: no cover — dépend de la plateforme
+    except (OSError, AttributeError) as exc:            # pragma: no cover — dépend de la plateforme
+        print(f"{__file__} : ctypes.WinDLL(\"kernel32\") impossible : %s" % exc, file=sys.stderr)
         return None
 
 
@@ -367,7 +368,8 @@ def processus_concurrents() -> list[dict]:
         sortie = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
                                 capture_output=True, text=True, encoding="utf-8",
                                 errors="replace", timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return []
     trouves = []
     for ligne in sortie.splitlines():

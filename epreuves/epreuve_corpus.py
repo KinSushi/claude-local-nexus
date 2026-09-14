@@ -39,7 +39,8 @@ def run_nexus_corpus(root, extensions=None, max_depth=None, json_output=False):
             timeout=TIMEOUT
         )
         return result.returncode, result.stdout, result.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("epreuve_corpus.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", "Timeout"
 
 def test_case(name, setup_func, check_func, expected_code=0):

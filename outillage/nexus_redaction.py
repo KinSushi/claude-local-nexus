@@ -80,7 +80,8 @@ def count_commits(window_hours):
             encoding='utf-8',
             errors='replace'
         )
-    except Exception:
+    except Exception as exc:
+        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return None
     if result.returncode != 0:
         return None
@@ -148,7 +149,8 @@ def count_delegated(window_hours):
             errors="replace",
             timeout=10
         )
-    except Exception:
+    except Exception as exc:
+        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
         # Le sous‑processus n’a pas pu être lancé
         return (None, "subprocess_failed")
 
@@ -265,9 +267,11 @@ def controle_auteur(fenetre_heures):
             errors="replace",
             timeout=30,
         )
-    except FileNotFoundError:
+    except FileNotFoundError as exc:
+        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return (None, None, "git not found")
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return (None, None, "git timeout")
 
     if result.returncode != 0:
