@@ -41,7 +41,13 @@ def _retry_delay(attempt):
 
 
 def _state_path():
-    """Return absolute path to the json file that stores the circuit state."""
+    """Return absolute path to the json file that stores the circuit state.
+    Uses NEXUS_ETAT_DISJONCTEUR environment variable if defined and non-empty,
+    otherwise falls back to the default path under the repository root.
+    """
+    env_path = os.environ.get("NEXUS_ETAT_DISJONCTEUR")
+    if env_path:
+        return os.path.abspath(env_path)
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     return os.path.join(base_dir, _STATE_DIR, _STATE_FILE)
 

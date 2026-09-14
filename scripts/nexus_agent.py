@@ -800,7 +800,7 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     except Exception as exc:
         print("lecture de la tracabilite du plan ratee : %s" % exc, file=sys.stderr)
 
-    return {
+    resultat = {
         "texte": texte,
         "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
@@ -820,6 +820,12 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "repli_passerelle": repli_passerelle_effectif(entetes),
         "tool_calls": (choix.get("message") or {}).get("tool_calls") or [],
     }
+    if resultat["repli_passerelle"] and not resultat.get("motif_bascule"):
+        resultat["motif_bascule"] = (
+            f"repli de la passerelle : {modele} -> {resultat['servi_par']} "
+            f"({resultat['adresse']}, plan {plan_de(entetes.get('x-litellm-model-api-base', ''))})"
+        )
+    return resultat
 
 
 def plans_par_alias(cle: str) -> Dict[str, str]:
@@ -1634,6 +1640,7 @@ def executer(tache: dict, cle: str) -> dict:
                     msg = "%s : raisonnement a epuise le budget (%s), bascule sans relever le plafond" % (
                         candidat, resultat.get("cause_vide"))
                     echecs.append(msg)
+                    troncatures.add(msg)
                     _journal_echec(msg)  # ligne où _journal_echec est défini : voir fonction locale dans executer
                     continue
                 trunc_failure = resultat
