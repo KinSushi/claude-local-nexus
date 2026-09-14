@@ -744,6 +744,10 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         corps_requete["max_tokens"] = max_tokens
     if temperature is not None:
         corps_requete["temperature"] = temperature
+    # Désactive les replis de la passerelle si NEXUS_MAX_REPLIS_LOCAUX <= 0 ou NEXUS_REPLIS_PASSERELLE == "0"
+    if MAX_REPLIS_LOCAUX <= 0 or os.environ.get("NEXUS_REPLIS_PASSERELLE") == "0":
+        corps_requete["disable_fallbacks"] = True
+        print(f"Replis de la passerelle desactives pour {modele} (NEXUS_MAX_REPLIS_LOCAUX<=0 ou NEXUS_REPLIS_PASSERELLE=0)", file=sys.stderr)
     charge = json.dumps(corps_requete).encode("utf-8")
     requete = urllib.request.Request(
         PASSERELLE + "/v1/chat/completions",
