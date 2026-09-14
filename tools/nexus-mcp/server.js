@@ -3800,8 +3800,19 @@ async function callTool(name, args) {
   // 4️⃣ acquisition du verrou (détermination du besoin de verrou)
   // Construction de la liste des modèles à utiliser
   let modelList = [];
-  if (args && args.model) {
+
+  // Cas où la liste peut être déterminée
+  if (name === 'nexus_batch' && args && Array.isArray(args.tasks)) {
+    // chaque tâche peut spécifier son modèle, sinon on utilise le modèle de chat par défaut
+    modelList = args.tasks.map(t => t.model || DEFAULT_CHAT_MODEL);
+  } else if (args && args.model) {
     modelList = [args.model];
+  } else if (args && args.profile && !args.model) {
+    // profil présent sans modèle : liste indéterminée, on laisse vide
+    modelList = [];
+  } else if (typeof name === 'string' && name.startsWith('adaptive-router')) {
+    // alias de router indéterminé
+    modelList = [];
   } else {
     switch (name) {
       case 'nexus_vision':
@@ -3811,16 +3822,11 @@ async function callTool(name, args) {
       case 'nexus_search':
         modelList = [DEFAULT_EMBED_MODEL];
         break;
-      case 'nexus_batch':
-        modelList = [DEFAULT_CHAT_MODEL];
-        break;
       default:
-        // Pour les autres outils lourds, on utilise le modèle de chat par défaut
         if (OUTILS_LOURDS.has(name)) {
           modelList = [DEFAULT_CHAT_MODEL];
         }
-        // Pour les outils dont la liste de modèles est indéterminée (router, profile, alias adaptive-router*),
-        // on laisse modelList vide afin de conserver le comportement actuel (verrou obligatoire).
+        // sinon liste vide (indéterminée)
         break;
     }
   }
@@ -3829,7 +3835,7 @@ async function callTool(name, args) {
   const isCloudModel = (m) => {
     if (!m) return false;
     if (plansConnus && plansConnus.get(m) === "cloud") return true;
-    return m.endsWith("-cloud");
+    return m.endsWith("-cloud") && !m.startsWith("adaptive-router");
   };
 
   // Si la liste est déterminée, non vide et que tous les modèles sont cloud,
