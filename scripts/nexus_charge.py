@@ -29,6 +29,69 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
+def mesurer_ram() -> dict:
+    """
+    Mesure la RAM libre, totale et la consommation des modèles résidents.
+    Retourne un dict avec les clés 'libre_go', 'totale_go', 'residents_go'.
+    En cas d'échec de chaque mesure, la valeur correspondante est None.
+    """
+    ram_libre_go = None
+    ram_totale_go = None
+    ram_modeles_residents_go = None
+
+    # Mesure de la RAM via PowerShell
+    try:
+        cmd_ram = (
+            'powershell -NoProfile -NonInteractive -Command "'
+            'Get-CimInstance Win32_OperatingSystem | '
+            'Select-Object FreePhysicalMemory, TotalVisibleMemorySize | ConvertTo-Json"'
+        )
+        res_ram = subprocess.check_output(
+            cmd_ram,
+            shell=True,
+            stderr=subprocess.DEVNULL,
+            encoding='utf-8',
+            errors='replace'
+        )
+        ram_data = json.loads(res_ram)
+        ram_libre_go = ram_data.get("FreePhysicalMemory", 0) / (1024 * 1024)
+        ram_totale_go = ram_data.get("TotalVisibleMemorySize", 0) / (1024 * 1024)
+    except Exception:
+        pass
+
+    # Interrogation des modèles résidents
+    try:
+        inference_url = os.environ.get(
+            "NEXUS_INFERENCE_URL",
+            "http://localhost:11434/api/ps"
+        )
+        with urllib.request.urlopen(inference_url, timeout=8) as response:
+            modeles_data = json.loads(response.read().decode('utf-8'))
+        # Normaliser en liste
+        if isinstance(modeles_data, dict):
+            modeles_data = modeles_data.get(
+                'models',
+                [modeles_data] if 'models' not in modeles_data else []
+            )
+        elif modeles_data is None:
+            modeles_data = []
+
+        ram_modeles_residents_go = 0.0
+        if modeles_data:
+            for m in modeles_data:
+                taille = m.get('size', 0) if isinstance(m, dict) else 0
+                ram_modeles_residents_go += taille / (1024**3)
+        else:
+            ram_modeles_residents_go = 0.0
+    except Exception:
+        ram_modeles_residents_go = None
+
+    return {
+        "libre_go": ram_libre_go,
+        "totale_go": ram_totale_go,
+        "residents_go": ram_modeles_residents_go,
+    }
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -59,37 +122,14 @@ def main():
             procs_data = []
 
         # 2. Interroger la RAM
-        cmd_ram = (
-            'powershell -NoProfile -NonInteractive -Command "'
-            'Get-CimInstance Win32_OperatingSystem | '
-            'Select-Object FreePhysicalMemory, TotalVisibleMemorySize | ConvertTo-Json"'
-        )
-        res_ram = subprocess.check_output(cmd_ram, shell=True, stderr=subprocess.DEVNULL, encoding='utf-8', errors='replace')
-        ram_data = json.loads(res_ram)
-
-        # Interroger les modèles résidents du moteur d'inférence
-        ram_modeles_residents_go = 0.0
-        etat_moteur = "injoignable"
-        inference_url = os.environ.get("NEXUS_INFERENCE_URL", "http://localhost:11434/api/ps")
-        try:
-            with urllib.request.urlopen(inference_url, timeout=8) as response:
-                modeles_data = json.loads(response.read().decode('utf-8'))
-            # Normaliser en liste
-            if isinstance(modeles_data, dict):
-                modeles_data = modeles_data.get('models', [modeles_data] if 'models' not in modeles_data else [])
-            elif modeles_data is None:
-                modeles_data = []
-            
-            if not modeles_data:
-                etat_moteur = "joignable_vide"
-            else:
-                etat_moteur = "joignable_avec_modeles"
-                for m in modeles_data:
-                    taille = m.get('size', 0) if isinstance(m, dict) else 0
-                    ram_modeles_residents_go += taille / (1024**3)
-        except Exception:
+        _ram = mesurer_ram()
+        ram_modeles_residents_go = _ram["residents_go"] if _ram["residents_go"] is not None else 0.0
+        if _ram["residents_go"] is None:
             etat_moteur = "injoignable"
-            ram_modeles_residents_go = 0.0
+        elif ram_modeles_residents_go > 0:
+            etat_moteur = "joignable_avec_modeles"
+        else:
+            etat_moteur = "joignable_vide"
 
         # Filtrage et calculs
         pid_courant = os.getpid()
@@ -129,9 +169,8 @@ def main():
                     "projet": projet
                 })
 
-        # RAM (valeurs en Ko)
-        ram_libre_go = ram_data.get("FreePhysicalMemory", 0) / (1024 * 1024)
-        ram_totale_go = ram_data.get("TotalVisibleMemorySize", 0) / (1024 * 1024)
+        ram_libre_go = _ram["libre_go"] or 0.0
+        ram_totale_go = _ram["totale_go"] or 0.0
         ram_disponible_inference_go = ram_libre_go + ram_modeles_residents_go
 
         # Verdict

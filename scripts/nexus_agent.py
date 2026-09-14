@@ -320,6 +320,92 @@ def borner_replis_locaux(candidats: list, plans: dict, maximum: int = MAX_REPLIS
                 )
     return gardes, ecartes
 
+# ----------------------------------------------------------------------
+# Fonctions pures ajoutées pour la garde‑mémoire avant repli local
+# ----------------------------------------------------------------------
+def memoire_suffisante(poids_go, libre_go, marge_go: float = 2.0) -> bool:
+    """
+    Retourne True si la mémoire libre est suffisante pour le poids du modèle
+    (avec une marge de sécurité). Règles :
+
+    - Si poids_go est None → on ne peut pas comparer, on considère qu'il y a
+      suffisamment de mémoire (True) afin de ne pas bloquer le repli.
+    - Si libre_go est None → on ne sait pas, on considère qu'il n'y a pas
+      assez de mémoire (False).
+    - Sinon, retourne poids_go + marge_go <= libre_go.
+    """
+    if poids_go is None:
+        return True
+    if libre_go is None:
+        return False
+    return (poids_go + marge_go) <= libre_go
+
+
+def tag_depuis_alias(alias: str, tags_installes: list) -> str | None:
+    """
+    Recherche le tag d'origine correspondant à un alias local.
+
+    L'alias est dérivé par `local_alias` dans nexus_generate.py.
+    Cette fonction importe `local_alias` de façon paresseuse et renvoie le
+    tag correspondant ou None si aucun ne correspond.
+    """
+    try:
+        from nexus_generate import local_alias
+    except Exception:
+        return None
+
+    for t in tags_installes:
+        try:
+            if local_alias(t) == alias:
+                return t
+        except Exception:
+            continue
+    return None
+
+
+def poids_et_libre(alias: str) -> tuple:
+    """
+    Retourne (poids_go, libre_go) pour l'alias donné.
+
+    - `installed_models()` (nexus_capability) fournit le dictionnaire
+      tag → poids.
+    - `tag_depuis_alias` permet de retrouver le tag à partir de l'alias.
+    - `mesurer_ram()` (nexus_charge) fournit la RAM libre.
+    - En cas d'échec à n'importe quelle étape, renvoie (None, None).
+    """
+    try:
+        from nexus_capability import installed_models
+    except Exception:
+        return (None, None)
+
+    try:
+        models = installed_models()
+    except Exception:
+        return (None, None)
+
+    if not models:
+        return (None, None)
+
+    tags = list(models.keys())
+    tag = tag_depuis_alias(alias, tags)
+    if tag is None:
+        return (None, None)
+
+    poids = models.get(tag)
+
+    try:
+        from nexus_charge import mesurer_ram
+    except Exception:
+        return (poids, None)
+
+    try:
+        ram = mesurer_ram()
+        libre = ram.get("libre_go")
+    except Exception:
+        libre = None
+
+    return (poids, libre)
+
 # Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
 # sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier
 # ne doit pas être accepté ici puis refusé là-bas, ou inversement, car les deux canaux
@@ -493,12 +579,19 @@ def _sans_raisonnement(texte):
     return s.rstrip()
 
 
-def reprise_utile(cause_vide) -> bool:
+SEUIL_RAISONNEMENT = int(os.environ.get("NEXUS_SEUIL_RAISONNEMENT", "4096"))
+
+
+def reprise_utile(cause_vide, plafond=0) -> bool:
     """
-    Retourne False si `cause_vide` est une chaîne commençant par "raisonnement_"
-    (relever le plafond ne changerait rien), True sinon (y compris None ou vide).
+    Retourne True si relever le plafond est utile.
+    - Si `cause_vide` ne commence pas par "raisonnement_" → True.
+    - Si commence par "raisonnement_" → True tant que `plafond` < SEUIL_RAISONNEMENT,
+      sinon False.
     """
-    return not (isinstance(cause_vide, str) and cause_vide.startswith("raisonnement_"))
+    if not (isinstance(cause_vide, str) and cause_vide.startswith("raisonnement_")):
+        return True
+    return plafond < SEUIL_RAISONNEMENT
 
 def part_repetee(texte: str, longueur_min: int = 40, repetitions: int = 5) -> float:
     """
@@ -1302,6 +1395,18 @@ def executer(tache: dict, cle: str) -> dict:
                 _t.sleep(min(_rd(len(essais) - 1), 5.0))
             except Exception:
                 pass
+        # Garde‑mémoire avant de tenter le repli local
+        if appeler._cache_plans.get(candidat) == "local" and candidat != modele:
+            poids, libre = poids_et_libre(candidat)
+            if not memoire_suffisante(poids, libre):
+                msg = "%s : ecarte, memoire insuffisante (%s Go libres pour %s Go)" % (
+                    candidat, libre, poids)
+                ecartes.append(msg)
+                _journal_echec(msg)
+                continue
+            if poids is None:
+                _journal_echec("%s : poids inconnu, repli local tente sans garde memoire" % candidat)
+
         essais.append(candidat)
         try:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
@@ -1331,7 +1436,7 @@ def executer(tache: dict, cle: str) -> dict:
             if resultat.get("tronque"):
                 # Le modèle a consommé tout son budget sans produire de texte.
                 # On consigne l'échec et on sort de la boucle pour reprendre le plafond immédiatement.
-                if not reprise_utile(resultat.get("cause_vide")):
+                if not reprise_utile(resultat.get("cause_vide"), plafond):
                     msg = "%s : raisonnement a epuise le budget (%s), bascule sans relever le plafond" % (
                         candidat, resultat.get("cause_vide"))
                     echecs.append(msg)

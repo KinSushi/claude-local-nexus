@@ -244,18 +244,56 @@ def test_reprise_utile():
     8. reprise_utile : vérifie le comportement de la fonction pure ajoutée.
     """
     ok = True
-    if not agent.reprise_utile("raisonnement_30869") is False:
+
+    # raison_30869 avec plafond grand → False
+    if agent.reprise_utile("raisonnement_30869", 8192) is False:
+        _ok("reprise_utile raison_30869/8192", "False")
+    else:
         ok = False
-        _rate("reprise_utile raison", "devrait être False")
-    if not agent.reprise_utile("contenu_present") is True:
+        _rate("reprise_utile raison_30869/8192", "devrait être False")
+
+    # raison_46 avec plafond petit → True
+    if agent.reprise_utile("raisonnement_46", 16) is True:
+        _ok("reprise_utile raison_46/16", "True")
+    else:
         ok = False
-        _rate("reprise_utile contenu", "devrait être True")
-    if not agent.reprise_utile(None) is True:
+        _rate("reprise_utile raison_46/16", "devrait être True")
+
+    # raison_46 avec plafond 4095 → True
+    if agent.reprise_utile("raisonnement_46", 4095) is True:
+        _ok("reprise_utile raison_46/4095", "True")
+    else:
         ok = False
-        _rate("reprise_utile None", "devrait être True")
-    if not agent.reprise_utile("") is True:
+        _rate("reprise_utile raison_46/4095", "devrait être True")
+
+    # raison_46 avec plafond 4096 → False
+    if agent.reprise_utile("raisonnement_46", 4096) is False:
+        _ok("reprise_utile raison_46/4096", "False")
+    else:
         ok = False
-        _rate("reprise_utile vide", "devrait être True")
+        _rate("reprise_utile raison_46/4096", "devrait être False")
+
+    # contenu_present avec plafond grand → True
+    if agent.reprise_utile("contenu_present", 8192) is True:
+        _ok("reprise_utile contenu_present/8192", "True")
+    else:
+        ok = False
+        _rate("reprise_utile contenu_present/8192", "devrait être True")
+
+    # None avec petit plafond → True
+    if agent.reprise_utile(None, 16) is True:
+        _ok("reprise_utile None/16", "True")
+    else:
+        ok = False
+        _rate("reprise_utile None/16", "devrait être True")
+
+    # vide avec plafond grand → True
+    if agent.reprise_utile("", 8192) is True:
+        _ok("reprise_utile vide/8192", "True")
+    else:
+        ok = False
+        _rate("reprise_utile vide/8192", "devrait être True")
+
     if ok:
         _ok("reprise_utile", "tous les cas passent")
     return ok
@@ -281,6 +319,50 @@ def test_degenere_detection():
         agent.texte_degenere = original
 
 
+def test_memoire_suffisante():
+    """
+    9. memoire_suffisante : différents cas de marge.
+    """
+    cas = [
+        ((20.0, 25.0), True),
+        ((20.0, 21.0), False),
+        ((None, 1.0), True),
+        ((0.5, 3.0), True),
+        ((0.5, 2.4), False),
+        ((20.0, None), False),
+    ]
+    all_ok = True
+    for (poids, libre), attendu in cas:
+        obtenu = agent.memoire_suffisante(poids, libre)
+        if obtenu != attendu:
+            all_ok = False
+            _rate("memoire_suffisante %s/%s" % (poids, libre),
+                  "attendu=%s obtenu=%s" % (attendu, obtenu))
+        else:
+            _ok("memoire_suffisante %s/%s" % (poids, libre), "ok")
+    return all_ok
+
+
+def test_tag_depuis_alias():
+    """
+    10. tag_depuis_alias : résolution d'alias local.
+    """
+    alias = "qwen3-coder-30b-local"
+    tags = ["qwen3-coder:30b", "llama3.2:1b"]
+    attendu = "qwen3-coder:30b"
+    obtenu = agent.tag_depuis_alias(alias, tags)
+    if obtenu != attendu:
+        _rate("tag_depuis_alias %s" % alias,
+              "attendu=%s obtenu=%s" % (attendu, obtenu))
+        return False
+    # alias inconnu
+    if agent.tag_depuis_alias("inconnu-local", tags) is not None:
+        _rate("tag_depuis_alias inconnu", "devrait retourner None")
+        return False
+    _ok("tag_depuis_alias", "ok")
+    return True
+
+
 def main():
     failures = 0
 
@@ -299,6 +381,10 @@ def main():
     if not test_reprise_utile():
         failures += 1
     if not test_degenere_detection():
+        failures += 1
+    if not test_memoire_suffisante():
+        failures += 1
+    if not test_tag_depuis_alias():
         failures += 1
 
     sys.exit(1 if failures else 0)

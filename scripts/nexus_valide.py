@@ -34,6 +34,84 @@ PLATEFORME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PLATEFORME, "scripts"))
 import nexus_agent as agent  # noqa: E402
 
+# ---------------------------------------------------------------------------
+# Verrou d'instance unique
+# ---------------------------------------------------------------------------
+
+import atexit
+import tempfile
+
+def verrou_est_libre(contenu: str, pid_vivant) -> bool:
+    """
+    Retourne True si le verrou est libre.
+    - contenu vide ou illisible → libre
+    - sinon le PID contenu doit ne plus être vivant.
+    """
+    if not contenu or not contenu.strip():
+        return True
+    try:
+        pid = int(contenu.strip())
+    except ValueError:
+        return True
+    return not pid_vivant(pid)
+
+def _pid_vivant_defaut(pid: int) -> bool:
+    """Détection de processus vivant selon la plateforme."""
+    if os.name == "nt":
+        # Windows : tasklist
+        try:
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
+            )
+            return str(pid) in result.stdout
+        except Exception:
+            return False
+    else:
+        # Unix : os.kill avec signal 0
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+def prendre_verrou(chemin: str, pid: int, pid_vivant=_pid_vivant_defaut) -> bool:
+    """
+    Essaie de prendre le verrou.
+    - Lit le fichier s'il existe et applique `verrou_est_libre`.
+    - Si libre, écrit atomiquement le PID courant.
+    - Retourne True si le verrou a été pris, sinon False.
+    """
+    try:
+        contenu = ""
+        if os.path.isfile(chemin):
+            with open(chemin, "r", encoding="utf-8", errors="replace") as fh:
+                contenu = fh.read()
+        if not verrou_est_libre(contenu, pid_vivant):
+            return False
+
+        # écriture atomique
+        dir_name = os.path.dirname(chemin)
+        fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(str(pid))
+        os.replace(tmp_path, chemin)
+        return True
+    except Exception:
+        return False
+
+def _liberer_verrou(chemin: str, pid: int):
+    """Supprime le verrou si c'est bien notre PID."""
+    try:
+        if not os.path.isfile(chemin):
+            return
+        with open(chemin, "r", encoding="utf-8", errors="replace") as fh:
+            contenu = fh.read().strip()
+        if contenu == str(pid):
+            os.remove(chemin)
+    except Exception:
+        pass
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -663,6 +741,17 @@ def main():
         help="Modele juge. Defaut %s, ou NEXUS_VALIDE_MODELE. A nommer en "
              "local quand le plan cloud est indisponible." % MODELE_JUGE)
     args = parser.parse_args()
+
+    # -----------------------------------------------------------------------
+    # Verrou d'instance unique : on ne doit lancer qu'une seule validation à la fois
+    # -----------------------------------------------------------------------
+    lock_path = os.path.join(PLATEFORME, ".nexus", "valide.lock")
+    my_pid = os.getpid()
+    if not prendre_verrou(lock_path, my_pid):
+        print(f"REFUS : une autre instance de nexus_valide tourne (PID {my_pid}) -- attendre sa fin ou la tuer")
+        return 2
+    # S'assurer que le verrou est libéré à la sortie du script
+    atexit.register(_liberer_verrou, lock_path, my_pid)
 
     # -----------------------------------------------------------------------
     # Détermination du périmètre : travail non commité vs comparaison de commits
