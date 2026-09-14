@@ -28817,3 +28817,28 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] `conformite_epreuves_repli_et_profils` : AVANT introuvable deux fois, il faut l'ancre littérale.
 
 **Délégué ce tour** : 101 tâches au banc cloud. **Arbitré ici** : sept triages en worktree, cinq commits, une trentaine de refus motivés et renvoyés.
+
+#### 15:55 — le pont ne bloque plus le cloud, sémaphore cloud par requête, plafond effectif du compte mesuré
+
+**Posé et éprouvé en réel :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| 24d5734 | un appel MCP tout-cloud ne prend plus le verrou banc | pendant un tour local : pont vivant en code 75 après 5 min, pont patché « OK » en quelques secondes ; audit tiers d'EA MT5 conforme sur ce chemin |
+| f2983cd | sémaphore cloud machine par requête dans `nexus_agent`, 10 places | appel réel rendu ; une place tenue par un autre processus, l'appel échoue en « plafond cloud machine atteint » sans partir |
+| 83e32ce, edbf228 | `nexus_lot_controle` : arrêt coopératif de lot et sonde cloud, puis CLI en options | épreuve à 17 cas sur 17, contre-épreuve sans module, `--etat` à 0 |
+
+**Plafond effectif du compte Pro, mesuré dans `LiteLLM_SpendLogs`** : 12 à 13 requêtes en vol sans refus. À 16 en vol, 12 refus 429 « too many concurrent requests » en 5 minutes. La veille du quota ne cherchait que « concurrent request slot » ; elle compte désormais les deux messages. Répartition machine ramenée à 12 : 8 ici, 2 et 2.
+
+**Erreur de cette session, corrigée** : le message de 83e32ce disait « --arreter ../x rend 2 » sans voir que ce 2 venait d'argparse, qui ne connaissait pas l'option. L'épreuve passait pour une mauvaise raison ; le cas CLI est renforcé dans la rafale 51.
+
+**Trouvé par l'usage :** le cas 11 d'`epreuve_sonde_mcp` (génération MCP réelle) ratait sur le pont vivant parce que le banc était tenu : c'était le défaut de 24d5734, pas une épreuve cassée.
+
+**Audit tiers de 24d5734 par EA MT5, trois chemins ouverts par défaut** (lot mixte, profil sans modèle, alias de routeur suffixé `-cloud`) : fermés aujourd'hui par le défaut local de `DEFAULT_CHAT_MODEL`, mais un contournement ne doit pas dépendre d'un défaut. Le durcissement « liste résolue ou verrou » est en rafale 51.
+
+**Ouverts :**
+- [ ] durcissement du pont, résolution stricte (rafale 51) ;
+- [ ] chaîne `issues_generation` de la veille, v2 à v4 posées en worktree : lecture de `issues_path` hors du `if journal:`, et épreuve qui lançait la VRAIE purge des orphelins, deux défauts renvoyés en rafale 51 ;
+- [ ] `agent_verrou_lot_local_seulement` v4 à éprouver après le tour local de 16:04 ;
+- [ ] outil de pose v6, outil de quota v5, arrêt du cloud sur quota v5 et son épreuve (rafale 51) ;
+- [ ] file d'attente du verrou banc : cinq rendus refusés ; réduire la portée à la seule fonction `verrou`.
