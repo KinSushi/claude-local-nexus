@@ -28766,3 +28766,26 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 **Audit tiers demandé** (temps 3 de la LOI 1) : EA MT5 et SAS relisent ce commit en lecture seule.
 
 **Ouvert** : un runner de qwen3-coder:30b a été chargé à 14:46 avec une fenêtre de 262 144 jetons, soit 44 Go, alors que l'alias déclare `num_ctx: 8192`. Un appel sans `num_ctx` hérite du défaut du moteur, dimensionné sur la mémoire annoncée par Vulkan. Il faut trouver l'émetteur et borner le défaut (`OLLAMA_CONTEXT_LENGTH`) après mesure.
+
+#### 15:01 — trois correctifs locaux posés, un refusé ; la veille du moteur rechargeait elle-même le résidant à 44 Go, tâche NexusTraque en pause ; audit tiers d'EA MT5
+
+**Tour (a) de cette session sur le banc local**, rafale 41L, qwen3-coder-30b-local, de 14:50 à 14:54 :
+
+| tâche | décision | preuve |
+| --- | --- | --- |
+| `agent_disable_fallbacks_passerelle` | POSÉ, ee2c3c7 | essai réel, quota épuisé : échec explicite en 15 s au lieu de 900 s, aucune requête vers le moteur local dans `LiteLLM_SpendLogs` |
+| `reprise_pointeur_ressources` | POSÉ, 7189dee | le hook imprime la ligne `[RESSOURCES-A-FOND]` |
+| `charge_json_caracteres_controle` | POSÉ, 1cf792e, 3 blocs sur 4 | verdict rendu en 6 s ; le 4e bloc touchait la réponse HTTP d'Ollama, hors consigne |
+| `agent_quota_cloud_arret` | REFUSÉ | blocs 1 et 3 chevauchants, `global` après usage (SyntaxError), `depuis` en epoch ; renvoyé au cloud avec les trois défauts nommés |
+
+**Trouvé par l'usage** : NexusTraque lance la veille du moteur toutes les 10 minutes. Sa sonde poste `/api/chat` au moteur sans `num_ctx`, et le résidant est rechargé au contexte par défaut. À 14:46:14 et 14:56:14, qwen3-coder:30b est passé de 8 192 à 262 144 jetons, soit de 19 à 44 Go, avec 1,99 Go de RAM libre ; l'appel suivant de la passerelle l'a rechargé à 8 192. La veille censée repérer les runners bloqués provoquait elle-même des rechargements de 20 à 44 Go. `/api/ps` rend pourtant `context_length`. **Tâche NexusTraque désactivée à 15:00:49** ; son correctif et son épreuve sont en tête de la rafale 43, et la tâche sera réactivée après la pose.
+
+**Audit tiers de fd6e1d5 par EA MT5** : points 1 à 3 conformes. Point 4 expliqué : `litellm_health_check: true` figure dans les `litellm_params` d'alias locaux et part comme option du moteur à chaque requête ordinaire, d'où une ligne `invalid option` par requête, sans rafale. Question d'audit retenue comme défaut : routage par santé coupé, un alias local mort à déploiement unique reste choisi sans limite, car `allowed_fails` ne refroidit pas un groupe à déploiement unique (lecture du code installé, non éprouvée).
+
+**Ouverts :**
+- [ ] réactiver NexusTraque après la pose de `veille_sonde_contexte_residant` ;
+- [ ] `allowed_fails_policy` par déploiement local (`TimeoutErrorAllowedFails`) ou délai propre aux alias locaux, avec épreuve réelle sur un modèle local arrêté ;
+- [ ] `litellm_health_check` retiré des `litellm_params` des alias, à la source du générateur si c'est lui qui l'écrit ;
+- [ ] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (renvoyé au cloud).
+
+**Délégué ce tour** : 4 tâches au banc local ; rafale 43 (20 tâches, modèles bon marché) armée pour le retour du quota. **Arbitré ici** : trois poses, un refus, la pause de NexusTraque.
