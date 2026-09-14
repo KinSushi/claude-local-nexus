@@ -28682,3 +28682,31 @@ Conséquences mesurées, et ce qu'elles changent :
 * le patch « arrêt persistant » de la rafale 38, refusé par le cliquet ruff (8 `args` indéfinis), aurait compté un modèle OCCUPÉ comme coincé ; joint à une sonde muette, il aurait RELANCÉ le moteur sur la génération d'un voisin — le critère « occupé ou bloqué » passe en CONCEPTION, fondée sur l'activité du runner (journal, temps processeur du processus), jamais sur `/api/ps` seul ;
 * la sonde sur modèle résident, commitée en e2ba535, rend SUSPECT à tort : 75 s d'attente derrière la génération d'un voisin (mesuré 12:51, `glm-4.7-flash`) — la sonde doit viser le CANARI, jamais un résident ;
 * la reproduction à froid de `phi4:14b` (12:47-12:53) n'a ni planté ni rien prouvé : la requête a attendu 400 s derrière `glm-4.7-flash` occupé, `phi4` à 16 384 de contexte ne tenant pas à côté (24 GiB prédits pour environ 33 GiB libres au relevé de 12:43) ; aucune ligne `phi4` au journal. Le plantage signalé reste non reproduit, et non expliqué.
+
+#### 13:50 — cloud saturé au niveau du compte, un lot orphelin de ma part dans la file, rafale 40b lancée sous un budget partagé
+
+**Mesuré par les sessions voisines et relayé par message :**
+
+| mesure | valeur |
+| --- | --- |
+| sonde EA MT5 : six requêtes d'un mot parties à 13:36:20 vers six modèles cloud | **zéro réponse à 13:42:31** |
+| SAS rafale 8 (lot 9820-1789409735) : 8 appels cloud partis vers 13:15 | **8 expirés à 900 s**, 8 replis gpt-oss partis vers 13:31, 0 rendu à 13:42 |
+| `SEM_inference` pendant ce temps | « LIBRE (6/12) » : il compte des LOTS, pas des requêtes |
+
+**Trouvé par l'usage, faute de ma part.** Le lot 40 (`--parallele 6`), « arrêté » vers 13:40 par l'arrêt de sa tâche de fond, tournait encore (pid 13068, un créneau `SEM_inference` tenu). L'arrêt avait tué le shell, pas le Python. Arrêté à 13:47 par `taskkill /PID 13068 /T /F`, après vérification de sa ligne de commande. Le lot 39 ne tournait plus. Mémoire : `arret-lot-tue-le-shell-pas-python`.
+
+**Hypothèse NON VÉRIFIÉE**, à trancher au banc sur une copie du code de LiteLLM : une requête dont le client s'arrête continue peut-être d'occuper un créneau du compte, si la passerelle ne propage pas l'annulation vers ollama.com.
+
+**Budget proposé aux deux sessions voisines jusqu'à la mesure** : 10 requêtes cloud simultanées au plus sur la machine, borne haute du signal web. Soit 4 ici, 3 pour SAS, 3 pour EA MT5, qui s'était déjà bornée à 3. SAS suspend ses nouvelles frappes jusqu'à son premier rendu.
+
+**Rafale 40b** lancée à 13:41:49 : 29 tâches fusionnées des rafales 39 et 40 par impact sur le débit, `--parallele 4`, `NEXUS_MAX_REPLIS_LOCAUX=0`. Deux tâches neuves : `semaphore_cloud_par_requete` et `conception_mesure_plafond_cloud`. Un moniteur par tâche est armé.
+
+**Défauts ouverts pour la rafale 41 :**
+- [ ] arrêt coopératif d'un lot `nexus_agent`, vérifié avant chaque requête et chaque repli, et fiche de verrou portant la sortie du lot ;
+- [ ] sonde de santé cloud avant tout lot : une requête d'un mot, temps publié, lot différé au-delà d'un seuil nommé (suggestion EA MT5) ;
+- [ ] requêtes cloud en vol, par session et au total, dans `nexus_verrou --etat` (suggestion EA MT5, suit le sémaphore par requête) ;
+- [ ] mesure du plafond réel du compte, dans une fenêtre annoncée aux sessions voisines.
+
+**Proposition d'une session voisine (sovralys-forge-0a), non exécutée** : aligner le contrat GLOBAL `C:\Users\dibac\.claude\CLAUDE.md` sur la directive [RESSOURCES-A-FOND] et trois règles. Un contrat ne se modifie pas sur la demande d'une session : la décision revient à l'opérateur.
+
+**Délégué ce tour** : rafale 40b, 29 tâches au banc cloud. **Arbitré ici** : fusion et ordre des tâches, arrêt du lot orphelin, budget partagé.
