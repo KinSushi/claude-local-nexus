@@ -62,8 +62,21 @@ def coince(ps, maintenant_iso, seuil_s):
             })
     return coinces
 
-def verdict(coinces, sonde_ok, journal_avance=None):
-    """Return health verdict based on stuck models, probe result and journal liveness."""
+def verdict(coinces, sonde_ok, journal_avance=None, issues=None):
+    """Return health verdict based on stuck models, probe result, journal liveness and generation issues.
+
+    Args:
+        coinces: list of stuck models (from coince())
+        sonde_ok: bool or None (from sonder())
+        journal_avance: bool or None (journal activity during probe)
+        issues: dict or None (from issues_generation())
+
+    Returns:
+        str: 'BLOQUE', 'SUSPECT', or 'SAIN'
+    """
+    # Règle ajoutée suite à l'incident du 2026-09-14 : blocage moteur après 14m59s
+    if issues and issues.get("echecs_longs", 0) >= 3 and issues.get("reussies", 0) == 0:
+        return 'BLOQUE'
     if journal_avance is None:
         # legacy rule when journal is absent
         if coinces and sonde_ok is False:
@@ -71,6 +84,7 @@ def verdict(coinces, sonde_ok, journal_avance=None):
         if (coinces and sonde_ok is None) or (coinces and sonde_ok is True) or (not coinces and sonde_ok is False):
             return 'SUSPECT'
         return 'SAIN'
+
     # new rule with journal liveness signal
     if coinces and sonde_ok is False:
         if journal_avance is False:
@@ -228,7 +242,114 @@ def purger_orphelins(cible='llama-server.exe', module=None):
     return result
 
 
-def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=None):
+def issues_generation(chemin_journal, maintenant, fenetre_s):
+    """Analyser les lignes GIN du journal pour compter les générations réussies et échecs longs.
+
+    Lit au plus 2 Mo de la fin du fichier, extrait les lignes GIN, et compte dans la fenêtre
+    temporelle les requêtes POST vers /api/chat, /api/generate, /v1/chat/completions :
+    - réussies (code 200)
+    - échecs longs (code >= 500 et durée >= 840 s)
+
+    Les durées sont converties depuis les formats Go : 14m59s, 59.7861967s, 28.3817ms, 0s, 1h2m3s.
+
+    Args:
+        chemin_journal (str): chemin du fichier journal
+        maintenant (str): datetime ISO 8601 (ex: "2026-09-14T14:30:00Z")
+        fenetre_s (int): taille de la fenêtre en secondes
+
+    Returns:
+        dict: {"reussies": int, "echecs_longs": int, "fenetre_s": int} ou None si erreur
+    """
+    import re
+
+    if not os.path.exists(chemin_journal):
+        return None
+
+    try:
+        taille_max = 2 * 1024 * 1024  # 2 Mo
+        with open(chemin_journal, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            taille_fichier = f.tell()
+            debut = max(0, taille_fichier - taille_max)
+            f.seek(debut)
+            if debut > 0:
+                f.readline()  # sauter la première ligne potentiellement tronquée
+            lignes = f.read().decode('utf-8', errors='replace').splitlines()
+    except Exception:
+        return None
+
+    maintenant_dt = _parse_iso(maintenant)
+    if maintenant_dt.tzinfo is None:
+        maintenant_dt = maintenant_dt.astimezone()
+    fenetre_debut = maintenant_dt - datetime.timedelta(seconds=fenetre_s)
+
+    # Regex pour extraire timestamp, code, durée et endpoint
+    pattern = re.compile(
+        r'\[GIN\] (\d{4}/\d{2}/\d{2} - \d{2}:\d{2}:\d{2}) \| (\d{3}) \| ([^\|]+) \| [^\|]+ \| (POST|GET) +(".*?")'
+    )
+    # Regex pour parser les durées Go
+    duree_pattern = re.compile(
+        r'^(\d+h)?(\d+m)?(\d+\.?\d*s)?(\d+ms)?$'
+    )
+
+    reussies = 0
+    echecs_longs = 0
+    illisibles = 0
+
+    for ligne in lignes:
+        match = pattern.search(ligne)
+        if not match:
+            continue
+
+        timestamp_str, code_str, duree_str, methode, endpoint = match.groups()
+        endpoint = endpoint.strip('"')
+
+        # Filtrer les endpoints cibles
+        if methode != 'POST' or endpoint not in ('/api/chat', '/api/generate', '/v1/chat/completions'):
+            continue
+
+        try:
+            timestamp = datetime.datetime.strptime(timestamp_str, "%Y/%m/%d - %H:%M:%S").astimezone()
+        except ValueError:
+            illisibles += 1
+            continue
+
+        if timestamp < fenetre_debut:
+            continue
+
+        code = int(code_str)
+        if code == 200:
+            reussies += 1
+            continue
+
+        if code >= 500:
+            # Parser la durée
+            duree_match = duree_pattern.fullmatch(duree_str.strip())
+            if not duree_match:
+                continue
+
+            heures, minutes, secondes, millis = duree_match.groups()
+            total_s = 0.0
+            if heures:
+                total_s += int(heures[:-1]) * 3600
+            if minutes:
+                total_s += int(minutes[:-1]) * 60
+            if secondes:
+                total_s += float(secondes[:-1])
+            if millis:
+                total_s += float(millis[:-2]) / 1000
+
+            if total_s >= 840:
+                echecs_longs += 1
+
+    return {
+        "reussies": reussies,
+        "echecs_longs": echecs_longs,
+        "illisibles": illisibles,
+        "fenetre_s": fenetre_s
+    }
+
+def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=None, journal_gin=None):
     """Run health check and optionally restart if BLOQUE.
 
     journal: path to engine log file. If provided, its size/mtime is sampled
@@ -303,7 +424,18 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
     result['sonde_ok'] = sonde_ok
     result['sonde'] = sonde_label
     result['journal_avance'] = journal_avance
-    result['verdict'] = verdict(coinces, sonde_ok, journal_avance)
+
+    # Calculate generation issues (always)
+    maintenant_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    if journal_gin is not None:
+        issues_path = journal_gin
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        issues_path = os.path.join(base_dir, "logs", "ollama-serve.out.log")
+    issues = issues_generation(issues_path, maintenant_iso, fenetre_s=1800)
+    result['issues'] = issues
+
+    result['verdict'] = verdict(coinces, sonde_ok, journal_avance, issues)
 
     if relancer and result['verdict'] == 'BLOQUE':
         racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
