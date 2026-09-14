@@ -286,6 +286,8 @@ except ValueError:
     print(f"NEXUS_MAX_REPLIS_LOCAUX invalide (valeur='{os.environ.get('NEXUS_MAX_REPLIS_LOCAUX')}'), utilisation de la valeur par défaut 2", file=sys.stderr)
     MAX_REPLIS_LOCAUX = 2
 
+QUOTA_CLOUD_EPUISE = None
+
 def borner_replis_locaux(candidats: list, plans: dict, maximum: int = MAX_REPLIS_LOCAUX) -> tuple:
     """
     Retourne une paire (candidats_gardes, ecartes).
@@ -1619,6 +1621,9 @@ def executer(tache: dict, cle: str) -> dict:
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
+        if QUOTA_CLOUD_EPUISE and appeler._cache_plans.get(candidat) == "cloud":
+            ecartes.append("%s : ecarte, limite d'usage du compte cloud atteinte depuis %s" % (candidat, QUOTA_CLOUD_EPUISE["depuis"]))
+            continue
         # BACKOFF EXPONENTIEL AVEC JITTER entre deux tentatives, patron du livre :
         # start 100 ms, double a chaque essai, plafonne a 30 s, plus un tirage
         # aleatoire qui evite que plusieurs agents reessaient au meme instant.
@@ -1648,7 +1653,7 @@ def executer(tache: dict, cle: str) -> dict:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
         except urllib.error.HTTPError as exc:
             try:
-                detail = exc.read().decode("utf-8", "replace")[:300]
+                detail = exc.read().decode("utf-8", "replace")[:2000]
             except Exception:
                 detail = "<corps d'erreur illisible>"
             if temperature is not None and "temperature" in detail.lower():
@@ -1659,6 +1664,8 @@ def executer(tache: dict, cle: str) -> dict:
                     _journal_echec("%s : %s" % (candidat, second))
                     continue
             else:
+                if exc.code == 429 and "usage limit" in detail.lower():
+                    globals()["QUOTA_CLOUD_EPUISE"] = {"depuis": time.strftime("%Y-%m-%dT%H:%M:%S"), "message": detail[:200]}
                 echecs.append("%s : HTTP %s : %s" % (candidat, exc.code, detail))
                 _journal_echec("%s : HTTP %s : %s" % (candidat, exc.code, detail))
                 continue
