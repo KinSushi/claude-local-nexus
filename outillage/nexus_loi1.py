@@ -12,9 +12,10 @@ import json
 import sys
 import subprocess
 from pathlib import Path
+from datetime import datetime, timedelta
 
-def _load_traces(max_entries=400):
-    """Charge les textes des traces les plus recentes (max_entries)."""
+def _load_traces(base=None, plancher=400):
+    """Charge les textes des traces les plus recentes (plancher) entre base et 24h avant."""
     script_dir = Path(__file__).resolve().parent
     sys.path.insert(0, str(script_dir))
     try:
@@ -23,15 +24,43 @@ def _load_traces(max_entries=400):
         raise RuntimeError(f"Impossible d'importer nexus_verbatim: {e}") from e
 
     entries, _ = charger_index()
-    # Journal en AJOUT (JSONL) : ordonne du plus ancien au plus recent (4141 entrees mesurees)
-    selected = entries[-max_entries:] if max_entries else []
+    # Determine threshold based on base commit
+    seuil = None
+    if base is not None:
+        try:
+            # Obtain commit date string in local format YYYYMMDD-HHMMSS
+            result = subprocess.run(
+                ["git", "log", "-1", "--format=%cd", "--date=format-local:%Y%m%d-%H%M%S", base],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if result.returncode == 0:
+                commit_dt_str = result.stdout.strip()
+                commit_dt = datetime.strptime(commit_dt_str, "%Y%m%d-%H%M%S")
+                seuil_dt = commit_dt - timedelta(hours=24)
+                seuil = seuil_dt.strftime("%Y%m%d-%H%M%S")
+        except Exception:
+            seuil = None
+
+    if seuil is not None:
+        # Keep entries whose id timestamp >= seuil
+        selected = [e for e in entries if e.get("id", "")[:15] >= seuil]
+        # If fewer than plancher, fall back to last plancher entries
+        if len(selected) < plancher:
+            selected = entries[-plancher:] if plancher else []
+    else:
+        # Fallback to current behaviour
+        selected = entries[-plancher:] if plancher else []
+
     texts = []
     for e in selected:
         ident = e.get("id")
         if ident:
             txt = lire(ident)
             if txt is not None:
-                texts.append(txt)
+                texts.append(_normaliser_espaces(txt))
     return texts, len(selected)
 
 def _git_diff_name_only(base):
@@ -71,9 +100,14 @@ def _git_added_lines(base, path):
                 added.append(content)
     return added
 
+def _normaliser_espaces(s):
+    """Replace non‑breaking and narrow spaces with ordinary space."""
+    return s.replace(" ", " ").replace(" ", " ").replace(" ", " ")
+
 def _is_delegated(line, traces):
     """Determine si la ligne apparait dans au moins une trace."""
-    return any(line in txt for txt in traces)
+    norm_line = _normaliser_espaces(line)
+    return any(norm_line in txt for txt in traces)
 
 def _print_table(stats):
     """Affiche un tableau simple des resultats."""
@@ -105,8 +139,8 @@ def main():
         files = _git_diff_name_only(args.base)
 
         # Etape 5 : charger les traces du banc
-        traces, loaded_count = _load_traces()
-        print(f"Traces chargees : {loaded_count}")
+        traces, loaded_count = _load_traces(args.base)
+        print(f"Traces chargees : {loaded_count} (fenetre : depuis 24 h avant {args.base})")
 
         # Collecte des stats
         stats = {}

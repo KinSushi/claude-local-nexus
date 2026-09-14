@@ -214,6 +214,28 @@ def test_degenere():
     else:
         _ok("degenere bloc", "True")
 
+    # cas (a) pytest généré
+    texte_pytest = ""
+    for i in range(10):
+        texte_pytest += f"def test_cas_{i}():\n"
+        texte_pytest += "    with pytest.raises(ValueError):\n"
+        texte_pytest += f"        fonction_sous_test({i})\n"
+        texte_pytest += f"    assert resultat_{i} == attendu_{i}\n"
+    if not (not agent.texte_degenere(texte_pytest) and agent.part_repetee(texte_pytest) < 0.6):
+        all_ok = False
+        _rate("degenere pytest", f"part={agent.part_repetee(texte_pytest):.2f}")
+    else:
+        _ok("degenere pytest", f"part={agent.part_repetee(texte_pytest):.2f}")
+
+    # cas (b) paragraphe répété
+    paragraphe = "z" * 60
+    texte_para = "\n".join([paragraphe] * 15)
+    if not (agent.texte_degenere(texte_para) and agent.part_repetee(texte_para) >= 0.6):
+        all_ok = False
+        _rate("degenere paragraphe", f"part={agent.part_repetee(texte_para):.2f}")
+    else:
+        _ok("degenere paragraphe", f"part={agent.part_repetee(texte_para):.2f}")
+
     return all_ok
 
 

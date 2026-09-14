@@ -500,6 +500,32 @@ def reprise_utile(cause_vide) -> bool:
     """
     return not (isinstance(cause_vide, str) and cause_vide.startswith("raisonnement_"))
 
+def part_repetee(texte: str, longueur_min: int = 40, repetitions: int = 5) -> float:
+    """
+    Retourne la fraction de caractères du texte (hors espaces de tête/fin de chaque ligne)
+    appartenant à des lignes d'au moins ``longueur_min`` caractères qui apparaissent
+    au moins ``repetitions`` fois.
+    Le calcul ignore les lignes vides et les espaces de début/fin.
+    Si aucune ligne ne satisfait le critère, retourne 0.0.
+    """
+    if not texte:
+        return 0.0
+    # Nettoyage des lignes : strip des espaces de tête/fin, on garde les lignes suffisamment longues
+    lignes = [l.strip() for l in texte.splitlines() if len(l.strip()) >= longueur_min]
+    if not lignes:
+        return 0.0
+    from collections import Counter
+    compteur = Counter(lignes)
+    # Sélection des lignes qui apparaissent au moins ``repetitions`` fois
+    lignes_repetees = {ligne for ligne, cnt in compteur.items() if cnt >= repetitions}
+    if not lignes_repetees:
+        return 0.0
+    # Calcul du nombre total de caractères (hors espaces de tête/fin) du texte
+    total_chars = sum(len(l) for l in lignes)
+    # Caractères appartenant aux lignes répétées
+    rep_chars = sum(len(l) * compteur[l] for l in lignes_repetees)
+    return rep_chars / total_chars if total_chars else 0.0
+
 
 def texte_degenere(texte, longueur_min: int = 40, repetitions: int = 5) -> bool:
     """
@@ -517,18 +543,12 @@ def texte_degenere(texte, longueur_min: int = 40, repetitions: int = 5) -> bool:
     if not texte:
         return False
 
-    # 1. Recherche de lignes répétées
-    lignes = [
-        l.strip()
-        for l in texte.splitlines()
-        if len(l.strip()) >= longueur_min
-    ]
-    if lignes:
-        from collections import Counter
-        if any(cnt >= repetitions for cnt in Counter(lignes).values()):
-            return True
+    # 1. Critère de lignes répétées via part_repetee
+    part = part_repetee(texte, longueur_min=longueur_min, repetitions=repetitions)
+    if part >= 0.6:
+        return True
 
-    # 2. Recherche de blocs répétés (fenêtre glissante)
+    # 2. Recherche de blocs répétés (fenêtre glissante) – critère inchangé
     compact = "".join(texte.splitlines())
     if len(compact) < 200:
         return False
@@ -1266,6 +1286,7 @@ def executer(tache: dict, cle: str) -> dict:
     ecartes.extend(_ecartes_plafond)
 
     trunc_failure = None          # garde le premier échec par troncature
+    dernier_degenere = None       # mémorise le dernier résultat dégenéré
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
             continue
@@ -1327,6 +1348,8 @@ def executer(tache: dict, cle: str) -> dict:
             _journal_echec("%s : reponse vide (%d jetons consommes)" % (candidat, resultat.get("tokens", 0)))
             continue
         if texte_degenere(resultat.get("texte") or ""):
+            # On ne jette pas le rendu dégenéré : on le mémorise pour un éventuel retour.
+            dernier_degenere = resultat
             echecs.append("%s : reponse degeneree (meme bloc repete, %d jetons)"
                           % (candidat, resultat.get("tokens", 0)))
             _journal_echec("%s : reponse degeneree (meme bloc repete, %d jetons)" % (candidat, resultat.get("tokens", 0)))
@@ -1415,6 +1438,21 @@ def executer(tache: dict, cle: str) -> dict:
             return resultat
         return trunc_failure
 
+    # Aucun candidat n'a produit de texte ; si on a mémorisé un résultat dégenéré, le retourner.
+    if dernier_degenere is not None:
+        part = part_repetee(dernier_degenere.get("texte") or "", longueur_min=40, repetitions=5)
+        dernier_degenere.update({
+            "nom": nom,
+            "modele": dernier_degenere.get("modele", candidat),
+            "refus": refus,
+            "plan": plan_de(dernier_degenere.get("adresse", "?")),
+            "demande_initiale": modele,
+            "degenere": True,
+            "motif_degenere": f"meme bloc repete (part {part*100:.0f} %%)",
+            "bascule": plan_de(dernier_degenere.get("adresse", "?"))
+        })
+        return dernier_degenere
+
     return {"nom": nom, "modele": modele,
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
@@ -1457,6 +1495,8 @@ def rendre(resultat: dict) -> None:
     if resultat.get("degrade"):
         print("[DEGRADE] " + resultat.get("motif_degrade", ""))
         print("[DEGRADE] reponse a ne pas utiliser sans relecture : le modele servi est bien plus petit que celui demande (--accepter-degrade pour lever le code 3)")
+    if resultat.get("degenere"):
+        print("[DEGENERE] " + resultat.get("motif_degenere", ""))
     print("  %s" % resultat["nom"])
     if resultat.get("erreur"):
         print("  ECHEC : %s" % resultat["erreur"])
@@ -1967,7 +2007,7 @@ def main() -> int:
     if factures:
         print("  [!] %d tache(s) servies par Anthropic, donc FACTUREES : %s"
               % (len(factures), ", ".join(r["nom"] for r in factures)))
-    if any(r.get("degrade") for r in resultats) and not args.accepter_degrade:
+    if (any(r.get("degrade") for r in resultats) and not args.accepter_degrade) or any(r.get("degenere") for r in resultats):
         return 3
     return 1 if echecs else 0
 
