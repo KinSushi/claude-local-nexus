@@ -28911,3 +28911,32 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] épreuves jouées par la suite qui appelleraient elles-mêmes un modèle : inventaire à faire.
 
 **Délégué ce tour** : rafales 56 et 57, 27 tâches au banc cloud, dont sept audits par une troisième famille, gemma4-31b-cloud. **Arbitré ici** : trois triages, sept commits scriptés sans retape, quatre rendus réancrés ou assemblés à l'arbitrage et dits comme tels dans leurs commits.
+
+#### 19:45 — cinq commits de plus, créneau cloud du pont prouvé en réel, défauts nommés ligne par ligne pour les correctifs restants
+
+**Posé et éprouvé :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| b82092a | verrou de lot : banc pour les seules tâches locales, 75 en fin de lot | épreuve du banc sur l'état exact du commit : tâche locale refusée en 75, tâche cloud non bloquée ; audit mistral |
+| f777438 | `--semaphore` strictement positif, refus « semaphore plein » | essais réels : 0 et -3 → code 2, sémaphore plein → 75, sans option → PRIS ; audit mistral |
+| 0c0d595 | la suite joue cinq épreuves du jour | 29, 22, 3 et 3 cas ; quota-cloud rejouée sur main ; audit gpt-oss |
+| 39877fb | chaque appel cloud du pont tient un créneau du sémaphore machine `cloud` | processus `nexus_verrou_tenir.py cloud --semaphore 10` vivant pendant un appel réel ; épreuve 3 sur 3 sur main ; audit mistral |
+| 82453a9 | la suite joue l'épreuve de la sonde de la veille | 5 PASS sur main ; audit gpt-oss |
+
+**Mesuré et nommé :**
+- `keep_alive` : LiteLLM déployé le transmet du bloc de modèle ou de la requête au corps envoyé à Ollama (`ollama/chat/transformation.py`, lignes 241 et 307-308) ; la conception rendue le disait « par metadata », ce qui est faux. Les compagnons locaux se mesurent sur l'hôte Windows où tourne le moteur (`/api/ps` et l'engagement de `nexus_charge`), et non dans WSL ou un conteneur, présents sur la machine mais qui voient la mémoire de leur machine virtuelle ;
+- inventaire des épreuves jouées par la suite : `epreuve_sonde_mcp` fait un vrai appel cloud (gpt-oss-120b-cloud par la sonde MCP) ; les deux épreuves de bascule restent incertaines ; les autres emploient des faux ou lisent le code ;
+- `nexus_appliquer` v2 et v3 refusés sur régression, les cas A, C, E et G échouant : `ligne.endswith(avant)` testé ligne par ligne ne peut pas trouver un AVANT de plusieurs lignes ; la v4 exige un algorithme sur le texte entier ;
+- épreuve de l'outil de pose : la v1 lit juste mais étiquette faux, la v2 ne lit plus aucune décision ; la v3 repart de la v1 ;
+- détecteur de vision v4 : constantes déclarées hors de la fonction, que l'épreuve extrait seule, d'où `ReferenceError` ;
+- `sans_repli` v5, un bloc réaligné de quatre espaces et dit comme tel : fuite juste en réel, mais un succès ne porte pas encore le drapeau ;
+- un audit tiers comptait 50 caractères dans un motif qui en a 51 : trouvaille écartée.
+
+**Erreurs de cette session, corrigées** : un diff d'audit vidé parce qu'une copie de contre-épreuve avait écrasé la version de référence ; un filtre qui cherchait `[OK` dans une suite qui imprime `[PASS]`.
+
+**Ouverts, rafale 59 en cours :**
+- [ ] `nexus_appliquer` v4 ; épreuve de l'outil de pose v3 et audit de la v12 ; entrée `nexus poser` v3 ; vision v5 ; drapeau de succès de `sans_repli` ; `famille_de` v2 ; attente bornée du créneau cloud du pont ;
+- [ ] cliquet de câblage, deux régressions restantes : `epreuves/epreuve_lot_controle.py` orpheline, `outillage/nexus_mesure_cache.py` prouvée sans appelant.
+
+**Délégué ce tour** : rafales 58, 58b et 59, 25 tâches au banc cloud. **Arbitré ici** : trois tris, cinq commits, deux blocs réalignés à l'arbitrage et dits comme tels.
