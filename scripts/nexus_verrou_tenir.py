@@ -35,11 +35,11 @@ script_dir = os.path.abspath(os.path.dirname(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-# Import du gestionnaire de contexte `verrou`
+# Import des gestionnaires de contexte
 try:
-    from nexus_verrou_machine import verrou
+    from nexus_verrou_machine import verrou, semaphore
 except ImportError as e:
-    sys.stderr.write(f"[!] impossible d'importer verrou : {e}\n")
+    sys.stderr.write(f"[!] impossible d'importer verrou ou semaphore : {e}\n")
     sys.exit(1)
 
 
@@ -60,6 +60,11 @@ def parse_arguments():
         default=0.0,
         help="Temps d'attente en secondes (défaut : 0.0)",
     )
+    parser.add_argument(
+        "--semaphore",
+        type=int,
+        help="Nombre de créneaux du sémaphore (entier > 0, sinon refus)",
+    )
     return parser.parse_args()
 
 
@@ -68,9 +73,9 @@ def main():
 
     # 2. Entrer le gestionnaire de contexte
     try:
-        with verrou(
-            args.classe, projet=args.projet, attente_s=args.attente_s, bavard=False
-        ) as v:
+        mgr = semaphore(args.classe, args.semaphore, projet=args.projet, attente_s=args.attente_s, bavard=False) if args.semaphore is not None else verrou(args.classe, projet=args.projet, attente_s=args.attente_s, bavard=False)
+        with mgr as v:
+        # gestionnaire choisi
             # Le canal du protocole ne porte que le protocole.
             # Mesure: l'appelant recoit « verrou machine [banc] OBTENU (ep) » au lieu de PRIS.
             # 3. Verifier si le verrou a été obtenu
