@@ -1296,8 +1296,8 @@ def main() -> int:
         from pathlib import Path
         source_path = Path(__file__)
         source_text = source_path.read_text(encoding="utf-8")
-        pattern = r'args\.only\s+in\s+\(None,\s*"([^"]+)"\)'
-        found = re.findall(pattern, source_text)
+        pattern = r'args\.only\s+(?:in\s+\(None,\s*"([^"]+)"\)|==\s*"([^"]+)")'
+        found = [m for tup in re.findall(pattern, source_text) for m in tup if m]
         _choix = sorted(set(found)) if found else None
     except Exception:
         _choix = None
@@ -1363,6 +1363,12 @@ def main() -> int:
     if args.only in (None, "veille-orphelins"):
         jouer_epreuve_python("epreuve_veille_orphelins.py",
                              "purge des orphelins avant relance du moteur : forward, reverse, fuite")
+    if args.only in (None, "agent-familles"):
+        jouer_epreuve_python("epreuve_agent_familles.py",
+                             "familles du banc : nom servi normalise, exclusion de familles, refus avant tout appel")
+    if args.only in (None, "vision-degenere"):
+        jouer_epreuve_python("epreuve_vision_degenere.py",
+                             "pont MCP : reponse de vision degeneree refusee")
     # jouée SEULEMENT à la demande, car le serveur MCP attend le verrou machine « banc »
     # avant même la garde de chemin, et un refus qui attend derrière une inférence voisine
     # rend la suite aléatoire ; défaut du pont ouvert au cockpit
@@ -1995,6 +2001,8 @@ def test_terminal_repli() -> None:
         e.alias = alias
         e.modality = modality
         e.ctx = 0
+        e.physique = ""
+        e.api_base = ""
         return e
 
 
