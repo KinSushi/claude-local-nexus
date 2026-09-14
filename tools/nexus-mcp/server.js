@@ -793,6 +793,13 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature, options)
   } else {
     corps.num_predict = maxTokens || 2048;
   }
+  // Ajout du flag pour désactiver les replis lorsque le modèle est cloud
+  if (
+    (plansConnus && plansConnus.get(model) === "cloud") ||
+    (typeof model === "string" && model.endsWith("-cloud") && !model.startsWith("adaptive-router"))
+  ) {
+    corps.disable_fallbacks = true;
+  }
   // le cache exact est neutralise parce qu un second appel servi par le cache mesure le cache et non le modele
   // le depot l a deja mesure dans outillage/nexus_bench.py
   // une reponse cachee porte le message de troncature de l ANCIEN budget
