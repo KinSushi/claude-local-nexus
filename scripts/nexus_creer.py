@@ -217,8 +217,18 @@ def main() -> int:
 
     # Vérification syntaxique pour les fichiers Python
     if cible_path.endswith(".py"):
+        # Vérification de l'encodage ASCII si déclaré
+        lines = contenu.splitlines()
+        if len(lines) >= 2:
+            for line in lines[:2]:
+                if "coding:" in line and "ascii" in line:
+                    try:
+                        contenu.encode('ascii')
+                    except UnicodeEncodeError as e:
+                        print(f"REFUS : caractère non-ASCII détecté alors que l'encodage ASCII est déclaré : ligne {e.start+1}")
+                        return 1
         try:
-            compile(contenu, "<string>", "exec")
+            compile(contenu, cible_path, "exec")
         except SyntaxError as e:
             print(f"REFUS : le contenu proposé est syntaxiquement invalide : {e}")
             return 1
