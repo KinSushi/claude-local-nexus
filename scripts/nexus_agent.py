@@ -767,13 +767,27 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         method="POST",
     )
     depart = time.time()
+    from nexus_verrou_machine import semaphore
     ctx = ssl.create_default_context()
     # 15 min de silence, 0.05s CPU: l'appelant ne distingue pas requete non partie et inference.
     # Annonce sur stderr pour ne pas polluer le rendu.
     print(f"Appel modele {modele} (timeout {delai or DELAI}s) : depart maintenant", file=sys.stderr, flush=True)
-    with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
-        corps = json.loads(reponse.read().decode("utf-8"))
-        entetes = {k.lower(): v for k, v in reponse.getheaders()}
+    if plan == "cloud":
+        # Mesure 14/09 : 12 à 13 requêtes en vol passent, 16 produisent 12 refus 429 en 5 minutes.
+        n = int(os.environ.get("NEXUS_CLOUD_CONCURRENCE") or 10)
+        if n <= 0:
+            n = 10
+        attente = int(os.environ.get("NEXUS_CLOUD_ATTENTE_S") or 1800)
+        with semaphore("cloud", n, projet=os.path.basename(racine_travail()) or "nexus", attente_s=attente, bavard=False) as creneau:
+            if not creneau:
+                raise RuntimeError("plafond cloud machine atteint")
+            with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
+                corps = json.loads(reponse.read().decode("utf-8"))
+                entetes = {k.lower(): v for k, v in reponse.getheaders()}
+    else:
+        with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
+            corps = json.loads(reponse.read().decode("utf-8"))
+            entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
     choix = (corps.get("choices") or [{}])[0]
 
