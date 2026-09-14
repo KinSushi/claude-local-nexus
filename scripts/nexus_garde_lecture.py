@@ -410,7 +410,13 @@ def cibles_ecrites(commande):
             all_targets.extend(t2)
             indeterminate = indeterminate or d1 or d2
         return (all_targets, indeterminate)
-    except Exception:
+    except Exception as exc:  # NON VÉRIFIÉ : on ne sait pas quel type d’erreur peut survenir
+        # 1️⃣ Signalement explicite sur stderr
+        sys.stderr.write(
+            f"garde lecture : regle cibles_ecrites non evaluable : {exc}\\n"
+        )
+        # 2️⃣ Fail‑closed : on indique indeterminate=True afin que la logique appelante
+        #     refuse les chemins sensibles connus.
         return ([], True)
 
 def journaliser_ecriture_shell(session, commande, chemins, indetermine):

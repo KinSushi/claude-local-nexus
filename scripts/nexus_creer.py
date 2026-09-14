@@ -16,6 +16,7 @@ import os
 import sys
 import subprocess
 import contextlib
+import shutil
 import nexus_rendu
 
 with contextlib.suppress(Exception):
@@ -109,7 +110,14 @@ def _extraire_contenu(texte: str) -> str | None:
             break
     if start_idx is None or end_idx is None or end_idx <= start_idx:
         return None
-    # on exclut les lignes de marqueurs
+    # Ajustement : ignorer une éventuelle clôture Markdown immédiatement après <<<CREER>>> et avant <<<FIN>>>
+    # Si la ligne suivante le marqueur d'ouverture est une clôture Markdown (```), on la saute
+    if start_idx + 1 < len(lines) and lines[start_idx + 1].strip().startswith("```"):
+        start_idx += 1
+    # Si la ligne précédant le marqueur de fermeture est une clôture Markdown (```), on la retire
+    if end_idx - 1 > start_idx and lines[end_idx - 1].strip().startswith("```"):
+        end_idx -= 1
+    # on exclut les lignes de marqueurs (et les clôtures Markdown éventuelles)
     contenu = "\n".join(lines[start_idx + 1 : end_idx])
     if contenu:
         # ensure exactly one trailing newline
@@ -118,11 +126,16 @@ def _extraire_contenu(texte: str) -> str | None:
 
 
 def main() -> int:
-    if len(sys.argv) < 4:
-        print("Usage: python nexus_creer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
+    # --- Analyse des arguments -------------------------------------------------
+    args = sys.argv[1:]
+    remplacer = False
+    if "--remplacer" in args:
+        remplacer = True
+        args.remove("--remplacer")
+    if len(args) != 3:
+        print("Usage: python nexus_creer.py [--remplacer] <fichier_jsonl> <nom_tache> <fichier_cible>")
         return 2
-
-    jsonl_path, nom_tache, cible_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    jsonl_path, nom_tache, cible_path = args
 
     # --- Lecture du JSONL -------------------------------------------------
     texte = None
@@ -168,10 +181,32 @@ def main() -> int:
 
     # --- Vérifications préliminaires --------------------------------------
     if os.path.exists(cible_path):
-        print(
-            f"REFUS : le fichier cible '{cible_path}' existe déjà. Utilisez nexus_appliquer.py pour le modifier."
-        )
-        return 1
+        if not remplacer:
+            print(
+                f"REFUS : le fichier cible '{cible_path}' existe déjà. Utilisez nexus_appliquer.py pour le modifier."
+            )
+            return 1
+        # Option --remplacer activée : on vérifie le suivi git ou on crée une sauvegarde
+        backup_path = cible_path + ".avant-remplacement"
+        # Création de la sauvegarde
+        try:
+            shutil.copy2(cible_path, backup_path)
+        except Exception as e:
+            print(f"REFUS : impossible de créer la sauvegarde avant remplacement de '{cible_path}' : {e}")
+            return 1
+        # Vérification du suivi git (facultatif)
+        try:
+            subprocess.run(
+                ["git", "ls-files", "--error-unmatch", cible_path],
+                cwd=_trouver_racine_depot(os.path.dirname(cible_path)),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+        except Exception:
+            # non suivi, la sauvegarde suffit
+            pass
+        print(f"REMPLACE : {cible_path} (sauvegarde : {backup_path})")
 
     if not _verifier_dans_racine(cible_path):
         print(

@@ -197,15 +197,28 @@ def main():
     for cible in chemins:
         try:
             cible_norm = normaliser_relatif(cible)
-        except Exception:
-            continue
+        except Exception as exc:
+            # Log the failure and apply fail‑closed policy
+            print(f"Erreur de normalisation de la cible « {cible} » : {exc}",
+                  file=sys.stderr)
+            # La règle concernée est considérée sensible → refus immédiat
+            refuser(cible)
+            return
         for protege in proteges:
-            if protege.endswith('*'):
-                prefixe = protege[:-1]
-                if cible_norm.startswith(prefixe):
+            try:
+                if protege.endswith('*'):
+                    prefixe = protege[:-1]
+                    if cible_norm.startswith(prefixe):
+                        refuser(cible)
+                        return
+                elif cible_norm == protege:
                     refuser(cible)
                     return
-            elif cible_norm == protege:
+            except Exception as exc:
+                # Log any unexpected error during la comparaison
+                print(f"Erreur lors de la comparaison avec la règle protégée « {protege} » : {exc}",
+                      file=sys.stderr)
+                # Fail‑closed : refus
                 refuser(cible)
                 return
 

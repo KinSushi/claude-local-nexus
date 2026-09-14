@@ -252,15 +252,14 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
     journal_existait = False
     taille_avant = None
     mtime_avant = None
-    if journal:
-        if os.path.exists(journal):
-            try:
-                stat_avant = os.stat(journal)
-                taille_avant = stat_avant.st_size
-                mtime_avant = stat_avant.st_mtime_ns
-                journal_existait = True
-            except OSError:
-                journal_existait = False
+    if journal and os.path.exists(journal):
+        try:
+            stat_avant = os.stat(journal)
+            taille_avant = stat_avant.st_size
+            mtime_avant = stat_avant.st_mtime_ns
+            journal_existait = True
+        except OSError:
+            journal_existait = False
         # else: journal_existait remains False
 
     sonde_ok = sonder(url, modele_sonde, delai_sonde)

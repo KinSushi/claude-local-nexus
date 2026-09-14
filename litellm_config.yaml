@@ -737,6 +737,20 @@ model_list:
       nexus_generated: true
       nexus_pool: false
 
+  - model_name: hf.co/mradermacher/Prometheus-7B-v2.0-GGUF-local
+    litellm_params:
+      model: ollama_chat/hf.co/mradermacher/Prometheus-7B-v2.0-GGUF:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "hf.co/mradermacher/Prometheus-7B-v2.0-GGUF:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF-UD-Q4_K_XL-local
     litellm_params:
       model: ollama_chat/hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL
@@ -748,6 +762,21 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/Qwen3.5-9B-MTP-GGUF-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/Qwen3.5-9B-MTP-GGUF:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "hf.co/unsloth/Qwen3.5-9B-MTP-GGUF:latest (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
       nexus_pool: false
@@ -882,6 +911,21 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
+  - model_name: minicpm-v4.6-1b-local
+    litellm_params:
+      model: ollama_chat/minicpm-v4.6:1b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "minicpm-v4.6:1b (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: muse-glimmer-30b-local
     litellm_params:
       model: ollama_chat/muse-glimmer:30b
@@ -922,6 +966,18 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "nemotron-cascade-2:30b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: nomic-embed-text-v2-moe-local
+    litellm_params:
+      model: ollama/nomic-embed-text-v2-moe:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+    model_info:
+      max_input_tokens: 8192
+      description: "nomic-embed-text-v2-moe:latest (expose automatiquement — hors pool : non mesure)"
+      mode: embedding
       nexus_generated: true
       nexus_pool: false
 

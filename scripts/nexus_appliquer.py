@@ -67,6 +67,31 @@ def main():
         print("Le banc declare AUCUN DEFAUT SUR -- rien a appliquer.")
         return 2
 
+    def _decloturer(lignes: list[str]) -> tuple[list[str], int]:
+        """Retire les clôtures Markdown adjacentes aux marqueurs.
+
+        Args:
+            lignes: Liste des lignes du bloc AVANT/APRES.
+
+        Returns:
+            Tuple (lignes nettoyées, nombre de clôtures retirées).
+        """
+        if not lignes:
+            return lignes, 0
+
+        nb_retires = 0
+        # Clôture en première ligne (après marqueur)
+        if len(lignes) >= 1 and re.fullmatch(r'^```[a-zA-Z]*$', lignes[0].strip()):
+            lignes = lignes[1:]
+            nb_retires += 1
+
+        # Clôture en dernière ligne (avant marqueur)
+        if len(lignes) >= 1 and re.fullmatch(r'^```$', lignes[-1].strip()):
+            lignes = lignes[:-1]
+            nb_retires += 1
+
+        return lignes, nb_retires
+
     # Extraction de tous les blocs AVANT/APRES/FIN avec marqueur FICHIER optionnel
     pattern = re.compile(
         r'^(?:<<<FICHIER>>>[ \t]*([^\r\n]+)\r?\n)?^<<<AVANT>>>[ \t]*\r?$(.*?)^<<<APRES>>>[ \t]*\r?$(.*?)^<<<FIN>>>[ \t]*\r?$',
@@ -75,11 +100,19 @@ def main():
     blocs = []
     for m in pattern.finditer(texte):
         fichier_cible_bloc = m.group(1)
-        avant = m.group(2).strip("\r\n")
-        apres = m.group(3).strip("\r\n")
+        avant = m.group(2).strip("\r\n").splitlines()
+        apres = m.group(3).strip("\r\n").splitlines()
+
+        # Nettoyage des clôtures adjacentes
+        avant, nb_avant = _decloturer(avant)
+        apres, nb_apres = _decloturer(apres)
+        nb_total = nb_avant + nb_apres
+        if nb_total > 0:
+            print(f"clotures Markdown retirees : {nb_total}")
+
         # Un bloc avec marqueur FICHIER ne s'applique que si le chemin correspond
         if fichier_cible_bloc is None or fichier_cible_bloc.strip() == cible_path:
-            blocs.append((avant, apres))
+            blocs.append(("\n".join(avant), "\n".join(apres)))
 
     # Guard: ensure marker counts match extracted blocks
     # Count total matches of the pattern (including those filtered out later)
