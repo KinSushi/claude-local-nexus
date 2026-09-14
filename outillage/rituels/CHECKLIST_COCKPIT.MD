@@ -28842,3 +28842,38 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] `agent_verrou_lot_local_seulement` v4 à éprouver après le tour local de 16:04 ;
 - [ ] outil de pose v6, outil de quota v5, arrêt du cloud sur quota v5 et son épreuve (rafale 51) ;
 - [ ] file d'attente du verrou banc : cinq rendus refusés ; réduire la portée à la seule fonction `verrou`.
+
+#### 17:25 — trois rafales cloud (53 à 55, 43 tâches), deux correctifs du pont posés, la veille était aveugle au journal réel
+
+**Posé et éprouvé en réel :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| d04416d | le pont envoie `disable_fallbacks` sur tout appel cloud (P2 de l'audit de sovereign-ai-system) | sonde `nexus_ask` réelle sur gpt-oss-120b-cloud : OK ; audit tiers mistral : le champ part dans `corps` jusqu'à `requestJson` ; `chat()` est le seul appel à `/v1/chat/completions` du pont |
+| 6ee8832 | `nexus_compare` : `args.models` lu par la résolution stricte (P3) | sonde `compare` réelle sur deux modèles cloud : OK en 3 s, verrou banc jamais tenu (relevé toutes les 0,5 s) ; audit tiers gpt-oss conforme |
+
+**Trouvé par la mesure, et non par la lecture :**
+- la veille `issues_generation` ne lisait AUCUNE ligne GIN réelle : 0 réussite comptée contre 23 au comptage direct. `_parse_iso` levait sur le séparateur « - », et le journal du moteur est en heure LOCALE, UTC-5 ici. Après correctif en worktree : 87 contre 87 sur quatre heures ;
+- dans `verdict`, la règle des échecs longs était MORTE, ses deux branches rendant BLOQUE : les issues ne changeaient jamais le verdict. Le premier correctif n'a posé qu'un commentaire, mesuré par la table `verdict` ;
+- l'épreuve de contrat de la file d'attente du verrou avait un harnais cassé. Ses ouvriers importaient `scripts.` depuis un dossier temporaire, avec stderr jeté : cinq rendus avaient été refusés sur une épreuve qui ne pouvait pas passer ;
+- `epreuve_vision_degenere` ne pouvait jamais passer : `texteDegenere` n'a jamais existé (`git log -S` vide), et son script node redéclare `let __res` ;
+- `epreuve_conformite_sources` attendait BLOQUE là où le contrôle rend ALERTE par décision écrite dans sa docstring ;
+- le verrou de lot v6 laissait partir les tâches locales refusées, sans verrou : l'épreuve du banc a rendu 1 au lieu de 75 ;
+- `nexus_appliquer` cherche la racine par `.git` ou `CLAUDE.md` : la simulation du poseur dans `%TEMP%` refusait tout. Le marqueur `CLAUDE.md` l'a corrigée, et la simulation v9 rend les décisions réelles ;
+- l'agent n'a aucun réglage « sans repli ». Un audit tiers de sovereign-ai-system sur glm-5.3 a épuisé son raisonnement puis a été servi par gpt-oss, une famille déjà impliquée ;
+- un rendu v5 est revenu identique à la v4 jointe en référence.
+
+**Erreurs d'arbitrage de ce tour, corrigées** : un cas « illisible » demandé sur une ligne ISO que la regex GIN n'atteint jamais ; une passerelle factice demandée sans `adaptive-router-cloud` dans `/v1/models`, alias que le pont refuse avant tout appel ; l'hypothèse « disjoncteurs ouverts sur les alias factices », réfutée par lecture de l'état avant d'être écrite dans une consigne.
+
+**Audit tiers mistral de la veille** : une trouvaille vraie et mineure, les lignes datées du futur sont comptées, écartée car moteur et veille lisent la même horloge ; deux affirmations fausses, les exceptions `AmbiguousTimeError` de pytz attribuées à `datetime` et une influence du résultat sur `verdict` que la version jointe n'avait pas.
+
+**Ouverts, rafale 55 en cours :**
+- [ ] règle GIN du verdict v2, puis pose de la chaîne veille v2 à v6 rejouée depuis ses rendus (fichier identique octet pour octet) et de l'épreuve v8, contre-épreuve vérifiée ;
+- [ ] garde des appels réels de `nexus_test` v3, AVANT l'exécution planifiée de 20:10 ;
+- [ ] verrou de lot v7 (fuite, sémaphore relâché, profil relu à chaque tâche) ; arrêt coopératif et échéance v3 (`lot_id` absent sans `--sortie`) ; `sans_repli` v2, attendu par sovereign-ai-system pour relancer son audit ;
+- [ ] outil de quota v7 (29 sur 29, audité) : point d'entrée `nexus quota` pour le câblage ; arrêt du cloud sur quota, épreuve v7 sans contre-épreuve interne ;
+- [ ] vision : détecteur de boucle finale au lieu d'un calque de l'épreuve, et épreuve réparée ; sémaphore du script de verrou v3, puis créneau cloud du pont ;
+- [ ] outil de pose v10 (la pose réelle plante sur une `CalledProcessError` factice) ;
+- [ ] file d'attente du verrou : épreuve v2 au harnais réparé, mais le forward ne discrimine pas un mutex simple et le cas « attente nulle » attend un refus sur un verrou libre : conception à reprendre avant tout nouveau rendu.
+
+**Délégué ce tour** : 43 tâches au banc cloud, 8 en vol au plus, gpt-oss-120b et mistral-large-3 seulement. **Arbitré ici** : cinq triages en worktree, deux commits, trois audits tiers lus et départagés.
