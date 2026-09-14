@@ -102,7 +102,7 @@ def _git_added_lines(base, path):
 
 def _normaliser_espaces(s):
     """Replace non‑breaking and narrow spaces with ordinary space."""
-    return s.replace(" ", " ").replace(" ", " ").replace(" ", " ")
+    return s.replace("\u00A0", " ").replace("\u202F", " ").replace("\u2009", " ")
 
 def _is_delegated(line, traces):
     """Determine si la ligne apparait dans au moins une trace."""

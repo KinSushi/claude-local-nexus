@@ -784,11 +784,20 @@ def main(argv=None) -> int:
     # log consultation
     try:
         import datetime
+        from datetime import timezone
         root = Path(__file__).resolve().parent.parent
         journal_dir = root / ".nexus"
         journal_dir.mkdir(parents=True, exist_ok=True)
         journal_file = journal_dir / "consultations.jsonl"
-        entry = {"timestamp": datetime.datetime.now().isoformat(), "request": args.symbole}
+        # `sym` est le symbole trouvé, `lg` la taille en octets de l'entrée rendue.
+        entry = {
+            "timestamp": datetime.datetime.now(timezone.utc).isoformat(),
+            "mode": "doc",
+            "query": args.symbole,
+            "id": sym,
+            "count": 1,
+            "bytes": lg,
+        }
         with open(journal_file, "a", encoding="utf-8", newline="") as jf:
             jf.write(json.dumps(entry) + "\n")
     except Exception:
