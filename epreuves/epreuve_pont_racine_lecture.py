@@ -159,10 +159,9 @@ def check(id_, name, expect_refuse, expect_mention_claude):
             detail_parts.append("mot « refuse » présent")
 
     # Vérification de la mention de la racine « claude » (insensible à la casse et au séparateur)
-    if expect_mention_claude:
-        if 'claude' not in text.lower():
-            ok = False
-            detail_parts.append("absence de la mention « claude »")
+    if expect_mention_claude and 'claude' not in text.lower():
+        ok = False
+        detail_parts.append("absence de la mention « claude »")
     # sinon aucune contrainte sur la présence ou l’absence de la mention
 
     # Cas particulier du forward : le résumé peut échouer faute de modèle.
