@@ -57,6 +57,8 @@ except ImportError:
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG = os.path.join(ROOT, "litellm_config.yaml")
 BASE_URL = os.environ.get("NEXUS_LITELLM_URL", "http://127.0.0.1:4000")
+APPELS_MODELES = os.environ.get("NEXUS_TEST_APPELS_MODELES") == "1"
+PREFIXES_MODELES = ("/v1/chat/completions", "/chat/completions", "/v1/embeddings", "/embeddings", "/v1/messages", "/health")
 
 PASSED: list[str] = []
 FAILED: list[tuple[str, str]] = []
@@ -106,6 +108,10 @@ def call(path: str, payload=None, key: str | None = None, timeout: int = 300,
     du corps ne renvoie que le nom du routeur. Seul l'en-tête
     x-litellm-model-group révèle l'alias réellement servi.
     """
+    if not APPELS_MODELES and any(path.startswith(p) for p in PREFIXES_MODELES):
+        if with_headers:
+            return (0, {"error": "appel de modele desactive : NEXUS_TEST_APPELS_MODELES=1 ou --appels-modeles"}, {})
+        return (0, {"error": "appel de modele desactive : NEXUS_TEST_APPELS_MODELES=1 ou --appels-modeles"})
     url = BASE_URL + path
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     request = urllib.request.Request(url, data=data, method="POST" if data else "GET")
@@ -1290,6 +1296,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--include-slow", action="store_true",
                         help="ajoute les tests lents (vision sur CPU)")
+    parser.add_argument("--appels-modeles", action="store_true", help="activer les appels réels aux modèles")
     # On dérive la liste des choix pour éviter d'écraser le fichier source avec des valeurs manquantes.
     try:
         import re
@@ -1303,19 +1310,27 @@ def main() -> int:
         _choix = None
     parser.add_argument("--only", choices=_choix, help="ne joue qu'une famille de tests")
     args = parser.parse_args()
+    global APPELS_MODELES
+    if args.appels_modeles:
+        APPELS_MODELES = True
 
     print("=" * 72)
     print(" Suite de tests Claude-Local-Nexus — %s" % BASE_URL)
     print("=" * 72)
+    print("Appels modèles :", "activés" if APPELS_MODELES else "désactivés")
+    if not APPELS_MODELES:
+        skip("forward", "appels de modeles desactives")
+        skip("reverse", "appels de modeles desactives")
+        skip("policy", "appels de modeles desactives")
 
     recover_swapped_config()
     models = exposed_models()
 
-    if args.only in (None, "forward"):
+    if APPELS_MODELES and args.only in (None, "forward"):
         test_forward(models, args.include_slow)
-    if args.only in (None, "reverse"):
+    if APPELS_MODELES and args.only in (None, "reverse"):
         test_reverse(models)
-    if args.only in (None, "policy"):
+    if APPELS_MODELES and args.only in (None, "policy"):
         test_policy(models)
     if args.only in (None, "routage"):
         test_routage_par_profil()
