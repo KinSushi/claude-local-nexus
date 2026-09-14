@@ -28789,3 +28789,31 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (renvoyé au cloud).
 
 **Délégué ce tour** : 4 tâches au banc local ; rafale 43 (20 tâches, modèles bon marché) armée pour le retour du quota. **Arbitré ici** : trois poses, un refus, la pause de NexusTraque.
+
+#### 15:35 — cloud revenu à 15:01 : sept rafales à bas coût en 35 minutes, le goulot est désormais l'arbitrage
+
+**Débit** : rafales 43 à 49, soit 101 tâches envoyées sur gpt-oss-120b, mistral-large-3-675b et gemma4-31b, tout en `NEXUS_MAX_REPLIS_LOCAUX=0`. Aucune expiration, aucun repli local, aucun refus de créneau relevé par la veille du quota. Répartition machine : 16 requêtes en vol au plus, 10 ici, 3 et 3 pour les deux sessions voisines. EA MT5 rapporte 22 tâches sur 22 rendues depuis 15:10.
+
+**Posé et vérifié depuis 15:01** :
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| 0b02a9d | sonde de la veille au `context_length` du résidant | 8 192 jetons et 19 Go avant et après la sonde |
+| 105b373 | épreuve de cette sonde | 4 cas sur 5 ratent sur la veille d'avant, 5 sur 5 passent après |
+| adfea81 | motif de repli déclaré, budget épuisé hors disjoncteur, état du disjoncteur redirigeable | appel réel nominal, chemin redirigé vérifié |
+| 337978c | lecture protégée de `NEXUS_MAX_REPLIS_LOCAUX`, annonce unique, épreuve MCP corrigée | `aucun` → avertissement et code 0 ; épreuve à 11 cas au lieu de 10 |
+| adb2dbe | `nexus_creer` : compilation nommée et refus hors ASCII déclaré | suite `--only creer` à 5 sur 5 |
+
+**Taux d'acceptation au premier rendu, mesuré au triage en worktree** : faible sur les tâches composites. Environ une pose sur cinq pour les patchs à plusieurs blocs, souvent pour des ancres inventées, des marqueurs `<<<FIN>>>` manquants, des noms non définis ou des violations ruff. Les renvois qui citent les ancres LITTÉRALEMENT dans la consigne, et qui joignent la version précédente et l'épreuve de contrat, convergent mieux.
+
+**Erreurs d'arbitrage de cette session, corrigées** :
+- deux rendus de `creer_compile_avant_verdict` refusés à tort comme « hors sujet » pour un contrôle ASCII que la consigne demandait bien : la consigne se relit avant de refuser ;
+- `epreuve_charge_json_controle` v3 passait 10 sur 10 sur la version d'AVANT le correctif : sortie de l'arbre et renvoyée, car une épreuve dont la contre-épreuve passe ne prouve rien.
+
+**Trouvés par l'usage, ouverts :**
+- [ ] `epreuves/epreuve_vision_degenere.py` rate sur l'arbre vivant : la fonction `texteDegenere` n'existe plus dans le pont ;
+- [ ] `epreuves/epreuve_conformite_sources.py` plante sur l'arbre vivant, sans aucune ligne `[OK]` ni `[RATE]` ;
+- [ ] le poseur provisoire de session ne restaure pas le fichier après un échec du cliquet ; son portage en outil de plateforme est en rafale 49 ;
+- [ ] `conformite_epreuves_repli_et_profils` : AVANT introuvable deux fois, il faut l'ancre littérale.
+
+**Délégué ce tour** : 101 tâches au banc cloud. **Arbitré ici** : sept triages en worktree, cinq commits, une trentaine de refus motivés et renvoyés.
