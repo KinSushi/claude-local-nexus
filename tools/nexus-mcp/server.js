@@ -3808,33 +3808,43 @@ async function callTool(name, args) {
   // Construction de la liste des modèles à utiliser
   let modelList = [];
 
-  // Cas où la liste peut être déterminée
-  if (name === 'nexus_batch' && args && Array.isArray(args.tasks)) {
-    // chaque tâche peut spécifier son modèle, sinon on utilise le modèle de chat par défaut
-    modelList = args.tasks.map(t => t.model || DEFAULT_CHAT_MODEL);
-  } else if (args && args.model) {
-    modelList = [args.model];
-  } else if (args && args.profile && !args.model) {
-    // profil présent sans modèle : liste indéterminée, on laisse vide
-    modelList = [];
-  } else if (typeof name === 'string' && name.startsWith('adaptive-router')) {
-    // alias de router indéterminé
-    modelList = [];
+  // Si args.models est fourni, on l'utilise comme source principale
+  if (args && Array.isArray(args.models) && args.models.length > 0) {
+    // Un élément non-chaîne ou vide rend la liste indéterminée
+    if (args.models.every(m => typeof m === 'string' && m.trim() !== '')) {
+      modelList = [...args.models];
+    } else {
+      modelList = []; // indéterminée
+    }
   } else {
-    switch (name) {
-      case 'nexus_vision':
-        modelList = [DEFAULT_VISION_MODEL];
-        break;
-      case 'nexus_index_build':
-      case 'nexus_search':
-        modelList = [DEFAULT_EMBED_MODEL];
-        break;
-      default:
-        if (OUTILS_LOURDS.has(name)) {
-          modelList = [DEFAULT_CHAT_MODEL];
-        }
-        // sinon liste vide (indéterminée)
-        break;
+    // Cas où la liste peut être déterminée (branches existantes inchangées)
+    if (name === 'nexus_batch' && args && Array.isArray(args.tasks)) {
+      // chaque tâche peut spécifier son modèle, sinon on utilise le modèle de chat par défaut
+      modelList = args.tasks.map(t => t.model || DEFAULT_CHAT_MODEL);
+    } else if (args && args.model) {
+      modelList = [args.model];
+    } else if (args && args.profile && !args.model) {
+      // profil présent sans modèle : liste indéterminée, on laisse vide
+      modelList = [];
+    } else if (typeof name === 'string' && name.startsWith('adaptive-router')) {
+      // alias de router indéterminé
+      modelList = [];
+    } else {
+      switch (name) {
+        case 'nexus_vision':
+          modelList = [DEFAULT_VISION_MODEL];
+          break;
+        case 'nexus_index_build':
+        case 'nexus_search':
+          modelList = [DEFAULT_EMBED_MODEL];
+          break;
+        default:
+          if (OUTILS_LOURDS.has(name)) {
+            modelList = [DEFAULT_CHAT_MODEL];
+          }
+          // sinon liste vide (indéterminée)
+          break;
+      }
     }
   }
 
