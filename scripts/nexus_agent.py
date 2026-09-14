@@ -2067,6 +2067,8 @@ def main() -> int:
     parseur.add_argument(
         "--nom", default=None, metavar="NOM_TACHE",
         help="Nom de la tache a extraire pour sortie brute.")
+    parseur.add_argument("--echeance-s", type=int, default=0,
+                         help="Echeance en secondes pour le lot (defaut 0 = aucune).")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
     parseur.add_argument("--modeles", action="store_true",
@@ -2242,6 +2244,7 @@ def main() -> int:
             _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'inference: semaphore cloud plein (contention machine)')
             return 75
     depart = time.time()
+    lot_id = identifiant_lot(os.getpid(), depart)
     resultats: List[dict] = []
     # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
     #
@@ -2336,8 +2339,46 @@ def main() -> int:
                 except Exception as exc:
                     print("[!] erreur lors de la sortie brute depuis jsonl : %s" % exc, file=sys.stderr)
                     sys.exit(1)
+            # Chargement unique de nexus_lot_controle.py (si présent)
+            try:
+                import importlib.util
+                from pathlib import Path
+                lot_controle_path = Path(__file__).parent / "nexus_lot_controle.py"
+                spec = importlib.util.spec_from_file_location("nexus_lot_controle", lot_controle_path)
+                lot_controle = importlib.util.module_from_spec(spec) if spec and spec.loader else None
+                if lot_controle:
+                    spec.loader.exec_module(lot_controle)
+            except Exception as e:
+                print(f"[!] chargement de nexus_lot_controle.py impossible : {e}", file=sys.stderr)
+                lot_controle = None
+
+            # Fonction enveloppe pour gérer l'échéance et les arrêts de lot
+            def executer_avec_controles(t, cle):
+                # Vérification de l'arrêt du lot (appel unique)
+                arret_info = lot_controle.arret_demande(lot_id) if lot_controle else None
+                if arret_info:
+                    print(f"[!] tache {t.get('nom', t.get('modele', '?'))} : lot arrete avant execution : {arret_info['motif']}", file=sys.stderr)
+                    return {
+                        "nom": t.get("nom", t.get("modele", "?")),
+                        "modele": t.get("modele", "?"),
+                        "erreur": f"lot arrete avant execution : {arret_info['motif']}",
+                        "arrete": True
+                    }
+
+                # Vérification de l'échéance
+                if args.echeance_s > 0 and time.time() > depart + args.echeance_s:
+                    print(f"[!] tache {t.get('nom', t.get('modele', '?'))} : echeance du lot depassee avant execution", file=sys.stderr)
+                    return {
+                        "nom": t.get("nom", t.get("modele", "?")),
+                        "modele": t.get("modele", "?"),
+                        "erreur": "echeance du lot depassee avant execution",
+                        "echeance": True
+                    }
+
+                return executer(t, cle)
+
             # Collecte des tâches associées aux résultats pour pouvoir les rejouer si besoin.
-            futurs = {pool.submit(executer, t, cle): t for t in taches}
+            futurs = {pool.submit(executer_avec_controles, t, cle): t for t in taches}
             # Liste parallèle pour garder l'ordre d'arrivée des résultats.
             taches_par_futur = []
             for futur in concurrent.futures.as_completed(futurs):
