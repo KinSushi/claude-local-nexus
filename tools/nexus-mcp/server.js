@@ -818,10 +818,39 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature, options)
     corps,
     timeoutMs
   ));
-  const { body, headers } = await avecJetonDuPlan(model, () => {
-    attenteMs = Date.now() - depart;
-    return appelReseau();
-  });
+  let body, headers;
+  // Gestion du sémaphore pour les modèles cloud (même condition que disable_fallbacks)
+  const isCloud = (
+    (plansConnus && plansConnus.get(model) === "cloud") ||
+    (typeof model === "string" && model.endsWith("-cloud") && !model.startsWith("adaptive-router"))
+  );
+  let verrou;
+  let semaphoreAcquired = false;
+  if (isCloud) {
+    const classeSem = process.env.NEXUS_CLOUD_SEMAPHORE_CLASSE || "cloud";
+    const n = (typeof NEXUS_CLOUD_CONCURRENCE === 'number' && NEXUS_CLOUD_CONCURRENCE > 0) ? NEXUS_CLOUD_CONCURRENCE : 10;
+    try {
+      verrou = await tenirVerrou(classeSem, { semaphore: n });
+      semaphoreAcquired = true;
+    } catch (e) {
+      if (!global.__nexus_semaphore_logged) {
+        log('Refus ou erreur de prise du sémaphore cloud :', e.message);
+        global.__nexus_semaphore_logged = true;
+      }
+    }
+  }
+  try {
+    const result = await avecJetonDuPlan(model, () => {
+      attenteMs = Date.now() - depart;
+      return appelReseau();
+    });
+    body = result.body;
+    headers = result.headers;
+  } finally {
+    if (semaphoreAcquired && verrou && typeof verrou.relacher === 'function') {
+      await verrou.relacher();
+    }
+  }
   let choice = body.choices && body.choices[0];
   if (!choice) throw new Error("aucune reponse du modele " + model);
   let usage = body.usage || {};
@@ -3678,7 +3707,7 @@ function main() {
 
 main();
 
-async function tenirVerrou(classe) {
+async function tenirVerrou(classe, options = {}) {
   // fonction qui attend le verrou en lançant le script python
   return new Promise((resolve, reject) => {
     const { spawn } = require('node:child_process')
@@ -3691,7 +3720,15 @@ async function tenirVerrou(classe) {
     try {
       const python = process.env.NEXUS_PYTHON || 'python'
       const script = path.join(__dirname, '..', '..', 'scripts', 'nexus_verrou_tenir.py')
-      child = spawn(python, [script, classe, '--projet', 'mcp', '--attente-s', '900'], { stdio: ['pipe', 'pipe', 'inherit'] })
+      const args = [script, classe, '--projet', 'mcp']
+      // durée d'attente (en secondes) : valeur par défaut 900 s
+      const attenteS = (options && typeof options.attenteS === 'number') ? options.attenteS : 900
+      args.push('--attente-s', String(attenteS))
+      // sémaphore optionnel
+      if (options && typeof options.semaphore === 'number' && options.semaphore > 0) {
+        args.push('--semaphore', String(options.semaphore))
+      }
+      child = spawn(python, args, { stdio: ['pipe', 'pipe', 'inherit'] })
     } catch (e) {
       log('Erreur lors du spawn du verrou :', e)
       // resolve avec relacher qui ne fait rien
