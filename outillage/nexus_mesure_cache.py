@@ -15,6 +15,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import os
 
 
 def prefixe(n):
@@ -127,7 +128,11 @@ def verdict_cache(reference, suivants):
 
 def main():
     parser = argparse.ArgumentParser(description="Measure Ollama KV cache activity")
-    parser.add_argument("--modele", default="llama3.2:1b")
+    parser.add_argument(
+        "--modele",
+        default=os.getenv("NEXUS_CANARI_MODELE") or "phi:latest",
+        help="Modèle à utiliser ; si la variable d’environnement NEXUS_CANARI_MODELE est définie et non vide, sa valeur est utilisée, sinon phi:latest."
+    )
     parser.add_argument("--url", default="http://127.0.0.1:11434")
     parser.add_argument("--prefixe-mots", type=int, default=600)
     parser.add_argument("--repetitions", type=int, default=3,

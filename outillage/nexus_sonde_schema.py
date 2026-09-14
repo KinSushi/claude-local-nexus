@@ -270,7 +270,11 @@ def build_gateway_body(schema: dict[str, Any], alias: str) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Measure JSON schema enforcement.")
-    parser.add_argument("--modele-local", default="llama3.2:1b")
+    parser.add_argument(
+        "--modele-local",
+        default=os.getenv("NEXUS_CANARI_MODELE") or "phi:latest",
+        help="Modèle local utilisé par défaut : la variable d’environnement NEXUS_CANARI_MODELE si définie, sinon « phi:latest ».",
+    )
     parser.add_argument("--modele-cloud", default="gpt-oss:120b")
     parser.add_argument("--alias-passerelle", default="gpt-oss-120b-cloud")
     parser.add_argument(
