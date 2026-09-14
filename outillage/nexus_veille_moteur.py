@@ -99,14 +99,17 @@ def lire_ps(url):
         pass
     return {}
 
-def sonder(url, modele, delai, num_predict=4):
-    """Return True if POST /api/chat with tiny prompt succeeds within delai seconds."""
+def sonder(url, modele, delai, num_predict=4, num_ctx=None):
+    """Return True if POST /api/chat with tiny prompt succeeds within delai seconds.
+    If num_ctx is provided, it is added to the request options."""
     body = {
         "model": modele,
         "messages": [{"role": "user", "content": "ping"}],
         "stream": False,
         "options": {"num_predict": num_predict}
     }
+    if num_ctx is not None:
+        body["options"]["num_ctx"] = num_ctx
     data = json.dumps(body).encode('utf-8')
     req = urllib.request.Request(url + '/api/chat', data=data, headers={'Content-Type': 'application/json'})
     try:
@@ -267,8 +270,13 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
         # No explicit model: use resident model if any, otherwise no generation
         if ps.get('models'):
             modele_a_sonder = ps['models'][0].get('name')
-            sonde_ok = sonder(url, modele_a_sonder, delai_sonde, num_predict=1)
-            sonde_label = modele_a_sonder
+            ctx = ps['models'][0].get('context_length')
+            if isinstance(ctx, int):
+                sonde_ok = sonder(url, modele_a_sonder, delai_sonde, num_predict=1, num_ctx=ctx)
+                sonde_label = modele_a_sonder
+            else:
+                sonde_ok = None
+                sonde_label = "sautee : contexte du residant inconnu"
         else:
             sonde_ok = None
             sonde_label = "version"
