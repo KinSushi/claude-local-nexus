@@ -1489,6 +1489,10 @@ def executer(tache: dict, cle: str) -> dict:
     troncatures = set()
     def _journal_echec(message: str):
         print(f"Echec candidat : {message}", file=sys.stderr, flush=True)
+    if refus and not joints:
+        _journal_echec("fichiers joints absents : " + ", ".join(refus))
+        return {"nom": nom, "modele": modele, "cause_vide": "fichiers_joints_absents",
+                "erreur": "aucun fichier joint disponible : " + ", ".join(refus)}
     candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
     _dj = None
     try:
