@@ -95,7 +95,8 @@ def _endpoint_par_defaut() -> str:
     de la corriger.
     """
     try:
-        texte = io.open(CONFIG, encoding="utf-8").read()
+        with io.open(CONFIG, encoding="utf-8") as f:
+            texte = f.read()
     except Exception:
         return "http://host.docker.internal:11434"
     compte = {a: texte.count(a) for a in SONDES}
@@ -1593,8 +1594,8 @@ def main() -> int:
     # cette forme -- effacer la marque EST le degat -- mais juste sous
     # celle-ci.
     if not latences_relevees():
-        promus = "nexus_pool: true" in open(CONFIG, encoding="utf-8",
-                                            errors="replace").read()
+        with open(CONFIG, encoding="utf-8", errors="replace") as f:
+            promus = "nexus_pool: true" in f.read()
         if promus:
             print(chr(10) + "Le relevé de mesures est absent alors que la configuration")
             print("porte des modeles promus. Generer maintenant les sortirait")

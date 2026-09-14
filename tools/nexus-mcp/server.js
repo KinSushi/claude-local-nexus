@@ -775,7 +775,7 @@ async function reveillerModele(model, timeoutMs) {
   }
 }
 
-async function chat(model, messages, maxTokens, timeoutMs, temperature) {
+async function chat(model, messages, maxTokens, timeoutMs, temperature, options) {
   // Une phase MAP peut durer un quart d'heure : perdre dix fenetres deja
   // calculees pour une coupure de socket serait absurde.
   // Le reveil couvre TOUS les chemins de generation en un seul point --

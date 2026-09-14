@@ -204,9 +204,9 @@ def main() -> int:
                 stderr=subprocess.DEVNULL,
                 check=True,
             )
-        except Exception:
+        except Exception as e:
+            print(f"[!] git ls-files a échoué : {e}", file=sys.stderr)
             # non suivi, la sauvegarde suffit
-            pass
         print(f"REMPLACE : {cible_path} (sauvegarde : {backup_path})")
 
     if not _verifier_dans_racine(cible_path):

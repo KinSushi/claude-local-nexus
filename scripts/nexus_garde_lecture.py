@@ -93,9 +93,10 @@ def retenir(chemin_memoire: str, connus: set) -> None:
         os.makedirs(os.path.dirname(chemin_memoire), exist_ok=True)
         with open(chemin_memoire, "w", encoding="utf-8") as fh:
             json.dump({"lus": sorted(connus)}, fh, ensure_ascii=False)
-    except Exception:
+    except Exception as exc:
         # Un echec d'ecriture ne doit JAMAIS empecher d'autoriser : le pire
         # que l'on risque est d'oublier une lecture, pas de perdre un fichier.
+        print("nexus_garde_lecture : retenir impossible : %s" % exc, file=sys.stderr)
         pass
 
 
@@ -443,7 +444,8 @@ def journaliser_ecriture_shell(session, commande, chemins, indetermine):
         with open(os.path.join(dossier, "ecritures_shell.jsonl"),
                   "a", encoding="utf-8") as fh:
             fh.write(ligne + "\n")
-    except Exception:
+    except Exception as exc:
+        print("nexus_garde_lecture : journaliser_ecriture_shell impossible : %s" % exc, file=sys.stderr)
         pass
 
 

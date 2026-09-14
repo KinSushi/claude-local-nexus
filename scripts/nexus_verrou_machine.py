@@ -448,8 +448,8 @@ def ecrire_fiche(chemin, fiche):
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(fiche, f, ensure_ascii=True)
         os.replace(tmp, chemin)
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"{__file__} : ecrire_fiche impossible : {exc}", file=sys.stderr)
 
 
 def effacer_fiche(chemin):
@@ -508,7 +508,8 @@ def processus_concurrents() -> list[dict]:
         sortie = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
                                 capture_output=True, text=True, encoding="utf-8",
                                 errors="replace", timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"{__file__} : subprocess.run impossible : {exc}", file=sys.stderr)
         return []
     trouves = []
     for ligne in sortie.splitlines():

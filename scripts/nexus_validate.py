@@ -94,7 +94,11 @@ def _capacites(base: str) -> set:
                 if not ligne.strip() or not ligne[0].isspace():
                     break
                 trouvees.add(ligne.strip().lower())
-    except Exception:
+    except FileNotFoundError:
+        # Absence du binaire Ollama : état normal, silencieux
+        pass
+    except Exception as exc:
+        print("nexus_validate.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         pass
     _CAPACITES[base] = trouvees
     return trouvees
@@ -269,7 +273,14 @@ def controle_modalites(model_list, erreurs):
                             in_capabilities = False
                 
                 cache[tag] = capabilities
-            except (subprocess.TimeoutExpired, Exception):
+            except subprocess.TimeoutExpired as exc:
+                print("nexus_validate.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
+                continue  # Ne pas ajouter au cache en cas d'erreur
+            except FileNotFoundError:
+                # Exécutable absent : état normal, silencieux
+                continue  # Ne pas ajouter au cache en cas d'erreur
+            except Exception as exc:
+                print("nexus_validate.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
                 continue  # Ne pas ajouter au cache en cas d'erreur
         
         # Obtenir le mode de la configuration si present

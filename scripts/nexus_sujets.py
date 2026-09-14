@@ -469,7 +469,7 @@ def git_log_commits() -> List[Dict]:
 # --------------------------------------------------------------------------- #
 
 def derniers_maillons(titres: List[str]) -> List[str]:
-    """
+    r"""
     Retourne la liste des titres dont le numéro (premier \d+\.\d+)
     n'est pas cité par un autre titre sous la forme « remplace §<numéro> ».
     L'ordre d'origine est conservé.

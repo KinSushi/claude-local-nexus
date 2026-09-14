@@ -274,7 +274,8 @@ def lancer(nom, fichier, modele, consigne, verifier, max_tokens) -> int:
         print("Le fichier n'existe pas dans l'arbre isole : %s" % cible)
         return 1
 
-    contenu = io.open(cible, encoding="utf-8").read()
+    with io.open(cible, encoding="utf-8") as f:
+        contenu = f.read()
     print("  arbre    : %s" % chemin_arbre)
     print("  fichier  : %s (%d lignes)" % (fichier, contenu.count("\n") + 1))
     print("  modele   : %s" % modele)

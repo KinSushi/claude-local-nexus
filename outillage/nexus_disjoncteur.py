@@ -79,7 +79,8 @@ def _save_state(state):
             # Cleanup temporary file on any failure
             with contextlib.suppress(Exception):
                 os.remove(temp_path)
-    except Exception:
+    except Exception as exc:
+        print("_save_state : operation impossible : %s" % exc, file=sys.stderr)
         pass
 
 
@@ -251,7 +252,8 @@ class CircuitBreaker:
                                   "circuit_journal.jsonl")
             with open(chemin, "a", encoding="utf-8") as f:
                 f.write(json.dumps(ligne, ensure_ascii=False) + chr(10))
-        except Exception:
+        except Exception as exc:
+            print("_journal : operation impossible : %s" % exc, file=sys.stderr)
             pass
 
     def get_state(self):
