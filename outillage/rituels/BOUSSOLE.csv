@@ -3,16 +3,16 @@ Contrat;.claude/CLAUDE.md;Contrat d'exploitation de la plateforme;122201;2026-09
 Contrat;AGENTS.md;Contrat d'agent universel;3540;2026-08-28;e258b3cc90de2a14
 Infrastructure;docker-compose.yml;Définition des services et volumes;6261;2026-09-07;2bcf84ef8fb1486f
 Configuration;.env.example;Modèle de fichier d'environnement;3051;2026-08-29;f70ad0c51a6d67ab
-Configuration;litellm_config.yaml;Modèles, routeurs, fallbacks — mi-généré, mi-manuel;66515;2026-09-14;8be3d3cae813b00a
+Configuration;litellm_config.yaml;Modèles, routeurs, fallbacks — mi-généré, mi-manuel;68454;2026-09-14;073c8614c5071f84
 Inventaire;cloud_models.txt;Catalogue Ollama Cloud, généré, droits annotés;571;2026-09-13;c63b19bf68140b38
 Inventaire;model_list.txt;Modèles locaux à télécharger;601;2026-09-02;15c95c6f625eeeaa
 Pont;.mcp.json;Déclaration du serveur MCP pour Claude Code;246;2026-08-29;2622bc6acf81e922
 Pont;Set-ClaudeModel.ps1;Choix explicite du mode d'exécution de Claude Code;12771;2026-09-02;cd68d2299da2ed40
-Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;159746;2026-09-14;185a6d3a29f12f48
+Pont;tools/nexus-mcp/server.js;Serveur MCP : les modèles comme outils;162714;2026-09-14;c1f86803c5bfb850
 Génération;scripts/Update-NexusModels.ps1;Orchestrateur de mise à jour;13737;2026-09-07;99e3e0c3e2fddb4e
 Génération;scripts/nexus_generate.py;Régénère les zones AUTOGEN;91174;2026-09-13;2a719d078df59c7a
 Vérification;outillage/nexus_mcp_probe.py;Sonde les outils du pont MCP;19379;2026-09-08;b7df4a95c153ce54
-Vérification;outillage/nexus_test.py;Suite forward / reverse / policy / code;191605;2026-09-14;7c0cb20903988890
+Vérification;outillage/nexus_test.py;Suite forward / reverse / policy / code;192026;2026-09-14;083fa49cde96f2a6
 Vérification;scripts/Test-NexusConfig.ps1;Enveloppe du validateur;4974;2026-09-07;a1fee5b0f3db72fe
 Vérification;scripts/Test-NexusSmoke.ps1;Smoke test runtime;9241;2026-09-02;3a0e8d637cb715aa
 Vérification;scripts/nexus_capability.py;Profil matériel et verdict par modèle;30602;2026-09-07;aa45588da452f434
@@ -24,16 +24,17 @@ Exploitation;scripts/backup.ps1;Sauvegarde configuration et volumes;9765;2026-09
 Exploitation;scripts/restore.ps1;Restauration;7779;2026-09-02;3d7c3f18eff18380
 Exploitation;scripts/start.ps1;Démarrage de la pile;14163;2026-09-13;6c4e72999c049db3
 Exploitation;scripts/stop.ps1;Arrêt de la pile;4119;2026-09-02;ea4e8f7b82abfa83
-Rituel;PROGRESS.MD;Historique des décisions et des erreurs;2309;2026-09-14;65d7453bdb5c711b
+Rituel;PROGRESS.MD;Historique des décisions et des erreurs;2358;2026-09-14;9f9606ba5ff35857
 Rituel;outillage/nexus_boussole.py;Régénère cette boussole;12250;2026-09-07;f4b942bab7a8e4cc
-Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1647255;2026-09-14;efda1f541ba07ab1
-Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1502673;2026-09-14;cc9e7d127a2bc327
+Rituel;outillage/rituels/BOUSSOLE.md;Cet index;1647905;2026-09-14;14a46c160b6fe15f
+Rituel;outillage/rituels/CHECKLIST_COCKPIT.MD;Sujets ouverts;1519684;2026-09-14;831074d60c1c5c70
 Rituel;outillage/rituels/RESUME.ps1;Reprise de session;2878;2026-09-06;770e25b546079761
-Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3479;2026-09-14;d8a09ee2a4530362
+Rituel;outillage/rituels/STATE.md;État mesuré — généré, ne pas éditer;3219;2026-09-14;f15632ab999dd553
 Rituel;scripts/nexus_state.py;Régénère STATE.md par mesure;24273;2026-09-07;4027c4d837b6f1b1
 Documentation;README.md;Vue d'ensemble et installation;15254;2026-09-13;23ec8beab0afc39e
 Documentation;docs/pont-local-abonnement.md;Associer modèles locaux et abonnement;16774;2026-09-06;ee756cc3eb305c0c
 Architecture;.claude/agents/nexus-delegue.md;;4131;2026-08-29;103b5dbd0d19550c
+Architecture;.claude/scheduled_tasks.lock;;124;2026-09-14;66f323d8a57e14e8
 Architecture;.claude/settings.json;;5662;2026-09-07;b7136d3bb079bb1e
 Architecture;.claude/settings.json.avant_socle_20260901-190654;;3425;2026-09-06;44f99227a7175251
 Architecture;.claude/settings.local.json;;1837;2026-09-14;9864b1469a799b71
@@ -43,8 +44,8 @@ Architecture;.gitignore;;5502;2026-09-07;dec9645db4ce3907
 Architecture;.ruff_cache/.gitignore;;35;2026-08-31;9e3a60f1e6ec4ae6
 Architecture;.ruff_cache/0.16.5/10020963307576928546;;1052;2026-09-13;6a75659aa992c1bc
 Architecture;.ruff_cache/0.16.5/10030628807976243294;;3492;2026-09-13;43c7dc08ae3aa7d4
-Architecture;.ruff_cache/0.16.5/10040030221802267965;;172;2026-09-07;81a16cad0def4631
-Architecture;.ruff_cache/0.16.5/10108054744112579873;;9364;2026-09-14;dccd06bb5adb5fe3
+Architecture;.ruff_cache/0.16.5/10040030221802267965;;8588;2026-09-14;40732100948b62d3
+Architecture;.ruff_cache/0.16.5/10108054744112579873;;9364;2026-09-14;8d45ec9d6a811ad6
 Architecture;.ruff_cache/0.16.5/10124619652482519485;;172;2026-09-07;dbafe849e13d69ec
 Architecture;.ruff_cache/0.16.5/10177341371865747424;;156;2026-09-01;3aa6f83eb4902b70
 Architecture;.ruff_cache/0.16.5/10179678212708851550;;4412;2026-09-01;799d8bfe9a949736
@@ -58,16 +59,18 @@ Architecture;.ruff_cache/0.16.5/10511024831248402188;;1820;2026-09-07;3def659978
 Architecture;.ruff_cache/0.16.5/10550273669060046575;;2380;2026-08-31;bc8db856083379bb
 Architecture;.ruff_cache/0.16.5/10603773891652047434;;7852;2026-09-02;9578e37d61bd7f72
 Architecture;.ruff_cache/0.16.5/10667063694677050817;;188;2026-09-09;419e977ae5f71a36
+Architecture;.ruff_cache/0.16.5/10797906781632084285;;364;2026-09-14;a5cd3a8089596f44
 Architecture;.ruff_cache/0.16.5/11159084486107725335;;180;2026-09-13;8b73569b7efc6a4e
 Architecture;.ruff_cache/0.16.5/11248009460340601029;;3996;2026-09-02;ed56b102292f045f
 Architecture;.ruff_cache/0.16.5/11371556791863279361;;332;2026-09-07;01fed97406d7ddd4
+Architecture;.ruff_cache/0.16.5/11589413076113786207;;196;2026-09-14;59aa0116ef2ab855
 Architecture;.ruff_cache/0.16.5/1174267585862584150;;2244;2026-09-13;1762105d6757c4f7
 Architecture;.ruff_cache/0.16.5/11870650972443376488;;268;2026-08-31;7e65f846593f3f85
 Architecture;.ruff_cache/0.16.5/12097943216486239122;;476;2026-09-02;6009f04d0f58f68c
-Architecture;.ruff_cache/0.16.5/12188456645946320487;;2844;2026-09-01;c6a6c1725262cbac
+Architecture;.ruff_cache/0.16.5/12188456645946320487;;3788;2026-09-14;c733f2ea6650a443
 Architecture;.ruff_cache/0.16.5/12283610345515842208;;164;2026-09-08;e7ec8b2cfbea0757
 Architecture;.ruff_cache/0.16.5/12305097964330132417;;2244;2026-09-13;5adcddeae5c65e6c
-Architecture;.ruff_cache/0.16.5/12371781643915760102;;8580;2026-09-14;183e836c26dd5396
+Architecture;.ruff_cache/0.16.5/12371781643915760102;;8580;2026-09-14;bdcf77f70101f7e9
 Architecture;.ruff_cache/0.16.5/12443191087169482853;;180;2026-09-07;cfa7072b6beb7b04
 Architecture;.ruff_cache/0.16.5/12444162157776358107;;3844;2026-09-08;d7cf87e4d68e6506
 Architecture;.ruff_cache/0.16.5/12613474961878029211;;188;2026-09-01;f061bbda0997e84e
@@ -76,16 +79,19 @@ Architecture;.ruff_cache/0.16.5/13044583939176750697;;5364;2026-09-01;334c998006
 Architecture;.ruff_cache/0.16.5/13106115938342738144;;196;2026-09-13;ca1b40e093bd0f31
 Architecture;.ruff_cache/0.16.5/13138782307495393148;;164;2026-09-08;d40c4c1a5baa9bff
 Architecture;.ruff_cache/0.16.5/13195187389784286675;;3844;2026-09-08;354e2fe98d5929be
-Architecture;.ruff_cache/0.16.5/13260099532227286935;;4764;2026-09-14;06381042728e52ab
+Architecture;.ruff_cache/0.16.5/13202743552362239487;;164;2026-09-14;ec7fa8e6189898b6
+Architecture;.ruff_cache/0.16.5/13260099532227286935;;4764;2026-09-14;49b29e0c27346b87
 Architecture;.ruff_cache/0.16.5/13289934018927647403;;2196;2026-08-31;0eba88d1b07379f6
 Architecture;.ruff_cache/0.16.5/13443779736450239840;;228;2026-09-13;8fd19d467eed5e22
-Architecture;.ruff_cache/0.16.5/13446392367267597956;;2292;2026-09-14;36d41c04fda3511b
+Architecture;.ruff_cache/0.16.5/13446392367267597956;;2292;2026-09-14;dd2831c8dab04f9c
 Architecture;.ruff_cache/0.16.5/13454085944863612442;;2380;2026-08-31;f702be4df2bddcc9
 Architecture;.ruff_cache/0.16.5/13577033435700752088;;164;2026-08-31;90b3a9eaab976eae
+Architecture;.ruff_cache/0.16.5/13709803475597827445;;204;2026-09-14;32392ded6ff4dfe1
 Architecture;.ruff_cache/0.16.5/13954307803360208894;;7908;2026-09-02;dfea66ee31123b3c
-Architecture;.ruff_cache/0.16.5/14059106395295115456;;4052;2026-09-14;2aa7708d4a56e4ac
+Architecture;.ruff_cache/0.16.5/14059106395295115456;;4052;2026-09-14;fac74071151bd49a
 Architecture;.ruff_cache/0.16.5/14194984766851969492;;2196;2026-08-31;759366fc70225fa5
 Architecture;.ruff_cache/0.16.5/14237619000490327463;;4820;2026-09-09;11765596d2ca6268
+Architecture;.ruff_cache/0.16.5/14305007918634855934;;260;2026-09-14;3a53357dabf63549
 Architecture;.ruff_cache/0.16.5/14358615054462433942;;172;2026-09-09;0289afa450ed1e0c
 Architecture;.ruff_cache/0.16.5/14366030611415331262;;164;2026-09-02;381fbaee07b24519
 Architecture;.ruff_cache/0.16.5/14412068750374925602;;196;2026-09-09;a7e552539bb541a0
@@ -102,24 +108,28 @@ Architecture;.ruff_cache/0.16.5/15100215123932875898;;180;2026-09-07;79c0072d70c
 Architecture;.ruff_cache/0.16.5/15215520482303494580;;212;2026-09-07;18f2a208e2badb58
 Architecture;.ruff_cache/0.16.5/15439179792969532340;;252;2026-08-31;9cfdab5c83c38a08
 Architecture;.ruff_cache/0.16.5/15488914013848258156;;1916;2026-09-08;da5c2559c996198b
+Architecture;.ruff_cache/0.16.5/15548260170911187079;;172;2026-09-14;02f5147ab5cd1b89
 Architecture;.ruff_cache/0.16.5/1564874108514034290;;180;2026-09-07;fb9e94e0fdb6d0ba
 Architecture;.ruff_cache/0.16.5/15849022267522586265;;164;2026-09-08;c0ba2aa538b5c7af
 Architecture;.ruff_cache/0.16.5/15893589190699598071;;172;2026-09-13;b516301ce2d6561b
 Architecture;.ruff_cache/0.16.5/15898859826282287107;;164;2026-09-07;7843f40957be9dd7
 Architecture;.ruff_cache/0.16.5/15991078781346383157;;244;2026-09-01;c99d2a54d31c51fd
-Architecture;.ruff_cache/0.16.5/16057941055777274933;;164;2026-09-08;fdbf8f4f009c0c2d
+Architecture;.ruff_cache/0.16.5/16057941055777274933;;4052;2026-09-14;b80ee50779bfcaa4
 Architecture;.ruff_cache/0.16.5/16313130111453591128;;164;2026-09-09;219bd73b022bf883
 Architecture;.ruff_cache/0.16.5/16535297596278683755;;172;2026-09-01;1a659ab3021b9646
 Architecture;.ruff_cache/0.16.5/16631133977321131918;;5364;2026-09-01;7dc8a00834515bf7
+Architecture;.ruff_cache/0.16.5/1663810170608443970;;348;2026-09-14;63ab1efc3d4c58aa
 Architecture;.ruff_cache/0.16.5/16742425436133786254;;4092;2026-09-07;3204fdcf7f0e133c
 Architecture;.ruff_cache/0.16.5/17018753034727135126;;6116;2026-09-02;0748c7d95ae7eb6b
 Architecture;.ruff_cache/0.16.5/17095073316590096600;;204;2026-09-09;d7e0ca267e4ed6f1
+Architecture;.ruff_cache/0.16.5/17148371557153954767;;212;2026-09-14;c50b386844b5ad0a
 Architecture;.ruff_cache/0.16.5/17152601990647591200;;3844;2026-09-13;831688305c08c833
+Architecture;.ruff_cache/0.16.5/17273620895530114186;;164;2026-09-14;9e18c164b6f7a49e
 Architecture;.ruff_cache/0.16.5/17317544956508051424;;164;2026-09-08;51806002ac6dd013
 Architecture;.ruff_cache/0.16.5/17321816017736170431;;172;2026-09-07;63f6a530c7132a6f
 Architecture;.ruff_cache/0.16.5/17341765443534343973;;4092;2026-09-07;6e992c2054f3f057
 Architecture;.ruff_cache/0.16.5/17378449226791531954;;172;2026-09-01;4dbf7e0d22f69d78
-Architecture;.ruff_cache/0.16.5/1737940014446486211;;8588;2026-09-14;fab36ebc35527d8b
+Architecture;.ruff_cache/0.16.5/1737940014446486211;;8588;2026-09-14;983502636fd6be2a
 Architecture;.ruff_cache/0.16.5/17383864683153407835;;364;2026-09-08;f517f88342d3a390
 Architecture;.ruff_cache/0.16.5/17632243767547897970;;196;2026-09-13;d6520dc334a087ab
 Architecture;.ruff_cache/0.16.5/17632354879131024054;;148;2026-09-01;e0d05a01063a169a
@@ -145,7 +155,9 @@ Architecture;.ruff_cache/0.16.5/2532226648074036210;;204;2026-09-08;ff896a850dc3
 Architecture;.ruff_cache/0.16.5/2555769582492602664;;3316;2026-09-13;aff9291e823f2429
 Architecture;.ruff_cache/0.16.5/2572072464392283268;;204;2026-09-08;d0aa55dae183c300
 Architecture;.ruff_cache/0.16.5/2805896571579050925;;2244;2026-09-09;745e6a4f3ea67a45
+Architecture;.ruff_cache/0.16.5/3492066888051947286;;180;2026-09-14;bcb2924441dbf6ad
 Architecture;.ruff_cache/0.16.5/3513283981245334600;;172;2026-09-13;8669705b3ede4bb4
+Architecture;.ruff_cache/0.16.5/3532022562600560016;;180;2026-09-14;8f0d5003772db120
 Architecture;.ruff_cache/0.16.5/359016334827892630;;1916;2026-09-08;732a0b6bddf0e092
 Architecture;.ruff_cache/0.16.5/3611732672678976494;;2196;2026-08-31;a48b186dfbe7c798
 Architecture;.ruff_cache/0.16.5/3754390892959237002;;1820;2026-09-07;a5c2c75300308a91
@@ -155,6 +167,7 @@ Architecture;.ruff_cache/0.16.5/4045497113797835424;;172;2026-09-07;061cd02e7199
 Architecture;.ruff_cache/0.16.5/4130897460249937328;;204;2026-09-13;76241e8e4858e25f
 Architecture;.ruff_cache/0.16.5/4228267026108389762;;2196;2026-08-31;9a0055cf218392ea
 Architecture;.ruff_cache/0.16.5/4241613810482374822;;260;2026-09-08;1c18d230613e06b1
+Architecture;.ruff_cache/0.16.5/4416609324312655472;;308;2026-09-14;e9ded8d449ab89c0
 Architecture;.ruff_cache/0.16.5/4656405054037113001;;244;2026-09-01;808e1b7677308658
 Architecture;.ruff_cache/0.16.5/4687559574044939446;;172;2026-09-01;3212974dd4afba24
 Architecture;.ruff_cache/0.16.5/4786718088144822638;;172;2026-09-07;81839e16d8cfb713
@@ -176,10 +189,12 @@ Architecture;.ruff_cache/0.16.5/5756748736740822419;;164;2026-09-08;b0daa53d8165
 Architecture;.ruff_cache/0.16.5/5785493642906717947;;212;2026-08-31;d44cfba2aed4f7a2
 Architecture;.ruff_cache/0.16.5/5838088151039679405;;204;2026-09-09;bd6e5844f2d1e2bf
 Architecture;.ruff_cache/0.16.5/5839449063045416517;;2196;2026-08-31;a8fc7443b46a17cd
+Architecture;.ruff_cache/0.16.5/6176271086796277296;;364;2026-09-14;d42624d431e7e230
 Architecture;.ruff_cache/0.16.5/6207093755450512321;;260;2026-09-14;deac2441da845be7
 Architecture;.ruff_cache/0.16.5/6269975626809520852;;180;2026-09-07;45983c0dda851482
 Architecture;.ruff_cache/0.16.5/6284134633869325547;;7068;2026-09-09;246d02f928edb615
 Architecture;.ruff_cache/0.16.5/6309381100648749824;;7908;2026-09-07;9be9709f014d352e
+Architecture;.ruff_cache/0.16.5/6353483503542189764;;172;2026-09-14;fd6809f43f87d956
 Architecture;.ruff_cache/0.16.5/6462348733437882406;;156;2026-09-09;9277c2534c7ba2dc
 Architecture;.ruff_cache/0.16.5/6513354883426615950;;308;2026-09-14;1cad75893ae25d72
 Architecture;.ruff_cache/0.16.5/6665543148801511996;;212;2026-09-01;4d742d0bd21283b2
@@ -196,6 +211,7 @@ Architecture;.ruff_cache/0.16.5/7030950681005779684;;8084;2026-09-13;cd7c7167018
 Architecture;.ruff_cache/0.16.5/713092962779550954;;2708;2026-08-31;ab6ef33a7ca91787
 Architecture;.ruff_cache/0.16.5/7268353598982164622;;308;2026-09-07;86600fac5bc56172
 Architecture;.ruff_cache/0.16.5/728287331025515125;;236;2026-09-01;8f604a81243ca370
+Architecture;.ruff_cache/0.16.5/7298043420514728786;;212;2026-09-14;fce7a6501a69feb4
 Architecture;.ruff_cache/0.16.5/7357206066777503580;;1916;2026-09-08;2e61d8357c806285
 Architecture;.ruff_cache/0.16.5/7417025341465640920;;172;2026-09-07;32f777a8b52f7567
 Architecture;.ruff_cache/0.16.5/7436670238545905122;;3004;2026-08-31;c4bf0d367e35337b
@@ -217,6 +233,7 @@ Architecture;.ruff_cache/0.16.5/9014249530989735555;;2196;2026-08-31;595ec49c670
 Architecture;.ruff_cache/0.16.5/9063188629575566429;;3844;2026-09-09;26fe0e1ae3ba063f
 Architecture;.ruff_cache/0.16.5/9144252113258020155;;7908;2026-09-02;d4aa5676a8da3561
 Architecture;.ruff_cache/0.16.5/919350841150749264;;164;2026-09-05;740383939724c8af
+Architecture;.ruff_cache/0.16.5/9219618422178478663;;172;2026-09-14;38538fa4ea89662f
 Architecture;.ruff_cache/0.16.5/9413750576472324194;;164;2026-08-31;0bd32f5301ab205a
 Architecture;.ruff_cache/0.16.5/9691695313051288092;;212;2026-09-02;f851ae4f28ff2a26
 Architecture;.ruff_cache/0.16.5/9702833173602940057;;3796;2026-09-08;279385b9704f7c6a
@@ -356,7 +373,7 @@ Architecture;epreuves/epreuve_outillage.py;;2643;2026-09-08;88a96812e6ad8cb0
 Architecture;epreuves/epreuve_paires_copiees.py;;3354;2026-09-09;b49cc32165f02e0b
 Architecture;epreuves/epreuve_part_raisonnement.py;;4194;2026-09-06;1d747409da5c8f56
 Architecture;epreuves/epreuve_plafond_sortie.py;;5573;2026-09-09;970be25b520bff85
-Architecture;epreuves/epreuve_pont_racine_lecture.py;;6232;2026-09-14;85290f9508ec68d0
+Architecture;epreuves/epreuve_pont_racine_lecture.py;;6216;2026-09-14;451286e82e6014c6
 Architecture;epreuves/epreuve_porte_rituel.py;;3163;2026-09-09;c8c9a357724242d8
 Architecture;epreuves/epreuve_poser_socle.py;;3374;2026-09-09;16d5e5eb6976a8dd
 Architecture;epreuves/epreuve_posterior.py;;3036;2026-09-08;b2d4abdaf60cd0b9
@@ -401,7 +418,7 @@ Architecture;epreuves/epreuve_traque_veille.py;;886;2026-09-13;11aea2189bf9353f
 Architecture;epreuves/epreuve_valide_copie.py;;3898;2026-09-13;c25c567e45027935
 Architecture;epreuves/epreuve_valide_decoupe.py;;5998;2026-09-13;397fca2459da4c5a
 Architecture;epreuves/epreuve_valide_verrou.py;;4114;2026-09-13;a0ed54ff5df87fcb
-Architecture;epreuves/epreuve_veille_moteur.py;;5839;2026-09-14;382ab819e361cc7c
+Architecture;epreuves/epreuve_veille_moteur.py;;5858;2026-09-14;3839ec45344ea541
 Architecture;epreuves/epreuve_veille_orphelins.py;;5832;2026-09-14;208f4ef3969767e3
 Architecture;epreuves/epreuve_verbatim.py;;959;2026-09-09;bf8305379836f437
 Architecture;epreuves/epreuve_verdict_rassurant.py;;4235;2026-09-09;c80070ee1c2f351c
@@ -480,7 +497,7 @@ Architecture;outillage/nexus_sonde_schema.py;;12947;2026-09-13;f025610a08649b19
 Architecture;outillage/nexus_stats_jsonl.py;;5894;2026-09-06;9bf65a3f349486af
 Architecture;outillage/nexus_test_outillage.py;;25098;2026-09-06;52036273fe934bba
 Architecture;outillage/nexus_traque.py;;20204;2026-09-14;ef05f174c508d408
-Architecture;outillage/nexus_veille_moteur.py;;12632;2026-09-14;ab060d1e4d41fbf7
+Architecture;outillage/nexus_veille_moteur.py;;12596;2026-09-14;aae669c461e573ef
 Architecture;outillage/nexus_verbatim.py;;10794;2026-09-07;1bae3b0cf33da9ea
 Architecture;outillage/nexus_verifie_rendu.py;;7143;2026-09-06;24cf94e640252313
 Architecture;outillage/nexus_verrou_machine.py;;23411;2026-09-07;9af91c1209a56108
@@ -489,7 +506,7 @@ Architecture;outillage/nexus_worktree.py;;21215;2026-09-07;9f948ebd6c64d6e9
 Architecture;outillage/rituels/ACHEVEMENT.md;;4893;2026-09-07;2f5c4b7dbab00f84
 Architecture;outillage/rituels/A_POSER_global.json;;7953;2026-09-06;d33a9cd20d953d7d
 Architecture;outillage/rituels/A_POSER_local.json;;2254;2026-09-07;dc5e0c6fa0b788d2
-Architecture;outillage/rituels/BOUSSOLE.csv;;1442207;2026-09-14;af4a480eb23287bb
+Architecture;outillage/rituels/BOUSSOLE.csv;;1442725;2026-09-14;bf568abd413f101c
 Architecture;outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md;;38355;2026-09-06;1f94b6bf8244d354
 Architecture;outillage/rituels/CORPUS_LIVRES.md;;6232;2026-09-06;7a297119dcca2efd
 Architecture;outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md;;7364;2026-09-06;8fb3057f414f2e54
@@ -10130,19 +10147,19 @@ Architecture;scripts/mesure_rendu_vide.py;;7932;2026-09-02;6fbe547079976463
 Architecture;scripts/nexus.ps1;;12436;2026-09-07;a746fd08a9facc7f
 Architecture;scripts/nexus_agent.py;;108603;2026-09-14;88f3383632ed3eff
 Architecture;scripts/nexus_agent.py.avant-patch;;49956;2026-08-30;310e3bab9ab3d1fb
-Architecture;scripts/nexus_appliquer.py;;12373;2026-09-13;94f3fdbae317c27c
+Architecture;scripts/nexus_appliquer.py;;13494;2026-09-14;2a9beff707d8e264
 Architecture;scripts/nexus_boucle_locale.py;;7059;2026-09-09;680be47745f90d27
-Architecture;scripts/nexus_charge.py;;12222;2026-09-14;d2465215a37470a7
+Architecture;scripts/nexus_charge.py;;18516;2026-09-14;ec0c77c3b1ce2742
 Architecture;scripts/nexus_conformite.py;;98407;2026-09-14;b35a7962d83bfb83
 Architecture;scripts/nexus_conformite.py.avant-patch;;35895;2026-08-30;1ccee0e7fa3cffd4
-Architecture;scripts/nexus_creer.py;;8178;2026-09-09;35126bc2a49e8900
+Architecture;scripts/nexus_creer.py;;9920;2026-09-14;06a51b1a174fbcce
 Architecture;scripts/nexus_deposer.py;;1595;2026-09-09;e96bdf653455d99f
 Architecture;scripts/nexus_disjoncteur.py;;11258;2026-09-09;a3f7be41fecbdc42
 Architecture;scripts/nexus_garde_agent.py;;10117;2026-09-08;6ed15df21fccc9e5
-Architecture;scripts/nexus_garde_ecriture.py;;6885;2026-09-07;2214cd3d33e39d9f
+Architecture;scripts/nexus_garde_ecriture.py;;7576;2026-09-14;3adf926dc36ede4b
 Architecture;scripts/nexus_garde_edition.py;;5274;2026-09-08;78a3ad460b5ef7d4
 Architecture;scripts/nexus_garde_isolation.py;;5732;2026-09-08;a9f07e624e220f1a
-Architecture;scripts/nexus_garde_lecture.py;;21180;2026-09-08;2ec76fabfe1b94fd
+Architecture;scripts/nexus_garde_lecture.py;;21575;2026-09-14;4fb694b0101c0283
 Architecture;scripts/nexus_garde_production.py;;5434;2026-09-09;585f3094d71b5ced
 Architecture;scripts/nexus_garde_shell.py;;12615;2026-09-08;e5b3deb3ae57f0c6
 Architecture;scripts/nexus_livres_semantique.py;;12191;2026-09-09;cc03b5c986ffbf5b
@@ -10158,7 +10175,7 @@ Architecture;scripts/nexus_reprise.py;;22484;2026-09-14;787eacedb9144474
 Architecture;scripts/nexus_rituel.py;;26865;2026-09-08;dcbb75576114d3ce
 Architecture;scripts/nexus_savings.py;;22114;2026-09-07;5aaf9762f4f29bed
 Architecture;scripts/nexus_succession.py;;6087;2026-09-09;acf9fc3adbd924c8
-Architecture;scripts/nexus_sujets.py;;23495;2026-09-08;5ecf28d06ca8ae32
+Architecture;scripts/nexus_sujets.py;;23495;2026-09-14;5ecf28d06ca8ae32
 Architecture;scripts/nexus_valide.py;;40851;2026-09-13;4e9633492b942945
 Architecture;scripts/nexus_verbatim.py;;10794;2026-09-07;1bae3b0cf33da9ea
 Architecture;scripts/nexus_verrou_machine.py;;31398;2026-09-14;aa1fd4f45c88a51b

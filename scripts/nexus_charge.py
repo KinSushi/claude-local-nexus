@@ -322,7 +322,7 @@ def main():
             parent_statut = str(parent_pid) if parent_pid and parent_pid in parent_map else "MORT"
 
             # Age en minutes
-            age_min = _extraire_age_minutes(p.get("CreationDate"))
+            age_min = _age_minutes(p.get("CreationDate"))
 
             # Débits de lecture/écriture (Mo/s) entre les deux relevés
             second = second_snapshot.get(pid, {})
