@@ -103,6 +103,38 @@ def jouer() -> int:
     verifier("Cas 10 - le delai par defaut depasse la grace du serveur (120 s)",
              delai > 120, "delai=%ss" % delai)
 
+    # Cas 11 - sonde MCP réelle (exécuté uniquement si NEXUS_EPREUVE_MCP_REEL=1)
+    if os.getenv("NEXUS_EPREUVE_MCP_REEL") == "1":
+        import subprocess, sys
+        env = dict(os.environ)
+        env["NEXUS_PROBE_MODEL"] = "gpt-oss-120b-cloud"
+        # Chemin du script probe, relatif à ce fichier
+        probe_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "outillage", "nexus_mcp_probe.py")
+        )
+        cmd = [sys.executable, probe_path, "summarize", "scripts/nexus_deposer.py"]
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=os.path.dirname(__file__),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            ok = result.returncode == 0 and "Echec de" not in result.stdout
+            detail = "" if ok else result.stdout[:300]
+        except Exception as exc:  # pragma: no cover
+            ok = False
+            detail = str(exc)[:300]
+        verifier("Cas 11 - sonde MCP réelle", ok, detail)
+    else:
+        verifier(
+            "Cas 11 - sonde MCP réelle",
+            True,
+            "generation MCP reelle : sautee, NEXUS_EPREUVE_MCP_REEL absente",
+        )
+
     print("-" * 66)
     print("VERDICT : epreuve tenue" if ECHECS == 0
           else "VERDICT : %d echec(s)" % ECHECS)

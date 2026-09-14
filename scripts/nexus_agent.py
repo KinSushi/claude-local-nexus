@@ -280,7 +280,11 @@ def replis_gratuits(cle: str) -> List[str]:
 # Limitation du nombre de replis locaux conservés.
 # Le plafond est configurable via la variable d'environnement NEXUS_MAX_REPLIS_LOCAUX
 # (défaut : 2). La fonction est pure et ne dépend que des arguments fournis.
-MAX_REPLIS_LOCAUX = int(os.environ.get("NEXUS_MAX_REPLIS_LOCAUX", "2"))
+try:
+    MAX_REPLIS_LOCAUX = int(os.environ.get("NEXUS_MAX_REPLIS_LOCAUX", "2"))
+except ValueError:
+    print(f"NEXUS_MAX_REPLIS_LOCAUX invalide (valeur='{os.environ.get('NEXUS_MAX_REPLIS_LOCAUX')}'), utilisation de la valeur par défaut 2", file=sys.stderr)
+    MAX_REPLIS_LOCAUX = 2
 
 def borner_replis_locaux(candidats: list, plans: dict, maximum: int = MAX_REPLIS_LOCAUX) -> tuple:
     """
@@ -747,7 +751,11 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     # Désactive les replis de la passerelle si NEXUS_MAX_REPLIS_LOCAUX <= 0 ou NEXUS_REPLIS_PASSERELLE == "0"
     if MAX_REPLIS_LOCAUX <= 0 or os.environ.get("NEXUS_REPLIS_PASSERELLE") == "0":
         corps_requete["disable_fallbacks"] = True
-        print(f"Replis de la passerelle desactives pour {modele} (NEXUS_MAX_REPLIS_LOCAUX<=0 ou NEXUS_REPLIS_PASSERELLE=0)", file=sys.stderr)
+        if not hasattr(appeler, "_modeles_fallbacks_desactives"):
+            appeler._modeles_fallbacks_desactives = set()
+        if modele not in appeler._modeles_fallbacks_desactives:
+            print(f"Replis de la passerelle desactives pour {modele} (NEXUS_MAX_REPLIS_LOCAUX<=0 ou NEXUS_REPLIS_PASSERELLE=0)", file=sys.stderr)
+            appeler._modeles_fallbacks_desactives.add(modele)
     charge = json.dumps(corps_requete).encode("utf-8")
     requete = urllib.request.Request(
         PASSERELLE + "/v1/chat/completions",
