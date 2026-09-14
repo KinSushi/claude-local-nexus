@@ -125,6 +125,7 @@ def bloc_objectif() -> None:
     print("  des bancs, des outils voisins reperes, et une documentation et")
     print("  des bibliotheques a portee de copie.")
     print("  Voir « CE DONT JE DISPOSE » dans outillage/rituels/CHECKLIST_COCKPIT.MD.")
+    print("  [RESSOURCES-A-FOND] pont MCP/A2A, banc cloud et local, To de donnees en lecture par copie : les exploiter a fond (inventaire sous ce marqueur).")
 
 
 def bloc_git() -> None:
