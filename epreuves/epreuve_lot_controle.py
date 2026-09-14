@@ -235,23 +235,43 @@ def main() -> int:
     # ------------------------------------------------------------------
     # 6. Reverse – CLI avec lot_id invalide.
     # ------------------------------------------------------------------
-    cmd = [
+    cmd_arreter = [
         sys.executable,
         str(repo_root / "scripts" / "nexus_lot_controle.py"),
         "--arreter",
         "../x",
     ]
+    cmd_etat = [
+        sys.executable,
+        str(repo_root / "scripts" / "nexus_lot_controle.py"),
+        "--etat",
+    ]
     try:
-        result = subprocess.run(
-            cmd,
+        # Cas --arreter ../x
+        result_arreter = subprocess.run(
+            cmd_arreter,
             capture_output=True,
             text=True,
             timeout=30,
+            encoding="utf-8",
         )
-        rc_ok = result.returncode == 2
-        pid_epoch_present = any("-" in line for line in (result.stdout + result.stderr).splitlines())
-        ok &= check("reverse_cli_code", rc_ok, f"rc={result.returncode}")
-        ok &= check("reverse_cli_output", pid_epoch_present, "pas de pattern pid-epoch")
+        output_combined = result_arreter.stdout + result_arreter.stderr
+        rc_ok = result_arreter.returncode != 0
+        pid_epoch_present = "<pid>-<epoch>" in output_combined
+        no_argparse_error = "error: the following arguments are required" not in output_combined
+        ok &= check("reverse_cli_arreter_code", rc_ok, f"rc={result_arreter.returncode}")
+        ok &= check("reverse_cli_arreter_pid_epoch", pid_epoch_present, "pattern <pid>-<epoch> absent")
+        ok &= check("reverse_cli_arreter_no_argparse", no_argparse_error, "refus argparse présent")
+
+        # Cas --etat
+        result_etat = subprocess.run(
+            cmd_etat,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            encoding="utf-8",
+        )
+        ok &= check("reverse_cli_etat_code", result_etat.returncode == 0, f"rc={result_etat.returncode}")
     except subprocess.TimeoutExpired:
         ok &= check("reverse_cli_timeout", False, "timeout")
     except Exception as e:  # pragma: no cover
