@@ -3104,6 +3104,7 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
     # → le lecteur doit accepter les deux formes « [OK  ] » et « [OK] » ainsi que « [RATE] ».
     # Le message d'erreur nomme les trois prefixes attendus.
     vus = 0
+    rates = 0
     for ligne in (r.stdout or "").splitlines():
         ligne = ligne.strip()
         # tester les préfixes dans l’ordre indiqué
@@ -3120,6 +3121,7 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
         nom, _, detail = corps.rpartition(" : ")
         if not nom:
             nom, detail = corps, ""
+        rates += 0 if prefix.startswith("[OK") else 1
         # succès si le préfixe commence par "[OK"
         check(nom, prefix.startswith("[OK"), detail[:70])
         vus += 1
@@ -3130,6 +3132,10 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
             "aucun cas rendu par l'epreuve (code %s) -- attendu des lignes [OK  ] / [OK] / [RATE] nom : detail"
             % r.returncode,
         )
+    elif r.returncode != 0 and not rates:
+        check(etiquette + " (code de sortie)", False, "code %s alors qu'aucun cas RATE n'a ete rendu : l'epreuve est morte apres ses cas" % r.returncode)
+    elif r.returncode == 0 and rates:
+        check(etiquette + " (code de sortie)", False, "code 0 alors que %d cas RATE : le code de sortie ment" % rates)
 
 
 def test_quota_partage() -> None:
