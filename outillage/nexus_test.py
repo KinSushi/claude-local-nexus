@@ -1417,6 +1417,21 @@ def main() -> int:
     if args.only in (None, "traque-veille"):
         jouer_epreuve_python("epreuve_traque_veille.py",
                              "decision de la traque apres la veille du moteur : relancer, signaler, rien")
+    if args.only in (None, "quota-cloud"):
+        jouer_epreuve_python("epreuve_quota_cloud.py",
+                             "quota cloud : etat du compte et usage en dollars par modele")
+    if args.only in (None, "veille-issues"):
+        jouer_epreuve_python("epreuve_veille_issues.py",
+                             "veille du moteur : lignes GIN en heure locale et regle des echecs longs")
+    if args.only in (None, "agent-quota-cloud"):
+        jouer_epreuve_python("epreuve_agent_quota_cloud.py",
+                             "arret du cloud sur limite d'usage du compte")
+    if args.only in (None, "pont-repli-cloud"):
+        jouer_epreuve_python("epreuve_pont_disable_fallbacks.py",
+                             "pont : disable_fallbacks sur tout appel cloud")
+    if args.only in (None, "nexus-test-sans-modele"):
+        jouer_epreuve_python("epreuve_nexus_test_sans_modele.py",
+                             "suite : aucun appel de modele sans option explicite")
     if args.only in (None, "portee"):
         test_portee_import()
     if args.only in (None, "semaphore"):
