@@ -2208,17 +2208,22 @@ def main() -> int:
     else:
         largeur = max(1, min(args.parallele, 8, len(taches)))
     pile_verrou = contextlib.ExitStack()
-    est_local = False
+    # Détermination du caractère local de chaque tâche (appel unique avant la boucle)
     try:
         plans = plans_par_alias(cle)
-        for t in taches:
-            nom = t.get('modele') or ''
-            if plans.get(nom) == 'local' or nom.endswith('-local'):
-                est_local = True
-                break
     except Exception:
-        est_local = True  # profil illisible : ne pas desactiver la protection
-    if est_local:
+        plans = {} # profil illisible : ne pas desactiver la protection
+    taches_locales = []
+    taches_cloud = []
+    for t in taches:
+        nom = t.get('modele') or ''
+        est_local = plans.get(nom) == 'local' or nom.endswith('-local')
+        if est_local:
+            taches_locales.append(t)
+        else:
+            taches_cloud.append(t)
+    refus_local = False
+    if taches_locales:
         # l'attente est bornee a 120 secondes pour qu'une contention reste visible au lieu de devenir un blocage silencieux
         from nexus_verrou_machine import verrou
         try: attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
@@ -2226,12 +2231,13 @@ def main() -> int:
         ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True, annoncer=lambda m: print(m, file=sys.stderr, flush=True)))
         if not ctx.obtenu:
             # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
+            for t in taches_locales:
+                print('banc: contention detectee', file=sys.stderr)
+                _ecrire_refus_sortie(getattr(args, 'sortie', None), [t], 'banc: contention detectee')
             pile_verrou.close()
-            print('banc: contention detectee', file=sys.stderr)
-            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'banc: contention detectee')
-            return 75
-    est_cloud = any(str(t.get('modele', '')).endswith('-cloud') for t in taches)
-    if est_cloud:
+            refus_local = True
+            taches = taches_cloud
+    if taches_cloud:
         from nexus_verrou_machine import semaphore
         try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', PLAFOND_INFERENCE_CLOUD))
         except ValueError: n_inf = PLAFOND_INFERENCE_CLOUD
@@ -2241,7 +2247,7 @@ def main() -> int:
         if not ctx_inf.obtenu:
             pile_verrou.close()
             print('inference: semaphore cloud plein (contention machine)', file=sys.stderr)
-            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'inference: semaphore cloud plein (contention machine)')
+            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches_cloud, 'inference: semaphore cloud plein (contention machine)')
             return 75
     depart = time.time()
     lot_id = identifiant_lot(os.getpid(), depart)
@@ -2478,6 +2484,8 @@ def main() -> int:
               % (len(factures), ", ".join(r["nom"] for r in factures)))
     if (any(r.get("degrade") for r in resultats) and not args.accepter_degrade) or any(r.get("degenere") for r in resultats):
         return 3
+    if refus_local:
+        return 75
     return 1 if echecs else 0
 
 
