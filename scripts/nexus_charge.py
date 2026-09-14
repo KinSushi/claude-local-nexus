@@ -78,7 +78,7 @@ def mesurer_ram() -> dict:
             encoding='utf-8',
             errors='replace'
         )
-        ram_data = json.loads(res_ram)
+        ram_data = json.loads(res_ram, strict=False)
 
         # Utilisation de _nombre pour chaque champ
         ram_libre_go = _nombre(ram_data.get("FreePhysicalMemory")) / (1024 * 1024)
@@ -262,7 +262,7 @@ def main():
             encoding='utf-8',
             errors='replace'
         )
-        procs_data_1 = json.loads(res_proc)
+        procs_data_1 = json.loads(res_proc, strict=False)
         if isinstance(procs_data_1, dict):
             procs_data_1 = [procs_data_1]
         elif procs_data_1 is None:
@@ -277,7 +277,7 @@ def main():
             encoding='utf-8',
             errors='replace'
         )
-        procs_data_2 = json.loads(res_proc_2)
+        procs_data_2 = json.loads(res_proc_2, strict=False)
         if isinstance(procs_data_2, dict):
             procs_data_2 = [procs_data_2]
         elif procs_data_2 is None:
