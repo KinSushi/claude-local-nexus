@@ -600,6 +600,20 @@ def _sans_raisonnement(texte):
 SEUIL_RAISONNEMENT = int(os.environ.get("NEXUS_SEUIL_RAISONNEMENT", "4096"))
 
 
+def demande_fichier_entier(consigne: str) -> bool:
+    """
+    Heuristique très simple pour détecter une consigne demandant la génération
+    d'un fichier complet. Retourne True si la consigne contient l'un des verbes
+    ou expressions typiques d'une tâche d'écriture de fichier.
+    """
+    mots_cles = [
+        "écris", "ecris", "génère", "genere", "rends le fichier",
+        "fichier complet", "crée", "creer", "creé", "creée", "create"
+    ]
+    cons = consigne.lower()
+    return any(m in cons for m in mots_cles)
+
+
 def reprise_utile(cause_vide, plafond=0) -> bool:
     """
     Retourne True si relever le plafond est utile.
@@ -1441,6 +1455,20 @@ def executer(tache: dict, cle: str) -> dict:
         return executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus, joints, bool(tache.get("web_consenti")))
 
     if corpus and len(corpus) > FENETRE_CARACTERES:
+        # Si la consigne indique explicitement la génération d'un fichier complet,
+        # on refuse le découpage MAP-REDUCE et on renvoie une erreur claire.
+        if demande_fichier_entier(consigne):
+            return {
+                "nom": nom,
+                "modele": modele,
+                "refus": refus,
+                "fichiers_joints": joints,
+                "plan": plan_de("?"),
+                "decoupe_refusee": True,
+                "erreur": ("Le corpus dépasse la fenêtre de caractères et la tâche demande "
+                           "l'écriture d'un fichier complet ; réduction requise."),
+                "texte": "",
+            }
         resultat = carte_reduction(corpus, consigne, modele, cle, plafond,
                                    temperature, local_seul=local_seul)
         resultat.update({

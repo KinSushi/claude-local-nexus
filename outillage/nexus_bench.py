@@ -499,6 +499,46 @@ def ecrire_json(racine, mesures):
     return True
 
 
+def archiver_fantomes(releves: dict, alias_exposes: set, chemin_archive) -> int:
+    """
+    Archive les relevés dont l'alias n'est plus exposé par la passerelle.
+
+    Les mesures coûtent cher : on ne supprime jamais un relevé, on le déplace
+    vers une archive horodatée. L'archive fusionne avec l'existante, sans
+    perdre ses entrées. Retourne le nombre de relevés déplacés.
+    """
+    fantomes = {alias: releve for alias, releve in releves.items()
+                if alias not in alias_exposes}
+    if not fantomes:
+        return 0
+
+    # charger l'archive existante si présente
+    archive = {}
+    if chemin_archive.exists():
+        try:
+            with open(chemin_archive, 'r', encoding='utf-8') as f:
+                archive = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            # archive illisible : on repart de zéro, mais on ne perd pas les
+            # fantômes à archiver.
+            archive = {}
+
+    maintenant = datetime.now(timezone.utc).isoformat()
+    for alias, releve in fantomes.items():
+        releve_archive = dict(releve)
+        releve_archive["archive_le"] = maintenant
+        archive[alias] = releve_archive
+        del releves[alias]
+
+    # écriture atomique de l'archive
+    temp_file = chemin_archive.with_suffix('.tmp')
+    with open(temp_file, 'w', encoding='utf-8') as f:
+        json.dump(archive, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, chemin_archive)
+
+    return len(fantomes)
+
+
 def afficher_tableau(resultats: dict):
     """Afficher un tableau simple alias, secondes, verdict."""
     entete = f"{'Alias':30} {'Secondes':>10} {'Verdict':>20}"
@@ -549,11 +589,50 @@ def main():
                              "inter-projets (deliberement sous charge)")
     parser.add_argument("--attente-verrou", type=float, default=0,
                         help="secondes d'attente du verrou avant d'abandonner")
+    parser.add_argument("--archiver-fantomes", action="store_true",
+                        help="Archiver les relevés des modèles qui ne sont "
+                             "plus exposés par la passerelle, sans mesurer.")
     args = parser.parse_args()
 
     # determiner la racine (parent du repertoire du script)
     script_path = Path(__file__).resolve()
     racine = script_path.parent.parent
+
+    if args.archiver_fantomes:
+        # charger .env localement pour cette branche
+        env = charger_env(racine)
+        CLEF["valeur"] = os.getenv("LITELLM_MASTER_KEY", env.get("LITELLM_MASTER_KEY", ""))
+        gateway = os.getenv("NEXUS_GATEWAY", env.get("NEXUS_GATEWAY", "http://localhost:4000"))
+        timeout_defaut = float(os.getenv("NEXUS_BENCH_TIMEOUT", env.get("NEXUS_BENCH_TIMEOUT", "90")))
+        timeout = args.timeout if args.timeout is not None else timeout_defaut
+
+        # obtenir les alias réellement exposés (tous, sans filtre de plan)
+        try:
+            info = appel_get(f"{gateway.rstrip('/')}/model/info", timeout)
+        except urllib.error.HTTPError as exc:
+            sys.stderr.write("Passerelle joignable mais refus HTTP %s : verifier "
+                             "LITELLM_MASTER_KEY dans .env\n" % exc.code)
+            sys.exit(1)
+        except Exception as exc:
+            sys.stderr.write("Passerelle injoignable sur %s : %s\n" % (gateway, exc))
+            sys.exit(1)
+        alias_exposes = {m["model_name"] for m in info.get("data", []) if m.get("model_name")}
+
+        # charger les relevés existants
+        releves = latences_existantes(racine)
+        chemin_archive = racine / ".nexus" / "latences_archive.json"
+        nb = archiver_fantomes(releves, alias_exposes, chemin_archive)
+
+        # réécrire latences.json sans les fantômes
+        fichier_latences = racine / ".nexus" / "latences.json"
+        temp_file = fichier_latences.with_suffix('.tmp')
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump({"mesure_le": datetime.now(timezone.utc).isoformat(),
+                       "modeles": releves}, f, ensure_ascii=False, indent=2)
+        os.replace(temp_file, fichier_latences)
+
+        print("%d relevé(s) fantôme(s) archivé(s)" % nb)
+        sys.exit(0)
 
     # LE VERROU MACHINE, pris ICI et pas ailleurs.
     #

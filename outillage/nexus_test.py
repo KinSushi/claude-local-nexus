@@ -1378,6 +1378,9 @@ def main() -> int:
     if args.only in (None, "charge-verdict"):
         jouer_epreuve_python("epreuve_charge_verdict.py",
                              "verdict de charge : grandeur et seuil nommes")
+    if args.only in (None, "bench-fantomes"):
+        jouer_epreuve_python("epreuve_bench_fantomes.py",
+                             "archivage des releves fantomes : deplace, fusionne, neutre")
     if args.only in (None, "traque-veille"):
         jouer_epreuve_python("epreuve_traque_veille.py",
                              "decision de la traque apres la veille du moteur : relancer, signaler, rien")

@@ -95,7 +95,7 @@ CLASSES = {
     "banc": "une inference locale sur le banc de modeles, la memoire du moteur etant partagee",
 }
 SEMAPHORES = {
-    "inference": "les lots cloud partagent la passerelle (plafond machine-wide)",
+    "inference": (12, "les lots cloud partagent la passerelle (plafond machine-wide)"),
 }
 
 
@@ -597,10 +597,27 @@ def main(argv=None) -> int:
             print(f"  {libre} {classe:<10} {quoi}")
 
     print("\n  SEMAPHORES (plafond, non exclusif) :")
-    for classe, quoi in SEMAPHORES.items():
-        with semaphore(classe, 1, projet="sonde", attente_s=0.0, bavard=False) as s:
-            etat = "LIBRE" if s.obtenu else "PLEIN"
-        print(f"  {etat:<6} SEM_{classe:<10} {quoi}")
+    for classe, (plafond, quoi) in SEMAPHORES.items():
+        occupes = 0
+        for i in range(plafond):
+            nom_i = PREFIXE + "SEM_" + classe.upper() + "_" + str(i)
+            k = _kernel32()
+            if k is None:
+                continue
+            k.CreateMutexW.restype = ctypes.c_void_p
+            k.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
+            k.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+            k.WaitForSingleObject.restype = ctypes.c_uint32
+            k.CloseHandle.argtypes = [ctypes.c_void_p]
+            handle = k.CreateMutexW(None, False, nom_i)
+            if not handle:
+                continue
+            r = k.WaitForSingleObject(handle, 0)
+            if r not in (WAIT_OBJECT_0, WAIT_ABANDONED):
+                occupes += 1
+            k.CloseHandle(handle)
+        etat = f"LIBRE ({plafond - occupes}/{plafond})" if occupes < plafond else f"PLEIN ({plafond}/{plafond})"
+        print(f"  {etat:<15} SEM_{classe:<10} {quoi}")
 
     procs = processus_concurrents()
     print(f"\n  diagnostic (non autoritaire) — {len(procs)} processus concurrent(s) :")
@@ -609,16 +626,31 @@ def main(argv=None) -> int:
     if not procs:
         print("      aucun")
 
+    erreurs_purge = 0
     for classe in CLASSES:
         info = detenteur(RACINE_VERROUS, classe)
         if info:
             etat = "vivant" if info.get("vivant") else "ORPHELIN"
             print(f"      detenteur [{classe}] : {info['projet']} pid {info['pid']} depuis {info['depuis']} ({etat})")
+            if not info.get("vivant"):
+                try:
+                    effacer_fiche(chemin_fiche(RACINE_VERROUS, classe))
+                    print(f"      fiche orpheline purgée : {classe} pid {info['pid']}")
+                except Exception:
+                    erreurs_purge += 1
     for i in range(16):
         info = detenteur(RACINE_VERROUS, "inference", slot=i)
         if info:
             etat = "vivant" if info.get("vivant") else "ORPHELIN"
             print(f"      detenteur [inference_{i}] : {info['projet']} pid {info['pid']} depuis {info['depuis']} ({etat})")
+            if not info.get("vivant"):
+                try:
+                    effacer_fiche(chemin_fiche(RACINE_VERROUS, "inference", slot=i))
+                    print(f"      fiche orpheline purgée : inference_{i} pid {info['pid']}")
+                except Exception:
+                    erreurs_purge += 1
+    if erreurs_purge > 0:
+        print(f"      purge : {erreurs_purge} erreur(s)")
     return 0
 
 
