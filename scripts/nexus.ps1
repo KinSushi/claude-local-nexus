@@ -52,7 +52,8 @@ function Show-Aide {
     Write-Host "                  nexus ask `"la consigne`" fichier1 fichier2"
     Write-Host "    valide    valide le PROJET COURANT sans agent ni cout :"
     Write-Host "                  nexus valide --base main"
-    Write-Host "    help      cette aide"
+    Write-Host "    help      cette aide
+    quota     rend l'état du quota (--etat) ou l'usage en dollars (--usage)"
     Write-Host ""
     Write-Host "  Plateforme : $racine" -ForegroundColor DarkGray
     Write-Host ""
@@ -127,6 +128,10 @@ switch ($Commande.ToLower()) {
         Exit-Avec $LASTEXITCODE
     }
 
+    'quota' {
+        & (Get-Python) (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") 'nexus_quota_cloud.py') @Reste
+        Exit-Avec $LASTEXITCODE
+    }
     'mcp' {
         $courant = (Get-Location).Path
 
