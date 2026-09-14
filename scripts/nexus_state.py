@@ -569,6 +569,48 @@ def main() -> int:
         "\tUp ",
     )
     ecrire_si_change(STATE, lines, VOLATILES)
+    # Mise à jour du compteur d'alias dans README.md
+    try:
+        import importlib.util
+        conform_path = os.path.join(_SCRIPT_DIR, "nexus_conformite.py")
+        spec = importlib.util.spec_from_file_location("nexus_conformite", conform_path)
+        if spec and spec.loader:
+            nexus_conformite = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(nexus_conformite)
+            alias_counts = nexus_conformite._alias_declares(ROOT)
+
+            readme_path = os.path.join(ROOT, "README.md")
+            with io.open(readme_path, "r", encoding="utf-8") as f:
+                readme_lines = f.readlines()
+
+            pattern = re.compile(r"^(\s*)(\d+)(\s+alias\s+)(\d+)(\s+alias\s+)(\d+)(\s+alias)\s*$")
+            for idx, line in enumerate(readme_lines):
+                m = pattern.match(line)
+                if m:
+                    old_vals = [int(m.group(2)), int(m.group(4)), int(m.group(6))]
+                    new_vals = [
+                        alias_counts.get("local", 0),
+                        alias_counts.get("cloud", 0),
+                        alias_counts.get("anthropic", 0),
+                    ]
+                    if old_vals != new_vals:
+                        new_line = (
+                            f"{m.group(1)}{new_vals[0]}{m.group(3)}"
+                            f"{new_vals[1]}{m.group(5)}{new_vals[2]}{m.group(7)}\n"
+                        )
+                        readme_lines[idx] = new_line
+                        _ecrire_atomique(
+                            readme_path,
+                            [l.rstrip("\n") for l in readme_lines],
+                        )
+                    # Si les valeurs sont identiques, ne rien faire.
+                    break
+            else:
+                print("Alias line not found in README.md")
+        else:
+            print("Unable to load nexus_conformite module")
+    except Exception as exc:
+        print(f"Failed to update README alias line: {exc}")
 
     if passerelle_muette:
         print(
