@@ -188,7 +188,8 @@ def main():
             temp_name = tf.name
         os.replace(temp_name, progress_path)
         return 0
-    except Exception:
+    except Exception as exc:
+        print("nexus_progres.py : os.replace impossible : %s" % exc, file=sys.stderr)
         return 1
 
 if __name__ == "__main__":

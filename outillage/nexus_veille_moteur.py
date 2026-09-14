@@ -99,13 +99,13 @@ def lire_ps(url):
         pass
     return {}
 
-def sonder(url, modele, delai):
+def sonder(url, modele, delai, num_predict=4):
     """Return True if POST /api/chat with tiny prompt succeeds within delai seconds."""
     body = {
         "model": modele,
         "messages": [{"role": "user", "content": "ping"}],
         "stream": False,
-        "options": {"num_predict": 4}
+        "options": {"num_predict": num_predict}
     }
     data = json.dumps(body).encode('utf-8')
     req = urllib.request.Request(url + '/api/chat', data=data, headers={'Content-Type': 'application/json'})
@@ -262,7 +262,20 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
             journal_existait = False
         # else: journal_existait remains False
 
-    sonde_ok = sonder(url, modele_sonde, delai_sonde)
+    # Determine which probe to run
+    if modele_sonde is None:
+        # No explicit model: use resident model if any, otherwise no generation
+        if ps.get('models'):
+            modele_a_sonder = ps['models'][0].get('name')
+            sonde_ok = sonder(url, modele_a_sonder, delai_sonde, num_predict=1)
+            sonde_label = modele_a_sonder
+        else:
+            sonde_ok = None
+            sonde_label = "version"
+    else:
+        # Explicit model: keep current behaviour
+        sonde_ok = sonder(url, modele_sonde, delai_sonde)
+        sonde_label = modele_sonde
 
     # Measure journal after probe if it existed before
     if journal and journal_existait:
@@ -280,6 +293,7 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
 
     result['coinces'] = coinces
     result['sonde_ok'] = sonde_ok
+    result['sonde'] = sonde_label
     result['journal_avance'] = journal_avance
     result['verdict'] = verdict(coinces, sonde_ok, journal_avance)
 
@@ -294,7 +308,7 @@ def executer(url, modele_sonde, delai_sonde, seuil_stopping, relancer, journal=N
 def main():
     parser = argparse.ArgumentParser(description='Monitor Ollama runner health.')
     parser.add_argument('--url', default='http://127.0.0.1:11434')
-    parser.add_argument('--modele-sonde', default='llama3.2:1b')
+    parser.add_argument('--modele-sonde', default=None, help='Modèle à sonder explicitement ; si absent, la sonde utilise le modèle résident ou la version')
     parser.add_argument('--delai-sonde', type=int, default=75, help='delai de la sonde en secondes ; 25 s expirait sous charge normale (mesure 2026-09-14), 75 s laisse passer une inference de 20 Go devant la sonde')
     parser.add_argument('--seuil-stopping', type=float, default=120)
     parser.add_argument('--relancer', action='store_true')

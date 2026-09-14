@@ -23,7 +23,10 @@ def lire(chemin):
         chemin = os.fspath(chemin)
         with open(chemin, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except FileNotFoundError:
+        return None
+    except Exception as exc:
+        print("nexus_pouls.py : lecture impossible : %s" % exc, file=sys.stderr)
         return None
 
 
@@ -45,7 +48,8 @@ def battre(chemin, modele="inconnu"):
             os.fsync(f.fileno())
         os.replace(tmp_path, chemin)
         return True
-    except Exception:
+    except Exception as exc:
+        print("nexus_pouls.py : ecriture impossible : %s" % exc, file=sys.stderr)
         return False
 
 

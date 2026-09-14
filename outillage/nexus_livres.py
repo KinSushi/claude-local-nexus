@@ -65,7 +65,8 @@ def _log_consultation(mode, query_or_id, count, bytes_read=0):
         }
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
-    except Exception:
+    except Exception as exc:
+        print(f"{__file__} : log_consultation impossible : {exc}", file=sys.stderr)
         pass
 
 def _format_fragment(data):
@@ -143,8 +144,9 @@ def main():
                             length = int(row["longueur_octets"])
                             f.seek(off)
                             data = json.loads(f.read(length).decode("utf-8"))
-                    except Exception:
+                    except Exception as exc:
                         # En cas d'erreur de lecture, on ignore ce fragment
+                        print(f"{__file__} : open impossible : {exc}", file=sys.stderr)
                         continue
                     # Construction du texte searchable à partir des champs disponibles
                     searchable_parts = []

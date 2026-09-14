@@ -75,11 +75,13 @@ def _save_state(state):
 
             # Atomic replace
             os.replace(temp_path, path)
-        except Exception:
+        except Exception as exc:
             # Cleanup temporary file on any failure
             with contextlib.suppress(Exception):
                 os.remove(temp_path)
-    except Exception:
+            print("nexus_disjoncteur.py : save_state action impossible : %s" % exc, file=sys.stderr)
+    except Exception as exc:
+        print("nexus_disjoncteur.py : save_state action impossible : %s" % exc, file=sys.stderr)
         pass
 
 
@@ -251,7 +253,8 @@ class CircuitBreaker:
                                   "circuit_journal.jsonl")
             with open(chemin, "a", encoding="utf-8") as f:
                 f.write(json.dumps(ligne, ensure_ascii=False) + chr(10))
-        except Exception:
+        except Exception as exc:
+            print("nexus_disjoncteur.py : journal action impossible : %s" % exc, file=sys.stderr)
             pass
 
     def get_state(self):

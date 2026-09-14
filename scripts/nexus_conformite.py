@@ -396,6 +396,72 @@ def controle_runners_orphelins() -> None:
     noter('runners orphelins', True, IGNORE, 'non mesurable : code %d' % result.returncode)
 
 
+def controle_gardes_globales() -> None:
+    """
+    Vérifie que les gardes globales référencées dans le fichier de paramètres
+    ``~/.claude/settings.json`` existent dans le dépôt et sont situées à
+    l'intérieur du dépôt. Si le dépôt change de place, les cinq gardes
+    installées globalement deviendraient inactives sans que l'utilisateur
+    ne s'en rende compte.
+    """
+    chemin = os.path.expanduser('~/.claude/settings.json')
+    try:
+        with open(chemin, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+    except Exception as exc:
+        noter('gardes globales', True, IGNORE,
+              f'settings global absent ou illisible : {exc}')
+        return
+
+    hooks = settings.get('hooks') or {}
+    racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+    trouve = False
+    garde_morte = False
+
+    for evenement, entrees in hooks.items():
+        if not isinstance(entrees, list):
+            continue
+        for entree in entrees:
+            for h in (entree.get('hooks') or []):
+                cmd = str(h.get('command') or '')
+                if 'nexus_garde' not in cmd:
+                    continue
+                trouve = True
+                if cmd.count('"') >= 2:
+                    garde_path = cmd.split('"')[1]
+                else:
+                    # commande sans guillemets ou chemin non extrait
+                    noter('gardes globales', True, AVERTISSEMENT,
+                          f'commande garde sans guillemets ou chemin non extrait : {cmd}')
+                    continue
+                garde_path = os.path.normpath(garde_path.replace('/', os.sep))
+
+                if not os.path.isfile(garde_path):
+                    garde_morte = True
+                    noter('gardes globales', False, AVERTISSEMENT,
+                          f'garde globale morte : {garde_path} -- remede : python outillage/nexus_armer_garde.py')
+                else:
+                    try:
+                        if os.path.commonpath([racine, garde_path]) != racine:
+                            noter('gardes globales', False, AVERTISSEMENT,
+                                  f'garde globale hors depot : {garde_path}')
+                    except ValueError:
+                        # chemins sur différents volumes → hors dépôt
+                        noter('gardes globales', False, AVERTISSEMENT,
+                              f'garde globale hors depot : {garde_path}')
+                n += 1
+
+    if not trouve:
+        noter('gardes globales', True, IGNORE,
+              'aucune garde nexus_garde dans le settings global')
+    else:
+        niveau_final = AVERTISSEMENT if garde_morte else AVERTISSEMENT
+        # toujours un avertissement, jamais bloquant, même si toutes présentes
+        noter('gardes globales', True, niveau_final,
+              f'{n} garde(s) globale(s), toutes presentes')
+
+
 def controle_marqueurs_autogen() -> None:
     """
     Les zones générées sont-elles bien fermées, et une seule fois chacune ?
@@ -729,21 +795,24 @@ def controle_taches_planifiees() -> None:
     Vérifie que les tâches planifiées Nexus existent et sont saines.
 
     - Interroge PowerShell en une seule commande.
-    - Une tâche est cassée si son exécutable n’existe pas ou si
-      LastTaskResult == 2147942402.
-    - Verdict OK : « N tache(s) Nexus, executables presents ».
-    - Verdict ALERTE : liste des tâches cassées + remède
-      « relancer outillage/Register-<Nom>.ps1 ».
-    - Si aucune tâche Nexus n’est trouvée → ALERTE « aucune tache planifiee Nexus enregistree ».
-    - Si PowerShell absent ou échoue → IGNORE (verdict neutre) via `ignorer`.
+    - Une tâche est cassée si son exécutable n’existe pas ou si le
+      code de résultat n’est pas parmi les valeurs attendues
+      (0, 0x41301 en cours, 0x41303 jamais exécutée, 0x41325 en file).
+    - Verdict OK : « N tache(s) Nexus, executables presents, derniers resultats sains ».
+    - Verdict AVERTISSEMENT : liste des tâches cassées + remède.
+    - Si aucune tâche Nexus n’est trouvée → AVERTISSEMENT « aucune tache planifiee Nexus enregistree ».
+    - Si PowerShell absent ou échoue → IGNORE via `ignorer`.
     """
+    import shutil  # ajouté pour la détection d'exécutables via PATH
     # 1. Exécution de la commande PowerShell
     ps_cmd = (
         "Get-ScheduledTask -ErrorAction SilentlyContinue | "
         "Where-Object { $_.TaskName -like '*Nexus*' } | "
-        "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
+        "ForEach-Object { "
+        "$i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
         "$a = $_.Actions | Select-Object -First 1; "
-        "\"$($_.TaskName)|$($_.State)|$($i.LastTaskResult)|$($a.Execute)\" }"
+        "$lt = $i.LastRunTime.ToString('yyyy-MM-dd HH:mm'); "
+        "\"$($_.TaskName)|$($_.State)|$($i.LastTaskResult)|$lt|$($a.Execute)\" }"
     )
     try:
         r = subprocess.run(
@@ -755,18 +824,15 @@ def controle_taches_planifiees() -> None:
             timeout=25,
         )
     except Exception as exc:
-        # PowerShell manquant ou appel impossible → verdict neutre
         ignorer("taches planifiees", f"PowerShell indisponible ou erreur d'exécution : {str(exc)[:70]}")
         return
 
     if r.returncode != 0:
-        # Échec de la commande PowerShell → verdict neutre
         ignorer("taches planifiees", f"PowerShell a retourné code {r.returncode}")
         return
 
     sortie = r.stdout.strip()
     if not sortie:
-        # Aucun résultat → aucune tâche Nexus enregistrée
         noter("taches planifiees", False, AVERTISSEMENT,
               "aucune tache planifiee Nexus enregistree")
         return
@@ -775,26 +841,35 @@ def controle_taches_planifiees() -> None:
     taches_trouvees = 0
     cassees = []
 
+    codes_sains = {0, 0x41301, 0x41303, 0x41325}
+
     for ligne in lignes:
-        parts = ligne.split("|", 3)
-        if len(parts) != 4:
-            continue  # ligne mal formée, on l'ignore
-        nom, etat, last_result_str, executable = parts
+        parts = ligne.split("|", 4)
+        if len(parts) != 5:
+            continue  # ligne mal formée
+        nom, etat, last_result_str, last_run_str, executable = parts
         taches_trouvees += 1
-        # 2. Détection de casse
+
+        # 2. Analyse du code de résultat
         try:
             last_result = int(last_result_str)
         except ValueError:
             last_result = None
-        exe_absent = not (executable and os.path.isfile(executable))
-        resultat_err = (last_result == 2147942402)
-        if exe_absent or resultat_err:
-            raison = []
-            if exe_absent:
-                raison.append("executable absent")
-            if resultat_err:
-                raison.append("LastTaskResult 2147942402")
-            cassees.append(f"{nom} ({', '.join(raison)})")
+
+        if last_result is not None and last_result not in codes_sains:
+            detail = f"{nom} : code 0x{last_result:X} à {last_run_str}"
+            if "Mise a jour" in nom:
+                detail += " – lire logs/update.log"
+            cassees.append(detail)
+            continue
+
+        # 3. Vérification de l'exécutable
+        exe_absent = not (
+            executable
+            and (os.path.exists(executable) or shutil.which(os.path.basename(executable)))
+        )
+        if exe_absent:
+            cassees.append(f"{nom} (executable absent)")
 
     if taches_trouvees == 0:
         noter("taches planifiees", False, AVERTISSEMENT,
@@ -802,15 +877,11 @@ def controle_taches_planifiees() -> None:
         return
 
     if not cassees:
-        # 3. Verdict OK
+        # Verdict sain
         noter("taches planifiees", True, AVERTISSEMENT,
-              f"{taches_trouvees} tache(s) Nexus, executables presents")
+              f"{taches_trouvees} tache(s) Nexus, executables presents, derniers resultats sains")
     else:
-        # 4. Verdict ALERTE avec remède
-        detail = (
-            f"taches cassees : {', '.join(cassees)} ; "
-            "remede : relancer outillage/Register-<Nom>.ps1"
-        )
+        detail = "; ".join(cassees)
         noter("taches planifiees", False, AVERTISSEMENT, detail)
 
 
@@ -2262,6 +2333,7 @@ def main() -> int:
         controle_moteur_coherent,
         controle_moteur_joignable,
         controle_runners_orphelins,
+        controle_taches_planifiees,
         controle_marqueurs_autogen,
         controle_frontiere_alias,
         controle_residence_modeles,
@@ -2272,6 +2344,7 @@ def main() -> int:
         controle_imports,
         controle_portee_import,
         controle_hooks_cables,
+        controle_gardes_globales,
         controle_verrou_machine,
         controle_mcp_a_jour,
         controle_secrets,

@@ -537,11 +537,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except BaseException:
+    with contextlib.suppress(BaseException):
         # Rempart final. La contrainte est absolue : ce garde n'echoue jamais,
         # et une anomalie AUTORISE en silence. Un garde qui plante empeche de
         # travailler, ce qui est pire que le defaut qu'il surveille.
-        pass
+        main()
     sys.exit(0)

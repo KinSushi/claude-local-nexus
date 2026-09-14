@@ -172,14 +172,17 @@ def taille_registre(modele: str) -> float | None:
     except urllib.error.HTTPError as exc:
         # 404 : le modele n'existe pas. Autre code : le registre a repondu,
         # mais pas ce qu'on attendait.
+        print("nexus_pull_host.py : urlopen impossible : %s" % exc, file=sys.stderr)
         POURQUOI[modele] = ("inexistant" if exc.code == 404
                             else "registre HTTP %s" % exc.code)
         return None
     except (urllib.error.URLError, OSError) as exc:
         # Reseau. Le modele existe peut-etre parfaitement.
+        print("nexus_pull_host.py : urlopen impossible : %s" % exc, file=sys.stderr)
         POURQUOI[modele] = "reseau : %s" % str(getattr(exc, "reason", exc))[:40]
         return None
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        print("nexus_pull_host.py : urlopen impossible : %s" % exc, file=sys.stderr)
         POURQUOI[modele] = "manifeste illisible"
         return None
 

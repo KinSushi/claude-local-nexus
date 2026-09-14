@@ -5,10 +5,12 @@ def run(args, timeout=10):
         r = subprocess.run([sys.executable] + args, capture_output=True, 
                            text=True, timeout=timeout, encoding="utf-8", errors="replace")
         return r.returncode, r.stdout, r.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("epreuve_import.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", f"L'outil n'a pas rendu la main (timeout {timeout}s)"
-    except Exception as e:
-        return -1, "", str(e)
+    except Exception as exc:
+        print("epreuve_import.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
+        return -1, "", str(exc)
 
 def main():
     tool = os.path.join("outillage", "nexus_import.py")

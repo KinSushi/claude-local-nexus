@@ -112,7 +112,8 @@ def empreinte_modele(nom):
             if nom == nom_ligne or (':' not in nom and nom_ligne.startswith(nom + ':')):
                 return id_ligne
         return None
-    except Exception:
+    except Exception as exc:
+        print("nexus_maj_modeles.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return None
 
 def rafraichir_modele(nom, delai_s):
@@ -140,9 +141,11 @@ def rafraichir_modele(nom, delai_s):
         if id_avant == id_apres:
             return 'a_jour'
         return 'mis_a_jour'
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("nexus_maj_modeles.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return 'echec'
-    except Exception:
+    except Exception as exc:
+        print("nexus_maj_modeles.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return 'echec'
 
 

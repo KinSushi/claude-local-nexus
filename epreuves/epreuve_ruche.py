@@ -28,7 +28,8 @@ def lancer_ruche(args, input_text=None):
             check=False
         )
         return proc.returncode, proc.stdout, proc.stderr
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        print("epreuve_ruche.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return -1, "", f"Timeout apres {TIMEOUT}s"
 
 def cas_nominal():

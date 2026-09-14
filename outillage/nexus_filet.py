@@ -79,7 +79,8 @@ def fichiers_diff(wt: Path, exclure=()):
     cmd = ['git', '-C', str(wt), 'diff', '--name-only', '--', '.'] + excl_args
     try:
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError:
+    except OSError as exc:
+        print("nexus_filet.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return []
     if result.returncode != 0:
         return []
@@ -215,7 +216,8 @@ def commits_non_vus(wt: Path):
         # aussi les fichiers ou seul main a avance depuis la divergence.
         r_names = subprocess.run(['git', '-C', str(wt), 'diff', '--name-only', 'main...HEAD'],
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError:
+    except OSError as exc:
+        print("nexus_filet.py : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return 0, 0
     if r_log.returncode != 0 or r_names.returncode != 0:
         return 0, 0

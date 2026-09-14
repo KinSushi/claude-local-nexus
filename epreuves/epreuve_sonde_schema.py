@@ -22,7 +22,7 @@ import sys
 module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "outillage", "nexus_sonde_schema.py"))
 spec = importlib.util.spec_from_file_location("nexus_sonde_schema", module_path)
 if spec is None or spec.loader is None:
-    print("[RATE] Unable to load module")
+    print("[RATE] Unable to load module :")
     sys.exit(1)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -31,7 +31,8 @@ spec.loader.exec_module(module)
 # Helper for test reporting
 # ----------------------------------------------------------------------
 def report(name: str, ok: bool) -> None:
-    print(f"{name}: {'[OK]' if ok else '[RATE]'}")
+    label = "[OK  ]" if ok else "[RATE]"
+    print(f"{label} {name} :")
 
 all_ok = True
 

@@ -800,7 +800,8 @@ def main(argv=None) -> int:
         }
         with open(journal_file, "a", encoding="utf-8", newline="") as jf:
             jf.write(json.dumps(entry) + "\n")
-    except Exception:
+    except Exception as exc:
+        print("nexus_doc.py : journal write impossible : %s" % exc, file=sys.stderr)
         pass
     return 0
 

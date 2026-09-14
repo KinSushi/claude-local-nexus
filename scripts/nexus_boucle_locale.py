@@ -83,7 +83,8 @@ def deposer_proposition(tache, patch, verdict, dossier):
             json.dump(data, f, ensure_ascii=True)
         os.replace(tmp, chemin_final)
         return chemin_final
-    except Exception:
+    except Exception as exc:
+        print("scripts/nexus_boucle_locale.py : deposer_proposition impossible : %s" % exc, file=sys.stderr)
         return None
 
 
@@ -116,7 +117,11 @@ def charger_file(chemin):
     try:
         with open(chemin, "r", encoding="utf-8") as f:
             lignes = f.readlines()
-    except Exception:
+    except FileNotFoundError:
+        # Absence du fichier est l'état normal d'un fichier vide : renvoie [] sans alerte
+        return []
+    except Exception as exc:
+        print("scripts/nexus_boucle_locale.py : charger_file (open) impossible : %s" % exc, file=sys.stderr)
         return []
     taches = []
     for ligne in lignes:
@@ -127,7 +132,8 @@ def charger_file(chemin):
             obj = json.loads(ligne)
             if isinstance(obj, dict):
                 taches.append(obj)
-        except Exception:
+        except Exception as exc:
+            print("scripts/nexus_boucle_locale.py : charger_file (json.loads) impossible : %s" % exc, file=sys.stderr)
             continue
     return taches
 

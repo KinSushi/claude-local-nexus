@@ -1490,7 +1490,7 @@ def executer(tache: dict, cle: str) -> dict:
     def _journal_echec(message: str):
         print(f"Echec candidat : {message}", file=sys.stderr, flush=True)
     if refus and not joints:
-        _journal_echec("fichiers joints absents : " + ", ".join(refus))
+        _journal_echec("fichiers joints refuses ou absents : " + ", ".join(refus))
         return {"nom": nom, "modele": modele, "cause_vide": "fichiers_joints_absents",
                 "erreur": "aucun fichier joint disponible : " + ", ".join(refus)}
     candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
@@ -2080,17 +2080,34 @@ def main() -> int:
                 print("L'option --nom est obligatoire avec --depuis-jsonl.", file=sys.stderr)
                 return 2
             try:
+                last_any = None
+                last_success = None
+                last_tache = None
+                lignes_invalides = 0
                 with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
                     for ligne in src:
-                        obj = json.loads(ligne)
+                        try:
+                            obj = json.loads(ligne)
+                        except Exception:
+                            lignes_invalides += 1
+                            continue
                         if obj.get("en_tete") or obj.get("fin"):
                             continue
-                        if obj.get("nom") == args.nom:
-                            taches = [obj]
-                            break
-                    else:
-                        print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
-                        return 1
+                        if obj.get("nom") != args.nom:
+                            continue
+                        last_any = obj
+                        if obj.get("tache"):
+                            last_tache = obj
+                        texte = (obj.get("texte") or "").strip()
+                        erreur = (obj.get("erreur") or "").strip()
+                        if texte and not erreur:
+                            last_success = obj
+                if not last_any:
+                    print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                    return 1
+                # choisir la tâche à rejouer
+                taches = [last_tache if last_tache else last_any]
+                # le nombre de lignes invalides est conservé pour le bloc sortie brute
             except Exception as exc:
                 print("[!] erreur lors de la lecture du jsonl : %s" % exc, file=sys.stderr)
                 return 1
@@ -2226,18 +2243,42 @@ def main() -> int:
         with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
             if args.sortie_brute and args.depuis_jsonl and args.nom:
                 try:
+                    last_any = None
+                    last_success = None
+                    lignes_invalides = 0
                     with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
                         for ligne in src:
-                            obj = json.loads(ligne)
-                            if obj.get("nom") == args.nom:
-                                texte = obj.get("texte") or ""
-                                texte = decaper_cloture_englobante(texte)
-                                mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
-                                with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
-                                    dst.write(texte + "\n")
-                                sys.exit(0)
-                    print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
-                    sys.exit(1)
+                            try:
+                                obj = json.loads(ligne)
+                            except Exception:
+                                lignes_invalides += 1
+                                continue
+                            if obj.get("nom") != args.nom:
+                                continue
+                            last_any = obj
+                            texte = (obj.get("texte") or "").strip()
+                            erreur = (obj.get("erreur") or "").strip()
+                            if texte and not erreur:
+                                last_success = obj
+                    if not last_any:
+                        print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(1)
+                    if last_success:
+                        texte = last_success.get("texte") or ""
+                        texte = decaper_cloture_englobante(texte)
+                        mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
+                        with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
+                            dst.write(texte + "\n")
+                        if lignes_invalides:
+                            print("[!] %d ligne(s) JSON invalide(s) ignorée(s) dans %s" % (lignes_invalides, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(0)
+                    else:
+                        derniere_erreur = (last_any.get("erreur") or "")[:160]
+                        print("[!] tache %s : %d ligne(s) dans %s, aucune reussie (derniere erreur : %s)" % (
+                            args.nom, 1, args.depuis_jsonl, derniere_erreur), file=sys.stderr)
+                        if lignes_invalides:
+                            print("[!] %d ligne(s) JSON invalide(s) ignorée(s) dans %s" % (lignes_invalides, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(1)
                 except Exception as exc:
                     print("[!] erreur lors de la sortie brute depuis jsonl : %s" % exc, file=sys.stderr)
                     sys.exit(1)

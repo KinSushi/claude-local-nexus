@@ -92,8 +92,9 @@ def _lancer_ruff(cible_path: str) -> None:
             print("[!] Violations détectées :\n%s" % stdout)
         if stderr:
             print("[!] L'analyseur n'a PAS PU se prononcer :\n%s" % stderr)
-    except Exception:
-        pass  # on ne fait jamais échouer le script à cause de ruff
+    except Exception as e:
+        print(f"[!] Erreur lors de l'exécution de ruff : {e}", file=sys.stderr)
+        # on ne fait jamais échouer le script à cause de ruff
 
 
 def _extraire_contenu(texte: str) -> str | None:

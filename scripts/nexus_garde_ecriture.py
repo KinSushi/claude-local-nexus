@@ -224,9 +224,7 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
+    with contextlib.suppress(BaseException):
         main()
-    except BaseException:
         # Rempart final : ce garde n'échoue jamais.
-        pass
     sys.exit(0)

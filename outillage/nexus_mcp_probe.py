@@ -179,14 +179,17 @@ def call_tool(name: str, arguments: dict, timeout: int = 0) -> str:
             timeout=delai,
             env=environnement,
         )
-    except FileNotFoundError:
+    except FileNotFoundError as exc:
         # node n'est pas dans le PATH
+        print("call_tool : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return f"ERROR: node executable not found (SERVER={SERVER})"
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         # le serveur n'a pas répondu à temps
+        print("call_tool : subprocess.run impossible : %s" % exc, file=sys.stderr)
         return f"ERROR: timeout expired after {delai}s (SERVER={SERVER})"
     except Exception as e:  # pragma: no cover
         # toute autre erreur inattendue
+        print("call_tool : subprocess.run impossible : %s" % e, file=sys.stderr)
         return f"ERROR: unexpected error {type(e).__name__}: {e} (SERVER={SERVER})"
 
     # si le processus s'est terminé avec un code d'erreur et aucune sortie JSON

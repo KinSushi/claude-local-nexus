@@ -9,6 +9,7 @@ marques de haute valeur et déduplique les occurrences similaires.
 """
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -467,7 +468,29 @@ def git_log_commits() -> List[Dict]:
 # Lecture du cockpit (checklist)
 # --------------------------------------------------------------------------- #
 
-def process_cockpit(path: Path) -> List[Dict]:
+def derniers_maillons(titres: List[str]) -> List[str]:
+    """
+    Retourne la liste des titres dont le numéro (premier \d+\.\d+)
+    n'est pas cité par un autre titre sous la forme « remplace §<numéro> ».
+    L'ordre d'origine est conservé.
+    """
+    # Numéros référencés par d'autres titres
+    refs: set[str] = set()
+    for t in titres:
+        for ref in re.findall(r"remplace\s+§(\d+\.\d+)", t, flags=re.IGNORECASE):
+            refs.add(ref)
+
+    # Conserver les titres dont le numéro n'est pas dans refs
+    result: List[str] = []
+    for t in titres:
+        m = re.search(r"\d+\.\d+", t)
+        if m and m.group(0) in refs:
+            continue
+        result.append(t)
+    return result
+
+
+def process_cockpit(path: Path, depuis_jours: int = 14) -> List[Dict]:
     """Analyse le fichier cockpit s’il existe et renvoie les occurrences filtrées."""
     occurrences = []
     if not path.is_file():
@@ -475,15 +498,42 @@ def process_cockpit(path: Path) -> List[Dict]:
     try:
         with path.open(encoding="utf-8", errors="replace") as f:
             content = f.read()
+
+        # Extraction des titres (lignes commençant par un numéro)
+        titres_bruts = [
+            line.strip()
+            for line in content.splitlines()
+            if re.match(r"\d+\.\d+\s", line)
+        ]
+
+        # Application du filtre « derniers maillons »
+        titres_filtres = derniers_maillons(titres_bruts)
+
+        # Exclusion des titres datés antérieurs à aujourd'hui - depuis_jours
+        aujourd = datetime.date.today()
+        seuil = aujourd - datetime.timedelta(days=depuis_jours)
+        titres_final: List[str] = []
+        for i, t in enumerate(titres_filtres):
+            m = re.search(r"2026-\d{2}-\d{2}", t)
+            if m:
+                try:
+                    dt = datetime.datetime.strptime(m.group(0), "%Y-%m-%d").date()
+                except ValueError:
+                    dt = None
+                if dt and dt < seuil and i != len(titres_filtres) - 1:
+                    continue
+            titres_final.append(t)
+
+        # Rapport sur le nombre de sections retenues / historiques écartées
+        nb_ouvertes = len(titres_final)
+        nb_hist = len(titres_bruts) - nb_ouvertes
+        print(f"{nb_ouvertes} sections ouvertes retenues, {nb_hist} historiques ecartees", file=sys.stderr)
+
+        # Extraction des occurrences comme auparavant
         for pos, marker in find_markers(content, MARKERS):
             ctx = extract_context(content, pos, len(marker))
             if is_noise(ctx):
                 continue
-            # UN MARQUEUR N'EST PAS UN SUJET. Sans ces deux filtres, la
-            # recolte rendait de la doctrine, des lignes de commande et sa
-            # propre narration d'un travail deja fait -- mesure sur une
-            # vraie execution. L'outil bati pour eviter de deviner
-            # obligeait alors a deviner.
             if not marqueur_fiable(content, pos, marker):
                 continue
             if semble_clos(ctx):
@@ -593,6 +643,12 @@ def main(argv: List[str] | None = None) -> int:
         type=int,
         help="Nombre maximal de groupes à afficher.",
     )
+    parser.add_argument(
+        "--depuis-jours",
+        type=int,
+        default=14,
+        help="Nombre de jours à considérer comme historique (défaut : 14).",
+    )
     args = parser.parse_args(argv)
 
     sources_read = 0
@@ -619,7 +675,7 @@ def main(argv: List[str] | None = None) -> int:
 
     # 3. Cockpit
     cockpit_path = Path("outillage", "rituels") / "CHECKLIST_COCKPIT.MD"
-    cockpit_occ = process_cockpit(cockpit_path)
+    cockpit_occ = process_cockpit(cockpit_path, depuis_jours=args.depuis_jours)
     if cockpit_occ:
         sources_read += 1
         all_occurrences.extend(cockpit_occ)
