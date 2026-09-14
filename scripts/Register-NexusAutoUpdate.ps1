@@ -92,17 +92,8 @@ if ($Unregister) {
 # ------------------------------------------------------------
 # Interpreteur : PowerShell 7 si disponible, sinon Windows PowerShell
 # ------------------------------------------------------------
-$pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
-if ($pwshCmd) {
-    $shell = $pwshCmd.Source
-} else {
-    $psCmd = Get-Command powershell -ErrorAction SilentlyContinue
-    if ($psCmd) {
-        $shell = $psCmd.Source
-    } else {
-        $shell = $null
-    }
-}
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'outillage\Resolve-NexusShell.ps1')
+$shell = Resolve-NexusShell
 if (-not $shell) {
     Write-Error "Aucun interpreteur PowerShell trouve."
     exit 1

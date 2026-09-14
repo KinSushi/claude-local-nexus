@@ -46,9 +46,9 @@ if ($Minutes -lt 5) {
 }
 
 $racine = Split-Path -Parent $PSScriptRoot
-$pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
-if (-not $pwshCmd) { $pwshCmd = Get-Command powershell -ErrorAction SilentlyContinue }
-if (-not $pwshCmd) {
+. (Join-Path $PSScriptRoot 'Resolve-NexusShell.ps1')
+$shell = Resolve-NexusShell
+if (-not $shell) {
     [Console]::Error.WriteLine("Aucun interpreteur PowerShell trouve.")
     exit 1
 }
@@ -86,7 +86,7 @@ $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes $Minutes)
 
-$action = New-ScheduledTaskAction -Execute $pwshCmd.Source -Argument $arguments `
+$action = New-ScheduledTaskAction -Execute $shell -Argument $arguments `
     -WorkingDirectory $racine
 
 # Interactive, comme les autres taches de ce depot : la boucle lit des

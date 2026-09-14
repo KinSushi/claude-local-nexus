@@ -151,6 +151,38 @@ def bloc_git() -> None:
         print("  %s commit(s) non pousse(s) vers origin." % sortie)
 
 
+def etat_tache(etat: str, dernier_resultat, exe_existe: bool) -> tuple:
+    """
+    Détermine l'état d'une tâche planifiée.
+
+    - Si l'exécutable est absent, retourne ("CASSEE", "executable introuvable : " + explication).
+    - Si le dernier résultat indique le code 0x80070002 (2147942402), retourne
+      ("CASSEE", "dernier resultat 0x80070002 : executable introuvable au dernier declenchement").
+    - Sinon retourne (etat, "").
+    Aucun exception n'est levée.
+    """
+    # Cas où l'exécutable n'existe pas
+    if not exe_existe:
+        explication = "executable introuvable"
+        return ("CASSEE", "executable introuvable : " + explication)
+
+    # Normaliser le dernier résultat en entier
+    try:
+        dernier = int(dernier_resultat)
+    except Exception:
+        try:
+            dernier = int(float(dernier_resultat))
+        except Exception:
+            dernier = 0
+
+    # Code d'erreur indiquant que le fichier était introuvable lors du dernier déclenchement
+    if dernier == 2147942402:
+        return ("CASSEE",
+                "dernier resultat 0x80070002 : executable introuvable au dernier declenchement")
+
+    # Cas normal
+    return (etat, "")
+
 def bloc_taches() -> None:
     """
     Ce qui tourne sans session — la distinction qui compte au réveil.
@@ -176,15 +208,15 @@ def bloc_taches() -> None:
     # jamais sa branche ABSENTE.
     taches = (
         ("NexusTraque", "traque des defauts + cockpit, PT10M",
-         "Register-NexusTraque.ps1"),
+         "Register-NexusTraque.ps1", "outillage"),
         ("NexusVitrine", "publication si sain, PT6H",
-         "Register-NexusVitrine.ps1"),
+         "Register-NexusVitrine.ps1", "outillage"),
         ("NexusBoucleLocale", "boucle agentique locale si pouls Claude mort, PT10M",
-         "Register-NexusBoucleLocale.ps1"),
+         "Register-NexusBoucleLocale.ps1", "outillage"),
         ("Claude-Local-Nexus - Demarrage", "pile au logon",
-         "Register-NexusDemarrage.ps1"),
+         "Register-NexusDemarrage.ps1", "scripts"),
         ("Claude-Local-Nexus - Mise a jour", "modeles, quotidien",
-         "Register-NexusAutoUpdate.ps1"),
+         "Register-NexusAutoUpdate.ps1", "scripts"),
     )
     # INTERROGER SANS FILTRE : Get-ScheduledTask sans -TaskName rend code 0
     # et la liste complete. Le code de retour devient non ambigu : 0 = j'ai
@@ -192,25 +224,42 @@ def bloc_taches() -> None:
     # liste se fait en Python, ce qui leve l'ambiguite structurelle de PowerShell.
     commande = (
         "Get-ScheduledTask -ErrorAction SilentlyContinue | "
-        "ForEach-Object { \"$($_.TaskName)|$($_.State)\" }"
+        "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
+        "$a = $_.Actions | Select-Object -First 1; "
+        "\"$($_.TaskName)|$($_.State)|$($i.LastTaskResult)|$($a.Execute)\" }"
     )
     ok, sortie = executer(["powershell", "-NoProfile", "-Command", commande], 25)
     if not ok:
-        for nom, _, _ in taches:
+        for nom, _, _, _ in taches:
             print("  [ ?      ] %-15s etat illisible" % nom)
     else:
         etats = {}
         for ligne in sortie.splitlines():
             if "|" in ligne:
-                nom_tache, etat = ligne.split("|", 1)
-                etats[nom_tache.strip()] = etat.strip()
-        for nom, role, script in taches:
-            etat = etats.get(nom)
-            if etat:
-                print("  [%-8s] %-15s %s" % (etat, nom, role))
+                parts = ligne.split("|", 3)
+                nom = parts[0].strip()
+                etat = parts[1].strip() if len(parts) > 1 else ""
+                dernier = parts[2].strip() if len(parts) > 2 else ""
+                exe = parts[3].strip() if len(parts) > 3 else ""
+                exe_existe = (not exe) or os.path.isfile(exe)
+                verdict, detail = etat_tache(etat, dernier, exe_existe)
+                etats[nom] = (verdict, detail)
+        for nom, role, script, dossier in taches:
+            info = etats.get(nom)
+            if info:
+                verdict, detail = info
+                if verdict == "sain":
+                    print("  [%-8s] %-15s %s" % (verdict, nom, role))
+                elif verdict == "CASSEE":
+                    print("  [CASSEE  ] %-15s %s" % (nom, role))
+                    print("             -> %s" % detail)
+                    print("             -> relancer .\\%s\\%s" % (dossier, script))
+                else:
+                    # tout autre verdict est affiché comme « sain » générique
+                    print("  [%-8s] %-15s %s" % (verdict, nom, role))
             else:
                 print("  [ABSENTE ] %-15s %s" % (nom, role))
-                print("             -> .\\scripts\\%s" % script)
+                print("             -> .\\%s\\%s" % (dossier, script))
 
 
 def bloc_sujets() -> None:

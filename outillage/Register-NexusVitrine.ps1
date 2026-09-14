@@ -55,9 +55,9 @@ if ($Heures -lt 1) {
 }
 
 $racine = Split-Path -Parent $PSScriptRoot
-$pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
-if (-not $pwshCmd) { $pwshCmd = Get-Command powershell -ErrorAction SilentlyContinue }
-if (-not $pwshCmd) {
+. (Join-Path $PSScriptRoot 'Resolve-NexusShell.ps1')
+$shell = Resolve-NexusShell
+if (-not $shell) {
     [Console]::Error.WriteLine("Aucun interpreteur PowerShell trouve.")
     exit 1
 }
@@ -104,7 +104,7 @@ $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) `
     -RepetitionInterval (New-TimeSpan -Hours $Heures)
 
-$action = New-ScheduledTaskAction -Execute $pwshCmd.Source -Argument $arguments `
+$action = New-ScheduledTaskAction -Execute $shell -Argument $arguments `
     -WorkingDirectory $racine
 
 # Interactive : git lit les identifiants dans le profil utilisateur, et un

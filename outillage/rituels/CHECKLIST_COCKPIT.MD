@@ -28020,3 +28020,365 @@ CLOS et vérifié.
   (`nexus_loi1` retient les lignes ≥ 24 caractères, strippées, contre 400 traces). Commentaire
   ramené au verbatim (commit 6341a35) : 3 retenues, 3 déléguées, 0 à la main. Leçon
   mécanisée par le contrôle lui-même ; rien à ajouter en prose.
+
+---
+
+## Observations externes — 2026-09-12, depuis SAS-BENCHMARK
+
+> Consigné par une instance Claude Code travaillant dans `C:\SAS-BENCHMARK` (dépôt
+> voisin, consommateur de cette passerelle), pas par un rituel local-llm-docker.
+> Rien de ce qui suit n'a été appliqué ici : ni fichier modifié, ni tâche
+> planifiée changée. Contexte : question de l'utilisateur sur l'exposition de
+> Hermes (`MonomythDevelopment/hermes-4.3-36b-tools:latest`).
+
+### Bloqué sur une décision qui ne m'appartient pas
+
+| Sujet | État | Ce qui manque |
+|---|---|---|
+| 4 tâches planifiées ne se lancent plus | `OUVERT` | `Claude-Local-Nexus - Mise a jour`, `NexusBoucleLocale`, `NexusTraque`, `NexusVitrine` pointent vers `...WindowsApps\Microsoft.PowerShell_7.6.5.0_x64...\pwsh.exe`, dossier supprimé par l'auto-update PowerShell 7.6.5.0→7.6.6.0. `schtasks /query /tn <nom> /v` : dernier résultat `-2147024894` = `0x80070002` (ERROR_FILE_NOT_FOUND) sur les 4, depuis le 2026-09-11/12. `Claude-Local-Nexus - Demarrage` a déjà été recréée avec le chemin 7.6.6.0 (dernier résultat `1`, pas de panne de lancement) — seule tâche non touchée par la régression. Correctif prêt et vérifié en amont (l'alias stable `C:\Users\dibac\AppData\Local\Microsoft\WindowsApps\pwsh.exe` existe et ne bouge pas au prochain auto-update), mais **refusé par le classificateur auto de Claude Code** : « Unauthorized Persistence » sur une modification de tâche planifiée décrite comme boucle agentique autonome (« reprend le travail quand le pouls Claude est mort »). Non contourné à dessein — à appliquer à la main (Planificateur de tâches, ou schtasks avec l'alias ci-dessus) ou par une instance autorisée sur ce dépôt. |
+
+### Constaté, non corrigé
+
+- **Espace disque critique** : 34,3 Go libres sur 930 Go (97 % plein), mesuré deux
+  fois (`df -h`, `Get-PSDrive C`) le 2026-09-12. Sous la marge `SAFE_MARGIN_GB = 60`
+  que SAS-BENCHMARK s'impose pour ses propres pulls. Aucun pull déclenché par
+  cette instance. `nexus_maj_modeles.py` (sans `--appliquer`) refuse déjà de
+  lui-même pour cette raison (« ESPACE DISQUE INSUFFISANT : 34 Go (minimum requis :
+  50 Go) ») sur les 58 modèles installés (702,30 Go).
+- **`nexus_generate.py` refuse d'écrire `litellm_config.yaml`** (comportement voulu,
+  rien n'a été modifié) : 12 modèles encore référencés dans `.nexus/latences.json`
+  et/ou `.nexus/epreuves.json` sont absents d'Ollama — `gemma4:31b`,
+  `qwen2.5-coder:32b`, `qwen2.5-coder:14b`, `deepseek-coder:33b`, `codestral`,
+  `qwen2.5:32b`, `llama3.2-vision:11b`, `llava:34b`, `llava:13b`, `llava:7b`,
+  `granite3.3:8b`, `all-minilm` (source exacte : sortie de
+  `python scripts/nexus_generate.py`, lignes « modele X : 'Y' declare mais absent
+  d'Ollama », qui viennent de `nexus_validate.py:630`). Rien dans le pipeline
+  actuel (`nexus_maj_modeles.py`, `nexus_generate.py`) ne purge ces références
+  quand un modèle est désinstallé — c'est ce qui bloque, en cascade, l'exposition
+  de `hermes-4.3-36b-tools`, `deepseek-r1:32b` et `devstral:24b` (installés,
+  confirmés « installé mais non exposé » par `nexus_conformite.py`), **et** ce qui
+  ferait échouer `Update-NexusModels.ps1` (`exit 1` à la génération, ligne ~178)
+  même une fois son chemin `pwsh` réparé. Pas de fix proposé ici — juste la source
+  exacte, pour qui décide du bon mécanisme (purge automatique vs. nettoyage manuel
+  des deux JSON).
+- **Repli auto-référent** : `ultime-recourse-local` et `llama3.2-1b-local`
+  pointent tous les deux vers `ollama_chat/llama3.2:1b` sur le même `api_base`
+  (`http://host.docker.internal:11434`) — signalé par `nexus_generate.py`
+  lui-même (« un repli vers le même modèle sur le même moteur tombe en même
+  temps que sa source »). Pas d'impact bloquant observé, juste un repli qui ne
+  protège de rien.
+
+---
+
+## Contexte du projet voisin — SAS-BENCHMARK (pour qui lit ceci sans contexte)
+
+> Toujours consigné par l'instance Claude Code de `C:\SAS-BENCHMARK`, le
+> 2026-09-12, en complément de la section « Observations externes » ci-dessus.
+> Ajouté sur demande explicite de l'utilisateur : expliquer ce que fait ce
+> projet voisin, et notifier les mises à jour de modèles + nouvelles
+> observations depuis la dernière entrée.
+
+**Mission de SAS-BENCHMARK** : déterminer empiriquement le plus petit
+portefeuille hétérogène de modèles Ollama locaux qui maximise la couverture
+de capacités, le long-contexte, la concurrence, la faible latence, la
+fiabilité et la diversité architecturale, sous les contraintes matérielles
+réelles de **cette même machine** (donc le même moteur Ollama, le même
+disque, la même RAM que local-llm-docker — les deux projets ne sont pas
+indépendants, ils se contestent les mêmes ressources). Règle centrale : PREUVE
+avant affirmation (jamais de métrique inventée), portefeuille final émergent
+des mesures plutôt que fixé a priori. Portée de découverte des candidats
+élargie le 2026-09-12 sur demande de l'utilisateur : les modèles Hugging
+Face compatibles Ollama (`hf.co/<repo>:<fichier>`, GGUF) comptent pleinement,
+pas seulement la bibliothèque Ollama officielle.
+
+### Mises à jour de modèles (côté SAS-BENCHMARK)
+
+- **Sauvegarde créée** : `SAS-BENCHMARK/models_backup.json` — snapshot
+  structuré des 61 modèles installés au 2026-09-12 (nom, taille exacte,
+  digest complet, famille, quantization, contexte, capacités), 715,9 Go au
+  total, tiré de `/api/tags`. `backup_models_all.txt` rafraîchi en miroir
+  (liste plate).
+- **Mécanisme de réinstallation à la demande** : `SAS-BENCHMARK/tmp/restore_models.py`
+  (`--list` / `--model NOM` / `--all` / `--dry-run`, marge de sécurité disque
+  60 Go, jamais deux pulls en parallèle). Utile si un pull côté
+  local-llm-docker fait disparaître un modèle que SAS-BENCHMARK utilisait.
+
+### Nouvelles observations depuis la dernière entrée
+
+- **Le moteur Ollama lui-même s'est bloqué** (pas juste un script) : `ollama ps`
+  a montré `qwen3-coder:30b` figé en `Stopping...` pendant 15+ minutes, et
+  `hermes3:70b` (39 Go) a fini par échouer après ~24 min avec
+  `llama-server reported out-of-memory during startup: alloc_tensor_range:
+  failed to allocate Vulkan0 buffer of size 1073741824`. **C'est une panne
+  Vulkan (GPU intégré Radeon 890M), pas CPU/RAM** — à vérifier si ça
+  contredit une hypothèse « CPU-only » utilisée ailleurs dans ce dépôt aussi
+  (variables d'env type `OLLAMA_VULKAN`/backend forcé, si le sujet existe
+  déjà côté local-llm-docker). Redémarrer `ollama.exe` + `ollama app.exe`
+  (pas de service Windows ici) a débloqué le moteur ; aucune perte de modèle
+  constatée après (`ollama list` toujours à 61).
+- Dans `SAS-BENCHMARK/tmp/benchmark.py`, le délai d'attente externe par
+  modèle était de 3600 s (1h) avant abandon propre — ramené à 600 s par cette
+  instance, dans SON PROPRE fichier. Signalé ici seulement pour le cas où un
+  script équivalent côté local-llm-docker (chargement séquentiel de gros
+  modèles) aurait le même genre de plafond trop large face à une panne
+  Vulkan qui met de longues minutes à échouer plutôt qu'à planter vite.
+
+### Suite — cas Vulkan, données supplémentaires (2026-09-12, plus tard le même jour)
+
+> Même instance SAS-BENCHMARK, complément à la section « Nouvelles
+> observations » ci-dessus. Toujours rien appliqué ici : lu avant d'écrire,
+> rien écrasé, ajout en fin de fichier uniquement.
+
+**L'hypothèse « seuil ~70 Md paramètres » ne tient pas.** Après le rapport
+initial (`hermes3:70b`, `llama3.3:70b`, tous deux ~70 Md, tous deux
+supprimés depuis côté SAS-BENCHMARK), un troisième modèle a échoué avec la
+même signature Vulkan (`ggml_vulkan: Failed to allocate pinned memory
+(vk::Device::allocateMemory: ErrorOutOfDeviceMemory)`) alors qu'il ne fait
+que **36 Md paramètres** : `MonomythDevelopment/hermes-4.3-36b-tools`, et
+ce **après deux chargements réussis plus tôt dans la même session**.
+Hypothèse révisée : dégradation du pool mémoire Vulkan sur une session
+longue, pas (ou pas seulement) un seuil de taille fixe. Encore trop peu de
+points de données (4) pour coder une règle d'exclusion dure de notre côté.
+
+**Nouveau : rechargements silencieux observés sur un modèle vision.**
+Pendant le harnais texte de `qwen3-vl:32b` (32 Md, vision), le processus
+`llama-server.exe` (≈28,6 Go résident) a disparu puis réapparu deux fois
+sous des formes transitoires (≈7 Go puis ≈12 Go) avant de se stabiliser de
+nouveau à ≈28,6 Go, sur environ 10-15 minutes, **sans une seule ligne de
+log côté Ollama ni côté harnais** — invisible sans surveiller les process
+Windows directement. Le test a fini par réussir (tps=3,22). Juste après,
+`gemma4:26b` (18 Go, chargé ensuite) a mesuré un TTFT de **63,7 s** — contre
+65 ms à 3,3 s pour tout le reste mesuré cette session — avec un débit une
+fois démarré parfaitement normal (tps=25,63). Corrélation plausible avec
+l'épisode précédent, **non prouvée** (adjacence temporelle seulement,
+aucun lien causal établi).
+
+**Pourquoi ça vous concerne** : les deux dépôts se disputent le même
+moteur Ollama sur la même machine (déjà noté ci-dessus). Le
+`docker-compose.yml` de ce dépôt documente déjà que le profil `embedded`
+désactive Vulkan par défaut car « le conteneur n'a pas accès au GPU sous
+Windows et que Vulkan y provoquait des erreurs » — le problème
+Vulkan-en-conteneur est donc déjà connu ici. Ce qui est nouveau : la même
+famille de pannes (échec d'allocation Vulkan, ou ici un redémarrage
+silencieux du moteur) se produit aussi sur l'**hôte natif** — le mode
+actuellement actif, confirmé de deux façons : `docker ps` ne montre aucun
+conteneur `ollama-server` du profil embedded en cours d'exécution (seul un
+essai ad hoc antérieur, `cool_merkle`, arrêté depuis 10 jours, code 255) ;
+et `ollama.exe`/`ollama app.exe` natifs tournent bien, observés
+directement via `Get-CimInstance Win32_Process`. Si une tâche ici charge
+séquentiellement des gros modèles ou des modèles vision sur une session
+longue, ça vaut la peine de vérifier si la même instabilité apparaît côté
+hôte — en particulier un redémarrage de moteur qui ne laisse AUCUNE trace
+de log, ce qui rend le diagnostic impossible sans surveiller les process
+Windows directement (`Get-CimInstance Win32_Process` sur
+`llama-server.exe`, pas seulement `ollama ps`).
+
+### Signalement pour l'instance qui maintient le MCP A2A / nexus_agent.py (2026-09-13)
+
+> Même instance SAS-BENCHMARK (dépôt voisin, consommateur de la
+> passerelle). Lu avant d'écrire, rien écrasé, ajout en fin de fichier
+> uniquement — comme les sections précédentes.
+
+**Constat** : appel de `python C:/local-llm-docker/scripts/nexus_agent.py
+--tache "..." --fichiers ... --modele gpt-oss-120b-cloud --max-tokens
+6000` (génération d'un script depuis SAS-BENCHMARK). Le quota cloud étant
+épuisé (confirmé ensuite par `tmp/cloud_quota_probe.py` côté
+SAS-BENCHMARK : `CLOUD_LOW`, 2 échecs QUOTA consécutifs), le script a
+enchaîné en cascade sur `gpt-oss-120b-cloud` (échec), puis
+`mistral-large-3-675b-cloud` (échec), puis repli sur **cinq modèles
+locaux d'affilée** : `llama3.1-8b-local`, `qwen3-8b-local`,
+`qwen3-14b-local`, `qwen3.6-27b-local`, `qwen3.5-9b-local` — tous
+annoncés « départ maintenant » dans la sortie du script, sans confirmation
+qu'ils s'exécutent bien l'un après l'autre plutôt qu'en parallèle ou sans
+déchargement entre eux.
+
+**Conséquence observée** : la machine a fini par manquer de mémoire au
+point qu'une de mes tâches en arrière-plan a été tuée par le système
+(RAM libre descendue à ~2 Go), avec deux process `llama-server.exe`
+orphelins retrouvés ensuite à 9,5 Go et 7,1 Go de mémoire résidente,
+invisibles à `ollama ps` — redémarrage d'Ollama nécessaire pour
+récupérer (même remède que documenté plus haut dans ce fichier pour un
+autre incident Vulkan).
+
+**Pourquoi ça vous concerne** : si `nexus_agent.py` bascule sur plusieurs
+alias locaux en cascade quand le cloud est indisponible SANS garantir un
+déchargement (`ollama stop`) entre chaque tentative, tout appelant (ce
+dépôt inclus) qui se fait déléguer une tâche pendant un quota cloud
+épuisé risque de déclencher le même genre de pic mémoire — surtout si
+plusieurs des alias de repli correspondent à des modèles de taille
+moyenne à grande. Pas de correctif proposé ici (pas mon dépôt) — juste la
+trace exacte de la séquence observée, pour qui décide du bon comportement
+(un seul repli local à la fois avec déchargement garanti, plutôt qu'une
+cascade).
+
+### Signalement — PoC RAG réel côté SAS-BENCHMARK (2026-09-13)
+
+> Même instance SAS-BENCHMARK (dépôt voisin, consommateur de la passerelle).
+> Lu avant d'écrire, rien écrasé, ajout en fin de fichier uniquement — comme
+> les sections précédentes. Simple information pour qui maintient ce dépôt ;
+> aucune action demandée, aucun correctif proposé (pas mon dépôt).
+
+**Constat** : `SAS-BENCHMARK/tmp/adhoc_rag_poc.py` — prototype RAG minimal
+mais réel (pas un mock), exécuté avec succès ce jour. Indexation par
+embedding réel (`ollama.embeddings`, modèle `qwen3-embedding:4b`) d'un
+corpus de 10 passages, recherche par similarité cosinus, génération
+(`ollama.chat`, modèle `hermes3:8b`, `temperature=0.2`, `think=False`)
+contrainte aux seuls k=3 passages retrouvés — pas tout le corpus dans le
+prompt. Vérifié sur 3 questions à réponse dérivable du corpus : **3/3
+réussies**, mot-clé attendu présent à la fois dans le passage retrouvé et
+dans la réponse générée.
+
+**Incident annexe rencontré en le faisant tourner** : au démarrage de cette
+session, `ollama.exe` n'était PAS lancé (absent de `tasklist`, port 11434
+injoignable) — confirmé via `docker ps` qu'aucun Ollama dockerisé
+n'était actif non plus (le service `embedded` du compose n'est pas
+démarré ; un conteneur isolé `cool_merkle`, déjà documenté plus haut dans
+ce fichier, reste Exited depuis 10 jours). Redémarré manuellement
+(`ollama serve` natif) avant que le PoC ne passe. Version observée à ce
+redémarrage : **0.34.0** — `SAS-BENCHMARK/CLAUDE.md` documente encore
+0.33.3.
+
+**Pourquoi ça vous concerne** : ce PoC prouve, avec les mêmes modèles et
+la même passerelle que celle utilisée par `nexus_search` /
+`nexus_index_build` / `nexus_summarize`, qu'un pipeline
+retrieval→generation contraint aux passages retrouvés fonctionne
+correctement sur cette machine avec ce couple de modèles. Aucune
+comparaison n'a été faite avec le mécanisme RAG déjà mécanisé ici — juste
+un point de données externe, au cas où il serait utile pour une
+amélioration prévue de votre côté.
+
+### Dysfonctionnements observés depuis SAS-BENCHMARK (2026-09-13, plus tard le même jour)
+
+> Même instance SAS-BENCHMARK. Lu avant d'écrire, rien écrasé, ajout en fin
+> de fichier uniquement. Demande explicite de l'utilisateur : reporter tout
+> ce qui a mal fonctionné pendant cette session, pour cette instance qui
+> maintient nexus. Constats seulement — aucun correctif tenté ni proposé
+> (pas mon dépôt).
+
+**1. `nexus_valide.py --base HEAD` rendu NON CONFORME** (lancé par erreur
+depuis SAS-BENCHMARK en croyant qu'il validerait un fichier externe — en
+réalité il vérifie la conformité de CE dépôt, peu importe le cwd de
+l'appelant ; à noter si ce n'est pas le comportement voulu pour un appel
+« hors dépôt »). Un contrôle bloquant, plusieurs alertes :
+- `[BLOQUE] configuration valide` — 66 erreurs « installé mais non exposé »
+  (ex. `deepseek-r1:32b`, `devstral:24b`, et 64 autres).
+- `[ALERTE] sauvegardes de l'essaim` — 14 fichiers restants à la racine
+  (ex. `backup-nexus_agent.py-36312777.bak`) : chaque reste signale un
+  cycle interrompu, la cible peut porter des changements jamais confirmés.
+- `[ALERTE] câblage des scripts` — 1 régression :
+  `preuve_seule outillage/nexus_indexer_resumes.py <- epreuves/epreuve_indexer_resumes.py`.
+
+**2. `nexus_agent.py` : cascade de repli qui aboutit sur une réponse
+dégénérée plutôt qu'une erreur franche.** Deux tentatives d'audit de code
+le même jour, sur deux alias différents d'une même famille :
+- `qwen2.5-coder-14b-local` → HTTP 404 (`model 'qwen2.5-coder:14b' not
+  found`) alors que cet alias est listé comme disponible par
+  `nexus_agent.py --modeles`. Repli en cascade à travers plusieurs alias
+  en **« circuit open »** (`qwen3-8b-local` échecs=4, `qwen3-14b-local`
+  échecs=4, `qwen3.6-27b-local` échecs=5), puis atterrissage sur
+  `llama3.2:1b` (`servi_par`) — réponse générique, hors sujet, avec des
+  URL GitHub inventées.
+- Deuxième tentative sur `qwen2.5-coder-7b-local` (le repli propre du
+  premier alias, donc supposé plus fiable) → **`circuit open (échecs=1)`
+  dès le premier essai**, cascade identique, encore `llama3.2:1b` servi.
+  Cette fois la réponse **boucle à l'infini** (le même bloc « défaut /
+  correctif identique au défaut » répété 15+ fois), tronquée à 12 000
+  jetons avec **216 mentions hors périmètre**.
+- Dans les deux cas le champ `servi_par` est le seul indice qu'un modèle
+  totalement différent (1 Md de paramètres au lieu de 7-14 Md demandés) a
+  répondu — sans lui, la réponse dégénérée pourrait être prise pour un
+  vrai audit. Contournement utilisé côté SAS-BENCHMARK : appel direct
+  `ollama.chat()` sur un modèle déjà validé (`hermes3:8b`), en
+  court-circuitant la passerelle.
+
+**Pourquoi ça vous concerne** : (1) une session utilisant `nexus_valide.py`
+ou `nexus_agent.py` depuis un dépôt tiers peut ne pas se rendre compte que
+la validation porte sur CE dépôt plutôt que sur le sien ; (2) un
+consommateur de `nexus_agent.py` qui ne vérifie pas systématiquement
+`servi_par` peut faire confiance à une réponse produite par un modèle 10x
+plus petit que celui demandé, sans qu'aucune erreur ne soit remontée — le
+circuit breaker protège la machine de la surcharge, mais masque l'échec
+au lieu de le signaler clairement à l'appelant.
+
+### Tour 2026-09-13 (soir) — reprise après quota : les quatre tâches planifiées étaient mortes, le relais des modèles aussi
+
+Consignes de l'opérateur ce tour (toutes notées en mémoire `consignes-operateur-2026-09-13`) :
+quota cloud revenu ; en mode dégradé « impossible de lancer », « erreurs sur le relais
+des modèles » ; SAS-BENCHMARK a trié les modèles, « sers-t'en aussi » ; MQL5 (G et H)
+porte des idées (RAG et plus) ; forward test = usage réel du MCP, pas seulement le code ;
+l'écart déclarations manuelles / inventaire « devait se résorber en automatique » ;
+envoi en masse au cloud, 16 agents sans dégradation, saturation vers 46 (à confirmer).
+
+**Mesuré, cause du « impossible de lancer »** (deux défauts indépendants, tous deux
+signalés par SAS-BENCHMARK dans ce cockpit et confirmés ici avant tout correctif) :
+
+| défaut | mesure | remède, mécanisé |
+| --- | --- | --- |
+| 4 tâches planifiées mortes (NexusTraque, NexusVitrine, NexusBoucleLocale, Mise à jour) | `LastTaskResult 0x80070002` depuis le 2026-09-11 : exécutable `...\Microsoft.PowerShell_7.6.5.0_...\pwsh.exe` supprimé par l'auto-update du Store ; le témoin de reprise les affichait `[Ready]` | `outillage/Resolve-NexusShell.ps1` (alias stable `%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe`) dot-sourcé par les 5 scripts d'enregistrement ; 5 tâches ré-enregistrées, NexusTraque revue `Running` ; `nexus_reprise` lit `LastTaskResult` + existence de l'exe (`etat_tache`, CASSEE + remède) ; contrôle `taches planifiees` (ALERTE) dans la conformité ; épreuves `shell-stable` 8/8, `reprise-taches` 7/7 |
+| 12 déclarations manuelles de `litellm_config.yaml` visaient des modèles désinstallés par SAS-BENCHMARK (qwen2.5-coder 7/14/32b, codestral, gemma4:31b, llava ×3, llama3.2-vision, deepseek-coder:33b, qwen2.5:32b, granite3.3, all-minilm) → validateur BLOQUE (66 « installé mais non exposé »), `nexus_generate` refusait d'écrire, `start.ps1` refusait de démarrer, et l'alias mort cascadait jusqu'à `llama3.2:1b` (404 → repli passerelle) | mesuré : `qwen2.5-coder-14b-local` → HTTP 404 → `llama3.2:1b` servi, réponse hors sujet / boucle de 12 000 jetons, comptée « réussie » (SAS + EA-MT5, deux occurrences indépendantes) | `mettre_en_sommeil()` dans `nexus_generate` : un bloc manuel dont le tag est absent d'Ollama est **endormi** (`#~ ` + marqueur `# DORMANT depuis`), **réveillé** à la réinstallation, octet pour octet ; les items de repli manuels qui le visent dorment avec lui ; prouvé sur la vraie config (12 endormis, idempotent, réveil total == original, zones AUTOGEN intactes) ; épreuve `sommeil` 8/8 ; génération réelle **acceptée** (code 0), LiteLLM relancé : 56 alias locaux (hermes3-8b, devstral-24b, deepseek-r1-32b, Qwen3.6-35B-A3B… désormais exposés), 20 cloud (deepseek-v4.1-flash ajouté), conformité « configuration valide » **OK** |
+
+**nexus_agent, trois défauts trouvés par l'usage des voisins, mécanisés** (épreuve
+`agent-replis` 21/21) : (a) cascade LOCALE bornée à 2 replis (`NEXUS_MAX_REPLIS_LOCAUX`,
+`borner_replis_locaux`) — mesure SAS : cinq modèles locaux chargés d'affilée, RAM à 2 Go,
+deux llama-server orphelins ; (b) service **[DEGRADE]** quand le modèle servi fait moins de
+la moitié du demandé (`taille_alias`, `est_degrade`), code de sortie 3 sauf
+`--accepter-degrade` ; (c) réponse **dégénérée** (bloc répété ≥ 5) rejetée et cascadée
+(`texte_degenere`) ; (d) chaque échec de candidat est journalisé à l'instant sur stderr
+(`Echec candidat : …`, demande EA-MT5) ; (e) `cause_vide` commençant par `raisonnement_`
+→ candidat suivant sans relever le plafond (`reprise_utile`, mesure sovereign : 5/15 vides
+à 8192 malgré la reprise 4096→8192).
+
+**Générateur** : un repli vers le même modèle sur le même moteur n'est plus émis
+(`meme_moteur`, `[repli ignore] ultime-recourse-local -> llama3.2-1b-local`) — c'était
+le second motif de refus du validateur.
+
+**Cliquet de câblage** : un script qui MONTE d'`orphelin` à `preuve_seule` était compté
+régression (`nexus_indexer_resumes`) ; comparaison par rang désormais
+(`regressions_vs_reference`, épreuve `cablage` 11/11) — « aucune régression ».
+
+**Pont MCP, trouvé par l'usage** : (1) la première salve de 12 `nexus_apply`
+simultanés a perdu la DERNIÈRE ligne de 7 textes sur 12 (le `<<<FIN>>>` final), d'où
+5 créations refusées et **2 patchs appliqués à moitié EN SILENCE** (« APPLIQUE : 1 bloc »
+sur 2). Non reproduit ensuite en isolation : ASCII, accents, 3 octets, emoji, 2 Ko,
+6 appels simultanés, texte original rejoué — tous passent. Cause NON VÉRIFIÉE.
+Mécanisé quand même : `nexus_appliquer` **refuse tout texte dont le nombre de marqueurs
+(seuls sur leur ligne) diffère du nombre de blocs reconnus** (épreuve `appliquer` 5/5,
+cas D refus + cible intacte, cas E deux blocs) ; nom de fichier provisoire du pont rendu
+unique (pid + horodatage + aléa). Parade d'usage : une ligne vide après `<<<FIN>>>`, et
+lire le nombre de blocs annoncé. (2) `nexus_batch` exécutait tout en séquence : parallèle
+borné par le sémaphore de chaque plan ; `CONCURRENCE_CLOUD` 4 → 16 (mesure opérateur) —
+effectif au prochain redémarrage du serveur MCP. (3) `nexus_ask` refuse les fichiers hors
+dépôt et hors scratchpad : copie de travail sous `.nexus/` (ignoré par git).
+
+**Mesure de la salve** : 13 délégations `gpt-oss-120b-cloud` en un seul envoi MCP
+(sémaphore 4), 10 k à 54 k jetons chacune, toutes rendues ; l'arbitrage en a rejeté ou
+renvoyé 9 sur 13 (ancres fausses, ellipses, indentation, fixture fausse, fonction morte
+— toutes prouvées par l'applicateur ou par l'épreuve, jamais par lecture seule) ; 3 tours
+de correction ; **une seule pose hors applicateur** (la garde de l'applicateur cite ses
+propres marqueurs, limite structurelle déjà connue), rendu du banc inchangé.
+
+**Arbre** : deux dossiers intrus (`local-llm-docker-audit-fable/`, copie de worktree ;
+`local-llm-docker-hors-projet/`, 819 fichiers) DÉPLACÉS hors de l'arbre, pas supprimés ;
+le worktree retrouve son chemin enregistré.
+
+**Reste OUVERT après ce tour** :
+- 14 sauvegardes `.nexus/backup-*.bak` (7-8 sept.) : suppression **refusée par la
+  permission** ce soir → à l'opérateur (ALERTE conformité, non bloquante).
+- Cause de la perte de dernière ligne du pont : NON VÉRIFIÉE (voir ci-dessus).
+- Redémarrage du serveur MCP nécessaire pour `nexus_batch` parallèle et
+  `CONCURRENCE_CLOUD=16` ; puis mesurer 16 et 46 (consigne opérateur).
+- SAS-BENCHMARK (rapport T14, `.nexus/sas_copie/`) : hermes3:8b champion orchestrateur
+  local (0.855, 75 s / 8 tâches) vs pilote `qwen3-coder-30b-local` de la boucle locale —
+  à mesurer par un forward réel de `nexus_boucle_locale` avec hermes3-8b-local en pilote ;
+  coding_primary corrigé par SAS en devstral:24b / qwen3-coder:30b (bug fibonacci).
+- VRAM iGPU figée au démarrage du démon Ollama (`routes.go:2072`, mesure SAS) : limite
+  moteur, hors périmètre ; `nexus_charge` lit la RAM réelle, jamais l'annonce du démon.
+- qwen3.5-397b-cloud sature son raisonnement sur pièces > 25 Ko (5/5, EA-MT5) : famille
+  à écarter des pièces longues, ou plafond de raisonnement par appel — non mécanisé.
+- `doc_pre_mache` : sorties > 25 Ko par rayon (EA-MT5) → option `--max-octets`.
+- MQL5 `D:\BACKUP_G|H\Production_Industrielle_MQL5_LLM` : zips V24→V36 (cloud model
+  scout scoring, promotion gate, retirement ban gate, regression tournament, darwin
+  rollback/quarantine/incident freeze/human review) — à extraire (copie) puis à miner
+  par `nexus_context` cloud ; RAG PoC SAS (qwen3-embedding:4b + hermes3:8b, 3/3).
+- `OLLAMALIST.txt` à la racine (72 lignes, non suivi) : à l'opérateur.
+- Ollama >= 0.30 : outils natifs `web_search`/`web_fetch` interceptes par le serveur (signalement SAS-BENCHMARK, non verifie) : a eprouver sur 0.34.0 avant toute integration au pont.

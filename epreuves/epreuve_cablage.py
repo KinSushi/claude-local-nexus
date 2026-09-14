@@ -97,6 +97,25 @@ def jouer() -> int:
         "cat={}; citants={}".format(cat, citants),
     )
 
+    # Tests additionnels pour la fonction regressions_vs_reference
+    # a) progres : aucune regression attendue
+    connus = {"orphelin": ["x.py"], "preuve_seule": []}
+    courant = {"orphelin": [], "preuve_seule": ["x.py"], "appele": [], "cable": []}
+    res = nexus_cablage.regressions_vs_reference(connus, courant)
+    verifier("Cas 5a – progres", res == [], f"got={res}")
+
+    # b) regression détectée
+    connus = {"orphelin": [], "preuve_seule": ["y.py"]}
+    courant = {"orphelin": ["y.py"], "preuve_seule": [], "appele": [], "cable": []}
+    res = nexus_cablage.regressions_vs_reference(connus, courant)
+    verifier("Cas 5b – regression", res == [("orphelin", "y.py")], f"got={res}")
+
+    # c) chute d'un cable (preuve_seule devient plus faible)
+    connus = {"orphelin": [], "preuve_seule": []}
+    courant = {"orphelin": [], "preuve_seule": ["z.py"], "appele": [], "cable": []}
+    res = nexus_cablage.regressions_vs_reference(connus, courant)
+    verifier("Cas 5c – chute d'un cable", res == [("preuve_seule", "z.py")], f"got={res}")
+
     print("-" * 66)
 
     # ------------------------------------------------------------------

@@ -371,6 +371,25 @@ def ecrire_reference(categories: dict) -> None:
         fh.write(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
 
 
+RANG = {"orphelin": 0, "preuve_seule": 1, "appele": 2, "cable": 3}
+def regressions_vs_reference(connus: dict, categories: dict) -> list:
+    """Retourne la liste des régressions détectées comparées à la référence."""
+    # rang précédent d'une cible selon la référence (orphelin ou preuve_seule)
+    prev_rank = {}
+    for nom, lst in connus.items():
+        r = RANG.get(nom, 2)
+        for cible in lst:
+            prev_rank[cible] = r
+    regressions = []
+    for cat in ("orphelin", "preuve_seule"):
+        cur_rank = RANG[cat]
+        for cible in categories.get(cat, []):
+            previous = prev_rank.get(cible, 2)   # 2 = au moins « appele » dans la référence
+            if cur_rank < previous:
+                regressions.append((cat, cible))
+    return sorted(regressions)
+
+
 def main() -> int:
     # La console Windows est en cp1252 : sans cela, tout tiret cadratin ou
     # accent devient « ? » des que la sortie est redirigee -- et elle l'est,
@@ -425,12 +444,7 @@ def main() -> int:
         return 0
 
     connus = reference.get("categories", {})
-    regressions = []
-    for nom in ("orphelin", "preuve_seule"):
-        avant = set(connus.get(nom) or [])
-        for cible in categories[nom]:
-            if cible not in avant:
-                regressions.append((nom, cible))
+    regressions = regressions_vs_reference(connus, categories)
 
     if not regressions:
         # Un progres constate et non retenu laisse repasser le retour en arriere en silence.

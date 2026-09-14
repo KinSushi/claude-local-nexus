@@ -247,7 +247,7 @@ def _run_ruff() -> Dict[str, Any]:
                 "--exclude",
                 "outillage/rituels",
                 "--select",
-                "E9,F,B,C4,SIM,RET",
+                "E9,F,B,C4,SIM,RET,W292",
                 "--output-format",
                 "json",
             ],

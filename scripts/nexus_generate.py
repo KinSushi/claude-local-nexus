@@ -868,9 +868,9 @@ def validate_cloud(names: list[str],
 # Classification des modèles déjà déclarés
 # ----------------------------------------------------------------------
 class Entry:
-    __slots__ = ("alias", "domain", "modality", "family", "tier", "ctx", "order")
+    __slots__ = ("alias", "domain", "modality", "family", "tier", "ctx", "order", "physique", "api_base")
 
-    def __init__(self, alias, domain, modality, family, tier, ctx, order):
+    def __init__(self, alias, domain, modality, family, tier, ctx, order, physique: str = "", api_base: str = ""):
         self.alias = alias
         self.domain = domain
         self.modality = modality
@@ -878,6 +878,8 @@ class Entry:
         self.tier = tier
         self.ctx = ctx
         self.order = order
+        self.physique = physique
+        self.api_base = api_base
 
 
 def classify(config: dict, profile: dict | None = None,
@@ -962,6 +964,9 @@ def classify(config: dict, profile: dict | None = None,
         else:
             family = "text"
 
+        # Le modèle physique (le nom réel du modèle sur le moteur) et l'api_base
+        # sont conservés pour détecter les repli sur le même moteur.
+        physique = raw.split("/", 1)[1] if "/" in raw else ""
         entries.append(Entry(
             alias=alias,
             domain=domain,
@@ -970,6 +975,8 @@ def classify(config: dict, profile: dict | None = None,
             tier=int(prefs.get("quality_tier") or 0),
             ctx=int(info.get("max_input_tokens") or 0),
             order=order,
+            physique=physique,
+            api_base=api_base,
         ))
     return entries
 
@@ -1013,6 +1020,14 @@ def ranked_by_modality(entries: list[Entry], domain: str) -> dict[tuple[str, str
 # ----------------------------------------------------------------------
 # Rendu des blocs
 # ----------------------------------------------------------------------
+def meme_moteur(a, b) -> bool:
+    """
+    Retourne True si les deux entrées proviennent du même modèle physique
+    et du même moteur (api_base identique). Les champs doivent être non vides.
+    """
+    return bool(a.physique and b.physique and a.physique == b.physique and a.api_base == b.api_base)
+
+
 def render_chain(groups: dict, indent: int, width: int = 2,
                  terminal: list[str] | None = None) -> list[str]:
     """
@@ -1070,7 +1085,14 @@ def render_chain(groups: dict, indent: int, width: int = 2,
             # cette amplification en degradation : on perd de la capacite,
             # jamais le service.
             reserve = 1 if terminal_valide else 0
-            targets = [e.alias for e in chain[i + 1:i + 1 + max(0, width - reserve)]]
+            # Sélection des cibles potentielles, puis exclusion des entrées
+            # qui pointent vers le même moteur et le même modèle physique.
+            raw_targets = chain[i + 1:i + 1 + max(0, width - reserve)]
+            filtered_targets = [e for e in raw_targets if not meme_moteur(entry, e)]
+            # Log des exclusions
+            for excl in [e for e in raw_targets if meme_moteur(entry, e)]:
+                print(f"  [repli ignore] {entry.alias} -> {excl.alias} : meme modele sur le meme moteur")
+            targets = [e.alias for e in filtered_targets]
             if terminal_valide:
                 for extra in terminal_valide:
                     if extra not in targets and extra != entry.alias:
@@ -1102,7 +1124,7 @@ def render_ctx_chain(groups: dict, indent: int) -> list[str]:
     for _, chain in sorted(groups.items()):
         for entry in chain:
             larger = sorted(
-                (e for e in chain if e.ctx > entry.ctx),
+                (e for e in chain if e.ctx > entry.ctx and not meme_moteur(entry, e)),
                 key=lambda e: e.ctx,
             )[:2]
             if not larger:
@@ -1229,6 +1251,260 @@ def set_block(lines: list[str], marker: str, content: list[str]) -> list[str]:
     return lines[:start + 1] + content + lines[end:]
 
 
+def mettre_en_sommeil(raw: str, installes: set) -> tuple[str, list[str], list[str]]:
+    """
+    Process the configuration file line‑by‑line and put alive local blocks
+    to sleep when their tag is not installed, or wake dormant blocks when
+    the tag becomes installed.
+
+    The function never touches AUTOGEN zones, never reads or writes files,
+    and returns the new text together with two lists:
+        - endormis : aliases of blocks that were put to sleep
+        - reveilles: aliases of blocks that were woken up
+    """
+    import re
+    import datetime
+
+    lines = raw.split("\n")
+    new_lines: list[str] = []
+    endormis: list[str] = []
+    reveilles: list[str] = []
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # -----------------------------------------------------------------
+        # Preserve AUTOGEN zones unchanged
+        # -----------------------------------------------------------------
+        if "# >>> AUTOGEN:" in line:
+            new_lines.append(line)
+            i += 1
+            while i < len(lines):
+                new_lines.append(lines[i])
+                if "# <<< AUTOGEN:" in lines[i]:
+                    i += 1
+                    break
+                i += 1
+            continue
+
+        # -----------------------------------------------------------------
+        # Dormant block – may need to be woken
+        # -----------------------------------------------------------------
+        if line.startswith("  # DORMANT depuis"):
+            # collect the whole dormant block (including the marker line)
+            block = [line]
+            i += 1
+            while i < len(lines) and lines[i].startswith("#~ "):
+                block.append(lines[i])
+                i += 1
+
+            # extract tag from the line that contains the model definition
+            tag = None
+            for bl in block:
+                stripped = bl[3:] if bl.startswith("#~ ") else bl
+                m = re.search(r"model:\s*[^/]+/([^ \n]+)", stripped)
+                if m:
+                    tag = m.group(1)
+                    break
+
+            # decide whether the tag is now installed
+            if tag is None:
+                tag_installed = False
+            else:
+                tag_installed = (
+                    tag in installes
+                    or f"{tag}:latest" in installes
+                    or (tag.endswith(":latest") and tag[:-7] in installes)
+                )
+
+            if tag_installed:
+                # Wake: remove the marker line and the "#~ " prefix from each line
+                for bl in block[1:]:
+                    if bl.startswith("#~ "):
+                        new_lines.append(bl[3:])
+                    else:
+                        new_lines.append(bl)
+                # alias is the value after "- model_name:" in the first
+                # non‑marker line of the block
+                alias = None
+                for bl in block[1:]:
+                    m = re.match(r"\s*-\s*model_name:\s*(\S+)", bl[3:] if bl.startswith("#~ ") else bl)
+                    if m:
+                        alias = m.group(1)
+                        break
+                if alias:
+                    reveilles.append(alias)
+            else:
+                # Still dormant – keep unchanged
+                new_lines.extend(block)
+            continue
+
+        # -----------------------------------------------------------------
+        # Live block – may need to be put to sleep
+        # -----------------------------------------------------------------
+        if line.startswith("  - model_name: "):
+            block = [line]
+            i += 1
+            while i < len(lines):
+                nxt = lines[i]
+                # stop conditions for the block
+                if nxt.startswith("  - model_name: "):
+                    break
+                if "# >>> AUTOGEN:" in nxt:
+                    break
+                if nxt.startswith("  # DORMANT depuis"):
+                    break
+                if nxt and not nxt.startswith(" "):
+                    break
+                block.append(nxt)
+                i += 1
+
+            # Determine if the block is a local Ollama model
+            is_local = False
+            tag = None
+            for bl in block:
+                m = re.search(r"model:\s*(ollama|ollama_chat)/([^ \n]+)", bl)
+                if m:
+                    tag = m.group(2)
+                    # check that no api_base line points to ollama.com
+                    api_base_ollama = any(
+                        "api_base:" in l and "ollama.com" in l for l in block
+                    )
+                    if not api_base_ollama:
+                        is_local = True
+                        break
+
+            alias = line.split("model_name:")[1].strip()
+
+            # tag is considered installed if any of the three conditions hold
+            if tag is None:
+                tag_installed = False
+            else:
+                tag_installed = (
+                    tag in installes
+                    or f"{tag}:latest" in installes
+                    or (tag.endswith(":latest") and tag[:-7] in installes)
+                )
+
+            if is_local and not tag_installed:
+                # Put to sleep
+                marker = (
+                    f"  # DORMANT depuis {datetime.date.today().isoformat()} : "
+                    f"{tag} absent d'Ollama (reveil automatique a la reinstallation)"
+                )
+                new_lines.append(marker)
+                for bl in block:
+                    new_lines.append("#~ " + bl)
+                endormis.append(alias)
+            else:
+                # Keep block as‑is
+                new_lines.extend(block)
+            continue
+
+        # -----------------------------------------------------------------
+        # Default – copy line unchanged
+        # -----------------------------------------------------------------
+        new_lines.append(line)
+        i += 1
+
+    # Preserve final newline if it existed in the original text
+    result = "\n".join(new_lines)
+
+    # -----------------------------------------------------------------
+    # SECOND PASS – handle manual fallback entries (outside AUTOGEN)
+    # -----------------------------------------------------------------
+    # Compute the set of aliases whose blocks are currently dormant.
+    dormants: set[str] = set()
+    for l in new_lines:
+        if l.startswith("#~   - model_name:"):
+            parts = l.split("model_name:", 1)
+            if len(parts) == 2:
+                dormants.add(parts[1].strip())
+
+    # First sub‑pass: prefix/unprefix individual fallback items.
+    final_lines: list[str] = []
+    inside_autogen = False
+    for line in new_lines:
+        if "# >>> AUTOGEN:" in line:
+            inside_autogen = True
+        if "# <<< AUTOGEN:" in line:
+            inside_autogen = False
+
+        if not inside_autogen:
+            if line.startswith("        - "):
+                alias = line.split("- ", 1)[1].strip()
+                if alias in dormants:
+                    line = "#~ " + line
+            elif line.startswith("#~         - "):
+                alias = line.split("- ", 1)[1].strip()
+                if alias not in dormants:
+                    line = line[3:]
+        final_lines.append(line)
+
+    # Second sub‑pass: adjust source lines (4 spaces, dash, space, source:)
+    adjusted_lines: list[str] = []
+    i = 0
+    while i < len(final_lines):
+        line = final_lines[i]
+
+        src_match = re.match(r"^(#~ )?( {4})- (\S+):", line)
+        if src_match and not inside_autogen:
+            prefix = src_match.group(1)
+            source = src_match.group(3)
+
+            items = []
+            j = i + 1
+            while j < len(final_lines):
+                itm = final_lines[j]
+                if re.match(r"^(#~ )? {8}- ", itm):
+                    items.append(itm)
+                    j += 1
+                else:
+                    break
+
+            source_is_dormant = source in dormants
+
+            if source_is_dormant:
+                # Ensure source line is prefixed
+                if not prefix:
+                    line = "#~ " + line
+                # Prefix all items
+                new_items = []
+                for itm in items:
+                    if not itm.startswith("#~ "):
+                        new_items.append("#~ " + itm)
+                    else:
+                        new_items.append(itm)
+                items = new_items
+            else:
+                # Source not dormant: remove prefix from source line if present
+                if prefix:
+                    line = line[3:]
+                # Unprefix items unless their alias is still dormant
+                new_items = []
+                for itm in items:
+                    core = itm[3:] if itm.startswith("#~ ") else itm
+                    m = re.search(r"-\s*(\S+)", core)
+                    alias_item = m.group(1) if m else ""
+                    if itm.startswith("#~ ") and alias_item not in dormants:
+                        new_items.append(core)
+                    else:
+                        new_items.append(itm)
+                items = new_items
+
+            adjusted_lines.append(line)
+            adjusted_lines.extend(items)
+            i = j
+            continue
+
+        adjusted_lines.append(line)
+        i += 1
+
+    result = "\n".join(adjusted_lines)
+    return (result, endormis, reveilles)
+
+
 def main() -> int:
     # An interrupt allows the operator to freeze generation during an incident without uninstalling the tool
     # This switch is controlled by the environment variable NEXUS_GENERATION_GELEE
@@ -1285,6 +1561,15 @@ def main() -> int:
         print("joignables ? La generation s'arrete — supposer que tous les")
         print("modeles tiennent en memoire serait pire que ne rien ecrire.")
         return 1
+
+    # Apply manual sleep / wake handling
+    raw, endormis, reveilles = mettre_en_sommeil(raw, set(sizes))
+    for alias in endormis:
+        print("  [sommeil] %s : tag absent d'Ollama" % alias)
+    for alias in reveilles:
+        print("  [reveil] %s : tag de retour" % alias)
+    print("  Declarations manuelles : %d endormie(s), %d reveillee(s)" % (len(endormis), len(reveilles)))
+    config = yaml.safe_load(raw)
     print("  Moteur %s — %.0f Go de memoire d'inference, budget pool %.0f Go"
           % (profile["ollama"]["mode"], profile["inference_memory_gb"],
              profile["pool_budget_gb"]))

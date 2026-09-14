@@ -1416,6 +1416,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_creer.py", "creation de fichier")
     if args.only in (None, "repli"):
         jouer_epreuve_python("epreuve_repli_adaptatif.py", "repli gratuit cloud-first")
+    if args.only in (None, "agent-replis"):
+        jouer_epreuve_python("epreuve_agent_replis.py", "nexus_agent : cascade locale bornee, service degrade nomme, reponse degeneree rejetee")
     if args.only in (None, "dispatch"):
         jouer_epreuve_python("epreuve_dispatch_sain.py", "cablage sain : aucun dispatch sans fichier")
     if args.only in (None, "skip"):
@@ -1442,12 +1444,18 @@ def main() -> int:
         jouer_epreuve_python("epreuve_savings.py", "savings : nettoyage env, validation url, domaine")
     if args.only in (None, "deposer"):
         jouer_epreuve_python("epreuve_deposer.py", "deposer : trace verbatim (forward), degrade proprement (reverse)")
+    if args.only in (None, "shell-stable"):
+        jouer_epreuve_python("epreuve_shell_stable.py", "chemin pwsh stable : les taches planifiees survivent a l'auto-update du Store")
     if args.only in (None, "sauf-tests"):
         jouer_epreuve_python("epreuve_sauf_tests.py", "vitrine : --sauf-tests ne saute que les tests, jamais conformite/rituel")
     if args.only in (None, "succession"):
         jouer_epreuve_python("epreuve_succession.py", "succession orchestrateur : opus>fable>cloud>local selon disponibilite et sensibilite")
+    if args.only in (None, "sommeil"):
+        jouer_epreuve_python("epreuve_sommeil.py", "sommeil des declarations manuelles : tag absent d'Ollama endormi, reveille a la reinstallation")
     if args.only in (None, "pouls"):
         jouer_epreuve_python("epreuve_pouls.py", "pouls de presence : est_vivant (fraicheur, skew) et battre atomique")
+    if args.only in (None, "reprise-taches"):
+        jouer_epreuve_python("epreuve_reprise_taches.py", "temoin de reprise : une tache planifiee dont l'executable manque est CASSEE, pas Ready")
     if args.only in (None, "boucle"):
         jouer_epreuve_python("epreuve_boucle_locale.py", "boucle locale : decision, verdict, LOI 1, cycle et boucle par injection (retrait si Claude vivant)")
     if args.only in (None, "recolte"):

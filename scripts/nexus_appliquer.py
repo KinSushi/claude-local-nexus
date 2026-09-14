@@ -81,6 +81,18 @@ def main():
         if fichier_cible_bloc is None or fichier_cible_bloc.strip() == cible_path:
             blocs.append((avant, apres))
 
+    # Guard: ensure marker counts match extracted blocks
+    # Count total matches of the pattern (including those filtered out later)
+    nb_trouves = sum(1 for _ in pattern.finditer(texte))
+    # Count markers that appear alone on their line
+    nb_avant = sum(1 for l in texte.splitlines() if l.strip() == "<<<AVANT>>>")
+    nb_apres = sum(1 for l in texte.splitlines() if l.strip() == "<<<APRES>>>")
+    nb_fin = sum(1 for l in texte.splitlines() if l.strip() == "<<<FIN>>>")
+    if nb_avant != nb_trouves or nb_avant != nb_apres or nb_avant != nb_fin:
+        print("REFUS : %d bloc(s) extrait(s) pour %d marqueur(s) AVANT (%d APRES, %d FIN) -- texte tronque ou marqueur mal place, RIEN n'est applique" % (
+            len(blocs), nb_avant, nb_apres, nb_fin))
+        return 1
+
     if not blocs:
         counts = {m: texte.count(m) for m in ["<<<AVANT>>>", "<<<APRES>>>", "<<<FIN>>>"]}
         if any(counts.values()):

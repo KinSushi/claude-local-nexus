@@ -276,6 +276,50 @@ def replis_gratuits(cle: str) -> List[str]:
     except Exception:
         return list(REPLIS_GRATUITS_PLANCHER)
 
+# ----------------------------------------------------------------------
+# Limitation du nombre de replis locaux conservés.
+# Le plafond est configurable via la variable d'environnement NEXUS_MAX_REPLIS_LOCAUX
+# (défaut : 2). La fonction est pure et ne dépend que des arguments fournis.
+MAX_REPLIS_LOCAUX = int(os.environ.get("NEXUS_MAX_REPLIS_LOCAUX", "2"))
+
+def borner_replis_locaux(candidats: list, plans: dict, maximum: int = MAX_REPLIS_LOCAUX) -> tuple:
+    """
+    Retourne une paire (candidats_gardes, ecartes).
+
+    - Le premier candidat (le modèle demandé) est toujours conservé.
+    - Tous les candidats dont le plan n'est pas « local » sont conservés.
+    - Parmi les candidats « local », on ne garde que les *maximum* premiers
+      (dans l'ordre d'apparition) ; les suivants sont listés dans *ecartes*.
+    - Si *maximum* ≤ 0, aucun repli local supplémentaire n'est conservé.
+    - Chaque entrée d'*ecartes* a la forme
+      "%s : ecarte, plafond de %d repli(s) local(aux) (NEXUS_MAX_REPLIS_LOCAUX)".
+    """
+    if not candidats:
+        return [], []
+
+    # Le premier candidat (modèle demandé) est toujours conservé.
+    gardes = [candidats[0]]
+    ecartes = []
+
+    # Compteur des replis locaux déjà conservés (hors modèle demandé).
+    locaux_gardes = 0
+
+    for cand in candidats[1:]:
+        plan = plans.get(cand)
+        if plan != "local":
+            # Tout ce qui n'est pas explicitement local est conservé.
+            gardes.append(cand)
+        else:
+            # Candidat local : on ne garde que jusqu'au plafond.
+            if maximum > 0 and locaux_gardes < maximum:
+                gardes.append(cand)
+                locaux_gardes += 1
+            else:
+                ecartes.append(
+                    f"{cand} : ecarte, plafond de {maximum} repli(s) local(aux) (NEXUS_MAX_REPLIS_LOCAUX)"
+                )
+    return gardes, ecartes
+
 # Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
 # sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier
 # ne doit pas être accepté ici puis refusé là-bas, ou inversement, car les deux canaux
@@ -447,6 +491,58 @@ def _sans_raisonnement(texte):
     if s == str(texte):
         return s
     return s.rstrip()
+
+
+def reprise_utile(cause_vide) -> bool:
+    """
+    Retourne False si `cause_vide` est une chaîne commençant par "raisonnement_"
+    (relever le plafond ne changerait rien), True sinon (y compris None ou vide).
+    """
+    return not (isinstance(cause_vide, str) and cause_vide.startswith("raisonnement_"))
+
+
+def texte_degenere(texte, longueur_min: int = 40, repetitions: int = 5) -> bool:
+    """
+    Détecte un texte dégénéré :
+    - découpe le texte en lignes stripées, ignore celles de moins de
+      ``longueur_min`` caractères ;
+    - renvoie ``True`` si une même ligne apparaît au moins ``repetitions``
+      fois ;
+    - ou si, sur le texte sans sauts de ligne, un même bloc de 200 caractères
+      (extrait tous les 100 caractères) apparaît au moins ``repetitions``
+      fois ;
+    - renvoie ``False`` pour un texte vide ou trop court. Aucun
+      exception n’est levée.
+    """
+    if not texte:
+        return False
+
+    # 1. Recherche de lignes répétées
+    lignes = [
+        l.strip()
+        for l in texte.splitlines()
+        if len(l.strip()) >= longueur_min
+    ]
+    if lignes:
+        from collections import Counter
+        if any(cnt >= repetitions for cnt in Counter(lignes).values()):
+            return True
+
+    # 2. Recherche de blocs répétés (fenêtre glissante)
+    compact = "".join(texte.splitlines())
+    if len(compact) < 200:
+        return False
+
+    blocs = [
+        compact[i:i + 200]
+        for i in range(0, len(compact) - 200 + 1, 100)
+    ]
+    if blocs:
+        from collections import Counter
+        if any(cnt >= repetitions for cnt in Counter(blocs).values()):
+            return True
+
+    return False
 
 
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
@@ -1092,6 +1188,8 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs, ecartes = [], [], []
     troncatures = set()
+    def _journal_echec(message: str):
+        print(f"Echec candidat : {message}", file=sys.stderr, flush=True)
     candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
     _dj = None
     try:
@@ -1162,6 +1260,11 @@ def executer(tache: dict, cle: str) -> dict:
             return {"nom": nom, "modele": modele,
                     "erreur": "aucun modele local disponible pour NEXUS_LOCAL_SEUL=1"}
 
+    # Appliquer le plafond de replis locaux afin d'éviter de charger
+    # de trop nombreux modèles locaux en mémoire.
+    candidats, _ecartes_plafond = borner_replis_locaux(candidats, appeler._cache_plans)
+    ecartes.extend(_ecartes_plafond)
+
     trunc_failure = None          # garde le premier échec par troncature
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
@@ -1191,12 +1294,15 @@ def executer(tache: dict, cle: str) -> dict:
                     resultat = appeler(candidat, messages, plafond, cle, None)
                 except Exception as second:
                     echecs.append("%s : %s" % (candidat, second))
+                    _journal_echec("%s : %s" % (candidat, second))
                     continue
             else:
                 echecs.append("%s : HTTP %s : %s" % (candidat, exc.code, detail))
+                _journal_echec("%s : HTTP %s : %s" % (candidat, exc.code, detail))
                 continue
         except Exception as exc:
             echecs.append("%s : %s" % (candidat, exc))
+            _journal_echec("%s : %s" % (candidat, exc))
             continue
 
         texte_vide = not (resultat.get("texte") or "").strip()
@@ -1204,6 +1310,12 @@ def executer(tache: dict, cle: str) -> dict:
             if resultat.get("tronque"):
                 # Le modèle a consommé tout son budget sans produire de texte.
                 # On consigne l'échec et on sort de la boucle pour reprendre le plafond immédiatement.
+                if not reprise_utile(resultat.get("cause_vide")):
+                    msg = "%s : raisonnement a epuise le budget (%s), bascule sans relever le plafond" % (
+                        candidat, resultat.get("cause_vide"))
+                    echecs.append(msg)
+                    _journal_echec(msg)  # ligne où _journal_echec est défini : voir fonction locale dans executer
+                    continue
                 trunc_failure = resultat
                 motif_troncature = "%s : reponse vide tronquee (demande %d jetons)" % (candidat, plafond)
                 echecs.append(motif_troncature)
@@ -1212,6 +1324,12 @@ def executer(tache: dict, cle: str) -> dict:
                 break
             echecs.append("%s : reponse vide (%d jetons consommes)"
                           % (candidat, resultat.get("tokens", 0)))
+            _journal_echec("%s : reponse vide (%d jetons consommes)" % (candidat, resultat.get("tokens", 0)))
+            continue
+        if texte_degenere(resultat.get("texte") or ""):
+            echecs.append("%s : reponse degeneree (meme bloc repete, %d jetons)"
+                          % (candidat, resultat.get("tokens", 0)))
+            _journal_echec("%s : reponse degeneree (meme bloc repete, %d jetons)" % (candidat, resultat.get("tokens", 0)))
             continue
 
         # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
@@ -1244,6 +1362,11 @@ def executer(tache: dict, cle: str) -> dict:
             if not motif and trace:
                 motif = trace[-1]
             resultat["motif_bascule"] = motif
+        servi = resultat.get("servi_par", "?")
+        if est_degrade(modele, servi):
+            resultat["degrade"] = True
+            resultat["motif_degrade"] = "servi par %s (%s B) pour une demande de %s (%s B)" % (
+                servi, taille_alias(servi), modele, taille_alias(modele))
         if resultat.get("tronque"):
             # Un rendu NON VIDE mais tronque (finish_reason == length) ne doit pas
             # etre livre incomplet : meme reprise que la troncature vide (banc, v20).
@@ -1296,8 +1419,44 @@ def executer(tache: dict, cle: str) -> dict:
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
 
+def taille_alias(nom: str) -> float | None:
+    r"""
+    Extrait le nombre de milliards de paramètres d'un nom de modèle ou d'alias.
+    Recherche la plus grande valeur correspondant à l'expression
+    (\d+(?:\.\d+)?)b(?![a-z0-9]) en minuscules, après suppression du préfixe
+    fournisseur (tout avant le dernier '/' retiré).
+    """
+    # Retirer le préfixe fournisseur
+    base = nom.rsplit("/", 1)[-1].lower()
+    matches = re.findall(r"(\d+(?:\.\d+)?)b(?![a-z0-9])", base)
+    if not matches:
+        return None
+    # Convertir toutes les correspondances en float et retourner la plus grande
+    try:
+        valeurs = [float(m) for m in matches]
+        return max(valeurs) if valeurs else None
+    except ValueError:
+        return None
+
+
+def est_degrade(demande: str, servi: str) -> bool:
+    """
+    Retourne True si les deux tailles sont connues et que la taille du modèle
+    servi est strictement inférieure à la moitié de celle demandée.
+    """
+    taille_demande = taille_alias(demande)
+    taille_servi = taille_alias(servi)
+    if taille_demande is None or taille_servi is None:
+        return False
+    return taille_servi < (taille_demande / 2)
+
+
 def rendre(resultat: dict) -> None:
     print("=" * 72)
+    # Avertissement en cas de service dégradé
+    if resultat.get("degrade"):
+        print("[DEGRADE] " + resultat.get("motif_degrade", ""))
+        print("[DEGRADE] reponse a ne pas utiliser sans relecture : le modele servi est bien plus petit que celui demande (--accepter-degrade pour lever le code 3)")
     print("  %s" % resultat["nom"])
     if resultat.get("erreur"):
         print("  ECHEC : %s" % resultat["erreur"])
@@ -1506,6 +1665,8 @@ def main() -> int:
                          help="Lister les modeles exposes par plan.")
     parseur.add_argument("--json", action="store_true",
                          help="Sortie machine au lieu du rapport lisible.")
+    parseur.add_argument("--accepter-degrade", action="store_true",
+                         help="Accepter un modele servi bien plus petit que demande (sinon code de sortie 3).")
     args = parseur.parse_args()
 
     # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
@@ -1806,6 +1967,8 @@ def main() -> int:
     if factures:
         print("  [!] %d tache(s) servies par Anthropic, donc FACTUREES : %s"
               % (len(factures), ", ".join(r["nom"] for r in factures)))
+    if any(r.get("degrade") for r in resultats) and not args.accepter_degrade:
+        return 3
     return 1 if echecs else 0
 
 

@@ -81,6 +81,36 @@ def main():
                          ("[RATE] casC : code=%d, verification echec" % rc))
         echec = echec or not ok
 
+        # ---------- cas D ----------
+        cibleD = base / "cibleD.txt"
+        originalD = "\n".join(["alpha", "beta", "gamma", ""])
+        _ecrire(cibleD, originalD)
+        casD = base / "casD.jsonl"
+        _jsonl(casD, "\n".join([A, "alpha", P, "ALPHA", F,
+                                A, "beta", P, "BETA"]))  # missing FIN
+        rc = subprocess.run([sys.executable, str(nexus_path), str(casD), "t", str(cibleD)],
+                            capture_output=True, text=True).returncode
+        contenu = cibleD.read_text(encoding="utf-8")
+        ok = (rc != 0 and contenu == originalD)
+        resultats.append(("[OK  ] casD : code=%d, texte tronque -> refus, fichier intact" % rc) if ok else
+                         ("[RATE] casD : code=%d, verification echec" % rc))
+        echec = echec or not ok
+
+        # ---------- cas E ----------
+        cibleE = base / "cibleE.txt"
+        originalE = "\n".join(["alpha", "beta", "gamma", ""])
+        _ecrire(cibleE, originalE)
+        casE = base / "casE.jsonl"
+        _jsonl(casE, "\n".join([A, "alpha", P, "ALPHA", F,
+                                A, "beta", P, "BETA", F]))
+        rc = subprocess.run([sys.executable, str(nexus_path), str(casE), "t", str(cibleE)],
+                            capture_output=True, text=True).returncode
+        contenu = cibleE.read_text(encoding="utf-8")
+        ok = (rc == 0 and "ALPHA" in contenu and "BETA" in contenu)
+        resultats.append(("[OK  ] casE : code=%d, deux remplacements appliques" % rc) if ok else
+                         ("[RATE] casE : code=%d, verification echec" % rc))
+        echec = echec or not ok
+
     for ligne in resultats:
         print(ligne)
 

@@ -81,8 +81,8 @@ if (-not (Test-Path $Demarreur)) {
     exit 1
 }
 
-$shell = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
-if (-not $shell) { $shell = (Get-Command powershell -ErrorAction SilentlyContinue).Source }
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'outillage\Resolve-NexusShell.ps1')
+$shell = Resolve-NexusShell
 if (-not $shell) {
     [Console]::Error.WriteLine("Ni pwsh ni powershell dans le PATH.")
     exit 1

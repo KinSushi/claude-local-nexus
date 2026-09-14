@@ -23,7 +23,7 @@
 # ============================================================
 
 # ============================================================
-# NEXUS-ROUTER-VERSION: r4501352c7d
+# NEXUS-ROUTER-VERSION: rc383ab8fbc
 # Version de la politique de routage. Elle change des que les
 # pools, les chaines de fallback ou les seuils materiels
 # changent — donc des qu'une meme requete pourrait etre servie
@@ -165,26 +165,27 @@ model_list:
       nexus_pool: false
 
   # ---- Gemma 4 31B ------------------------------------------
-  - model_name: gemma4-31b-local
-    litellm_params:
-      model: ollama_chat/gemma4:31b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      mode: vision
-      max_input_tokens: 8192
-      description: "Gemma 4 31B — généraliste, raisonnement et agentic workflows"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - analytical_reasoning
-          - general
-          - code_understanding
-
-  # ---- Qwen Coder 30B ---------------------------------------
+  # DORMANT depuis 2026-09-13 : gemma4:31b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: gemma4-31b-local
+#~     litellm_params:
+#~       model: ollama_chat/gemma4:31b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       mode: vision
+#~       max_input_tokens: 8192
+#~       description: "Gemma 4 31B — généraliste, raisonnement et agentic workflows"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - analytical_reasoning
+#~           - general
+#~           - code_understanding
+#~ 
+#~   # ---- Qwen Coder 30B ---------------------------------------
   - model_name: qwen3-coder-30b-local
     litellm_params:
       model: ollama_chat/qwen3-coder:30b
@@ -204,96 +205,101 @@ model_list:
           - technical_design
 
   # ---- Qwen 2.5 Coder 32B -----------------------------------
-  - model_name: qwen2.5-coder-32b-local
-    litellm_params:
-      model: ollama_chat/qwen2.5-coder:32b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 8192
-      description: "Qwen2.5-Coder 32B"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - code_generation
-          - code_understanding
-
-  # ---- Qwen 2.5 Coder 14B -----------------------------------
-  - model_name: qwen2.5-coder-14b-local
-    litellm_params:
-      model: ollama_chat/qwen2.5-coder:14b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 8192
-      description: "Qwen2.5-Coder 14B"
-      adaptive_router_preferences:
-        quality_tier: 1
-        strengths:
-          - code_generation
-          - code_understanding
-
-  # ---- DeepSeek Coder 33B -----------------------------------
-  - model_name: deepseek-coder-33b-local
-    litellm_params:
-      model: ollama_chat/deepseek-coder:33b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 8192
-      description: "DeepSeek Coder 33B"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - code_generation
-          - code_understanding
-
-  # ---- Codestral --------------------------------------------
-  - model_name: codestral-local
-    litellm_params:
-      model: ollama_chat/codestral
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 8192
-      description: "Codestral"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - code_generation
-          - code_understanding
-
-  # ---- Généralistes -----------------------------------------
-  - model_name: qwen2.5-32b-local
-    litellm_params:
-      model: ollama_chat/qwen2.5:32b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 8192
-      description: "Qwen2.5 32B — généraliste"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - general
-          - analytical_reasoning
-          - factual_lookup
-  # ---- Rapides ----------------------------------------------
+  # DORMANT depuis 2026-09-13 : qwen2.5-coder:32b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: qwen2.5-coder-32b-local
+#~     litellm_params:
+#~       model: ollama_chat/qwen2.5-coder:32b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 8192
+#~       description: "Qwen2.5-Coder 32B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - code_generation
+#~           - code_understanding
+#~ 
+#~   # ---- Qwen 2.5 Coder 14B -----------------------------------
+  # DORMANT depuis 2026-09-13 : qwen2.5-coder:14b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: qwen2.5-coder-14b-local
+#~     litellm_params:
+#~       model: ollama_chat/qwen2.5-coder:14b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 8192
+#~       description: "Qwen2.5-Coder 14B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 1
+#~         strengths:
+#~           - code_generation
+#~           - code_understanding
+#~ 
+#~   # ---- DeepSeek Coder 33B -----------------------------------
+  # DORMANT depuis 2026-09-13 : deepseek-coder:33b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: deepseek-coder-33b-local
+#~     litellm_params:
+#~       model: ollama_chat/deepseek-coder:33b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 8192
+#~       description: "DeepSeek Coder 33B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - code_generation
+#~           - code_understanding
+#~ 
+#~   # ---- Codestral --------------------------------------------
+  # DORMANT depuis 2026-09-13 : codestral absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: codestral-local
+#~     litellm_params:
+#~       model: ollama_chat/codestral
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 8192
+#~       description: "Codestral"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - code_generation
+#~           - code_understanding
+#~ 
+#~   # ---- Généralistes -----------------------------------------
+  # DORMANT depuis 2026-09-13 : qwen2.5:32b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: qwen2.5-32b-local
+#~     litellm_params:
+#~       model: ollama_chat/qwen2.5:32b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 8192
+#~       description: "Qwen2.5 32B — généraliste"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - general
+#~           - analytical_reasoning
+#~           - factual_lookup
+#~   # ---- Rapides ----------------------------------------------
   - model_name: gemma4-12b-local
     litellm_params:
       model: ollama_chat/gemma4:12b
@@ -371,77 +377,81 @@ model_list:
   # 3. LOCAL — MULTIMODAL
   # ==========================================================
 
-  - model_name: llama3.2-vision-11b-local
-    litellm_params:
-      model: ollama_chat/llama3.2-vision:11b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 2048
-      temperature: 0.2
-    model_info:
-      mode: vision
-      max_input_tokens: 8192
-      description: "Llama 3.2 Vision 11B"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - general
-  - model_name: llava-34b-local
-    litellm_params:
-      model: ollama_chat/llava:34b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 2048
-      temperature: 0.2
-    model_info:
-      mode: vision
-      max_input_tokens: 8192
-      description: "LLaVA 34B"
-      adaptive_router_preferences:
-        quality_tier: 2
-        strengths:
-          - general
-
-  - model_name: llava-13b-local
-    litellm_params:
-      model: ollama_chat/llava:13b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 2048
-      temperature: 0.2
-    model_info:
-      mode: vision
-      max_input_tokens: 8192
-      description: "LLaVA 13B"
-      adaptive_router_preferences:
-        quality_tier: 1
-        strengths:
-          - general
-
-  - model_name: llava-7b-local
-    litellm_params:
-      model: ollama_chat/llava:7b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 8192
-      num_predict: 2048
-      temperature: 0.2
-    model_info:
-      mode: vision
-      max_input_tokens: 8192
-      description: "LLaVA 7B"
-      adaptive_router_preferences:
-        quality_tier: 1
-        strengths:
-          - general
-
-  # ==========================================================
-  # 4. LOCAL — EMBEDDINGS
-  # ==========================================================
-
+  # DORMANT depuis 2026-09-13 : llama3.2-vision:11b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: llama3.2-vision-11b-local
+#~     litellm_params:
+#~       model: ollama_chat/llama3.2-vision:11b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 2048
+#~       temperature: 0.2
+#~     model_info:
+#~       mode: vision
+#~       max_input_tokens: 8192
+#~       description: "Llama 3.2 Vision 11B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - general
+  # DORMANT depuis 2026-09-13 : llava:34b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: llava-34b-local
+#~     litellm_params:
+#~       model: ollama_chat/llava:34b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 2048
+#~       temperature: 0.2
+#~     model_info:
+#~       mode: vision
+#~       max_input_tokens: 8192
+#~       description: "LLaVA 34B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 2
+#~         strengths:
+#~           - general
+#~ 
+  # DORMANT depuis 2026-09-13 : llava:13b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: llava-13b-local
+#~     litellm_params:
+#~       model: ollama_chat/llava:13b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 2048
+#~       temperature: 0.2
+#~     model_info:
+#~       mode: vision
+#~       max_input_tokens: 8192
+#~       description: "LLaVA 13B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 1
+#~         strengths:
+#~           - general
+#~ 
+  # DORMANT depuis 2026-09-13 : llava:7b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: llava-7b-local
+#~     litellm_params:
+#~       model: ollama_chat/llava:7b
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~       num_ctx: 8192
+#~       num_predict: 2048
+#~       temperature: 0.2
+#~     model_info:
+#~       mode: vision
+#~       max_input_tokens: 8192
+#~       description: "LLaVA 7B"
+#~       adaptive_router_preferences:
+#~         quality_tier: 1
+#~         strengths:
+#~           - general
+#~ 
+#~   # ==========================================================
+#~   # 4. LOCAL — EMBEDDINGS
+#~   # ==========================================================
+#~ 
   - model_name: qwen3-embedding-8b-local
     litellm_params:
       model: ollama/qwen3-embedding:8b
@@ -492,37 +502,39 @@ model_list:
       max_input_tokens: 8192
       description: "bge-m3 — embedding multilingue, 1024 dimensions (nomic en rend 768, all-minilm 384, tous deux anglocentres)"
 
-  - model_name: granite3.3-8b-local
-    litellm_params:
-      model: ollama_chat/granite3.3:8b
-      api_base: http://host.docker.internal:11434
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "Granite 3.3 8B — generaliste local a large contexte ; hors lui et glm-4.7-flash, le pool local plafonne a 8192"
-
-  - model_name: all-minilm-local
-    litellm_params:
-      model: ollama/all-minilm
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-    model_info:
-      mode: embedding
-      max_input_tokens: 8192
-      description: "all-MiniLM — embedding léger"
-
-  # ==========================================================
-  # LOCAL — EXPOSITION AUTOMATIQUE
-  # ==========================================================
-  # Tout modele present dans Ollama mais non declare a la main
-  # ci-dessus est expose ici automatiquement, afin de pouvoir
-  # etre adresse explicitement. Ces modeles ne sont volontairement
-  # PAS versés aux pools des routeurs adaptatifs ni aux chaines de
-  # fallback : etre installe ne vaut pas etre eligible au routage
-  # automatique (§76). Pour en promouvoir un, le declarer a la
-  # main plus haut avec son profil de capacite.
+  # DORMANT depuis 2026-09-13 : granite3.3:8b absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: granite3.3-8b-local
+#~     litellm_params:
+#~       model: ollama_chat/granite3.3:8b
+#~       api_base: http://host.docker.internal:11434
+#~       num_ctx: 32768
+#~       num_predict: 4096
+#~       temperature: 0.2
+#~     model_info:
+#~       max_input_tokens: 32768
+#~       description: "Granite 3.3 8B — generaliste local a large contexte ; hors lui et glm-4.7-flash, le pool local plafonne a 8192"
+#~ 
+  # DORMANT depuis 2026-09-13 : all-minilm absent d'Ollama (reveil automatique a la reinstallation)
+#~   - model_name: all-minilm-local
+#~     litellm_params:
+#~       model: ollama/all-minilm
+#~       api_base: http://host.docker.internal:11434
+#~       litellm_health_check: true
+#~     model_info:
+#~       mode: embedding
+#~       max_input_tokens: 8192
+#~       description: "all-MiniLM — embedding léger"
+#~ 
+#~   # ==========================================================
+#~   # LOCAL — EXPOSITION AUTOMATIQUE
+#~   # ==========================================================
+#~   # Tout modele present dans Ollama mais non declare a la main
+#~   # ci-dessus est expose ici automatiquement, afin de pouvoir
+#~   # etre adresse explicitement. Ces modeles ne sont volontairement
+#~   # PAS versés aux pools des routeurs adaptatifs ni aux chaines de
+#~   # fallback : etre installe ne vaut pas etre eligible au routage
+#~   # automatique (§76). Pour en promouvoir un, le declarer a la
+#~   # main plus haut avec son profil de capacite.
   # >>> AUTOGEN:LOCAL_MODELS_EXTRA
   - model_name: bespoke-minicheck-local
     litellm_params:
@@ -535,62 +547,6 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "bespoke-minicheck:latest (expose automatiquement — hors pool : non mesure)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: codegemma-7b-local
-    litellm_params:
-      model: ollama_chat/codegemma:7b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "codegemma:7b (expose automatiquement — hors pool : mesure en echec : timed out)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: codestral-22b-local
-    litellm_params:
-      model: ollama_chat/codestral:22b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "codestral:22b (expose automatiquement — hors pool : mesure en echec : timed out)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: command-r-local
-    litellm_params:
-      model: ollama_chat/command-r:latest
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "command-r:latest (expose automatiquement — hors pool : mesure en echec : timed out)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: deepseek-coder-6.7b-local
-    litellm_params:
-      model: ollama_chat/deepseek-coder:6.7b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "deepseek-coder:6.7b (expose automatiquement — hors pool : mesure en echec : timed out)"
       nexus_generated: true
       nexus_pool: false
 
@@ -609,33 +565,33 @@ model_list:
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: deepseek-r1-8b-local
+  - model_name: deepseek-r1-32b-local
     litellm_params:
-      model: ollama_chat/deepseek-r1:8b
+      model: ollama_chat/deepseek-r1:32b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "deepseek-r1:8b (expose automatiquement — hors pool : non mesure)"
+      max_input_tokens: 16384
+      description: "deepseek-r1:32b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: gemma3-1b-local
+  - model_name: devstral-24b-local
     litellm_params:
-      model: ollama_chat/gemma3:1b
+      model: ollama_chat/devstral:24b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "gemma3:1b (promu automatiquement — epreuve reelle 4/4)"
+      max_input_tokens: 16384
+      description: "devstral:24b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
 
   - model_name: gemma4-26b-local
     litellm_params:
@@ -681,9 +637,9 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
-  - model_name: granite3.1-moe-1b-local
+  - model_name: granite3-guardian-2b-local
     litellm_params:
-      model: ollama_chat/granite3.1-moe:1b
+      model: ollama_chat/granite3-guardian:2b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 32768
@@ -691,9 +647,198 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 32768
-      description: "granite3.1-moe:1b (promu automatiquement — 2.2 s — mais epreuve 1/4 : detail non releve)"
+      description: "granite3-guardian:2b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
+
+  - model_name: granite3.2-vision-2b-local
+    litellm_params:
+      model: ollama_chat/granite3.2-vision:2b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "granite3.2-vision:2b (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: granite4.1-guardian-8b-local
+    litellm_params:
+      model: ollama_chat/granite4.1-guardian:8b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "granite4.1-guardian:8b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: granite4.1-8b-local
+    litellm_params:
+      model: ollama_chat/granite4.1:8b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "granite4.1:8b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hermes3-8b-local
+    litellm_params:
+      model: ollama_chat/hermes3:8b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "hermes3:8b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF-q4_K_M-local
+    litellm_params:
+      model: ollama_chat/hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF:q4_K_M
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF:q4_K_M (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/ggml-org/GLM-OCR-GGUF-Q8_0-local
+    litellm_params:
+      model: ollama_chat/hf.co/ggml-org/GLM-OCR-GGUF:Q8_0
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/ggml-org/GLM-OCR-GGUF:Q8_0 (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF-UD-Q4_K_XL-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/Qwen3.6-27B-GGUF-UD-Q4_K_XL-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/Qwen3.6-27B-GGUF:UD-Q4_K_XL
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/unsloth/Qwen3.6-27B-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/Qwen3.6-35B-A3B-GGUF-UD-Q4_K_M-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/Qwen3.6-35B-A3B-GGUF-UD-Q4_K_XL-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: hf.co/unsloth/gemma-4-26B-A4B-it-GGUF-UD-Q4_K_XL-local
+    litellm_params:
+      model: ollama_chat/hf.co/unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "hf.co/unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: laguna-xs-2.1-q4_K_M-local
+    litellm_params:
+      model: ollama_chat/laguna-xs-2.1:q4_K_M
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "laguna-xs-2.1:q4_K_M (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: lfm2.5-thinking-local
+    litellm_params:
+      model: ollama_chat/lfm2.5-thinking:latest
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "lfm2.5-thinking:latest (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: llama-guard3-local
     litellm_params:
@@ -709,9 +854,9 @@ model_list:
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: llama3.1-8b-local
+  - model_name: llama3-groq-tool-use-8b-local
     litellm_params:
-      model: ollama_chat/llama3.1:8b
+      model: ollama_chat/llama3-groq-tool-use:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 32768
@@ -719,9 +864,9 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 32768
-      description: "llama3.1:8b (promu automatiquement — epreuve reelle 4/4)"
+      description: "llama3-groq-tool-use:8b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
 
   - model_name: llama3.2-1b-local
     litellm_params:
@@ -737,33 +882,76 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
-  - model_name: mistral-7b-local
+  - model_name: muse-glimmer-30b-local
     litellm_params:
-      model: ollama_chat/mistral:7b
+      model: ollama_chat/muse-glimmer:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "mistral:7b (promu automatiquement — 2.5 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
+      max_input_tokens: 16384
+      description: "muse-glimmer:30b (expose automatiquement — hors pool : non mesure)"
+      mode: vision
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
 
-  - model_name: mixtral-8x7b-local
+  - model_name: nemotron-3.5-lightning-30b-local
     litellm_params:
-      model: ollama_chat/mixtral:8x7b
+      model: ollama_chat/nemotron-3.5-lightning:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "mixtral:8x7b (promu automatiquement — 56.0 s — mais epreuve 0/4 : parle le protocole /v1/messages, demande un outil, enchaine deux outils)"
+      max_input_tokens: 16384
+      description: "nemotron-3.5-lightning:30b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
+
+  - model_name: nemotron-cascade-2-30b-local
+    litellm_params:
+      model: ollama_chat/nemotron-cascade-2:30b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "nemotron-cascade-2:30b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: north-mini-code-1.0-q4_K_M-local
+    litellm_params:
+      model: ollama_chat/north-mini-code-1.0:q4_K_M
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "north-mini-code-1.0:q4_K_M (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: ornith-35b-local
+    litellm_params:
+      model: ollama_chat/ornith:35b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "ornith:35b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: phi3.5-local
     litellm_params:
@@ -793,23 +981,9 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
-  - model_name: qwen2-math-1.5b-local
+  - model_name: phi4-reasoning-14b-local
     litellm_params:
-      model: ollama_chat/qwen2-math:1.5b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "qwen2-math:1.5b (expose automatiquement — hors pool : non mesure)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: qwen2-math-72b-local
-    litellm_params:
-      model: ollama_chat/qwen2-math:72b
+      model: ollama_chat/phi4-reasoning:14b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 16384
@@ -817,65 +991,35 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 16384
-      description: "qwen2-math:72b (expose automatiquement — hors pool : 41 Go sur 66 Go : chargeable, mais sans marge pour le contexte et le cache)"
+      description: "phi4-reasoning:14b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: qwen2-math-7b-local
+  - model_name: phi4-14b-local
     litellm_params:
-      model: ollama_chat/qwen2-math:7b
+      model: ollama_chat/phi4:14b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "qwen2-math:7b (expose automatiquement — hors pool : non mesure)"
+      max_input_tokens: 16384
+      description: "phi4:14b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: qwen2.5-coder-7b-local
+  - model_name: qwen3-embedding-4b-local
     litellm_params:
-      model: ollama_chat/qwen2.5-coder:7b
+      model: ollama/qwen3-embedding:4b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
     model_info:
-      max_input_tokens: 32768
-      description: "qwen2.5-coder:7b (promu automatiquement — 2.5 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
+      max_input_tokens: 8192
+      description: "qwen3-embedding:4b (expose automatiquement — hors pool : non mesure)"
+      mode: embedding
       nexus_generated: true
-      nexus_pool: true
-
-  - model_name: qwen2.5-0.5b-local
-    litellm_params:
-      model: ollama_chat/qwen2.5:0.5b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "qwen2.5:0.5b (promu automatiquement — 2.1 s — mais epreuve 3/4 : detail non releve)"
-      nexus_generated: true
-      nexus_pool: true
-
-  - model_name: qwen2.5-1.5b-local
-    litellm_params:
-      model: ollama_chat/qwen2.5:1.5b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32768
-      description: "qwen2.5:1.5b (promu automatiquement — 2.1 s — mais epreuve 2/4 : detail non releve)"
-      nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
 
   - model_name: qwen3-vl-32b-local
     litellm_params:
@@ -937,6 +1081,36 @@ model_list:
       nexus_generated: true
       nexus_pool: true
 
+  - model_name: qwen3.6-27b-coding-local
+    litellm_params:
+      model: ollama_chat/qwen3.6:27b-coding
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3.6:27b-coding (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
+  - model_name: qwen3.8-27b-local
+    litellm_params:
+      model: ollama_chat/qwen3.8:27b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 16384
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 16384
+      description: "qwen3.8:27b (expose automatiquement — hors pool : non mesure)"
+      mode: vision
+      nexus_generated: true
+      nexus_pool: false
+
   - model_name: qwen3-0.6b-local
     litellm_params:
       model: ollama_chat/qwen3:0.6b
@@ -965,37 +1139,9 @@ model_list:
       nexus_generated: true
       nexus_pool: false
 
-  - model_name: qwen3-14b-local
+  - model_name: qwen3-4b-local
     litellm_params:
-      model: ollama_chat/qwen3:14b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "qwen3:14b (promu automatiquement — epreuve reelle 4/4)"
-      nexus_generated: true
-      nexus_pool: true
-
-  - model_name: qwen3-32b-local
-    litellm_params:
-      model: ollama_chat/qwen3:32b
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "qwen3:32b (promu automatiquement — epreuve reelle 4/4)"
-      nexus_generated: true
-      nexus_pool: true
-
-  - model_name: qwen3-8b-local
-    litellm_params:
-      model: ollama_chat/qwen3:8b
+      model: ollama_chat/qwen3:4b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 32768
@@ -1003,9 +1149,23 @@ model_list:
       temperature: 0.2
     model_info:
       max_input_tokens: 32768
-      description: "qwen3:8b (promu automatiquement — epreuve reelle 4/4)"
+      description: "qwen3:4b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
-      nexus_pool: true
+      nexus_pool: false
+
+  - model_name: shieldgemma-2b-local
+    litellm_params:
+      model: ollama_chat/shieldgemma:2b
+      api_base: http://host.docker.internal:11434
+      litellm_health_check: true
+      num_ctx: 32768
+      num_predict: 4096
+      temperature: 0.2
+    model_info:
+      max_input_tokens: 32768
+      description: "shieldgemma:2b (expose automatiquement — hors pool : non mesure)"
+      nexus_generated: true
+      nexus_pool: false
 
   - model_name: smollm2-1.7b-local
     litellm_params:
@@ -1032,34 +1192,6 @@ model_list:
     model_info:
       max_input_tokens: 16384
       description: "smollm2:360m (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: sqlcoder-local
-    litellm_params:
-      model: ollama_chat/sqlcoder:latest
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "sqlcoder:latest (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
-      nexus_generated: true
-      nexus_pool: false
-
-  - model_name: tinyllama-local
-    litellm_params:
-      model: ollama_chat/tinyllama:latest
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 16384
-      description: "tinyllama:latest (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
       nexus_generated: true
       nexus_pool: false
   # <<< AUTOGEN:LOCAL_MODELS_EXTRA
@@ -1365,9 +1497,24 @@ model_list:
       num_ctx: 131072
       num_predict: 8192
     model_info:
-      mode: vision
       max_input_tokens: 131072
       description: "gemma4:31b (Ollama Cloud)"
+      adaptive_router_preferences:
+        quality_tier: 1
+        strengths:
+          - general
+          - analytical_reasoning
+
+  - model_name: deepseek-v4.1-flash-cloud
+    litellm_params:
+      model: ollama_chat/deepseek-v4.1-flash
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_CLOUD_API_KEY
+      num_ctx: 131072
+      num_predict: 8192
+    model_info:
+      max_input_tokens: 131072
+      description: "deepseek-v4.1-flash (Ollama Cloud)"
       adaptive_router_preferences:
         quality_tier: 1
         strengths:
@@ -1402,13 +1549,12 @@ model_list:
     litellm_params:
       model: auto_router/adaptive_router
       # >>> AUTOGEN:LOCAL_POOL
-      adaptive_router_default_model: codestral-local
+      adaptive_router_default_model: glm-4.7-flash-local
       adaptive_router_config:
         available_models:
-          - codestral-local
-          - deepseek-coder-33b-local
+          - glm-4.7-flash-local
+          - qwen3-coder-30b-local
           - llama3.2-3b-local
-          - phi3-mini-local
       # <<< AUTOGEN:LOCAL_POOL
         weights:
           quality: 1.0
@@ -1423,6 +1569,7 @@ model_list:
       adaptive_router_config:
         available_models:
           # >>> AUTOGEN:CLOUD_POOL_CLOUD
+          - gemma4-31b-cloud
           - deepseek-v4-flash-0731-cloud
           - minimax-m3-cloud
           - deepseek-v4-pro-0813-cloud
@@ -1441,6 +1588,7 @@ model_list:
           - nemotron-3-nano-30b-cloud
           - qwen3.5-397b-cloud
           - nemotron-3-super-cloud
+          - deepseek-v4.1-flash-cloud
           # <<< AUTOGEN:CLOUD_POOL_CLOUD
         weights:
           quality: 1.0
@@ -1468,15 +1616,15 @@ model_list:
     litellm_params:
       model: auto_router/adaptive_router
       # >>> AUTOGEN:GLOBAL_POOL
-      adaptive_router_default_model: codestral-local
+      adaptive_router_default_model: glm-4.7-flash-local
       adaptive_router_config:
         available_models:
-          - codestral-local
-          - deepseek-coder-33b-local
+          - glm-4.7-flash-local
+          - qwen3-coder-30b-local
           - llama3.2-3b-local
-          - phi3-mini-local
       # <<< AUTOGEN:GLOBAL_POOL
           # >>> AUTOGEN:CLOUD_POOL_GLOBAL
+          - gemma4-31b-cloud
           - deepseek-v4-flash-0731-cloud
           - minimax-m3-cloud
           - deepseek-v4-pro-0813-cloud
@@ -1495,6 +1643,7 @@ model_list:
           - nemotron-3-nano-30b-cloud
           - qwen3.5-397b-cloud
           - nemotron-3-super-cloud
+          - deepseek-v4.1-flash-cloud
           # <<< AUTOGEN:CLOUD_POOL_GLOBAL
         weights:
           quality: 1.0
@@ -1571,7 +1720,7 @@ router_settings:
     # temps que sa source et ne rattrape rien.
     - releve-locale:
         - qwen3-coder-30b-local
-        - qwen2.5-coder-32b-local
+#~         - qwen2.5-coder-32b-local
 
     # >>> AUTOGEN:ANTHROPIC_FALLBACKS
     - claude-fable-5:
@@ -1594,56 +1743,8 @@ router_settings:
 
     # >>> AUTOGEN:LOCAL_FALLBACKS
     # descente de 24576 jetons (32768 -> 8192)
-    # descente de 24576 jetons (32768 -> 8192)
     - glm-4.7-flash-local:
         - qwen3-coder-30b-local
-        - qwen2.5-coder-32b-local
-
-    - qwen3-coder-30b-local:
-        - qwen2.5-coder-32b-local
-        - deepseek-coder-33b-local
-
-    - qwen2.5-coder-32b-local:
-        - deepseek-coder-33b-local
-        - codestral-local
-
-    - deepseek-coder-33b-local:
-        - codestral-local
-        - qwen2.5-32b-local
-
-    - codestral-local:
-        - qwen2.5-32b-local
-        - qwen2.5-coder-14b-local
-
-    - qwen2.5-32b-local:
-        - qwen2.5-coder-14b-local
-        - qwen2.5-coder-7b-local
-
-    - qwen2.5-coder-14b-local:
-        - qwen2.5-coder-7b-local
-        - qwen2.5-0.5b-local
-
-    - qwen2.5-coder-7b-local:
-        - qwen2.5-0.5b-local
-        - qwen2.5-1.5b-local
-
-    # descente de 16384 jetons (32768 -> 16384)
-    - qwen2.5-0.5b-local:
-        - qwen2.5-1.5b-local
-        - qwen3-14b-local
-
-    # descente de 16384 jetons (32768 -> 16384)
-    # descente de 16384 jetons (32768 -> 16384)
-    - qwen2.5-1.5b-local:
-        - qwen3-14b-local
-        - qwen3-32b-local
-
-    - qwen3-14b-local:
-        - qwen3-32b-local
-        - qwen3-8b-local
-
-    - qwen3-32b-local:
-        - qwen3-8b-local
 
     - qwen3-embedding-8b-local:
         - nomic-embed-text-local
@@ -1651,10 +1752,6 @@ router_settings:
 
     - nomic-embed-text-local:
         - bge-m3-local
-        - all-minilm-local
-
-    - bge-m3-local:
-        - all-minilm-local
 
     - llama3.2-3b-local:
         - phi3-mini-local
@@ -1662,73 +1759,25 @@ router_settings:
 
     - phi3-mini-local:
         - ultime-recourse-local
-        - granite3.3-8b-local
+        - gpt-oss-20b-local
 
     - ultime-recourse-local:
-        - granite3.3-8b-local
-        - gemma3-1b-local
-
-    # descente de 16384 jetons (32768 -> 16384)
-    - granite3.3-8b-local:
-        - gemma3-1b-local
         - gpt-oss-20b-local
-
-    # descente de 16384 jetons (32768 -> 16384)
-    - gemma3-1b-local:
-        - gpt-oss-20b-local
-        - granite3.1-moe-1b-local
 
     - gpt-oss-20b-local:
-        - granite3.1-moe-1b-local
-        - llama3.1-8b-local
-
-    - granite3.1-moe-1b-local:
-        - llama3.1-8b-local
         - llama3.2-1b-local
-
-    - llama3.1-8b-local:
-        - llama3.2-1b-local
-        - mistral-7b-local
-
-    - llama3.2-1b-local:
-        - mistral-7b-local
-        - mixtral-8x7b-local
-
-    # descente de 16384 jetons (32768 -> 16384)
-    - mistral-7b-local:
-        - mixtral-8x7b-local
         - phi3.5-local
 
     # descente de 16384 jetons (32768 -> 16384)
     # descente de 16384 jetons (32768 -> 16384)
-    - mixtral-8x7b-local:
+    - llama3.2-1b-local:
         - phi3.5-local
         - phi3-medium-local
 
     - phi3.5-local:
         - phi3-medium-local
 
-    - gemma4-31b-local:
-        - llama3.2-vision-11b-local
-        - llava-34b-local
-
-    - llama3.2-vision-11b-local:
-        - llava-34b-local
-        - gemma4-12b-local
-
-    - llava-34b-local:
-        - gemma4-12b-local
-        - llava-13b-local
-
     - gemma4-12b-local:
-        - llava-13b-local
-        - llava-7b-local
-
-    - llava-13b-local:
-        - llava-7b-local
-        - gemma4-26b-local
-
-    - llava-7b-local:
         - gemma4-26b-local
         - gemma4-local
 
@@ -1806,6 +1855,12 @@ router_settings:
     - nemotron-3-nano-30b-cloud:
         - glm-4.7-flash-local
 
+    - gemma4-31b-cloud:
+        - glm-4.7-flash-local
+
+    - deepseek-v4.1-flash-cloud:
+        - glm-4.7-flash-local
+
     # <<< AUTOGEN:CLOUD_FALLBACKS
 
     # >>> AUTOGEN:ROUTER_FALLBACKS
@@ -1850,26 +1905,6 @@ context_window_fallbacks:
       - gpt-oss-20b-local
       - phi3.5-local
 
-  - qwen2.5-coder-32b-local:
-      - gpt-oss-20b-local
-      - phi3.5-local
-
-  - deepseek-coder-33b-local:
-      - gpt-oss-20b-local
-      - phi3.5-local
-
-  - codestral-local:
-      - gpt-oss-20b-local
-      - phi3.5-local
-
-  - qwen2.5-32b-local:
-      - gpt-oss-20b-local
-      - phi3.5-local
-
-  - qwen2.5-coder-14b-local:
-      - gpt-oss-20b-local
-      - phi3.5-local
-
   - llama3.2-3b-local:
       - gpt-oss-20b-local
       - phi3.5-local
@@ -1884,45 +1919,17 @@ context_window_fallbacks:
 
   - gpt-oss-20b-local:
       - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - llama3.2-1b-local
 
   - phi3.5-local:
       - glm-4.7-flash-local
-      - granite3.3-8b-local
+      - llama3.2-1b-local
 
   - phi3-medium-local:
       - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - qwen3-14b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - qwen3-32b-local:
-      - glm-4.7-flash-local
-      - granite3.3-8b-local
-
-  - gemma4-31b-local:
-      - gemma4-26b-local
-      - gemma4-local
-
-  - llama3.2-vision-11b-local:
-      - gemma4-26b-local
-      - gemma4-local
-
-  - llava-34b-local:
-      - gemma4-26b-local
-      - gemma4-local
+      - llama3.2-1b-local
 
   - gemma4-12b-local:
-      - gemma4-26b-local
-      - gemma4-local
-
-  - llava-13b-local:
-      - gemma4-26b-local
-      - gemma4-local
-
-  - llava-7b-local:
       - gemma4-26b-local
       - gemma4-local
 

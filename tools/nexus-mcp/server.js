@@ -460,8 +460,10 @@ function planOf(alias) {
 // DEUX FILES SEPAREES, jamais une seule : un appel cloud qui attendrait
 // derriere un appel local paierait la lenteur du local, ce qui annulerait
 // l'interet meme d'avoir deux plans.
+// Mesure du 2026-09-13 : le plan Ollama Cloud accepte 16 agents en parallèle sans dégradation,
+// se dégrade au‑delà et montre saturation vers ~46 (à confirmer). L'env prime sur la valeur par défaut.
 const CONCURRENCE_LOCALE = Number(process.env.NEXUS_LOCAL_CONCURRENCE || 1);
-const CONCURRENCE_CLOUD = Number(process.env.NEXUS_CLOUD_CONCURRENCE || 4);
+const CONCURRENCE_CLOUD = Number(process.env.NEXUS_CLOUD_CONCURRENCE || 16);
 
 /**
  * Une mecanique, deux instances. Deux copies finiraient par diverger.
@@ -2296,9 +2298,7 @@ const TOOLS = [
       "modele different. Sert a traiter un lot sans multiplier les allers-" +
       "retours : classification d'une liste, extraction sur plusieurs " +
       "fichiers, meme question posee a plusieurs modeles.\n\n" +
-      "L'execution est sequentielle a dessein : sur un hote CPU, deux " +
-      "inferences simultanees se disputent la meme bande passante memoire " +
-      "et finissent plus tard que si elles s'etaient suivies.",
+      "L'execution est parallele, bornee par le semaphore de chaque plan : le cloud accepte plusieurs taches a la fois (mesure : 16 sans degradation), le local reste sequentiel parce que deux inferences locales se disputent la meme bande passante memoire.",
     inputSchema: {
       type: "object",
       properties: {
@@ -3210,13 +3210,15 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
 
   if (name === "nexus_batch") {
     const tasks = exigerTableauNonVide(args.tasks, "tasks", 1, "tache");
-    const parts = [];
+    const parts = new Array(tasks.length);
     let total = 0;
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
+
+    // Exécute une tâche et place le résultat formaté dans parts[i].
+    // Retourne le nombre de tokens générés (0 en cas d’erreur ou d’ignore).
+    async function executerUne(task, i) {
       if (!task.prompt) {
-        parts.push(`### ${i + 1}. (ignoree : aucun prompt)`);
-        continue;
+        parts[i] = `### ${i + 1}. (ignoree : aucun prompt)`;
+        return 0;
       }
       const messages = [];
       if (task.system) messages.push({ role: "system", content: task.system });
@@ -3228,18 +3230,23 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
           messages,
           task.max_tokens || 1024
         );
-        total += result.tokens;
+        // le sémaphore interne de `chat` (via avecJetonDuPlan) limite la concurrence cloud
         deposerTrace(result, messages, planOf(result.model));
-        parts.push(
-          `### ${i + 1}. ${result.model} — ${((Date.now() - started) / 1000).toFixed(1)}s${mentionsReponse(result)}\n` +
-          result.text.trim()
-        );
+        parts[i] = `### ${i + 1}. ${result.model} — ${((Date.now() - started) / 1000).toFixed(1)}s${mentionsReponse(result)}\n` +
+                    result.text.trim();
+        return result.tokens;
       } catch (err) {
-        // Une tache qui echoue ne doit pas emporter le lot : les autres
-        // resultats gardent leur valeur.
-        parts.push(`### ${i + 1}. echec : ${err.message}`);
+        parts[i] = `### ${i + 1}. echec : ${err.message}`;
+        return 0;
       }
     }
+
+    // Lancement parallèle ; Promise.all attend que toutes les tâches soient terminées.
+    const tokenPromises = tasks.map((t, idx) => executerUne(t, idx));
+    const tokenResults = await Promise.all(tokenPromises);
+    // Addition sûre du total après résolution de toutes les promesses.
+    for (const t of tokenResults) total += t;
+
     return `[${tasks.length} taches · ${total} tokens]\n\n${parts.join("\n\n")}`;
   }
 
@@ -3311,7 +3318,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     }
     const fs = require("node:fs");
     const os = require("node:os");
-    const provisoirePath = path.join(os.tmpdir(), `nexus_apply_${process.pid}_${Date.now()}.jsonl`);
+    const provisoirePath = path.join(os.tmpdir(), `nexus_apply_${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.jsonl`);
     try {
       fs.writeFileSync(provisoirePath, JSON.stringify({ nom, texte }) + "\n", { encoding: "utf8" });
       return await runPython(

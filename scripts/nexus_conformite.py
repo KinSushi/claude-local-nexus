@@ -685,6 +685,96 @@ def controle_cablage() -> None:
     return None
 
 
+def controle_taches_planifiees() -> None:
+    """
+    Vérifie que les tâches planifiées Nexus existent et sont saines.
+
+    - Interroge PowerShell en une seule commande.
+    - Une tâche est cassée si son exécutable n’existe pas ou si
+      LastTaskResult == 2147942402.
+    - Verdict OK : « N tache(s) Nexus, executables presents ».
+    - Verdict ALERTE : liste des tâches cassées + remède
+      « relancer outillage/Register-<Nom>.ps1 ».
+    - Si aucune tâche Nexus n’est trouvée → ALERTE « aucune tache planifiee Nexus enregistree ».
+    - Si PowerShell absent ou échoue → IGNORE (verdict neutre) via `ignorer`.
+    """
+    # 1. Exécution de la commande PowerShell
+    ps_cmd = (
+        "Get-ScheduledTask -ErrorAction SilentlyContinue | "
+        "Where-Object { $_.TaskName -like '*Nexus*' } | "
+        "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
+        "$a = $_.Actions | Select-Object -First 1; "
+        "\"$($_.TaskName)|$($_.State)|$($i.LastTaskResult)|$($a.Execute)\" }"
+    )
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps_cmd],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=25,
+        )
+    except Exception as exc:
+        # PowerShell manquant ou appel impossible → verdict neutre
+        ignorer("taches planifiees", f"PowerShell indisponible ou erreur d'exécution : {str(exc)[:70]}")
+        return
+
+    if r.returncode != 0:
+        # Échec de la commande PowerShell → verdict neutre
+        ignorer("taches planifiees", f"PowerShell a retourné code {r.returncode}")
+        return
+
+    sortie = r.stdout.strip()
+    if not sortie:
+        # Aucun résultat → aucune tâche Nexus enregistrée
+        noter("taches planifiees", False, AVERTISSEMENT,
+              "aucune tache planifiee Nexus enregistree")
+        return
+
+    lignes = sortie.splitlines()
+    taches_trouvees = 0
+    cassees = []
+
+    for ligne in lignes:
+        parts = ligne.split("|", 3)
+        if len(parts) != 4:
+            continue  # ligne mal formée, on l'ignore
+        nom, etat, last_result_str, executable = parts
+        taches_trouvees += 1
+        # 2. Détection de casse
+        try:
+            last_result = int(last_result_str)
+        except ValueError:
+            last_result = None
+        exe_absent = not (executable and os.path.isfile(executable))
+        resultat_err = (last_result == 2147942402)
+        if exe_absent or resultat_err:
+            raison = []
+            if exe_absent:
+                raison.append("executable absent")
+            if resultat_err:
+                raison.append("LastTaskResult 2147942402")
+            cassees.append(f"{nom} ({', '.join(raison)})")
+
+    if taches_trouvees == 0:
+        noter("taches planifiees", False, AVERTISSEMENT,
+              "aucune tache planifiee Nexus enregistree")
+        return
+
+    if not cassees:
+        # 3. Verdict OK
+        noter("taches planifiees", True, AVERTISSEMENT,
+              f"{taches_trouvees} tache(s) Nexus, executables presents")
+    else:
+        # 4. Verdict ALERTE avec remède
+        detail = (
+            f"taches cassees : {', '.join(cassees)} ; "
+            "remede : relancer outillage/Register-<Nom>.ps1"
+        )
+        noter("taches planifiees", False, AVERTISSEMENT, detail)
+
+
 def controle_pont_lecture_seule() -> None:
     """
     Le pont MCP peut-il abimer un fichier source ?
