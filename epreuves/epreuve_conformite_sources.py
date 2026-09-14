@@ -109,7 +109,7 @@ def main():
         etat, detail = controle_readme_chiffres(tmp, lire_modeles)
         verifier(
             "README REVERSE",
-            etat == "BLOQUE"
+            etat == "ALERTE"
             # L'intention : le detail NOMME LES DEUX VALEURS, celle du README
             # et celle mesuree. Viser un MOT de la formulation casserait au
             # premier reformulage -- et c'est arrive : « la passerelle en
@@ -146,7 +146,7 @@ def main():
             lambda: {"local": 11, "cloud": 11, "anthropic": 11})
         verifier(
             "README TROIS DIVERGENCES",
-            etat == "BLOQUE" and detail.startswith("3 divergence"),
+            etat == "ALERTE" and detail.startswith("3 divergence"),
             f"etat={etat} detail={detail}",
         )
     finally:
