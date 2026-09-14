@@ -774,10 +774,24 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     print(f"Appel modele {modele} (timeout {delai or DELAI}s) : depart maintenant", file=sys.stderr, flush=True)
     if plan == "cloud":
         # Mesure 14/09 : 12 à 13 requêtes en vol passent, 16 produisent 12 refus 429 en 5 minutes.
-        n = int(os.environ.get("NEXUS_CLOUD_CONCURRENCE") or 10)
-        if n <= 0:
+        # Lecture protégée de NEXUS_CLOUD_CONCURRENCE
+        _n_raw = os.getenv("NEXUS_CLOUD_CONCURRENCE")
+        try:
+            n = int(_n_raw) if _n_raw is not None else 10
+            if n <= 0:
+                raise ValueError
+        except Exception:
+            print("NEXUS_CLOUD_CONCURRENCE invalide, utilisation de la valeur par défaut 10", file=sys.stderr)
             n = 10
-        attente = int(os.environ.get("NEXUS_CLOUD_ATTENTE_S") or 1800)
+        # Lecture protégée de NEXUS_CLOUD_ATTENTE_S
+        _att_raw = os.getenv("NEXUS_CLOUD_ATTENTE_S")
+        try:
+            attente = int(_att_raw) if _att_raw is not None else 1800
+            if attente <= 0:
+                raise ValueError
+        except Exception:
+            print("NEXUS_CLOUD_ATTENTE_S invalide, utilisation de la valeur par défaut 1800", file=sys.stderr)
+            attente = 1800
         with semaphore("cloud", n, projet=os.path.basename(racine_travail()) or "nexus", attente_s=attente, bavard=False) as creneau:
             if not creneau:
                 raise RuntimeError("plafond cloud machine atteint")
