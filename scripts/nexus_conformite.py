@@ -434,7 +434,8 @@ def controle_mcp_a_jour() -> None:
 # toutes sous « .nexus » : le magasin d'observations et l'index (ecrit par
 # fichier provisoire puis renomme, pour qu'une interruption ne laisse pas un
 # JSON tronque).
-RESERVE_ECRITURE = ("OBSERVATIONS", "INDEX_DIR", "INDEX_PATH", "provisoire")
+# verbatim : journaux de traces sous .nexus/verbatim/, jamais une source
+RESERVE_ECRITURE = ("OBSERVATIONS", "INDEX_DIR", "INDEX_PATH", "provisoire", "verbatim")
 
 ECRITURES_JS = ("writeFileSync", "appendFileSync", "createWriteStream",
                 "unlinkSync", "renameSync", "rmSync", "rmdirSync",

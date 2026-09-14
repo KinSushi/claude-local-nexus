@@ -1336,6 +1336,51 @@ def main() -> int:
         test_garde_lecture()
     if args.only in (None, "shell"):
         test_garde_shell()
+    if args.only in (None, "sonde-schema"):
+        jouer_epreuve_python("epreuve_sonde_schema.py",
+                             "sonde de schema JSON : verdict de conformite, parse_env, extraction du contenu hors enveloppe")
+    if args.only in (None, "mesure-cache"):
+        jouer_epreuve_python("epreuve_mesure_cache.py",
+                             "mesure du cache de prefixe KV : verdict, contention, requete avec prefixe en system")
+    if args.only in (None, "agent-repli-passerelle"):
+        jouer_epreuve_python("epreuve_agent_repli_passerelle.py",
+                             "en-tete x-litellm-attempted-fallbacks : absent, vide, vrai, faux")
+    if args.only in (None, "agent-json-propre"):
+        jouer_epreuve_python("epreuve_agent_json_propre.py",
+                             "stdout de --json reste du JSON pur")
+    if args.only in (None, "agent-sans-web"):
+        jouer_epreuve_python("epreuve_agent_sans_web.py",
+                             "consigne systeme sans web et composer_systeme")
+    if args.only in (None, "agent-web"):
+        jouer_epreuve_python("epreuve_agent_web.py",
+                             "boucle d'outils web : forward, reverse sans cle, fuite modele local")
+    if args.only in (None, "agent-lot-id"):
+        jouer_epreuve_python("epreuve_agent_lot_id.py",
+                             "identifiant de lot porte par chaque ligne de --sortie")
+    if args.only in (None, "agent-plafond-inference"):
+        jouer_epreuve_python("epreuve_agent_plafond_inference.py",
+                             "plafond du semaphore inference derive de la mesure")
+    if args.only in (None, "valide-decoupe"):
+        jouer_epreuve_python("epreuve_valide_decoupe.py",
+                             "decoupe bornee du diff par le validateur, contre-epreuve RecursionError")
+    if args.only in (None, "valide-copie"):
+        jouer_epreuve_python("epreuve_valide_copie.py",
+                             "validateur sur copie detachee : creer et retirer un worktree")
+    if args.only in (None, "verrou-annonce"):
+        jouer_epreuve_python("epreuve_verrou_annonce.py",
+                             "annonce d'attente du verrou et du semaphore")
+    if args.only in (None, "verrou-detenteur"):
+        jouer_epreuve_python("epreuve_verrou_detenteur.py",
+                             "fiche de detention du verrou, orphelin")
+    if args.only in (None, "veille-moteur"):
+        jouer_epreuve_python("epreuve_veille_moteur.py",
+                             "veille du moteur Ollama : runner coince, sonde, verdict, relance")
+    if args.only in (None, "charge-verdict"):
+        jouer_epreuve_python("epreuve_charge_verdict.py",
+                             "verdict de charge : grandeur et seuil nommes")
+    if args.only in (None, "traque-veille"):
+        jouer_epreuve_python("epreuve_traque_veille.py",
+                             "decision de la traque apres la veille du moteur : relancer, signaler, rien")
     if args.only in (None, "portee"):
         test_portee_import()
     if args.only in (None, "semaphore"):

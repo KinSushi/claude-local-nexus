@@ -40,6 +40,7 @@ import nexus_agent as agent  # noqa: E402
 
 import atexit
 import tempfile
+import time
 
 def verrou_est_libre(contenu: str, pid_vivant) -> bool:
     """
@@ -153,7 +154,27 @@ ROOT = _racine_de_travail()
 
 # Constantes configurables
 DEFAULT_MAX_TOKENS = 8000
+PALIERS_MAX_DECOUPE = 8
 ALLOWED_EXTENSIONS = {".py", ".ps1"}
+
+def _split_diff_by_file(text):
+    """Retourne une liste de sous-diffs, chacun commencant par 'diff --git'."""
+    parts = []
+    current = []
+    for line in text.splitlines(keepends=True):
+        if line.startswith("diff --git"):
+            if current:
+                parts.append("".join(current))
+            current = [line]
+        else:
+            current.append(line)
+    if current:
+        parts.append("".join(current))
+    return parts
+
+def _exceeds_token_limit(text, limit):
+    """Estimation tres simple du nombre de tokens requis"""
+    return len(text) // 4 > limit  # 4 caracteres pour 1 token
 
 # ---------------------------------------------------------------------------
 
@@ -204,6 +225,55 @@ def _tete_existe():
         return True
     except RuntimeError:
         return False
+
+def creer_copie_detachee(racine: str) -> str:
+    """
+    Cree une copie detachee (git worktree) de HEAD sous .nexus/valide_wt/.
+    Le validateur juge cette copie, jamais l'arbre vivant (regle 0.4).
+    """
+    chemin = os.path.join(racine, '.nexus', 'valide_wt',
+                         time.strftime('%Y%m%d-%H%M%S') + '-' + str(os.getpid()))
+    parent = os.path.dirname(chemin)
+    os.makedirs(parent, exist_ok=True)
+    result = subprocess.run(
+        ['git', 'worktree', 'add', '--detach', chemin, 'HEAD'],
+        cwd=racine,
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
+    )
+    if result.returncode != 0:
+        if os.path.isdir(chemin):
+            shutil.rmtree(chemin, ignore_errors=True)
+        raise RuntimeError('copie impossible : ' + result.stderr.strip())
+    return chemin
+
+def retirer_copie(racine: str, chemin: str):
+    """
+    Supprime la copie detachee et nettoie les residus ; ne leve jamais.
+    """
+    try:
+        subprocess.run(
+            ['git', 'worktree', 'remove', '--force', chemin],
+            cwd=racine,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+        )
+        subprocess.run(
+            ['git', 'worktree', 'prune'],
+            cwd=racine,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+        )
+        if os.path.isdir(chemin):
+            shutil.rmtree(chemin, ignore_errors=True)
+    except Exception:
+        pass
 
 
 def get_modified_files_uncommitted():
@@ -599,7 +669,7 @@ def analyse_result(text):
             return True, False
     return False, False
 
-def free_plan_judgment(diff_text, callers, modele=None):
+def free_plan_judgment(diff_text, callers, modele=None, _profondeur=0):
     """
     Envoie la tâche à l'agent gratuit et interprète le résultat.
     Gère les cas de troncature (clé `tronque`) en relançant une fois avec
@@ -608,35 +678,29 @@ def free_plan_judgment(diff_text, callers, modele=None):
     Si le diff dépasse le plafond de tokens, il est découpé par fichier
     et chaque morceau est jugé séparément. Le verdict global est négatif
     dès qu’un seul morceau rend une régression.
+    La recursion est bornee : PALIERS_MAX_DECOUPE paliers au plus, et un
+    morceau qui ne se decoupe plus (un seul fichier trop grand) est REFUSE
+    avec sa cause, jamais juge en silence (mesure du 2026-09-14 : 11 morceaux
+    juges puis 'maximum recursion depth exceeded').
     """
     # -----------------------------------------------------------------------
     # Découpage du diff si nécessaire (approx. 4 caractères ≈ 1 token)
     # -----------------------------------------------------------------------
-    def _split_diff_by_file(text):
-        """Retourne une liste de sous‑diffs, chacun commençant par 'diff --git'."""
-        parts = []
-        current = []
-        for line in text.splitlines(keepends=True):
-            if line.startswith("diff --git"):
-                if current:
-                    parts.append("".join(current))
-                current = [line]
-            else:
-                current.append(line)
-        if current:
-            parts.append("".join(current))
-        return parts
-
-    # Estimation très simple du nombre de tokens requis
-    def _exceeds_token_limit(text, limit):
-        return len(text) // 4 > limit  # 4 caractères ≈ 1 token
-
     # Si le diff complet dépasse le plafond, on le découpe et on traite chaque morceau.
     if _exceeds_token_limit(diff_text, DEFAULT_MAX_TOKENS):
         morceaux = _split_diff_by_file(diff_text)
         # Si aucun morceau n’est trouvé (diff ne suit pas le format attendu), on garde le texte entier.
         if not morceaux:
             morceaux = [diff_text]
+
+        # Condition d'arret : aucun decoupage effectif ou profondeur maximale atteinte
+        if (len(morceaux) == 1 and len(morceaux[0]) == len(diff_text)) or _profondeur >= PALIERS_MAX_DECOUPE:
+            first_line = morceaux[0].splitlines()[0] if morceaux[0].splitlines() else ''
+            first_line = first_line[:80]
+            n = len(morceaux[0])
+            raise RuntimeError(
+                f"morceau trop grand pour etre juge : {first_line} ({n} caracteres, plafond {DEFAULT_MAX_TOKENS*4}) -- relancer avec une base plus proche ou juger ce fichier a part"
+            )
 
         regression_global = False
         bascule_global = None
@@ -645,7 +709,7 @@ def free_plan_judgment(diff_text, callers, modele=None):
         for morceau in morceaux:
             # On applique la logique existante sur chaque morceau.
             try:
-                reg, bas, txt = free_plan_judgment(morceau, callers, modele)  # appel récursif contrôlé
+                reg, bas, txt = free_plan_judgment(morceau, callers, modele, _profondeur=_profondeur+1)  # appel récursif contrôlé
             except RuntimeError:
                 # Propagation de l’erreur si un morceau ne peut être jugé.
                 raise
@@ -723,6 +787,7 @@ def validate_base(base):
         raise ValueError(f"Valeur invalide pour --base : '{base}'")
 
 def main():
+    global ROOT
     parser = argparse.ArgumentParser(description="Validation Nexus sans cout")
     # Defaut HEAD~1 et non main : juger toute l'histoire d'une branche en un
     # seul appel produit un diff de plus de 100 000 caracteres, que le jugement
@@ -740,6 +805,9 @@ def main():
         "--modele", default=None,
         help="Modele juge. Defaut %s, ou NEXUS_VALIDE_MODELE. A nommer en "
              "local quand le plan cloud est indisponible." % MODELE_JUGE)
+    parser.add_argument(
+        "--copie", action="store_true",
+        help="Juger une copie detachee de HEAD (git worktree) au lieu de l'arbre vivant.")
     args = parser.parse_args()
 
     # -----------------------------------------------------------------------
@@ -752,6 +820,16 @@ def main():
         return 2
     # S'assurer que le verrou est libéré à la sortie du script
     atexit.register(_liberer_verrou, lock_path, my_pid)
+    if args.copie:
+        try:
+            copie = creer_copie_detachee(ROOT)
+            atexit.register(retirer_copie, ROOT, copie)
+            sha = run_git(['rev-parse', '--short', 'HEAD']).strip()
+            print('Juge sur la copie %s au commit %s' % (copie, sha))
+            ROOT = copie
+        except RuntimeError as e:
+            print('REFUS : %s' % e)
+            return 2
 
     # -----------------------------------------------------------------------
     # Détermination du périmètre : travail non commité vs comparaison de commits

@@ -426,6 +426,24 @@ MOTIFS_SECRETS = re.compile(
 )
 
 
+def cle_ollama() -> str:
+    """Cle Ollama Cloud (outils web), meme mecanisme que cle_maitre ; jamais imprimee."""
+    cle = os.environ.get("OLLAMA_CLOUD_API_KEY")
+    if cle:
+        return cle.strip().split(" #")[0].strip().strip('"').strip("'")
+    chemin_env = os.path.join(ROOT, ".env")
+    if os.path.isfile(chemin_env):
+        with open(chemin_env, "r", encoding="utf-8") as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if ligne.startswith("OLLAMA_CLOUD_API_KEY="):
+                    valeur = ligne.split("=", 1)[1].strip()
+                    valeur = valeur.split(" #")[0].strip()
+                    valeur = valeur.strip('"').strip("'")
+                    if valeur:
+                        return valeur
+    raise SystemExit("OLLAMA_CLOUD_API_KEY introuvable (ni dans l'environnement, ni dans .env).")
+
 def cle_maitre() -> str:
     """
     Cle de la passerelle, lue dans l'environnement puis dans .env.
@@ -658,9 +676,28 @@ def texte_degenere(texte, longueur_min: int = 40, repetitions: int = 5) -> bool:
     return False
 
 
+def repli_passerelle_effectif(entetes) -> bool | None:
+    """
+    Retourne True si la passerelle a servi un autre modele que celui demande.
+
+    - True si x-litellm-attempted-fallbacks vaut '1', 'true' ou 'True'
+    - False si l'en-tete est present avec '0', 'false' ou ''
+    - None si absent ou si entetes n'est pas un dict
+    """
+    if not isinstance(entetes, dict):
+        return None
+    if "x-litellm-attempted-fallbacks" not in entetes:
+        return None
+    valeur = entetes["x-litellm-attempted-fallbacks"]
+    if valeur in ("1", "true", "True"):
+        return True
+    if valeur in ("0", "false", ""):
+        return False
+    return None
+
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             cle: str, temperature: float | None = None,
-            delai: int | None = None) -> Dict[str, Any]:
+            delai: int | None = None, outils: Any = None) -> Dict[str, Any]:
     """
     Un appel a la passerelle, avec la preuve du plan réellement servi.
 
@@ -683,6 +720,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "messages": messages,
         "cache": {"no-cache": True},
     }
+    if outils:
+        corps_requete["tools"] = outils
     # Inconnu retombe sur max_tokens parce qu'Anthropic l'exige et qu'Ollama se contente de l'ignorer.
     # Utilise num_predict uniquement lorsque le plan est connu et vaut 'local' ou 'cloud'.
     if plan in ("local", "cloud"):
@@ -760,6 +799,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "cause_vide": (
             "raisonnement_" + str(len(choix.get('message', {}).get('reasoning_content', '')))
         ) if not texte else "contenu_present",
+        "repli_passerelle": repli_passerelle_effectif(entetes),
+        "tool_calls": (choix.get("message") or {}).get("tool_calls") or [],
     }
 
 
@@ -1260,6 +1301,125 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
         print("comptage des mentions hors perimetre rate : %s" % exc, file=sys.stderr)
     return resultat
 
+# Consigne systeme par defaut du banc.
+SYSTEME_DEFAUT = (
+    "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
+    "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
+    "que tu n'as pas lu, et tu dis explicitement quand tu n'es pas sur."
+)
+
+def consigne_sans_web() -> str:
+    return (
+        "Tu n as AUCUN acces au web ni a aucun outil. Ce que tu rapportes vient de "
+        "ta memoire d entrainement : ne presente jamais un souvenir comme le resultat "
+        "d une recherche, cite tes sources comme des souvenirs, et marque NON VERIFIE tout "
+        "fait dont tu n es pas certain."
+    )
+
+def composer_systeme(systeme_demande, web) -> str:
+    base = systeme_demande if systeme_demande else SYSTEME_DEFAUT
+    if not web:
+        base = f"{base} {consigne_sans_web()}"
+    return base
+
+# Outils web natifs d'Ollama, exposes au modele en function calling OpenAI.
+# La requete de recherche part vers ollama.com : avec un modele LOCAL, --web
+# est refuse sans --web-consenti (regle 108 : un repli est subi, jamais choisi).
+OUTILS_WEB = [
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Search the web for current information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "max_results": {"type": "integer", "minimum": 1, "maximum": 10, "description": "Maximum number of results"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_fetch",
+            "description": "Fetch content from a URL.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "URL to fetch"}
+                },
+                "required": ["url"]
+            }
+        }
+    }
+]
+
+def appel_web(cle_web: str, outil: str, corps: dict) -> dict:
+    url = "https://ollama.com/api/" + outil
+    data = json.dumps(corps).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Authorization": "Bearer " + cle_web, "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            reponse = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError("appel web " + outil + " rate : " + str(exc)) from exc
+    if "content" in reponse and isinstance(reponse["content"], str):
+        reponse["content"] = reponse["content"][:4000]
+    if "results" in reponse and isinstance(reponse["results"], list):
+        for r in reponse["results"]:
+            if isinstance(r, dict) and "content" in r and isinstance(r["content"], str):
+                r["content"] = r["content"][:4000]
+    return reponse
+
+def executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus, joints, consentement) -> dict:
+    try:
+        cle_web = cle_ollama()
+    except SystemExit as exc:
+        return {"nom": nom, "modele": modele, "erreur": str(exc), "code": 2}
+    if modele.endswith("-local") and not consentement:
+        return {"nom": nom, "modele": modele, "erreur": "la recherche web envoie la requete a ollama.com : ajouter --web-consenti pour l autoriser avec un modele local", "code": 2}
+    recherches = lectures = 0
+    urls = []
+    final = None
+    for _ in range(6):
+        resultat = appeler(modele, messages, plafond, cle, temperature, outils=OUTILS_WEB)
+        appels = resultat.get("tool_calls") or []
+        if not appels:
+            final = resultat
+            break
+        for appel in appels:
+            fonction = (appel.get("function") or {}).get("name", "")
+            try:
+                arguments = json.loads((appel.get("function") or {}).get("arguments", "{}"))
+                if not isinstance(arguments, dict):
+                    arguments = {}
+            except Exception:
+                arguments = {}
+            try:
+                reponse = appel_web(cle_web, fonction, arguments)
+            except Exception as exc:
+                reponse = {"erreur": str(exc)}
+            if fonction == "web_search":
+                recherches += 1
+                for r in reponse.get("results", []):
+                    urls.append(r.get("url", ""))
+            elif fonction == "web_fetch":
+                lectures += 1
+                urls.append(arguments.get("url", ""))
+            messages.append({"role": "assistant", "content": "", "tool_calls": [appel]})
+            messages.append({"role": "tool", "tool_call_id": appel.get("id"), "content": json.dumps(reponse, ensure_ascii=False)})
+    if final is None:
+        final = resultat
+        final["web_incomplet"] = True
+    if urls:
+        final["texte"] = (final.get("texte") or "") + "\n\n" + "\n".join("source : " + u for u in urls)
+    final["web"] = {"recherches": recherches, "lectures": lectures, "urls": urls}
+    final.update({"nom": nom, "modele": modele, "refus": refus, "fichiers_joints": joints, "plan": plan_de(final.get("adresse", "?"))})
+    return final
+
 def executer(tache: dict, cle: str) -> dict:
     # Trois etats: preparation en cours, appel reseau parti, attente de reponse
     print(f"PREPARATION commence pour {tache.get('modele') or 'modele inconnu'}: lecture des pieces jointes et resolution du plan", file=sys.stderr, flush=True)
@@ -1271,16 +1431,14 @@ def executer(tache: dict, cle: str) -> dict:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
     racine_tache = tache.get("racine")
     corpus, refus, joints = charger_fichiers(tache.get("fichiers") or [], racine=racine_tache)
-    systeme = tache.get("systeme") or (
-        "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
-        "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
-        "que tu n'as pas lu, et tu dis explicitement quand tu n'es pas sur."
-    )
+    systeme = composer_systeme(tache.get("systeme"), bool(tache.get("web")))
     contenu = consigne if not corpus else "%s\n\n%s" % (consigne, corpus)
     messages = [{"role": "system", "content": systeme},
                 {"role": "user", "content": contenu}]
     plafond = int(tache.get("max_tokens") or 4096)
     temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
+    if tache.get("web"):
+        return executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus, joints, bool(tache.get("web_consenti")))
 
     if corpus and len(corpus) > FENETRE_CARACTERES:
         resultat = carte_reduction(corpus, consigne, modele, cle, plafond,
@@ -1446,7 +1604,7 @@ def executer(tache: dict, cle: str) -> dict:
                 motif_troncature = "%s : reponse vide tronquee (demande %d jetons)" % (candidat, plafond)
                 echecs.append(motif_troncature)
                 troncatures.add(motif_troncature)
-                print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien")
+                print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien", file=sys.stderr, flush=True)
                 break
             echecs.append("%s : reponse vide (%d jetons consommes)"
                           % (candidat, resultat.get("tokens", 0)))
@@ -1602,7 +1760,15 @@ def rendre(resultat: dict) -> None:
         print("[DEGRADE] reponse a ne pas utiliser sans relecture : le modele servi est bien plus petit que celui demande (--accepter-degrade pour lever le code 3)")
     if resultat.get("degenere"):
         print("[DEGENERE] " + resultat.get("motif_degenere", ""))
+    if resultat.get("repli_passerelle"):
+        servi = resultat.get("servi_par", "?")
+        demande = resultat.get("demande_initiale") or resultat.get("modele", "?")
+        print(f"[REPLI PASSERELLE] servi par {servi} au lieu de {demande}")
     print("  %s" % resultat["nom"])
+    if resultat.get("web"):
+        print('  [WEB] recherches=%d lectures=%d' % (
+            resultat["web"].get("recherches", 0),
+            resultat["web"].get("lectures", 0)))
     if resultat.get("erreur"):
         print("  ECHEC : %s" % resultat["erreur"])
         print("TRACABILITE: %s [%s] %s" % (
@@ -1757,6 +1923,17 @@ def _ecrire_refus_sortie(sortie_path, taches, cause):
     except Exception as exc:
         print('refus non ecrit dans %s : %s' % (sortie_path, exc), file=sys.stderr)
 
+def identifiant_lot(pid: int, debut_epoch: float) -> str:
+    """Identifiant d'un lot : pid-epoch, porte par chaque ligne de --sortie."""
+    return "%d-%d" % (pid, int(debut_epoch))
+
+# Mesure du 2026-09-14 : 16 appels cloud simultanes vers gpt-oss-120b-cloud
+# repondent en 2,5 a 4,8 s chacun, sans degradation ; saturation estimee vers 46.
+# Le semaphore machine 'inference' etait a 3 slots, partages par TOUTES les
+# sessions et par le validateur : trois processus suffisaient a faire attendre
+# tout le monde. 12 garde une marge pour le pont MCP, qui ne prend pas ce semaphore.
+PLAFOND_INFERENCE_CLOUD = 12
+
 def main() -> int:
     with contextlib.suppress(Exception):
         # Premiere ligne a 11,6s sur 11,7s; run long indiscernable d'un run gele
@@ -1812,6 +1989,10 @@ def main() -> int:
                          help="Sortie machine au lieu du rapport lisible.")
     parseur.add_argument("--accepter-degrade", action="store_true",
                          help="Accepter un modele servi bien plus petit que demande (sinon code de sortie 3).")
+    parseur.add_argument("--web", action="store_true",
+                         help="Donner au modele les outils web d'Ollama (web_search, web_fetch) : la requete part vers ollama.com.")
+    parseur.add_argument("--web-consenti", action="store_true",
+                         help="Autoriser --web avec un modele LOCAL malgre la sortie de la requete vers ollama.com.")
     args = parseur.parse_args()
 
     # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
@@ -1858,7 +2039,9 @@ def main() -> int:
                    "max_tokens": (args.max_tokens or 4096),
                    "temperature": (args.temperature if args.temperature is not None
                                    else TEMPERATURE_DEFAUT),
-                   "racine": args.racine}]
+                   "racine": args.racine,
+                   "web": getattr(args, "web", False),
+                   "web_consenti": getattr(args, "web_consenti", False)}]
     else:
         if args.depuis_jsonl:
             if not args.nom:
@@ -1868,6 +2051,8 @@ def main() -> int:
                 with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
                     for ligne in src:
                         obj = json.loads(ligne)
+                        if obj.get("en_tete") or obj.get("fin"):
+                            continue
                         if obj.get("nom") == args.nom:
                             taches = [obj]
                             break
@@ -1899,6 +2084,12 @@ def main() -> int:
         for t in taches:
             if not t.get("systeme"):
                 t["systeme"] = args.systeme
+    if args.web:
+        for t in taches:
+            t["web"] = True
+    if args.web_consenti:
+        for t in taches:
+            t["web_consenti"] = True
 
     # Le parallélisme est limité par la RAM locale uniquement pour les modèles
     # locaux (alias ne se terminant pas par « -cloud »).  Ces modèles partagent
@@ -1927,7 +2118,7 @@ def main() -> int:
         from nexus_verrou_machine import verrou
         try: attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
         except ValueError: attente_verrou = 120 # une valeur gravee ment le lendemain, et surtout une epreuve ne peut pas solliciter le REFUS du verrou si elle doit le tenir plus de deux minutes — un verrou qu'on n'a jamais vu refuser n'est pas mesure.
-        ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True))
+        ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True, annoncer=lambda m: print(m, file=sys.stderr, flush=True)))
         if not ctx.obtenu:
             # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
             pile_verrou.close()
@@ -1937,11 +2128,11 @@ def main() -> int:
     est_cloud = any(str(t.get('modele', '')).endswith('-cloud') for t in taches)
     if est_cloud:
         from nexus_verrou_machine import semaphore
-        try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', 3))
-        except ValueError: n_inf = 3
+        try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', PLAFOND_INFERENCE_CLOUD))
+        except ValueError: n_inf = PLAFOND_INFERENCE_CLOUD
         try: attente_inf = float(os.getenv('NEXUS_SEMAPHORE_INFERENCE_ATTENTE_S', 120))
         except ValueError: attente_inf = 120
-        ctx_inf = pile_verrou.enter_context(semaphore('inference', n_inf, projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_inf, bavard=True))
+        ctx_inf = pile_verrou.enter_context(semaphore('inference', n_inf, projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_inf, bavard=True, annoncer=lambda m: print(m, file=sys.stderr, flush=True)))
         if not ctx_inf.obtenu:
             pile_verrou.close()
             print('inference: semaphore cloud plein (contention machine)', file=sys.stderr)
@@ -1977,6 +2168,10 @@ def main() -> int:
                     print(f"[i] fichier de sortie existant renommé en {nouveau_nom}",
                           file=sys.stderr)
                 flux = io.open(sortie_path, "w", encoding="utf-8", newline="\n")
+                lot_id = identifiant_lot(os.getpid(), time.time())
+                en_tete = {"en_tete": True, "lot_id": lot_id, "lot": args.lot or "tache_unique", "parallele": args.parallele, "nb_taches": len(taches)}
+                flux.write(json.dumps(en_tete, ensure_ascii=False) + "\n")
+                flux.flush()
             except Exception as exc:
                 print("[!] sortie incrémentale impossible : %s" % exc,
                       file=sys.stderr)
@@ -2024,6 +2219,7 @@ def main() -> int:
                 taches_par_futur.append(futurs[futur])
                 faits += 1
                 if flux is not None:
+                    r["lot_id"] = lot_id
                     flux.write(json.dumps(r, ensure_ascii=False) + "\n")
                     flux.flush()
                 if args.sortie_brute:
@@ -2068,7 +2264,7 @@ def main() -> int:
         # L'absence de cette ligne signifie EN COURS ou INTERROMPU.
         if flux is not None:
             try:
-                flux.write(json.dumps({"fin": True, "taches_ecrites": faits}, ensure_ascii=False) + "\n")
+                flux.write(json.dumps({"fin": True, "lot_id": lot_id, "taches_ecrites": faits}, ensure_ascii=False) + "\n")
                 flux.flush()
             except Exception:
                 pass

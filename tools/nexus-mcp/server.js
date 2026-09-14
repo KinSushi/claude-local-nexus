@@ -2573,15 +2573,17 @@ let pythonRetenu = null;
 // Fire-and-forget : ni bloquant ni capable de casser l'appel -- tracer est
 // utile, jamais critique. Le fichier provisoire (nom exempte du controle
 // pont-lecture-seule) est ecrit ici et supprime cote Python apres depot.
-function deposerTrace(result, messages, plan) {
+// Pour tester : rendre le dossier .nexus/verbatim non inscriptible,
+// appeler un outil du pont, verifier une ligne dans echecs.jsonl et que l'outil a quand meme repondu.
+function deposerTrace(result, messages, plan, outil = null) {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const { spawn } = require('node:child_process');
+
+    const provisoireName = `nexus_verbatim_provisoire_${process.pid}_${Date.now()}_${Math.floor(Math.random()*1e9)}.txt`;
+    const provisoirePath = path.join(os.tmpdir(), provisoireName);
+
     try {
-        const fs = require('node:fs');
-        const os = require('node:os');
-        const { spawn } = require('node:child_process');
-
-        const provisoireName = `nexus_verbatim_provisoire_${process.pid}_${Date.now()}_${Math.floor(Math.random()*1e9)}.txt`;
-        const provisoirePath = path.join(os.tmpdir(), provisoireName);
-
         fs.writeFileSync(provisoirePath, String(result.text || ""), { encoding: 'utf8' });
 
         let tache = "";
@@ -2605,8 +2607,24 @@ function deposerTrace(result, messages, plan) {
         });
 
         child.unref();
-    } catch {
-        /* tracer must never break caller */
+
+        return { ok: true };
+    } catch (err) {
+        const echec = {
+            ts: new Date().toISOString(),
+            outil,
+            cause: String(err && err.message || err),
+            chemin: provisoirePath
+        };
+        try {
+            const dir = path.join(INSTALL_ROOT, '.nexus', 'verbatim');
+            fs.mkdirSync(dir, { recursive: true });
+            const verbatimLogPath = path.join(dir, 'echecs.jsonl');
+            fs.appendFileSync(verbatimLogPath, JSON.stringify(echec) + "\n");
+        } catch (logErr) {
+            console.error('Failed to log deposerTrace failure:', logErr);
+        }
+        return { ok: false, cause: echec.cause };
     }
 }
 

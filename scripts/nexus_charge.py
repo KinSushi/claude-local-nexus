@@ -92,6 +92,16 @@ def mesurer_ram() -> dict:
         "residents_go": ram_modeles_residents_go,
     }
 
+def verdict_charge(disponible_go: float, seuil_go: float) -> tuple:
+    """
+    Rend (etiquette, message) : CHARGEE sous le seuil, LIBRE sinon. Le message
+    porte la grandeur ET le seuil : anomalie du 2026-09-14, « RAM insuffisante »
+    affiche a cote de « 13,87 Go disponibles » sans que le seuil soit dit.
+    """
+    etiquette = "CHARGEE" if disponible_go < seuil_go else "LIBRE"
+    message = "%.1f Go disponibles pour l'inference, seuil %.1f Go" % (disponible_go, seuil_go)
+    return etiquette, message
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -177,8 +187,9 @@ def main():
         raison = []
         if significatifs:
             raison.append("processus significatifs")
-        if ram_disponible_inference_go < ram_seuil_go:
-            raison.append("RAM insuffisante pour l'inférence")
+        etiquette_ram, message_ram = verdict_charge(ram_disponible_inference_go, ram_seuil_go)
+        if etiquette_ram == "CHARGEE":
+            raison.append("RAM insuffisante pour l'inference : " + message_ram)
 
         est_au_repos = len(raison) == 0
         etat = 'repos' if est_au_repos else 'chargee'

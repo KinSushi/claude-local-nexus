@@ -30,6 +30,8 @@ import os
 import re
 import sys
 import contextlib
+import subprocess
+import json
 
 ACTIONS = {"write", "write_text", "writelines", "dump", "makedirs", "mkdir",
            "copy", "copy2", "move", "remove", "unlink", "rename", "replace",
@@ -287,6 +289,14 @@ def analyser(chemin):
     return constats
 
 
+def decision_veille(verdict: str, sans_relance: bool) -> str:
+    """Action apres la veille du moteur : relancer, signaler ou rien."""
+    if verdict == "BLOQUE" and not sans_relance:
+        return "relancer"
+    if verdict == "BLOQUE" and sans_relance:
+        return "signaler"
+    return "rien"
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", default=None,
@@ -348,6 +358,23 @@ def main():
     print("%d fichier(s) analyse(s)" % len(fichiers))
     for c in range(1, 7):
         print("  classe %d  %-38s %d" % (c, intitules[c], total.get(c, 0)))
+    # Veille du moteur Ollama (mesure du 2026-09-14 : deux runners bloques en
+    # 'Stopping...' en 30 min, debloques seulement par une relance). La relance
+    # automatique ne part que sur BLOQUE (modele coince > 120 s ET sonde muette) ;
+    # NEXUS_VEILLE_SANS_RELANCE=1 la desactive.
+    try:
+        veille = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nexus_veille_moteur.py")
+        r = subprocess.run([sys.executable, veille, "--json"], capture_output=True, text=True, timeout=90)
+        verdict = json.loads(r.stdout or "{}").get("verdict", "INCONNU")
+        print("veille moteur : %s" % verdict)
+        action = decision_veille(verdict, os.getenv("NEXUS_VEILLE_SANS_RELANCE") == "1")
+        if action == "relancer":
+            rel = subprocess.run([sys.executable, veille, "--relancer"], capture_output=True, text=True, timeout=120)
+            print("moteur relance" if rel.returncode == 0 else "relance ratee (code %d)" % rel.returncode)
+        elif action == "signaler":
+            print("BLOQUE, relance desactivee (NEXUS_VEILLE_SANS_RELANCE=1)")
+    except Exception as exc:
+        print("veille moteur impossible : %s" % exc)
     return 0
 
 

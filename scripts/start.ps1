@@ -115,7 +115,28 @@ function Confirm-MoteurOllama {
     # -WindowStyle Hidden et non -NoNewWindow : ce dernier rattache le
     # serveur a la console courante, ou il mourrait avec elle. Le moteur
     # doit survivre a ce script.
-    Start-Process -FilePath $ollama -ArgumentList "serve" -WindowStyle Hidden | Out-Null
+    # 2026-09-14 : lance en fenetre cachee sans redirection, le moteur n'ecrivait
+    # ses journaux NULLE PART (server.log de %LOCALAPPDATA% ne vient que de
+    # l'application de barre des taches). Deux runners bloques en "Stopping..."
+    # le meme soir n'ont laisse aucune trace : stdout et stderr vont desormais
+    # dans logs/, et le .err.log (ou Ollama ecrit) est renomme au-dela de 5 Mo.
+    $logsDir = Join-Path $RepoRoot 'logs'
+    if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
+
+    $errLog = Join-Path $logsDir 'ollama-serve.err.log'
+    $outLog = Join-Path $logsDir 'ollama-serve.out.log'
+
+    if (Test-Path $errLog) {
+        $size = (Get-Item $errLog).Length
+        if ($size -gt 5MB) {
+            $rotated = Join-Path $logsDir 'ollama-serve.err.1.log'
+            Move-Item -Path $errLog -Destination $rotated -Force
+        }
+    }
+
+    Start-Process -FilePath $ollama -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput $outLog -RedirectStandardError $errLog | Out-Null
+
+    Write-Host "  Journal du moteur : $errLog" -ForegroundColor Cyan
 
     for ($i = 0; $i -lt 30; $i++) {
         Start-Sleep -Seconds 1
