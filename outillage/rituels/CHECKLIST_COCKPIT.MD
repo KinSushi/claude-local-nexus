@@ -427,6 +427,8 @@ matin. Jouée une fois, elle a **payé immédiatement**, et deux fois :
 
 ### CE DONT JE DISPOSE — inventaire mesuré le 30/08, jamais supposé
 
+> **[RESSOURCES-A-FOND]** Consigne permanente de l'opérateur (2026-09-14, 13:20), à ne pas lui faire répéter : « tu as à ta disposition un MCP A2A de dernière génération, des fichiers par To de données. exploite à fond les ressources. » À relire AVANT de concevoir ou de déléguer. Inventaire et pointeurs : mémoire `ressources-a-exploiter-a-fond.md` (en tête de l'index `MEMORY.md`) ; le contrat `.claude/CLAUDE.md` n'a PAS pu recevoir sa section, l'édition de `.claude/` étant refusée par les permissions de la session — à ajouter par l'opérateur. Relevé du même jour : le pont MCP expose 16 outils, dont `nexus_livres`, `nexus_compare` et `nexus_context` ; le banc cloud offre une vingtaine de familles ; `nexus_doc` couvre la bibliothèque standard 3.13 et 63 paquets ; les données de production MQL5 de `D:\BACKUP_G` et les références de SAS ci-dessous restent sous-employées.
+
 Comptés par `find`, dans
 `D:\SAS\sovereign-ai-system\v1.104\sovereign-ai-system`. **Plus de 33 000
 fichiers** de documentation et de bibliothèques sont là, à disposition, et
