@@ -29394,3 +29394,16 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 - **Plan des fenêtres dérivées** arbitré (`.nexus/banc_joints/plan_fenetres_derivees.md`) : octets KV par jeton depuis `ollama show -v`, budget `0,85 × mémoire − poids − 2 Go`, plafond 65 536 et `num_predict` proportionnel, tous nommés comme hypothèses ; commit 1 (fonctions pures + épreuve sur fixtures réelles) au banc.
 
 **Restent ouverts** : fenêtres dérivées commits 1 et 2 ; registre commits 3 à 5 ; ratio caractères/jeton dérivé ; échecs antérieurs de la suite ; pont MCP réel ; passage de 04:00 ; mesures moteur en file (machine libre) ; minage MQL5 local.
+
+### Tour 2026-09-15 (07:00-07:35) — fenêtres locales dérivées du cache KV réel (demande de SAS)
+
+- **Réglages du moteur MESURÉS** (journal `%LOCALAPPDATA%\Ollama\server.log`) : `OLLAMA_NUM_PARALLEL:1`, `OLLAMA_KV_CACHE_TYPE` vide donc f16, `OLLAMA_FLASH_ATTENTION:false`, un `n_ctx = 65536` déjà alloué et servi. Le « q8_0 actif » signalé par SAS est RÉFUTÉ ici ; SAS prévenu.
+- **Commit 1** — `61527fd` : fonctions pures `lire_architecture` (clés `<arch>.attention.*`, notation flottante de nemotron `1.048576e+06`), `octets_kv_par_jeton`, `fenetre_par_memoire` (0,85 × mémoire − poids − 2 Go, puissance de 2, [4096, 65536]), `num_predict_pour` (fenêtre/4, [4096, 32768]). Contre-épreuve 11 RATE ; rendu posé tel quel : F1-F3 et L1 RATE sur le préfixe `attention.` non retiré (l'épreuve a mordu) ; F6 nemotron ajouté après le forward. Audit : aucune régression.
+- **Commit 2** — `79596ff` : `render_local_extra` branche `fenetre_derivee_ollama` (une lecture `ollama show -v`, lecture injectable, `None` = palier gardé) et `num_predict` dérivé. Contre-épreuve G1-G4 RATE ; après 16/16 ; familles `generate`, `generate-ctx-natif` vertes. Audit : aucune régression.
+- **Forward réel en lecture seule** du vrai `render_local_extra` : 58 blocs rendus, 45 élargis, 9 réduits au natif, 2 identiques, 0 nouveau, 0 disparu. Effet réel à la régénération de 04:00 : plus de mémoire par modèle chargé sur le moteur partagé, borné par le budget.
+- **Défauts de méthode de ce tour** : épreuve muette en vert refusée par le lanceur (« aucun cas rendu ») — corrigée ; fixture sans l'indentation réelle — recomposée ; en-tête doublé par un rendu — retiré. L'alerte `RETIRE` de `216e8d5` a servi en usage réel sur trois remplacements légitimes.
+- **Non vérifié** : latence à 65 536 ; surestimation connue du cache pour les architectures à fenêtre glissante, MLA ou hybrides (gemma4 1,57 Mo/jeton, glm-4.7-flash 962 560 o, qwen3.5 655 360 o), sens prudent.
+
+**OUVERT, trouvé par le forward** : `qwen3-coder-30b-local` (8 192, le cas cité par SAS) et `glm-4.7-flash-local` sont DÉCLARÉS À LA MAIN hors zone AUTOGEN ; la dérivation ne les touche pas (§105.2). Remède à concevoir : un avertissement de conformité quand une fenêtre déclarée à la main reste sous la fenêtre dérivée — jamais une réécriture silencieuse des déclarations.
+
+**Restent ouverts** : avertissement des fenêtres déclarées à la main ; registre commits 3 à 5 ; ratio caractères/jeton dérivé ; échecs antérieurs de la suite ; pont MCP réel ; passage de 04:00 (commit des générés + fenêtres dérivées) ; mesures moteur en file ; minage MQL5 local ; idées V26/V29 à concevoir.
