@@ -98,45 +98,22 @@ function Confirm-MoteurOllama {
         return $true
     } catch { }
 
-    $ollama = (Get-Command ollama -ErrorAction SilentlyContinue).Source
-    if (-not $ollama) {
-        $repli = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
-        if (Test-Path $repli) { $ollama = $repli }
-    }
-    if (-not $ollama) {
-        Write-Host "  Moteur Ollama introuvable : ni dans le PATH, ni dans" -ForegroundColor Red
-        Write-Host "  $env:LOCALAPPDATA\Programs\Ollama\ollama.exe" -ForegroundColor Red
-        Write-Host "  Installer depuis https://ollama.com/download, ou basculer la" -ForegroundColor Yellow
-        Write-Host "  pile sur le moteur embarque : docker compose --profile embedded up -d" -ForegroundColor Yellow
+    $app = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama app.exe'
+
+    # Mesure du 2026-09-15 : double instance (18868 de l'application, 21724 de la veille) - proprietaire unique
+    $portCheck = Get-NetTCPConnection -State Listen -LocalPort 11434 -ErrorAction SilentlyContinue
+    if ($portCheck) {
+        Write-Host "Port 11434 deja a l ecoute : aucun moteur supplementaire lance" -ForegroundColor Yellow
+        # le moteur est peut-etre en cours de demarrage, on passe a la boucle d'attente
+    } elseif (Test-Path $app) {
+        Write-Host "Moteur eteint, demarrage de l application Ollama..." -ForegroundColor Cyan
+        Start-Process -FilePath $app
+    } else {
+        Write-Host "Application Ollama introuvable : $app" -ForegroundColor Red
+        Write-Host "Le script ne lance plus 'ollama serve' (proprietaire unique)." -ForegroundColor Red
+        Write-Host "Installer depuis https://ollama.com/download" -ForegroundColor Yellow
         return $false
     }
-
-    Write-Host "  Moteur eteint, demarrage de $ollama serve..." -ForegroundColor Cyan
-    # -WindowStyle Hidden et non -NoNewWindow : ce dernier rattache le
-    # serveur a la console courante, ou il mourrait avec elle. Le moteur
-    # doit survivre a ce script.
-    # 2026-09-14 : lance en fenetre cachee sans redirection, le moteur n'ecrivait
-    # ses journaux NULLE PART (server.log de %LOCALAPPDATA% ne vient que de
-    # l'application de barre des taches). Deux runners bloques en "Stopping..."
-    # le meme soir n'ont laisse aucune trace : stdout et stderr vont desormais
-    # dans logs/, et le .err.log (ou Ollama ecrit) est renomme au-dela de 5 Mo.
-    $logsDir = Join-Path $RepoRoot 'logs'
-    if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
-
-    $errLog = Join-Path $logsDir 'ollama-serve.err.log'
-    $outLog = Join-Path $logsDir 'ollama-serve.out.log'
-
-    if (Test-Path $errLog) {
-        $size = (Get-Item $errLog).Length
-        if ($size -gt 5MB) {
-            $rotated = Join-Path $logsDir 'ollama-serve.err.1.log'
-            Move-Item -Path $errLog -Destination $rotated -Force
-        }
-    }
-
-    Start-Process -FilePath $ollama -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput $outLog -RedirectStandardError $errLog | Out-Null
-
-    Write-Host "  Journal du moteur : $errLog" -ForegroundColor Cyan
 
     for ($i = 0; $i -lt 30; $i++) {
         Start-Sleep -Seconds 1
@@ -148,7 +125,7 @@ function Confirm-MoteurOllama {
     }
 
     Write-Host "  Moteur Ollama lance mais muet apres 30 s." -ForegroundColor Red
-    Write-Host "  Diagnostic : ollama serve  (en avant-plan, pour voir l'erreur)" -ForegroundColor Yellow
+    Write-Host "  Diagnostic : ouvrir l application Ollama et lire %LOCALAPPDATA%\Ollama\server.log" -ForegroundColor Yellow
     return $false
 }
 

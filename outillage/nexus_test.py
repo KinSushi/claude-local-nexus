@@ -1436,6 +1436,9 @@ def main() -> int:
     if args.only in (None, "taches"):
         jouer_epreuve_python("epreuve_taches.py",
                              "registre des taches : schema ferme, etat derive d une preuve, cache par HEAD, aucune fuite")
+    if args.only in (None, "start-moteur"):
+        jouer_epreuve_python("epreuve_start_moteur.py",
+                             "demarrage du moteur : port deja a l ecoute respecte, application lancee, jamais ollama serve")
     if args.only in (None, "veille-sonde-contexte"):
         jouer_epreuve_python("epreuve_veille_sonde_contexte.py",
                              "sonde de la veille au contexte du residant : num_ctx lu, sonde sautee sans contexte")
