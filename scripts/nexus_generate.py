@@ -346,6 +346,149 @@ def plafonner_contexte(ctx: int, natif: int | None) -> int:
     return min(ctx, natif)
 
 
+# OCTETS_PAR_ELEMENT_KV = 2  # hypothese nommee
+OCTETS_PAR_ELEMENT_KV = 2
+
+# MARGE_CALCUL_GO = 2.0  # hypothese nommee
+MARGE_CALCUL_GO = 2.0
+
+# PLAFOND_FENETRE = 65536  # hypothese nommee
+PLAFOND_FENETRE = 65536
+
+# FENETRE_MIN = 4096  # hypothese nommee
+FENETRE_MIN = 4096
+
+# NUM_PREDICT_MIN = 4096  # hypothese nommee
+NUM_PREDICT_MIN = 4096
+
+# NUM_PREDICT_MAX = 32768  # hypothese nommee
+NUM_PREDICT_MAX = 32768
+
+
+def lire_architecture(sortie_show_v: str) -> dict | None:
+    """Parse `ollama show -v` output.\n
+    Measure 2026-09-15: qwen3-coder expose 8192 while native is 262144;\n
+    num_predict 4096 everywhere."""
+    if not isinstance(sortie_show_v, str):
+        return None
+
+    prefix = None
+    for line in sortie_show_v.splitlines():
+        line = line.strip()
+        if line.startswith("general.architecture"):
+            parts = line.split()
+            if len(parts) >= 2:
+                prefix = parts[1]
+                break
+    if not prefix:
+        return None
+
+    keys = {
+        "block_count": None,
+        "head_count": None,
+        "head_count_kv": None,
+        "key_length": None,
+        "value_length": None,
+        "embedding_length": None,
+        "context_length": None,
+    }
+
+    for line in sortie_show_v.splitlines():
+        line = line.strip()
+        if not line.startswith(prefix + "."):
+            continue
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        key_full, val_str = parts[0], parts[1]
+        short_key = key_full[len(prefix) + 1 :]  # remove prefix and dot
+        # Mesure du 2026-09-15 : les cles d'attention portent un second prefixe « attention. »
+        if short_key.startswith("attention."):
+            short_key = short_key[len("attention."):]
+        if short_key in keys:
+            try:
+                keys[short_key] = int(val_str)
+            except ValueError:
+                # Mesure du 2026-09-15 : nemotron ecrit context_length en notation flottante (1.048576e+06)
+                try:
+                    flottant = float(val_str)
+                    keys[short_key] = int(flottant) if flottant.is_integer() and flottant > 0 else None
+                except ValueError:
+                    keys[short_key] = None
+
+    return keys
+
+
+def octets_kv_par_jeton(arch: dict | None, octets_par_element: int = OCTETS_PAR_ELEMENT_KV) -> int | None:
+    """Compute KV cache bytes per token.\n
+    Measure 2026-09-15: qwen3-coder 8192 expose, native 262144."""
+    if arch is None or arch.get("block_count") is None:
+        return None
+
+    block_count = arch["block_count"]
+    head_count_kv = arch.get("head_count_kv") or arch.get("head_count")
+    if head_count_kv is None:
+        return None
+
+    key_len = arch.get("key_length")
+    val_len = arch.get("value_length")
+    if key_len is None or val_len is None:
+        embedding = arch.get("embedding_length")
+        head_cnt = arch.get("head_count")
+        if embedding is None or head_cnt is None or head_cnt == 0:
+            return None
+        derived = embedding // head_cnt
+        key_len = key_len or derived
+        val_len = val_len or derived
+
+    return block_count * head_count_kv * (key_len + val_len) * octets_par_element
+
+
+def fenetre_par_memoire(
+    octets_kv: int | None,
+    poids_go: float | None,
+    memoire_go: float | None,
+    runnable_fraction: float = 0.85,
+) -> int | None:
+    """Derive window size from memory budget.\n
+    Measure 2026-09-15: qwen3-coder 8192 expose, native 262144."""
+    if (
+        octets_kv is None
+        or poids_go is None
+        or memoire_go is None
+        or octets_kv <= 0
+        or poids_go <= 0
+        or memoire_go <= 0
+    ):
+        return None
+
+    budget_go = runnable_fraction * memoire_go - poids_go - MARGE_CALCUL_GO
+    if budget_go <= 0:
+        return FENETRE_MIN
+
+    jetons = int(budget_go * 1e9 // octets_kv)
+    if jetons <= 0:
+        return FENETRE_MIN
+
+    # largest power of two <= jetons
+    pow2 = 1 << (jetons.bit_length() - 1)
+
+    if pow2 < FENETRE_MIN:
+        pow2 = FENETRE_MIN
+    if pow2 > PLAFOND_FENETRE:
+        pow2 = PLAFOND_FENETRE
+
+    return pow2
+
+
+def num_predict_pour(fenetre: int | None) -> int:
+    """Compute num_predict from window size.\n
+    Measure 2026-09-15: num_predict 4096 partout."""
+    if fenetre is None or fenetre <= 0:
+        return NUM_PREDICT_MIN
+    return min(max(NUM_PREDICT_MIN, fenetre // 4), NUM_PREDICT_MAX)
+
+
 def local_alias(base: str) -> str:
     """
     Alias d'un modèle Ollama installé.

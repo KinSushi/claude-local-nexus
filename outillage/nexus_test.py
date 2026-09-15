@@ -1454,6 +1454,9 @@ def main() -> int:
     if args.only in (None, "progres-registre"):
         jouer_epreuve_python("epreuve_progres_registre.py",
                              "progres : taches a faire, faites, a trancher et non mesurees rendues depuis le registre, sans aucune preuve lancee")
+    if args.only in (None, "generate-fenetre-kv"):
+        jouer_epreuve_python("epreuve_generate_fenetre_kv.py",
+                             "generateur : octets KV par jeton lus dans ollama show -v, fenetre par budget memoire, num_predict proportionnel")
     if args.only in (None, "valide-perimetre"):
         jouer_epreuve_python("epreuve_valide_perimetre.py",
                              "validation : jamais vert sur rien, fichiers regeneres hors du diff juge")
