@@ -715,6 +715,38 @@ def repli_passerelle_effectif(entetes) -> bool | None:
         return False
     return None
 
+def car_par_jeton_entree(messages: List[Dict[str, Any]], usage: Dict[str, Any] | None) -> float | None:
+    """
+    Compute average characters per input token.
+    Returns None if input is invalid or token count is missing/invalid.
+    """
+    # Validate messages container
+    if not isinstance(messages, (list, tuple)):
+        return None
+    # Count characters in message contents
+    total_chars = 0
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            total_chars += len(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict):
+                    text = part.get("text")
+                    if isinstance(text, str):
+                        total_chars += len(text)
+    if total_chars == 0:
+        return None
+    # Extract token count safely
+    brut = (usage or {}).get("prompt_tokens") if isinstance(usage, dict) or usage is None else None
+    if isinstance(brut, bool) or not isinstance(brut, int) or brut <= 0:
+        return None
+    jetons = brut
+    return round(total_chars / jetons, 2)
+
+
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             cle: str, temperature: float | None = None,
             delai: int | None = None, outils: Any = None, sans_raisonnement: bool = False) -> Dict[str, Any]:
@@ -855,6 +887,9 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "tokens_sortie": (corps.get("usage") or {}).get("completion_tokens", 0),
         # part_raisonnement voit le raisonnement INLINE et cette grandeur voit le raisonnement HORS BANDE, mesures 0,02 contre 3,15
         "car_par_jeton": round(len(texte) / (corps.get("usage") or {}).get("completion_tokens", 0), 2) if (corps.get("usage") or {}).get("completion_tokens", 0) else None,
+        # jetons et ratio de l'ENTREE : mesure du 2026-09-15, l'hypothese de 4 caracteres par jeton reste a confronter
+        "tokens_entree": (corps.get("usage") or {}).get("prompt_tokens", 0),
+        "car_par_jeton_entree": car_par_jeton_entree(messages, corps.get("usage")),
         "cause_vide": (
             "raisonnement_" + str(len(choix.get('message', {}).get('reasoning_content', '')))
         ) if not texte else "contenu_present",
