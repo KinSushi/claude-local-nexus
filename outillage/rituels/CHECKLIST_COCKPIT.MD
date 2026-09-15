@@ -28940,3 +28940,33 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] cliquet de câblage, deux régressions restantes : `epreuves/epreuve_lot_controle.py` orpheline, `outillage/nexus_mesure_cache.py` prouvée sans appelant.
 
 **Délégué ce tour** : rafales 58, 58b et 59, 25 tâches au banc cloud. **Arbitré ici** : trois tris, cinq commits, deux blocs réalignés à l'arbitrage et dits comme tels.
+
+#### 19:15 — fenêtres de console : deux causes mesurées, la première corrigée ; rafale 60 triée, rafale 61 au banc
+
+**Posé et éprouvé :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| 3296d1d | les trois lancements de Python du pont ne peuvent plus ouvrir de fenêtre de console ; la suite joue `epreuve_pont_sans_fenetre` et `epreuve_lot_controle` | épreuve statique : 3 OK sur le pont corrigé, 3 RATE sur l'ancien ; lot-controle 19 PASS ; fichiers posés par `nexus_poser_lot` sur main, identiques octet pour octet au tri ; audits gemma, mistral et gpt-oss, chacun sur la pièce d'une autre famille |
+
+**Mesuré et nommé :**
+- signalé par l'opérateur : trois fenêtres figées sur l'erreur 0x800700e8 nommant `nexus_deposer.py`, puis « plein de fenêtres qui s'ouvrent et se ferment sans arrêt » ;
+- cause 1, le pont : `detached: true` devient `DETACHED_PROCESS` dans libuv 1.51.0, qui annule `CREATE_NO_WINDOW` selon la documentation Microsoft ; `python` passe ici par l'alias WindowsApps puis par le lanceur du gestionnaire Python ; corrigée en 3296d1d, effective au redémarrage de chaque pont ;
+- cause 2, les tâches planifiées, ouvertes en session Interactive : parenté relevée à 18:56, Planificateur, `pwsh -WindowStyle Hidden`, `nexus_state.py`, puis `powershell.exe` pour les cœurs et le GPU, une fenêtre Windows Terminal d'une seconde par lancement ; aucun `subprocess` du dépôt ne passe `creationflags` (traque 4, state 3, capability 2, charge 3, conformité 12, vitrine 1, suite 33) ; correctif et épreuve-cliquet en rafale 61 ;
+- les crochets bash et python des sessions créent des consoles, mais aucune fenêtre visible pendant la mesure ;
+- quota : la base de la passerelle garde les refus « usage limit » de toutes les sessions ; session épuisée de 18:00 à 19:55 UTC, 97 refus et zéro réussite ; le texte du refus ne donne aucune heure de remise à zéro ; la page de tarifs d'Ollama dit l'usage « measured in tokens at each model's rates » et ne définit ni la fenêtre de session ni la limite hebdomadaire ;
+- conception du quota rendue par mistral, refusée en l'état : second fichier d'état en doublon de la base, dossier `nexus/` inexistant, facteur 0,9 gravé, remises à zéro inventées ;
+- audit mistral de `nexus_appliquer` v4 : trois affirmations fausses au code (IndexError, message sur un AVANT exact, fins de ligne CRLF) ; contre-épreuve sur HEAD : F et H ratent, la v4 passe les huit cas ;
+- vision : troisième refus du même algorithme (v2, v5, v6), le rendu recopiant la boucle du rendu joint ; la v7 part sans rendu refusé joint ;
+- `famille_de` v3 : 12 cas sur 13, l'étiquette `:latest` reste dans la famille.
+
+**Consignes de l'opérateur, ce tour** : `nexus quota` doit être une vraie fonctionnalité d'une vraie utilité, pas un script de dépannage passé à une autre instance ; zéro bricolage ; ne pas se disperser, liquider la checklist. EA : l'opérateur a décidé que les images se lisent en local ; la pièce jointe image de `nexus_agent` reste un besoin A2A non engagé.
+
+**Ouverts, rafale 61 au banc :**
+- [ ] lancements Python sans fenêtre dans traque, state, capability, charge, conformité, vitrine et suite, et leur épreuve-cliquet ;
+- [ ] `nexus_appliquer` v4 et son cas F corrigé : audit tiers de l'épreuve, puis commit ;
+- [ ] vision v7 ; `famille_de` v4 ; épreuve de `sans_repli` et audit gemma de `sans_repli` ; épreuve de l'outil de pose v5 ; épreuve du créneau cloud v2 et audit du créneau lu dans l'environnement ; `nexus_mesure_cache` sous verrou v2, puis son entrée `nexus cache` ;
+- [ ] quota comme fonctionnalité : conception à refaire sur la base de la passerelle comme source unique ;
+- [ ] les ponts des sessions lancées avant 3296d1d gardent l'ancien code jusqu'à leur redémarrage.
+
+**Délégué ce tour** : rafale 60, 16 tâches, toutes réussies en 85 s ; rafale 61, 16 tâches ; trois audits tiers isolés. **Arbitré ici** : un tri en trois arbres avec l'outil de pose réel, deux contre-épreuves, trois audits vérifiés au code, un commit.
