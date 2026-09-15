@@ -1483,9 +1483,16 @@ def executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus,
     return final
 
 def executer(tache: dict, cle: str) -> dict:
+    resultat = _executer_sans_drapeau(tache, cle)
+    if (bool(tache.get("sans_repli")) or os.environ.get("NEXUS_SANS_REPLI") == "1") and isinstance(resultat, dict):
+        resultat["sans_repli"] = True
+    return resultat
+
+def _executer_sans_drapeau(tache: dict, cle: str) -> dict:
     # Trois etats: preparation en cours, appel reseau parti, attente de reponse
     print(f"PREPARATION commence pour {tache.get('modele') or 'modele inconnu'}: lecture des pieces jointes et resolution du plan", file=sys.stderr, flush=True)
     local_seul = bool(tache.get("local_seul")) or os.environ.get("NEXUS_LOCAL_SEUL") == "1"
+    sans_repli = bool(tache.get("sans_repli")) or os.environ.get("NEXUS_SANS_REPLI") == "1"
     nom = tache.get("nom") or tache.get("modele") or "tache"
     modele = tache.get("modele") or "adaptive-router"
     consigne = tache.get("tache") or ""
@@ -1542,6 +1549,8 @@ def executer(tache: dict, cle: str) -> dict:
         return {"nom": nom, "modele": modele, "cause_vide": "fichiers_joints_absents",
                 "erreur": "aucun fichier joint disponible : " + ", ".join(refus)}
     candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
+    if sans_repli:
+        candidats = [modele]
     _dj = None
     try:
         from nexus_disjoncteur import CircuitBreaker
@@ -1682,6 +1691,10 @@ def executer(tache: dict, cle: str) -> dict:
                 if not reprise_utile(resultat.get("cause_vide"), plafond):
                     msg = "%s : raisonnement a epuise le budget (%s), bascule sans relever le plafond" % (
                         candidat, resultat.get("cause_vide"))
+                    if sans_repli:
+                        return {"nom": nom, "modele": modele,
+                                "erreur": f"sans_repli : {resultat.get('cause_vide')}",
+                                "sans_repli": True}
                     echecs.append(msg)
                     troncatures.add(msg)
                     _journal_echec(msg)  # ligne où _journal_echec est défini : voir fonction locale dans executer
@@ -1802,6 +1815,10 @@ def executer(tache: dict, cle: str) -> dict:
         })
         return dernier_degenere
 
+    if sans_repli:
+        return {"nom": nom, "modele": modele,
+                "erreur": f"sans_repli : {' | '.join(ecartes + echecs)}",
+                "sans_repli": True}
     return {"nom": nom, "modele": modele,
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
@@ -2114,6 +2131,8 @@ def main() -> int:
                          help="Donner au modele les outils web d'Ollama (web_search, web_fetch) : la requete part vers ollama.com.")
     parseur.add_argument("--web-consenti", action="store_true",
                          help="Autoriser --web avec un modele LOCAL malgre la sortie de la requete vers ollama.com.")
+    parseur.add_argument("--sans-repli", action="store_true",
+                         help="Force l'usage du modele demande sans repli gratuit.")
     args = parseur.parse_args()
 
     # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
@@ -2162,7 +2181,8 @@ def main() -> int:
                                    else TEMPERATURE_DEFAUT),
                    "racine": args.racine,
                    "web": getattr(args, "web", False),
-                   "web_consenti": getattr(args, "web_consenti", False)}]
+                   "web_consenti": getattr(args, "web_consenti", False),
+                   "sans_repli": args.sans_repli}]
     else:
         taches = []
 

@@ -1379,6 +1379,9 @@ def main() -> int:
     if args.only in (None, "agent-sans-web"):
         jouer_epreuve_python("epreuve_agent_sans_web.py",
                              "consigne systeme sans web et composer_systeme")
+    if args.only in (None, "agent-sans-repli"):
+        jouer_epreuve_python("epreuve_agent_sans_repli.py",
+                             "agent sans repli")
     if args.only in (None, "agent-web"):
         jouer_epreuve_python("epreuve_agent_web.py",
                              "boucle d'outils web : forward, reverse sans cle, fuite modele local")
