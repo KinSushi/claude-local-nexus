@@ -394,11 +394,17 @@ def mechanical_battery(modified):
             check_powershell_syntax(abs_path)
     run_conformite()
 
-def get_diff_from_base(base):
-    """Retourne le diff complet entre <base> et HEAD."""
+def get_diff_from_base(base, fichiers=None):
+    """
+    Retourne le diff complet entre <base> et HEAD.
+    Si *fichiers* est fourni et non vide, le diff est limité à ces chemins.
+    """
+    if fichiers:
+        return run_git(["diff", f"{base}..HEAD", "--", *fichiers])
     return run_git(["diff", f"{base}..HEAD"])
 
-def get_diff_uncommitted():
+
+def get_diff_uncommitted(fichiers=None):
     """
     Diff complet depuis HEAD, index compris.
 
@@ -406,6 +412,8 @@ def get_diff_uncommitted():
     code faisait `git diff`, soit index vs arbre. L'ecart entre les deux
     est exactement ce qui rendait le trou invisible.
     """
+    if fichiers:
+        return run_git(["diff", "HEAD", "--", *fichiers]) if _tete_existe() else run_git(["diff", "--", *fichiers])
     return run_git(["diff", "HEAD"] if _tete_existe() else ["diff"])
 
 def extract_changed_functions(diff_text):
@@ -786,6 +794,38 @@ def validate_base(base):
     if not base or base.startswith("-") or re.search(r"\s", base):
         raise ValueError(f"Valeur invalide pour --base : '{base}'")
 
+# Mesure du 2026-09-15 :
+def choisir_perimetre(base: str) -> tuple[str, list[str], str, str]:
+    """
+    Détermine le périmètre de validation.
+    Retourne (mode, fichiers_retenus, diff_text, message).
+    - mode : 'non_commit' ou 'base'
+    - fichiers_retenus : liste des fichiers .py/.ps1 retenus pour la batterie mécanique
+    - diff_text : texte du diff correspondant au périmètre
+    - message : texte informatif affiché avant la batterie mécanique
+    """
+    # Travail non commité
+    non_commit = _filter_allowed_files(get_modified_files_uncommitted())
+    if non_commit:
+        mode = 'non_commit'
+        diff_text = get_diff_uncommitted(non_commit)
+        message = f"Utilisation du diff du travail non commit (HEAD) : {len(non_commit)} fichier(s) .py/.ps1."
+        return mode, non_commit, diff_text, message
+
+    # Aucun fichier non commité .py/.ps1
+    # Comptage des fichiers non commités hors extensions autorisées
+    tous_non_commit = get_modified_files_uncommitted()
+    ecartes = len([f for f in tous_non_commit if os.path.splitext(f)[1] not in ALLOWED_EXTENSIONS])
+
+    fichiers = _filter_allowed_files(get_modified_files_from_base(base))
+    mode = 'base'
+    diff_text = get_diff_from_base(base, fichiers) if fichiers else ''
+    message = f"Perimetre {base}..HEAD : {len(fichiers)} fichier(s) .py/.ps1"
+    if ecartes:
+        message += f" ({ecartes} fichier(s) non commite(s) hors .py/.ps1 ignore(s))"
+    return mode, fichiers, diff_text, message
+
+
 def main():
     global ROOT
     parser = argparse.ArgumentParser(description="Validation Nexus sans cout")
@@ -837,21 +877,8 @@ def main():
     try:
         validate_base(args.base)
 
-        # Si des changements non commités existent, on les utilise.
-        uncommitted = get_modified_files_uncommitted()
-        if uncommitted:
-            # On travaille sur le diff HEAD (travail non commit)
-            modified = _filter_allowed_files(uncommitted)
-            diff_text = get_diff_uncommitted()
-            # Information explicite pour le journal
-            print("Utilisation du diff du travail non commit (HEAD).")
-        else:
-            # Aucun changement non commit : on utilise le périmètre fourni
-            modified = _filter_allowed_files(get_modified_files_from_base(args.base))
-            diff_text = get_diff_from_base(args.base)
-            print(
-                f"Aucun changement non commit detecte ; utilisation du perimetre {args.base}..HEAD."
-            )
+        mode, modified, diff_text, message = choisir_perimetre(args.base)
+        print(message)
         mechanical_battery(modified)
     except Exception as e:
         print("Erreur mecanique :", e)
@@ -864,7 +891,7 @@ def main():
         if args.json:
             print(json.dumps({"verdict": "RIEN", "code": 0}))
         else:
-            print("Aucun changement a juger.")
+            print("Aucun fichier .py/.ps1 a juger dans le perimetre retenu.")
         return 0
 
     # Sans fonction identifiee, on juge le diff LUI-MEME plutot que de
