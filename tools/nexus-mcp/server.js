@@ -506,10 +506,15 @@ function planOf(alias) {
 // DEUX FILES SEPAREES, jamais une seule : un appel cloud qui attendrait
 // derriere un appel local paierait la lenteur du local, ce qui annulerait
 // l'interet meme d'avoir deux plans.
-// Mesure du 2026-09-13 : le plan Ollama Cloud accepte 16 agents en parallèle sans dégradation,
-// se dégrade au‑delà et montre saturation vers ~46 (à confirmer). L'env prime sur la valeur par défaut.
+// Mesure du 2026-09-13 : 16 agents en parallèle sans dégradation (à confirmer).
+// Mesure du 2026-09-14 : 16 agents en vol provoquent 429 Too Many Concurrent Requests.
+// Alignement avec nexus_agent : valeur par défaut 10.
 const CONCURRENCE_LOCALE = Number(process.env.NEXUS_LOCAL_CONCURRENCE || 1);
-const CONCURRENCE_CLOUD = Number(process.env.NEXUS_CLOUD_CONCURRENCE || 16);
+function entierStrictementPositif(brut, defaut) {
+  const n = Number.parseInt(brut, 10);
+  return Number.isInteger(n) && n > 0 ? n : defaut;
+}
+const CONCURRENCE_CLOUD = entierStrictementPositif(process.env.NEXUS_CLOUD_CONCURRENCE, 10);
 
 /**
  * Une mecanique, deux instances. Deux copies finiraient par diverger.

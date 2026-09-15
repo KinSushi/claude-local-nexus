@@ -1928,6 +1928,8 @@ def test_semaphore_local() -> None:
                        "SEMAPHORE DU PLAN LOCAL : la borne tient-elle ?")
     jouer_epreuve_node("epreuve_semaphore_machine.js", "plafond cloud machine",
                        "PLAFOND DU SEMAPHORE CLOUD MACHINE : suit-il NEXUS_CLOUD_CONCURRENCE comme nexus_agent ?")
+    jouer_epreuve_node("epreuve_concurrence_cloud.js", "concurrence cloud du pont",
+                       "SEMAPHORE INTERNE DU PONT : defaut 10 et valeur invalide refusee, comme nexus_agent ?")
 
 
 def test_reveil_modele() -> None:
