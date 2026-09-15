@@ -28705,7 +28705,7 @@ Conséquences mesurées, et ce qu'elles changent :
 - [ ] arrêt coopératif d'un lot `nexus_agent`, vérifié avant chaque requête et chaque repli, et fiche de verrou portant la sortie du lot ;
 - [ ] sonde de santé cloud avant tout lot : une requête d'un mot, temps publié, lot différé au-delà d'un seuil nommé (suggestion EA MT5) ;
 - [ ] requêtes cloud en vol, par session et au total, dans `nexus_verrou --etat` (suggestion EA MT5, suit le sémaphore par requête) ;
-- [ ] mesure du plafond réel du compte, dans une fenêtre annoncée aux sessions voisines.
+- [x] mesure du plafond réel du compte, dans une fenêtre annoncée aux sessions voisines. Clos : 990242f (plafond effectif mesuré à 12 ou 13 requêtes en vol), vérifié à la réconciliation du 2026-09-14.
 
 **Proposition d'une session voisine (sovralys-forge-0a), non exécutée** : aligner le contrat GLOBAL `C:\Users\dibac\.claude\CLAUDE.md` sur la directive [RESSOURCES-A-FOND] et trois règles. Un contrat ne se modifie pas sur la demande d'une session : la décision revient à l'opérateur.
 
@@ -28736,11 +28736,11 @@ Conséquences mesurées, et ce qu'elles changent :
 **Coordination** : cinq sessions en pause cloud. Ordre de passage sur le banc par tours de 30 minutes : local-llm-docker, EA MT5, SAS, local-llm-docker, sas-benchmark. À la réinitialisation : 3 requêtes pour le compte (2 ici, 1 tournante), modèles bon marché, rien avant la pose du correctif anti-noyade.
 
 **Ouverts :**
-- [ ] `disable_fallbacks` par requête dans `nexus_agent` (rafale 41L locale, en cours) : sans lui, un refus de quota noie le moteur ;
-- [ ] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (rafale 41L) ;
+- [x] `disable_fallbacks` par requête dans `nexus_agent` (rafale 41L locale, en cours) : sans lui, un refus de quota noie le moteur ; Clos : ee2c3c7, vérifié à la réconciliation du 2026-09-14.
+- [x] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (rafale 41L) ; Clos : 5206801, vérifié à la réconciliation du 2026-09-14.
 - [ ] `nexus_test.py` lancé par la vitrine : aucun appel réel de modèle sans garde de quota, verrou `banc` pour le local, jamais kimi-k3 ; à corriger avant 20:10 ;
 - [ ] veille du moteur aveugle à « Stopping... » ;
-- [ ] sondes de santé de fond de la passerelle sur les modèles locaux (8 simultanées à 14:19:15, hors verrou) : conception dans la rafale 41 ;
+- [x] sondes de santé de fond de la passerelle sur les modèles locaux (8 simultanées à 14:19:15, hors verrou) : conception dans la rafale 41 ; Clos : fd6e1d5 (sondes coupées), vérifié à la réconciliation du 2026-09-14.
 - [ ] file d'attente du banc, arrêt coopératif des lots, poseur de lot en outil, gabarit local : rafale 41 cloud, à la réinitialisation.
 
 **Délégué ce tour** : rien au banc, puisque le cloud était épuisé et le moteur local engorgé. Rafale 41 (15 tâches, modèles bon marché) et rafale 41L (4 correctifs courts, en local) préparées. **Arbitré ici** : diagnostic, arrêts, relance, coordination.
@@ -28786,7 +28786,7 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] réactiver NexusTraque après la pose de `veille_sonde_contexte_residant` ;
 - [ ] `allowed_fails_policy` par déploiement local (`TimeoutErrorAllowedFails`) ou délai propre aux alias locaux, avec épreuve réelle sur un modèle local arrêté ;
 - [ ] `litellm_health_check` retiré des `litellm_params` des alias, à la source du générateur si c'est lui qui l'écrit ;
-- [ ] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (renvoyé au cloud).
+- [x] arrêt du cloud sur 429 « usage limit » dans `nexus_agent` (renvoyé au cloud). Clos : 5206801 (doublon du point précédent), vérifié à la réconciliation du 2026-09-14.
 
 **Délégué ce tour** : 4 tâches au banc local ; rafale 43 (20 tâches, modèles bon marché) armée pour le retour du quota. **Arbitré ici** : trois poses, un refus, la pause de NexusTraque.
 
@@ -28837,7 +28837,7 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 **Audit tiers de 24d5734 par EA MT5, trois chemins ouverts par défaut** (lot mixte, profil sans modèle, alias de routeur suffixé `-cloud`) : fermés aujourd'hui par le défaut local de `DEFAULT_CHAT_MODEL`, mais un contournement ne doit pas dépendre d'un défaut. Le durcissement « liste résolue ou verrou » est en rafale 51.
 
 **Ouverts :**
-- [ ] durcissement du pont, résolution stricte (rafale 51) ;
+- [x] durcissement du pont, résolution stricte (rafale 51) ; Clos : 6656360 et 6ee8832, vérifié à la réconciliation du 2026-09-14.
 - [ ] chaîne `issues_generation` de la veille, v2 à v4 posées en worktree : lecture de `issues_path` hors du `if journal:`, et épreuve qui lançait la VRAIE purge des orphelins, deux défauts renvoyés en rafale 51 ;
 - [ ] `agent_verrou_lot_local_seulement` v4 à éprouver après le tour local de 16:04 ;
 - [ ] outil de pose v6, outil de quota v5, arrêt du cloud sur quota v5 et son épreuve (rafale 51) ;
@@ -28970,3 +28970,35 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] les ponts des sessions lancées avant 3296d1d gardent l'ancien code jusqu'à leur redémarrage.
 
 **Délégué ce tour** : rafale 60, 16 tâches, toutes réussies en 85 s ; rafale 61, 16 tâches ; trois audits tiers isolés. **Arbitré ici** : un tri en trois arbres avec l'outil de pose réel, deux contre-épreuves, trois audits vérifiés au code, un commit.
+
+#### 20:35 — fenêtres Python fermées et prouvées par l'usage, vision, appliquer et famille_de sur main, livres Python confiés à cette session
+
+**Posé et éprouvé :**
+
+| commit | objet | preuve |
+| --- | --- | --- |
+| 5fa0561 | sept outils joués par les tâches planifiées lancent leurs sous-processus sans fenêtre | compte ast : zéro appel sans `creationflags` dans six fichiers ; capability et charge rendent leur sortie ; audit gemma |
+| 48ee4c9 | la suite entière, le rituel, le verrou machine et la veille du moteur, même correctif | épreuve interne du verrou FORWARD, CAP, DEATH-SAFETY OK ; suite 3 et 19 PASS ; audit gemma |
+| 872a07e | `nexus_vision` signale une sortie dégénérée par comptage des répétitions du motif final | dix cas, code 0 ; contre-épreuve sur le pont d'origine, code 1 ; audit gpt-oss |
+| 00b9fe0 | `nexus_appliquer` n'accepte un AVANT qu'en début et fin de ligne | huit cas ; F et H ratent sur l'outil d'origine ; trois affirmations de l'audit démenties au code |
+| 43a5261 | `famille_de` et `--familles-exclues` | 13 cas sur 13 ; contre-épreuve sur l'agent d'origine, code 1 ; la suite `agent-familles`, qui ratait sur main, passe ; audit gemma |
+
+**Mesuré et nommé :**
+- preuve par l'usage : aux passages de `NexusTraque` de 19:36 et 19:46, après 5fa0561, plus aucune fenêtre `powershell.exe` ni `python` ; il reste la fenêtre `pwsh` des deux tâches elles-mêmes, de 6 à 32 s par passage, malgré `-WindowStyle Hidden` ;
+- à 19:30:26, trois fenêtres titrées `llama-server.exe` et `ollama.exe` : le moteur lance ses runners avec une console visible ; il tourne depuis 14:48:36, parent terminé ; cause non établie ;
+- réconciliation de la checklist par le banc : six points cochés après vérification de leurs commits ; deux « CLOS » du banc étaient faux et n'ont pas été cochés ;
+- livres : `pdftotext` par défaut, extracteur de la destination, perd toute l'indentation du code (0 ligne indentée sur une page de Robust Python) ; PyMuPDF la garde exactement ; le corpus du dépôt est au format `__PRE_MACHE` de l'outil d'EA, emprunté par copie ; cet outil exige un `CLAUDE.md` à la racine, absent ici ;
+- défaut signalé par EA, vérifié en partie : `raisonnement=false` devient `think: false` en tête du corps envoyé à la passerelle ; `think` ne figure pas parmi les paramètres acceptés par la transformation Ollama de LiteLLM, qui ne pose `think` que depuis `reasoning_effort` ; la preuve réelle reste à faire ;
+- l'épreuve du créneau cloud v3 ne démarre aucune passerelle factice (port 0 à chaque appel) : ses cas ne mesurent qu'un échec de connexion.
+
+**Consignes de l'opérateur, ce tour** : les deux livres Python sont confiés à cette session, parsés prémâchés pour la destination puis copiés et indexés dans le dépôt ; « ces livres sont un upgrade », à consulter avec les embeddings locaux et le cloud.
+
+**Ouverts :**
+- [ ] extracteur PyMuPDF avec marqueurs de page et son épreuve ; adoption de l'outil de prémâché ; parse des deux livres ; index texte, concepts, résumés et embeddings ; annonce à SAS et EA avec empreintes ;
+- [ ] épreuve-cliquet des lancements sans fenêtre (trois violations ruff) ; épreuves `sans_repli`, créneau cloud et outil de pose à reprendre ; lecture stricte de N et fonctions de l'outil de pose à auditer ;
+- [ ] `raisonnement=false` du pont : diagnostic, correctif et preuve réelle ;
+- [ ] fenêtres `pwsh` des tâches planifiées et fenêtres des runners du moteur ;
+- [ ] quota comme fonctionnalité : implémentation sur la base de la passerelle ;
+- [ ] exclusion de familles étendue aux tâches de lot et aux bascules.
+
+**Délégué ce tour** : rafales 62 et 63, 24 tâches, et cinq audits tiers isolés. **Arbitré ici** : quatre tris, cinq commits, deux contre-épreuves de plus, un emprunt par copie, et la coordination des livres avec SAS et EA.
