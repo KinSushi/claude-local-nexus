@@ -20,6 +20,41 @@ import time
 import urllib.request
 import urllib.error
 
+# Mesure du 2026-09-15 : PID 18868 (ollama serve enfant de ollama app.exe) écoute [::]:11434 ; PID 21724 (ollama serve lancé par relancer_moteur) écoute 127.0.0.1:11434, parent sorti.
+
+def application_ollama_vivante() -> bool:
+    """Retourne True si le processus « ollama app.exe » est présent."""
+    try:
+        result = subprocess.run(
+            ['tasklist', '/FI', 'IMAGENAME eq ollama app.exe', '/NH'],
+            capture_output=True,
+            text=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        )
+        return 'ollama app.exe' in result.stdout.lower()
+    except Exception:
+        return False
+
+def nombre_serveurs_ollama() -> int | None:
+    """Retourne le nombre de processus « ollama.exe » dont la ligne de commande contient « serve »."""
+    try:
+        cmd = [
+            'powershell',
+            '-NoProfile',
+            '-Command',
+            "(Get-CimInstance Win32_Process -Filter \"Name='ollama.exe'\" | Where-Object { $_.CommandLine -match ' serve' }).Count"
+        ]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            timeout=20
+        )
+        return int(result.stdout.strip())
+    except Exception:
+        return None
+
 def _parse_iso(iso_str):
     """Parse ISO 8601 string, handling trailing Z and long fractions."""
     if iso_str.endswith('Z'):
@@ -133,14 +168,14 @@ def sonder(url, modele, delai, num_predict=4, num_ctx=None):
         return False
 
 def relancer_moteur(racine):
-    """Restart Ollama service on Windows. Return True if engine responds within 30s."""
+    """Restart Ollama service on Windows. Return True if engine responds within 30 s and exactly one « serve » process is running."""
     if platform.system() != 'Windows':
         print('relance non implementee sur cette plateforme')
         return False
 
     import winreg
 
-    # Copy OLLAMA_* environment variables from registry
+    # Copie des variables d’environnement OLLAMA_* depuis le registre
     reg_paths = [
         (winreg.HKEY_CURRENT_USER, r'Environment'),
         (winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
@@ -160,7 +195,7 @@ def relancer_moteur(racine):
         except OSError:
             pass
 
-    # Locate ollama executable
+    # Recherche de l’exécutable ollama
     ollama = shutil.which('ollama')
     if not ollama:
         local_app_data = os.environ.get('LOCALAPPDATA', '')
@@ -170,19 +205,34 @@ def relancer_moteur(racine):
     if not ollama:
         return False
 
-    # Kill existing process
+    # Arrêt brutal de tous les processus ollama.exe
     subprocess.run(['taskkill', '/IM', 'ollama.exe', '/F', '/T'],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     time.sleep(3)
 
-    # Prepare log directory
+    # Si l’application « ollama app.exe » est encore vivante, on ne relance pas de serveur
+    if application_ollama_vivante():
+        # Attente de la réponse du moteur existant
+        for _ in range(30):
+            if version_repond('http://127.0.0.1:11434'):
+                cnt = nombre_serveurs_ollama()
+                if cnt is None:
+                    return True
+                if cnt == 1:
+                    return True
+                sys.stderr.write(f"Erreur : {cnt} processus ollama serve détectés (application ollama app.exe vivante)\n")
+                return False
+            time.sleep(1)
+        return False
+
+    # Préparation du répertoire de logs
     logs_dir = os.path.join(racine, 'logs')
     os.makedirs(logs_dir, exist_ok=True)
     out_log = os.path.join(logs_dir, 'ollama-serve.out.log')
     err_log = os.path.join(logs_dir, 'ollama-serve.err.log')
 
-    # Start new process
+    # Démarrage du nouveau serveur
     creationflags = 0x00000008 | 0x00000200  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
     with open(out_log, 'a') as out_f, open(err_log, 'a') as err_f:
         subprocess.Popen([ollama, 'serve'],
@@ -190,10 +240,16 @@ def relancer_moteur(racine):
                          creationflags=creationflags,
                          cwd=racine)
 
-    # Wait for engine to respond (up to 30 seconds)
+    # Attente de la réponse du moteur (jusqu’à 30 s)
     for _ in range(30):
         if version_repond('http://127.0.0.1:11434'):
-            return True
+            cnt = nombre_serveurs_ollama()
+            if cnt is None:
+                return True
+            if cnt == 1:
+                return True
+            sys.stderr.write(f"Erreur : {cnt} processus ollama serve détectés après relance\n")
+            return False
         time.sleep(1)
     return False
 
