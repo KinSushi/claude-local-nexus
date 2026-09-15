@@ -29008,3 +29008,60 @@ Le routage par santé est coupé avec les sondes : sans elles, il n'aurait plus 
 - [ ] exclusion de familles étendue aux tâches de lot et aux bascules.
 
 **Délégué ce tour** : rafales 62 et 63, 24 tâches, et cinq audits tiers isolés. **Arbitré ici** : quatre tris, cinq commits, deux contre-épreuves de plus, un emprunt par copie, et la coordination des livres avec SAS et EA.
+
+#### 20:40-21:05 — boucle de rappel de l'opérateur armée, tri du lot 66, plan avant code, vague 67 locale et cloud
+
+**Consignes de l'opérateur ce tour**, dans l'ordre :
+
+- une boucle de rappel à 5 minutes, à ne pas modifier : ressources du disque consultées AVANT d'agir, `py_compile` puis test, reverse et forward mécanisés, PLAN avant CODE, un plan unique fusionné de façon réversible, vagues de 15 agents au plus, rituels à chaque tour ;
+- « ne mécanise pas le plafond de 15 agents par vague » : tenu par discipline, aucun outil ni garde ;
+- « si tu emploies des agents locaux, [...] tu vas faire moins d'erreurs ; combo local + cloud = clé de la réussite », puis « délègue au maximum à des agents locaux + cloud, la stack est riche ».
+
+**Tri du lot 66** : onze rendus posés en worktree, compilés, passés aux sélecteurs bloquants de ruff, puis joués.
+
+| rendu | worktree | compile | ruff | épreuve | contre-épreuve |
+| --- | --- | --- | --- | --- | --- |
+| épreuve du créneau cloud v6 | w63 | OK | 0 | 8 OK, code 0 | main sans correctif : code 1, cas B au rouge ; plante sous la console cp1252 |
+| épreuve des sous-processus v5 | w63 | OK | 1 (SIM102) | 10 OK, code 0 | arbre 3296d1d : RATE imprimés mais code 0, faux vert |
+| épreuve du prémâché EA v3 | w64 | OK | 0 | 3 OK, code 0 | décision : non adoptée, l'outil d'EA doublonne le prémâcheur de programmation |
+| prémâcheur des livres de programmation | w64 | OK | 3 | — | usage réel sur *Robust Python* : `TypeError` ligne 330 |
+| épreuve du prémâcheur | w64 | OK | 8 | code 2 : le rendu est un outil à arguments obligatoires | — |
+| extracteur passé à pymupdf | w64 | OK | 6 | 1 OK, 3 RATE : `name 'fitz' is not defined` | — |
+| épreuve vision et raisonnement v3 | w64 | OK | 0 | 3 RATE : le faux serveur ne sert pas `/v1/model/info` | — |
+| épreuve du quota v2 | w64 | OK | 0 | plantage `AssertionError` ligne 198 | — |
+| épreuve du verrou du cache v3 | w61 | OK | 0 | 3 RATE : `--attente-banc-s` vaut 120 par défaut, copie écrite en cp1252 | — |
+| `sans_repli` recalé sur main | w64t | refus | — | blocs 1 à 3 décalés de deux espaces, bloc 4 présent trois fois | — |
+
+**Trouvé par l'usage ce tour** :
+
+- l'outil de pose n'est pas sur main : 25 copies éparses, jamais commitées (rangée 20) ;
+- une épreuve qui imprime ses RATE et sort en 0 (sous-processus v5) ;
+- une épreuve dont la sortie non ASCII plante sous la console Windows (créneau v6) ;
+- un long heredoc passé par l'outil Bash a été coupé par la couche shell (« unexpected EOF while looking for matching quote ») ; rien n'a tourné, et le générateur a été réécrit par l'outil d'écriture de fichiers, comme la leçon déjà consignée le prescrit.
+
+**Plan avant code** : rangées 17 à 22 de la liste vivante, commit c7335db.
+
+**Vague 67 envoyée à 21:03:25**, onze tâches, quatre familles :
+
+- au cloud (gpt-oss-120b, mistral-large-3) : huit correctifs aux causes mesurées et la conception du plan unique ;
+- en local : l'audit du prémâcheur par qwen3-coder-30b, et la synthèse de cinq passages de livres sur les portes de commit et l'ancrage des réponses par granite4.1-8b.
+
+Références jointes relevées sur disque : la documentation installée de `get_toc` par `nexus_doc`, et les passages de livres par l'index sémantique.
+
+**Ce qui s'est passé, mesuré** :
+
+- le verrou du banc était tenu depuis 20:53:04 par un appel MCP d'une AUTRE session (chaîne de processus : `nexus_verrou_tenir.py banc --projet mcp`, puis `server.js`, puis un `claude.exe` qui n'est pas celui de cette session) ;
+- pendant ce temps, le moteur montrait `glm-4.7-flash` en « Stopping... » ; à 21:06:43, le runner était revenu ;
+- l'agent a attendu le verrou 120 s (`NEXUS_VERROU_ATTENTE_S`), a écrit un refus propre pour les deux tâches locales, puis a rendu les neuf tâches cloud : 9 réussies, 87 062 jetons, 54 s.
+
+**Lecture fausse, corrigée ici** : j'ai d'abord écrit que les neuf tâches cloud restaient bloquées derrière le verrou local. C'était faux : l'attente est bornée, et le cloud part après le refus. Le garde-fou enchaîné « pas d'en-tête de sortie, pas de commit » a empêché d'inscrire l'affirmation « vague envoyée » avant sa preuve.
+
+**Refus du classificateur, non contourné** : l'arrêt de mon propre lot par `taskkill` a été refusé ; le lot s'est terminé seul.
+
+**Tâches locales relancées seules** vers 21:08, avec une attente de verrou portée à 900 s, le verrou étant repris à 21:06:01 par EA MT5.
+
+**Embeddings** : reconstruction locale par nomic-embed-text, 42 016 fragments à 21:02 sur environ 62 500.
+
+**Rituel** : `nexus_valide` est différé jusqu'à la fin de la reconstruction des embeddings, parce que la validation réécrit l'arbre vivant pendant qu'elle tourne.
+
+**Délégué ce tour** : onze tâches au banc, dont deux locales. **Arbitré ici** : tri du lot 66, contre-épreuves, non-adoption de l'outil de prémâché d'EA, cible du plan unique.
