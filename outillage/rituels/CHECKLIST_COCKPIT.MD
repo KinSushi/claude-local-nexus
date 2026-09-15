@@ -29223,3 +29223,33 @@ Aucune fuite vers main : lignes fictives du vrai journal et `core.hooksPath` inc
 **Coordination** : EA a relevé par `/api/show` que qwen3.6:27b et qwen3.6:27b-coding ont les mêmes poids, et a remesuré que `treyleo16/gpt-5-6-sol` est distant. EA signale un piège : sous Windows, `subprocess.run(input=texte, encoding=...)` écrit l'entrée en CRLF, et `git check-ignore --stdin` ne reconnaît plus le chemin ; il faut passer des octets. SAS a mesuré que deepseek-v4-pro refuse tout max_tokens au-delà de 65 536 par un 400 avant génération. Mon second lot local risque de prendre le verrou avant les créneaux promis à SAS et EA ; les deux sont prévenus.
 
 **Délégué** : onze rendus cloud et quatre audits locaux (vague 76), quinze tâches (vague 77). **Arbitré ici** : tri, mesures directes à deux processus, vérification des audits dans le code, lecture de SAS-BENCHMARK, spécification de l'exposition.
+
+### Tour 2026-09-15 (00:25-00:40) — tri de la vague 77, duel local en cours, vague 78 frappée
+
+**Vague 77 triée** :
+
+| rendu | verdict mesuré |
+| --- | --- |
+| porte de commit v4 | les codes de règle sortent enfin (F401 présent), index intact ; dérogation code 0 et journal |
+| épreuve de la porte, décodage | 7 OK sur l'outil corrigé, 1 RATE sur l'outil d'origine : discriminante |
+| extracteur, sauts de ligne | plus d'antislash-n littéral ni de code inventé ; épreuve 5 OK, contre-épreuve 1 RATE |
+| état du quota sans reprise | sur la même entrée, la consommation d'une fenêtre sans reprise passe de 0,0 à 2,0 dollars ; épreuve v6 15 OK |
+| disjoncteur, ruff | refusé : l'ancre `import datetime` figure trois fois |
+| épreuve de concurrence v2 | plante : import `scripts.nexus_disjoncteur` sans la racine dans le chemin |
+| épreuve du journal v3 | plante : racine remontée de deux niveaux |
+| épreuve d'état du quota, ruff | refusé : ancre présente cinq fois, imposée par mon générateur sans vérifier son unicité |
+| épreuve de l'indice v3 | cas B toujours raté ; mesure directe : un APRÈS identique à l'AVANT est refusé avant tout indice |
+| outil d'exposition, constat | code 2 sur la vraie machine : adresse `host.docker.internal` injoignable depuis l'hôte, `/api/show` appelé en GET au lieu d'un POST |
+| épreuve de l'exposition | 2 OK, 5 RATE : elle ne désigne jamais ses faux serveurs à l'outil |
+
+**Audit tiers du disjoncteur par gpt-oss-120b, vérifié dans le code** : une vraie régression retenue, le premier échec d'une cible inconnue n'est plus compté ni journalisé ; `_persist`, muet et sans appelant, retenu comme piège ; le forçage d'écriture après 10 s de verrou est un compromis de conception noté ; deux trouvailles rejetées, la relecture étant voulue par le contrat et l'initialisation réservée aux cibles nouvelles.
+
+**Mécanisation apprise** : le générateur de la vague 78 calcule chaque ancre imposée par une recherche de fenêtre unique, au lieu de la supposer. Son autocontrôle a d'abord bloqué la vague sur une fenêtre introuvable à six lignes, levée en l'élargissant à douze.
+
+**Duel local contre cloud, en cours** : l'audit du disjoncteur sur glm-4.7-flash-local a épuisé son raisonnement à 8 000 jetons (raisonnement_29248) après environ onze minutes, sans rendu ; le même audit au cloud a rendu en moins d'une minute, avec une régression réelle. Les deux patchs en duel sont en cours.
+
+**Mesures relayées par SAS** : sur l'index verbatim, glm-5.3-cloud a rendu 145 réponses vides sur 195 appels et glm-4.7-flash-local 100 sur 148, causes non distinguées ; le motif « reponse vide » n'écrit pas `cause_vide`, d'où une tâche de la vague 78.
+
+**Vague 78 frappée à 00:36** : douze tâches cloud. Disjoncteur : cible inconnue, `_persist`, ruff. Deux épreuves du disjoncteur. Épreuve d'état du quota à fenêtres calculées. Épreuve de l'indice. Outil d'exposition et son épreuve, avec un contrat commun des adresses. Installateur. Cause du vide dans le motif de l'agent. Trois audits tiers avant le rapatriement de la porte, de l'extracteur et du quota.
+
+**Délégué** : douze rendus cloud (vague 77), trois tâches en duel local, douze tâches (vague 78). **Arbitré ici** : tri, mesures directes, vérification de l'audit dans le code, calcul des ancres.
