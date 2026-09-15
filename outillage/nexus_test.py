@@ -1430,6 +1430,9 @@ def main() -> int:
     if args.only in (None, "veille-moteur"):
         jouer_epreuve_python("epreuve_veille_moteur.py",
                              "veille du moteur Ollama : runner coince, sonde, verdict, relance")
+    if args.only in (None, "veille-double-serve"):
+        jouer_epreuve_python("epreuve_veille_double_serve.py",
+                             "relance du moteur : jamais un second ollama serve quand l application vit")
     if args.only in (None, "veille-sonde-contexte"):
         jouer_epreuve_python("epreuve_veille_sonde_contexte.py",
                              "sonde de la veille au contexte du residant : num_ctx lu, sonde sautee sans contexte")
