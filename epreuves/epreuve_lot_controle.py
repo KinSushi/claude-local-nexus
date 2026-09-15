@@ -254,8 +254,9 @@ def main() -> int:
             text=True,
             timeout=30,
             encoding="utf-8",
+            errors="replace",
         )
-        output_combined = result_arreter.stdout + result_arreter.stderr
+        output_combined = (result_arreter.stdout or "") + (result_arreter.stderr or "")
         rc_ok = result_arreter.returncode != 0
         pid_epoch_present = "<pid>-<epoch>" in output_combined
         no_argparse_error = "error: the following arguments are required" not in output_combined
@@ -270,6 +271,7 @@ def main() -> int:
             text=True,
             timeout=30,
             encoding="utf-8",
+            errors="replace",
         )
         ok &= check("reverse_cli_etat_code", result_etat.returncode == 0, f"rc={result_etat.returncode}")
     except subprocess.TimeoutExpired:

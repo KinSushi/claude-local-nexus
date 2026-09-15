@@ -26,9 +26,14 @@ import os
 import re
 import json
 import time
+import sys
 from datetime import datetime
 from typing import Dict, Any, Optional, Callable
 from contextlib import suppress
+
+with suppress(Exception):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # Constante pour valider le format du lot_id
 LOT_ID = re.compile(r"^\d+-\d+$")
