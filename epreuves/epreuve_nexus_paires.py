@@ -15,6 +15,7 @@ import contextlib
 import io
 import sys
 import shutil
+import subprocess
 import tempfile
 import importlib.util
 from pathlib import Path
@@ -205,6 +206,85 @@ def lancer_cas():
             all_ok &= _ok(ok_ret and ok_o and ok_n, "S4", mesure)
         except Exception as exc:
             all_ok &= _ok(False, "S4", f"exception : {exc}")
+
+        # ------------------------------------------------------------------
+        # Cas H1 – forward sync (scripts modify, outillage should follow)
+        # ------------------------------------------------------------------
+        try:
+            depot = tempfile.mkdtemp()
+            subprocess.run(['git','init'], cwd=depot, capture_output=True, check=True)
+            subprocess.run(['git','config','user.email','e@e'], cwd=depot, check=True)
+            subprocess.run(['git','config','user.name','e'], cwd=depot, check=True)
+            (Path(depot)/'scripts').mkdir()
+            (Path(depot)/'outillage').mkdir()
+            # contenu avec au moins trois lignes longues (>12 caractères)
+            contenu = (
+                "def fonction_très_longue(parametre):\n"
+                "    return parametre * 2\n"
+                "# commentaire très long pour dépasser douze caractères\n"
+            )
+            (Path(depot)/'scripts'/'m.py').write_text(contenu, encoding='utf-8')
+            (Path(depot)/'outillage'/'m.py').write_text(contenu, encoding='utf-8')
+            subprocess.run(['git','add','.'], cwd=depot, capture_output=True, check=True)
+            subprocess.run(['git','commit','-m','init'], cwd=depot, capture_output=True, check=True)
+            # modifier le script source
+            nouveau = contenu.replace('return parametre * 2', 'return parametre * 3')
+            (Path(depot)/'scripts'/'m.py').write_text(nouveau, encoding='utf-8')
+            ok_sync, lignes = mod.synchroniser(Path(depot), 'm')
+            out_eq = (Path(depot)/'outillage'/'m.py').read_text(encoding='utf-8') == nouveau
+            mesure = f"H1 sync={ok_sync}; out_eq_src={out_eq}"
+            all_ok &= _ok(ok_sync and out_eq, "H1", mesure)
+        except Exception as exc:
+            all_ok &= _ok(False, "H1", f"exception : {exc}")
+        finally:
+            shutil.rmtree(depot, ignore_errors=True)
+
+        # ------------------------------------------------------------------
+        # Cas H2 – reverse sync (outillage gets clean line, source also changes)
+        # ------------------------------------------------------------------
+        try:
+            depot = tempfile.mkdtemp()
+            subprocess.run(['git','init'], cwd=depot, capture_output=True, check=True)
+            subprocess.run(['git','config','user.email','e@e'], cwd=depot, check=True)
+            subprocess.run(['git','config','user.name','e'], cwd=depot, check=True)
+            (Path(depot)/'scripts').mkdir()
+            (Path(depot)/'outillage').mkdir()
+            (Path(depot)/'scripts'/'m.py').write_text(contenu, encoding='utf-8')
+            (Path(depot)/'outillage'/'m.py').write_text(contenu, encoding='utf-8')
+            subprocess.run(['git','add','.'], cwd=depot, capture_output=True, check=True)
+            subprocess.run(['git','commit','-m','init'], cwd=depot, capture_output=True, check=True)
+            # ajouter une ligne propre dans la copie outillage
+            (Path(depot)/'outillage'/'m.py').write_text(contenu + "ligne_propre = 99\n", encoding='utf-8')
+            # modifier le script source
+            nouveau_src = contenu.replace('return parametre * 2', 'return parametre * 4')
+            (Path(depot)/'scripts'/'m.py').write_text(nouveau_src, encoding='utf-8')
+            ok_sync, lignes = mod.synchroniser(Path(depot), 'm')
+            garde_propre = "ligne_propre = 99" in (Path(depot)/'outillage'/'m.py').read_text(encoding='utf-8')
+            mesure = f"H2 sync={ok_sync}; lignes={lignes}; clean_kept={garde_propre}"
+            all_ok &= _ok(not ok_sync and bool(lignes) and garde_propre, "H2", mesure)
+        except Exception as exc:
+            all_ok &= _ok(False, "H2", f"exception : {exc}")
+        finally:
+            shutil.rmtree(depot, ignore_errors=True)
+
+        # ------------------------------------------------------------------
+        # Cas H3 – dégradation (pas de dépôt git)
+        # ------------------------------------------------------------------
+        try:
+            depot = tempfile.mkdtemp()
+            (Path(depot)/'scripts').mkdir()
+            (Path(depot)/'outillage').mkdir()
+            (Path(depot)/'scripts'/'m.py').write_text(contenu, encoding='utf-8')
+            (Path(depot)/'outillage'/'m.py').write_text(contenu + "ligne_propre = 123\n", encoding='utf-8')
+            src_last = mod.source_au_dernier_commit(Path(depot), 'm.py')
+            ok_none = src_last is None
+            ok_sync, lignes = mod.synchroniser(Path(depot), 'm')
+            mesure = f"H3 src_none={ok_none}; sync={ok_sync}; lignes={lignes}"
+            all_ok &= _ok(not ok_sync and ok_none and bool(lignes), "H3", mesure)
+        except Exception as exc:
+            all_ok &= _ok(False, "H3", f"exception : {exc}")
+        finally:
+            shutil.rmtree(depot, ignore_errors=True)
 
         # ------------------------------------------------------------------
         # Cas L1 – lignes_propres(['    )'], [])

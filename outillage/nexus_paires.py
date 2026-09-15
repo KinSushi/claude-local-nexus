@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -92,6 +93,21 @@ def lignes_propres(copie: List[str], source: List[str], seuil: int = 12) -> List
             propres.append(stripped)
     return propres
 
+def source_au_dernier_commit(racine: Path, fichier: str) -> bytes | None:
+    """Retourne le contenu du fichier source au dernier commit, ou None."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(racine), "show", f"HEAD:scripts/{fichier}"],
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode == 0:
+            return normaliser(result.stdout)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
 
 def synchroniser(racine: Path, nom: str, forcer: bool = False) -> Tuple[bool, List[str]]:
     """Synchronise le fichier ``scripts/<nom>.py`` vers ``outillage/<nom>.py``.
@@ -128,6 +144,11 @@ def synchroniser(racine: Path, nom: str, forcer: bool = False) -> Tuple[bool, Li
     src_lines = src_text.splitlines()
 
     propres = lignes_propres(dst_lines, src_lines)
+    # Mesure du 2026-09-15 : ajustement du comportement en présence de lignes propres
+    if propres and not forcer:
+        copie_normalisee = _contenu_normalise(dst_path)
+        if copie_normalisee is not None and copie_normalisee == source_au_dernier_commit(racine, fichier):
+            propres = []
 
     # Décision de copie
     if forcer or not propres:
