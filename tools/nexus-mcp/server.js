@@ -419,6 +419,52 @@ const LIBELLE_PLAN = {
   routeur: "routeur",
 };
 
+function texteDegenere(texte) {
+    // hypothèse non mesurée
+    const MIN_COVERAGE_LENGTH = 200;
+    // hypothèse non mesurée
+    const MIN_REPEAT_COUNT = 8;
+    // hypothèse non mesurée
+    const MAX_PATTERN_LENGTH = 50;
+
+    if (typeof texte !== "string") return false;
+    for (let period = 1; period <= MAX_PATTERN_LENGTH; period++) {
+        if (texte.length < period) continue;
+        const motif = texte.slice(-period);
+        let n = 1;
+        let debut = texte.length - period;
+        while (debut - period >= 0 && texte.slice(debut - period, debut) === motif) {
+            n += 1;
+            debut -= period;
+        }
+        if (n >= MIN_REPEAT_COUNT && n * period >= MIN_COVERAGE_LENGTH) return true;
+    }
+    return false;
+}
+
+function longueurBoucleFinale(texte) {
+    // hypothèse non mesurée
+    const MIN_COVERAGE_LENGTH = 200;
+    // hypothèse non mesurée
+    const MIN_REPEAT_COUNT = 8;
+    // hypothèse non mesurée
+    const MAX_PATTERN_LENGTH = 50;
+
+    if (typeof texte !== "string") return 0;
+    for (let period = 1; period <= MAX_PATTERN_LENGTH; period++) {
+        if (texte.length < period) continue;
+        const motif = texte.slice(-period);
+        let n = 1;
+        let debut = texte.length - period;
+        while (debut - period >= 0 && texte.slice(debut - period, debut) === motif) {
+            n += 1;
+            debut -= period;
+        }
+        if (n >= MIN_REPEAT_COUNT && n * period >= MIN_COVERAGE_LENGTH) return n * period;
+    }
+    return 0;
+}
+
 function planOf(alias) {
   if (!alias) return "plan inconnu";
   // Un plan inconnu honnete vaut mieux qu'une affirmation de confidentialite
@@ -3029,6 +3075,11 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     const result = await chat(model, messages, maxTokens, undefined, undefined, options);
     const kb = Math.round(taille / 1024);
     const coupe = mentionsReponse(result);
+    if (texteDegenere(result.text)) {
+        const boucle = longueurBoucleFinale(result.text);
+        const prefixe = result.text.slice(0, -boucle).slice(0, 1500);
+        return `REPONSE DEGENEREE [${result.model} · ${planOf(result.model)}] : boucle finale de ${boucle} caractères ; relancer avec raisonnement=false ou un autre modèle de vision\n\n${prefixe}`;
+    }
     if (!result.text?.trim()) {
       return `REPONSE VIDE apres raisonnement — relancer avec raisonnement=false ou max_tokens plus grand\n[${result.model} · ${planOf(result.model)} · image ${kb} Ko${coupe}]`;
     }

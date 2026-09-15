@@ -83,6 +83,11 @@ def _build_node_script(func_src: str) -> str:
         ("forward_long_repeat", json.dumps(forward_str), True),
         ("reverse_long_varied", json.dumps(reverse_str), False),
         ("threshold_150_repeat", json.dumps(threshold_str), False),
+        ("prefixe_puis_boucle", json.dumps("La prose française, avec ses nuances et ses subtilités, offre un terrain fertile pour l'analyse des répétitions textuelles. En effet, un texte dégénéré se caractérise souvent par des motifs répétitifs qui, lorsqu'ils dépassent un certain seuil, trahissent une absence de variété sémantique ou syntaxique. Ce phénomène peut être observé dans divers contextes, allant des discours politiques aux textes publicitaires, en passant par les contenus générés automatiquement. L'étude de ces répétitions permet non seulement de détecter des anomalies, mais aussi de comprendre les mécanismes sous-jacents à la production de textes. Cependant, il est crucial de distinguer les répétitions intentionnelles, qui peuvent servir un but stylistique ou rhétorique, des répétitions involontaires, souvent symptomatiques d'une dégénérescence textuelle. Dans cette optique, l'analyse doit prendre en compte la longueur des motifs, leur fréquence, ainsi que leur distribution au sein du texte." + "1. " * 80), True),
+        ("prose_variee_longue", json.dumps("L'histoire des civilisations est marquée par des périodes de transformation profonde, où les structures sociales, politiques et culturelles évoluent sous l'effet de forces internes et externes. Ces mutations, souvent lentes et imperceptibles à l'échelle d'une génération, finissent par redéfinir les contours d'une société. Par exemple, la Renaissance en Europe a vu émerger une nouvelle vision de l'homme et du monde, fondée sur la redécouverte des textes antiques et l'essor des sciences. De même, la révolution industrielle a bouleversé les modes de production et les rapports sociaux, entraînant des changements radicaux dans les villes et les campagnes. Ces transitions ne sont jamais linéaires : elles sont jalonnées de résistances, de conflits et d'adaptations qui en complexifient la compréhension. Ainsi, étudier ces périodes de transition permet de saisir la dynamique des sociétés humaines, tout en soulignant l'importance des contextes historiques et géographiques dans leur évolution. Les outils d'analyse contemporains, qu'ils soient quantitatifs ou qualitatifs, offrent des perspectives nouvelles pour appréhender ces phénomènes, mais ils doivent être utilisés avec rigueur pour éviter les généralisations hâtives ou les interprétations anachroniques."), False),
+        ("fin_huit_tirets", json.dumps("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.--------"), False),
+        ("motif_51_repete", json.dumps("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy" * 10), False),
+        ("motif_3_couvre_240", json.dumps("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor." + "ab " * 80), True),
         ("empty_string", json.dumps(""), False),
         ("null_input", "null", False),
     ]
@@ -90,8 +95,10 @@ def _build_node_script(func_src: str) -> str:
     lines = [func_src, "\n"]
     for name, arg_js, expected in cases:
         lines.append(
+            f"{{"
             f"let __res = texteDegenere({arg_js});"
             f"console.log(JSON.stringify({{name: '{name}', result: !!__res, expected: {str(expected).lower()}}}));"
+            f"}}"
         )
     return "\n".join(lines)
 
@@ -131,7 +138,8 @@ def main() -> int:
         return 1
 
     if proc.returncode != 0:
-        ok &= _print_result("node retour non‑zéro", False, f"code={proc.returncode}")
+        stderr_normalized = " ".join(proc.stderr[:300].split())
+        ok &= _print_result("node retour non‑zéro", False, f"code={proc.returncode} stderr={stderr_normalized}")
         return 1
 
     # 6️⃣ Analyse des résultats
