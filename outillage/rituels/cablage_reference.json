@@ -10,7 +10,6 @@
       "epreuves/epreuve_cles_only.py",
       "outillage/nexus_armer_hook.py",
       "outillage/nexus_avant_apres.py",
-      "outillage/nexus_checklist_progres.py",
       "outillage/nexus_decouper_livres.py",
       "outillage/nexus_extraire_livres.py",
       "outillage/nexus_filet.py",

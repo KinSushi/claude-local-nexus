@@ -1652,8 +1652,6 @@ def main() -> int:
         jouer_epreuve_python("epreuve_poser_socle.py", "poser socle : merge_permissions (fusion sans doublon, neuf refus, cible None)")
     if args.only in (None, "ombre"):
         jouer_epreuve_python("epreuve_ombre.py", "ombre : build_marker, extract_blocks, count_anchor, simulate_replacement (marqueurs par concatenation)")
-    if args.only in (None, "checklist-progres"):
-        jouer_epreuve_python("epreuve_checklist_progres.py", "checklist progres : lire_regressions (compte, aucune -> 0, inconnu)")
     if args.only in (None, "indexer-texte"):
         jouer_epreuve_python("epreuve_indexer_texte.py", "indexer texte : _slugify (slug, sentinelle unknown, entier refuse)")
     if args.only in (None, "migration-plan"):
