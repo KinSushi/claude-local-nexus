@@ -874,7 +874,10 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature, options)
   let semaphoreAcquired = false;
   if (isCloud) {
     const classeSem = process.env.NEXUS_CLOUD_SEMAPHORE_CLASSE || "cloud";
-    const n = (typeof NEXUS_CLOUD_CONCURRENCE === 'number' && NEXUS_CLOUD_CONCURRENCE > 0) ? NEXUS_CLOUD_CONCURRENCE : 10;
+    // La règle de calcul doit rester identique à celle de scripts/nexus_agent.py :
+    // lire la variable d'environnement NEXUS_CLOUD_CONCURRENCE, la convertir en entier strictement positif, sinon 10.
+    const envVal = Number.parseInt(process.env.NEXUS_CLOUD_CONCURRENCE, 10);
+    const n = (Number.isInteger(envVal) && envVal > 0) ? envVal : 10;
     try {
       verrou = await tenirVerrou(classeSem, { semaphore: n });
       semaphoreAcquired = true;
@@ -3071,7 +3074,6 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
       ],
     }];
     const options = args.raisonnement === false ? { think: false } : undefined;
-    const corps = { model, messages, ...(options || {}) };
     const result = await chat(model, messages, maxTokens, undefined, undefined, options);
     const kb = Math.round(taille / 1024);
     const coupe = mentionsReponse(result);
