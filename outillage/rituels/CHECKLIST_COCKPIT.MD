@@ -29297,4 +29297,10 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 
 **Porte absente, trouvée par l'usage** : `epreuve_paires_copiees` RATE sur CINQ paires divergentes (`nexus_agent`, `nexus_capability`, `nexus_disjoncteur`, `nexus_verbatim`, `nexus_verrou_machine`) et personne ne l'a vu : la vitrine joue `nexus_test` en AVERTISSEMENT seulement, le rituel ne la joue pas. Le contrôle existe et détecte ; rien ne refuse. `epreuve_journal_disjoncteur` éprouve la copie périmée.
 
+**Audit tiers (LOI 1, temps 3)** : `nexus_valide.py --base 9dda9d6` — « Aucune regression detectee, juge par le banc gratuit (12 fonctions touchees) », code 0, sur `659b8e8`, `8dd157e`, `2807d3a`, `009d8f3`. Il a fallu trois lancements, et les deux premiers sont deux défauts de l'outil trouvés par l'usage :
+- **vert sur rien** : un seul fichier non suivi (`*.avant-remplacement`) suffit pour que `--base` soit ignoré en silence ; le diff non commité filtré est vide, et l'outil rend « Aucun changement a juger », code 0. Un audit qui n'a rien lu se lit comme un audit passé ;
+- **fichier régénéré non écarté** : `--base e92e8aa` refusé, code 2, sur le diff de `outillage/rituels/BOUSSOLE.csv` (67 145 caractères, plafond 32 000). Un état dérivé ne devrait jamais entrer dans le jugement.
+
+**Ouverts, à déléguer** : ces deux défauts de `nexus_valide` ; la porte des paires copiées ; `nexus_creer --remplacer` qui imprime « git ls-files a échoué : WinError 123 » ; `nexus_agent.py` sans argument rend 0 en silence.
+
 **Ouverts** : un appel `nexus_agent.py` sans argument rend 0 en silence ; `epreuve_agent_familles` compte OK un cas « fuite_no_tracabilite : TRACABILITE détecté » (libellé contradictoire, à auditer) ; rejeu `--depuis-jsonl` sans `--tache` inatteignable.
