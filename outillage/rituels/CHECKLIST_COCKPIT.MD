@@ -29253,3 +29253,28 @@ Aucune fuite vers main : lignes fictives du vrai journal et `core.hooksPath` inc
 **Vague 78 frappée à 00:36** : douze tâches cloud. Disjoncteur : cible inconnue, `_persist`, ruff. Deux épreuves du disjoncteur. Épreuve d'état du quota à fenêtres calculées. Épreuve de l'indice. Outil d'exposition et son épreuve, avec un contrat commun des adresses. Installateur. Cause du vide dans le motif de l'agent. Trois audits tiers avant le rapatriement de la porte, de l'extracteur et du quota.
 
 **Délégué** : douze rendus cloud (vague 77), trois tâches en duel local, douze tâches (vague 78). **Arbitré ici** : tri, mesures directes, vérification de l'audit dans le code, calcul des ancres.
+
+### Tour 2026-09-15 (00:40-01:00) — tris des vagues 78 et 79, duel local jugé, trouvailles d'audit vérifiées
+
+**Duel local contre cloud jugé** (consigne de l'opérateur « les modèles locaux sont aussi bons que le cloud », mesurée sur les mêmes consignes et les mêmes épreuves) :
+
+| tâche | glm-4.7-flash-local | cloud |
+| --- | --- | --- |
+| audit tiers du disjoncteur | raisonnement épuisé à 8 000 jetons après onze minutes, aucun rendu | 15 s, six trouvailles dont une vraie régression |
+| nettoyage de l'extracteur | 299 s, pose refusée (ancre introuvable) | 6 s, posé, épreuve 5 OK, contre-épreuve discriminante |
+| correctif d'épreuve du quota | aucun rendu | refusé, par une ancre que j'imposais à tort |
+
+Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteur local. Un duel sur une seule famille ne tranche pas pour toutes : le prochain prend une MoE rapide mesurée par SAS-BENCHMARK, avec un budget d'au moins 16 000 jetons.
+
+**Prouvés par mesure directe et épreuve discriminante** :
+- porte de commit : fichier fautif refusé avec son code de règle et index intact ; dérogation code 0 et journal JSON ; hors dépôt, code 2 et message clair ; épreuve 7 OK, 1 RATE sur l'outil d'origine ;
+- épreuve de l'indice de `nexus_appliquer` : 4 OK sur l'outil corrigé, 4 RATE sur l'outil de main ;
+- quota : sur la même entrée, la consommation depuis la reprise passe de 0,0 à 2,0 dollars une fois la reprise elle-même comptée ; épreuve du quota à ruff zéro.
+
+**Trouvailles d'audit tiers vérifiées dans le code** : porte de commit, quatre retenues (racine non contrôlée, appel git doublé par fichier, variable mal nommée, journal ambigu) et corrigées ; extracteur, deux retenues (sonde limitée aux premières pages, contenu de sauvegarde non vérifié), l'ordre des sauts de ligne rejeté à la lecture ; quota, deux retenues (repli de date à « maintenant », reprise non comptée), le code de l'état TENDU rejeté car conforme à la docstring ; motif du vide, une retenue sur cinq (`_journal_echec` garde l'ancien format court).
+
+**Refusés ou faux, causes mesurées** : disjoncteur, fenêtre du `elif` imposée sans la ligne du `if` imbriqué, le bloc est revenu identique ; sonde répartie de l'extracteur, rendu syntaxiquement invalide ; contrôle du contenu de sauvegarde, inversé (rate sur l'outil juste, passe sur le défaut injecté) ; épreuve de l'installateur, cas F et G faux alors que la mesure directe donne les codes du contrat ; outil d'exposition v3, modèles déclarés en `:latest` pris pour des doublons d'eux-mêmes, modèle distant écarté avant la décision par `discover_local`, sortie JSON polluée par ses avertissements ; son épreuve rend presque partout une sortie vide. Mon contrôle anti-copie a signalé à tort la fonction `main` d'une épreuve : faux positif de mon propre outil.
+
+**Rapatriement préparé** : bases mesurées (w64 et w64t en retard de 13 commits sur main, w76 de 2) ; seul fichier modifié entre-temps sur main, `scripts/nexus_agent.py` : le rapatriement passera par un diff appliqué avec git, jamais par copie. Groupes : porte de commit complète avec son installateur et son câblage à la suite ; indice d'`appliquer` après son audit tiers ; quota après la mise à jour de l'attendu du cas A.
+
+**Délégué** : douze rendus (vague 78), treize rendus (vague 79), trois tâches en duel local. **Arbitré ici** : deux tris, vérification de quinze trouvailles d'audit dans le code, contrat d'exposition, bases des worktrees.
