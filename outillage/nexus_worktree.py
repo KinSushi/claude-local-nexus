@@ -522,7 +522,7 @@ def main() -> int:
         retenus = [r for r in resultats if r[2] == 0]
         print("  %d fichier(s) traites, %d proposition(s) exploitables"
               % (len(resultats), len(retenus)))
-        for cible, nom, code in resultats:
+        for cible, _nom, code in resultats:
             print("    %-40s %s" % (cible, "retenue" if code == 0 else "sans suite"))
         if retenus:
             print("\n  Examiner puis retenir :")

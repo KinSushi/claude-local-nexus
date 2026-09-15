@@ -48,7 +48,7 @@ def main():
         ok &= check("famille_de_absente", False, "fonction manquante")
         sys.exit(1)
 
-    famille_de = getattr(module, "famille_de")
+    famille_de = module.famille_de
 
     # ------------------------------------------------------------------
     # 2. Cas forward – les alias doivent appartenir à la même famille.

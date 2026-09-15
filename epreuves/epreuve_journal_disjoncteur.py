@@ -68,6 +68,11 @@ def main():
             )
         if not entree.get("motif"):
             fautes.append(f"{cible} : motif vide, le POURQUOI est perdu")
+        # Vérifier que le motif injecté apparaît bien dans le journal si le motif injecté n'est pas vide
+        if motif and motif not in str(entree.get("motif", "")):
+            fautes.append(
+                f"{cible} : motif '{entree.get('motif')}' ne porte pas le motif injecte '{motif}'"
+            )
         for champ in ("le", "echecs", "etat"):
             if champ not in entree:
                 fautes.append(f"{cible} : champ '{champ}' absent")
