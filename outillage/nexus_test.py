@@ -1433,6 +1433,9 @@ def main() -> int:
     if args.only in (None, "veille-double-serve"):
         jouer_epreuve_python("epreuve_veille_double_serve.py",
                              "relance du moteur : jamais un second ollama serve quand l application vit")
+    if args.only in (None, "taches"):
+        jouer_epreuve_python("epreuve_taches.py",
+                             "registre des taches : schema ferme, etat derive d une preuve, cache par HEAD, aucune fuite")
     if args.only in (None, "veille-sonde-contexte"):
         jouer_epreuve_python("epreuve_veille_sonde_contexte.py",
                              "sonde de la veille au contexte du residant : num_ctx lu, sonde sautee sans contexte")
