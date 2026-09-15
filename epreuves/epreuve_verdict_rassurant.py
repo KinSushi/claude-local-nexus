@@ -56,10 +56,11 @@ def _run_test():
     )
     try:
         mod.free_plan_judgment = _fake_free_plan_judgment
+        # depuis 41400b2 un diff n'est juge que s'il reste des fichiers .py/.ps1 ; le faux perimetre en fournit un
         mod.get_modified_files_uncommitted = lambda: []
-        mod.get_modified_files_from_base = lambda base: []
-        mod.get_diff_uncommitted = lambda: dummy_diff
-        mod.get_diff_from_base = lambda base: dummy_diff
+        mod.get_modified_files_from_base = lambda base: ["file.py"]
+        mod.get_diff_uncommitted = lambda fichiers=None: dummy_diff
+        mod.get_diff_from_base = lambda base, fichiers=None: dummy_diff
         mod.mechanical_battery = lambda modified: None
         mod.find_callers = lambda funcs: {}
 
