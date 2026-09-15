@@ -174,10 +174,9 @@ def paires_tenues(racine: Path) -> tuple[str, str]:
         first_line = result.stdout.splitlines()[0] if result.stdout else ''
         if result.returncode == 0:
             return (OK, first_line)
-        elif result.returncode == 1:
+        if result.returncode == 1:
             return (MANQUE, f"{first_line} : python outillage/nexus_paires.py --synchroniser")
-        else:
-            return (IGNORE, f"code retour {result.returncode}")
+        return (IGNORE, f"code retour {result.returncode}")
     except Exception as e:
         return (IGNORE, str(e))
 
