@@ -185,13 +185,47 @@ def main():
             print("REFUS : le bloc %d a un texte APRES identique à AVANT ; aucun changement réel." % idx)
             return 1
 
+    # Helper : compter les occurrences « bornées » d'un texte AVANT.
+    def _compter_occurrences_borne(texte: str, avant: str):
+        """Retourne (nb_borne, start_mal, end_mal, ligne_exemple|None)."""
+        pos = 0
+        nb_borne = 0
+        start_mal = False
+        end_mal = False
+        while True:
+            idx = texte.find(avant, pos)
+            if idx == -1:
+                break
+            debut_ok = idx == 0 or texte[idx - 1] == "\n"
+            fin_ok = idx + len(avant) == len(texte) or texte[idx + len(avant)] == "\n"
+            if debut_ok and fin_ok:
+                nb_borne += 1
+            else:
+                if not debut_ok:
+                    start_mal = True
+                if not fin_ok:
+                    end_mal = True
+            pos = idx + 1
+        # recherche d'une ligne exacte (sans espaces de tête) si possible
+        avant_stripped = avant.lstrip()
+        lignes = texte.splitlines()
+        matches = [ln for ln in lignes if ln.lstrip() == avant_stripped]
+        ligne_ex = matches[0] if len(matches) == 1 else None
+        return nb_borne, start_mal, end_mal, ligne_ex
+
     # Verification de chaque bloc AVANT
     for idx, (avant, _) in enumerate(blocs, start=1):
-        occ = src.count(avant)
-        if occ != 1:
-            print("REFUS : le bloc %d doit etre unique et reel. Occurrences trouvees : %d" % (idx, occ))
-            print("--- ce que le banc a cru trouver ---")
-            print(avant[:400])
+        nb_borne, start_mal, end_mal, ligne_ex = _compter_occurrences_borne(src, avant)
+        if nb_borne == 1:
+            pass
+        elif nb_borne == 0 and (start_mal or end_mal):
+            msg = "ne commence pas en debut de ligne" if start_mal else "ne finit pas en fin de ligne"
+            print(f"REFUS : le bloc {idx} doit etre unique et reel. {msg}")
+            if ligne_ex is not None:
+                print(f"la ligne reelle est : '{ligne_ex}'")
+            return 1
+        else:
+            print(f"REFUS : le bloc {idx} doit etre unique et reel. Occurrences trouvees : {nb_borne}")
             return 1
 
     # Application de tous les remplacements, avec RE-VERIFICATION a
@@ -206,11 +240,16 @@ def main():
     # patch plutot que d'en laisser une partie s'appliquer en silence.
     nouveau_src = src
     for idx, (avant, apres) in enumerate(blocs, start=1):
-        occ_cumul = nouveau_src.count(avant)
-        if occ_cumul != 1:
-            print("REFUS : le bloc %d chevauche un bloc deja applique (occurrences restantes : %d, attendu 1). Aucune ecriture effectuee." % (idx, occ_cumul))
+        nb_borne, start_mal, end_mal, ligne_ex = _compter_occurrences_borne(nouveau_src, avant)
+        if nb_borne == 1:
+            nouveau_src = nouveau_src.replace(avant, apres, 1)
+        elif nb_borne == 0 and (start_mal or end_mal):
+            msg = "ne commence pas en debut de ligne" if start_mal else "ne finit pas en fin de ligne"
+            print(f"REFUS : le bloc {idx} chevauche un bloc deja applique. {msg}")
             return 1
-        nouveau_src = nouveau_src.replace(avant, apres, 1)
+        else:
+            print(f"REFUS : le bloc {idx} chevauche un bloc deja applique. Occurrences restantes : {nb_borne}, attendu 1")
+            return 1
 
     # Verification syntaxique avant ecriture pour eviter de casser le fichier
     if cible_path.endswith(".py"):
