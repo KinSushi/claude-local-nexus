@@ -1411,6 +1411,12 @@ def main() -> int:
     if args.only in (None, "veille-sonde-contexte"):
         jouer_epreuve_python("epreuve_veille_sonde_contexte.py",
                              "sonde de la veille au contexte du residant : num_ctx lu, sonde sautee sans contexte")
+    if args.only in (None, "lot-controle"):
+        jouer_epreuve_python("epreuve_lot_controle.py",
+                             "controle de lot : arret cooperatif, sonde cloud, options de la ligne de commande")
+    if args.only in (None, "pont-sans-fenetre"):
+        jouer_epreuve_python("epreuve_pont_sans_fenetre.py",
+                             "pont : aucun lancement de processus ne peut ouvrir de fenetre de console")
     if args.only in (None, "charge-verdict"):
         jouer_epreuve_python("epreuve_charge_verdict.py",
                              "verdict de charge : grandeur et seuil nommes")

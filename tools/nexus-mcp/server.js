@@ -2673,6 +2673,10 @@ function deposerTrace(result, messages, plan, outil = null) {
             }
         }
 
+        // DETACHED_PROCESS pose DETACHED_PROCESS (0x08) qui force une console
+        // pour l'interpréteur Python enfant, visible sur le bureau.
+        // CREATE_NO_WINDOW (windowsHide) est ignoré avec DETACHED_PROCESS.
+        // stdio: "ignore" + child.unref() suffit à ne pas retenir le pont.
         const child = spawn(pythonRetenu || "python", [
             path.join(INSTALL_ROOT, "scripts", "nexus_deposer.py"),
             provisoirePath,
@@ -2681,7 +2685,7 @@ function deposerTrace(result, messages, plan, outil = null) {
             tache
         ], {
             env: { ...process.env, PYTHONIOENCODING: "utf-8" },
-            detached: true,
+            windowsHide: true,
             stdio: "ignore"
         });
 
@@ -2730,6 +2734,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
         // Une annulation ou une fermeture de stdin doit aussi arreter le
         // script : sinon il continue de lire la passerelle pour personne.
         signal: signalCourant(),
+        windowsHide: true,
       });
 
       const sortie = [];
@@ -3728,7 +3733,13 @@ async function tenirVerrou(classe, options = {}) {
       if (options && typeof options.semaphore === 'number' && options.semaphore > 0) {
         args.push('--semaphore', String(options.semaphore))
       }
-      child = spawn(python, args, { stdio: ['pipe', 'pipe', 'inherit'] })
+      child = spawn(python, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true
+      })
+      child.stderr.on('data', (data) => {
+        process.stderr.write(data)
+      })
     } catch (e) {
       log('Erreur lors du spawn du verrou :', e)
       // resolve avec relacher qui ne fait rien
