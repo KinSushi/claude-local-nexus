@@ -432,6 +432,10 @@ def etats_pour_rendu(
 
     resultat: list[tuple[Tache, str, str]] = []
     for t in taches:
+        # mesure du 2026-09-15 : une tache non mecanisable etait affichee non mesuree
+        if t.non_mecanisable:
+            resultat.append((t, "NON_MECANISABLE", t.non_mecanisable))
+            continue
         if head is not None and cache_head == head:
             v = cache_verdicts.get(t.id)
             if v:

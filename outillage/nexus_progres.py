@@ -25,6 +25,98 @@ import re
 import datetime
 import tempfile
 
+def _charger_taches(outillage_dir):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_nexus_taches_rendu",
+        os.path.join(outillage_dir, "nexus_taches.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def rendre_registre(taches_mod, chemin_registre, chemin_cache, head):
+    # mesure du 2026-09-15 : un chemin en chaine faisait lever is_file
+    from pathlib import Path
+    chemin_registre = Path(chemin_registre)
+    chemin_cache = Path(chemin_cache)
+    lines = []
+
+    if not os.path.exists(chemin_registre):
+        lines.append(f"- Registre absent : {chemin_registre}")
+        return lines
+
+    try:
+        etats = taches_mod.etats_pour_rendu(chemin_registre, chemin_cache, head)
+    except taches_mod.RegistreInvalide as e:
+        lines.append(f"- Registre illisible, ligne {e.ligne} : {e.message}")
+        return lines
+    except Exception as e:
+        lines.append(f"- Erreur lecture registre : {e}")
+        return lines
+
+    compte = {"A_FAIRE": 0, "FAIT": 0, "NON_MECANISABLE": 0,
+              "INCONNU": 0, "NON_MESURE": 0}
+    for _t, etat, _ in etats:
+        if etat in compte:
+            compte[etat] += 1
+
+    a_trancher = compte["NON_MECANISABLE"] + compte["INCONNU"]
+    lines.append(f"- A faire : {compte['A_FAIRE']} | Fait : {compte['FAIT']} | "
+                 f"A trancher : {a_trancher} | Non mesurees : {compte['NON_MESURE']}")
+
+    # ### A FAIRE
+    lines.append("### A FAIRE")
+    any_a_faire = False
+    for t, etat, raison in sorted(etats, key=lambda x: x[0].id):
+        if etat == "A_FAIRE":
+            any_a_faire = True
+            lines.append(f"- {t.id} {t.titre} (origine : {t.origine}) -- {raison}")
+    if not any_a_faire:
+        lines.append("- (aucune)")
+
+    # ### FAIT
+    lines.append("### FAIT")
+    any_fait = False
+    for t, etat, _ in sorted(etats, key=lambda x: x[0].id):
+        if etat == "FAIT":
+            any_fait = True
+            preuve_type = ""
+            cible = ""
+            if t.preuve:
+                preuve_type = t.preuve.get("type", "")
+                cible = t.preuve.get("cible", "")
+                cible = f" {cible}" if cible else ""
+            lines.append(f"- {t.id} {t.titre} -- preuve {preuve_type}{cible}")
+    if not any_fait:
+        lines.append("- (aucune)")
+
+    # ### A TRANCHER
+    lines.append("### A TRANCHER")
+    any_trancher = False
+    for t, etat, raison in sorted(etats, key=lambda x: x[0].id):
+        if etat in ("NON_MECANISABLE", "INCONNU"):
+            any_trancher = True
+            raison_aff = raison if raison else (t.non_mecanisable or "")
+            lines.append(f"- {t.id} {t.titre} -- {etat} : {raison_aff}")
+    if not any_trancher:
+        lines.append("- (aucune)")
+
+    # ### NON MESUREES
+    lines.append("### NON MESUREES")
+    any_nm = False
+    for t, etat, raison in sorted(etats, key=lambda x: x[0].id):
+        if etat == "NON_MESURE":
+            any_nm = True
+            lines.append(f"- {t.id} {t.titre} -- {raison}")
+    if not any_nm:
+        lines.append("- (aucune)")
+
+    return lines
+
+
 def main():
     # Racine derivee de __file__
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -98,8 +190,23 @@ def main():
         lines.append(f"- Erreur mesure mecanismes : {e}")
     lines.append("")
 
-    # QUATRE : Sujets Ouverts
-    lines.append("## SUJETS OUVERTS")
+    # QUATRE : Registre des taches (mesure du 2026-09-15 : le decompte des lignes du cockpit ne disait ni ce qui reste a faire ni ce qui est fait)
+    lines.append("## TACHES")
+    try:
+        taches_mod = _charger_taches(outillage_dir)
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root_dir,
+            stderr=subprocess.DEVNULL,
+            encoding="utf-8"
+        ).strip() or None
+    except Exception as e:
+        taches_mod, head = None, None
+        lines.append(f"- Registre non rendu : {e}")
+    if taches_mod is not None:
+        lines.extend(rendre_registre(taches_mod, taches_mod.REGISTRE, taches_mod.CACHE, head))
+    lines.append("")
+    lines.append("## SUJETS OUVERTS (cockpit)")
     try:
         checklist_path = os.path.join(root_dir, "outillage", "rituels", "CHECKLIST_COCKPIT.MD")
         if os.path.exists(checklist_path):
