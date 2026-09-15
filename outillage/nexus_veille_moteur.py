@@ -172,7 +172,8 @@ def relancer_moteur(racine):
 
     # Kill existing process
     subprocess.run(['taskkill', '/IM', 'ollama.exe', '/F', '/T'],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     time.sleep(3)
 
     # Prepare log directory

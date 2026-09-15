@@ -2591,7 +2591,8 @@ def test_doc_annexe() -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=300)
+                           errors="replace", timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check("doc annexe", False, "pas de reponse en 300 s")
         return
@@ -2625,7 +2626,8 @@ def test_doc_annexe() -> None:
                "--simuler"]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True,
-                               timeout=5)  # <1s pour 72 symboles
+                               timeout=5,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))  # <1s pour 72 symboles
         except subprocess.TimeoutExpired:
             check("indexeur forward", False,
                   "timeout après %d s" % 5)
@@ -2682,7 +2684,8 @@ def test_sonde_mcp() -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=300)
+                           errors="replace", timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check("sonde mcp", False, "pas de reponse en 300 s")
         return
@@ -3158,7 +3161,8 @@ def jouer_epreuve_python(fichier: str, etiquette: str) -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=300)
+                           errors="replace", timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check(etiquette, False, "pas de reponse en 300 s")
         return
@@ -3243,7 +3247,8 @@ def test_quota_partage() -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=420)
+                           errors="replace", timeout=420,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check("quota partage", False, "pas de reponse en 420 s")
         return
@@ -3289,7 +3294,8 @@ def test_cablage_epreuves() -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=300)
+                           errors="replace", timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check("cablage des epreuves", False, "pas de reponse en 300 s")
         return
@@ -3346,7 +3352,8 @@ def test_garde_plan_paye() -> None:
     try:
         r = subprocess.run([sys.executable, epreuve], cwd=ROOT,
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=300)
+                           errors="replace", timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         check("garde de plan", False, "pas de reponse en 300 s")
         return
@@ -3525,7 +3532,8 @@ def test_ruche() -> None:
                 [sys.executable, script_ruche, "--max-cibles", "2",
                  "--taille-lot", "2", "--essaims", "1", "--simuler",
                  "--tout-refaire"],
-                capture_output=True, text=True, timeout=60)
+                capture_output=True, text=True, timeout=60,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             check("--max-cibles borne le volume traite",
                   "Cibles traitees cette execution : 2" in result.stdout,
                   (result.stdout.strip().splitlines() or ["aucune sortie"])[-1])
@@ -3562,7 +3570,8 @@ def test_vitrine() -> None:
     # meme silence. L'epreuve injecte quatre faux secrets et exige de les voir.
     r = subprocess.run([sys.executable, racine_vitrine, "--epreuve"],
                        capture_output=True, text=True, timeout=120,
-                       encoding="utf-8", errors="replace")
+                       encoding="utf-8", errors="replace",
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     check("le detecteur de secrets detecte (4 cas + 1 texte anodin)",
           r.returncode == 0,
           (r.stdout.strip().splitlines() or ["aucune sortie"])[-1])
@@ -3573,13 +3582,14 @@ def test_vitrine() -> None:
     # « SIMULATION » sur un blocage. Un depot sale, en simulation, doit
     # s'annoncer REFUSE.
     with tempfile.TemporaryDirectory() as rep:
-        subprocess.run(["git", "init", "-q"], cwd=rep, timeout=60)
+        subprocess.run(["git", "init", "-q"], cwd=rep, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         with io.open(os.path.join(rep, "sale.txt"), "w", encoding="utf-8") as fh:
             fh.write("non commite\n")
         r = subprocess.run([sys.executable, racine_vitrine, "--simulation",
                             "--racine", rep, "--sauf-tests"],
                            capture_output=True, text=True, timeout=180,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         sortie = r.stdout or ""
         check("un blocage en simulation s'annonce REFUSEE, pas « passerait »",
               r.returncode == 1 and "REFUSEE" in sortie
@@ -3794,13 +3804,15 @@ def test_garde_lecture() -> None:
         return subprocess.run([sys.executable, script],
                               input=json.dumps(charge), capture_output=True,
                               text=True, encoding="utf-8", errors="replace",
-                              timeout=60, cwd=ROOT)
+                              timeout=60, cwd=ROOT,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
     def brut(entree):
         return subprocess.run([sys.executable, script], input=entree,
                               capture_output=True, text=True,
                               encoding="utf-8", errors="replace",
-                              timeout=60, cwd=ROOT)
+                              timeout=60, cwd=ROOT,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
     try:
         # 1. Le cas qui justifie tout le garde : ecrire sur ce qu'on n'a pas vu.
@@ -3925,7 +3937,8 @@ def test_garde_shell() -> None:
                              "tool_input": {"command": commande}})
         r = subprocess.run([sys.executable, garde], input=charge,
                            capture_output=True, text=True, timeout=60,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         return ("deny" in (r.stdout or "")), r.returncode
 
     cas = [
@@ -3965,7 +3978,8 @@ def test_garde_shell() -> None:
                         ("stdin vide => silence", "")):
         r = subprocess.run([sys.executable, garde], input=entree,
                            capture_output=True, text=True, timeout=60,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         check(nom, r.stdout == "" and r.returncode == 0,
               "rc=%s" % r.returncode)
 
@@ -3985,7 +3999,8 @@ def test_garde_shell() -> None:
             continue
         r = subprocess.run([sys.executable, chemin], cwd=ROOT,
                            capture_output=True, text=True, timeout=60,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         lignes = [x.strip() for x in (r.stdout or "").splitlines()
                   if "ECHEC" in x or "PLANTE" in x]
         detail = " | ".join(lignes[:2]) if lignes else "rc=%d" % r.returncode

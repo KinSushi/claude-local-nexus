@@ -39,7 +39,8 @@ OK, MANQUE, IGNORE = "OK", "MANQUE", "IGNORE"
 def racine_git() -> Path:
     """Racine découverte, jamais déclarée — la faute que ce dépôt combat."""
     r = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                       capture_output=True, text=True, timeout=30)
+                       capture_output=True, text=True, timeout=30,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     if r.returncode != 0 or not r.stdout.strip():
         raise RuntimeError("hors d'un depot git")
     return Path(r.stdout.strip())
@@ -49,7 +50,8 @@ def travail_commite(racine: Path) -> tuple[str, str]:
     """Rien ne doit rester non commité : un travail non commité est perdu."""
     try:
         r = subprocess.run(["git", "status", "--porcelain"], cwd=racine,
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, timeout=60,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if r.returncode != 0:
             raise RuntimeError("git status a echoue")
         lignes = [l for l in r.stdout.splitlines() if l.strip()]
@@ -99,7 +101,8 @@ def _frais(racine: Path, rel: str, absent: str) -> tuple[str, str]:
             return IGNORE, absent
         r = subprocess.run(["git", "log", "-1", "--format=%ct", "--",
                             "scripts/", "tools/"], cwd=racine,
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, timeout=60,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if r.returncode != 0 or not r.stdout.strip():
             return OK, "aucun changement de code a suivre"
         dernier = int(r.stdout.strip())
@@ -113,7 +116,8 @@ def _frais(racine: Path, rel: str, absent: str) -> tuple[str, str]:
         # la MEME horloge, celle de git, et sont donc comparables.
         rc = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
                             cwd=racine, capture_output=True, text=True,
-                            timeout=60)
+                            timeout=60,
+                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if rc.returncode == 0 and rc.stdout.strip():
             if int(rc.stdout.strip()) >= dernier:
                 return OK, "commite avec le code, ou apres lui"
@@ -171,7 +175,8 @@ def part_deleguee(racine: Path) -> tuple[str, str]:
         r = subprocess.run([sys.executable, "scripts/nexus_savings.py",
                             "--jours", "1", "--json"], cwd=racine,
                            capture_output=True, text=True, timeout=120,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if r.returncode != 0:
             raise RuntimeError("nexus_savings a rendu %s" % r.returncode)
         par_plan = json.loads(r.stdout).get("par_plan") or {}
@@ -228,6 +233,7 @@ def progres(racine: Path) -> tuple[str, str]:
             # a 13,7 s (commit f364f40). Sans borne ici, un planificateur
             # lent aurait emporte le rituel entier, et son verdict avec.
             encoding="utf-8", errors="replace", timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if res.returncode == 0:
             return OK, "PROGRESS.MD regenere"
@@ -258,6 +264,7 @@ def arbres_en_attente(racine: Path) -> tuple[str, str]:
         result = subprocess.run(
             cmd, cwd=str(racine), capture_output=True, text=True,
             timeout=120, encoding="utf-8", errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if result.returncode != 0:
             sortie = result.stderr.splitlines() or result.stdout.splitlines()
@@ -363,7 +370,8 @@ def cablage_tenu(racine: Path) -> tuple[str, str]:
     try:
         r = subprocess.run([sys.executable, "outillage/nexus_cablage.py"],
                            cwd=racine, capture_output=True, text=True,
-                           timeout=180, encoding="utf-8", errors="replace")
+                           timeout=180, encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
         if r.returncode == 0:
             return OK, (lignes[0] if lignes else "aucune regression")
@@ -385,6 +393,7 @@ def chemins_tenus(racine: Path) -> tuple[str, str]:
             timeout=180,
             encoding='utf-8',
             errors='replace',
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
         if r.returncode == 0:
@@ -411,6 +420,7 @@ def frontiere_tenue(racine: Path) -> tuple[str, str]:
             timeout=180,
             encoding="utf-8",
             errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
         if r.returncode == 0:
@@ -443,7 +453,8 @@ def outillage_tenu(racine) -> tuple[str, str]:
         r = subprocess.run([sys.executable, "outillage/nexus_outillage.py",
                             "--cliquet"],
                            cwd=racine, capture_output=True, text=True,
-                           timeout=420, encoding="utf-8", errors="replace")
+                           timeout=420, encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
         verdict = next((l for l in lignes if l.startswith("Outillage :")), "")
         if r.returncode == 0:
@@ -466,7 +477,8 @@ def loi1_tenue(racine):
     try:
         r = subprocess.run([sys.executable, "outillage/nexus_loi1.py"],
                            cwd=racine, capture_output=True, text=True,
-                           timeout=300, encoding="utf-8", errors="replace")
+                           timeout=300, encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         lignes = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
         if r.returncode == 0:
             for prefix in ("Conformite", "part manuelle non aggravee"):
@@ -501,7 +513,8 @@ def redaction_declaree(racine):
     try:
         r = subprocess.run([sys.executable, 'outillage/nexus_redaction.py'],
                            cwd=racine, capture_output=True, text=True,
-                           timeout=180, encoding='utf-8', errors='replace')
+                           timeout=180, encoding='utf-8', errors='replace',
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         return IGNORE, 'nexus_redaction n a pas repondu en 180 s'
     except Exception as exc:

@@ -354,10 +354,10 @@ def _run_epreuve() -> int:
         r2 = tmp / "forward2"
         proc_f1 = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r1), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         proc_f2 = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r2), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
         deadline = time.time() + 10
         while time.time() < deadline and not (r1.exists() and r2.exists()):
@@ -379,7 +379,7 @@ def _run_epreuve() -> int:
         rcap = tmp / "cap"
         proc_c = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveC', '1', str(rcap), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
         deadline = time.time() + 10
         while time.time() < deadline and not rcap.exists():
@@ -405,7 +405,7 @@ def _run_epreuve() -> int:
         # ---------- DEATH‑SAFETY ----------
         proc_d = subprocess.Popen(
             [sys.executable, __file__, '--tenir-slot', 'epreuveD', '1'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         proc_d.wait()
 
         with semaphore('epreuveD', 1, projet='epreuve', attente_s=5, bavard=False) as s:
@@ -507,7 +507,7 @@ def processus_concurrents() -> list[dict]:
     try:
         sortie = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
                                 capture_output=True, text=True, encoding="utf-8",
-                                errors="replace", timeout=60).stdout
+                                errors="replace", timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
     except (OSError, subprocess.SubprocessError) as exc:
         print(f"{__file__} : subprocess.run impossible : {exc}", file=sys.stderr)
         return []
