@@ -420,7 +420,7 @@ def controle_gardes_globales() -> None:
     trouve = False
     garde_morte = False
 
-    for evenement, entrees in hooks.items():
+    for _evenement, entrees in hooks.items():
         if not isinstance(entrees, list):
             continue
         for entree in entrees:
