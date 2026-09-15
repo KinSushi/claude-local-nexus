@@ -22,6 +22,10 @@ __pycache__/
 # le fichier reel, ni encombrer `git status` au moment ou l'on diagnostique.
 *.candidat
 *.avant-patch
+# Meme classe, ecrite par nexus_creer --remplacer. Mesure du 2026-09-15 : deux
+# sauvegardes laissees dans epreuves/ bloquaient la cloture du tour, et les
+# commiter aurait verse des copies mortes dans l'historique.
+*.avant-remplacement
 
 # Diffs temporaires ecrits par l'outillage de validation, pour que le
 # fenetrage MAP-REDUCE s'applique. Un residu ne doit jamais encombrer
