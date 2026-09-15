@@ -306,6 +306,46 @@ def capacites_ollama(nom_base: str, timeout: int = 20) -> set:
         return set()
 
 
+def lire_contexte_natif(sortie_show: str) -> int | None:
+    """Parse 'context length' from ollama show output."""
+    if not isinstance(sortie_show, str):
+        return None
+    for line in sortie_show.splitlines():
+        line = line.strip().lower()
+        if line.startswith("context length"):
+            parts = line.split()
+            if len(parts) >= 3 and parts[2].isdigit():
+                val = int(parts[2])
+                return val if val > 0 else None
+    return None
+
+
+def contexte_natif_ollama(nom_base: str, timeout: int = 20) -> int | None:
+    """Run `ollama show` and extract native context length."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["ollama", "show", nom_base],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if result.returncode != 0:
+            return None
+        return lire_contexte_natif(result.stdout)
+    except Exception:
+        return None
+
+
+def plafonner_contexte(ctx: int, natif: int | None) -> int:
+    """Cap context to native limit if known."""
+    if natif is None or natif <= 0:
+        return ctx
+    return min(ctx, natif)
+
+
 def local_alias(base: str) -> str:
     """
     Alias d'un modèle Ollama installé.
@@ -499,6 +539,7 @@ def render_local_extra(installed: list[str], declared: set[str],
     for i, (base, state, reason) in enumerate(rendered):
         alias = local_alias(base)
         ctx = local_context(base, profile)
+        ctx = plafonner_contexte(ctx, contexte_natif_ollama(base))
         is_embed = bool(EMBED_HINT.search(base))
         # PROMOTION MECANISEE.
         #
