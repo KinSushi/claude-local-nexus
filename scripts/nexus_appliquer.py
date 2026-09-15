@@ -184,6 +184,12 @@ def main():
         if avant == apres:
             print("REFUS : le bloc %d a un texte APRES identique à AVANT ; aucun changement réel." % idx)
             return 1
+    # Mesure du 2026-09-15 : deux familles de tests effacees par des patchs d'ajout ; une ligne retiree se DIT.
+    for idx, (avant, apres) in enumerate(blocs, start=1):
+        lignes_apres = {ligne.strip() for ligne in apres.splitlines()}
+        retirees = [ligne for ligne in avant.splitlines() if ligne.strip() and ligne.strip() not in lignes_apres]
+        if retirees:
+            print("RETIRE : le bloc %d supprime %d ligne(s) de l'AVANT absente(s) de l'APRES : %s" % (idx, len(retirees), " | ".join(l.strip()[:80] for l in retirees[:3])))
 
     # Helper : compter les occurrences « bornées » d'un texte AVANT.
     def _compter_occurrences_borne(texte: str, avant: str):

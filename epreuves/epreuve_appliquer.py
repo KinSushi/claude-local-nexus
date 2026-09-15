@@ -51,6 +51,28 @@ def main():
                          ("[RATE] casA : code=%d, verification echec" % rc))
         echec = echec or not ok
 
+        # ---------- cas R ----------
+        cibleR = base / "cibleR.txt"
+        _ecrire(cibleR, "un\ndeux\ntrois\n")
+        casR = base / "casR.jsonl"
+        _jsonl(casR, "\n".join([A, "deux", P, "DEUX_NEUF", F]))
+        rR = subprocess.run([sys.executable, str(nexus_path), str(casR), "t", str(cibleR)], capture_output=True, text=True)
+        retireR = next((l for l in rR.stdout.splitlines() if l.startswith("RETIRE")), "aucune ligne RETIRE")
+        ok = (rR.returncode == 0 and "DEUX_NEUF" in cibleR.read_text(encoding="utf-8") and retireR.startswith("RETIRE : le bloc 1 supprime 1 ligne(s)"))
+        resultats.append(("[OK  ] casR : code=%d, %s" % (rR.returncode, retireR)) if ok else ("[RATE] casR : code=%d, %s" % (rR.returncode, retireR)))
+        echec = echec or not ok
+
+        # ---------- cas S ----------
+        cibleS = base / "cibleS.txt"
+        _ecrire(cibleS, "un\ndeux\ntrois\n")
+        casS = base / "casS.jsonl"
+        _jsonl(casS, "\n".join([A, "deux", P, "deux", "deux_bis", F]))
+        rS = subprocess.run([sys.executable, str(nexus_path), str(casS), "t", str(cibleS)], capture_output=True, text=True)
+        retireS = next((l for l in rS.stdout.splitlines() if l.startswith("RETIRE")), "aucune ligne RETIRE")
+        ok = (rS.returncode == 0 and "deux_bis" in cibleS.read_text(encoding="utf-8") and not any(l.startswith("RETIRE") for l in rS.stdout.splitlines()))
+        resultats.append(("[OK  ] casS : code=%d, aucune ligne RETIRE" % rS.returncode) if ok else ("[RATE] casS : code=%d, %s" % (rS.returncode, retireS)))
+        echec = echec or not ok
+
         # ---------- cas B ----------
         cibleB = base / "cibleB.txt"
         originalB = "\n".join(["alpha", "beta", "gamma", ""])
