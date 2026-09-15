@@ -153,6 +153,35 @@ def boussole_fraiche(racine: Path) -> tuple[str, str]:
     return statut, detail
 
 
+def paires_tenues(racine: Path) -> tuple[str, str]:
+    """Contrôle « paires tenues » – mesure du 2026-09-15.
+    Refuse la clôture du tour quand les scripts et l'outillage divergent.
+    """
+    script = racine / 'outillage' / 'nexus_paires.py'
+    if not script.is_file():
+        return (IGNORE, 'outil nexus_paires absent')
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script), '--verifier', '--racine', str(racine)],
+            cwd=racine,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=120,
+            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        )
+        first_line = result.stdout.splitlines()[0] if result.stdout else ''
+        if result.returncode == 0:
+            return (OK, first_line)
+        elif result.returncode == 1:
+            return (MANQUE, f"{first_line} : python outillage/nexus_paires.py --synchroniser")
+        else:
+            return (IGNORE, f"code retour {result.returncode}")
+    except Exception as e:
+        return (IGNORE, str(e))
+
+
 def boucle_armee() -> tuple[str, str]:
     """
     Non vérifiable ici, et le dire vaut mieux que le supposer.
@@ -590,6 +619,7 @@ def main() -> int:
         # ne regenere est un etat de memoire et que l'operateur l'a interdit
         ("progres", lambda: progres(racine)),
         ("boussole", lambda: boussole_fraiche(racine)),
+        ("paires tenues", lambda: paires_tenues(racine)),
         ("arbres recoltes", lambda: arbres_en_attente(racine)),
         ("pouls battu", lambda: pouls_battu(racine)),
     ]

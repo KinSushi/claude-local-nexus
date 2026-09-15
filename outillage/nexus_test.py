@@ -1442,6 +1442,9 @@ def main() -> int:
     if args.only in (None, "valide-perimetre"):
         jouer_epreuve_python("epreuve_valide_perimetre.py",
                              "validation : jamais vert sur rien, fichiers regeneres hors du diff juge")
+    if args.only in (None, "paires-outil"):
+        jouer_epreuve_python("epreuve_nexus_paires.py",
+                             "paires copiees : divergence vue, synchronisation refusee si la copie porte une ligne propre")
     if args.only in (None, "veille-sonde-contexte"):
         jouer_epreuve_python("epreuve_veille_sonde_contexte.py",
                              "sonde de la veille au contexte du residant : num_ctx lu, sonde sautee sans contexte")
