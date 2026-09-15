@@ -76,6 +76,38 @@ if (-not $LogPath) {
     $LogPath = Join-Path $LogDir ("update-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
 }
 
+function Save-FichiersGeneres {
+    param(
+        [Parameter(Mandatory)][string]$Racine,
+        [Parameter(Mandatory)][string[]]$Chemins,
+        [Parameter(Mandatory)][string]$Message
+    )
+    try {
+        $status = git -C $Racine status --porcelain -- $Chemins 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return "ECHEC : $status"
+        }
+        if (-not $status) {
+            return 'RIEN'
+        }
+        $add = git -C $Racine add -- $Chemins 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return "ECHEC : $add"
+        }
+        $commit = git -C $Racine commit -m $Message -- $Chemins 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return "ECHEC : $commit"
+        }
+        $sha = git -C $Racine rev-parse --short HEAD 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return "ECHEC : $sha"
+        }
+        return "COMMIT $sha"
+    } catch {
+        return "ECHEC : $($_.Exception.Message)"
+    }
+}
+
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
     $line = "[{0}] [{1}] {2}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Level, $Message
@@ -299,6 +331,22 @@ Write-Log "Regeneration du cockpit"
     ForEach-Object { Write-Log "  $_" }
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Cockpit non regenere : outillage/rituels/STATE.md reste date" "WARN"
+}
+
+# Mesure du 2026-09-15 :
+if (-not $DryRun) {
+    $msg = @"
+chore(modeles): mise a jour planifiee du $(Get-Date -Format 'yyyy-MM-dd HH:mm'), fichiers generes commites par la mise a jour elle-meme
+Ecrit par le generateur ; commit par Update-NexusModels.
+Redige a la main.
+"@
+    $result = Save-FichiersGeneres -Racine (Split-Path -Parent $PSScriptRoot) -Chemins @('README.md','litellm_config.yaml') -Message $msg
+    if ($result -match '^(COMMIT|RIEN)') {
+        $lvl = 'OK'
+    } else {
+        $lvl = 'WARN'
+    }
+    Write-Log $result $lvl
 }
 
 Write-Log "Mise a jour terminee" "OK"
