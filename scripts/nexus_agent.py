@@ -2241,9 +2241,6 @@ def main() -> int:
             except Exception as exc:
                 print("[!] erreur lors de la lecture du jsonl : %s" % exc, file=sys.stderr)
                 return 1
-        else:
-            parseur.print_help()
-            return 1
 
     # La competence s'applique ici, et non plus haut : `taches` n'existe pas
     # avant ce point, quelle que soit la branche empruntee.
