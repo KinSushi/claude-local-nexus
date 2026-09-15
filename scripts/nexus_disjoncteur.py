@@ -101,7 +101,11 @@ def echec_transitoire(message):
     if not isinstance(message, str):
         return False
     lowered = message.lower()
-    signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503"]
+    # Mesure du 2026-09-15 : cas (a) - connexion non détectée, circuit ouvert
+    # Mesure du 2026-09-15 : cas (b) - réponse vide après consommation de jetons
+    # Mesure du 2026-09-15 : les deux cas ouvraient le circuit au premier échec
+    signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503",
+        "connexion", "urlopen error", "winerror 10060", "winerror 10061", "refused", "reponse vide"]
     if any(sig in lowered for sig in signals):
         return True
     # Mesure du 2026-09-02 : seul le code 503 etait reconnu parmi les 5xx.

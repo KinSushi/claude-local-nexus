@@ -12,22 +12,13 @@ Utilisation :
     python epreuves/epreuve_agent_tache_unique.py
 """
 
-import importlib.util
 import os
 import pathlib
 import sys
 import subprocess
 import time
-
-def _load_module():
-    """Charge ``scripts/nexus_agent.py`` depuis la racine du dépôt."""
-    base_dir = pathlib.Path(__file__).resolve().parents[1]   # repository root
-    script_path = base_dir / "scripts" / "nexus_agent.py"
-    spec = importlib.util.spec_from_file_location("nexus_agent", script_path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module, base_dir
+import tempfile
+import shutil
 
 def check(nom, condition, detail=""):
     """Affiche le résultat d’un cas de test et renvoie le booléen."""
@@ -42,98 +33,130 @@ def main():
     sys.stdout.reconfigure(encoding='utf-8')
 
     ok = True
-    _, repo_root = _load_module()
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
 
-    # Environnement contrôlé
+    # Lecture du journal réel avant le cas A
+    journal_path = repo_root / ".nexus" / "circuit_journal.jsonl"
+    if journal_path.is_file():
+        with journal_path.open(encoding='utf-8') as f:
+            initial_lines = f.read().splitlines()
+    else:
+        initial_lines = []
+
+    # Répertoire temporaire isolant l’état du disjoncteur
+    temp_dir = tempfile.mkdtemp(prefix='nexus_dj_epreuve_')
     env = os.environ.copy()
     env["NEXUS_GATEWAY"] = "http://127.0.0.1:9"
     env["NEXUS_AGENT_TIMEOUT"] = "5"
+    env["NEXUS_ETAT_DISJONCTEUR"] = os.path.join(temp_dir, "disjoncteur.json")
 
-    # ------------------------------------------------------------------
-    # Cas A – forward (régression 43a5261)
-    # ------------------------------------------------------------------
-    cmd_a = [
-        sys.executable,
-        str(repo_root / "scripts" / "nexus_agent.py"),
-        "--tache", "OK",
-        "--modele", "gpt-oss-120b-cloud",
-        "--max-tokens", "16",
-        "--sans-repli",
-    ]
     try:
-        result_a = subprocess.run(
-            cmd_a,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=60,
-        )
-        sortie_a = (result_a.stdout or "") + (result_a.stderr or "")
-        condition_a = "usage: nexus_agent.py" not in sortie_a
+        # ------------------------------------------------------------------
+        # Cas A – forward (régression 43a5261)
+        # ------------------------------------------------------------------
+        cmd_a = [
+            sys.executable,
+            str(repo_root / "scripts" / "nexus_agent.py"),
+            "--tache", "OK",
+            "--modele", "gpt-oss-120b-cloud",
+            "--max-tokens", "16",
+            "--sans-repli",
+        ]
+        try:
+            result_a = subprocess.run(
+                cmd_a,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=60,
+            )
+            sortie_a = (result_a.stdout or "") + (result_a.stderr or "")
+            condition_a = "usage: nexus_agent.py" not in sortie_a
+            ok &= check(
+                "forward_A",
+                condition_a,
+                f"rc={result_a.returncode}"
+            )
+        except subprocess.TimeoutExpired:
+            ok &= check("forward_A", False, "timeout")
+        except Exception as e:  # pragma: no cover
+            ok &= check("forward_A", False, str(e))
+
+        # ------------------------------------------------------------------
+        # Cas D – fuite_etat_reel (détection d’une fuite dans le journal)
+        # ------------------------------------------------------------------
+        if journal_path.is_file():
+            with journal_path.open(encoding='utf-8') as f:
+                later_lines = f.read().splitlines()
+        else:
+            later_lines = []
+        new_lines = later_lines[len(initial_lines):]
+        fuite = any('10061' in line or '127.0.0.1:9' in line for line in new_lines)
+        condition_d = not fuite
         ok &= check(
-            "forward_A",
-            condition_a,
-            f"rc={result_a.returncode}"
+            "fuite_etat_reel",
+            condition_d,
+            "leak détectée" if fuite else ""
         )
-    except subprocess.TimeoutExpired:
-        ok &= check("forward_A", False, "timeout")
-    except Exception as e:  # pragma: no cover
-        ok &= check("forward_A", False, str(e))
 
-    # ------------------------------------------------------------------
-    # Cas B – reverse (fichier JSONL inexistant, sans --nom)
-    # ------------------------------------------------------------------
-    cmd_b = [
-        sys.executable,
-        str(repo_root / "scripts" / "nexus_agent.py"),
-        "--depuis-jsonl", "fichier_inexistant.jsonl",
-    ]
-    try:
-        result_b = subprocess.run(
-            cmd_b,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=60,
-        )
-        sortie_b = (result_b.stdout or "") + (result_b.stderr or "")
-        condition_code = result_b.returncode == 2
-        condition_msg = "--nom" in sortie_b
-        condition_b = condition_code and condition_msg
-        detail_b = f"rc={result_b.returncode}, msg={'present' if condition_msg else 'absent'}"
-        ok &= check("reverse_B", condition_b, detail_b)
-    except subprocess.TimeoutExpired:
-        ok &= check("reverse_B", False, "timeout")
-    except Exception as e:  # pragma: no cover
-        ok &= check("reverse_B", False, str(e))
+        # ------------------------------------------------------------------
+        # Cas B – reverse (fichier JSONL inexistant, sans --nom)
+        # ------------------------------------------------------------------
+        cmd_b = [
+            sys.executable,
+            str(repo_root / "scripts" / "nexus_agent.py"),
+            "--depuis-jsonl", "fichier_inexistant.jsonl",
+        ]
+        try:
+            result_b = subprocess.run(
+                cmd_b,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=60,
+            )
+            sortie_b = (result_b.stdout or "") + (result_b.stderr or "")
+            condition_code = result_b.returncode == 2
+            condition_msg = "--nom" in sortie_b
+            condition_b = condition_code and condition_msg
+            detail_b = f"rc={result_b.returncode}, msg={'present' if condition_msg else 'absent'}"
+            ok &= check("reverse_B", condition_b, detail_b)
+        except subprocess.TimeoutExpired:
+            ok &= check("reverse_B", False, "timeout")
+        except Exception as e:  # pragma: no cover
+            ok &= check("reverse_B", False, str(e))
 
-    # ------------------------------------------------------------------
-    # Cas C – reverse, garde amont (aucun argument)
-    # ------------------------------------------------------------------
-    cmd_c = [
-        sys.executable,
-        str(repo_root / "scripts" / "nexus_agent.py"),
-    ]
-    try:
-        start = time.time()
-        result_c = subprocess.run(
-            cmd_c,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=60,
-        )
-        duration = time.time() - start
-        # On ne juge pas le code retour, on indique simplement qu’il a fini.
-        ok &= check(
-            "reverse_garde_amont",
-            True,
-            f"rc={result_c.returncode}, dur={duration:.2f}s"
-        )
-    except subprocess.TimeoutExpired:
-        ok &= check("reverse_garde_amont", False, "timeout")
-    except Exception as e:  # pragma: no cover
-        ok &= check("reverse_garde_amont", False, str(e))
+        # ------------------------------------------------------------------
+        # Cas C – reverse, garde amont (aucun argument)
+        # ------------------------------------------------------------------
+        cmd_c = [
+            sys.executable,
+            str(repo_root / "scripts" / "nexus_agent.py"),
+        ]
+        try:
+            start = time.time()
+            result_c = subprocess.run(
+                cmd_c,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=60,
+            )
+            duration = time.time() - start
+            # On ne juge pas le code retour, on indique simplement qu’il a fini.
+            ok &= check(
+                "reverse_garde_amont",
+                True,
+                f"rc={result_c.returncode}, dur={duration:.2f}s"
+            )
+        except subprocess.TimeoutExpired:
+            ok &= check("reverse_garde_amont", False, "timeout")
+        except Exception as e:  # pragma: no cover
+            ok &= check("reverse_garde_amont", False, str(e))
+
+    finally:
+        # Nettoyage du répertoire temporaire
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     # ------------------------------------------------------------------
     # Résultat final

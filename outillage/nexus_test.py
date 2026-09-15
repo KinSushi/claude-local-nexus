@@ -1382,6 +1382,12 @@ def main() -> int:
     if args.only in (None, "agent-sans-repli"):
         jouer_epreuve_python("epreuve_agent_sans_repli.py",
                              "agent sans repli")
+    if args.only in (None, "agent-tache-unique"):
+        jouer_epreuve_python("epreuve_agent_tache_unique.py",
+                             "agent tache unique sans usage")
+    if args.only in (None, "disjoncteur-classes"):
+        jouer_epreuve_python("epreuve_disjoncteur_classes.py",
+                             "disjoncteur classes reseau et isolation")
     if args.only in (None, "agent-web"):
         jouer_epreuve_python("epreuve_agent_web.py",
                              "boucle d'outils web : forward, reverse sans cle, fuite modele local")

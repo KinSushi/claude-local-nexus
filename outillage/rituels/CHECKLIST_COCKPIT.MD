@@ -29278,3 +29278,23 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 **Rapatriement préparé** : bases mesurées (w64 et w64t en retard de 13 commits sur main, w76 de 2) ; seul fichier modifié entre-temps sur main, `scripts/nexus_agent.py` : le rapatriement passera par un diff appliqué avec git, jamais par copie. Groupes : porte de commit complète avec son installateur et son câblage à la suite ; indice d'`appliquer` après son audit tiers ; quota après la mise à jour de l'attendu du cas A.
 
 **Délégué** : douze rendus (vague 78), treize rendus (vague 79), trois tâches en duel local. **Arbitré ici** : deux tris, vérification de quinze trouvailles d'audit dans le code, contrat d'exposition, bases des worktrees.
+
+### Tour 2026-09-15 (02:27-03:00) — régression de la voie `--tache`, et une épreuve qui a ouvert le circuit de tout le monde
+
+**Régression signalée par EA-MT5, reproduite** : `nexus_agent.py --tache X --modele M` imprimait l'usage et rendait 1 depuis `43a5261` (2026-09-14 20:03) — la voie d'appel du contrat global, cassée pour tous les projets pendant six heures. Cause : le `else: print_help()` du bloc `--depuis-jsonl`, greffé sous `if args.tache and args.modele and taches`. Correctif `8dd157e` : trois lignes supprimées, ruff inchangé (5 SIM préexistantes). Épreuve `epreuve_agent_tache_unique.py` : cas A RATE sur l'ancien code, OK après ; forward réel `OK.` en 3 s.
+
+**Défaut causé par cette épreuve, trouvé par l'usage d'une session voisine (SAS)** : son cas A visait la passerelle factice `127.0.0.1:9`. L'échec a été écrit dans `.nexus/circuit_state.json`, l'état RÉEL et partagé, et classé PERMANENT : ouverture immédiate du circuit `gpt-oss-120b-cloud` à 02:40:20. Le lot SAS en `sans_repli` a été refusé à 02:40:50, et mon propre forward réel est parti en repli vers `mistral-large-3:675b`. Circuit refermé par `record_success`.
+
+**Cause racine, lue dans le code** : `echec_transitoire` cherche `connection` ; Windows en français écrit « connexion ». Toute erreur réseau localisée ouvre le circuit au premier échec. Même classe : `reponse vide (N jetons consommes)` lu permanent (glm-5.3-cloud, 00:19:27), alors que c'est un budget épuisé. Plancher du livre (*30 Agents*, ch. 4) : il n'ouvre qu'au seuil, sans classe permanente ; le dépasser exigeait un classificateur juste, et c'est lui qui manquait.
+
+**Posés et commités** : `9dda9d6` (B007 conformité, boussole), `659b8e8` (B009 familles, B007 worktree ; l'épreuve du journal du disjoncteur compare enfin le motif injecté — contre-épreuve en worktree jetable, motif figé : 2 RATE pour la bonne raison).
+
+**Refusés** : deux rendus qui déclaraient lue une variable que ruff voit inutilisée (le banc lisait un homonyme d'une autre portée) ; un rendu au marqueur `<<<FIN>>` tronqué, refusé proprement par `nexus_appliquer` ; pièces jointes hors racine, refusées proprement par `nexus_agent`.
+
+**Seconde faute du tour, et c'est la dérive que la consigne de l'opérateur nomme** : j'ai fait concevoir `NEXUS_DISJONCTEUR_DIR` SANS lire le disque d'abord. Il existe DEUX copies, `scripts/nexus_disjoncteur.py` (importée par `nexus_agent`, `nexus_boucle_locale`, `nexus_succession`) et `outillage/nexus_disjoncteur.py` (périmée, mais visée par `epreuve_disjoncteur_classes` v1 et `epreuve_journal_disjoncteur`). La copie réelle isolait DÉJÀ son état par `NEXUS_ETAT_DISJONCTEUR` (`adfea81`), employée par deux épreuves existantes. Mesure du coût : l'épreuve « isolée » par la variable inventée a rouvert le circuit réel à 02:48:56 ; son cas D de fuite l'a vu. Pose en double annulée (`git checkout`), épreuves recentrées sur `scripts/` et la variable réelle.
+
+**Posés, prouvés** : signaux `connexion`, `urlopen error`, `winerror 10060/10061`, `refused`, `reponse vide` dans `scripts/nexus_disjoncteur.py` — contre-épreuve F1 et F2 RATE avant pose, 7 OK après ; épreuve de la tâche unique isolée — cas D RATE avec la mauvaise variable, OK avec la vraie (en worktree jetable puis sur main) ; forward réel servi par `gpt-oss:120b` lui-même, état réel fermé.
+
+**Porte absente, trouvée par l'usage** : `epreuve_paires_copiees` RATE sur CINQ paires divergentes (`nexus_agent`, `nexus_capability`, `nexus_disjoncteur`, `nexus_verbatim`, `nexus_verrou_machine`) et personne ne l'a vu : la vitrine joue `nexus_test` en AVERTISSEMENT seulement, le rituel ne la joue pas. Le contrôle existe et détecte ; rien ne refuse. `epreuve_journal_disjoncteur` éprouve la copie périmée.
+
+**Ouverts** : un appel `nexus_agent.py` sans argument rend 0 en silence ; `epreuve_agent_familles` compte OK un cas « fuite_no_tracabilite : TRACABILITE détecté » (libellé contradictoire, à auditer) ; rejeu `--depuis-jsonl` sans `--tache` inatteignable.
