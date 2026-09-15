@@ -373,12 +373,12 @@ def main():
     # NEXUS_VEILLE_SANS_RELANCE=1 la desactive.
     try:
         veille = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nexus_veille_moteur.py")
-        r = subprocess.run([sys.executable, veille, "--json"], capture_output=True, text=True, timeout=90)
+        r = subprocess.run([sys.executable, veille, "--json"], capture_output=True, text=True, timeout=90, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         verdict = json.loads(r.stdout or "{}").get("verdict", "INCONNU")
         print("veille moteur : %s" % verdict)
         action = decision_veille(verdict, os.getenv("NEXUS_VEILLE_SANS_RELANCE") == "1")
         if action == "relancer":
-            rel = subprocess.run([sys.executable, veille, "--relancer"], capture_output=True, text=True, timeout=120)
+            rel = subprocess.run([sys.executable, veille, "--relancer"], capture_output=True, text=True, timeout=120, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             print("moteur relance" if rel.returncode == 0 else "relance ratee (code %d)" % rel.returncode)
         elif action == "signaler":
             print("BLOQUE, relance desactivee (NEXUS_VEILLE_SANS_RELANCE=1)")
@@ -390,7 +390,7 @@ def main():
     # pas enumerer ; la meme variable que la veille coupe la purge automatique.
     try:
         orphelins = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "nexus_orphelins.py")
-        r = subprocess.run([sys.executable, orphelins, "--json"], capture_output=True, text=True, timeout=20)
+        r = subprocess.run([sys.executable, orphelins, "--json"], capture_output=True, text=True, timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         data = json.loads(r.stdout or "{}")
         orps = data.get("orphelins", [])
         print("orphelins runner : %d (%.1f Go)" % (len(orps), data.get("total_prive_octets", 0) / 1024**3))
@@ -399,7 +399,7 @@ def main():
         else:
             decision = decision_orphelins(r.returncode, len(orps), os.getenv("NEXUS_VEILLE_SANS_RELANCE") == "1")
             if decision == "TUER":
-                rel = subprocess.run([sys.executable, orphelins, "--tuer", "--json"], capture_output=True, text=True, timeout=20)
+                rel = subprocess.run([sys.executable, orphelins, "--tuer", "--json"], capture_output=True, text=True, timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
                 data2 = json.loads(rel.stdout or "{}")
                 tues = data2.get("tues", [])
                 print("orphelins runner : %d tue(s), %.1f Go liberes" % (len(tues), data2.get("total_prive_octets", 0) / 1024**3))

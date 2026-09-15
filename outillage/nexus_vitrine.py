@@ -66,7 +66,8 @@ def executer(cmd: list, cwd: Path, delai: int = 60) -> subprocess.CompletedProce
     """Jamais de trace : un échec de sous-processus est un résultat, pas un bug."""
     try:
         return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True,
-                              timeout=delai, encoding="utf-8", errors="replace")
+                              timeout=delai, encoding="utf-8", errors="replace",
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         return subprocess.CompletedProcess(cmd, 124, "", "delai depasse")
     except OSError as exc:

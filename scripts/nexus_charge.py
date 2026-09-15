@@ -76,7 +76,8 @@ def mesurer_ram() -> dict:
             shell=True,
             stderr=subprocess.DEVNULL,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
         ram_data = json.loads(res_ram, strict=False)
 
@@ -260,7 +261,8 @@ def main():
             shell=True,
             stderr=subprocess.DEVNULL,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
         procs_data_1 = json.loads(res_proc, strict=False)
         if isinstance(procs_data_1, dict):
@@ -275,7 +277,8 @@ def main():
             shell=True,
             stderr=subprocess.DEVNULL,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
         procs_data_2 = json.loads(res_proc_2, strict=False)
         if isinstance(procs_data_2, dict):

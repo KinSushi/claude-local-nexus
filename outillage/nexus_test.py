@@ -281,6 +281,7 @@ def run_validator_on(config: dict) -> tuple[int, str]:
             capture_output=True,
             text=True,
             timeout=180,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         return result.returncode, result.stdout + result.stderr
     finally:
@@ -651,7 +652,8 @@ def test_reverse(models: list[str]) -> None:
     ]) + "\n"
     try:
         result = subprocess.run(["node", server], input=messages,
-                                capture_output=True, text=True, timeout=180)
+                                capture_output=True, text=True, timeout=180,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         replies = {r.get("id"): r for r in
                    (json.loads(l) for l in result.stdout.splitlines()
                     if l.strip().startswith("{"))}
@@ -723,7 +725,8 @@ def test_reverse(models: list[str]) -> None:
     ]) + "\n"
     try:
         result = subprocess.run(["node", server], input=messages,
-                                capture_output=True, text=True, timeout=120)
+                                capture_output=True, text=True, timeout=120,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         replies = [json.loads(l) for l in result.stdout.splitlines() if l.strip().startswith("{")]
         unknown = next((r for r in replies if r.get("id") == 2), None)
         survived = any(r.get("id") == 3 for r in replies)
@@ -1057,10 +1060,12 @@ def test_code() -> None:
         generate = [sys.executable,
                     os.path.join(ROOT, "scripts", "nexus_generate.py"),
                     "--no-validate"]
-        first = subprocess.run(generate, capture_output=True, text=True, timeout=300)
+        first = subprocess.run(generate, capture_output=True, text=True, timeout=300,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         with io.open(CONFIG, encoding="utf-8") as fh:
             after_first = fh.read()
-        second = subprocess.run(generate, capture_output=True, text=True, timeout=300)
+        second = subprocess.run(generate, capture_output=True, text=True, timeout=300,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         with io.open(CONFIG, encoding="utf-8") as fh:
             after_second = fh.read()
         if first.returncode != 0 or second.returncode != 0:
@@ -1077,7 +1082,8 @@ def test_code() -> None:
 
     # Le validateur doit accepter la configuration reellement deployee.
     result = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "nexus_validate.py")],
-                            capture_output=True, text=True, timeout=180)
+                            capture_output=True, text=True, timeout=180,
+                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     if not SECRETS_ABSENTS:
         check("configuration deployee valide", result.returncode == 0,
               "code %s" % result.returncode)
@@ -1114,7 +1120,8 @@ def test_code() -> None:
     ]) + "\n"
     try:
         result = subprocess.run(["node", server], input=messages,
-                                capture_output=True, text=True, timeout=60)
+                                capture_output=True, text=True, timeout=60,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         replies = {r.get("id"): r for r in
                    (json.loads(l) for l in result.stdout.splitlines()
                     if l.strip().startswith("{"))}
@@ -1178,7 +1185,8 @@ def test_code() -> None:
             [sys.executable, "-c",
              "import sys; sys.path.insert(0, r'%s'); sys.path.insert(0, r'%s'); import %s"
              % (os.path.join(ROOT, "scripts"), os.path.join(ROOT, "outillage"), name)],
-            capture_output=True, text=True, timeout=120)
+            capture_output=True, text=True, timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if result.returncode != 0:
             broken_imports.append(name)
     check("modules Python importables sans effet de bord", not broken_imports,
@@ -1195,7 +1203,8 @@ def test_code() -> None:
     env_sans_profil["COMPOSE_PROFILES"] = ""
     minimal = subprocess.run(["docker", "compose", "config", "--services"],
                              cwd=ROOT, capture_output=True, text=True,
-                             env=env_sans_profil, timeout=180)
+                             env=env_sans_profil, timeout=180,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     services_min = set(minimal.stdout.split()) if minimal.returncode == 0 else set()
     if not SECRETS_ABSENTS:
         check("pile minimale valide sans Ollama",
@@ -1208,7 +1217,8 @@ def test_code() -> None:
     env_avec_profil["COMPOSE_PROFILES"] = "embedded"
     complet = subprocess.run(["docker", "compose", "config", "--services"],
                              cwd=ROOT, capture_output=True, text=True,
-                             env=env_avec_profil, timeout=180)
+                             env=env_avec_profil, timeout=180,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     services_all = set(complet.stdout.split()) if complet.returncode == 0 else set()
     if not SECRETS_ABSENTS:
         check("profil 'embedded' rallume Ollama", "ollama" in services_all,
@@ -1232,7 +1242,8 @@ def test_code() -> None:
     # ceux de la racine, qui sont les points d'entree de l'utilisateur.
     ps_scripts = [f for f in os.listdir(os.path.join(ROOT, "scripts"))
                   if f.endswith(".ps1")]
-    shell = "pwsh" if subprocess.run(["where", "pwsh"], capture_output=True).returncode == 0 \
+    shell = "pwsh" if subprocess.run(["where", "pwsh"], capture_output=True,
+                                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).returncode == 0 \
         else "powershell"
     ps_paths = [os.path.join(ROOT, "scripts", n) for n in ps_scripts]
     ps_paths += [os.path.join(ROOT, n) for n in os.listdir(ROOT)
@@ -1252,7 +1263,8 @@ def test_code() -> None:
             "if($e -and $e.Count -gt 0){ exit 1 } else { exit 0 }" % path
         )
         result = subprocess.run([shell, "-NoProfile", "-Command", probe],
-                                capture_output=True, text=True, timeout=120)
+                                capture_output=True, text=True, timeout=120,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if result.returncode != 0:
             broken.append(name)
     check("scripts PowerShell sans erreur de syntaxe", not broken,
@@ -1263,7 +1275,8 @@ def test_code() -> None:
 
     try:
         git_py = subprocess.run(["git", "ls-files", "--", "*.py"],
-                                cwd=ROOT, capture_output=True, text=True)
+                                cwd=ROOT, capture_output=True, text=True,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except OSError as e:
         check("git ls-files executable trouve", False, "git introuvable: %s" % e)
     else:
@@ -1772,7 +1785,8 @@ def test_portee_import() -> None:
                 fh.write(source)
             r = subprocess.run([sys.executable, outil, cible],
                                capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=120)
+                               encoding="utf-8", errors="replace", timeout=120,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             return r.returncode, [l for l in r.stdout.splitlines() if l.strip()]
         finally:
             shutil.rmtree(dossier, ignore_errors=True)
@@ -1857,7 +1871,8 @@ def test_portee_import() -> None:
         with open(cible, "wb") as fh:
             fh.write(b"\xff\xfe\x00i\x00m\x00p\x00o\x00r\x00t\n")
         r = subprocess.run([sys.executable, outil, cible], capture_output=True,
-                           text=True, encoding="utf-8", errors="replace", timeout=120)
+                           text=True, encoding="utf-8", errors="replace", timeout=120,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         sortie = [l for l in r.stdout.splitlines() if l.strip()]
         check("fichier non utf-8 : le detecteur survit et continue",
               r.returncode == 0 and sortie == ["OK"] and "Traceback" not in (r.stderr or ""),
@@ -1939,7 +1954,8 @@ def jouer_epreuve_node(fichier: str, etiquette: str, titre: str) -> None:
     try:
         r = subprocess.run(["node", epreuve], cwd=ROOT, capture_output=True,
                            text=True, encoding="utf-8", errors="replace",
-                           timeout=300)
+                           timeout=300,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except FileNotFoundError:
         skip(etiquette, "node introuvable")
         return

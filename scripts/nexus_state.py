@@ -118,6 +118,7 @@ def run(args, timeout=TIMEOUT_RUN):
             timeout=timeout,
             encoding="utf-8",
             errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if result.stderr:
             print(result.stderr, file=sys.stderr)
@@ -358,6 +359,7 @@ def main() -> int:
             timeout=TIMEOUT_RUN,
             encoding="utf-8",
             errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover
         print(
@@ -504,7 +506,8 @@ def main() -> int:
         r = subprocess.run([sys.executable,
                             os.path.join(ROOT, "outillage", "nexus_traque.py"),
                             "--muet"], capture_output=True, text=True,
-                           timeout=180, encoding="utf-8", errors="replace")
+                           timeout=180, encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if r.returncode == 0 and r.stdout.strip():
             lines += ["```", r.stdout.strip(), "```", "",
                       "Heuristiques : chaque constat est une piste a verifier",

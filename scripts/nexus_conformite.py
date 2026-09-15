@@ -240,6 +240,7 @@ def controle_config_valide() -> None:
         text=True,
         encoding="utf-8",
         errors="replace",
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
     )
     erreurs = [l.strip() for l in r.stdout.splitlines() if l.strip().startswith("- ")]
     # Cas où le processus échoue sans produire d'erreurs « - » : on indique le code
@@ -375,7 +376,7 @@ def controle_runners_orphelins() -> None:
     script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nexus_orphelins.py')
     try:
         result = subprocess.run([sys.executable, script_path, '--json'],
-                                capture_output=True, text=True, timeout=20)
+                                capture_output=True, text=True, timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except Exception as exc:
         noter('runners orphelins', True, IGNORE, 'non mesurable : %s' % exc)
         return
@@ -740,7 +741,7 @@ def controle_imports() -> None:
     try:
         r = subprocess.run([sys.executable, outil], cwd=ROOT,
                            capture_output=True, text=True, timeout=900,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         return ignorer("import des scripts", "pas de reponse en 900 s")
     except Exception as exc:
@@ -778,7 +779,7 @@ def controle_cablage() -> None:
     try:
         r = subprocess.run([sys.executable, outil], cwd=ROOT,
                            capture_output=True, text=True, timeout=180,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except Exception as exc:
         return ignorer("cablage des scripts", str(exc)[:60])
     lignes = [l for l in (r.stdout or "").splitlines() if l.strip()]
@@ -822,6 +823,7 @@ def controle_taches_planifiees() -> None:
             encoding="utf-8",
             errors="replace",
             timeout=25,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
     except Exception as exc:
         ignorer("taches planifiees", f"PowerShell indisponible ou erreur d'exécution : {str(exc)[:70]}")
@@ -1063,7 +1065,7 @@ def controle_residence_modeles() -> None:
         import subprocess
         sortie = subprocess.run(["ollama", "ps"], capture_output=True,
                                 text=True, timeout=20, encoding="utf-8",
-                                errors="replace")
+                                errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except Exception as exc:
         ignorer("residence des modeles", "moteur non interrogeable : %s" % exc)
         return
@@ -1316,6 +1318,7 @@ def controle_env_hors_git() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
     )
     suivi = r.returncode == 0
     noter(
@@ -1566,7 +1569,7 @@ def controle_portee_import() -> None:
     try:
         r = subprocess.run([sys.executable, outil], cwd=ROOT,
                            capture_output=True, text=True, timeout=300,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except subprocess.TimeoutExpired:
         return ignorer("portee des imports", "pas de reponse en 300 s")
     except Exception as exc:
@@ -1989,7 +1992,7 @@ def _demarrage_passerelle():
     r = subprocess.run(
         ["docker", "inspect", "-f", "{{.State.StartedAt}}", "litellm-proxy"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=20)
+        timeout=20, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     if r.returncode != 0 or not (r.stdout or "").strip():
         raise RuntimeError("conteneur litellm-proxy introuvable ou arrete")
     brut = r.stdout.strip()
@@ -2186,6 +2189,7 @@ def controle_runtime(avant_demarrage: bool) -> None:
             encoding="utf-8",
             errors="replace",
             timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
     except Exception as exc:
         # Timeout ou autre problème d'exécution rend le contrôle non vérifiable.
@@ -2238,6 +2242,7 @@ def controle_delegation(avant_demarrage: bool) -> None:
             encoding="utf-8",
             errors="replace",
             timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
     except Exception as exc:
         ignorer("part deleguee", "releve des depenses injoignable : %s" % exc)
@@ -2359,6 +2364,7 @@ def controle_garde_agent() -> None:
             input='{"tool_name":"Agent","tool_input":{}}',
             capture_output=True, text=True, encoding="utf-8",
             errors="replace", timeout=30, env=env,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
     except Exception as exc:
         noter("garde agent", False, BLOQUANT,
