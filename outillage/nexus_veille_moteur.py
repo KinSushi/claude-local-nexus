@@ -13,9 +13,9 @@ import datetime
 import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
+import socket
 import time
 import urllib.request
 import urllib.error
@@ -54,6 +54,22 @@ def nombre_serveurs_ollama() -> int | None:
         return int(result.stdout.strip())
     except Exception:
         return None
+
+def port_moteur_occupe(hote: str = '127.0.0.1', port: int = 11434, delai: float = 2.0) -> bool:
+    """Vérifie si le port du moteur est occupé."""
+    try:
+        with socket.create_connection((hote, port), timeout=delai):
+            return True
+    except OSError:
+        return False
+
+def chemin_application_ollama() -> str | None:
+    """Retourne le chemin de l’exécutable Ollama app.exe s’il existe."""
+    valeur = os.environ.get('LOCALAPPDATA')
+    if not valeur:
+        return None
+    chemin = os.path.join(valeur, 'Programs', 'Ollama', 'ollama app.exe')
+    return chemin if os.path.isfile(chemin) else None
 
 def _parse_iso(iso_str):
     """Parse ISO 8601 string, handling trailing Z and long fractions."""
@@ -195,16 +211,6 @@ def relancer_moteur(racine):
         except OSError:
             pass
 
-    # Recherche de l’exécutable ollama
-    ollama = shutil.which('ollama')
-    if not ollama:
-        local_app_data = os.environ.get('LOCALAPPDATA', '')
-        candidate = os.path.join(local_app_data, 'Programs', 'Ollama', 'ollama.exe')
-        if os.path.exists(candidate):
-            ollama = candidate
-    if not ollama:
-        return False
-
     # Arrêt brutal de tous les processus ollama.exe
     subprocess.run(['taskkill', '/IM', 'ollama.exe', '/F', '/T'],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -226,18 +232,17 @@ def relancer_moteur(racine):
             time.sleep(1)
         return False
 
-    # Préparation du répertoire de logs
-    logs_dir = os.path.join(racine, 'logs')
-    os.makedirs(logs_dir, exist_ok=True)
-    out_log = os.path.join(logs_dir, 'ollama-serve.out.log')
-    err_log = os.path.join(logs_dir, 'ollama-serve.err.log')
+    # Mesure du 2026-09-15 : Trois lanceurs possibles (application Ollama, scripts/start.ps1, relancer_moteur).
+    # Décision : l'application Ollama est le propriétaire unique du moteur. Si un moteur répond déjà,
+    # quelle que soit son origine, aucun nouveau lancement n'est déclenché.
 
-    # Démarrage du nouveau serveur
-    creationflags = 0x00000008 | 0x00000200  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-    with open(out_log, 'a') as out_f, open(err_log, 'a') as err_f:
-        subprocess.Popen([ollama, 'serve'],
-                         stdout=out_f, stderr=err_f,
-                         creationflags=creationflags,
+    if not port_moteur_occupe():
+        chemin = chemin_application_ollama()
+        if chemin is None:
+            sys.stderr.write('application Ollama introuvable : aucun serveur lance\n')
+            return False
+        subprocess.Popen([chemin],
+                         creationflags=0x00000008 | 0x00000200,  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
                          cwd=racine)
 
     # Attente de la réponse du moteur (jusqu’à 30 s)

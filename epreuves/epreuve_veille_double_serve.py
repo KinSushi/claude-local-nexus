@@ -29,14 +29,23 @@ class FauxSubprocess:
     def __init__(self):
         self.run_calls = []
         self.popen_calls = 0
+        self.popen_argvs = []          # list of argv passed to each Popen
+        self.tous_argvs = []           # argv de tous les cas, jamais vide : lu par FUITE_SERVE
 
     def run(self, *args, **kwargs):
         self.run_calls.append((args, kwargs))
-        # Do nothing, pretend success
+        # Pretend success
         return types.SimpleNamespace(returncode=0)
 
     def Popen(self, *args, **kwargs):
         self.popen_calls += 1
+        # Record the first positional argument (the argv list)
+        if args:
+            self.popen_argvs.append(args[0])
+            self.tous_argvs.append(args[0])
+        else:
+            self.popen_argvs.append([])
+            self.tous_argvs.append([])
         # Return a dummy process object with minimal interface
         return types.SimpleNamespace(pid=12345, poll=lambda: None, terminate=lambda: None)
 
@@ -74,6 +83,9 @@ mod.shutil = types.SimpleNamespace(which=lambda name: r'C:\faux\ollama.exe')
 mod.version_repond = lambda url: False
 mod.application_ollama_vivante = lambda: False
 mod.nombre_serveurs_ollama = lambda: None
+# New helpers introduced by the updated target module
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
 
 # ----------------------------------------------------------------------
 # Install a fake winreg module in sys.modules
@@ -94,12 +106,12 @@ if mod.subprocess is real_subprocess:
     sys.exit(1)
 
 # ----------------------------------------------------------------------
-# Test cases
+# Test utilities
 # ----------------------------------------------------------------------
 def reset_popen_counter():
     fake_subprocess.popen_calls = 0
+    fake_subprocess.popen_argvs = []
 
-# Helper to run relancer_moteur with a fresh temporary racine
 def run_relancer():
     racine = tempfile.mkdtemp()
     try:
@@ -115,22 +127,57 @@ reset_popen_counter()
 mod.application_ollama_vivante = lambda: True
 mod.version_repond = lambda url: True
 mod.nombre_serveurs_ollama = lambda: 1
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
 res_f1 = run_relancer()
 check(res_f1 is True and fake_subprocess.popen_calls == 0,
       'F1 application vivante, moteur répond, 1 serveur',
       f'result={res_f1}, popen_calls={fake_subprocess.popen_calls}')
 
 # ----------------------------------------------------------------------
-# F2 : application absente, moteur répond, 1 serveur -> True, 1 Popen
+# F2 : application absente, port libre, chemin présent, moteur répond, 1 serveur -> True, 1 Popen
 # ----------------------------------------------------------------------
 reset_popen_counter()
 mod.application_ollama_vivante = lambda: False
 mod.version_repond = lambda url: True
 mod.nombre_serveurs_ollama = lambda: 1
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: r'C:/faux/Ollama/ollama app.exe'
 res_f2 = run_relancer()
-check(res_f2 is True and fake_subprocess.popen_calls == 1,
-      'F2 application absente, moteur répond, 1 serveur',
-      f'result={res_f2}, popen_calls={fake_subprocess.popen_calls}')
+cond_f2 = (res_f2 is True and
+           fake_subprocess.popen_calls == 1 and
+           fake_subprocess.popen_argvs[0][0].endswith('ollama app.exe'))
+check(cond_f2,
+      'F2 application absente, port libre, chemin présent, moteur répond, 1 serveur',
+      f'result={res_f2}, popen_calls={fake_subprocess.popen_calls}, argv0={fake_subprocess.popen_argvs[0][0] if fake_subprocess.popen_argvs else None}')
+
+# ----------------------------------------------------------------------
+# P1 : application absente, port OCCUPE, moteur répond, 1 serveur -> True, 0 Popen
+# ----------------------------------------------------------------------
+reset_popen_counter()
+mod.application_ollama_vivante = lambda: False
+mod.version_repond = lambda url: True
+mod.nombre_serveurs_ollama = lambda: 1
+mod.port_moteur_occupe = lambda: True          # port already used
+mod.chemin_application_ollama = lambda: r'C:/faux/Ollama/ollama app.exe'
+res_p1 = run_relancer()
+check(res_p1 is True and fake_subprocess.popen_calls == 0,
+      'P1 application absente, port OCCUPE, moteur répond, 1 serveur',
+      f'result={res_p1}, popen_calls={fake_subprocess.popen_calls}')
+
+# ----------------------------------------------------------------------
+# A1 : application absente, port libre, chemin None -> False, 0 Popen
+# ----------------------------------------------------------------------
+reset_popen_counter()
+mod.application_ollama_vivante = lambda: False
+mod.version_repond = lambda url: True
+mod.nombre_serveurs_ollama = lambda: 1
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
+res_a1 = run_relancer()
+check(res_a1 is False and fake_subprocess.popen_calls == 0,
+      'A1 application absente, port libre, chemin None',
+      f'result={res_a1}, popen_calls={fake_subprocess.popen_calls}')
 
 # ----------------------------------------------------------------------
 # R1 : application vivante, moteur répond, 2 serveurs -> False, 0 Popen
@@ -139,6 +186,8 @@ reset_popen_counter()
 mod.application_ollama_vivante = lambda: True
 mod.version_repond = lambda url: True
 mod.nombre_serveurs_ollama = lambda: 2
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
 res_r1 = run_relancer()
 check(res_r1 is False and fake_subprocess.popen_calls == 0,
       'R1 application vivante, moteur répond, 2 serveurs',
@@ -151,6 +200,8 @@ reset_popen_counter()
 mod.application_ollama_vivante = lambda: True
 mod.version_repond = lambda url: True
 mod.nombre_serveurs_ollama = lambda: None
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
 res_r2 = run_relancer()
 check(res_r2 is True,
       'R2 application vivante, moteur répond, nombre None',
@@ -163,15 +214,28 @@ reset_popen_counter()
 mod.application_ollama_vivante = lambda: True
 mod.version_repond = lambda url: False
 mod.nombre_serveurs_ollama = lambda: 1
+mod.port_moteur_occupe = lambda: False
+mod.chemin_application_ollama = lambda: None
 res_r3 = run_relancer()
 check(res_r3 is False and fake_subprocess.popen_calls == 0,
       'R3 application vivante, moteur ne répond jamais',
       f'result={res_r3}, popen_calls={fake_subprocess.popen_calls}')
 
 # ----------------------------------------------------------------------
+# FUITE_SERVE : aucun argv ne doit contenir la chaîne 'serve'
+# ----------------------------------------------------------------------
+# popen_argvs cumule les argv de TOUS les cas précédents
+if not fake_subprocess.tous_argvs:
+    fuite_ok = False  # aucun lancement enregistré sur l'ensemble des cas, on ne considère pas la fuite comme OK
+else:
+    fuite_ok = all('serve' not in ' '.join(map(str, argv)).lower() for argv in fake_subprocess.tous_argvs)
+check(fuite_ok,
+      'FUITE_SERVE aucun appel Popen ne contient "serve"',
+      'un argv contenait "serve"')
+
+# ----------------------------------------------------------------------
 # S1 : safety – ensure real subprocess.run was never called
 # ----------------------------------------------------------------------
-# Vérification que les objets capturés avant le premier cas sont intacts
 check(real_subprocess.run is ORIGINE_RUN and real_subprocess.Popen is ORIGINE_POPEN,
       'S1 surete : vrais subprocess.run et Popen intacts',
       'le vrai module subprocess a ete modifie')
