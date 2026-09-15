@@ -27,16 +27,22 @@ def _creer_jsonl(contenu: str, nom_tache: str) -> Path:
         fh.write("\n")
     return Path(path)
 
-def _lancer_outil(outil: Path, jsonl: Path, nom: str, cible: Path) -> int:
-    """Exécute nexus_creer.py et renvoie le code retour."""
-    proc = subprocess.run(
-        [sys.executable, str(outil), str(jsonl), nom, str(cible)],
+def _lancer(outil: Path, argv_supplementaires: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
+    """Lance l'outil avec les arguments fournis, capture stdout/stderr."""
+    cmd = [sys.executable, str(outil)] + argv_supplementaires
+    return subprocess.run(
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
+        cwd=cwd,
     )
+
+def _lancer_outil(outil: Path, jsonl: Path, nom: str, cible: Path) -> int:
+    """Exécute nexus_creer.py et renvoie le code retour (ancienne interface)."""
+    proc = _lancer(outil, [str(jsonl), nom, str(cible)])
     return proc.returncode
 
 def _verifier_fichier(cible: Path, attendu: str) -> bool:
@@ -75,10 +81,7 @@ def main() -> int:
         contenu_forward = "print('hello world')\n"
         jsonl_forward = _creer_jsonl(contenu_forward, "forward")
         rc = _lancer_outil(outil, jsonl_forward, "forward", cible_forward)
-        ok = (
-            rc == 0
-            and _verifier_fichier(cible_forward, contenu_forward)
-        )
+        ok = rc == 0 and _verifier_fichier(cible_forward, contenu_forward)
         if ok:
             _imprimer_ok("FORWARD", "création réussie")
         else:
@@ -136,24 +139,83 @@ def main() -> int:
 
         # -----------------------------------------------------------------
         # 5. FORWARD chemin reel : le texte n'a PAS de ligne vide avant FIN
-        #    (forme envoyee par le serveur MCP). Avant le correctif, le
-        #    fichier cree n'avait aucun saut de ligne final : ce sous-cas
-        #    ECHOUE sur l'ancien nexus_creer et reussit sur le nouveau.
         # -----------------------------------------------------------------
         cible_forward_reel = Path(temp_dir) / "forward_reel.py"
         contenu_forward_reel = "print('fin')"
         jsonl_forward_reel = _creer_jsonl(contenu_forward_reel, "chemin_reel")
         rc = _lancer_outil(outil, jsonl_forward_reel, "chemin_reel", cible_forward_reel)
-        ok = (
-            rc == 0
-            and _verifier_fichier(cible_forward_reel, contenu_forward_reel + "\n")
-        )
+        ok = rc == 0 and _verifier_fichier(cible_forward_reel, contenu_forward_reel + "\n")
         if ok:
             _imprimer_ok("FORWARD_CHEMIN_REEL", "cree avec exactement un saut de ligne final")
         else:
             _imprimer_rate("FORWARD_CHEMIN_REEL", f"rc={rc}")
             overall_ok = False
         jsonl_forward_reel.unlink(missing_ok=True)
+
+        # -----------------------------------------------------------------
+        # 6. REVERSE_REMPLACER_SYNTAXE : syntaxe invalide avec --remplacer
+        # -----------------------------------------------------------------
+        cible_remplacer = Path(temp_dir) / "remplace.py"
+        cible_remplacer.write_text("x = 1\n", encoding="utf-8")
+        jsonl_invalid = _creer_jsonl("def f(:\n", "remplacer_invalid")
+        proc = _lancer(outil, ["--remplacer", str(jsonl_invalid), "remplacer_invalid", str(cible_remplacer)])
+        rc = proc.returncode
+        backup_path = cible_remplacer.with_name(cible_remplacer.name + ".avant-remplacement")
+        ok = (
+            rc != 0
+            and cible_remplacer.read_text(encoding="utf-8") == "x = 1\n"
+            and not backup_path.is_file()
+            and "REMPLACE" not in proc.stdout
+        )
+        if ok:
+            _imprimer_ok("REVERSE_REMPLACER_SYNTAXE", "refus syntaxe avec --remplacer")
+        else:
+            _imprimer_rate("REVERSE_REMPLACER_SYNTAXE", f"rc={rc}")
+            overall_ok = False
+        jsonl_invalid.unlink(missing_ok=True)
+
+        # -----------------------------------------------------------------
+        # 7. FORWARD_REMPLACER : remplacement valide avec sauvegarde
+        # -----------------------------------------------------------------
+        # Le fichier existe déjà avec le contenu "x = 1\n"
+        jsonl_valid = _creer_jsonl("x = 2\n", "remplacer_valide")
+        proc = _lancer(outil, ["--remplacer", str(jsonl_valid), "remplacer_valide", str(cible_remplacer)])
+        rc = proc.returncode
+        backup_path = cible_remplacer.with_name(cible_remplacer.name + ".avant-remplacement")
+        ok = (
+            rc == 0
+            and cible_remplacer.read_text(encoding="utf-8") == "x = 2\n"
+            and backup_path.is_file()
+            and backup_path.read_text(encoding="utf-8") == "x = 1\n"
+            and "REMPLACE" in proc.stdout
+        )
+        if ok:
+            _imprimer_ok("FORWARD_REMPLACER", "remplacement réussi avec sauvegarde")
+        else:
+            _imprimer_rate("FORWARD_REMPLACER", f"rc={rc}")
+            overall_ok = False
+        jsonl_valid.unlink(missing_ok=True)
+
+        # -----------------------------------------------------------------
+        # 8. REVERSE_GIT_RELATIF : cible relative depuis la racine du dépôt
+        # -----------------------------------------------------------------
+        # On utilise la même cible que précédemment, mais on la passe en chemin relatif.
+        rel_path = os.path.relpath(str(cible_remplacer), start=str(racine))
+        jsonl_git = _creer_jsonl("x = 3\n", "remplacer_git")
+        proc = _lancer(outil, ["--remplacer", str(jsonl_git), "remplacer_git", rel_path], cwd=str(racine))
+        rc = proc.returncode
+        ok = (
+            rc == 0
+            and "WinError" not in proc.stderr
+            and "a échoué" not in proc.stderr
+            and "REMPLACE" in proc.stdout
+        )
+        if ok:
+            _imprimer_ok("REVERSE_GIT_RELATIF", "remplacement relatif sans erreur git")
+        else:
+            _imprimer_rate("REVERSE_GIT_RELATIF", f"rc={rc}")
+            overall_ok = False
+        jsonl_git.unlink(missing_ok=True)
 
     finally:
         # Nettoyage du répertoire temporaire créé sous la racine

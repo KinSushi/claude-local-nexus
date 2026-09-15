@@ -181,33 +181,13 @@ def main() -> int:
         return 1
 
     # --- Vérifications préliminaires --------------------------------------
-    if os.path.exists(cible_path):
-        if not remplacer:
-            print(
-                f"REFUS : le fichier cible '{cible_path}' existe déjà. Utilisez nexus_appliquer.py pour le modifier."
-            )
-            return 1
-        # Option --remplacer activée : on vérifie le suivi git ou on crée une sauvegarde
-        backup_path = cible_path + ".avant-remplacement"
-        # Création de la sauvegarde
-        try:
-            shutil.copy2(cible_path, backup_path)
-        except Exception as e:
-            print(f"REFUS : impossible de créer la sauvegarde avant remplacement de '{cible_path}' : {e}")
-            return 1
-        # Vérification du suivi git (facultatif)
-        try:
-            subprocess.run(
-                ["git", "ls-files", "--error-unmatch", cible_path],
-                cwd=_trouver_racine_depot(os.path.dirname(cible_path)),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-            )
-        except Exception as e:
-            print(f"[!] git ls-files a échoué : {e}", file=sys.stderr)
-            # non suivi, la sauvegarde suffit
-        print(f"REMPLACE : {cible_path} (sauvegarde : {backup_path})")
+    # Déterminer si on doit remplacer un fichier existant
+    remplacement = remplacer and os.path.exists(cible_path)
+    if os.path.exists(cible_path) and not remplacement:
+        print(
+            f"REFUS : le fichier cible '{cible_path}' existe déjà. Utilisez nexus_appliquer.py pour le modifier."
+        )
+        return 1
 
     if not _verifier_dans_racine(cible_path):
         print(
@@ -233,6 +213,26 @@ def main() -> int:
             print(f"REFUS : le contenu proposé est syntaxiquement invalide : {e}")
             return 1
 
+    # Mesure du 2026-09-15 : sauvegarde et contrôle git avant création si remplacement
+    if remplacement:
+        backup_path = cible_path + ".avant-remplacement"
+        try:
+            shutil.copy2(cible_path, backup_path)
+        except Exception as e:
+            print(f"REFUS : impossible de créer la sauvegarde avant remplacement de '{cible_path}' : {e}")
+            return 1
+        try:
+            subprocess.run(
+                ["git", "ls-files", "--error-unmatch", cible_path],
+                cwd=_trouver_racine_depot(os.path.dirname(os.path.realpath(cible_path))),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print(f"NOTE : fichier non suivi par git, la sauvegarde suffit : {cible_path}")
+        except OSError as e:
+            print(f"[!] git introuvable ou non lancable : {e}", file=sys.stderr)
     # --- Création des répertoires parents ---------------------------------
     try:
         os.makedirs(os.path.dirname(cible_path) or ".", exist_ok=True)
@@ -260,7 +260,10 @@ def main() -> int:
     if cible_path.endswith(".py"):
         _lancer_ruff(cible_path)
 
-    print(f"CREE : {cible_path}")
+    if remplacement:
+        print(f"REMPLACE : {cible_path} (sauvegarde : {backup_path})")
+    else:
+        print(f"CREE : {cible_path}")
     return 0
 
 
