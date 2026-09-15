@@ -29334,6 +29334,23 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 
 **Trinity** : SAS a arrêté sa série ; `nexus_agent` n'a aucune voie pour couper le raisonnement (il relève `reasoning_content` après coup) ; seul `nexus_vision` expose `raisonnement=false`, dont l'effet réel à travers LiteLLM n'est pas mesuré.
 
+### Tour 2026-09-15 (04:45-05:30) — sujets ouverts de la conversation soldés d'abord (consigne opérateur)
+
+**P1 soldés, chacun avec épreuve, contre-épreuve et famille jouée** :
+- `nexus_valide` vert sur rien, et fichiers régénérés dans le diff jugé — `41400b2` : `choisir_perimetre` filtre `.py/.ps1` AVANT de choisir, diff restreint ; épreuve sur dépôt git temporaire, V5 défaut réinjecté HORS du dépôt + V5b ; forward réel « Périmètre a422185..HEAD : 5 fichier(s) ».
+- `nexus_creer --remplacer` qui annonçait REMPLACE et sauvegardait avant de refuser, `WinError 123`, fichier non suivi présenté comme échec — `c1dc445`.
+- paires `scripts/` ↔ `outillage/` : copies d'`eacf02f` restées périmées (nexus_agent 550 lignes de retard) et exécutées par nexus_essaim, nexus_patch, nexus_ruche, nexus_relais, nexus_worktree, nexus_bench, nexus_test — resynchronisation `3f6c58d` après vérification que chaque ligne propre à outillage existe sous une forme évoluée dans scripts ; outil `nexus_paires` et porte « paires tenues » du rituel `9704cee` ; premier usage réel en `09edf32` (divergence vue puis synchronisée par l'outil).
+
+**P2 soldés** : `nexus_agent` sans argument rend 2 (`09edf32`) ; sémaphore interne du pont 16 → 10 et `NaN` refusé (`9ca6ce9`).
+
+**Suite complète après la resynchronisation** : 1 192 réussites, 20 échecs. Comparaison épreuve par épreuve entre `e92e8aa` et l'arbre vivant : UNE régression de session, `epreuve_verdict_rassurant` (ses faux supposaient l'ancien périmètre de `nexus_valide`), corrigée `e7c826f`. Les autres sont ANTÉRIEURES : plafond_sortie, garde_quote, corpus, preload, bascule_contre, reprise_avant_repli, charge, bascule, options_lot, relais ; avertir_rendu et posterior passent seules ; `epreuve_nexus_regression.py` branchée le 2026-09-08 sans jamais avoir existé. Elles restent OUVERTES, à traiter une à une.
+
+**Audit tiers `3f6c58d..HEAD`** (jugé par mistral-large-3 après une réponse dégénérée de gpt-oss-120b) : verdict REGRESSION sur deux ÉPREUVES volontairement durcies (cas C de tache_unique, faux de verdict_rassurant) ; toutes les fonctions de production TRAITÉES. Arbitré : faux positif, le juge lit un changement d'assertion d'épreuve comme un changement de comportement ; preuves : contre-épreuves et comparateur. `3f6c58d` lui-même hors audit : copie mécanique au diff hors plafond.
+
+**Défauts d'outil trouvés par l'usage pendant ce tour** : `pwsh -Command` sort en 1 sans stdout ni stderr sur une ParserError (mémoire) ; plusieurs épreuves rendues « vertes sur rien » refusées : noms de tâche absents du JSONL, variante fautive écrite DANS le dépôt éprouvé, épreuve qui réimplémentait l'API au lieu d'importer l'outil, outil chargé depuis la racine temporaire, sortie de l'outil lue comme un cas raté par le harnais, libellés qui affichaient le texte d'échec en OK.
+
+**Restent ouverts** (inventaire complet dans la mémoire de session) : ratio caractères/jeton à mesurer puis dériver ; relance sans raisonnement ; `num_ctx` dérivé ; commit automatique de la mise à jour planifiée ; registre des tâches commits 2 à 5 ; les douze échecs antérieurs de la suite ; pont MCP à éprouver après redémarrage des sessions. Journaux inertes `logs/ollama-serve.err.log` (88 Mo) et `.out.log` (5,6 Mo), plus écrits depuis 03:50:56, ignorés par git : suppression laissée à l'opérateur.
+
 **Principe opérateur « darwin »** : un geste manuel répété est un défaut de mécanisme. Gestes manuels de ce tour, à verser au registre avec une preuve : le doublon `ollama serve` résorbé à la main (la veille corrigée n'en crée plus mais ne vérifie pas le port déjà à l'écoute) ; les fichiers générés par la mise à jour commités à la main ; `num_ctx` fixe au lieu d'être dérivé du contexte natif et de la mémoire mesurée ; 4 caractères par jeton supposés par `nexus_agent` quand SAS en mesure ~3 sur les jetons comptés par la passerelle.
 
 **Ouverts** : un appel `nexus_agent.py` sans argument rend 0 en silence ; `epreuve_agent_familles` compte OK un cas « fuite_no_tracabilite : TRACABILITE détecté » (libellé contradictoire, à auditer) ; rejeu `--depuis-jsonl` sans `--tache` inatteignable.
