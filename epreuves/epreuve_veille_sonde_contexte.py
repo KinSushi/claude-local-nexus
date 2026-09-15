@@ -8,6 +8,10 @@ import pathlib
 import sys
 import urllib.request
 
+# mesure du 2026-09-15 : console cp1252, le signe different faisait planter un cas reussi
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 def _load_module():
     """Charge ``outillage/nexus_veille_moteur.py`` depuis la racine du dépôt."""
     base_dir = pathlib.Path(__file__).resolve().parents[1]  # repository root
