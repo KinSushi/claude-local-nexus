@@ -30,9 +30,9 @@ def _load_module():
     return module, base_dir
 
 def check(nom, condition, detail=""):
-    """Affiche le résultat d’un cas de test et renvoie le booléen."""
+    """Affiche le résultat d’un cas de test et renvoie le booléen. `detail` décrit l'échec et n'est imprimé qu'en cas de RATE."""
     if condition:
-        print(f"[OK  ] {nom} : {detail}")
+        print(f"[OK  ] {nom}")
     else:
         print(f"[RATE] {nom} : {detail}")
     return condition
