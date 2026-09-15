@@ -18,7 +18,7 @@ from pathlib import Path
 
 # ---------------------------------------------------------------------------
 
-def _faux_appeler(candidat, messages, plafond, cle, temperature):
+def _faux_appeler(candidat, messages, plafond, cle, temperature=None, **_options):
     """Fake `appeler` used by the tests."""
     _faux_appeler.recorded.append(candidat)
     scenario = _faux_appeler.scenario

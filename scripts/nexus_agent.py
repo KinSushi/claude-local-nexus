@@ -717,7 +717,7 @@ def repli_passerelle_effectif(entetes) -> bool | None:
 
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             cle: str, temperature: float | None = None,
-            delai: int | None = None, outils: Any = None) -> Dict[str, Any]:
+            delai: int | None = None, outils: Any = None, sans_raisonnement: bool = False) -> Dict[str, Any]:
     """
     Un appel a la passerelle, avec la preuve du plan réellement servi.
 
@@ -750,6 +750,9 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         corps_requete["max_tokens"] = max_tokens
     if temperature is not None:
         corps_requete["temperature"] = temperature
+    # mesure du 2026-09-15 : think false traverse LiteLLM, 444 -> 3 jetons sur qwen3.5-397b-cloud
+    if sans_raisonnement:
+        corps_requete["think"] = False
     # Désactive les replis de la passerelle si NEXUS_MAX_REPLIS_LOCAUX <= 0 ou NEXUS_REPLIS_PASSERELLE == "0"
     if MAX_REPLIS_LOCAUX <= 0 or os.environ.get("NEXUS_REPLIS_PASSERELLE") == "0":
         corps_requete["disable_fallbacks"] = True
@@ -1659,7 +1662,7 @@ def _executer_sans_drapeau(tache: dict, cle: str) -> dict:
 
         essais.append(candidat)
         try:
-            resultat = appeler(candidat, messages, plafond, cle, temperature)
+            resultat = appeler(candidat, messages, plafond, cle, temperature, sans_raisonnement=bool(tache.get("sans_raisonnement")))
         except urllib.error.HTTPError as exc:
             try:
                 detail = exc.read().decode("utf-8", "replace")[:2000]
@@ -1683,6 +1686,24 @@ def _executer_sans_drapeau(tache: dict, cle: str) -> dict:
             _journal_echec("%s : %s" % (candidat, exc))
             continue
 
+        # Mesure du 2026-09-15 : Trinity rendait vide (raisonnement_21535) ; think false traverse la passerelle (444 -> 3 jetons).
+        vide_par_raisonnement = (
+            not (resultat.get("texte") or "").strip()
+            and bool(resultat.get("tronque"))
+            and not reprise_utile(resultat.get("cause_vide"), plafond)
+            and not tache.get("sans_raisonnement")
+        )
+        if vide_par_raisonnement:
+            motif = "%s : raisonnement a epuise le budget (%s), relance unique avec think false" % (candidat, resultat.get("cause_vide"))
+            _journal_echec(motif)
+            try:
+                relance = appeler(candidat, messages, plafond, cle, temperature, sans_raisonnement=True)
+            except Exception as exc:
+                relance = None
+                _journal_echec("%s : relance sans raisonnement echouee : %s" % (candidat, exc))
+            if relance is not None and (relance.get("texte") or "").strip():
+                relance["relance_sans_raisonnement"] = motif
+                resultat = relance
         texte_vide = not (resultat.get("texte") or "").strip()
         if texte_vide:
             if resultat.get("tronque"):
@@ -2133,6 +2154,8 @@ def main() -> int:
                          help="Autoriser --web avec un modele LOCAL malgre la sortie de la requete vers ollama.com.")
     parseur.add_argument("--sans-repli", action="store_true",
                          help="Force l'usage du modele demande sans repli gratuit.")
+    parseur.add_argument("--sans-raisonnement", action="store_true",
+                         help="Envoie think false : le modele repond sans raisonner (budget de sortie preserve).")
     args = parseur.parse_args()
 
     # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
@@ -2182,7 +2205,8 @@ def main() -> int:
                    "racine": args.racine,
                    "web": getattr(args, "web", False),
                    "web_consenti": getattr(args, "web_consenti", False),
-                   "sans_repli": args.sans_repli}]
+                   "sans_repli": args.sans_repli,
+                   "sans_raisonnement": args.sans_raisonnement}]
     else:
         taches = []
 

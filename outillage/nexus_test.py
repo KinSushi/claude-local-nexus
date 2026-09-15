@@ -1439,6 +1439,12 @@ def main() -> int:
     if args.only in (None, "start-moteur"):
         jouer_epreuve_python("epreuve_start_moteur.py",
                              "demarrage du moteur : port deja a l ecoute respecte, application lancee, jamais ollama serve")
+    if args.only in (None, "maj-commit"):
+        jouer_epreuve_python("epreuve_maj_commit.py",
+                             "mise a jour planifiee : fichiers generes commites seuls, rien si inchange, echec dit sans exception")
+    if args.only in (None, "agent-sans-raisonnement"):
+        jouer_epreuve_python("epreuve_agent_sans_raisonnement.py",
+                             "agent : relance unique think false sur vide par raisonnement, jamais sous le seuil, aucune requete reelle")
     if args.only in (None, "valide-perimetre"):
         jouer_epreuve_python("epreuve_valide_perimetre.py",
                              "validation : jamais vert sur rien, fichiers regeneres hors du diff juge")

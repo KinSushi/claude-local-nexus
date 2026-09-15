@@ -12,7 +12,7 @@ import urllib.error
 from pathlib import Path
 import importlib.util
 
-def faux_appeler(candidat, messages, plafond, cle, temperature):
+def faux_appeler(candidat, messages, plafond, cle, temperature=None, **_options):
     faux_appeler.recorded.append(candidat)
     corps = faux_appeler.corps_erreur
     raise urllib.error.HTTPError(
