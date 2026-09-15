@@ -143,10 +143,10 @@ def main():
                 timeout=60,
             )
             duration = time.time() - start
-            # On ne juge pas le code retour, on indique simplement qu’il a fini.
+            # un appel sans tache doit etre REFUSE (mesure du 2026-09-15 : rc=0 en silence)
             ok &= check(
                 "reverse_garde_amont",
-                True,
+                result_c.returncode == 2 and 'usage' in ((result_c.stdout or '') + (result_c.stderr or '')).lower(),
                 f"rc={result_c.returncode}, dur={duration:.2f}s"
             )
         except subprocess.TimeoutExpired:

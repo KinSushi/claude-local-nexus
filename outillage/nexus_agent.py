@@ -2242,6 +2242,11 @@ def main() -> int:
                 print("[!] erreur lors de la lecture du jsonl : %s" % exc, file=sys.stderr)
                 return 1
 
+    # Mesure du 2026-09-15 :
+    if not taches and not (args.sortie_brute and args.depuis_jsonl and args.nom):
+        parseur.print_usage(sys.stderr)
+        print("aucune tache : donner --tache et --modele, ou --lot, ou --modeles", file=sys.stderr)
+        return 2
     # La competence s'applique ici, et non plus haut : `taches` n'existe pas
     # avant ce point, quelle que soit la branche empruntee.
     if args.competence:
