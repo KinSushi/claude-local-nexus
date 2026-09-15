@@ -29303,4 +29303,10 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 
 **Ouverts, à déléguer** : ces deux défauts de `nexus_valide` ; la porte des paires copiées ; `nexus_creer --remplacer` qui imprime « git ls-files a échoué : WinError 123 » ; `nexus_agent.py` sans argument rend 0 en silence.
 
+**Régression eslint relevée par le rituel, et ce n'était pas du lint** (`291c711`) : `server.js:877` (39877fb, 2026-09-14) testait `typeof NEXUS_CLOUD_CONCURRENCE`, identifiant jamais déclaré. `typeof` ne lève pas : le pont prenait TOUJOURS 10 places au sémaphore cloud machine et ignorait la variable que `nexus_agent` lit. Deux détenteurs d'un même sémaphore nommé qui annoncent des plafonds différents n'ont plus de plafond commun. Règle alignée sur `nexus_agent` (entier > 0, sinon 10). `corps` mort retiré de `nexus_vision`. Épreuve `epreuve_semaphore_machine.js` : F1 et R4 RATE avant pose, 7 OK après, contre-épreuve C1 ; famille `semaphore` jouée, 16 réussis. Deux rendus du banc refusés : une épreuve à cas R4 inversé (verte par construction) et une ancre à deux lignes vides là où le fichier en porte une.
+
+**Ouverts neufs** : le sémaphore INTERNE du pont (`CONCURRENCE_CLOUD`, 16 par défaut) dépasse le plafond mesuré le 2026-09-14 (16 en vol → 429) ; le pont MCP déjà lancé dans les sessions ouvertes garde l'ancien code jusqu'à son redémarrage ; forward du plafond à travers le MCP réel non fait pour cette raison.
+
+**Demande de l'opérateur, en attente** : élaborer une stratégie pour vider la checklist et voir les tâches validées apparaître dans `PROGRESS.MD` — mémoire `strategie-checklist-vers-progress`.
+
 **Ouverts** : un appel `nexus_agent.py` sans argument rend 0 en silence ; `epreuve_agent_familles` compte OK un cas « fuite_no_tracabilite : TRACABILITE détecté » (libellé contradictoire, à auditer) ; rejeu `--depuis-jsonl` sans `--tache` inatteignable.
