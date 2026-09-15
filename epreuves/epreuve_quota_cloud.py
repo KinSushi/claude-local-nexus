@@ -239,7 +239,7 @@ def main():
     # ------------------------------------------------------------------
     usage_mixed = (
         "gpt-oss-120b-cloud|19|1|0|1000000\n"
-        "glm-5.3-cloud|20|1|0|500000\n"
+        "modele-fictif-sans-tarif-cloud|20|1|0|500000\n"
     )
     overall_ok &= _run_case(
         name="forward_usage_mixed",
@@ -247,8 +247,8 @@ def main():
         fake_behavior={"stdout": usage_mixed, "returncode": 0},
         expected_code=0,
         stdout_contains=["0.60", "gpt-oss-120b-cloud"],
-        # le coût de l'alias sans tarif ne doit pas apparaître
-        forbidden_substrings="glm-5.3-cloud",
+        # le coût de l'alias fictif (jamais tarifé) ne doit pas apparaître
+        forbidden_substrings="modele-fictif-sans-tarif-cloud",
     )
 
     # ------------------------------------------------------------------
