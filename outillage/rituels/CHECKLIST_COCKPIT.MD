@@ -27761,6 +27761,8 @@ liquidation apparaît dans progress.md via son commit.
 | 20 | **Outil de pose sur main** — `scripts/nexus_poser_lot.py` n'existe qu'en 25 copies (worktrees et références), jamais commité ; v13 et épreuve v8 : un RATE mesuré le 2026-09-14 à 20:39, `ruff introuvable` parce que l'épreuve cherche ruff dans son dépôt temporaire | HAUTE | banc + orchestrateur | correctif à frapper |
 | 21 | **Dossier propre** — une quarantaine de worktrees sous `.nexus/worktrees` ; copie `outillage/nexus_agent.py` en retard de 784 lignes sur `scripts/`, sans appelant de code (seuls la boussole et ce cockpit la citent) ; récolte puis suppression réversible | MOYENNE | orchestrateur | à inventorier |
 | 22 | **Livres Python pour SAS et EA** (*Fluent Python* 2e éd., *Robust Python*) — extraction PyMuPDF faite en transit ; prémâcheur de livres de programmation rendu par le banc, plantage réel `TypeError` ligne 330 sur *Robust Python* ; restent la destination, les indexeurs, les embeddings (reconstruction en cours) et l'annonce avec SHA-256 | HAUTE | banc + orchestrateur | en cours |
+| 23 | **Copies périmées exécutées depuis `outillage/`** — trouvé par l'usage et prouvé à l'exécution le 2026-09-14 à 21:31 : importé depuis `outillage/`, `nexus_agent` résout `outillage/nexus_agent.py`, figé depuis le 2026-09-08, et n'a pas `famille_de`. Au moins quatre outils insèrent leur propre dossier en tête de `sys.path` avant d'importer l'agent par son nom (`nexus_essaim` ligne 43, `nexus_patch` lignes 331 et 488, `nexus_ruche` ligne 44, `nexus_worktree` ligne 59) ; `nexus_relais` et `nexus_migration_plan` sont à vérifier. Remède à concevoir : une seule source dans `scripts/`, les outils de `outillage/` importent depuis `scripts/`, copies retirées par un commit annulable | HAUTE | banc (diagnostic local, vague 69) + orchestrateur | diagnostic au banc |
+| 24 | **Suite rouge sur main, préexistante** — mesuré le 2026-09-14 à 21:14 et 21:28 : famille `lot-controle`, cas `reverse_cli_error`, « can only concatenate str (not "NoneType") to str » ; famille `paires`, trois paires divergentes (`nexus_agent`, `nexus_capability`, `nexus_disjoncteur`), liée à la rangée 23 | HAUTE | banc (diagnostic local, vague 68) | diagnostic au banc |
 
 Je porte seul 1, 2, 3, 6, 7 (aucune inférence lourde, non concurrents du rebuild) ;
 je liquide du plus haut au plus bas, un item par commit. 4, 5 et 11 demandent
@@ -29065,3 +29067,35 @@ Références jointes relevées sur disque : la documentation installée de `get_
 **Rituel** : `nexus_valide` est différé jusqu'à la fin de la reconstruction des embeddings, parce que la validation réécrit l'arbre vivant pendant qu'elle tourne.
 
 **Délégué ce tour** : onze tâches au banc, dont deux locales. **Arbitré ici** : tri du lot 66, contre-épreuves, non-adoption de l'outil de prémâché d'EA, cible du plan unique.
+
+#### 21:10-21:40 — vagues 67 et 68 triées, index sémantique promu, copies périmées exécutées depuis `outillage/`, trois conceptions arbitrées
+
+**Index sémantique des livres** : reconstruction locale terminée à 21:20, 62 494 fragments, 0 échec, index promu. Preuve par l'usage : une recherche de `FrenchDeck` rend le code de *Fluent Python* aux chapitres 1 et 5, et les trois positions rendues se relisent en enregistrements JSON valides de ce symbole.
+
+**Trouvé par l'usage, prouvé à l'exécution** : importé depuis `outillage/`, `nexus_agent` résout la copie de `outillage/`, figée depuis le 2026-09-08, sans `famille_de`. Au moins quatre outils de `outillage/` insèrent leur propre dossier en tête de `sys.path` avant cet import (rangée 23). La famille `paires` de la suite est rouge sur main, et `lot-controle` aussi, pour une autre cause (rangée 24).
+
+**Vague 67, retenus après épreuve et contre-épreuve**, audits tiers locaux en cours avant tout commit :
+
+- le recalage de `sans_repli` sur main : 7 OK avec le patch, 1 RATE sans ; dix familles de la suite de l'agent vertes avec et sans le patch ; ruff identique à main ;
+- l'épreuve-cliquet des sous-processus v6 : 10 OK sur l'arbre corrigé et sur main, 76 RATE et code 1 sur l'arbre d'avant le correctif.
+
+**Vague 68**, onze tâches cloud (108 147 jetons, 166 s) et trois locales :
+
+| rendu | mesure |
+| --- | --- |
+| patch de l'extracteur v3 | posé, ruff 0 ; épreuve : cas A et D rouges, trace dans l'outil ligne 258 |
+| prémâcheur v2 | *Robust Python* : 3 630 unités, texte verbatim exact, aucune légende (le texte n'en contient aucune) ; *Fluent Python* : `IndexError` ligne 317 sur une ligne `def` ou `class` nue (deux dans le texte) |
+| épreuve du créneau v8 | 8 OK au rejeu sur machine calme ; au premier passage, sous charge, deux RATE du cas C : seuil de 3 s instable |
+| épreuve du verrou du cache v5 | cas C vert ; cas A : l'outil obtient le verrou que l'épreuve croit tenir |
+| épreuves vision v5, quota v4, prémâcheur v3 | plantage au chargement |
+| patch d'import propre du cache | refusé, ancre introuvable |
+
+**Défaut de ma consigne** : pour « le bloc de console du dépôt », j'ai joint les lignes 18 à 25 de `scripts/nexus_creer.py`, qui contiennent aussi `import nexus_rendu`. Deux épreuves l'ont recopié et plantent sur `ModuleNotFoundError` ; une troisième emploie `contextlib` avant de l'importer. Le renvoi joint exactement le bloc, et le générateur vérifie son contenu.
+
+**Arbitrage des conceptions** :
+
+- **plan unique v2, retenue avec corrections** : extension de `nexus_plan.py` plutôt qu'un second outil de plan ; manifeste indexé par numéro de rangée, jamais par numéro de ligne ; aucune case `- [ ]` ne reste dans le cockpit ; renvoi `→ rangée N` au format exact ; cliquet dans un contrôle dédié de `nexus_conformite.py` ;
+- **accès au disque, rejetée** : détails inventés (verrou `local_semantic_engine`, drapeau `--deviation`, chemin de trace) ; renvoi avec l'API réelle de `nexus_verbatim.deposer` et du verrou ;
+- **porte de commit, retenue sur ses mesures** : la CI compile seulement `scripts/*.py`, sans ruff, sous Linux ; combinaison arbitrée : crochet `pre-commit` versionné, activé par `core.hooksPath`, qui vérifie le contenu INDEXÉ et non le fichier de travail ; ruff 0.16.5 épinglé dans la CI ; contrôle de présence du crochet.
+
+**Délégué** : quatorze tâches de la vague 68, dont trois locales, et la relance locale de la vague 67. **Arbitré ici** : tris, contre-épreuves, rejeu du créneau, trois conceptions.
