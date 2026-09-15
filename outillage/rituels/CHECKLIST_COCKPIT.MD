@@ -27766,7 +27766,8 @@ liquidation apparaît dans progress.md via son commit.
 | 25 | **Refus de `nexus_appliquer` qui dit où est l'écart** — signalé par EA MT5 le 2026-09-14 vers 21:35 (un modèle local rogne l'indentation des AVANT derrière des numéros de ligne) et mesuré ici à la main le même soir (trois AVANT décalés de deux espaces, lignes réelles 1488, 1544, 1684). Au refus « bloc introuvable » ou « ne commence pas en début de ligne », l'outil cherche la première ligne du bloc sans ses espaces et annonce chaque ligne candidate, son indentation réelle et l'indentation rendue ; le refus reste un refus | MOYENNE | banc (vague 70) | à frapper |
 | 26 | **Captures de sortie fragiles** — cause mesurée du rouge de `lot-controle` le 2026-09-14 vers 21:44 : l'épreuve capture la sortie de `scripts/nexus_lot_controle.py` en UTF-8 strict (`encoding="utf-8"` sans `errors`), l'outil imprime « Arrêt demandé » en cp1252 faute de bloc de console, le fil de lecture meurt sur l'octet `0xea`, la sortie capturée vaut `None`, et la concaténation de la ligne 258 échoue. Dix épreuves sur les vingt-sept qui capturent en UTF-8 n'ont aucune gestion d'erreur de décodage. Remède : bloc de console dans l'outil, `errors="replace"` dans les captures, cliquet qui refuse toute nouvelle capture stricte | HAUTE | banc (vague 70) | à frapper |
 | 27 | **Épreuve-cliquet des sous-processus NON FIABLE** — audit local gemma4-26b, vérifié dans le code réel le 2026-09-14 : l'analyse ne voit que `subprocess.<appel>` écrit sous cette forme (ni `from subprocess import run`, ni alias, ni `os.system`, `os.popen`, `os.startfile`), ne parcourt que `scripts/` et `outillage/`, et `--rebaseline` réécrit la référence puis sort en 0 sans motif ; son affirmation sur la ligne 148 n'a pas été retrouvée. Remède : un module d'analyse des appels de processus partagé par les deux cliquets, périmètre élargi et déclaré dans la référence, rebasement exigeant un motif | HAUTE | banc (vague 70) | v7 à frapper |
-| 28 | **TSV du prémâcheur incompatible avec le format de la bibliothèque, trouvé par l'usage AVANT publication** — mesuré le 2026-09-14 vers 21:50 : les deux livres passent enfin (Robust Python 3 630 unités, Fluent Python 9 841, invariant verbatim vrai), mais `unites_atomiques.tsv` porte de vrais sauts de ligne dans les champs et des fins de ligne CRLF (45 088 lignes physiques pour 3 630 unités), alors que le format existant tient un enregistrement par ligne, en LF, avec `\` doublé, saut de ligne écrit `\n`, tabulation en espace et CR retiré (outil EA, ligne 812 ; TSV réel de la bibliothèque). L'invariant est calculé en mémoire, jamais sur le fichier écrit. Relu par `csv.reader` comme le fait `outillage/nexus_indexer_texte.py` ligne 62 : Robust Python rend 45 087 enregistrements dont 3 630 complets, chaque unité multiligne serait réduite à sa première ligne dans l index et les fragments écartés sans bruit ; Fluent Python rend 9 603 enregistrements complets pour 9 841 unités ; le corpus existant est sain, 342 sur 342. Remède : échappement conforme, écriture en LF, invariant recalculé sur relecture du fichier écrit ; publication vers la destination, SAS et EA suspendue jusque-là | HAUTE | banc (vague 71) | à frapper |
+| 28 | **TSV du prémâcheur incompatible avec le format de la bibliothèque, trouvé par l'usage AVANT publication** — mesuré le 2026-09-14 vers 21:50 : les deux livres passent enfin (Robust Python 3 630 unités, Fluent Python 9 841, invariant verbatim vrai), mais `unites_atomiques.tsv` porte de vrais sauts de ligne dans les champs et des fins de ligne CRLF (45 088 lignes physiques pour 3 630 unités), alors que le format existant tient un enregistrement par ligne, en LF, avec `\` doublé, saut de ligne écrit `\n`, tabulation en espace et CR retiré (outil EA, ligne 812 ; TSV réel de la bibliothèque). L'invariant est calculé en mémoire, jamais sur le fichier écrit. Relu par `csv.reader` comme le fait `outillage/nexus_indexer_texte.py` ligne 62 : Robust Python rend 45 087 enregistrements dont 3 630 complets, chaque unité multiligne serait réduite à sa première ligne dans l index et les fragments écartés sans bruit ; Fluent Python rend 9 603 enregistrements complets pour 9 841 unités ; le corpus existant est sain, 342 sur 342. Remède : échappement conforme, écriture en LF, invariant recalculé sur relecture du fichier écrit ; publication vers la destination, SAS et EA suspendue jusque-là | HAUTE | banc (vague 71) | ✅ livré pour la publication (TSV conforme, livres publiés le 2026-09-14 et vérifiés par SAS et EA) ; l'outil reste à commiter, rangée 22 |
+| 29 | **Disjoncteur partagé : écritures perdues entre processus, et épreuves qui écrivent dans l'état réel** — mesuré le 2026-09-14 : la fermeture de `deepseek-v4-pro-0813-cloud` écrite à 22:58:46 par une session a été écrasée à 22:59:10 par un cliché périmé ; l'état a repris `fail_count` 1 et `last_failure` 02:49:48, valeurs EXACTES de l'échec de 02:49. Auteur non identifiable, car aucune écriture ne porte son auteur ; la session voisine l'a écarté par ses horaires. Cause lue dans `scripts/nexus_disjoncteur.py` : `_ensure_state` charge l'état une fois par instance, `_persist` réécrit le dictionnaire entier, le verrou est un `RLock` interne au processus. Deux épreuves écrivent dans l'état réel : `epreuve_journal_disjoncteur.py` (sans `NEXUS_ETAT_DISJONCTEUR`, et sur la copie `outillage/`) et `epreuve_agent_quota_cloud.py` (`restaurer()` dès le premier cas) ; quatre cibles fictives traînent dans l'état partagé. Erreur corrigée de ma part : « un budget épuisé bannit le modèle » était FAUX, ce motif est sauté depuis `adfea81`. Remède frappé en vague 76 : chaque modification relue sous verrou entre processus, cible seule réécrite, auteur `modifie_par`, `oublier_cible` ; épreuve à sous-processus (nominale, concurrence, inverse, auteur, oubli, fuite) ; deux épreuves isolées | HAUTE (trois sessions) | banc (vague 76) | frappé |
 
 Je porte seul 1, 2, 3, 6, 7 (aucune inférence lourde, non concurrents du rebuild) ;
 je liquide du plus haut au plus bas, un item par commit. 4, 5 et 11 demandent
@@ -29142,3 +29143,50 @@ Les huit TSV se relisent avec une largeur constante ; taille maximale des unité
 **Restent ouverts** : le commit du prémâcheur et de l'extracteur (violation ruff SIM108, épreuve du prémâcheur fausse verte, épreuve de l'extracteur dont le cas A passe `--refaire` sans `--sauvegardes`, refus muet de l'outil lignes 160-161, dépendance à `pdftotext` même en mode pymupdf ligne 166) ; la détection des légendes de code, partielle (134 rattachées pour Fluent Python, qui compte 520 lignes « Example N-M. ») ; les embeddings des nouveaux textes.
 
 **Délégué** : prémâcheur et correctifs rendus par gpt-oss-120b, mistral-large-3 et qwen3.5-397b. **Arbitré ici** : vérification indépendante des fichiers écrits, publication, indexation, preuve par l'usage.
+
+### Tour 2026-09-14 (22:55-23:55) — vague 75 triée, tarifs commités, plan des plus-values immédiates, disjoncteur partagé
+
+**Commité** : `1d6f159`, tarifs officiels Ollama Cloud et épreuve du quota cloud sur alias fictif (29 OK ; contre-épreuve, l'alias fictif doté d'un prix, 1 RATE). `nexus_valide --base HEAD~1` : aucune régression, juge le banc gratuit, code 0.
+
+**Vague 75, quinze rendus cloud, arbitrée** :
+
+| rendu | verdict mesuré |
+| --- | --- |
+| épreuve du quota cloud | posée, discriminante, commitée |
+| épreuve de l'extracteur v5 | 5 OK ; contre-épreuve 1 RATE ; l'outil garde deux `sys.exit(2)` en double et un code `E821` inventé |
+| épreuve d'état du quota v6 | 15 OK ; contre-épreuve 1 RATE ; ruff 2 |
+| indice de `nexus_appliquer` | mesures directes justes (zéro occurrence, typographie) ; prouvé sur un vrai refus du prémâcheur ; l'épreuve d'indice est périmée |
+| sept outils « scripts d'abord » | cinq chargent `scripts/` à l'exécution ; `nexus_relais` et `nexus_patch` importent dans une fonction, que `--help` n'atteint pas |
+| module partagé, API pure | REJETÉ et restauré : `NameError: path`, et la fonction par fichier passait un dossier comme texte |
+| porte de commit v2 | REJETÉE et restaurée : `UnboundLocalError: _ruff_outputs` |
+| cliquet des sous-processus v10 | plante avec le module, et a réécrit sa référence à 0 pendant que l'analyse plantait : faux vert à corriger |
+| `nexus_plan` (lot 75b) | chemin corrigé ; plante à l'impression (U+2192 en cp1252) ; message `Erreur ` affiché littéralement |
+| créneau cloud v11 | le cas C rate sur l'arbre corrigé ET sur main : il faut un diagnostic du pont, pas une version de plus |
+| références de l'agent | refusé, bloc 7 décalé : rendu par fonction entière en vague 76 |
+| prémâcheur | refusé : ancre à 0 espace rendue à 4, indice « candidat ligne 140 » |
+
+**Livres** : index sémantique reconstruit, 75 965 fragments, 0 échec ; *Robust Python* remonte en tête sur NewType ; aucune apostrophe typographique perdue. EA prévenu.
+
+**Plan des plus-values immédiates**, demandé par l'opérateur, écrit dans `.nexus/references_lot76/plan_plus_values_immediates.md` et critiqué par deux tiers :
+
+1. disjoncteur partagé, rangée 29 ;
+2. rapatrier sur main le travail vérifié ;
+3. porte de commit installée, rangée 19 ;
+4. références du disque AVANT, rangée 18 ;
+5. outil de tri et de pose sur main, rangée 20 ;
+6. rendus plus fiables : fonctions entières, indices de refus, budget par famille ;
+7. dossier propre et réversible, rangées 21, 23 et 24 ;
+8. plan unique, rangée 17 ;
+9. livres, rangées 22 et 28.
+
+Critiques : gpt-oss-120b, repli de glm-5.3-cloud qui a épuisé son raisonnement à 16 000 jetons, a rendu trois trouvailles, toutes rejetées (la colonne de valeur lue comme un état présent). qwen3-coder-30b-local : une trouvaille retenue, le disjoncteur absent de la table, d'où la rangée 29 ; sept rejetées, car les rangées 17 à 20 existent.
+
+**Vague 76 lancée**, quinze tâches : quatre pour le disjoncteur, trois pour la porte de commit, sept pour rapatrier le travail vérifié dont quatre audits locaux sur quatre familles (qwen3.6-27b-coding, devstral-24b, qwen3-coder-30b, phi4-reasoning-14b), une pour les références du disque par fonction entière.
+
+**Coordination** : SAS a réfuté par ses horaires mon hypothèse sur l'auteur de l'écriture perdue ; ma première explication (budget épuisé) était fausse, corrigée auprès de SAS. EA et SAS ordonnent le banc local. Les modèles tirés ce soir par l'opérateur (qwen3.5:35b, Trinity-Mini, nemotron-3-nano:30b, Lucie-7B, selene-mini, phi4-mini, deepseek-coder-v2:16b) n'ont pas d'alias : la tâche de 04:00 les exposera, sans redémarrer LiteLLM pendant les frappes des voisins.
+
+**Défauts trouvés par l'usage, à inscrire au plan** : un lot local de N tâches tient le verrou « banc » pendant les N, et bloque les appels courts des voisins ; glm-5.3-cloud a épuisé son raisonnement à 6 000 (deux fois) puis à 16 000 jetons, sans aucun rendu ce soir ; le compteur de raisonnement vaut environ 3,5 fois le budget demandé, chez moi comme chez SAS.
+
+**Consignes de l'opérateur pendant le tour** : « termine tes tâches en cours, ensuite planifie ce qui apporte de vraies plus-values immédiates » ; « après le commit, vois parmi ta checklist ce qui apporte une grosse plus-value à exécuter en premier » ; « la puissance des agents locaux » (liste de 78 modèles installés) ; « les modèles locaux sont aussi bons que le cloud ». Mise en œuvre mesurable, pas déclarative : à partir de la vague 77, chaque rendu est frappé en double, une famille locale et une famille cloud, et les deux sont jugés par les MÊMES épreuves et contre-épreuves ; le taux de rendus posés et discriminants par plan tranchera, tâche par tâche.
+
+**Délégué** : quinze rendus (vague 75), un re-rendu (75b), deux critiques du plan, quinze tâches (vague 76). **Arbitré ici** : tri, poses, contre-épreuves, restaurations, commit, plan, coordination.
