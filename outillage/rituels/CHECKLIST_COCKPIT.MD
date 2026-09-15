@@ -29103,3 +29103,23 @@ Références jointes relevées sur disque : la documentation installée de `get_
 - **porte de commit, retenue sur ses mesures** : la CI compile seulement `scripts/*.py`, sans ruff, sous Linux ; combinaison arbitrée : crochet `pre-commit` versionné, activé par `core.hooksPath`, qui vérifie le contenu INDEXÉ et non le fichier de travail ; ruff 0.16.5 épinglé dans la CI ; contrôle de présence du crochet.
 
 **Délégué** : quatorze tâches de la vague 68, dont trois locales, et la relance locale de la vague 67. **Arbitré ici** : tris, contre-épreuves, rejeu du créneau, trois conceptions.
+
+#### 22:00-22:25 — deux correctifs sur main, un faux rouge et des faux verts démasqués par des mesures indépendantes
+
+**Commités sur main**, chacun après épreuve, contre-épreuve, audit tiers et rejeu sur main même :
+
+- `02f5782`, `lot-controle` : bloc de console dans l'outil, `errors="replace"` dans les captures de l'épreuve ; 19 OK sur main, famille de la suite verte (rangée 24 : moitié `lot-controle` close ; rangée 26 : premier site corrigé) ;
+- `ec8e586`, `sans_repli` dans `nexus_agent`, avec son épreuve et la famille `agent-sans-repli` : identité octet pour octet avec le worktree, ruff inchangé (5 avant, 5 après), onze familles de la suite vertes sur main.
+
+**Mesures indépendantes qui ont renversé un verdict** :
+
+- **prémâcheur v4, faux rouge** : l'outil déclare « invariant violé » et écrit `false` ; relu par une mesure indépendante, son TSV est juste (3 630 textes exacts sur 3 630, LF, un enregistrement par ligne). Cause lue dans le code : un désechappement enchaîné par `replace` change le littéral `\n` des chaînes Python en saut de ligne. Correctif envoyé à la vague 72 ;
+- **verrou du cache, cas A** : face à un porteur du même verrou, l'outil rend 75 en 2,1 s ; le défaut est dans l'épreuve, et le diagnostic local qui accusait l'outil est réfuté ;
+- **cliquet des sous-processus v8, faux vert** : il fige sa référence à 0 site, alors que le module partagé qu'il doit employer en compte 169 sur le même arbre (épreuves 86, outillage 54, scripts 29) ;
+- **épreuve du prémâcheur v5, faux vert** : trois `[RATE]` imprimés et code 0.
+
+**Mesuré sur les agents locaux** : `qwen3-coder-30b-local` rend des audits utilisables, mais des diagnostics génériques ou faux (trois rejetés ce soir) ; `gemma4-26b-local`, modèle à raisonnement, rend VIDE à 2 500 jetons. Les diagnostics passent au cloud, les audits restent locaux, et les générateurs de vagues refusent désormais tout budget sous 6 000 jetons (mémoire `budget-sortie-banc` complétée).
+
+**Défauts de ma propre instrumentation, corrigés** : un script de tri qui plantait sur `�` faute de bloc de console ; une vérification de générateur qui doublait deux fois les barres obliques inverses ; une contre-épreuve de cliquet jouée sur un arbre non comparable. La contre-épreuve d'un cliquet injecte désormais un défaut dans l'arbre même où la référence a été figée.
+
+**Délégué** : vagues 69 à 72, quarante-six tâches dont huit locales. **Arbitré ici** : tris, mesures directes, deux poses sur main.
