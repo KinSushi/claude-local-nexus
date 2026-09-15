@@ -104,7 +104,8 @@ def _run(args: list[str], timeout: int = 60) -> str:
     try:
         result = subprocess.run(args, capture_output=True, text=True,
                                 timeout=timeout, encoding="utf-8",
-                                errors="replace")
+                                errors="replace",
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         if result.returncode != 0:
             _dire("code %s : %s" % (result.returncode,
                                     (result.stderr or "").strip()[:120]))
@@ -148,6 +149,7 @@ def racine_plateforme(defaut: str) -> str:
             ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
             cwd=defaut, capture_output=True, text=True, timeout=10,
             encoding="utf-8", errors="replace",
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if resultat.returncode == 0 and resultat.stdout.strip():
             racine = os.path.dirname(resultat.stdout.strip())

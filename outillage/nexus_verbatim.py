@@ -198,16 +198,19 @@ def purger(jours: int) -> tuple:
                 if age < limite:
                     os.remove(chemin)
                     supprimes += 1
-            except OSError:
+            except OSError as exc:
+                print("purger : os.remove impossible : %s" % exc, file=sys.stderr)
                 continue
-    except OSError:
+    except OSError as exc:
+        print("purger : os.listdir impossible : %s" % exc, file=sys.stderr)
         pass
 
     try:
         with io.open(INDEX, "w", encoding="utf-8", errors="replace") as fh:
             for e in gardees:
                 fh.write(json.dumps(e, ensure_ascii=False) + "\n")
-    except OSError:
+    except OSError as exc:
+        print("purger : index write impossible : %s" % exc, file=sys.stderr)
         pass
     return supprimes, sautees
 

@@ -276,6 +276,142 @@ def replis_gratuits(cle: str) -> List[str]:
     except Exception:
         return list(REPLIS_GRATUITS_PLANCHER)
 
+# ----------------------------------------------------------------------
+# Limitation du nombre de replis locaux conservés.
+# Le plafond est configurable via la variable d'environnement NEXUS_MAX_REPLIS_LOCAUX
+# (défaut : 2). La fonction est pure et ne dépend que des arguments fournis.
+try:
+    MAX_REPLIS_LOCAUX = int(os.environ.get("NEXUS_MAX_REPLIS_LOCAUX", "2"))
+except ValueError:
+    print(f"NEXUS_MAX_REPLIS_LOCAUX invalide (valeur='{os.environ.get('NEXUS_MAX_REPLIS_LOCAUX')}'), utilisation de la valeur par défaut 2", file=sys.stderr)
+    MAX_REPLIS_LOCAUX = 2
+
+QUOTA_CLOUD_EPUISE = None
+
+def borner_replis_locaux(candidats: list, plans: dict, maximum: int = MAX_REPLIS_LOCAUX) -> tuple:
+    """
+    Retourne une paire (candidats_gardes, ecartes).
+
+    - Le premier candidat (le modèle demandé) est toujours conservé.
+    - Tous les candidats dont le plan n'est pas « local » sont conservés.
+    - Parmi les candidats « local », on ne garde que les *maximum* premiers
+      (dans l'ordre d'apparition) ; les suivants sont listés dans *ecartes*.
+    - Si *maximum* ≤ 0, aucun repli local supplémentaire n'est conservé.
+    - Chaque entrée d'*ecartes* a la forme
+      "%s : ecarte, plafond de %d repli(s) local(aux) (NEXUS_MAX_REPLIS_LOCAUX)".
+    """
+    if not candidats:
+        return [], []
+
+    # Le premier candidat (modèle demandé) est toujours conservé.
+    gardes = [candidats[0]]
+    ecartes = []
+
+    # Compteur des replis locaux déjà conservés (hors modèle demandé).
+    locaux_gardes = 0
+
+    for cand in candidats[1:]:
+        plan = plans.get(cand)
+        if plan != "local":
+            # Tout ce qui n'est pas explicitement local est conservé.
+            gardes.append(cand)
+        else:
+            # Candidat local : on ne garde que jusqu'au plafond.
+            if maximum > 0 and locaux_gardes < maximum:
+                gardes.append(cand)
+                locaux_gardes += 1
+            else:
+                ecartes.append(
+                    f"{cand} : ecarte, plafond de {maximum} repli(s) local(aux) (NEXUS_MAX_REPLIS_LOCAUX)"
+                )
+    return gardes, ecartes
+
+# ----------------------------------------------------------------------
+# Fonctions pures ajoutées pour la garde‑mémoire avant repli local
+# ----------------------------------------------------------------------
+def memoire_suffisante(poids_go, libre_go, marge_go: float = 2.0) -> bool:
+    """
+    Retourne True si la mémoire libre est suffisante pour le poids du modèle
+    (avec une marge de sécurité). Règles :
+
+    - Si poids_go est None → on ne peut pas comparer, on considère qu'il y a
+      suffisamment de mémoire (True) afin de ne pas bloquer le repli.
+    - Si libre_go est None → on ne sait pas, on considère qu'il n'y a pas
+      assez de mémoire (False).
+    - Sinon, retourne poids_go + marge_go <= libre_go.
+    """
+    if poids_go is None:
+        return True
+    if libre_go is None:
+        return False
+    return (poids_go + marge_go) <= libre_go
+
+
+def tag_depuis_alias(alias: str, tags_installes: list) -> str | None:
+    """
+    Recherche le tag d'origine correspondant à un alias local.
+
+    L'alias est dérivé par `local_alias` dans nexus_generate.py.
+    Cette fonction importe `local_alias` de façon paresseuse et renvoie le
+    tag correspondant ou None si aucun ne correspond.
+    """
+    try:
+        from nexus_generate import local_alias
+    except Exception:
+        return None
+
+    for t in tags_installes:
+        try:
+            if local_alias(t) == alias:
+                return t
+        except Exception:
+            continue
+    return None
+
+
+def poids_et_libre(alias: str) -> tuple:
+    """
+    Retourne (poids_go, libre_go) pour l'alias donné.
+
+    - `installed_models()` (nexus_capability) fournit le dictionnaire
+      tag → poids.
+    - `tag_depuis_alias` permet de retrouver le tag à partir de l'alias.
+    - `mesurer_ram()` (nexus_charge) fournit la RAM libre.
+    - En cas d'échec à n'importe quelle étape, renvoie (None, None).
+    """
+    try:
+        from nexus_capability import installed_models
+    except Exception:
+        return (None, None)
+
+    try:
+        models = installed_models()
+    except Exception:
+        return (None, None)
+
+    if not models:
+        return (None, None)
+
+    tags = list(models.keys())
+    tag = tag_depuis_alias(alias, tags)
+    if tag is None:
+        return (None, None)
+
+    poids = models.get(tag)
+
+    try:
+        from nexus_charge import mesurer_ram
+    except Exception:
+        return (poids, None)
+
+    try:
+        ram = mesurer_ram()
+        libre = ram.get("libre_go")
+    except Exception:
+        libre = None
+
+    return (poids, libre)
+
 # Règles de filtrage des fichiers secrets. Les deux étages (ce script et le serveur MCP)
 # sont désormais alignés sur le filtre le plus strict, celui du serveur MCP. Un même fichier
 # ne doit pas être accepté ici puis refusé là-bas, ou inversement, car les deux canaux
@@ -295,6 +431,24 @@ MOTIFS_SECRETS = re.compile(
     re.IGNORECASE,
 )
 
+
+def cle_ollama() -> str:
+    """Cle Ollama Cloud (outils web), meme mecanisme que cle_maitre ; jamais imprimee."""
+    cle = os.environ.get("OLLAMA_CLOUD_API_KEY")
+    if cle:
+        return cle.strip().split(" #")[0].strip().strip('"').strip("'")
+    chemin_env = os.path.join(ROOT, ".env")
+    if os.path.isfile(chemin_env):
+        with open(chemin_env, "r", encoding="utf-8") as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if ligne.startswith("OLLAMA_CLOUD_API_KEY="):
+                    valeur = ligne.split("=", 1)[1].strip()
+                    valeur = valeur.split(" #")[0].strip()
+                    valeur = valeur.strip('"').strip("'")
+                    if valeur:
+                        return valeur
+    raise SystemExit("OLLAMA_CLOUD_API_KEY introuvable (ni dans l'environnement, ni dans .env).")
 
 def cle_maitre() -> str:
     """
@@ -449,9 +603,121 @@ def _sans_raisonnement(texte):
     return s.rstrip()
 
 
+SEUIL_RAISONNEMENT = int(os.environ.get("NEXUS_SEUIL_RAISONNEMENT", "4096"))
+
+
+def demande_fichier_entier(consigne: str) -> bool:
+    """
+    Heuristique très simple pour détecter une consigne demandant la génération
+    d'un fichier complet. Retourne True si la consigne contient l'un des verbes
+    ou expressions typiques d'une tâche d'écriture de fichier.
+    """
+    mots_cles = [
+        "écris", "ecris", "génère", "genere", "rends le fichier",
+        "fichier complet", "crée", "creer", "creé", "creée", "create"
+    ]
+    cons = consigne.lower()
+    return any(m in cons for m in mots_cles)
+
+
+def reprise_utile(cause_vide, plafond=0) -> bool:
+    """
+    Retourne True si relever le plafond est utile.
+    - Si `cause_vide` ne commence pas par "raisonnement_" → True.
+    - Si commence par "raisonnement_" → True tant que `plafond` < SEUIL_RAISONNEMENT,
+      sinon False.
+    """
+    if not (isinstance(cause_vide, str) and cause_vide.startswith("raisonnement_")):
+        return True
+    return plafond < SEUIL_RAISONNEMENT
+
+def part_repetee(texte: str, longueur_min: int = 40, repetitions: int = 5) -> float:
+    """
+    Retourne la fraction de caractères du texte (hors espaces de tête/fin de chaque ligne)
+    appartenant à des lignes d'au moins ``longueur_min`` caractères qui apparaissent
+    au moins ``repetitions`` fois.
+    Le calcul ignore les lignes vides et les espaces de début/fin.
+    Si aucune ligne ne satisfait le critère, retourne 0.0.
+    """
+    if not texte:
+        return 0.0
+    # Nettoyage des lignes : strip des espaces de tête/fin, on garde les lignes suffisamment longues
+    lignes = [l.strip() for l in texte.splitlines() if len(l.strip()) >= longueur_min]
+    if not lignes:
+        return 0.0
+    from collections import Counter
+    compteur = Counter(lignes)
+    # Sélection des lignes qui apparaissent au moins ``repetitions`` fois
+    lignes_repetees = {ligne for ligne, cnt in compteur.items() if cnt >= repetitions}
+    if not lignes_repetees:
+        return 0.0
+    # Calcul du nombre total de caractères (hors espaces de tête/fin) du texte
+    total_chars = sum(len(l) for l in lignes)
+    # Caractères appartenant aux lignes répétées
+    rep_chars = sum(len(l) * compteur[l] for l in lignes_repetees)
+    return rep_chars / total_chars if total_chars else 0.0
+
+
+def texte_degenere(texte, longueur_min: int = 40, repetitions: int = 5) -> bool:
+    """
+    Détecte un texte dégénéré :
+    - découpe le texte en lignes stripées, ignore celles de moins de
+      ``longueur_min`` caractères ;
+    - renvoie ``True`` si une même ligne apparaît au moins ``repetitions``
+      fois ;
+    - ou si, sur le texte sans sauts de ligne, un même bloc de 200 caractères
+      (extrait tous les 100 caractères) apparaît au moins ``repetitions``
+      fois ;
+    - renvoie ``False`` pour un texte vide ou trop court. Aucun
+      exception n’est levée.
+    """
+    if not texte:
+        return False
+
+    # 1. Critère de lignes répétées via part_repetee
+    part = part_repetee(texte, longueur_min=longueur_min, repetitions=repetitions)
+    if part >= 0.6:
+        return True
+
+    # 2. Recherche de blocs répétés (fenêtre glissante) – critère inchangé
+    compact = "".join(texte.splitlines())
+    if len(compact) < 200:
+        return False
+
+    blocs = [
+        compact[i:i + 200]
+        for i in range(0, len(compact) - 200 + 1, 100)
+    ]
+    if blocs:
+        from collections import Counter
+        if any(cnt >= repetitions for cnt in Counter(blocs).values()):
+            return True
+
+    return False
+
+
+def repli_passerelle_effectif(entetes) -> bool | None:
+    """
+    Retourne True si la passerelle a servi un autre modele que celui demande.
+
+    - True si x-litellm-attempted-fallbacks vaut '1', 'true' ou 'True'
+    - False si l'en-tete est present avec '0', 'false' ou ''
+    - None si absent ou si entetes n'est pas un dict
+    """
+    if not isinstance(entetes, dict):
+        return None
+    if "x-litellm-attempted-fallbacks" not in entetes:
+        return None
+    valeur = entetes["x-litellm-attempted-fallbacks"]
+    if valeur in ("1", "true", "True"):
+        return True
+    if valeur in ("0", "false", ""):
+        return False
+    return None
+
 def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
             cle: str, temperature: float | None = None,
-            delai: int | None = None) -> Dict[str, Any]:
+            delai: int | None = None, outils: Any = None) -> Dict[str, Any]:
     """
     Un appel a la passerelle, avec la preuve du plan réellement servi.
 
@@ -474,6 +740,8 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "messages": messages,
         "cache": {"no-cache": True},
     }
+    if outils:
+        corps_requete["tools"] = outils
     # Inconnu retombe sur max_tokens parce qu'Anthropic l'exige et qu'Ollama se contente de l'ignorer.
     # Utilise num_predict uniquement lorsque le plan est connu et vaut 'local' ou 'cloud'.
     if plan in ("local", "cloud"):
@@ -482,6 +750,14 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         corps_requete["max_tokens"] = max_tokens
     if temperature is not None:
         corps_requete["temperature"] = temperature
+    # Désactive les replis de la passerelle si NEXUS_MAX_REPLIS_LOCAUX <= 0 ou NEXUS_REPLIS_PASSERELLE == "0"
+    if MAX_REPLIS_LOCAUX <= 0 or os.environ.get("NEXUS_REPLIS_PASSERELLE") == "0":
+        corps_requete["disable_fallbacks"] = True
+        if not hasattr(appeler, "_modeles_fallbacks_desactives"):
+            appeler._modeles_fallbacks_desactives = set()
+        if modele not in appeler._modeles_fallbacks_desactives:
+            print(f"Replis de la passerelle desactives pour {modele} (NEXUS_MAX_REPLIS_LOCAUX<=0 ou NEXUS_REPLIS_PASSERELLE=0)", file=sys.stderr)
+            appeler._modeles_fallbacks_desactives.add(modele)
     charge = json.dumps(corps_requete).encode("utf-8")
     requete = urllib.request.Request(
         PASSERELLE + "/v1/chat/completions",
@@ -493,13 +769,41 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         method="POST",
     )
     depart = time.time()
+    from nexus_verrou_machine import semaphore
     ctx = ssl.create_default_context()
     # 15 min de silence, 0.05s CPU: l'appelant ne distingue pas requete non partie et inference.
     # Annonce sur stderr pour ne pas polluer le rendu.
     print(f"Appel modele {modele} (timeout {delai or DELAI}s) : depart maintenant", file=sys.stderr, flush=True)
-    with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
-        corps = json.loads(reponse.read().decode("utf-8"))
-        entetes = {k.lower(): v for k, v in reponse.getheaders()}
+    if plan == "cloud":
+        # Mesure 14/09 : 12 à 13 requêtes en vol passent, 16 produisent 12 refus 429 en 5 minutes.
+        # Lecture protégée de NEXUS_CLOUD_CONCURRENCE
+        _n_raw = os.getenv("NEXUS_CLOUD_CONCURRENCE")
+        try:
+            n = int(_n_raw) if _n_raw is not None else 10
+            if n <= 0:
+                raise ValueError
+        except Exception:
+            print("NEXUS_CLOUD_CONCURRENCE invalide, utilisation de la valeur par défaut 10", file=sys.stderr)
+            n = 10
+        # Lecture protégée de NEXUS_CLOUD_ATTENTE_S
+        _att_raw = os.getenv("NEXUS_CLOUD_ATTENTE_S")
+        try:
+            attente = int(_att_raw) if _att_raw is not None else 1800
+            if attente <= 0:
+                raise ValueError
+        except Exception:
+            print("NEXUS_CLOUD_ATTENTE_S invalide, utilisation de la valeur par défaut 1800", file=sys.stderr)
+            attente = 1800
+        with semaphore("cloud", n, projet=os.path.basename(racine_travail()) or "nexus", attente_s=attente, bavard=False) as creneau:
+            if not creneau:
+                raise RuntimeError("plafond cloud machine atteint")
+            with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
+                corps = json.loads(reponse.read().decode("utf-8"))
+                entetes = {k.lower(): v for k, v in reponse.getheaders()}
+    else:
+        with urllib.request.urlopen(requete, timeout=(delai or DELAI), context=ctx) as reponse:
+            corps = json.loads(reponse.read().decode("utf-8"))
+            entetes = {k.lower(): v for k, v in reponse.getheaders()}
     duree = time.time() - depart
     choix = (corps.get("choices") or [{}])[0]
 
@@ -534,7 +838,7 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
     except Exception as exc:
         print("lecture de la tracabilite du plan ratee : %s" % exc, file=sys.stderr)
 
-    return {
+    resultat = {
         "texte": texte,
         "tronque": choix.get("finish_reason") == "length",
         "tokens": (corps.get("usage") or {}).get("total_tokens", 0),
@@ -551,7 +855,15 @@ def appeler(modele: str, messages: List[Dict[str, Any]], max_tokens: int,
         "cause_vide": (
             "raisonnement_" + str(len(choix.get('message', {}).get('reasoning_content', '')))
         ) if not texte else "contenu_present",
+        "repli_passerelle": repli_passerelle_effectif(entetes),
+        "tool_calls": (choix.get("message") or {}).get("tool_calls") or [],
     }
+    if resultat["repli_passerelle"] and not resultat.get("motif_bascule"):
+        resultat["motif_bascule"] = (
+            f"repli de la passerelle : {modele} -> {resultat['servi_par']} "
+            f"({resultat['adresse']}, plan {plan_de(entetes.get('x-litellm-model-api-base', ''))})"
+        )
+    return resultat
 
 
 def plans_par_alias(cle: str) -> Dict[str, str]:
@@ -1051,10 +1363,136 @@ def etiqueter_ecritures(resultat: dict, tache: dict, consigne: str) -> dict:
         print("comptage des mentions hors perimetre rate : %s" % exc, file=sys.stderr)
     return resultat
 
+# Consigne systeme par defaut du banc.
+SYSTEME_DEFAUT = (
+    "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
+    "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
+    "que tu n'as pas lu, et tu dis explicitement quand tu n'es pas sur."
+)
+
+def consigne_sans_web() -> str:
+    return (
+        "Tu n as AUCUN acces au web ni a aucun outil. Ce que tu rapportes vient de "
+        "ta memoire d entrainement : ne presente jamais un souvenir comme le resultat "
+        "d une recherche, cite tes sources comme des souvenirs, et marque NON VERIFIE tout "
+        "fait dont tu n es pas certain."
+    )
+
+def composer_systeme(systeme_demande, web) -> str:
+    base = systeme_demande if systeme_demande else SYSTEME_DEFAUT
+    if not web:
+        base = f"{base} {consigne_sans_web()}"
+    return base
+
+# Outils web natifs d'Ollama, exposes au modele en function calling OpenAI.
+# La requete de recherche part vers ollama.com : avec un modele LOCAL, --web
+# est refuse sans --web-consenti (regle 108 : un repli est subi, jamais choisi).
+OUTILS_WEB = [
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Search the web for current information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "max_results": {"type": "integer", "minimum": 1, "maximum": 10, "description": "Maximum number of results"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_fetch",
+            "description": "Fetch content from a URL.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "URL to fetch"}
+                },
+                "required": ["url"]
+            }
+        }
+    }
+]
+
+def appel_web(cle_web: str, outil: str, corps: dict) -> dict:
+    url = "https://ollama.com/api/" + outil
+    data = json.dumps(corps).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"Authorization": "Bearer " + cle_web, "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            reponse = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError("appel web " + outil + " rate : " + str(exc)) from exc
+    if "content" in reponse and isinstance(reponse["content"], str):
+        reponse["content"] = reponse["content"][:4000]
+    if "results" in reponse and isinstance(reponse["results"], list):
+        for r in reponse["results"]:
+            if isinstance(r, dict) and "content" in r and isinstance(r["content"], str):
+                r["content"] = r["content"][:4000]
+    return reponse
+
+def executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus, joints, consentement) -> dict:
+    try:
+        cle_web = cle_ollama()
+    except SystemExit as exc:
+        return {"nom": nom, "modele": modele, "erreur": str(exc), "code": 2}
+    if modele.endswith("-local") and not consentement:
+        return {"nom": nom, "modele": modele, "erreur": "la recherche web envoie la requete a ollama.com : ajouter --web-consenti pour l autoriser avec un modele local", "code": 2}
+    recherches = lectures = 0
+    urls = []
+    final = None
+    for _ in range(6):
+        resultat = appeler(modele, messages, plafond, cle, temperature, outils=OUTILS_WEB)
+        appels = resultat.get("tool_calls") or []
+        if not appels:
+            final = resultat
+            break
+        for appel in appels:
+            fonction = (appel.get("function") or {}).get("name", "")
+            try:
+                arguments = json.loads((appel.get("function") or {}).get("arguments", "{}"))
+                if not isinstance(arguments, dict):
+                    arguments = {}
+            except Exception:
+                arguments = {}
+            try:
+                reponse = appel_web(cle_web, fonction, arguments)
+            except Exception as exc:
+                reponse = {"erreur": str(exc)}
+            if fonction == "web_search":
+                recherches += 1
+                for r in reponse.get("results", []):
+                    urls.append(r.get("url", ""))
+            elif fonction == "web_fetch":
+                lectures += 1
+                urls.append(arguments.get("url", ""))
+            messages.append({"role": "assistant", "content": "", "tool_calls": [appel]})
+            messages.append({"role": "tool", "tool_call_id": appel.get("id"), "content": json.dumps(reponse, ensure_ascii=False)})
+    if final is None:
+        final = resultat
+        final["web_incomplet"] = True
+    if urls:
+        final["texte"] = (final.get("texte") or "") + "\n\n" + "\n".join("source : " + u for u in urls)
+    final["web"] = {"recherches": recherches, "lectures": lectures, "urls": urls}
+    final.update({"nom": nom, "modele": modele, "refus": refus, "fichiers_joints": joints, "plan": plan_de(final.get("adresse", "?"))})
+    return final
+
 def executer(tache: dict, cle: str) -> dict:
+    resultat = _executer_sans_drapeau(tache, cle)
+    if (bool(tache.get("sans_repli")) or os.environ.get("NEXUS_SANS_REPLI") == "1") and isinstance(resultat, dict):
+        resultat["sans_repli"] = True
+    return resultat
+
+def _executer_sans_drapeau(tache: dict, cle: str) -> dict:
     # Trois etats: preparation en cours, appel reseau parti, attente de reponse
     print(f"PREPARATION commence pour {tache.get('modele') or 'modele inconnu'}: lecture des pieces jointes et resolution du plan", file=sys.stderr, flush=True)
     local_seul = bool(tache.get("local_seul")) or os.environ.get("NEXUS_LOCAL_SEUL") == "1"
+    sans_repli = bool(tache.get("sans_repli")) or os.environ.get("NEXUS_SANS_REPLI") == "1"
     nom = tache.get("nom") or tache.get("modele") or "tache"
     modele = tache.get("modele") or "adaptive-router"
     consigne = tache.get("tache") or ""
@@ -1062,18 +1500,30 @@ def executer(tache: dict, cle: str) -> dict:
         return {"nom": nom, "erreur": "champ 'tache' vide"}
     racine_tache = tache.get("racine")
     corpus, refus, joints = charger_fichiers(tache.get("fichiers") or [], racine=racine_tache)
-    systeme = tache.get("systeme") or (
-        "Tu es un relecteur technique rigoureux. Tu reponds en francais, de "
-        "maniere concise et factuelle. Tu ne pretends jamais avoir verifie ce "
-        "que tu n'as pas lu, et tu dis explicitement quand tu n'es pas sur."
-    )
+    systeme = composer_systeme(tache.get("systeme"), bool(tache.get("web")))
     contenu = consigne if not corpus else "%s\n\n%s" % (consigne, corpus)
     messages = [{"role": "system", "content": systeme},
                 {"role": "user", "content": contenu}]
     plafond = int(tache.get("max_tokens") or 4096)
     temperature = tache.get("temperature", TEMPERATURE_DEFAUT)
+    if tache.get("web"):
+        return executer_web(tache, cle, modele, messages, plafond, temperature, nom, refus, joints, bool(tache.get("web_consenti")))
 
     if corpus and len(corpus) > FENETRE_CARACTERES:
+        # Si la consigne indique explicitement la génération d'un fichier complet,
+        # on refuse le découpage MAP-REDUCE et on renvoie une erreur claire.
+        if demande_fichier_entier(consigne):
+            return {
+                "nom": nom,
+                "modele": modele,
+                "refus": refus,
+                "fichiers_joints": joints,
+                "plan": plan_de("?"),
+                "decoupe_refusee": True,
+                "erreur": ("Le corpus dépasse la fenêtre de caractères et la tâche demande "
+                           "l'écriture d'un fichier complet ; réduction requise."),
+                "texte": "",
+            }
         resultat = carte_reduction(corpus, consigne, modele, cle, plafond,
                                    temperature, local_seul=local_seul)
         resultat.update({
@@ -1092,7 +1542,15 @@ def executer(tache: dict, cle: str) -> dict:
 
     essais, echecs, ecartes = [], [], []
     troncatures = set()
+    def _journal_echec(message: str):
+        print(f"Echec candidat : {message}", file=sys.stderr, flush=True)
+    if refus and not joints:
+        _journal_echec("fichiers joints refuses ou absents : " + ", ".join(refus))
+        return {"nom": nom, "modele": modele, "cause_vide": "fichiers_joints_absents",
+                "erreur": "aucun fichier joint disponible : " + ", ".join(refus)}
     candidats = list(dict.fromkeys([modele] + replis_gratuits(cle)))
+    if sans_repli:
+        candidats = [modele]
     _dj = None
     try:
         from nexus_disjoncteur import CircuitBreaker
@@ -1162,9 +1620,18 @@ def executer(tache: dict, cle: str) -> dict:
             return {"nom": nom, "modele": modele,
                     "erreur": "aucun modele local disponible pour NEXUS_LOCAL_SEUL=1"}
 
+    # Appliquer le plafond de replis locaux afin d'éviter de charger
+    # de trop nombreux modèles locaux en mémoire.
+    candidats, _ecartes_plafond = borner_replis_locaux(candidats, appeler._cache_plans)
+    ecartes.extend(_ecartes_plafond)
+
     trunc_failure = None          # garde le premier échec par troncature
+    dernier_degenere = None       # mémorise le dernier résultat dégenéré
     for candidat in candidats:
         if candidat in essais or candidat.startswith("claude-"):
+            continue
+        if QUOTA_CLOUD_EPUISE and appeler._cache_plans.get(candidat) == "cloud":
+            ecartes.append("%s : ecarte, limite d'usage du compte cloud atteinte depuis %s" % (candidat, QUOTA_CLOUD_EPUISE["depuis"]))
             continue
         # BACKOFF EXPONENTIEL AVEC JITTER entre deux tentatives, patron du livre :
         # start 100 ms, double a chaque essai, plafonne a 30 s, plus un tirage
@@ -1178,12 +1645,24 @@ def executer(tache: dict, cle: str) -> dict:
                 _t.sleep(min(_rd(len(essais) - 1), 5.0))
             except Exception:
                 pass
+        # Garde‑mémoire avant de tenter le repli local
+        if appeler._cache_plans.get(candidat) == "local" and candidat != modele:
+            poids, libre = poids_et_libre(candidat)
+            if not memoire_suffisante(poids, libre):
+                msg = "%s : ecarte, memoire insuffisante (%s Go libres pour %s Go)" % (
+                    candidat, libre, poids)
+                ecartes.append(msg)
+                _journal_echec(msg)
+                continue
+            if poids is None:
+                _journal_echec("%s : poids inconnu, repli local tente sans garde memoire" % candidat)
+
         essais.append(candidat)
         try:
             resultat = appeler(candidat, messages, plafond, cle, temperature)
         except urllib.error.HTTPError as exc:
             try:
-                detail = exc.read().decode("utf-8", "replace")[:300]
+                detail = exc.read().decode("utf-8", "replace")[:2000]
             except Exception:
                 detail = "<corps d'erreur illisible>"
             if temperature is not None and "temperature" in detail.lower():
@@ -1191,12 +1670,17 @@ def executer(tache: dict, cle: str) -> dict:
                     resultat = appeler(candidat, messages, plafond, cle, None)
                 except Exception as second:
                     echecs.append("%s : %s" % (candidat, second))
+                    _journal_echec("%s : %s" % (candidat, second))
                     continue
             else:
+                if exc.code == 429 and "usage limit" in detail.lower():
+                    globals()["QUOTA_CLOUD_EPUISE"] = {"depuis": time.strftime("%Y-%m-%dT%H:%M:%S"), "message": detail[:200]}
                 echecs.append("%s : HTTP %s : %s" % (candidat, exc.code, detail))
+                _journal_echec("%s : HTTP %s : %s" % (candidat, exc.code, detail))
                 continue
         except Exception as exc:
             echecs.append("%s : %s" % (candidat, exc))
+            _journal_echec("%s : %s" % (candidat, exc))
             continue
 
         texte_vide = not (resultat.get("texte") or "").strip()
@@ -1204,14 +1688,33 @@ def executer(tache: dict, cle: str) -> dict:
             if resultat.get("tronque"):
                 # Le modèle a consommé tout son budget sans produire de texte.
                 # On consigne l'échec et on sort de la boucle pour reprendre le plafond immédiatement.
+                if not reprise_utile(resultat.get("cause_vide"), plafond):
+                    msg = "%s : raisonnement a epuise le budget (%s), bascule sans relever le plafond" % (
+                        candidat, resultat.get("cause_vide"))
+                    if sans_repli:
+                        return {"nom": nom, "modele": modele,
+                                "erreur": f"sans_repli : {resultat.get('cause_vide')}",
+                                "sans_repli": True}
+                    echecs.append(msg)
+                    troncatures.add(msg)
+                    _journal_echec(msg)  # ligne où _journal_echec est défini : voir fonction locale dans executer
+                    continue
                 trunc_failure = resultat
                 motif_troncature = "%s : reponse vide tronquee (demande %d jetons)" % (candidat, plafond)
                 echecs.append(motif_troncature)
                 troncatures.add(motif_troncature)
-                print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien")
+                print(f"troncature a {resultat.get('tokens',0)} jetons : reprise du plafond plutot que repli, un autre modele ne changerait rien", file=sys.stderr, flush=True)
                 break
             echecs.append("%s : reponse vide (%d jetons consommes)"
                           % (candidat, resultat.get("tokens", 0)))
+            _journal_echec("%s : reponse vide (%d jetons consommes)" % (candidat, resultat.get("tokens", 0)))
+            continue
+        if texte_degenere(resultat.get("texte") or ""):
+            # On ne jette pas le rendu dégenéré : on le mémorise pour un éventuel retour.
+            dernier_degenere = resultat
+            echecs.append("%s : reponse degeneree (meme bloc repete, %d jetons)"
+                          % (candidat, resultat.get("tokens", 0)))
+            _journal_echec("%s : reponse degeneree (meme bloc repete, %d jetons)" % (candidat, resultat.get("tokens", 0)))
             continue
 
         # le champ modele porte le candidat servi; sans demande_initiale le modele demande est perdu (mesure 2026-08-31)
@@ -1244,6 +1747,11 @@ def executer(tache: dict, cle: str) -> dict:
             if not motif and trace:
                 motif = trace[-1]
             resultat["motif_bascule"] = motif
+        servi = resultat.get("servi_par", "?")
+        if est_degrade(modele, servi):
+            resultat["degrade"] = True
+            resultat["motif_degrade"] = "servi par %s (%s B) pour une demande de %s (%s B)" % (
+                servi, taille_alias(servi), modele, taille_alias(modele))
         if resultat.get("tronque"):
             # Un rendu NON VIDE mais tronque (finish_reason == length) ne doit pas
             # etre livre incomplet : meme reprise que la troncature vide (banc, v20).
@@ -1292,13 +1800,111 @@ def executer(tache: dict, cle: str) -> dict:
             return resultat
         return trunc_failure
 
+    # Aucun candidat n'a produit de texte ; si on a mémorisé un résultat dégenéré, le retourner.
+    if dernier_degenere is not None:
+        part = part_repetee(dernier_degenere.get("texte") or "", longueur_min=40, repetitions=5)
+        dernier_degenere.update({
+            "nom": nom,
+            "modele": dernier_degenere.get("modele", candidat),
+            "refus": refus,
+            "plan": plan_de(dernier_degenere.get("adresse", "?")),
+            "demande_initiale": modele,
+            "degenere": True,
+            "motif_degenere": f"meme bloc repete (part {part*100:.0f} %%)",
+            "bascule": plan_de(dernier_degenere.get("adresse", "?"))
+        })
+        return dernier_degenere
+
+    if sans_repli:
+        return {"nom": nom, "modele": modele,
+                "erreur": f"sans_repli : {' | '.join(ecartes + echecs)}",
+                "sans_repli": True}
     return {"nom": nom, "modele": modele,
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
 
+def famille_de(nom: str) -> str:
+    """
+    Calcule la « famille » d’un modèle ou d’un alias selon la règle du contrat :
+    - on retire le préfixe éventuel du fournisseur (ex. « ollama_chat/ »),
+    - on retire le suffixe « ‑cloud » ou « ‑local »,
+    - on retire tout ce qui suit le premier deux-points (l'etiquette, quelle qu'elle soit),
+    - on enlève le segment final s’il correspond à une taille de modèle
+      (ex. « 120b », « 31b », « 675b », « 397b », « 8b », …).
+    Le résultat est la chaîne obtenue après ces transformations.
+    """
+    # 1. Supprimer le préfixe du fournisseur s’il y en a un
+    if '/' in nom:
+        nom = nom.split('/', 1)[1]
+
+    # 2. Retirer le suffixe -cloud ou -local
+    for suffix in ('-cloud', '-local'):
+        if nom.endswith(suffix):
+            nom = nom[: -len(suffix)]
+            break
+
+    # 3. Retirer l'etiquette apres le premier deux-points
+    nom = nom.split(':', 1)[0]
+
+    # 4. Supprimer le dernier segment s’il est une taille de modèle
+    parts = nom.split('-')
+    if parts:
+        last = parts[-1].lower()
+        # reconnaître les tailles comme 120b, 31b, 675b, 397b, 8b, etc.
+        if last.endswith('b') and last[:-1].isdigit():
+            parts = parts[:-1]
+    return '-'.join(parts)
+
+
+def taille_alias(nom: str) -> float | None:
+    r"""
+    Extrait le nombre de milliards de paramètres d'un nom de modèle ou d'alias.
+    Recherche la plus grande valeur correspondant à l'expression
+    (\d+(?:\.\d+)?)b(?![a-z0-9]) en minuscules, après suppression du préfixe
+    fournisseur (tout avant le dernier '/' retiré).
+    """
+    # Retirer le préfixe fournisseur
+    base = nom.rsplit("/", 1)[-1].lower()
+    matches = re.findall(r"(\d+(?:\.\d+)?)b(?![a-z0-9])", base)
+    if not matches:
+        return None
+    # Convertir toutes les correspondances en float et retourner la plus grande
+    try:
+        valeurs = [float(m) for m in matches]
+        return max(valeurs) if valeurs else None
+    except ValueError:
+        return None
+
+
+def est_degrade(demande: str, servi: str) -> bool:
+    """
+    Retourne True si les deux tailles sont connues et que la taille du modèle
+    servi est strictement inférieure à la moitié de celle demandée.
+    """
+    taille_demande = taille_alias(demande)
+    taille_servi = taille_alias(servi)
+    if taille_demande is None or taille_servi is None:
+        return False
+    return taille_servi < (taille_demande / 2)
+
+
 def rendre(resultat: dict) -> None:
     print("=" * 72)
+    # Avertissement en cas de service dégradé
+    if resultat.get("degrade"):
+        print("[DEGRADE] " + resultat.get("motif_degrade", ""))
+        print("[DEGRADE] reponse a ne pas utiliser sans relecture : le modele servi est bien plus petit que celui demande (--accepter-degrade pour lever le code 3)")
+    if resultat.get("degenere"):
+        print("[DEGENERE] " + resultat.get("motif_degenere", ""))
+    if resultat.get("repli_passerelle"):
+        servi = resultat.get("servi_par", "?")
+        demande = resultat.get("demande_initiale") or resultat.get("modele", "?")
+        print(f"[REPLI PASSERELLE] servi par {servi} au lieu de {demande}")
     print("  %s" % resultat["nom"])
+    if resultat.get("web"):
+        print('  [WEB] recherches=%d lectures=%d' % (
+            resultat["web"].get("recherches", 0),
+            resultat["web"].get("lectures", 0)))
     if resultat.get("erreur"):
         print("  ECHEC : %s" % resultat["erreur"])
         print("TRACABILITE: %s [%s] %s" % (
@@ -1453,6 +2059,17 @@ def _ecrire_refus_sortie(sortie_path, taches, cause):
     except Exception as exc:
         print('refus non ecrit dans %s : %s' % (sortie_path, exc), file=sys.stderr)
 
+def identifiant_lot(pid: int, debut_epoch: float) -> str:
+    """Identifiant d'un lot : pid-epoch, porte par chaque ligne de --sortie."""
+    return "%d-%d" % (pid, int(debut_epoch))
+
+# Mesure du 2026-09-14 : 16 appels cloud simultanes vers gpt-oss-120b-cloud
+# repondent en 2,5 a 4,8 s chacun, sans degradation ; saturation estimee vers 46.
+# Le semaphore machine 'inference' etait a 3 slots, partages par TOUTES les
+# sessions et par le validateur : trois processus suffisaient a faire attendre
+# tout le monde. 12 garde une marge pour le pont MCP, qui ne prend pas ce semaphore.
+PLAFOND_INFERENCE_CLOUD = 12
+
 def main() -> int:
     with contextlib.suppress(Exception):
         # Premiere ligne a 11,6s sur 11,7s; run long indiscernable d'un run gele
@@ -1500,12 +2117,22 @@ def main() -> int:
     parseur.add_argument(
         "--nom", default=None, metavar="NOM_TACHE",
         help="Nom de la tache a extraire pour sortie brute.")
+    parseur.add_argument("--echeance-s", type=int, default=0,
+                         help="Echeance en secondes pour le lot (defaut 0 = aucune).")
     parseur.add_argument("--parallele", type=int, default=3,
                          help="Taches simultanees (defaut 3).")
     parseur.add_argument("--modeles", action="store_true",
                          help="Lister les modeles exposes par plan.")
     parseur.add_argument("--json", action="store_true",
                          help="Sortie machine au lieu du rapport lisible.")
+    parseur.add_argument("--accepter-degrade", action="store_true",
+                         help="Accepter un modele servi bien plus petit que demande (sinon code de sortie 3).")
+    parseur.add_argument("--web", action="store_true",
+                         help="Donner au modele les outils web d'Ollama (web_search, web_fetch) : la requete part vers ollama.com.")
+    parseur.add_argument("--web-consenti", action="store_true",
+                         help="Autoriser --web avec un modele LOCAL malgre la sortie de la requete vers ollama.com.")
+    parseur.add_argument("--sans-repli", action="store_true",
+                         help="Force l'usage du modele demande sans repli gratuit.")
     args = parseur.parse_args()
 
     # Vérifier que --nom est fourni lorsqu'on utilise --depuis-jsonl
@@ -1552,28 +2179,68 @@ def main() -> int:
                    "max_tokens": (args.max_tokens or 4096),
                    "temperature": (args.temperature if args.temperature is not None
                                    else TEMPERATURE_DEFAUT),
-                   "racine": args.racine}]
+                   "racine": args.racine,
+                   "web": getattr(args, "web", False),
+                   "web_consenti": getattr(args, "web_consenti", False),
+                   "sans_repli": args.sans_repli}]
     else:
+        taches = []
+
+    # ------------------------------------------------------------
+    # Gestion de l’option --familles-exclues
+    # ------------------------------------------------------------
+    familles_exclues = set()
+    if getattr(args, "familles_exclues", None):
+        # la liste peut être séparée par des virgules ou des espaces
+        raw = args.familles_exclues
+        for token in str(raw).replace(',', ' ').split():
+            if token:
+                familles_exclues.add(token.strip())
+
+    # Si une tâche unique est demandée, vérifier l’exclusion avant toute
+    # préparation ou appel réseau.
+    if args.tache and args.modele and taches:
+        famille_modele = famille_de(args.modele)
+        if famille_modele in familles_exclues:
+            # sortie immédiate, code non‑zéro, message contenant « exclue »
+            print(f"Modèle exclu (famille : {famille_modele}) – exclusion appliquée", file=sys.stderr)
+            sys.exit(1)
         if args.depuis_jsonl:
             if not args.nom:
                 print("L'option --nom est obligatoire avec --depuis-jsonl.", file=sys.stderr)
                 return 2
             try:
+                last_any = None
+                last_success = None
+                last_tache = None
+                lignes_invalides = 0
                 with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
                     for ligne in src:
-                        obj = json.loads(ligne)
-                        if obj.get("nom") == args.nom:
-                            taches = [obj]
-                            break
-                    else:
-                        print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
-                        return 1
+                        try:
+                            obj = json.loads(ligne)
+                        except Exception:
+                            lignes_invalides += 1
+                            continue
+                        if obj.get("en_tete") or obj.get("fin"):
+                            continue
+                        if obj.get("nom") != args.nom:
+                            continue
+                        last_any = obj
+                        if obj.get("tache"):
+                            last_tache = obj
+                        texte = (obj.get("texte") or "").strip()
+                        erreur = (obj.get("erreur") or "").strip()
+                        if texte and not erreur:
+                            last_success = obj
+                if not last_any:
+                    print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                    return 1
+                # choisir la tâche à rejouer
+                taches = [last_tache if last_tache else last_any]
+                # le nombre de lignes invalides est conservé pour le bloc sortie brute
             except Exception as exc:
                 print("[!] erreur lors de la lecture du jsonl : %s" % exc, file=sys.stderr)
                 return 1
-        else:
-            parseur.print_help()
-            return 1
 
     # La competence s'applique ici, et non plus haut : `taches` n'existe pas
     # avant ce point, quelle que soit la branche empruntee.
@@ -1593,6 +2260,12 @@ def main() -> int:
         for t in taches:
             if not t.get("systeme"):
                 t["systeme"] = args.systeme
+    if args.web:
+        for t in taches:
+            t["web"] = True
+    if args.web_consenti:
+        for t in taches:
+            t["web_consenti"] = True
 
     # Le parallélisme est limité par la RAM locale uniquement pour les modèles
     # locaux (alias ne se terminant pas par « -cloud »).  Ces modèles partagent
@@ -1606,42 +2279,49 @@ def main() -> int:
     else:
         largeur = max(1, min(args.parallele, 8, len(taches)))
     pile_verrou = contextlib.ExitStack()
-    est_local = False
+    # Détermination du caractère local de chaque tâche (appel unique avant la boucle)
     try:
         plans = plans_par_alias(cle)
-        for t in taches:
-            nom = t.get('modele') or ''
-            if plans.get(nom) == 'local' or nom.endswith('-local'):
-                est_local = True
-                break
     except Exception:
-        est_local = True  # profil illisible : ne pas desactiver la protection
-    if est_local:
+        plans = {} # profil illisible : ne pas desactiver la protection
+    taches_locales = []
+    taches_cloud = []
+    for t in taches:
+        nom = t.get('modele') or ''
+        est_local = plans.get(nom) == 'local' or nom.endswith('-local')
+        if est_local:
+            taches_locales.append(t)
+        else:
+            taches_cloud.append(t)
+    refus_local = False
+    if taches_locales:
         # l'attente est bornee a 120 secondes pour qu'une contention reste visible au lieu de devenir un blocage silencieux
         from nexus_verrou_machine import verrou
         try: attente_verrou = float(os.getenv('NEXUS_VERROU_ATTENTE_S', 120))
         except ValueError: attente_verrou = 120 # une valeur gravee ment le lendemain, et surtout une epreuve ne peut pas solliciter le REFUS du verrou si elle doit le tenir plus de deux minutes — un verrou qu'on n'a jamais vu refuser n'est pas mesure.
-        ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True))
+        ctx = pile_verrou.enter_context(verrou('banc', projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_verrou, bavard=True, annoncer=lambda m: print(m, file=sys.stderr, flush=True)))
         if not ctx.obtenu:
             # le refus est un echec assume car un travail local non fait ne doit jamais passer pour un travail fait
+            for t in taches_locales:
+                print('banc: contention detectee', file=sys.stderr)
+                _ecrire_refus_sortie(getattr(args, 'sortie', None), [t], 'banc: contention detectee')
             pile_verrou.close()
-            print('banc: contention detectee', file=sys.stderr)
-            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'banc: contention detectee')
-            return 75
-    est_cloud = any(str(t.get('modele', '')).endswith('-cloud') for t in taches)
-    if est_cloud:
+            refus_local = True
+            taches = taches_cloud
+    if taches_cloud:
         from nexus_verrou_machine import semaphore
-        try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', 3))
-        except ValueError: n_inf = 3
+        try: n_inf = int(os.getenv('NEXUS_SEMAPHORE_INFERENCE_N', PLAFOND_INFERENCE_CLOUD))
+        except ValueError: n_inf = PLAFOND_INFERENCE_CLOUD
         try: attente_inf = float(os.getenv('NEXUS_SEMAPHORE_INFERENCE_ATTENTE_S', 120))
         except ValueError: attente_inf = 120
-        ctx_inf = pile_verrou.enter_context(semaphore('inference', n_inf, projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_inf, bavard=True))
+        ctx_inf = pile_verrou.enter_context(semaphore('inference', n_inf, projet=(os.path.basename(racine_travail()) or 'nexus'), attente_s=attente_inf, bavard=True, annoncer=lambda m: print(m, file=sys.stderr, flush=True)))
         if not ctx_inf.obtenu:
             pile_verrou.close()
             print('inference: semaphore cloud plein (contention machine)', file=sys.stderr)
-            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches, 'inference: semaphore cloud plein (contention machine)')
+            _ecrire_refus_sortie(getattr(args, 'sortie', None), taches_cloud, 'inference: semaphore cloud plein (contention machine)')
             return 75
     depart = time.time()
+    lot_id = identifiant_lot(os.getpid(), depart)
     resultats: List[dict] = []
     # CHAQUE RESULTAT EST ECRIT DES QU'IL TOMBE.
     #
@@ -1671,6 +2351,10 @@ def main() -> int:
                     print(f"[i] fichier de sortie existant renommé en {nouveau_nom}",
                           file=sys.stderr)
                 flux = io.open(sortie_path, "w", encoding="utf-8", newline="\n")
+                lot_id = identifiant_lot(os.getpid(), time.time())
+                en_tete = {"en_tete": True, "lot_id": lot_id, "lot": args.lot or "tache_unique", "parallele": args.parallele, "nb_taches": len(taches)}
+                flux.write(json.dumps(en_tete, ensure_ascii=False) + "\n")
+                flux.flush()
             except Exception as exc:
                 print("[!] sortie incrémentale impossible : %s" % exc,
                       file=sys.stderr)
@@ -1693,23 +2377,85 @@ def main() -> int:
         with concurrent.futures.ThreadPoolExecutor(max_workers=largeur) as pool:
             if args.sortie_brute and args.depuis_jsonl and args.nom:
                 try:
+                    last_any = None
+                    last_success = None
+                    lignes_invalides = 0
                     with io.open(args.depuis_jsonl, "r", encoding="utf-8") as src:
                         for ligne in src:
-                            obj = json.loads(ligne)
-                            if obj.get("nom") == args.nom:
-                                texte = obj.get("texte") or ""
-                                texte = decaper_cloture_englobante(texte)
-                                mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
-                                with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
-                                    dst.write(texte + "\n")
-                                sys.exit(0)
-                    print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
-                    sys.exit(1)
+                            try:
+                                obj = json.loads(ligne)
+                            except Exception:
+                                lignes_invalides += 1
+                                continue
+                            if obj.get("nom") != args.nom:
+                                continue
+                            last_any = obj
+                            texte = (obj.get("texte") or "").strip()
+                            erreur = (obj.get("erreur") or "").strip()
+                            if texte and not erreur:
+                                last_success = obj
+                    if not last_any:
+                        print("[!] tache %s introuvable dans %s" % (args.nom, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(1)
+                    if last_success:
+                        texte = last_success.get("texte") or ""
+                        texte = decaper_cloture_englobante(texte)
+                        mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
+                        with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
+                            dst.write(texte + "\n")
+                        if lignes_invalides:
+                            print("[!] %d ligne(s) JSON invalide(s) ignorée(s) dans %s" % (lignes_invalides, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(0)
+                    else:
+                        derniere_erreur = (last_any.get("erreur") or "")[:160]
+                        print("[!] tache %s : %d ligne(s) dans %s, aucune reussie (derniere erreur : %s)" % (
+                            args.nom, 1, args.depuis_jsonl, derniere_erreur), file=sys.stderr)
+                        if lignes_invalides:
+                            print("[!] %d ligne(s) JSON invalide(s) ignorée(s) dans %s" % (lignes_invalides, args.depuis_jsonl), file=sys.stderr)
+                        sys.exit(1)
                 except Exception as exc:
                     print("[!] erreur lors de la sortie brute depuis jsonl : %s" % exc, file=sys.stderr)
                     sys.exit(1)
+            # Chargement unique de nexus_lot_controle.py (si présent)
+            try:
+                import importlib.util
+                from pathlib import Path
+                lot_controle_path = Path(__file__).parent / "nexus_lot_controle.py"
+                spec = importlib.util.spec_from_file_location("nexus_lot_controle", lot_controle_path)
+                lot_controle = importlib.util.module_from_spec(spec) if spec and spec.loader else None
+                if lot_controle:
+                    spec.loader.exec_module(lot_controle)
+            except Exception as e:
+                print(f"[!] chargement de nexus_lot_controle.py impossible : {e}", file=sys.stderr)
+                lot_controle = None
+
+            # Fonction enveloppe pour gérer l'échéance et les arrêts de lot
+            def executer_avec_controles(t, cle):
+                # Vérification de l'arrêt du lot (appel unique)
+                arret_info = lot_controle.arret_demande(lot_id) if lot_controle else None
+                if arret_info:
+                    print(f"[!] tache {t.get('nom', t.get('modele', '?'))} : lot arrete avant execution : {arret_info['motif']}", file=sys.stderr)
+                    return {
+                        "nom": t.get("nom", t.get("modele", "?")),
+                        "modele": t.get("modele", "?"),
+                        "erreur": f"lot arrete avant execution : {arret_info['motif']}",
+                        "arrete": True
+                    }
+
+                # Vérification de l'échéance
+                if args.echeance_s > 0 and time.time() > depart + args.echeance_s:
+                    print(f"[!] tache {t.get('nom', t.get('modele', '?'))} : echeance du lot depassee avant execution", file=sys.stderr)
+                    return {
+                        "nom": t.get("nom", t.get("modele", "?")),
+                        "modele": t.get("modele", "?"),
+                        "erreur": "echeance du lot depassee avant execution",
+                        "echeance": True
+                    }
+
+                return executer(t, cle)
+
             # Collecte des tâches associées aux résultats pour pouvoir les rejouer si besoin.
-            futurs = {pool.submit(executer, t, cle): t for t in taches}
+            futurs = {pool.submit(executer_avec_controles, t, cle): t for t in taches}
             # Liste parallèle pour garder l'ordre d'arrivée des résultats.
             taches_par_futur = []
             for futur in concurrent.futures.as_completed(futurs):
@@ -1718,6 +2464,7 @@ def main() -> int:
                 taches_par_futur.append(futurs[futur])
                 faits += 1
                 if flux is not None:
+                    r["lot_id"] = lot_id
                     flux.write(json.dumps(r, ensure_ascii=False) + "\n")
                     flux.flush()
                 if args.sortie_brute:
@@ -1762,7 +2509,7 @@ def main() -> int:
         # L'absence de cette ligne signifie EN COURS ou INTERROMPU.
         if flux is not None:
             try:
-                flux.write(json.dumps({"fin": True, "taches_ecrites": faits}, ensure_ascii=False) + "\n")
+                flux.write(json.dumps({"fin": True, "lot_id": lot_id, "taches_ecrites": faits}, ensure_ascii=False) + "\n")
                 flux.flush()
             except Exception:
                 pass
@@ -1806,6 +2553,10 @@ def main() -> int:
     if factures:
         print("  [!] %d tache(s) servies par Anthropic, donc FACTUREES : %s"
               % (len(factures), ", ".join(r["nom"] for r in factures)))
+    if (any(r.get("degrade") for r in resultats) and not args.accepter_degrade) or any(r.get("degenere") for r in resultats):
+        return 3
+    if refus_local:
+        return 75
     return 1 if echecs else 0
 
 

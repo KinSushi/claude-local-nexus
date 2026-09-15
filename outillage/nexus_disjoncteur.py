@@ -41,7 +41,13 @@ def _retry_delay(attempt):
 
 
 def _state_path():
-    """Return absolute path to the json file that stores the circuit state."""
+    """Return absolute path to the json file that stores the circuit state.
+    Uses NEXUS_ETAT_DISJONCTEUR environment variable if defined and non-empty,
+    otherwise falls back to the default path under the repository root.
+    """
+    env_path = os.environ.get("NEXUS_ETAT_DISJONCTEUR")
+    if env_path:
+        return os.path.abspath(env_path)
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     return os.path.join(base_dir, _STATE_DIR, _STATE_FILE)
 
@@ -75,12 +81,13 @@ def _save_state(state):
 
             # Atomic replace
             os.replace(temp_path, path)
-        except Exception:
+        except Exception as exc:
             # Cleanup temporary file on any failure
             with contextlib.suppress(Exception):
                 os.remove(temp_path)
+            print("nexus_disjoncteur.py : save_state action impossible : %s" % exc, file=sys.stderr)
     except Exception as exc:
-        print("_save_state : operation impossible : %s" % exc, file=sys.stderr)
+        print("nexus_disjoncteur.py : save_state action impossible : %s" % exc, file=sys.stderr)
         pass
 
 
@@ -94,7 +101,11 @@ def echec_transitoire(message):
     if not isinstance(message, str):
         return False
     lowered = message.lower()
-    signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503"]
+    # Mesure du 2026-09-15 : cas (a) - connexion non détectée, circuit ouvert
+    # Mesure du 2026-09-15 : cas (b) - réponse vide après consommation de jetons
+    # Mesure du 2026-09-15 : les deux cas ouvraient le circuit au premier échec
+    signals = ["429", "rate limit", "timeout", "timed out", "connection", "unavailable", "503",
+        "connexion", "urlopen error", "winerror 10060", "winerror 10061", "refused", "reponse vide"]
     if any(sig in lowered for sig in signals):
         return True
     # Mesure du 2026-09-02 : seul le code 503 etait reconnu parmi les 5xx.
@@ -253,7 +264,7 @@ class CircuitBreaker:
             with open(chemin, "a", encoding="utf-8") as f:
                 f.write(json.dumps(ligne, ensure_ascii=False) + chr(10))
         except Exception as exc:
-            print("_journal : operation impossible : %s" % exc, file=sys.stderr)
+            print("nexus_disjoncteur.py : journal action impossible : %s" % exc, file=sys.stderr)
             pass
 
     def get_state(self):

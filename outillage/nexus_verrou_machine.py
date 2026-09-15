@@ -66,7 +66,9 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import json
 import os
+import socket
 import sys
 import time
 import subprocess
@@ -93,7 +95,7 @@ CLASSES = {
     "banc": "une inference locale sur le banc de modeles, la memoire du moteur etant partagee",
 }
 SEMAPHORES = {
-    "inference": "les lots cloud partagent la passerelle (plafond machine-wide)",
+    "inference": (12, "les lots cloud partagent la passerelle (plafond machine-wide)"),
 }
 
 
@@ -108,8 +110,7 @@ def _kernel32():
         return None
     try:
         return ctypes.WinDLL("kernel32", use_last_error=True)
-    except (OSError, AttributeError) as exc:            # pragma: no cover — dépend de la plateforme
-        print(f"{__file__} : ctypes.WinDLL(\"kernel32\") impossible : %s" % exc, file=sys.stderr)
+    except (OSError, AttributeError):            # pragma: no cover — dépend de la plateforme
         return None
 
 
@@ -127,7 +128,7 @@ class Verrou:
 
 
 @contextmanager
-def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool = True):
+def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool = True, annoncer=None):
     """Acquiert le verrou machine de `classe`, le relâche à la sortie — même sur exception.
 
     ★ C'est un gestionnaire de contexte PAR CONSTRUCTION, et c'est ce qui répond à « sans risques
@@ -157,23 +158,48 @@ def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool 
             v = Verrou(classe, True, "mutex indisponible (droits ?) — on continue sans")
         else:
             debut = time.monotonic()
-            r = k.WaitForSingleObject(handle, int(max(0.0, attente_s) * 1000))
-            if r == WAIT_OBJECT_0:
-                v = Verrou(classe, True, "obtenu")
-            elif r == WAIT_ABANDONED:
-                # Le détenteur précédent est mort sans relâcher. On l'a QUAND MÊME : le noyau nous
-                # le donne. Un fichier de verrou, lui, serait resté là sans que personne sache s'il
-                # était légitime — c'est tout l'écart entre les deux mécaniques.
-                v = Verrou(classe, True, "obtenu — le détenteur précédent est MORT sans relâcher",
-                           abandonne=True)
-            elif r == WAIT_TIMEOUT:
-                att = time.monotonic() - debut
-                v = Verrou(classe, False,
-                           f"un AUTRE processus tient « {classe} » "
-                           f"({CLASSES.get(classe, 'ressource partagée')}) — "
-                           f"attendu {att:.0f}s en vain")
-            else:
-                v = Verrou(classe, True, f"attente en échec (code {r:#x}) — on continue sans")
+            deadline = debut + max(0.0, attente_s)
+            derniere_annonce = None
+            # L'attente est decoupee en tranches de 100 ms pour pouvoir ANNONCER
+            # la contention (mesure 2026-09-14 : une attente muette de 257 s
+            # etait indiscernable d'un blocage). Sans annoncer, meme echeance.
+            while True:
+                r = k.WaitForSingleObject(handle, int(max(0.0, min(0.1, deadline - time.monotonic())) * 1000))
+                if r == WAIT_OBJECT_0:
+                    if annoncer is not None and derniere_annonce is not None:
+                        total = int(time.monotonic() - debut)
+                        annoncer(f"verrou {classe} obtenu apres {total} s")
+                    v = Verrou(classe, True, "obtenu")
+                    break
+                elif r == WAIT_ABANDONED:
+                    # Le détenteur précédent est mort sans relâcher. On l'a QUAND MÊME : le noyau nous
+                    # le donne. Un fichier de verrou, lui, serait resté là sans que personne sache s'il
+                    # était légitime — c'est tout l'écart entre les deux mécaniques.
+                    if annoncer is not None and derniere_annonce is not None:
+                        total = int(time.monotonic() - debut)
+                        annoncer(f"verrou {classe} obtenu apres {total} s")
+                    v = Verrou(classe, True, "obtenu — le détenteur précédent est MORT sans relâcher",
+                               abandonne=True)
+                    break
+                elif r == WAIT_TIMEOUT:
+                    now = time.monotonic()
+                    if now >= deadline:
+                        att = now - debut
+                        v = Verrou(classe, False,
+                                   f"un AUTRE processus tient « {classe} » "
+                                   f"({CLASSES.get(classe, 'ressource partagée')}) — "
+                                   f"attendu {att:.0f}s en vain")
+                        break
+                    elapsed = now - debut
+                    if annoncer is not None and cadence_annonces(elapsed, derniere_annonce):
+                        if derniere_annonce is None:
+                            annoncer(f"verrou {classe} tenu par un autre processus : attente...")
+                        else:
+                            annoncer(f"verrou {classe} : attente depuis {int(elapsed)} s")
+                        derniere_annonce = elapsed
+                else:
+                    v = Verrou(classe, True, f"attente en échec (code {r:#x}) — on continue sans")
+                    break
 
     if bavard:
         etat = "OBTENU " if v.obtenu else "REFUSÉ "
@@ -181,18 +207,38 @@ def verrou(classe: str, projet: str = "?", attente_s: float = 0.0, bavard: bool 
         if v.abandonne:
             print("    ⚠ le détenteur précédent a été tué : vérifier qu'il n'a pas laissé un "
                   "travail à moitié fait", file=sys.stderr)
+    chemin_fiche_verrou = None
+    if v.obtenu and v.motif.startswith("obtenu"):
+        chemin_fiche_verrou = chemin_fiche(RACINE_VERROUS, classe)
+        ecrire_fiche(chemin_fiche_verrou, fiche_detenteur(classe, projet, os.getpid(), datetime.now().isoformat(timespec='seconds')))
     try:
         yield v
     finally:
         if handle and v.obtenu and v.motif.startswith("obtenu"):
             k.ReleaseMutex(handle)
+        if chemin_fiche_verrou:
+            effacer_fiche(chemin_fiche_verrou)
         if handle:
             k.CloseHandle(handle)
 
 
+def cadence_annonces(attente_s: float, derniere_annonce_s: float | None) -> bool:
+    """
+    Decide s'il faut annoncer l'etat d'attente.
+
+    - Premiere annonce : des que ``attente_s`` atteint 2 s et qu'aucune annonce
+      n'a encore ete faite.
+    - Annonces suivantes : toutes les 30 s d'attente supplementaire.
+    - Retourne ``True`` si une annonce doit etre faite maintenant.
+    """
+    if derniere_annonce_s is None:
+        return attente_s >= 2.0
+    return (attente_s - derniere_annonce_s) >= 30.0
+
+
 @contextmanager
 def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
-              bavard: bool = True):
+              bavard: bool = True, annoncer=None):
     """Acquiert un sémaphore nommé du noyau Windows, implémenté de façon death‑safe.
 
     Le sémaphore est simulé par *n* mutex nommés
@@ -217,6 +263,8 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
         k.CloseHandle.argtypes = [ctypes.c_void_p]
 
         deadline = time.monotonic() + max(0.0, attente_s)
+        debut = time.monotonic()
+        derniere_annonce = None
         while True:
             # Essai d’acquisition sur chaque mutex
             for i in range(n):
@@ -230,16 +278,30 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
                     handle = h
                     obtenu = True
                     motif = "obtenu"
+                    slot_obtenu = i
                     break
                 # Sinon le mutex est occupé : on le ferme et on passe au suivant
                 k.CloseHandle(h)
             if obtenu:
+                # Annonce finale d'obtention, seulement si l'attente a ete annoncee
+                if annoncer is not None and derniere_annonce is not None:
+                    total = int(time.monotonic() - debut)
+                    annoncer(f"verrou {classe} obtenu apres {total} s")
                 break
             # Aucun mutex libre
-            if time.monotonic() >= deadline:
+            now = time.monotonic()
+            if now >= deadline:
                 obtenu = False
                 motif = f"semaphore plein, aucun slot disponible après {attente_s:.0f}s"
                 break
+            # Annonces d'attente : premiere a 2 s, puis toutes les 30 s
+            elapsed = now - debut
+            if annoncer is not None and cadence_annonces(elapsed, derniere_annonce):
+                if derniere_annonce is None:
+                    annoncer(f"verrou {classe} tenu par un autre processus : attente...")
+                else:
+                    annoncer(f"verrou {classe} : attente depuis {int(elapsed)} s")
+                derniere_annonce = elapsed
             time.sleep(0.1)   # petite pause avant nouvelle tentative
 
     v = Verrou(classe, obtenu, motif)
@@ -248,12 +310,18 @@ def semaphore(classe: str, n: int, projet: str = "?", attente_s: float = 0.0,
         etat = "OBTENU " if v.obtenu else "REFUSÉ "
         print(f"  semaphore [{classe}] {etat}({projet}) — {v.motif}", file=sys.stderr)
 
+    chemin_fiche_sem = None
+    if obtenu and motif.startswith("obtenu"):
+        chemin_fiche_sem = chemin_fiche(RACINE_VERROUS, classe, slot=slot_obtenu)
+        ecrire_fiche(chemin_fiche_sem, fiche_detenteur(classe, projet, os.getpid(), datetime.now().isoformat(timespec='seconds')))
     try:
         yield v
     finally:
         if handle:
             if obtenu:
                 k.ReleaseMutex(handle)
+            if chemin_fiche_sem:
+                effacer_fiche(chemin_fiche_sem)
             k.CloseHandle(handle)
 
 
@@ -286,10 +354,10 @@ def _run_epreuve() -> int:
         r2 = tmp / "forward2"
         proc_f1 = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r1), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         proc_f2 = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveF', '2', str(r2), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
         deadline = time.time() + 10
         while time.time() < deadline and not (r1.exists() and r2.exists()):
@@ -311,7 +379,7 @@ def _run_epreuve() -> int:
         rcap = tmp / "cap"
         proc_c = subprocess.Popen(
             [sys.executable, __file__, '--tenir-vivant', 'epreuveC', '1', str(rcap), '4'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
         deadline = time.time() + 10
         while time.time() < deadline and not rcap.exists():
@@ -337,7 +405,7 @@ def _run_epreuve() -> int:
         # ---------- DEATH‑SAFETY ----------
         proc_d = subprocess.Popen(
             [sys.executable, __file__, '--tenir-slot', 'epreuveD', '1'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         proc_d.wait()
 
         with semaphore('epreuveD', 1, projet='epreuve', attente_s=5, bavard=False) as s:
@@ -350,6 +418,78 @@ def _run_epreuve() -> int:
 
 
 # ── Diagnostic humain — SÉPARÉ, et jamais autoritaire ──────────────────────────────────────────
+
+# Fiche de detention : un mutex noyau ne porte pas le nom de son detenteur, et le
+# diagnostic par ligne de commande ne voit ni une tache planifiee, ni un validateur,
+# ni un autre projet (anomalie du 2026-09-14 : 'banc' TENU et '0 processus concurrent').
+# La fiche est une aide, jamais une condition : toute erreur d'ecriture est ignoree.
+RACINE_VERROUS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.nexus', 'verrous')
+
+
+def fiche_detenteur(classe, projet, pid, maintenant_iso):
+    return {
+        "classe": classe,
+        "projet": projet,
+        "pid": pid,
+        "depuis": maintenant_iso,
+        "hote": socket.gethostname(),
+    }
+
+
+def chemin_fiche(dossier, classe, slot=None):
+    nom = classe.lower() + ('' if slot is None else '_' + str(slot)) + '.json'
+    return os.path.join(dossier, nom)
+
+
+def ecrire_fiche(chemin, fiche):
+    try:
+        os.makedirs(os.path.dirname(chemin), exist_ok=True)
+        tmp = chemin + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(fiche, f, ensure_ascii=True)
+        os.replace(tmp, chemin)
+    except Exception as exc:
+        print(f"{__file__} : ecrire_fiche impossible : {exc}", file=sys.stderr)
+
+
+def effacer_fiche(chemin):
+    with suppress(Exception):
+        os.remove(chemin)
+
+
+def pid_vivant(pid):
+    if os.name == 'nt':
+        try:
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+            if handle:
+                ctypes.windll.kernel32.CloseHandle(handle)
+                return True
+            return False
+        except Exception:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except Exception:
+            return False
+
+
+def detenteur(dossier, classe, slot=None):
+    chemin = chemin_fiche(dossier, classe, slot)
+    try:
+        with open(chemin, 'r', encoding='utf-8') as f:
+            fiche = json.load(f)
+    except Exception:
+        return None
+    pid = fiche.get('pid')
+    vivant = pid_vivant(pid) if pid is not None else False
+    fiche['vivant'] = vivant
+    if not vivant:
+        fiche['orpheline'] = True
+    return fiche
+
 
 def processus_concurrents() -> list[dict]:
     """Énumère les robocopy/pytest en cours, tous projets confondus.
@@ -367,9 +507,9 @@ def processus_concurrents() -> list[dict]:
     try:
         sortie = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
                                 capture_output=True, text=True, encoding="utf-8",
-                                errors="replace", timeout=60).stdout
+                                errors="replace", timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
     except (OSError, subprocess.SubprocessError) as exc:
-        print(f"{__file__} : subprocess.run impossible : %s" % exc, file=sys.stderr)
+        print(f"{__file__} : subprocess.run impossible : {exc}", file=sys.stderr)
         return []
     trouves = []
     for ligne in sortie.splitlines():
@@ -458,10 +598,27 @@ def main(argv=None) -> int:
             print(f"  {libre} {classe:<10} {quoi}")
 
     print("\n  SEMAPHORES (plafond, non exclusif) :")
-    for classe, quoi in SEMAPHORES.items():
-        with semaphore(classe, 1, projet="sonde", attente_s=0.0, bavard=False) as s:
-            etat = "LIBRE" if s.obtenu else "PLEIN"
-        print(f"  {etat:<6} SEM_{classe:<10} {quoi}")
+    for classe, (plafond, quoi) in SEMAPHORES.items():
+        occupes = 0
+        for i in range(plafond):
+            nom_i = PREFIXE + "SEM_" + classe.upper() + "_" + str(i)
+            k = _kernel32()
+            if k is None:
+                continue
+            k.CreateMutexW.restype = ctypes.c_void_p
+            k.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
+            k.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+            k.WaitForSingleObject.restype = ctypes.c_uint32
+            k.CloseHandle.argtypes = [ctypes.c_void_p]
+            handle = k.CreateMutexW(None, False, nom_i)
+            if not handle:
+                continue
+            r = k.WaitForSingleObject(handle, 0)
+            if r not in (WAIT_OBJECT_0, WAIT_ABANDONED):
+                occupes += 1
+            k.CloseHandle(handle)
+        etat = f"LIBRE ({plafond - occupes}/{plafond})" if occupes < plafond else f"PLEIN ({plafond}/{plafond})"
+        print(f"  {etat:<15} SEM_{classe:<10} {quoi}")
 
     procs = processus_concurrents()
     print(f"\n  diagnostic (non autoritaire) — {len(procs)} processus concurrent(s) :")
@@ -469,6 +626,32 @@ def main(argv=None) -> int:
         print(f"      {p['pid']:>7}  {p['classe']:<9} [{p['projet']:<6}] {p['cmd']}")
     if not procs:
         print("      aucun")
+
+    erreurs_purge = 0
+    for classe in CLASSES:
+        info = detenteur(RACINE_VERROUS, classe)
+        if info:
+            etat = "vivant" if info.get("vivant") else "ORPHELIN"
+            print(f"      detenteur [{classe}] : {info['projet']} pid {info['pid']} depuis {info['depuis']} ({etat})")
+            if not info.get("vivant"):
+                try:
+                    effacer_fiche(chemin_fiche(RACINE_VERROUS, classe))
+                    print(f"      fiche orpheline purgée : {classe} pid {info['pid']}")
+                except Exception:
+                    erreurs_purge += 1
+    for i in range(16):
+        info = detenteur(RACINE_VERROUS, "inference", slot=i)
+        if info:
+            etat = "vivant" if info.get("vivant") else "ORPHELIN"
+            print(f"      detenteur [inference_{i}] : {info['projet']} pid {info['pid']} depuis {info['depuis']} ({etat})")
+            if not info.get("vivant"):
+                try:
+                    effacer_fiche(chemin_fiche(RACINE_VERROUS, "inference", slot=i))
+                    print(f"      fiche orpheline purgée : inference_{i} pid {info['pid']}")
+                except Exception:
+                    erreurs_purge += 1
+    if erreurs_purge > 0:
+        print(f"      purge : {erreurs_purge} erreur(s)")
     return 0
 
 
