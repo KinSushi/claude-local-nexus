@@ -1806,6 +1806,39 @@ def executer(tache: dict, cle: str) -> dict:
             "erreur": "tous les replis gratuits ont echoue : " + " | ".join(ecartes + echecs)}
 
 
+def famille_de(nom: str) -> str:
+    """
+    Calcule la « famille » d’un modèle ou d’un alias selon la règle du contrat :
+    - on retire le préfixe éventuel du fournisseur (ex. « ollama_chat/ »),
+    - on retire le suffixe « ‑cloud » ou « ‑local »,
+    - on retire tout ce qui suit le premier deux-points (l'etiquette, quelle qu'elle soit),
+    - on enlève le segment final s’il correspond à une taille de modèle
+      (ex. « 120b », « 31b », « 675b », « 397b », « 8b », …).
+    Le résultat est la chaîne obtenue après ces transformations.
+    """
+    # 1. Supprimer le préfixe du fournisseur s’il y en a un
+    if '/' in nom:
+        nom = nom.split('/', 1)[1]
+
+    # 2. Retirer le suffixe -cloud ou -local
+    for suffix in ('-cloud', '-local'):
+        if nom.endswith(suffix):
+            nom = nom[: -len(suffix)]
+            break
+
+    # 3. Retirer l'etiquette apres le premier deux-points
+    nom = nom.split(':', 1)[0]
+
+    # 4. Supprimer le dernier segment s’il est une taille de modèle
+    parts = nom.split('-')
+    if parts:
+        last = parts[-1].lower()
+        # reconnaître les tailles comme 120b, 31b, 675b, 397b, 8b, etc.
+        if last.endswith('b') and last[:-1].isdigit():
+            parts = parts[:-1]
+    return '-'.join(parts)
+
+
 def taille_alias(nom: str) -> float | None:
     r"""
     Extrait le nombre de milliards de paramètres d'un nom de modèle ou d'alias.
@@ -2131,6 +2164,27 @@ def main() -> int:
                    "web": getattr(args, "web", False),
                    "web_consenti": getattr(args, "web_consenti", False)}]
     else:
+        taches = []
+
+    # ------------------------------------------------------------
+    # Gestion de l’option --familles-exclues
+    # ------------------------------------------------------------
+    familles_exclues = set()
+    if getattr(args, "familles_exclues", None):
+        # la liste peut être séparée par des virgules ou des espaces
+        raw = args.familles_exclues
+        for token in str(raw).replace(',', ' ').split():
+            if token:
+                familles_exclues.add(token.strip())
+
+    # Si une tâche unique est demandée, vérifier l’exclusion avant toute
+    # préparation ou appel réseau.
+    if args.tache and args.modele and taches:
+        famille_modele = famille_de(args.modele)
+        if famille_modele in familles_exclues:
+            # sortie immédiate, code non‑zéro, message contenant « exclue »
+            print(f"Modèle exclu (famille : {famille_modele}) – exclusion appliquée", file=sys.stderr)
+            sys.exit(1)
         if args.depuis_jsonl:
             if not args.nom:
                 print("L'option --nom est obligatoire avec --depuis-jsonl.", file=sys.stderr)
