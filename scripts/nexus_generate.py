@@ -489,6 +489,43 @@ def num_predict_pour(fenetre: int | None) -> int:
     return min(max(NUM_PREDICT_MIN, fenetre // 4), NUM_PREDICT_MAX)
 
 
+def lire_show_v_reel(nom_base: str, timeout: int = 20) -> str:
+    try:
+        result = subprocess.run(
+            ["ollama", "show", "-v", nom_base],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            encoding="utf-8",
+            errors="replace",
+        )
+        return result.stdout if result.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+
+def fenetre_derivee_ollama(nom_base: str, poids_go: float | None, memoire_go: float | None, lire_sortie=lire_show_v_reel) -> int | None:
+    """mesure du 2026-09-15, forward sur 64 modeles (qwen3-coder 8192 -> 65536), une seule lecture de ollama show -v par modele, None = on garde le palier."""
+    try:
+        sortie = lire_sortie(nom_base)
+    except Exception:
+        return None
+    arch = lire_architecture(sortie)
+    if arch is None:
+        return None
+    octets_kv = octets_kv_par_jeton(arch)
+    if octets_kv is None:
+        return None
+    fen = fenetre_par_memoire(octets_kv, poids_go, memoire_go)
+    if fen is None:
+        return None
+    natif = arch.get("context_length")
+    candidates = [c for c in (natif, fen, PLAFOND_FENETRE) if c is not None]
+    return min(candidates) if candidates else None
+
+
+
 def local_alias(base: str) -> str:
     """
     Alias d'un modèle Ollama installé.
@@ -683,6 +720,11 @@ def render_local_extra(installed: list[str], declared: set[str],
         alias = local_alias(base)
         ctx = local_context(base, profile)
         ctx = plafonner_contexte(ctx, contexte_natif_ollama(base))
+        # Mesure du 2026-09-15 : fenetre derivee du cache KV reel et de la memoire mesuree ; palier garde si non derivable
+        fenetre_derivee = fenetre_derivee_ollama(base, sizes.get(base), (profile or {}).get("inference_memory_gb"))
+        if fenetre_derivee and not EMBED_HINT.search(base):
+            ctx = fenetre_derivee
+        predict = num_predict_pour(ctx)
         is_embed = bool(EMBED_HINT.search(base))
         # PROMOTION MECANISEE.
         #
@@ -752,7 +794,7 @@ def render_local_extra(installed: list[str], declared: set[str],
             #
             # Un embedding n'en recoit pas : la notion n'a pas de sens pour
             # lui, et la lui envoyer serait au mieux ignore, au pire refuse.
-            out += ["      num_ctx: %d" % ctx, "      num_predict: 4096",
+            out += ["      num_ctx: %d" % ctx, "      num_predict: %d" % predict,
                     "      temperature: %s" % TEMPERATURE_DEFAUT]
         # CE QUI ETAIT FAUX : aucun champ `mode` n'etait emis, donc les
         # modeles de vision ou d'embedding etaient INVISIBLES aux controles

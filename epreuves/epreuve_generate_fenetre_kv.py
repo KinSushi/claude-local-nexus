@@ -217,6 +217,28 @@ NEMOTRON = (
     "    nemotron_h_moe.context_length                       1.048576e+06\n"
 )
 
+def test_g1():
+    result = module.fenetre_derivee_ollama("qwen3-coder:30b", 18.6, 66.2, lire_sortie=lambda nom: QWEN)
+    if result != 65536:
+        raise AssertionError(f"{result} != 65536")
+
+def test_g2():
+    result = module.fenetre_derivee_ollama("phi", 1.6, 66.2, lire_sortie=lambda nom: PHI)
+    if result != 2048:
+        raise AssertionError(f"{result} != 2048")
+
+def test_g3():
+    result = module.fenetre_derivee_ollama("x", 1.0, 66.2, lire_sortie=lambda nom: "")
+    if result is not None:
+        raise AssertionError(f"{result} is not None")
+
+def test_g4():
+    def lever(nom):
+        raise OSError("ollama absent")
+    result = module.fenetre_derivee_ollama("x", 1.0, 66.2, lire_sortie=lever)
+    if result is not None:
+        raise AssertionError(f"{result} is not None")
+
 def test_f6():
     arch = module.lire_architecture(NEMOTRON)
     assert arch["context_length"] == 1048576, f"{arch['context_length']}"
@@ -238,6 +260,10 @@ test_functions = [
     ("R4", test_r4),
     ("L1", test_l1),
     ("F6", test_f6),
+    ("G1", test_g1),
+    ("G2", test_g2),
+    ("G3", test_g3),
+    ("G4", test_g4),
 ]
 
 for name, func in test_functions:
