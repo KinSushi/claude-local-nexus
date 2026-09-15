@@ -29356,3 +29356,16 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 **Principe opérateur « darwin »** : un geste manuel répété est un défaut de mécanisme. Gestes manuels de ce tour, à verser au registre avec une preuve : le doublon `ollama serve` résorbé à la main (la veille corrigée n'en crée plus mais ne vérifie pas le port déjà à l'écoute) ; les fichiers générés par la mise à jour commités à la main ; `num_ctx` fixe au lieu d'être dérivé du contexte natif et de la mémoire mesurée ; 4 caractères par jeton supposés par `nexus_agent` quand SAS en mesure ~3 sur les jetons comptés par la passerelle.
 
 **Ouverts** : un appel `nexus_agent.py` sans argument rend 0 en silence ; `epreuve_agent_familles` compte OK un cas « fuite_no_tracabilite : TRACABILITE détecté » (libellé contradictoire, à auditer) ; rejeu `--depuis-jsonl` sans `--tache` inatteignable.
+
+### Tour 2026-09-15 (05:30-05:50) — relance sans raisonnement et commit de la mise à jour, soldés
+
+- Vitrine publiée avant les poses (verdict OK, 23 commits).
+- **Commit automatique de la mise à jour planifiée** — `e5d21fe` : `Save-FichiersGeneres` borne status/add/commit par `-- README.md litellm_config.yaml`. Contre-épreuve : fonction introuvable. Premier passage : C4 RATE, **vrai défaut du rendu posé** (dossier non git : `git status` sort 128 sans stdout, la fonction rendait RIEN) ; C2 RATE à tort (le .ps1 de l'épreuve écrit DANS le dépôt temporaire). Après correctifs : 4/4, famille `maj-commit`. Non vérifié : le passage réel de 04:00.
+- **Relance unique `think: false`** — `f161016` : `appeler(..., sans_raisonnement)`, `--sans-raisonnement`, relance du même candidat sur vide par raisonnement au-dessus du seuil. Contre-épreuve sur l'ancien code : 4 RATE ; après 6/6, famille `agent-sans-raisonnement`. Forward réel : qwen3.5-397b-cloud, « 391 » en 3 s. Non vérifié : Trinity à travers le MCP.
+- **Régression attrapée par les épreuves voisines avant commit** : faux `appeler` à signature figée dans `agent-sans-repli` et `agent-quota-cloud` (TypeError) ; ils suivent la signature réelle. Familles 7/7 et 3/3.
+- **Audit tiers `580d419..HEAD`** : 8 fichiers, 14 fonctions, aucune régression.
+- **Arbitrage des rendus** : bloc de relance refusé deux fois (variable lue avant calcul ; APRES identique à l'AVANT), puis posé sans `relance = None` dans l'`except` et complété par un patch séparé ; première épreuve refusée : sa contre-épreuve envoyait une vraie requête à la passerelle (HTTP 401 observé). gpt-oss-120b tient les petits patchs en 8 à 20 s (remarque opérateur confirmée).
+
+**Défaut d'outil trouvé par l'usage, OUVERT** : `nexus_paires --synchroniser` refuse (« 3 lignes propres à outillage/ ») quand la SOURCE vient d'être modifiée : il lit les anciennes lignes remplacées comme une divergence de la copie. Remède à déléguer : ne refuser que si la copie diffère de la source à HEAD (ici elles étaient identiques, vérifié par `cmp`, d'où `--forcer`).
+
+**Restent ouverts** : ratio caractères/jeton ; `num_ctx` dérivé ; registre des tâches commits 2 à 5 ; douze échecs antérieurs de la suite ; pont MCP réel ; défaut `nexus_paires` ci-dessus ; puis les grosses améliorations du moteur.
