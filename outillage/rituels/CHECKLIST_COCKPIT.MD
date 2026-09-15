@@ -29123,3 +29123,22 @@ Références jointes relevées sur disque : la documentation installée de `get_
 **Défauts de ma propre instrumentation, corrigés** : un script de tri qui plantait sur `�` faute de bloc de console ; une vérification de générateur qui doublait deux fois les barres obliques inverses ; une contre-épreuve de cliquet jouée sur un arbre non comparable. La contre-épreuve d'un cliquet injecte désormais un défaut dans l'arbre même où la référence a été figée.
 
 **Délégué** : vagues 69 à 72, quarante-six tâches dont huit locales. **Arbitré ici** : tris, mesures directes, deux poses sur main.
+
+#### 22:25-22:40 — livres Python publiés dans la destination et indexés dans le dépôt (rangées 22 et 28)
+
+**Prémâcheur juste sur les deux livres**, prouvé par une vérification indépendante des fichiers écrits, et non par l'outil seul :
+
+| livre | unités | textes exacts après désechappement | CR | concepts | sections |
+| --- | --- | --- | --- | --- | --- |
+| *Robust Python* | 3 630 | 3 630 | 0 | 252 | 229 |
+| *Fluent Python* 2e éd. | 9 841 | 9 841 | 0 | 401 | 544 |
+
+Les huit TSV se relisent avec une largeur constante ; taille maximale des unités : 900 caractères pour la prose, 1 999 pour le code.
+
+**Publié dans `D:/Bibliotheque_Ultime_KOS_IA_Qwen_Parse`**, à la racine comme les autres livres Python : les deux textes extraits par PyMuPDF avec marqueurs de page, et leurs dossiers `__PRE_MACHE`. L'ancienne version de *Fluent Python*, celle du 2026-09-02 (1 818 433 octets), est sauvegardée sous `.nexus/sauvegardes/destination_2026-09-14/`. Chaque copie a été vérifiée par SHA-256 ; manifeste : `.nexus/references_lot72/publication_livres_python.json`.
+
+**Copiés dans le dépôt**, rayon `references/livres_texte/Programmation Python/` (ignoré par git, donc jamais publié sur GitHub). Index régénérés : texte 88 livres et 42 771 unités, concepts 27 648, résumés 4 687, **0 ligne sautée** dans les trois. Preuve par l'usage : `nexus_livres --texte typing NewType` rend en tête un passage de *Robust Python*.
+
+**Restent ouverts** : le commit du prémâcheur et de l'extracteur (violation ruff SIM108, épreuve du prémâcheur fausse verte, épreuve de l'extracteur dont le cas A passe `--refaire` sans `--sauvegardes`, refus muet de l'outil lignes 160-161, dépendance à `pdftotext` même en mode pymupdf ligne 166) ; la détection des légendes de code, partielle (134 rattachées pour Fluent Python, qui compte 520 lignes « Example N-M. ») ; les embeddings des nouveaux textes.
+
+**Délégué** : prémâcheur et correctifs rendus par gpt-oss-120b, mistral-large-3 et qwen3.5-397b. **Arbitré ici** : vérification indépendante des fichiers écrits, publication, indexation, preuve par l'usage.
