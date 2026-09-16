@@ -2168,6 +2168,11 @@ def main() -> int:
              "des qu'elle aboutit. Independant de --sortie : les deux "
              "peuvent etre demandes ensemble.")
     parseur.add_argument(
+        "--brute-ajout", action="store_true", dest="brute_ajout",
+        help="Autoriser l'ajout a un fichier --sortie-brute deja rempli. "
+             "Sans cette option, un fichier existant et non vide fait refuser "
+             "l'ecriture plutot que concatener deux rendus en silence.")
+    parseur.add_argument(
         "--depuis-jsonl", default=None, metavar="FICHIER",
         help="Lire les taches depuis un fichier JSONL.")
     parseur.add_argument(
@@ -2464,8 +2469,12 @@ def main() -> int:
                     if last_success:
                         texte = last_success.get("texte") or ""
                         texte = decaper_cloture_englobante(texte)
-                        mode = "a" if os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0 else "w"
-                        with io.open(args.sortie_brute, mode, encoding="utf-8", newline="\n") as dst:
+                        # Signale par EA MT5 le 2026-09-16 : l'ajout silencieux concatenait deux rendus et rendait le fichier incompilable.
+                        deja = os.path.exists(args.sortie_brute) and os.path.getsize(args.sortie_brute) > 0
+                        if deja and not args.brute_ajout:
+                            print("[!] %s existe deja et n'est pas vide : refus d'ajouter en silence. Donner un autre chemin, ou --brute-ajout pour ajouter volontairement." % args.sortie_brute, file=sys.stderr)
+                            sys.exit(3)
+                        with io.open(args.sortie_brute, "a" if deja else "w", encoding="utf-8", newline="\n") as dst:
                             dst.write(texte + "\n")
                         if lignes_invalides:
                             print("[!] %d ligne(s) JSON invalide(s) ignorée(s) dans %s" % (lignes_invalides, args.depuis_jsonl), file=sys.stderr)
