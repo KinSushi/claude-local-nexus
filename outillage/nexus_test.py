@@ -1675,6 +1675,9 @@ def main() -> int:
     if args.only in (None, "apply"):
         jouer_epreuve_node("epreuve_apply.js", "outil MCP nexus_apply",
                            "NEXUS_APPLY : l'outil est-il cable dans le serveur ?")
+    if args.only in (None, "chars-entree"):
+        jouer_epreuve_node("epreuve_chars_in.js", "caracteres d entree du pont",
+                           "CHARS_IN : le magasin d observations porte-t-il la taille d entree ?")
     if args.only in (None, "lecture"):
         jouer_epreuve_python("epreuve_garde_lecture.py", "garde de lecture")
     if args.only in (None, "shell"):

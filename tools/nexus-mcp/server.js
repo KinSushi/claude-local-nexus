@@ -732,6 +732,25 @@ const TEMPERATURE_PROFIL = {
 const OBSERVATIONS = path.join(INSTALL_ROOT, ".nexus", "temperature",
                                "observations.jsonl");
 
+// mesure du 2026-09-16, le magasin porte les jetons mais aucun compte de caracteres, le ratio n'etait pas derivable.
+function caracteresEntree(messages) {
+    if (!Array.isArray(messages)) return 0;
+    let total = 0;
+    for (const element of messages) {
+        if (!element || typeof element !== 'object') continue;
+        if (typeof element.content === 'string') {
+            total += element.content.length;
+        } else if (Array.isArray(element.content)) {
+            for (const partie of element.content) {
+                if (typeof partie.text === 'string') {
+                    total += partie.text.length;
+                }
+            }
+        }
+    }
+    return total;
+}
+
 function observer(evenement) {
   try {
     fs.mkdirSync(path.dirname(OBSERVATIONS), { recursive: true });
@@ -959,6 +978,7 @@ async function chat(model, messages, maxTokens, timeoutMs, temperature, options)
     // est trop basse.
     attente_ms: attenteMs,
     tokens_in: usage.prompt_tokens || 0,
+    chars_in: caracteresEntree(corps.messages),
     tokens_out: sortie,
     // Jetons par seconde, la grandeur qui decide pour une generation
     // longue. Nul quand rien n'a ete produit -- une division par une
