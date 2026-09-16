@@ -541,11 +541,11 @@ model_list:
       model: ollama_chat/OpenLLM-France/Lucie-7B-Instruct:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 32000
+      num_predict: 8000
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 32000
       description: "OpenLLM-France/Lucie-7B-Instruct:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -555,11 +555,11 @@ model_list:
       model: ollama_chat/atla/selene-mini:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "atla/selene-mini:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -569,11 +569,11 @@ model_list:
       model: ollama_chat/bespoke-minicheck:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "bespoke-minicheck:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -583,11 +583,11 @@ model_list:
       model: ollama_chat/deepseek-coder-v2:16b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "deepseek-coder-v2:16b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -597,11 +597,11 @@ model_list:
       model: ollama_chat/deepseek-ocr:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 8192
       description: "deepseek-ocr:latest (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -612,11 +612,11 @@ model_list:
       model: ollama_chat/deepseek-r1:32b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "deepseek-r1:32b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -626,11 +626,11 @@ model_list:
       model: ollama_chat/devstral:24b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "devstral:24b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -640,11 +640,11 @@ model_list:
       model: ollama_chat/gemma4:26b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "gemma4:26b (promu automatiquement — epreuve reelle 4/4)"
       mode: vision
       nexus_generated: true
@@ -655,11 +655,11 @@ model_list:
       model: ollama_chat/gemma4:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "gemma4:latest (promu automatiquement — epreuve reelle 4/4)"
       mode: vision
       nexus_generated: true
@@ -670,11 +670,11 @@ model_list:
       model: ollama_chat/gpt-oss:20b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "gpt-oss:20b (promu automatiquement — epreuve reelle 4/4)"
       nexus_generated: true
       nexus_pool: true
@@ -684,11 +684,11 @@ model_list:
       model: ollama_chat/granite3-guardian:2b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 8192
       description: "granite3-guardian:2b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -698,11 +698,11 @@ model_list:
       model: ollama_chat/granite3.2-vision:2b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 16384
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 16384
       description: "granite3.2-vision:2b (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -713,11 +713,11 @@ model_list:
       model: ollama_chat/granite4.1-guardian:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "granite4.1-guardian:8b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -727,11 +727,11 @@ model_list:
       model: ollama_chat/granite4.1:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "granite4.1:8b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -741,11 +741,11 @@ model_list:
       model: ollama_chat/hermes3:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "hermes3:8b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -755,11 +755,11 @@ model_list:
       model: ollama_chat/hf.co/arcee-ai/Trinity-Mini-GGUF:q4_K_M
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/arcee-ai/Trinity-Mini-GGUF:q4_K_M (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -769,11 +769,11 @@ model_list:
       model: ollama_chat/hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF:q4_K_M
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF:q4_K_M (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -783,11 +783,11 @@ model_list:
       model: ollama_chat/hf.co/ggml-org/GLM-OCR-GGUF:Q8_0
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/ggml-org/GLM-OCR-GGUF:Q8_0 (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -799,7 +799,7 @@ model_list:
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
       num_ctx: 32768
-      num_predict: 4096
+      num_predict: 8192
       temperature: 0.2
     model_info:
       max_input_tokens: 32768
@@ -812,11 +812,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -827,11 +827,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/Qwen3.5-9B-MTP-GGUF:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "hf.co/unsloth/Qwen3.5-9B-MTP-GGUF:latest (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -842,11 +842,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/Qwen3.6-27B-GGUF:UD-Q4_K_XL
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/unsloth/Qwen3.6-27B-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -857,11 +857,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -872,11 +872,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -887,11 +887,11 @@ model_list:
       model: ollama_chat/hf.co/unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "hf.co/unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -902,11 +902,11 @@ model_list:
       model: ollama_chat/laguna-xs-2.1:q4_K_M
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "laguna-xs-2.1:q4_K_M (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -916,11 +916,11 @@ model_list:
       model: ollama_chat/lfm2.5-thinking:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "lfm2.5-thinking:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -930,11 +930,11 @@ model_list:
       model: ollama_chat/llama-guard3:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "llama-guard3:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -944,11 +944,11 @@ model_list:
       model: ollama_chat/llama3-groq-tool-use:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 8192
       description: "llama3-groq-tool-use:8b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -958,11 +958,11 @@ model_list:
       model: ollama_chat/llama3.2:1b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "llama3.2:1b (promu automatiquement — 6.5 s — mais epreuve 1/4 : demande un outil, exploite le resultat d'outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
@@ -972,11 +972,11 @@ model_list:
       model: ollama_chat/minicpm-v4.6:1b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "minicpm-v4.6:1b (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -987,11 +987,11 @@ model_list:
       model: ollama_chat/muse-glimmer:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "muse-glimmer:30b (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -1002,11 +1002,11 @@ model_list:
       model: ollama_chat/nemotron-3-nano:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "nemotron-3-nano:30b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1016,11 +1016,11 @@ model_list:
       model: ollama_chat/nemotron-3.5-lightning:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "nemotron-3.5-lightning:30b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1030,11 +1030,11 @@ model_list:
       model: ollama_chat/nemotron-cascade-2:30b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "nemotron-cascade-2:30b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1045,7 +1045,7 @@ model_list:
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
     model_info:
-      max_input_tokens: 8192
+      max_input_tokens: 512
       description: "nomic-embed-text-v2-moe:latest (expose automatiquement — hors pool : non mesure)"
       mode: embedding
       nexus_generated: true
@@ -1056,11 +1056,11 @@ model_list:
       model: ollama_chat/north-mini-code-1.0:q4_K_M
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "north-mini-code-1.0:q4_K_M (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1070,11 +1070,11 @@ model_list:
       model: ollama_chat/ornith:35b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "ornith:35b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1084,11 +1084,11 @@ model_list:
       model: ollama_chat/phi3.5:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "phi3.5:latest (promu automatiquement — 2.2 s — mais epreuve 1/4 : demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
@@ -1098,11 +1098,11 @@ model_list:
       model: ollama_chat/phi3:medium
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "phi3:medium (promu automatiquement — 20.2 s — mais epreuve 0/4 : parle le protocole /v1/messages, demande un outil, enchaine deux outils)"
       nexus_generated: true
       nexus_pool: true
@@ -1112,11 +1112,11 @@ model_list:
       model: ollama_chat/phi4-mini:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "phi4-mini:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1126,11 +1126,11 @@ model_list:
       model: ollama_chat/phi4-reasoning:14b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "phi4-reasoning:14b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1154,11 +1154,11 @@ model_list:
       model: ollama_chat/phi:latest
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
+      num_ctx: 2048
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 2048
       description: "phi:latest (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1180,11 +1180,11 @@ model_list:
       model: ollama_chat/qwen3-vl:32b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "qwen3-vl:32b (expose automatiquement — hors pool : trop lent : 76.5 s)"
       mode: vision
       nexus_generated: true
@@ -1195,11 +1195,11 @@ model_list:
       model: ollama_chat/qwen3-vl:8b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "qwen3-vl:8b (promu automatiquement — 38.2 s)"
       mode: vision
       nexus_generated: true
@@ -1210,11 +1210,11 @@ model_list:
       model: ollama_chat/qwen3.5:35b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 32768
+      num_predict: 8192
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 32768
       description: "qwen3.5:35b (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -1225,11 +1225,11 @@ model_list:
       model: ollama_chat/qwen3.5:9b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "qwen3.5:9b (promu automatiquement — epreuve reelle 4/4)"
       mode: vision
       nexus_generated: true
@@ -1240,11 +1240,11 @@ model_list:
       model: ollama_chat/qwen3.6:27b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "qwen3.6:27b (promu automatiquement — epreuve reelle 4/4)"
       mode: vision
       nexus_generated: true
@@ -1255,11 +1255,11 @@ model_list:
       model: ollama_chat/qwen3.6:27b-coding
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "qwen3.6:27b-coding (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -1270,11 +1270,11 @@ model_list:
       model: ollama_chat/qwen3.8:27b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 65536
       description: "qwen3.8:27b (expose automatiquement — hors pool : non mesure)"
       mode: vision
       nexus_generated: true
@@ -1285,11 +1285,11 @@ model_list:
       model: ollama_chat/qwen3:0.6b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 40960
+      num_predict: 10240
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 40960
       description: "qwen3:0.6b (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
       nexus_generated: true
       nexus_pool: false
@@ -1299,11 +1299,11 @@ model_list:
       model: ollama_chat/qwen3:1.7b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 40960
+      num_predict: 10240
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 40960
       description: "qwen3:1.7b (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
       nexus_generated: true
       nexus_pool: false
@@ -1313,11 +1313,11 @@ model_list:
       model: ollama_chat/qwen3:4b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
-      num_predict: 4096
+      num_ctx: 65536
+      num_predict: 16384
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 65536
       description: "qwen3:4b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1327,11 +1327,11 @@ model_list:
       model: ollama_chat/shieldgemma:2b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 8192
       description: "shieldgemma:2b (expose automatiquement — hors pool : non mesure)"
       nexus_generated: true
       nexus_pool: false
@@ -1341,11 +1341,11 @@ model_list:
       model: ollama_chat/smollm2:1.7b
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 32768
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 32768
+      max_input_tokens: 8192
       description: "smollm2:1.7b (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
       nexus_generated: true
       nexus_pool: false
@@ -1355,11 +1355,11 @@ model_list:
       model: ollama_chat/smollm2:360m
       api_base: http://host.docker.internal:11434
       litellm_health_check: true
-      num_ctx: 16384
+      num_ctx: 8192
       num_predict: 4096
       temperature: 0.2
     model_info:
-      max_input_tokens: 16384
+      max_input_tokens: 8192
       description: "smollm2:360m (expose automatiquement — hors pool : mesure en echec : Remote end closed connection without response)"
       nexus_generated: true
       nexus_pool: false
