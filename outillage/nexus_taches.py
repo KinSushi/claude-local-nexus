@@ -112,7 +112,7 @@ def lire_registre(chemin: Path) -> list[Tache]:
                 raise RegistreInvalide(num, "l’objet JSON n’est pas un dictionnaire")
 
             # Clés autorisées
-            cles_autorisees = {"id", "titre", "origine", "preuve", "cree_le", "non_mecanisable"}
+            cles_autorisees = {"id", "titre", "origine", "preuve", "cree_le", "non_mecanisable", "priorite", "critere_de_fin", "prochaine_action"}
             cles_inconnues = set(data) - cles_autorisees
             if cles_inconnues:
                 raise RegistreInvalide(num, f"clés inconnues {sorted(cles_inconnues)}")
@@ -123,6 +123,14 @@ def lire_registre(chemin: Path) -> list[Tache]:
                     raise RegistreInvalide(num, f"champ obligatoire « {champ} » manquant")
                 if not isinstance(data[champ], str) or not data[champ].strip():
                     raise RegistreInvalide(num, f"champ « {champ} » vide ou non‑string")
+
+            # Champs optionnels – ils sont optionnels car les 34 entrées existantes n'en portent aucun
+            if "priorite" in data and data["priorite"] not in ("haute", "moyenne", "basse"):
+                raise RegistreInvalide(num, "champ « priorite » valeur invalide")
+            if "critere_de_fin" in data and (not isinstance(data["critere_de_fin"], str) or not data["critere_de_fin"].strip()):
+                raise RegistreInvalide(num, "champ « critere_de_fin » vide ou non‑string")
+            if "prochaine_action" in data and (not isinstance(data["prochaine_action"], str) or not data["prochaine_action"].strip()):
+                raise RegistreInvalide(num, "champ « prochaine_action » vide ou non‑string")
 
             # Validation de l’identifiant
             ident = data["id"]
