@@ -142,6 +142,33 @@ def R2():
     return "aucune exception"
 
 
+def C1():
+    """Le CABLAGE, pas la fonction : journaliser_verdict est-il appele avant le PREMIER retour de main ?
+
+    Defaut mesure le 2026-09-16 : l'appel n'existait que sur le chemin d'echec.
+    Une fonction correcte mais non appelee au bon endroit est indiscernable
+    d'une fonction absente.
+    """
+    import inspect
+    source = inspect.getsource(nexus_vitrine.main)
+    avant_premier_retour = source.split("return 0 if sain else 1")[0]
+    assert "journaliser_verdict" in avant_premier_retour, (
+        "journaliser_verdict n est pas appele avant le premier retour de main : "
+        "la vitrine journaliserait ses refus et jamais ses reussites")
+    return "appele avant le premier retour"
+
+
+def C2():
+    """L'appel est-il present sur les DEUX chemins de sortie de main() ?"""
+    import inspect
+    source = inspect.getsource(nexus_vitrine.main)
+    occurrences = source.count("journaliser_verdict")
+    assert occurrences >= 2, (
+        "journaliser_verdict apparait %d fois dans main() : il en faut au moins "
+        "deux, une par chemin de sortie" % occurrences)
+    return occurrences
+
+
 def L1():
     """Vérifier la valeur de PASSERELLE ou de la variable d'environnement."""
     if hasattr(nexus_conformite, "PASSERELLE"):
@@ -161,6 +188,8 @@ run_case("F2", F2)
 run_case("F3", F3)
 run_case("R1", R1)
 run_case("R2", R2)
+run_case("C1", C1)
+run_case("C2", C2)
 run_case("L1", L1)
 
 print(f"{total_cases} cas, {failed_cases} RATE")

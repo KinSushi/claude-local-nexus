@@ -138,8 +138,69 @@ def charger_file(chemin):
     return taches
 
 
-def tour_si_pouls_mort(chemin_file, seuil_s=900.0, pilote="qwen3-coder-30b-local", auditeur="glm-4.7-flash-local", simuler=False):
+def modeles_derives():
+    """Pilote et auditeur DERIVES des epreuves mesurees, jamais graves.
+
+    Mesure du 2026-09-16 : ce fichier gravait deux modeles de 18 et 19 Go pour
+    une boucle de fond tournant toutes les dix minutes.
+
+    Le critere n est PAS le poids seul, et c est le point delicat. Le releve
+    .nexus/epreuves.json montre que les plus legers echouent aux epreuves
+    reelles -- smollm2:360m, tinyllama et llama3.2:1b rendent 1 sur 4, tous
+    sur « demande un outil » et « enchaine deux outils ». Deriver sur le poids
+    aurait remplace un mauvais choix grave par un choix derive incapable.
+
+    On retient donc les modeles dont l epreuve est COMPLETE et STABLE, puis
+    les deux plus legers parmi eux. Rend (None, None) si moins de deux
+    qualifient : l appelant decide, plutot qu un defaut invente ici.
+    """
+    racine = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    try:
+        with open(os.path.join(racine, ".nexus", "epreuves.json"), encoding="utf-8") as f:
+            releve = json.load(f).get("modeles", {})
+    except Exception:
+        return (None, None)
+    try:
+        import importlib.util
+        chemin = os.path.join(racine, "scripts", "nexus_capability.py")
+        spec = importlib.util.spec_from_file_location("_boucle_capability", chemin)
+        cap = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cap)
+        tailles = cap.installed_models() or {}
+    except Exception:
+        return (None, None)
+    qualifies = []
+    for alias, mesure in releve.items():
+        if not isinstance(mesure, dict):
+            continue
+        if not (mesure.get("complet") and mesure.get("stable")):
+            continue
+        if mesure.get("plan") != "local":
+            continue
+        servi = (mesure.get("servi") or "").split("/", 1)[-1]
+        poids = tailles.get(servi)
+        if not poids or poids <= 0:
+            continue
+        qualifies.append((poids, alias))
+    if len(qualifies) < 2:
+        return (None, None)
+    qualifies.sort()
+    return (qualifies[0][1], qualifies[1][1])
+
+
+def tour_si_pouls_mort(chemin_file, seuil_s=900.0, pilote=None, auditeur=None, simuler=False):
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    # Les valeurs non fournies se DERIVENT des epreuves mesurees. Sans cet
+    # appel, pilote et auditeur restaient None jusqu'a un_cycle, ou la garde
+    # LOI 1 « distincts » levait sur None == None : une fonction correcte mais
+    # non appelee est indiscernable d'une fonction absente.
+    if pilote is None or auditeur is None:
+        derives = modeles_derives()
+        pilote = pilote or derives[0]
+        auditeur = auditeur or derives[1]
+    if not pilote or not auditeur or pilote == auditeur:
+        return {"retrait": True,
+                "raison": "modeles indisponibles : derivation rend %r" % (( pilote, auditeur),)}
     from nexus_pouls import lire, est_vivant, _chemin_defaut
     pouls = lire(_chemin_defaut())
     if pouls is not None and est_vivant(pouls, time.time(), seuil_s):
@@ -179,8 +240,10 @@ if __name__ == "__main__":
     parser.add_argument("--file", default=os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), ".nexus", "file_locale.jsonl"))
     parser.add_argument("--seuil", type=float, default=900.0, help="Seuil de pouls mort (secondes)")
     parser.add_argument("--simuler", action="store_true", help="Mode simulation sans appel reseau")
-    parser.add_argument("--pilote", default="qwen3-coder-30b-local")
-    parser.add_argument("--auditeur", default="glm-4.7-flash-local")
+    # Defaut DERIVE des epreuves mesurees, jamais grave : voir
+    # modeles_derives(). Une valeur passee en ligne de commande l emporte.
+    parser.add_argument("--pilote", default=None)
+    parser.add_argument("--auditeur", default=None)
     args = parser.parse_args()
     if args.tour:
         rapport = tour_si_pouls_mort(args.file, args.seuil, args.pilote, args.auditeur, args.simuler)

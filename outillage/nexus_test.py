@@ -1469,6 +1469,12 @@ def main() -> int:
     if args.only in (None, "vitrine-charge"):
         jouer_epreuve_python("epreuve_vitrine_charge.py",
                              "vitrine : refus propre au-dessus du seuil d engagement, decide sur le JSON et non sur le code de sortie")
+    if args.only in (None, "creer-remplacer-sauvegarde"):
+        jouer_epreuve_python("epreuve_creer_remplacer_sauvegarde.py",
+                             "creer : --remplacer laisse sa sauvegarde sur le disque, constat opposable")
+    if args.only in (None, "boucle-locale-modeles"):
+        jouer_epreuve_python("epreuve_boucle_locale_modeles.py",
+                             "boucle locale : aucun modele grave, et la somme des poids tient dans le budget mesure")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")
