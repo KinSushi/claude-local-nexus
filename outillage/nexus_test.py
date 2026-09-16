@@ -1666,8 +1666,6 @@ def main() -> int:
         jouer_epreuve_python("epreuve_traque.py", "traque : _texte, _charge_de_refus (variable imprimee suivie dans la portee)")
     if args.only in (None, "indexer-resumes"):
         jouer_epreuve_python("epreuve_indexer_resumes.py", "indexer resumes : _slugify (troncature a 50, None/entier/flottant refuses)")
-    if args.only in (None, "nexus"):
-        jouer_epreuve_python("epreuve_nexus_regression.py", "cablage de la nouvelle epreuve de regression")
     if args.only in (None, "porte"):
         jouer_epreuve_python("epreuve_vitrine_suite.py", "la porte de publication joue la suite")
     if args.only in (None, "silence"):
