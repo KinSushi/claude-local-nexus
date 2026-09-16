@@ -1466,6 +1466,9 @@ def main() -> int:
     if args.only in (None, "vitrine-journal"):
         jouer_epreuve_python("epreuve_vitrine_journal.py",
                              "vitrine : le verdict est journalise quel que soit l appelant, et relu par etat_journal_vitrine")
+    if args.only in (None, "vitrine-charge"):
+        jouer_epreuve_python("epreuve_vitrine_charge.py",
+                             "vitrine : refus propre au-dessus du seuil d engagement, decide sur le JSON et non sur le code de sortie")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")

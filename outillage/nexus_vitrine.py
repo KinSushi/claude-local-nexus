@@ -257,6 +257,41 @@ def journaliser_verdict(racine, verdict):
         pass
 
 
+SEUIL_ENGAGEMENT_PCT = 90.0
+
+
+def machine_libre(racine):
+    """La machine peut-elle porter 1800 s de suite de tests ?
+
+    Mesure du 2026-09-16 : une publication a ete TUEE par le systeme faute de
+    memoire, engagement a 79 pour cent, avant meme d'entrer dans ce script.
+    Une suite de tests tuee a mi-course est une perte seche, donc ce controle
+    BLOQUE avant de commencer plutot que d'avertir apres coup.
+
+    On lit l'ENGAGEMENT, pas le code de sortie de nexus_charge : son seuil
+    repond a « puis-je charger un modele d'inference », question differente.
+    Mesure : moteur vide et engagement a 62 pour cent, il rendait encore 1.
+
+    Degrade en OK des que la mesure manque : un garde qui plante bloque le
+    travail qu'il devait proteger.
+    """
+    outil = Path(racine) / "scripts" / "nexus_charge.py"
+    if not outil.is_file():
+        return OK, "nexus_charge absent, charge non verifiee"
+    try:
+        r = subprocess.run([sys.executable, str(outil), "--json"], cwd=str(racine),
+                           capture_output=True, text=True, timeout=120,
+                           encoding="utf-8", errors="replace")
+        mesure = json.loads(r.stdout or "{}")
+        pct = float(mesure["engagement_pct"])
+    except Exception as exc:
+        return OK, "charge non mesurable : %s" % str(exc)[:60]
+    if pct < SEUIL_ENGAGEMENT_PCT:
+        return OK, "engagement %.0f%%, sous le seuil de %.0f%%" % (pct, SEUIL_ENGAGEMENT_PCT)
+    return BLOQUE, ("engagement %.0f%%, au-dessus du seuil de %.0f%% : la suite de tests serait tuee. "
+                    "Attendre que la machine se libere, puis relancer." % (pct, SEUIL_ENGAGEMENT_PCT))
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -267,6 +302,8 @@ def main() -> int:
                    help="sauter la suite de tests longue ; conformite et rituel restent verifies")
     p.add_argument("--epreuve", action="store_true",
                    help="verifier que le detecteur de secrets detecte")
+    p.add_argument("--ignorer-charge", action="store_true",
+                   help="publier meme si la machine est chargee, au risque que la suite de tests soit tuee")
     a = p.parse_args()
 
     if a.epreuve:
@@ -288,6 +325,7 @@ def main() -> int:
         "amont de la branche": ("BLOQUENT", lambda: amont_present(racine)),
         "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
                                                            False)),
+        "machine libre": ("BLOQUENT", lambda: (OK, "charge ignoree sur demande") if (a.ignorer_charge or a.simulation) else machine_libre(racine)),
         "suite de tests": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_test.py",
                                                                a.sauf_tests, 1800)),
         "rituel de fin de tour": ("BLOQUENT", lambda: sous_controle(racine,
@@ -354,6 +392,13 @@ def main() -> int:
             "avertissements": avertissements,
             "verdict": OK if sain else BLOQUE,
         }, ensure_ascii=False, indent=2))
+        # Mesure du 2026-09-16 : ce return sortait AVANT l'appel a
+        # journaliser_verdict place plus bas, donc la vitrine journalisait ses
+        # refus et jamais ses reussites -- l'inverse exact de ce que le controle
+        # « vitrine recente » doit compter.
+        if not a.simulation:
+            journaliser_verdict(racine, "VERDICT : vitrine publiee (%d avertissement(s))." % avertissements
+                                if sain else "VERDICT : publication REFUSEE. Rien n'est parti.")
         return 0 if sain else 1
 
     print("Sauvegarde vitrine -- %s" % racine)
