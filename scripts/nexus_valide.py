@@ -454,17 +454,39 @@ def extract_changed_functions(diff_text):
     py_def = re.compile(r"^[+-]\s*def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
     ps_def = re.compile(r"^[+-]\s*function\s+([A-Za-z_][A-Za-z0-9_-]*)", re.IGNORECASE)
 
+    # Mesure du 2026-09-16, signalee par deux sessions voisines : le nom que
+    # git place apres le second @@ est le CONTEXTE du hunk, pas ce qui change.
+    # Un diff de docstring produit un hunk A L'INTERIEUR d'une fonction, dont
+    # le nom etait donc compte : 54 fonctions « touchees » a AST identique.
+    # Le contexte n'est retenu que si le hunk porte au moins une ligne de CODE.
+    contexte = None
+    porte_du_code = False
+    dans_docstring = False
     for line in lines:
         if line.startswith("@@"):
+            if contexte and porte_du_code:
+                changed.add(contexte)
             m = hunk.search(line)
-            if m:
-                changed.add(m.group(1) or m.group(2))
+            contexte = (m.group(1) or m.group(2)) if m else None
+            porte_du_code = False
+            dans_docstring = False
             continue
+        if line[:1] in ("+", "-"):
+            corps = line[1:].strip()
+            delimiteurs = corps.count('\"\"\"') + corps.count("'''")
+            documentaire = (not corps) or corps.startswith("#") or dans_docstring or delimiteurs > 0
+            if delimiteurs % 2 == 1:
+                dans_docstring = not dans_docstring
+            if not documentaire:
+                porte_du_code = True
         for motif in (py_def, ps_def):
             m = motif.match(line)
             if m:
                 changed.add(m.group(1))
+                porte_du_code = True
                 break
+    if contexte and porte_du_code:
+        changed.add(contexte)
 
     return sorted(n for n in changed if n)
 

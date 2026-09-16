@@ -1475,6 +1475,9 @@ def main() -> int:
     if args.only in (None, "boucle-locale-modeles"):
         jouer_epreuve_python("epreuve_boucle_locale_modeles.py",
                              "boucle locale : aucun modele grave, et la somme des poids tient dans le budget mesure")
+    if args.only in (None, "valide-perimetre-docstrings"):
+        jouer_epreuve_python("epreuve_valide_perimetre_docstrings.py",
+                             "valide : un diff de docstring ne compte pas la fonction du contexte de hunk, un diff de code si")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")
