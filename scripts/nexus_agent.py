@@ -71,6 +71,23 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
+def materialiser_rendu(dossier, nom, texte, deja_vus):
+    """materialise le rendu d'une tache dans DOSSIER/<nom>.txt, refuse un nom deja materialise, ne leve jamais"""
+    import hashlib
+    if nom in deja_vus:
+        return (None, "doublon")
+    try:
+        os.makedirs(dossier, exist_ok=True)
+        contenu = decaper_cloture_englobante(texte or "")
+        chemin = os.path.join(dossier, str(nom) + ".txt")
+        with io.open(chemin, "w", encoding="utf-8", newline="\n") as f:
+            f.write(contenu)
+        deja_vus.add(nom)
+        return (chemin, hashlib.sha256(contenu.encode("utf-8")).hexdigest()[:16])
+    except Exception as exc:
+        return (None, str(exc)[:80])
+
+
 def decaper_cloture_englobante(texte: str) -> str:
     """
     Retourne *texte* après avoir éventuellement retiré les balises de bloc
@@ -2173,6 +2190,11 @@ def main() -> int:
              "Sans cette option, un fichier existant et non vide fait refuser "
              "l'ecriture plutot que concatener deux rendus en silence.")
     parseur.add_argument(
+        "--materialiser", default=None, metavar="DOSSIER",
+        help="Ecrire un fichier par tache, DOSSIER/<nom>.txt, balises de bloc "
+             "retirees et fins de ligne LF, avec son empreinte. Un nom deja "
+             "materialise fait refuser plutot qu'ecraser.")
+    parseur.add_argument(
         "--depuis-jsonl", default=None, metavar="FICHIER",
         help="Lire les taches depuis un fichier JSONL.")
     parseur.add_argument(
@@ -2531,6 +2553,8 @@ def main() -> int:
             futurs = {pool.submit(executer_avec_controles, t, cle): t for t in taches}
             # Liste parallèle pour garder l'ordre d'arrivée des résultats.
             taches_par_futur = []
+            # Un nom deja materialise fait refuser : jamais d'ecrasement silencieux.
+            noms_materialises = set()
             for futur in concurrent.futures.as_completed(futurs):
                 r = futur.result()
                 resultats.append(r)
@@ -2540,6 +2564,12 @@ def main() -> int:
                     r["lot_id"] = lot_id
                     flux.write(json.dumps(r, ensure_ascii=False) + "\n")
                     flux.flush()
+                if args.materialiser:
+                    chemin_mat, empreinte = materialiser_rendu(args.materialiser, r.get("nom") or "tache", r.get("texte") or "", noms_materialises)
+                    if chemin_mat:
+                        print("MATERIALISE %s %d %s" % (r.get("nom") or "tache", os.path.getsize(chemin_mat), empreinte))
+                    else:
+                        print("[!] materialisation refusee pour %s : %s" % (r.get("nom") or "tache", empreinte), file=sys.stderr)
                 if args.sortie_brute:
                     try:
                         with io.open(args.sortie_brute, "a", encoding="utf-8",

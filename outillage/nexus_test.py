@@ -1451,6 +1451,9 @@ def main() -> int:
     if args.only in (None, "sortie-brute"):
         jouer_epreuve_python("epreuve_agent_sortie_brute.py",
                              "agent : --sortie-brute refuse d ajouter a un fichier deja rempli, ajout seulement si --brute-ajout")
+    if args.only in (None, "materialiser"):
+        jouer_epreuve_python("epreuve_agent_materialiser.py",
+                             "agent : un fichier par tache avec empreinte, balises retirees, LF, refus sur doublon de nom")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")
