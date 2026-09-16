@@ -71,6 +71,22 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
+def ouvrir_sortie_brute(chemin, ajout):
+    """ouvre le flux brut UNE FOIS ; renomme un existant non vide avec un horodatage sauf si ajout ; rend (flux, renomme) ou (None, motif), ne leve jamais"""
+    import datetime
+    try:
+        renomme = None
+        if not ajout and os.path.isfile(chemin) and os.path.getsize(chemin) > 0:
+            horodatage = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            renomme = "%s.%s" % (chemin, horodatage)
+            os.rename(chemin, renomme)
+        # SIM115 neutralise a dessein : ce flux doit SURVIVRE a l'appel et traverser
+        # toute la boucle du lot ; un gestionnaire de contexte le fermerait ici.
+        flux = io.open(chemin, "a" if ajout else "w", encoding="utf-8", newline="\n")  # noqa: SIM115
+        return (flux, renomme)
+    except Exception as exc:
+        return (None, str(exc)[:120])
+
 def materialiser_rendu(dossier, nom, texte, deja_vus):
     """materialise le rendu d'une tache dans DOSSIER/<nom>.txt, refuse un nom deja materialise, ne leve jamais"""
     import hashlib
@@ -2452,6 +2468,17 @@ def main() -> int:
                 flux = None
         else:
             flux = None
+    # Le flux brut s'ouvre UNE FOIS, avant la boucle. Ouvert a chaque tache, il
+    # concatenait en silence les rendus de deux lots successifs. Le cas
+    # --depuis-jsonl est exclu : il possede sa propre garde plus haut et sort
+    # par sys.exit, donc l'ouvrir ici renommerait le fichier sous ses pieds.
+    flux_brut = None
+    if args.sortie_brute and not (args.depuis_jsonl and args.nom):
+        flux_brut, motif = ouvrir_sortie_brute(args.sortie_brute, args.brute_ajout)
+        if flux_brut is None:
+            print("[!] sortie brute impossible : %s" % motif, file=sys.stderr)
+        elif motif:
+            print("[i] sortie brute existante renommee en %s" % motif, file=sys.stderr)
     faits = 0
     # LA FERMETURE EST GARANTIE, ET NE L'ETAIT PAS.
     #
@@ -2570,11 +2597,10 @@ def main() -> int:
                         print("MATERIALISE %s %d %s" % (r.get("nom") or "tache", os.path.getsize(chemin_mat), empreinte))
                     else:
                         print("[!] materialisation refusee pour %s : %s" % (r.get("nom") or "tache", empreinte), file=sys.stderr)
-                if args.sortie_brute:
+                if flux_brut is not None:
                     try:
-                        with io.open(args.sortie_brute, "a", encoding="utf-8",
-                                     newline="\n") as fbrut:
-                            fbrut.write(decaper_cloture_englobante(r.get("texte") or "") + "\n")
+                        flux_brut.write(decaper_cloture_englobante(r.get("texte") or "") + "\n")
+                        flux_brut.flush()
                     except Exception as exc:
                         print("[!] sortie brute impossible : %s" % exc,
                               file=sys.stderr)
@@ -2599,11 +2625,10 @@ def main() -> int:
                         if flux is not None:
                             flux.write(json.dumps(new_res, ensure_ascii=False) + "\n")
                             flux.flush()
-                        if args.sortie_brute:
+                        if flux_brut is not None:
                             try:
-                                with io.open(args.sortie_brute, "a", encoding="utf-8",
-                                             newline="\n") as fbrut:
-                                    fbrut.write(decaper_cloture_englobante(new_res.get("texte") or "") + "\n")
+                                flux_brut.write(decaper_cloture_englobante(new_res.get("texte") or "") + "\n")
+                                flux_brut.flush()
                             except Exception as exc:
                                 print("[!] sortie brute impossible : %s" % exc,
                                       file=sys.stderr)
@@ -2617,8 +2642,9 @@ def main() -> int:
             except Exception:
                 pass
             flux.close()
-        if flux is not None:
-            flux.close()
+        if flux_brut is not None:
+            with contextlib.suppress(Exception):
+                flux_brut.close()
         # Une erreur a la fermeture ne doit pas masquer l'erreur d'origine
         with contextlib.suppress(Exception):
             pile_verrou.close()

@@ -29472,3 +29472,47 @@ Verdict de l'outil : **CACHE ACTIF**. À nombre de jetons de prompt constant, l'
 **Conséquence pratique, pas une spéculation** : tout appel qui répète un long préambule identique ne le repaie pas. Cela vaut pour `nexus_agent` (gabarit système identique à chaque appel) et pour MAP-REDUCE, où chaque fenêtre porte la même consigne. **Ce qui reste à décider** : stabiliser le gabarit système EN TÊTE de prompt pour maximiser le préfixe commun, et câbler cette mesure (l'outil est `preuve_seule`, personne ne l'appelle). La mesure ne dit rien du cache entre modèles ni de sa durée de vie : non mesuré.
 
 **Sur l'instrument de charge, à noter** : `nexus_charge` a rendu « machine CHARGÉE » alors que 44,45 Go étaient libres, aucun modèle résident, et que les « processus significatifs » étaient trois sessions Claude, WSL, OneDrive et l'antivirus — aucun n'occupant le moteur. Le verdict vient de la branche « processus », pas du seuil mémoire (30 Go). C'est la garde de contention de `nexus_mesure_cache` (lecture de `/api/ps`) qui a tranché correctement, en laissant la mesure passer.
+
+### Tour 2026-09-16 (13:40-14:35) — deux tâches closes, et la sauvegarde vitrine était en panne silencieuse depuis deux jours
+
+- **`a2a80d1` — T-20260916-001 close** : `--materialiser DOSSIER` écrit un fichier par tâche, `<nom>.txt`, décapé de ses clôtures markdown, en LF, avec empreinte sha256 tronquée à 16 caractères, et **refuse un nom déjà matérialisé** au lieu d'écraser en silence. **Forward réel** (2 tâches, gpt-oss-120b-cloud) : `MATERIALISE mat_un 11 b6b40f7b6e43980a`, `MATERIALISE mat_deux 13 0fc5518cfa65ec20`, contenus exacts, aucun CRLF. **Reverse réel** (deux tâches portant le même nom) : un seul `jumeau.txt` de 15 octets écrit, le second refusé avec le motif nommé « doublon », et le lot poursuit sans s'arrêter. Épreuve `materialiser` sous le lanceur : **8 cas, 0 échec** ; contre-épreuve préalable sur le code non modifié : **7 RATE**, seul L1 au vert. Audit tiers du commit : aucune régression, 12 fonctions touchées.
+- **Le registre dit la vérité plutôt que le commit** : la preuve de T-20260916-001 a été passée de `commit` à `famille materialiser`. Une famille se rejoue ; un commit ne se rejoue pas.
+
+### T-20260916-004 — le correctif de la veille ne couvrait qu'UN TIERS des chemins
+
+- **Défaut trouvé dans mon propre code, par lecture** : la garde anti-ajout-silencieux posée la veille par `5da1479` (lignes 2495-2498) n'existait sur **aucun** des deux autres chemins d'écriture de `--sortie-brute` — la boucle de lot et la relance séquentielle ouvraient en mode « a » sans vérification ni épreuve. Un correctif qui protège un chemin sur trois se lit comme une protection ; c'est pire qu'aucune.
+- **Le remède était déjà sur le disque, trois lignes plus haut** : le flux `--sortie` (2432-2444) **renomme** l'existant non vide avec un horodatage puis ouvre en « w », en le disant. Rien n'est concaténé, rien n'est perdu. Le bon remède n'était donc ni « refuser » ni « ajouter », mais ce geste-là — avec une ouverture **unique avant la boucle**, car N tâches partagent le fichier et une garde par itération ferait refuser dès la deuxième.
+- **Un rendu du banc REFUSÉ par arbitrage, alors qu'il était conforme à ma consigne** : il posait la logique *en ligne* dans `main()`. Conforme, et inéprouvable — c'est parce que `materialiser_rendu` est une **fonction** qu'une épreuve a pu la couvrir. Un correctif qu'aucune famille ne peut couvrir aurait laissé la tâche INCONNUE pour toujours. Renvoyé pour extraction en `ouvrir_sortie_brute(chemin, ajout)`, qui rend `(flux, renomme)` ou `(None, motif)` et ne lève jamais.
+- **Effet de bord pesé avant de déléguer** : l'ouverture exclut `--depuis-jsonl --nom`, qui possède sa propre garde et sort par `sys.exit` ; l'ouvrir là aurait renommé le fichier sous ses pieds.
+- **Épreuve `sortie-brute-lot`, 7 cas** — contre-épreuve d'abord, sur le code non modifié : **6 RATE** (`fonction manquante`, puis `no attribute 'ouvrir_sortie_brute'`), absence de la fonction vérifiée dans le fichier ; après la pose, **7/7 sous le lanceur réel**. F2 prouve que l'ancien contenu survit dans le fichier horodaté *et* que le nouveau ne le contient pas ; F3 qu'en mode `--brute-ajout` aucun fichier voisin n'apparaît ; R1 qu'un fichier **vide** n'est pas renommé, n'ayant aucun travail à préserver ; R2 que l'erreur est rendue sans être levée.
+- **FAUX VERT trouvé dans l'épreuve rendue, avant sa création** : son cas L1 se contentait de `return getattr(module, "PASSERELLE", None)`, sans rien assertionner — si la passerelle avait valu l'adresse réelle, ou `None`, le cas serait passé au vert en affichant la mauvaise valeur. Or L1 est précisément le cas qui garantit qu'aucun appel réel ne part. Corrigé avant toute création de fichier.
+- **FORWARD PAR L'USAGE, le seul qui reproduise le défaut d'origine** : deux lots successifs vers le même `--sortie-brute`. Le second annonce `[i] sortie brute existante renommee en brut_partage.txt.20260916143000` ; le fichier courant fait 16 octets (`print('SECOND')`) et le renommé 26 (`print('un')` + `print('deux')`). La concaténation silencieuse de la veille ne se reproduit pas, et rien n'est perdu.
+- **Code mort absorbé** : dans le `finally` de `main()`, `flux.close()` était appelé **deux fois**. Idempotent, donc sans effet fonctionnel, mais le second bloc mentait sur son intention ; il disparaît avec ce correctif.
+- **Un `SIM115` assumé, non contourné** : `ouvrir_sortie_brute` rend un flux qui doit **survivre à l'appel** et traverser toute la boucle ; un gestionnaire de contexte le fermerait et détruirait la fonction. Neutralisé par `# noqa: SIM115` avec la raison écrite au-dessus — la convention déjà employée ici pour `E402` et `F401`. Les cinq autres violations du fichier sont **antérieures**, mesurées sur la version HEAD.
+
+### LA SAUVEGARDE VITRINE ÉTAIT EN PANNE DEPUIS LE 2026-09-14 — et rien ne le disait
+
+Trouvé par l'usage, en lisant `logs/vitrine.log` que rien ne lit : **40 passages enregistrés depuis le 2026-08-30**, et **aucune publication depuis le 2026-09-14**. Neuf refus consécutifs, dont le dernier observé en direct pendant ce tour.
+
+| motif de refus | occurrences |
+| --- | --- |
+| `arbre propre — 1 fichier(s) non commite(s)` | 7 |
+| `arbre propre` — 2, 4, 6, 10, 26, 88, 111 fichiers | 8 |
+| `rituel de fin de tour — N manque(s)` | le reste |
+
+**La cause, mesurée** : `cockpit_frais` compare `outillage/rituels/CHECKLIST_COCKPIT.MD` au dernier commit touchant `scripts/` ou `tools/`. Or **rien ne régénère le cockpit** — il est *rédigé*, pas dérivé. `nexus_progres.py` ne fait que le **lire** pour en extraire un compte de sujets (ligne 211). Chaque commit de code le périme donc, le rituel manque, et la publication est refusée. Mesuré ce jour : cockpit à 13:35:02, commit `a2a80d1` à 13:55:04.
+
+**Et la dette était déjà écrite ici** : §119.10 recense huit correctifs « PRÊTS, en attente d'une main qui n'est pas la mienne », dont `scripts/nexus_cockpit.py — mécaniser cette checklist — rendu, audit tiers à faire`. §119.11 ajoute : *« Aucun des huit correctifs ci-dessus n'est posé : l'orchestrateur s'est interdit d'écrire »*. Le fichier n'a **jamais** existé dans git. L'outil qui aurait rendu ce cockpit dérivé a été produit, puis abandonné — et la panne d'aujourd'hui en est la facture.
+
+**Piège de diagnostic à retenir** : le rituel rend `[OK] progres — PROGRESS.MD regenere` dans le même relevé. Se fier à cette ligne, ou à la liste des scripts qui *mentionnent* `CHECKLIST_COCKPIT`, conduisait à rafraîchir le mauvais fichier.
+
+**Ce qui reste à mécaniser, et c'est le vrai livrable** : une publication qui échoue quarante fois sans que personne ne l'apprenne n'est pas une sauvegarde. Il faut un contrôle qui ÉCHOUE quand la dernière publication réussie date de plus de N passages — sinon la panne reviendra, et se taira de nouveau.
+
+### Deux affirmations que j'ai dû corriger en cours de tour
+
+- **`outillage/nexus_checklist_progres.py` n'a pas été perdu.** Je l'avais soupçonné d'être un outil supprimé sans preuve d'obsolescence. Vérifié : retiré le 2026-09-15 par `e5326a0`, avec mesure avant retrait (aucune tâche planifiée, aucun hook, aucun appelant, classé `preuve_seule` depuis le 09/09), remplacement nommé et réversibilité explicite. Le geste était exactement conforme à la règle.
+- **Les worktrees ne dérivent pas.** J'avais cru lire un écart entre déclarés et présents. La réconciliation ligne à ligne est nette : 41 déclarés, **0 absent du disque, 0 orphelin**. J'avais soustrait deux comptes approximatifs au lieu de tester chaque entrée. Le « 45 » du cockpit est simplement daté.
+
+- **Divers mesurés ce tour** : `e43cb36` boussole régénérée (10414 fichiers) ; paire `scripts/` ↔ `outillage/` de `nexus_agent.py` resynchronisée et **vérifiée identique par empreinte**, le silence de l'outil ne prouvant rien ; `chemins tenus` rend `SANS CANDIDAT (non bloquant)` — comportement délibéré de `nexus_chemins.py`, qui ne bloque que sur les références mortes *corrigeables*, et dont les 13 occurrences sont toutes dans de la prose, aucune dans du code.
+
+**Restent ouverts** : T-20260915-013, 014, 015 ; T-20260916-002 (test par mutation) ; **l'alerte sur les échecs répétés de la vitrine** ; les huit correctifs de §119.10, jamais posés ; dérivation du ratio par modèle une fois `chars_in` accumulé ; pont MCP réel après redémarrage ; minage MQL5 par agents locaux ; mesures moteur en file.
