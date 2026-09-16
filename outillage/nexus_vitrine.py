@@ -325,7 +325,7 @@ def main() -> int:
         "amont de la branche": ("BLOQUENT", lambda: amont_present(racine)),
         "conformite": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_conformite.py",
                                                            False)),
-        "machine libre": ("BLOQUENT", lambda: (OK, "charge ignoree sur demande") if (a.ignorer_charge or a.simulation) else machine_libre(racine)),
+        "machine libre": ("BLOQUENT", lambda: (OK, ("charge ignoree sur demande (ignorer-charge)" if a.ignorer_charge else ("charge ignoree sur demande (simulation)" if a.simulation else "charge ignoree sur demande (sauf-tests)"))) if (a.ignorer_charge or a.simulation or a.sauf_tests) else machine_libre(racine)),
         "suite de tests": ("AVERTISSENT", lambda: sous_controle(racine, "nexus_test.py",
                                                                a.sauf_tests, 1800)),
         "rituel de fin de tour": ("BLOQUENT", lambda: sous_controle(racine,
