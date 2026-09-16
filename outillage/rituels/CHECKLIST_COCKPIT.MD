@@ -29455,3 +29455,20 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 - **Découpage réversible** : `nexus_test.py` portait deux changements distincts ; plutôt que de bricoler un découpage de correctifs, les deux poses ont été **rejouées dans l'ordre** depuis leurs rendus enregistrés, pour deux commits annulables séparément.
 
 **Restent ouverts** : T-20260915-013, 014, 015 ; T-20260916-001 et 002 (frictions du voisin) ; dérivation effective du ratio une fois `chars_in` accumulé ; échecs antérieurs de la suite ; pont MCP réel après redémarrage ; minage MQL5 par agents locaux ; mesures moteur en file.
+
+### CACHE DE PRÉFIXE KV — MESURÉ le 2026-09-16, et il est ACTIF
+
+Signalé par SAS le 2026-09-14 comme « non vérifié », reporté deux fois faute de machine libre. Mesuré avec l'outil qui existait déjà, `outillage/nexus_mesure_cache.py` (jamais câblé — tâche T-20260915-015), sur `phi:latest`, même préfixe de 600 mots, questions différentes :
+
+| appel | temps jusqu'au 1er jeton | jetons de prompt | durée d'évaluation du prompt |
+| --- | --- | --- | --- |
+| échauffement | 4 238 ms | 1 226 | 1 316 ms |
+| référence | 3 959 ms | 1 233 | 1 243 ms |
+| suivant 1 | **140 ms** | 1 229 | **95 ms** |
+| suivant 2 | **103 ms** | 1 227 | **74 ms** |
+
+Verdict de l'outil : **CACHE ACTIF**. À nombre de jetons de prompt constant, l'évaluation passe de 1 243 ms à 74 ms — un facteur **17**, et le TTFT un facteur **38**.
+
+**Conséquence pratique, pas une spéculation** : tout appel qui répète un long préambule identique ne le repaie pas. Cela vaut pour `nexus_agent` (gabarit système identique à chaque appel) et pour MAP-REDUCE, où chaque fenêtre porte la même consigne. **Ce qui reste à décider** : stabiliser le gabarit système EN TÊTE de prompt pour maximiser le préfixe commun, et câbler cette mesure (l'outil est `preuve_seule`, personne ne l'appelle). La mesure ne dit rien du cache entre modèles ni de sa durée de vie : non mesuré.
+
+**Sur l'instrument de charge, à noter** : `nexus_charge` a rendu « machine CHARGÉE » alors que 44,45 Go étaient libres, aucun modèle résident, et que les « processus significatifs » étaient trois sessions Claude, WSL, OneDrive et l'antivirus — aucun n'occupant le moteur. Le verdict vient de la branche « processus », pas du seuil mémoire (30 Go). C'est la garde de contention de `nexus_mesure_cache` (lecture de `/api/ps`) qui a tranché correctement, en laissant la mesure passer.
