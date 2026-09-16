@@ -29431,3 +29431,15 @@ Zéro rendu local utilisable sur trois, pour environ vingt-cinq minutes de moteu
 - **Rappel d'usage** : l'alerte `RETIRE` de `216e8d5` a de nouveau servi trois fois ce tour sur des remplacements légitimes.
 
 **Restent ouverts** : T-20260915-010, 012, 013, 014, 015 ; échecs antérieurs de la suite ; pont MCP réel ; minage MQL5 par agents locaux ; mesures moteur en file.
+
+### Tour 2026-09-16 (12:50-13:30) — T-20260915-012 : le magasin d'observations porte enfin la taille d'entrée
+
+- **Constat mesuré** : `.nexus/temperature/observations.jsonl` — 1556 entrées avec `model`, `tokens_in`, `tokens_out`, `duree_ms`, `debit_jps`, et **aucun compte de caractères**. Le ratio caractères/jeton n'était donc pas dérivable de ce magasin. `nexus_agent` calcule bien `car_par_jeton_entree` depuis `3e0a57f`, mais ne l'écrit que dans le JSONL du lot, hors dépôt : rien ne s'accumulait. Le magasin du pont est le seul durable, et son écriture est déjà autorisée (`RESERVE_ECRITURE` porte `OBSERVATIONS`).
+- **Posé** : `caracteresEntree(messages)`, fonction pure (0 si l'argument n'est pas un tableau, 0 pour un élément qui n'est pas un objet, longueur du `content` chaîne, somme des parties `.text` si tableau), et le champ `chars_in` à côté de `tokens_in` dans l'événement. Aucun contenu de requête n'entre dans le magasin : seulement des grandeurs.
+- **Épreuve** `tools/nexus-mcp/epreuve_chars_in.js` (famille `chars-entree`), extraction du bloc depuis `server.js` et compilation par `new Function`, sans lancer le pont : **contre-épreuve** sur le serveur non corrigé — sortie 1, « fonction caracteresEntree introuvable », zéro occurrence de `chars_in` ; après la pose, 9 cas au vert dont F3 (image non comptée), R2 (tableau hétérogène avec `null`) et C1. `node --check` propre sur le serveur et sur l'épreuve. Familles voisines `semaphore` 24/0 et `apply` 5/0.
+- **Défaut vu à la lecture avant la pose** : `caracteresEntree` déréférençait `element.content` sans vérifier l'élément — un `null` dans la liste levait `TypeError`. Corrigé par un second patch avant toute pose.
+- **DÉFAUT DE MON PROPRE OUTILLAGE, corrigé** : le vérificateur de rendus du scratchpad compilait **tout** rendu en Python, sans regarder l'extension de la cible. Il avait refusé à tort deux épreuves JavaScript valides (« SyntaxError line 1 »). Il appelle désormais `node --check` pour une cible `.js` ; prouvé dans les deux sens (JS → `node --check`, Python → compilation Python).
+- **Vitrine** : publiée, « poussée vers origin », `main` aligné sur `origin` (15 commits sauvegardés).
+- **NON VÉRIFIÉ** : le pont en marche a lu `server.js` à son démarrage ; les observations ne porteront `chars_in` qu'après un redémarrage du serveur MCP.
+
+**Restent ouverts** : T-20260915-010, 013, 014, 015 ; dérivation effective du ratio par modèle une fois `chars_in` accumulé ; échecs antérieurs de la suite ; pont MCP réel ; minage MQL5 par agents locaux ; mesures moteur en file.
