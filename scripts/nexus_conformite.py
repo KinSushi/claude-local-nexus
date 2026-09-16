@@ -463,6 +463,99 @@ def controle_gardes_globales() -> None:
               f'{n} garde(s) globale(s), toutes presentes')
 
 
+def fenetres_declarees_sous_derivee(texte_config: str, derivee) -> list:
+    """
+    Retourne les alias dont le num_ctx declare est strictement inferieur
+    a la fenetre derivee par `derivee(base)`.
+    """
+    trouvees = []
+    dans_autogen = False
+    bloc_courant = None
+
+    for ligne in texte_config.splitlines():
+        if "# >>> AUTOGEN:LOCAL_MODELS_EXTRA" in ligne:
+            dans_autogen = True
+        elif "# <<< AUTOGEN:LOCAL_MODELS_EXTRA" in ligne:
+            dans_autogen = False
+
+        if ligne.startswith("  - model_name:"):
+            if (bloc_courant is not None and not bloc_courant["genere"]
+                    and bloc_courant.get("base") and bloc_courant.get("num_ctx")
+                    and "ollama.com" not in bloc_courant.get("api_base", "")):
+                try:
+                    derivee_result = derivee(bloc_courant["base"])
+                    if isinstance(derivee_result, int) and derivee_result > bloc_courant["num_ctx"]:
+                        trouvees.append((bloc_courant["alias"], bloc_courant["num_ctx"], derivee_result))
+                except Exception:
+                    pass
+            alias = ligne.split(":")[1].strip()
+            bloc_courant = {"alias": alias, "genere": dans_autogen}
+        elif bloc_courant is not None:
+            if ligne.startswith("      model: ollama_chat/"):
+                match = re.match(r"^\s+model:\s*ollama_chat/(\S+)\s*$", ligne)
+                if match:
+                    bloc_courant["base"] = match.group(1)
+            elif ligne.startswith("      api_base:"):
+                match = re.match(r"^\s+api_base:\s*(\S+)", ligne)
+                if match:
+                    bloc_courant["api_base"] = match.group(1)
+            elif ligne.startswith("      num_ctx:"):
+                match = re.match(r"^\s+num_ctx:\s*(\d+)", ligne)
+                if match:
+                    bloc_courant["num_ctx"] = int(match.group(1))
+
+    if bloc_courant is not None and not bloc_courant["genere"] and bloc_courant.get("base") and bloc_courant.get("num_ctx") and "ollama.com" not in bloc_courant.get("api_base", ""):
+        try:
+            derivee_result = derivee(bloc_courant["base"])
+            if isinstance(derivee_result, int) and derivee_result > bloc_courant["num_ctx"]:
+                trouvees.append((bloc_courant["alias"], bloc_courant["num_ctx"], derivee_result))
+        except Exception:
+            pass
+
+    return sorted(trouvees)
+
+def controle_fenetres_declarees() -> None:
+    """
+    Verifie que les fenetres declarees a la main dans litellm_config.yaml
+    ne sont pas strictement inferieures a la fenetre derivee.
+    Exemple historique (2026-09-16) : qwen3-coder-30b-local declare 8192,
+    derivee donne 65536, natif 262144.
+    On AVERTIT sans jamais reecrire une declaration.
+    """
+    try:
+        with open(CONFIG, "r", encoding="utf-8") as f:
+            texte_config = f.read()
+    except Exception as exc:
+        noter("fenetres declarees", False, AVERTISSEMENT, str(exc))
+        return
+
+    try:
+        import importlib.util
+        import sys
+        chemin_scripts = os.path.join(ROOT, "scripts")
+        if chemin_scripts not in sys.path:
+            sys.path.insert(0, chemin_scripts)
+
+        spec = importlib.util.spec_from_file_location("_conformite_nexus_generate", os.path.join(chemin_scripts, "nexus_generate.py"))
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        cap = module.capability
+        tailles = cap.installed_models() or {}
+        memoire = cap.build_profile().get("inference_memory_gb")
+
+        def derivee(base):
+            return module.fenetre_derivee_ollama(base, tailles.get(base), memoire)
+
+        trouvees = fenetres_declarees_sous_derivee(texte_config, derivee)
+        if not trouvees:
+            noter("fenetres declarees", True, AVERTISSEMENT, "aucune fenetre declaree a la main sous la fenetre derivee")
+        else:
+            noter("fenetres declarees", False, AVERTISSEMENT, "; ".join("%s : %d declare, %d derive" % t for t in trouvees))
+    except Exception as exc:
+        noter("fenetres declarees", True, AVERTISSEMENT, "mesure impossible : %s" % exc)
+
 def controle_marqueurs_autogen() -> None:
     """
     Les zones générées sont-elles bien fermées, et une seule fois chacune ?
@@ -2396,6 +2489,7 @@ def main() -> int:
         controle_runners_orphelins,
         controle_taches_planifiees,
         controle_marqueurs_autogen,
+        controle_fenetres_declarees,
         controle_frontiere_alias,
         controle_residence_modeles,
         controle_releves_lisibles,

@@ -1457,6 +1457,10 @@ def main() -> int:
     if args.only in (None, "generate-fenetre-kv"):
         jouer_epreuve_python("epreuve_generate_fenetre_kv.py",
                              "generateur : octets KV par jeton lus dans ollama show -v, fenetre par budget memoire, num_predict proportionnel")
+
+    if args.only in (None, "conformite-fenetres"):
+        jouer_epreuve_python("epreuve_conformite_fenetres.py",
+                             "conformite : fenetre declaree a la main sous la fenetre derivee, blocs generes et cloud ignores, aucune reecriture")
     if args.only in (None, "valide-perimetre"):
         jouer_epreuve_python("epreuve_valide_perimetre.py",
                              "validation : jamais vert sur rien, fichiers regeneres hors du diff juge")
