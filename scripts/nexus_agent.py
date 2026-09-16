@@ -44,6 +44,32 @@ Format du lot (liste d'objets) :
       {"nom": "generateur", "modele": "qwen3-14b-local",
        "tache": "...", "fichiers": ["scripts/nexus_generate.py"]}
     ]
+
+Formes de rendu attendues
+-------------------------
+Les outils de pose du depot lisent deux formes, et une consigne qui n'en
+demande aucune produit un texte qu'aucun outil ne sait poser.
+
+Corriger un fichier existant, pose par scripts/nexus_appliquer.py :
+
+    <<<AVANT>>>
+    texte exact a remplacer, tel qu'il figure dans le fichier
+    <<<APRES>>>
+    texte de remplacement
+    <<<FIN>>>
+
+Un bloc par correction, chacun termine par sa propre ligne <<<FIN>>>.
+L'AVANT doit exister EXACTEMENT une fois dans le fichier vise.
+
+Creer ou remplacer un fichier, pose par scripts/nexus_creer.py :
+
+    <<<CREER>>>
+    contenu complet du fichier
+    <<<FIN>>>
+
+Ces marqueurs ne sont jamais produits d'office : ils doivent etre DEMANDES
+dans la consigne --tache. L'option --materialiser ecrit le rendu brut dans
+un dossier sans les interpreter, et ne remplace donc pas la pose.
 """
 from __future__ import annotations
 

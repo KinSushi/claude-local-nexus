@@ -1457,6 +1457,9 @@ def main() -> int:
     if args.only in (None, "sortie-brute-lot"):
         jouer_epreuve_python("epreuve_sortie_brute_lot.py",
                              "agent : le flux brut s ouvre une fois, renomme un existant non vide, ajoute seulement sur --brute-ajout")
+    if args.only in (None, "vitrine-alerte"):
+        jouer_epreuve_python("epreuve_vitrine_alerte.py",
+                             "conformite : le journal de la vitrine est lu, aucune publication depuis N passages est signale")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")

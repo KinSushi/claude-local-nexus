@@ -514,6 +514,61 @@ def fenetres_declarees_sous_derivee(texte_config: str, derivee) -> list:
 
     return sorted(trouvees)
 
+def etat_journal_vitrine(texte):
+    """Fonction PURE : rend (passages, publiees, depuis_derniere) lus dans le texte d un journal de vitrine.
+
+    depuis_derniere vaut le nombre de passages ecoules depuis la derniere
+    publication reussie, et None si aucune publication n a jamais reussi.
+    """
+    passages = 0
+    publiees = 0
+    depuis_derniere = None
+    for ligne in (texte or "").splitlines():
+        depouillee = ligne.strip()
+        if depouillee.startswith("=== ") and depouillee.endswith(" ==="):
+            passages += 1
+            if depuis_derniere is not None:
+                depuis_derniere += 1
+        elif depouillee.startswith("VERDICT : vitrine publiee"):
+            publiees += 1
+            depuis_derniere = 0
+    return (passages, publiees, depuis_derniere)
+
+
+def controle_vitrine_recente() -> None:
+    """La sauvegarde vitrine publie-t-elle encore ?
+
+    Mesure du 2026-09-16 : 40 passages, 4 publications, et plus aucune depuis
+    le 2026-09-14 — neuf refus consecutifs qu aucun mecanisme ne signalait,
+    le journal n etant lu par personne. Une sauvegarde qui echoue sans que
+    personne ne l apprenne n est pas une sauvegarde.
+
+    AVERTISSEMENT et jamais BLOQUANT : refuser de demarrer punirait
+    l operateur venu reparer. Ce controle ne siege PAS dans nexus_rituel :
+    le rituel est deja ce qui bloque la publication, et l y placer creerait
+    un interblocage — la vitrine refuse faute de rituel, le rituel manque
+    faute de publication.
+    """
+    journal = os.path.join(ROOT, "logs", "vitrine.log")
+    if not os.path.exists(journal):
+        ignorer("vitrine recente", "journal absent")
+        return
+    try:
+        with io.open(journal, encoding="utf-8", errors="replace") as f:
+            passages, publiees, depuis = etat_journal_vitrine(f.read())
+    except Exception as exc:
+        noter("vitrine recente", True, AVERTISSEMENT, "mesure impossible : %s" % exc)
+        return
+    if publiees == 0:
+        noter("vitrine recente", False, AVERTISSEMENT,
+              "aucune publication reussie sur %d passage(s)" % passages)
+    elif depuis is not None and depuis >= 3:
+        noter("vitrine recente", False, AVERTISSEMENT,
+              "%d passage(s) depuis la derniere publication, sur %d au total" % (depuis, passages))
+    else:
+        noter("vitrine recente", True, AVERTISSEMENT,
+              "%d publication(s) sur %d passage(s)" % (publiees, passages))
+
 def controle_fenetres_declarees() -> None:
     """
     Verifie que les fenetres declarees a la main dans litellm_config.yaml
@@ -2490,6 +2545,7 @@ def main() -> int:
         controle_taches_planifiees,
         controle_marqueurs_autogen,
         controle_fenetres_declarees,
+        controle_vitrine_recente,
         controle_frontiere_alias,
         controle_residence_modeles,
         controle_releves_lisibles,

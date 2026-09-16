@@ -118,9 +118,12 @@ def main():
     # Count total matches of the pattern (including those filtered out later)
     nb_trouves = sum(1 for _ in pattern.finditer(texte))
     # Count markers that appear alone on their line
-    nb_avant = sum(1 for l in texte.splitlines() if l.strip() == "<<<AVANT>>>")
-    nb_apres = sum(1 for l in texte.splitlines() if l.strip() == "<<<APRES>>>")
-    nb_fin = sum(1 for l in texte.splitlines() if l.strip() == "<<<FIN>>>")
+    # Mesure du 2026-09-16 : strip() retirait l'indentation de TETE, donc la garde
+    # comptait des marqueurs que l'extracteur ignore -- un patch documentant les
+    # marqueurs etait refuse a tort. rstrip() est le critere exact de l'extracteur.
+    nb_avant = sum(1 for l in texte.splitlines() if l.rstrip() == "<<<AVANT>>>")
+    nb_apres = sum(1 for l in texte.splitlines() if l.rstrip() == "<<<APRES>>>")
+    nb_fin = sum(1 for l in texte.splitlines() if l.rstrip() == "<<<FIN>>>")
     if nb_avant != nb_trouves or nb_avant != nb_apres or nb_avant != nb_fin:
         print("REFUS : %d bloc(s) extrait(s) pour %d marqueur(s) AVANT (%d APRES, %d FIN) -- texte tronque ou marqueur mal place, RIEN n'est applique" % (
             len(blocs), nb_avant, nb_apres, nb_fin))
