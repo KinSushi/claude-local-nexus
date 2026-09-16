@@ -238,6 +238,25 @@ def epreuve() -> int:
     return 1 if echecs else 0
 
 
+def journaliser_verdict(racine, verdict):
+    """Inscrit le passage et son verdict dans logs/vitrine.log, sans jamais lever.
+
+    Mesure du 2026-09-16 : ce journal n'etait alimente que par la redirection de
+    la tache planifiee, donc une publication lancee a la main y etait invisible
+    et le controle « vitrine recente » alertait a tort. La source de verite est
+    desormais l'outil lui-meme, quel que soit son appelant.
+    """
+    import datetime
+    try:
+        dossier = Path(racine) / "logs"
+        dossier.mkdir(parents=True, exist_ok=True)
+        horodatage = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        with (dossier / "vitrine.log").open("a", encoding="utf-8", newline="\n") as f:
+            f.write("=== %s ===\n%s\n" % (horodatage, verdict))
+    except Exception:
+        pass
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--racine", type=Path, default=None)
@@ -347,13 +366,18 @@ def main() -> int:
     # rapport annoncant une reussite sur un echec.
     if not sain:
         if any("etat distant non verifiable" in d for _, _, d in resultats):
-            print("VERDICT : etat distant non verifiable. Publication incertaine.")
+            verdict = "VERDICT : etat distant non verifiable. Publication incertaine."
         else:
-            print("VERDICT : publication REFUSEE. Rien n'est parti.")
+            verdict = "VERDICT : publication REFUSEE. Rien n'est parti."
     elif a.simulation:
-        print(f"VERDICT : sain ({avertissements} avertissement(s)). La publication reelle passerait.")
+        verdict = f"VERDICT : sain ({avertissements} avertissement(s)). La publication reelle passerait."
     else:
-        print(f"VERDICT : vitrine publiee ({avertissements} avertissement(s)).")
+        verdict = f"VERDICT : vitrine publiee ({avertissements} avertissement(s))."
+    print(verdict)
+    # Une simulation n'est pas une publication : l'inscrire fausserait le
+    # compteur de passages depuis la derniere publication reussie.
+    if not a.simulation:
+        journaliser_verdict(racine, verdict)
     return 0 if sain else 1
 
 

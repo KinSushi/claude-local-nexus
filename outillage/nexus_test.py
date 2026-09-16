@@ -1463,6 +1463,9 @@ def main() -> int:
     if args.only in (None, "agent-aide-marqueurs"):
         jouer_epreuve_python("epreuve_agent_aide_marqueurs.py",
                              "agent : l aide documente les marqueurs de rendu, CREER comme AVANT APRES FIN")
+    if args.only in (None, "vitrine-journal"):
+        jouer_epreuve_python("epreuve_vitrine_journal.py",
+                             "vitrine : le verdict est journalise quel que soit l appelant, et relu par etat_journal_vitrine")
     if args.only in (None, "generate-ctx-natif"):
         jouer_epreuve_python("epreuve_generate_ctx_natif.py",
                              "generateur : num_ctx jamais au-dela du contexte natif declare par le moteur, palier garde si inconnu")
