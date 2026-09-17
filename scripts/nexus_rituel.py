@@ -33,7 +33,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
-OK, MANQUE, IGNORE = "OK", "MANQUE", "IGNORE"
+OK, MANQUE, IGNORE, AVEUGLE = "OK", "MANQUE", "IGNORE", "AVEUGLE"
+AVEUGLE_PLAFOND = 1  # IGNORE signale une absence d'information -- le script ne PEUT PAS savoir, ou la mesure n'existe pas encore -- et reste sans effet sur le code de sortie ; AVEUGLE signale une PANNE d'instrument -- délai expiré, exception, code de retour inattendu -- et fait échouer le rituel au‑delà du plafond. Un instrument en panne arrive et reste tolérable, plusieurs signifient que le rituel ne mesure plus grand‑chose.
 
 
 def racine_git() -> Path:
@@ -118,9 +119,8 @@ def _frais(racine: Path, rel: str, absent: str) -> tuple[str, str]:
                             cwd=racine, capture_output=True, text=True,
                             timeout=60,
                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        if rc.returncode == 0 and rc.stdout.strip():
-            if int(rc.stdout.strip()) >= dernier:
-                return OK, "commite avec le code, ou apres lui"
+        if rc.returncode == 0 and rc.stdout.strip() and int(rc.stdout.strip()) >= dernier:
+            return OK, "commite avec le code, ou apres lui"
 
         return MANQUE, "plus ancien que le dernier changement de code"
     except Exception as exc:
@@ -632,6 +632,7 @@ def main() -> int:
         resultats.append((nom, statut, detail))
 
     manques = [r for r in resultats if r[1] == MANQUE]
+    aveugles = [r for r in resultats if r[1] == AVEUGLE]
     ignores = [r for r in resultats if r[1] == IGNORE]
 
     if a.json:
@@ -639,10 +640,15 @@ def main() -> int:
             "racine": str(racine),
             "controles": [{"nom": n, "statut": s, "detail": d}
                           for n, s, d in resultats],
-            "verdict": MANQUE if manques else OK,
+            "verdict": (
+                MANQUE if manques else
+                MANQUE if len(aveugles) > AVEUGLE_PLAFOND else
+                OK
+            ),
             "ignores": [{"nom": n, "detail": d} for n, s, d in ignores],
+            "aveugles": [{"nom": n, "detail": d} for n, s, d in aveugles],
         }, ensure_ascii=False, indent=2))
-        return 1 if manques else 0
+        return 1 if manques or len(aveugles) > AVEUGLE_PLAFOND else 0
 
     print("Rituel de fin de tour — %s" % racine)
     print("-" * 72)
@@ -651,13 +657,22 @@ def main() -> int:
     print("-" * 72)
     if manques:
         print("VERDICT : %d manque(s). Le tour n'est pas clos." % len(manques))
+    elif len(aveugles) > AVEUGLE_PLAFOND:
+        print("VERDICT : %d aveugle(s) dépassent le plafond (%d). Le tour n'est pas clos."
+              % (len(aveugles), AVEUGLE_PLAFOND))
+        for nom, _, detail in aveugles:
+            print("  [AVEUGLE] %-18s %s" % (nom, detail))
+    elif aveugles:
+        print("VERDICT : %d aveugle(s). Le tour est tenu." % len(aveugles))
+        for nom, _, detail in aveugles:
+            print("  [AVEUGLE] %-18s %s" % (nom, detail))
     elif ignores:
         print("VERDICT : rituel tenu — %d controle(s) aveugle(s) (IGNORE)." % len(ignores))
         for nom, _, detail in ignores:
             print("  [IGNORE] %-18s %s" % (nom, detail))
     else:
         print("VERDICT : rituel tenu.")
-    return 1 if manques else 0
+    return 1 if manques or len(aveugles) > AVEUGLE_PLAFOND else 0
 
 
 if __name__ == "__main__":
