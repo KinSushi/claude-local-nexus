@@ -46,7 +46,7 @@ lui donner les modèles **comme outils**.
    ┌────┴──────────────┬──────────────────┐
    ▼                   ▼                  ▼
  LOCAL              OLLAMA CLOUD       ANTHROPIC
- 68 alias           20 alias           4 alias
+ 67 alias           20 alias           4 alias
  coût 0             abonnement Ollama  crédits API
  rien ne sort       sort vers          facturé au token
                     ollama.com
