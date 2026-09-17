@@ -536,20 +536,6 @@ model_list:
 #~   # automatique (§76). Pour en promouvoir un, le declarer a la
 #~   # main plus haut avec son profil de capacite.
   # >>> AUTOGEN:LOCAL_MODELS_EXTRA
-  - model_name: OpenLLM-France/Lucie-7B-Instruct-local
-    litellm_params:
-      model: ollama_chat/OpenLLM-France/Lucie-7B-Instruct:latest
-      api_base: http://host.docker.internal:11434
-      litellm_health_check: true
-      num_ctx: 32000
-      num_predict: 8000
-      temperature: 0.2
-    model_info:
-      max_input_tokens: 32000
-      description: "OpenLLM-France/Lucie-7B-Instruct:latest (expose automatiquement — hors pool : non mesure)"
-      nexus_generated: true
-      nexus_pool: false
-
   - model_name: atla/selene-mini-local
     litellm_params:
       model: ollama_chat/atla/selene-mini:latest
@@ -1937,8 +1923,6 @@ router_settings:
         - llama3.2-1b-local
         - phi3.5-local
 
-    # descente de 16384 jetons (32768 -> 16384)
-    # descente de 16384 jetons (32768 -> 16384)
     - llama3.2-1b-local:
         - phi3.5-local
         - phi3-medium-local
@@ -1958,12 +1942,10 @@ router_settings:
         - qwen3-vl-8b-local
         - qwen3.5-9b-local
 
-    # descente de 16384 jetons (32768 -> 16384)
     - qwen3-vl-8b-local:
         - qwen3.5-9b-local
         - qwen3.6-27b-local
 
-    # descente de 16384 jetons (32768 -> 16384)
     - qwen3.5-9b-local:
         - qwen3.6-27b-local
 
@@ -2070,49 +2052,33 @@ context_window_fallbacks:
   # <<< AUTOGEN:ANTHROPIC_CTX_FALLBACKS
 
   # >>> AUTOGEN:LOCAL_CTX_FALLBACKS
-  - qwen3-coder-30b-local:
+  - glm-4.7-flash-local:
       - gpt-oss-20b-local
-      - phi3.5-local
+      - llama3.2-1b-local
+
+  - qwen3-coder-30b-local:
+      - glm-4.7-flash-local
+      - gpt-oss-20b-local
 
   - llama3.2-3b-local:
+      - glm-4.7-flash-local
       - gpt-oss-20b-local
-      - phi3.5-local
 
   - phi3-mini-local:
+      - glm-4.7-flash-local
       - gpt-oss-20b-local
-      - phi3.5-local
 
   - ultime-recourse-local:
+      - glm-4.7-flash-local
       - gpt-oss-20b-local
-      - phi3.5-local
-
-  - gpt-oss-20b-local:
-      - glm-4.7-flash-local
-      - llama3.2-1b-local
-
-  - phi3.5-local:
-      - glm-4.7-flash-local
-      - llama3.2-1b-local
-
-  - phi3-medium-local:
-      - glm-4.7-flash-local
-      - llama3.2-1b-local
 
   - gemma4-12b-local:
       - gemma4-26b-local
       - gemma4-local
 
   - gemma4-26b-local:
+      - gemma4-local
       - qwen3-vl-8b-local
-      - qwen3.5-9b-local
-
-  - gemma4-local:
-      - qwen3-vl-8b-local
-      - qwen3.5-9b-local
-
-  - qwen3.6-27b-local:
-      - qwen3-vl-8b-local
-      - qwen3.5-9b-local
 
   # <<< AUTOGEN:LOCAL_CTX_FALLBACKS
 
