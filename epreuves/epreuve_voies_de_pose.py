@@ -15,9 +15,10 @@ Un garde qui indique la mauvaise sortie coute plus cher qu'un garde muet,
 car l'agent honnete suit l'indication.
 
 Cette epreuve rougit si l'un des deux outils cesse de nommer la voie de pose
-qui convient. Cinq cas, dont une contre-epreuve qui prouve que le critere
-DETECTE un message appauvri, et un cas qui distingue le refus de perimetre du
-refus de racine INTROUVABLE.
+qui convient. Six cas, dont une contre-epreuve qui prouve que le critere
+DETECTE un message appauvri, un cas qui distingue le refus de perimetre du
+refus de racine INTROUVABLE, et un cas qui exige que le refus de
+nexus_creer.py cite la ligne fautive ET n'ait pas tolere la creation.
 """
 
 import contextlib
@@ -49,6 +50,7 @@ FERMETURE = "<" * 3 + "FIN" + CHEVRONS
 
 GARDE = os.path.join(RACINE, "scripts", "nexus_garde_production.py")
 APPLIQUER = os.path.join(RACINE, "scripts", "nexus_appliquer.py")
+CREER = os.path.join(RACINE, "scripts", "nexus_creer.py")
 
 CIBLE_EXISTANTE = "scripts/nexus_agent.py"
 CIBLE_ABSENTE = "scripts/nexus_cible_absente_epreuve_voies_de_pose.py"
@@ -240,8 +242,56 @@ def cas5():
     )
 
 
+def cas6():
+    """nexus_creer sur un marqueur d'ouverture AMPUTE, cible non creee."""
+    dossier = tempfile.mkdtemp(prefix="epreuve_voies_ampute_")
+    jsonl = os.path.join(dossier, "taches.jsonl")
+    tache = "epreuve_voies_marqueur_ampute"
+    ouverture_amputee = "<" * 3 + "CREER" + ">" * 2
+    bloc = (
+        ouverture_amputee + "\n"
+        "print('contenu quelconque')\n"
+        "<<" + "<FIN" + CHEVRONS + "\n"
+    )
+    enregistrement = {"nom": tache, "texte": bloc}
+    with io.open(jsonl, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(enregistrement, ensure_ascii=False) + "\n")
+
+    proc = subprocess.run(
+        [sys.executable, CREER, jsonl, tache, CIBLE_ABSENTE],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=RACINE,
+    )
+    sortie = (proc.stdout or "") + (proc.stderr or "")
+    cible_creee = os.path.exists(os.path.join(RACINE, CIBLE_ABSENTE))
+    citation = "'" + ouverture_amputee + "'"
+    mention_attendue = "marqueur attendu : " + OUVERTURE
+    ok = citation in sortie and mention_attendue in sortie and not cible_creee
+    obtenu = sortie.replace("\n", " | ")[:300] if sortie.strip() else "sortie vide"
+    if cible_creee:
+        obtenu = "cible creee malgre le refus | " + obtenu
+
+    with contextlib.suppress(OSError):
+        os.remove(jsonl)
+    with contextlib.suppress(OSError):
+        os.rmdir(dossier)
+    with contextlib.suppress(OSError):
+        os.remove(os.path.join(RACINE, CIBLE_ABSENTE))
+
+    return _verdict(
+        6,
+        "nexus_creer sur un marqueur d'ouverture AMPUTE",
+        "la sortie cite le marqueur ampute ENTRE APOSTROPHES et annonce le marqueur attendu, et la cible n'est PAS creee",
+        obtenu,
+        ok,
+    )
+
+
 def main():
-    resultats = [cas1(), cas2(), cas3(), cas4(), cas5()]
+    resultats = [cas1(), cas2(), cas3(), cas4(), cas5(), cas6()]
     reussis = sum(1 for r in resultats if r)
     print("CONCLUSION : %d cas reussis sur %d" % (reussis, len(resultats)))
     return 0 if reussis == len(resultats) else 1

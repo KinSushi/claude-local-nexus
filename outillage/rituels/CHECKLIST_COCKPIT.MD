@@ -29955,3 +29955,104 @@ dégrade proprement. Ce n'est pas une dépendance du produit vers l'outillage.
 * **Deux mesures d'encodage** qui ne comptent pas la même chose.
 * Le **`vhdx` de 2,53 Go** sur C: résiste à la suppression, même élevée —
   diagnostic `icacls` / `.Owner` à passer par l'opérateur.
+
+## Tour 2026-09-18 (10:00-12:30) — trois refus qui envoyaient au mauvais endroit, et un faux vert pris en flagrant délit
+
+Une seule classe de défaut traverse tout ce tour, et elle n'était pas visible
+avant qu'on la nomme : **un refus qui indique la mauvaise sortie coûte plus cher
+qu'un refus muet, parce que l'agent honnête suit l'indication.** C'est la seule
+classe connue ici où la discipline aggrave la panne.
+
+Trois occurrences, trouvées par l'usage et non par audit, dont deux signalées par
+des sessions voisines.
+
+### 1 — La garde anti-production ne connaissait que la modification
+
+Elle refusait l'écriture directe d'un fichier de production — à juste titre — et
+prescrivait : faire produire un patch, puis l'appliquer avec `nexus_appliquer.py`.
+Or cet outil MODIFIE et ne crée pas. Pour un fichier neuf, `ea-mt5` a suivi la
+prescription, reçu « impossible d'ouvrir le fichier cible », conclu que la chaîne
+de pose était fermée sans issue, archivé son rendu en `.txt` et déclaré son travail
+non fait. `scripts/nexus_creer.py` existait et faisait exactement cela.
+
+Posé : la garde teste si la cible existe et prescrit la voie qui convient ; le refus
+de `nexus_appliquer` sur cible absente nomme la création. Les marqueurs sont écrits
+LITTÉRALEMENT dans les deux messages — les mentionner sans les écrire est le défaut
+même qui avait coûté le tour.
+
+### 2 — Un refus accusait le périmètre là où la racine était introuvable
+
+`sovereign-ai-system` signale que `nexus_apply` ne peut pas écrire chez lui. Ma
+première sonde le contredit : cible absolue dans SON dépôt, acceptée. **J'ai conclu
+d'un seul cas, et c'est lui qui a nommé l'écart.** Sa cible à lui vivait dans un
+scratchpad sous `AppData/Local/Temp`, sans `.git` ni `CLAUDE.md` : la remontée ne
+trouvait aucune racine, le repli retenait la mienne, et le message annonçait « hors
+racine du dépôt 'C:\local-llm-docker' ». Les deux mesures étaient exactes et ne
+portaient pas sur la même question.
+
+Posé : les deux causes ont désormais deux messages. Corrigé aussi la description du
+paramètre `cible` du schéma MCP, qui annonçait « relatif à la racine du dépôt » et
+inventait ainsi la limite dont il se plaignait.
+
+**Ce qui reste ouvert et qui est doctrinal** (T-20260918-007) : la règle « COPIE aux
+ouvriers, jamais l'original » pousse la copie hors dépôt ; l'outil de pose exige
+qu'elle y soit. Les deux sont raisonnables et se contrarient. Son contournement —
+placer la copie dans un sous-dossier de livraison de son dépôt — est propre mais
+reste une convention à tenir de tête, donc un bricolage au sens du contrat, et il ne
+se transporte pas. La sortie est un périmètre EXPLICITE (§0.5), avec ses trois
+épreuves écrites AVANT la pose.
+
+### 3 — `nexus_creer` refusait sans dire ce qu'il avait trouvé
+
+`Préparation demo day Jedha` signale que `gpt-oss-120b-cloud` tronque le marqueur
+d'ouverture — deux chevrons fermants au lieu de trois, la fermeture restant correcte.
+Trois sondes de mon côté, dont deux sur ce modèle : marqueur intact, 3/3. **Mon
+échantillon ne prouvait rien** contre un taux mesuré chez lui à deux refus sur une
+dizaine : la probabilité de ne pas reproduire était de l'ordre de deux tiers.
+
+Le pair a alors conservé l'artefact — `model_card.jsonl` — et je l'ai vérifié :
+ouverture à deux chevrons, fermeture à trois. Le défaut est réel. Il a aussi rectifié
+son propre chiffre de « 4 sur 4 » à deux cas prouvés, **parce que son contournement
+avait détruit les preuves** : normaliser le marqueur à la main efface le fait qu'il
+aurait fallu garder. C'est le coût caché d'un refus muet.
+
+Posé : le refus cite la ligne fautive, son contenu exact et le marqueur attendu. Le
+marqueur lui-même n'est PAS assoupli — un marqueur qui accepte ses déformations
+cesse d'être un marqueur, et un rendu à moitié tronqué passerait pour complet.
+
+### Le faux vert, et ce qu'il dit de la méthode
+
+Le CAS 6 écrit pour garder ce diagnostic **passait aussi sur le code d'avant**. Cause
+structurelle : le marqueur amputé est une SOUS-CHAÎNE du marqueur complet, que
+l'ancien message citait déjà dans sa phrase. `ouverture_amputee in sortie` était donc
+satisfait par le message qui ne diagnostique rien. Une inclusion de sous-chaîne ne
+discrimine pas quand l'une est préfixe de l'autre.
+
+Le critère exige maintenant la citation elle-même — le marqueur ENTRE APOSTROPHES,
+impossible dans l'ancien message. Rejoué sur `822e36f` : le CAS 6 rougit seul, code 1.
+
+**Aucune lecture n'aurait trouvé ce faux vert.** Seule la contre-épreuve contre le
+code d'avant l'a montré, et elle n'est pas un supplément : c'est le livrable.
+
+### Le validateur a crié au loup, et c'est une trouvaille
+
+`nexus_valide` a rendu `VERDICT_FINAL: REGRESSION` sur trois allégations. Les trois
+sont tombées à la mesure — dont une qui confondait `test_garde_shell`, lequel vise le
+garde du SHELL par `tool_input.command`, avec la garde anti-production, qui lit
+`file_path`. Deux familles tierces, `kimi-k2.7-code` et `minimax-m3`, ont conclu FAUX
+POSITIF sans trouver de défaut non signalé.
+
+Cause : **il juge sur le diff et ne lance pas les épreuves du périmètre**, alors
+qu'elles étaient nommées dedans et se lançaient en secondes. Un verdict de régression
+qui ne mesure rien coûte deux fois : il faut le réfuter, et il apprend à ne plus le
+croire — ce qui est le vrai danger, puisque sa prochaine alerte sera peut-être vraie.
+T-20260918-005.
+
+### État
+
+Commits `09fbc78` et `822e36f`, plus celui de ce tour. `epreuves/epreuve_voies_de_pose.py`
+à six cas, câblée dans la famille shell : 24 réussis, 0 échec. Registre : 33 FAIT,
+27 A_FAIRE avant ce tour, quatre sujets neufs ouverts (005, 006, 007, 008) et
+T-20260918-003 fermée sur preuve `famille`. Les trois sessions voisines ont été
+prévenues ; `ea-mt5` a versé les quatre points dans son skill (`ecab0702`), le mien
+est corrigé — il mentionnait « les marqueurs de création » sans les écrire.

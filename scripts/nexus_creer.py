@@ -13,6 +13,7 @@ Aucun effet de bord n’est produit à l’import.
 import io
 import json
 import os
+import re
 import sys
 import subprocess
 import contextlib
@@ -126,6 +127,27 @@ def _extraire_contenu(texte: str) -> str | None:
     return contenu
 
 
+def _lignes_ressemblant_a_marqueur(texte: str) -> list:
+    """Repere les lignes qui ressemblent a un marqueur sans en etre un.
+
+    Une telle ligne, depouillee de ses espaces, est faite d'un ou plusieurs
+    chevrons ouvrants, puis du mot CREER ou du mot FIN, puis d'un ou plusieurs
+    chevrons fermants, sans correspondre exactement au marqueur attendu.
+    Retourne des triplets (numero de ligne, contenu exact, marqueur attendu).
+    """
+    motif = re.compile(r"^\s*<+(CREER|FIN)>+\s*$")
+    suspects = []
+    for i, ligne in enumerate(texte.splitlines(), start=1):
+        trouve = motif.match(ligne)
+        if trouve is None:
+            continue
+        if ligne.strip() in ("<<<CREER>>>", "<<<FIN>>>"):
+            continue
+        attendu = "<<<CREER>>>" if trouve.group(1) == "CREER" else "<<<FIN>>>"
+        suspects.append((i, ligne, attendu))
+    return suspects
+
+
 def main() -> int:
     # --- Analyse des arguments -------------------------------------------------
     args = sys.argv[1:]
@@ -178,6 +200,11 @@ def main() -> int:
             "REFUS : les marqueurs <<<CREER>>> et <<<FIN>>> sont manquants ou mal placés dans la tâche %s"
             % nom_tache
         )
+        for num_ligne, ligne, attendu in _lignes_ressemblant_a_marqueur(texte):
+            print(
+                "  ligne %d : %r (marqueur attendu : %s)"
+                % (num_ligne, ligne, attendu)
+            )
         return 1
 
     # --- Vérifications préliminaires --------------------------------------

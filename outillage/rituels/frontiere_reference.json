@@ -3,42 +3,48 @@
     "file": "scripts\\start.ps1",
     "line": 273,
     "tool": "nexus_veille_db.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_conformite.py",
     "line": 783,
     "tool": "nexus_verrou_machine.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_conformite.py",
     "line": 886,
     "tool": "nexus_import.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_conformite.py",
     "line": 924,
     "tool": "nexus_cablage.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_conformite.py",
     "line": 1714,
     "tool": "nexus_portee_import.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_garde_production.py",
     "line": 76,
     "tool": "nexus_appliquer.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
+  },
+  {
+    "file": "scripts\\nexus_garde_production.py",
+    "line": 87,
+    "tool": "nexus_creer.py",
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   },
   {
     "file": "scripts\\nexus_state.py",
     "line": 507,
     "tool": "nexus_traque.py",
-    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+    "motif": "La garde anti-production prescrit desormais nexus_creer.py quand la cible n existe pas encore : elle ne connaissait que la modification, et prescrivait donc une voie qui ne pouvait pas aboutir pour un fichier neuf. Mesure du 2026-09-18 : une session voisine a suivi cette prescription, recu un refus d ouverture, conclu qu aucune voie n existait et archive son travail en .txt. Garde par le CAS 2 de epreuves/epreuve_voies_de_pose.py."
   }
 ]
