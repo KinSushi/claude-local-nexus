@@ -1646,6 +1646,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_succession.py", "succession orchestrateur : opus>fable>cloud>local selon disponibilite et sensibilite")
     if args.only in (None, "valide-verrou"):
         jouer_epreuve_python("epreuve_valide_verrou.py", "nexus_valide : une seule instance a la fois, verrou par PID vivant")
+    if args.only in (None, "valide-mesure"):
+        jouer_epreuve_python("epreuve_valide_mesure.py", "nexus_valide : MESURE desormais les epreuves de son perimetre au lieu de seulement les juger, et que le verrou se prend meme si son dossier manque")
     if args.only in (None, "sommeil"):
         jouer_epreuve_python("epreuve_sommeil.py", "sommeil des declarations manuelles : tag absent d'Ollama endormi, reveille a la reinstallation")
     if args.only in (None, "pouls"):

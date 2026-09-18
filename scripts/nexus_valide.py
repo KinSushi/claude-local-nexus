@@ -93,6 +93,8 @@ def prendre_verrou(chemin: str, pid: int, pid_vivant=_pid_vivant_defaut) -> bool
 
         # écriture atomique
         dir_name = os.path.dirname(chemin)
+        # Le dossier est ignoré par git et absent de tout arbre de travail neuf.
+        os.makedirs(dir_name, exist_ok=True)
         fd, tmp_path = tempfile.mkstemp(dir=dir_name, text=True)
         with os.fdopen(fd, "w", encoding="utf-8") as tmp:
             tmp.write(str(pid))
@@ -393,6 +395,92 @@ def mechanical_battery(modified):
         elif f.endswith(".ps1"):
             check_powershell_syntax(abs_path)
     run_conformite()
+
+def epreuves_du_perimetre(fichiers_modifies):
+    """Retourne les epreuves Python presentes dans le diff.
+
+    Cet outil JUGEAIT le diff sans jamais MESURER, et a rendu trois
+    fausses regressions le 2026-09-18 alors que l'epreuve concernee
+    etait dans le diff et passait.
+    """
+    selection = []
+    for chemin in fichiers_modifies or []:
+        if not chemin.endswith('.py'):
+            continue
+        parties = chemin.replace('\\', '/').split('/')
+        if 'epreuves' in parties:
+            selection.append(chemin)
+    return selection
+
+
+def lancer_epreuves(epreuves):
+    """Lance chaque epreuve et rend un compte rendu mesurable.
+
+    Cet outil JUGEAIT le diff sans jamais MESURER, et a rendu trois
+    fausses regressions le 2026-09-18 alors que l'epreuve concernee
+    etait dans le diff et passait.
+    """
+
+    def _resume(texte):
+        if len(texte) <= 600:
+            return texte
+        lignes = texte.splitlines()
+        marquees = [l for l in lignes if 'ECHEC' in l or 'PLANTE' in l]
+        if marquees:
+            extrait = '\n'.join(marquees)
+            if len(extrait) > 600:
+                extrait = extrait[:600]
+            return extrait
+        return texte[-600:]
+
+    resultats = []
+    for chemin in epreuves:
+        sortie = ''
+        try:
+            proc = subprocess.run(
+                [sys.executable, chemin],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            code = proc.returncode
+            sortie = (proc.stdout or '') + (proc.stderr or '')
+            concluante = code == 0
+        except subprocess.TimeoutExpired as e:
+            code = -1
+            concluante = False
+            sortie = (e.stdout or '') + (e.stderr or '')
+            if not sortie:
+                sortie = 'L epreuve a depasse le delai de 300 secondes.'
+        except OSError as e:
+            code = -2
+            concluante = False
+            sortie = str(e)
+        except Exception as e:
+            code = -3
+            concluante = False
+            sortie = str(e)
+        resultats.append({
+            'nom': chemin,
+            'code_sortie': code,
+            'concluante': concluante,
+            'extrait': _resume(sortie),
+        })
+    return resultats
+
+
+def _etat_de_la_mesure(epreuves, mesures):
+    """Renvoie une ligne decrivant l'etat de la mesure."""
+    if not epreuves:
+        return "Aucune epreuve ne figurait dans le perimetre : rien n'a ete mesure, le verdict repose sur le seul jugement."
+    total = len(mesures)
+    vertes = sum(1 for m in mesures if m.get("concluante"))
+    non_concluantes = [m["nom"] for m in mesures if not m.get("concluante")]
+    if non_concluantes:
+        return "%d epreuve(s) lancee(s), %d verte(s) ; non concluante(s) : %s" % (total, vertes, ", ".join(non_concluantes))
+    return "%d epreuve(s) lancee(s), %d verte(s)" % (total, vertes)
+
 
 def get_diff_from_base(base, fichiers=None):
     """
@@ -878,7 +966,18 @@ def main():
     lock_path = os.path.join(PLATEFORME, ".nexus", "valide.lock")
     my_pid = os.getpid()
     if not prendre_verrou(lock_path, my_pid):
-        print(f"REFUS : une autre instance de nexus_valide tourne (PID {my_pid}) -- attendre sa fin ou la tuer")
+        holder_pid = None
+        if os.path.exists(lock_path):
+            try:
+                with open(lock_path, encoding='utf-8', errors='replace') as f:
+                    holder_pid = f.read().strip()
+            except (OSError, ValueError):
+                print(f"REFUS : le verrou dans {lock_path} vient d'etre libere ou est illisible -- relancer")
+                return 2
+        if holder_pid:
+            print(f"REFUS : une autre instance de nexus_valide tourne (PID detenteur {holder_pid} dans {lock_path}) -- attendre sa fin ou l'arreter")
+        else:
+            print(f"REFUS : le verrou dans {lock_path} vient d'etre libere ou est illisible -- relancer")
         return 2
     # S'assurer que le verrou est libéré à la sortie du script
     atexit.register(_liberer_verrou, lock_path, my_pid)
@@ -902,9 +1001,14 @@ def main():
         mode, modified, diff_text, message = choisir_perimetre(args.base)
         print(message)
         mechanical_battery(modified)
+        epreuves = epreuves_du_perimetre(modified)
+        mesures = lancer_epreuves(epreuves)
     except Exception as e:
         print("Erreur mecanique :", e)
         return 1
+    epreuves_ech = [m for m in mesures if m["code_sortie"] != 0]
+    regression_mesuree = bool(epreuves_ech)
+    epreuves_vertes = bool(epreuves) and all(m["code_sortie"] == 0 for m in mesures)
 
     changed_funcs = extract_changed_functions(diff_text)
 
@@ -967,10 +1071,25 @@ def main():
             "bascule": bascule,
             "texte": texte,
             "desaccord": desaccord is not None,
-            "code": 1 if regression else 0,
+            "code": 1 if regression or regression_mesuree else 0,
+            "epreuves": epreuves,
+            "mesures": mesures,
+            "regression_mesuree": regression_mesuree,
+            "epreuves_ech": epreuves_ech,
+            "epreuves_vertes": epreuves_vertes,
         }
         print(json.dumps(payload, ensure_ascii=False))
     else:
+        if regression_mesuree:
+            print("REGRESSION MESUREE")
+            for m in epreuves_ech:
+                print(f"  {m['nom']} : code {m['code_sortie']}")
+                print(f"    extrait : {m['extrait']}")
+            if regression:
+                print("Le banc signalait aussi une anomalie.")
+            else:
+                print("Le banc ne voyait rien ; la mesure tranche.")
+            return 1
         if regression:
             # Le motif, pas seulement le verdict.
             #
@@ -997,6 +1116,9 @@ def main():
                 # Le plan ayant reellement juge. Un verdict rendu par un plan
                 # de repli ne se lit pas comme un verdict du plan demande.
                 print("  (bascule de plan : %s)" % bascule)
+            print("  %s" % _etat_de_la_mesure(epreuves, mesures))
+            if epreuves_vertes:
+                print("  Regression jugee mais non mesuree : les epreuves du perimetre sont toutes passees.")
             return 1
         portee = ("%d fonction(s) touchee(s)" % len(changed_funcs)
                   if changed_funcs else "diff entier, aucune fonction isolee")
@@ -1006,6 +1128,7 @@ def main():
         for ligne in (texte or "").splitlines():
             if ligne.startswith("[!]"):
                 print("  %s" % ligne.rstrip())
+        print("  %s" % _etat_de_la_mesure(epreuves, mesures))
         if bascule:
             print("  (bascule de plan : %s)" % bascule)
         return 0
