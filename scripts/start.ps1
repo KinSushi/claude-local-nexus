@@ -268,6 +268,17 @@ Write-Host ""
 if (-not $pret) {
     Write-Host "  LiteLLM ne repond pas apres 240 s." -ForegroundColor Red
     Write-Host "  Diagnostic : $composeNom logs litellm --tail 80" -ForegroundColor Yellow
+
+    # La cause est souvent en amont : base Postgres unhealthy (initdb interrompu).
+    $veilleDb = Join-Path (Split-Path -Parent $PSScriptRoot) "outillage\nexus_veille_db.py"
+    if (Test-Path $veilleDb) {
+        Write-Host "  Etat de la base litellm-db :" -ForegroundColor Yellow
+        & $python $veilleDb
+        Write-Host "  (code retour $LASTEXITCODE : 0 SAINE, 1 INTERROMPUE, 2 EN_COURS, 3 INCONNU)" -ForegroundColor Yellow
+    } else {
+        Write-Host "  outillage\nexus_veille_db.py introuvable : diagnostic de la base non disponible." -ForegroundColor Yellow
+    }
+
     exit 1
 }
 Write-Host "  Passerelle prete sur $HealthUrl" -ForegroundColor Green
