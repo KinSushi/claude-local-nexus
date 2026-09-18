@@ -29827,3 +29827,62 @@ corrige ; un rendu vide muet se croit.
 
 Le remède mesuré contre un rendu vide n'est pas d'augmenter `max_tokens` — le
 voisin en avait demandé 7 000 — mais de **découper la demande**.
+
+---
+
+## Tour 2026-09-18 (04:00-09:00) — la migration vers D:, et une base qui boucle
+
+### Ce qui a été fait
+
+| Sujet | Preuve |
+| --- | --- |
+| **T-20260916-020 clos** | tir **automatique** de 04:00, `LastTaskResult 0`, journal complet jusqu'à « Mise a jour terminee » |
+| Pile reconstruite après la migration vers D: | 3 conteneurs healthy, appel réel au banc vérifié |
+| **T-20260917-003 clos** | Docker sur D: (3 076 Go) en WSL 2, décision de l'opérateur exécutée |
+| `nexus_ask` échoue ce qu'il joint | éprouvé par le pont : `console_tools.py · 4137 octets · 0e653b29`, empreinte **identique** à celle de `nexus_agent.py` |
+| `nexus_charge` distingue vus et retenus | `processus examines : 27 / retenus : 2` |
+| Octets réellement transmis | `Buffer.byteLength(contenuFichiers)`, pas la somme des lectures |
+
+### Les erreurs de lecture du tour, et elles forment une série
+
+Cinq hypothèses plausibles et fausses, chacune réfutée par la mesure :
+
+1. `NativeCommandError` sur `docker ... 2>&1` — réfuté en PowerShell 7, **vrai** en 5.1 ;
+2. réémission des `ErrorRecord` dans le pipeline — réfuté ;
+3. `Push-Location` — réfuté ;
+4. le défaut IPv6 — réfuté, `Invoke-WebRequest` échouait sur **les deux** adresses ;
+5. `SIM115 16 -> 1` lu comme une amélioration — c'était `16 -> 18`, une régression **causée par mon propre cliquet**.
+
+Puis trois de plus sur l'incident Docker : un `prune` (c'était une migration), un DNS cassé dans WSL (il résout), un défaut réseau du démon (le registre répond en 401).
+
+**Le point commun** : chaque fois, l'instrument était exact et la question posée était voisine de celle que je croyais poser. Et deux fois, une **sortie tronquée** a fabriqué la conclusion — un `tail` avant `echo $?`, une ligne de rapport coupée.
+
+### La forme générale, payée deux fois le même jour
+
+> Une base interrompue pendant son initialisation ne se répare pas en attendant.
+> Elle boucle, et chaque minute d'attente ressemble à une initialisation lente.
+
+Le journal disait « database system is ready » à 10:38:35, puis « database
+"litellm" does not exist » trois secondes après. L'`initdb` avait été interrompu
+entre le cluster et la base. J'ai attendu onze minutes une guérison impossible.
+
+La session voisine a rapporté la même forme dans un autre registre : elle
+attribuait une lenteur de disque à un `icacls` de l'opérateur, alors que quatre
+`grep` orphelins à elle — dont un né le 15/09, 805 s de CPU, trois jours et demi
+de balayage — l'aggravaient. **L'attente imite le progrès ; seul le journal
+tranche.**
+
+### Ce qui reste OUVERT
+
+* **Le contrôle qui distingue « initdb en cours » de « initdb interrompu »**
+  (T-20260918-004) : la signature est lisible — un `does not exist` APRÈS un
+  `ready` — donc elle se mécanise. Sans lui, le prochain cas se paiera de la
+  même heure.
+* **T-20260918-003** : deux gardes qui prescrivent une voie incomplète. Le refus
+  de `nexus_appliquer` tait la création, et la garde anti-production renvoie vers
+  la seule modification. Une session voisine s'est arrêtée exactement là.
+* **T-20260917-007** : l'extraction du bloc `TOOLS` rend toujours zéro outil.
+* **Le pont accepte un binaire** et laisse le fournisseur refuser 889 982 jetons
+  plus tard, alors que la taille est connue avant l'envoi.
+* **Deux mesures d'encodage** coexistent sans compter la même chose :
+  `nexus_conformite` annonce 2 scripts exposés, le cliquet en tolère 7.
