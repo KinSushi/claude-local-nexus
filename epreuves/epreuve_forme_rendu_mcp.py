@@ -20,10 +20,16 @@ se contentant de dire que son parametre attendu manquait. La session en a
 conclu que l'outil etait casse, puis que le message lui mentait : deux
 conclusions fausses et un signalement errone chez le mainteneur.
 
-Le refus NOMME desormais les parametres recus qu'il ne reconnait pas. Ce
-mecanisme a echoue silencieusement a sa premiere pose, parce qu'il cherchait
-l'outil sous un nom invente : raison de plus pour qu'une epreuve le surveille,
-car son echec ne fait aucun bruit.
+Un parametre inconnu est desormais une faute de PROTOCOLE : le serveur refuse
+l'appel par une erreur JSON-RPC de code -32602, dont le message nomme les
+parametres recus qu'il ne reconnait pas et le parametre attendu. La doctrine du
+serveur est qu'une faute de protocole -- nom d'outil inexistant, argument absent
+ou du mauvais type -- ne se corrige pas en relisant le message mais en CHANGEANT
+L'APPEL : d'ou une erreur de protocole plutot qu'un resultat marque en erreur.
+
+Cette garde est GLOBALE : elle s'applique a tous les outils. Une garde qui
+refuserait tout passerait les autres cas au vert, d'ou un cas qui appelle un
+AUTRE outil avec un parametre JUSTE et exige un resultat, PAS une erreur.
 
 L'epreuve parle au serveur par son protocole reel : node, JSON-RPC ligne par
 ligne sur stdin/stdout, sequence initialize puis tools/call.
@@ -161,6 +167,16 @@ def extraire_text(reponse):
     return texte, None
 
 
+def extraire_erreur(reponse):
+    """Rend (erreur, raison) : erreur si la reponse porte un champ error objet."""
+    if not isinstance(reponse, dict):
+        return None, "reponse absente ou non-objet"
+    erreur = reponse.get("error")
+    if not isinstance(erreur, dict):
+        return None, "champ error absent ou non-objet"
+    return erreur, None
+
+
 def cas_refus(nom_outil, arguments, mots_attendus, nom_cas):
     """Cas 1 et 2 : un refus doit porter un text de type chaine, lisible."""
     try:
@@ -221,14 +237,15 @@ def cas_nominal():
 
 
 def cas_inconnus():
-    """Cas 5 : un refus doit NOMMER les parametres recus qu'il ne connait pas.
+    """Cas 5 : un parametre inconnu est une faute de PROTOCOLE, pas un resultat.
 
     L'appel porte query et k, inconnus de nexus_livres, et aucun parametre
-    valide. Le critere exige les trois a la fois : text de type chaine, le
-    parametre attendu question nomme, et les DEUX inconnus nommes. Sans ce
-    dernier point, le cas ne mesurerait que ce que le cas 1 mesure deja.
+    valide. Le serveur refuse par une erreur JSON-RPC de code -32602, dont le
+    message nomme les deux inconnus recus et le parametre attendu question. Le
+    critere exige les quatre a la fois : champ error present et non resultat,
+    code -32602, les DEUX inconnus nommes, et question nomme.
     """
-    nom_cas = "nexus_livres inconnus nommes"
+    nom_cas = "nexus_livres inconnus refuses"
     try:
         reponse = appeler_outil(
             "nexus_livres", {"query": "tests", "k": 3}, DELAI_DEFAUT
@@ -236,31 +253,81 @@ def cas_inconnus():
     except Exception as raison:  # noqa: BLE001
         ligne_harness(False, nom_cas, "appel impossible : %s" % (raison,))
         return False
-    texte, raison = extraire_text(reponse)
-    if texte is None:
-        ligne_harness(False, nom_cas, "type manquant : %s" % (raison,))
-        return False
-    if "question" not in texte:
+    if isinstance(reponse, dict) and "result" in reponse:
         ligne_harness(
             False,
             nom_cas,
-            "le refus ne nomme pas le parametre attendu question",
+            "la reponse porte un resultat : un parametre inconnu devrait etre "
+            "refuse par une erreur de protocole",
         )
         return False
-    inconnus_absents = [nom for nom in ("query", "k") if nom not in texte]
-    if inconnus_absents:
+    erreur, raison = extraire_erreur(reponse)
+    if erreur is None:
+        ligne_harness(False, nom_cas, "erreur manquante : %s" % (raison,))
+        return False
+    code = erreur.get("code")
+    if code != -32602:
         ligne_harness(
             False,
             nom_cas,
-            "le refus ne nomme pas les parametres inconnus recus : %s"
-            % (", ".join(inconnus_absents),),
+            "code d'erreur %r au lieu de -32602 (parametre invalide)" % (code,),
+        )
+        return False
+    message = erreur.get("message")
+    if not isinstance(message, str):
+        ligne_harness(
+            False,
+            nom_cas,
+            "message d'erreur absent ou non-chaine (type %s)"
+            % (type(message).__name__,),
+        )
+        return False
+    manquants = [nom for nom in ("query", "k", "question") if nom not in message]
+    if manquants:
+        ligne_harness(
+            False,
+            nom_cas,
+            "le message ne nomme pas %s" % (", ".join(manquants),),
         )
         return False
     ligne_harness(
         True,
         nom_cas,
-        "refus nommant question et les deux inconnus recus (query, k)",
+        "erreur -32602 nommant les deux inconnus recus (query, k) et le "
+        "parametre attendu question",
     )
+    return True
+
+
+def cas_autre_outil():
+    """Cas 6 : la garde est globale, elle ne doit pas refuser le travail normal.
+
+    nexus_search attend un parametre nomme query, avec une valeur textuelle
+    courte. L'appel est JUSTE : la reponse doit porter un resultat, PAS une
+    erreur, et son champ text doit etre une chaine non vide. Sans ce cas, une
+    garde qui refuserait tout passerait les autres cas au vert.
+    """
+    nom_cas = "nexus_search parametre juste"
+    try:
+        reponse = appeler_outil("nexus_search", {"query": "tests"}, DELAI_RECHERCHE)
+    except Exception as raison:  # noqa: BLE001
+        ligne_harness(False, nom_cas, "appel impossible : %s" % (raison,))
+        return False
+    if isinstance(reponse, dict) and "error" in reponse:
+        ligne_harness(
+            False,
+            nom_cas,
+            "la garde refuse un appel juste : %s" % (reponse.get("error"),),
+        )
+        return False
+    texte, raison = extraire_text(reponse)
+    if texte is None:
+        ligne_harness(False, nom_cas, "rendu malforme : %s" % (raison,))
+        return False
+    if not texte.strip():
+        ligne_harness(False, nom_cas, "chaine vide")
+        return False
+    ligne_harness(True, nom_cas, "chaine non vide de %d caracteres" % (len(texte),))
     return True
 
 
@@ -288,16 +355,16 @@ def cas_contre_epreuve():
 
 
 def main():
-    """Execute les cinq cas et rend le code de sortie."""
+    """Execute les six cas et rend le code de sortie."""
     if shutil.which("node") is None:
         ligne_harness(False, "environnement", "node introuvable dans le PATH")
-        print("conclusion : 0 cas reussi sur 5 -- mesure impossible")
+        print("conclusion : 0 cas reussi sur 6 -- mesure impossible")
         return 1
     if not os.path.isfile(CHEMIN_SERVEUR):
         ligne_harness(
             False, "environnement", "serveur introuvable : %s" % (CHEMIN_SERVEUR,)
         )
-        print("conclusion : 0 cas reussi sur 5 -- mesure impossible")
+        print("conclusion : 0 cas reussi sur 6 -- mesure impossible")
         return 1
 
     resultats = [
@@ -306,6 +373,7 @@ def main():
         cas_nominal(),
         cas_inconnus(),
         cas_contre_epreuve(),
+        cas_autre_outil(),
     ]
     reussis = sum(1 for r in resultats if r)
     print("conclusion : %d cas reussi(s) sur %d" % (reussis, len(resultats)))

@@ -2899,6 +2899,13 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
 
   async function callToolInterne(name, args) {
     args = args || {};
+    const inconnus = parametresInconnus(name, args);
+    if (inconnus.length) {
+      const outil = TOOLS.find(t => t.name === name);
+      const attend = (outil && outil.inputSchema && outil.inputSchema.properties) ? Object.keys(outil.inputSchema.properties) : [];
+      const attendMsg = attend.length ? attend.join(', ') : 'aucun paramètre';
+      throw new ErreurProtocole(`Paramètres inconnus reçus: ${inconnus.join(', ')} ; outil: ${name} ; paramètres attendus: ${attendMsg}`);
+    }
 
   // La table des plans est chargee avant tout appel : sans elle, planOf
   // retombe sur le suffixe du nom et peut annoncer un plan faux -- ce qui,
