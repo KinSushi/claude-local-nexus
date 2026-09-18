@@ -29886,3 +29886,72 @@ tranche.**
   plus tard, alors que la taille est connue avant l'envoi.
 * **Deux mesures d'encodage** coexistent sans compter la même chose :
   `nexus_conformite` annonce 2 scripts exposés, le cliquet en tolère 7.
+
+---
+
+## Tour 2026-09-18 (09:19-10:00) — le diagnostic qui manquait à l'incident de la nuit
+
+### Ce qui est posé
+
+`outillage/nexus_veille_db.py` répond à la question que j'ai mis une heure à
+poser correctement cette nuit : **la base est-elle en train de s'initialiser, ou
+son `initdb` a-t-il été interrompu ?** Les deux se ressemblent et ne se traitent
+pas pareil — l'une demande d'attendre, l'autre exige de recréer le volume.
+
+La signature est exacte et lisible, donc mécanisable :
+
+```
+10:38:35  database system is ready to accept connections
+10:38:38  FATAL: database "litellm" does not exist     <- APRES le « ready »
+```
+
+Quatre états rendus : `SAINE`, `EN_COURS`, `INTERROMPUE`, `INCONNU`. Pour
+`INTERROMPUE`, l'explication **nomme le remède** au lieu de le laisser deviner.
+`INCONNU` existe pour que l'outil puisse ne pas se prononcer — un diagnostic
+inventé coûte plus cher qu'une absence de diagnostic.
+
+La logique vit dans une **fonction pure** nourrie de lignes de journal, appelable
+sans Docker. C'est ce qui rend la contre-épreuve possible, et c'est le défaut
+inverse de celui déjà inscrit ici : une logique enfermée dans `main()` n'est
+testable par aucune épreuve.
+
+### Deux câblages, parce qu'un fichier que rien n'appelle n'est pas un mécanisme
+
+* **`scripts/start.ps1`**, à l'endroit exact où le diagnostic envoyait au mauvais
+  endroit : quand la passerelle ne répond pas après 240 s, le script disait
+  « logs litellm » alors que la cause était en amont. Il affiche désormais l'état
+  de la base, et dégrade proprement si l'outil manque.
+* **`nexus_test.py --only shell`** : la contre-épreuve est appelée à chaque
+  passage. Le câblage a demandé d'étendre la boucle de dispatch, qui ne cherchait
+  que dans `epreuves/` — le tuple porte maintenant le dossier.
+
+### Le validateur a rendu INCERTAIN, et c'était utile
+
+Ses deux passes se sont **contredites** sur un point précis : « `$python` risque
+de ne pas être défini ». Ce n'est pas un désaccord à trancher au jugement mais
+une question à vérifier dans le code réel — ce que le validateur demande
+lui-même. Vérifié : `$python` est défini lignes 167-169, l'appel est ligne 276,
+et une garde lignes 170-173 fait sortir le script si aucun interpréteur n'est
+trouvé. La première passe jugeait sur le diff seul, sans ce contexte.
+
+**Un verdict incertain n'est pas un verdict inutile** : il a désigné l'endroit
+exact où regarder.
+
+### Le contrôle de frontière a fait son travail
+
+Il a vu la nouvelle exécution — « 6 connues, 1 neuves » — et a refusé de clore.
+La référence a été mise à jour **avec son motif**, jamais en silence : cette
+exécution est un diagnostic, elle ne tourne que sur le chemin d'échec, et elle
+dégrade proprement. Ce n'est pas une dépendance du produit vers l'outillage.
+
+### Ce qui reste OUVERT
+
+* **T-20260918-003** : deux gardes qui prescrivent une voie incomplète — le refus
+  de `nexus_appliquer` tait la création, la garde anti-production ne mentionne
+  que la modification.
+* **T-20260917-007** : l'extraction du bloc `TOOLS` rend toujours zéro outil.
+* Le pont accepte un **binaire** et laisse le fournisseur refuser 889 982 jetons
+  plus tard, alors que la taille est connue avant l'envoi.
+* **Deux mesures d'encodage** qui ne comptent pas la même chose.
+* Le **`vhdx` de 2,53 Go** sur C: résiste à la suppression, même élevée —
+  diagnostic `icacls` / `.Owner` à passer par l'opérateur.
