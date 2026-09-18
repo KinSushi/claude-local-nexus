@@ -4068,16 +4068,17 @@ def test_garde_shell() -> None:
     # returncode nul exige donc qu'AUCUN cas n'ait échoué, pas seulement
     # que le script a tourné -- sinon ce serait un faux vert. cwd=ROOT :
     # leurs chemins internes sont relatifs à la racine du dépôt.
-    for nom, script, arguments in (
-        ("epreuve garde heredoc", "epreuve_garde_heredoc.py", []),
-        ("epreuve garde encodage", "epreuve_garde_encodage.py", []),
-        ("cliquet encodage", "epreuve_cliquet_encodage.py", []),
-        ("cliquet encodage detecte", "epreuve_cliquet_encodage.py", ["--contre-epreuve"]),
-        ("resolveur shell", "epreuve_resolveur_shell.py", []),
-        ("cliquet webrequest", "epreuve_cliquet_webrequest.py", []),
-        ("cliquet webrequest detecte", "epreuve_cliquet_webrequest.py", ["--contre-epreuve"]),
+    for nom, script, dossier, arguments in (
+        ("epreuve garde heredoc", "epreuve_garde_heredoc.py", "epreuves", []),
+        ("epreuve garde encodage", "epreuve_garde_encodage.py", "epreuves", []),
+        ("cliquet encodage", "epreuve_cliquet_encodage.py", "epreuves", []),
+        ("cliquet encodage detecte", "epreuve_cliquet_encodage.py", "epreuves", ["--contre-epreuve"]),
+        ("resolveur shell", "epreuve_resolveur_shell.py", "epreuves", []),
+        ("cliquet webrequest", "epreuve_cliquet_webrequest.py", "epreuves", []),
+        ("cliquet webrequest detecte", "epreuve_cliquet_webrequest.py", "epreuves", ["--contre-epreuve"]),
+        ("veille db detecte", "nexus_veille_db.py", "outillage", ["--contre-epreuve"]),
     ):
-        chemin = os.path.join(ROOT, "epreuves", script)
+        chemin = os.path.join(ROOT, dossier, script)
         if not os.path.isfile(chemin):
             check(nom, False, "%s introuvable : dispatch sans fichier" % script)
             continue
