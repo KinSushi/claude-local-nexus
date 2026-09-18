@@ -42,10 +42,7 @@ def _char_hors_cp1252(caractere: str) -> bool:
 
 def _chaine_hors_cp1252(valeur: str) -> bool:
     """Vrai si au moins un caractere de la chaine echoue en cp1252."""
-    for caractere in valeur:
-        if _char_hors_cp1252(caractere):
-            return True
-    return False
+    return any(_char_hors_cp1252(caractere) for caractere in valeur)
 
 
 def _qualifier(source: str):
@@ -245,10 +242,7 @@ def main(argv=None):
     )
     arguments = analyseur.parse_args(argv)
 
-    if arguments.contre_epreuve:
-        code = _executer_contre_epreuve()
-    else:
-        code = _executer_audit()
+    code = _executer_contre_epreuve() if arguments.contre_epreuve else _executer_audit()
     sys.exit(code)
 
 

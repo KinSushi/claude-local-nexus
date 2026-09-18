@@ -488,10 +488,7 @@ def _formater_readme(outils: list[dict]) -> str:
             for p in props:
                 requis = "oui" if p["required"] else "non"
                 description = (p["description"] or "").replace("\n", " ").replace("|", "\\|")
-                if p["enum"]:
-                    enum_txt = ", ".join(p["enum"])
-                else:
-                    enum_txt = ""
+                enum_txt = ", ".join(p["enum"]) if p["enum"] else ""
                 tampon.write(
                     "| " + p["name"] + " | " + p["type"] + " | " + requis +
                     " | " + description + " | " + enum_txt + " |\n"
@@ -630,6 +627,8 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
+    # Generation ou verification selon le flag.
+    texte = _formater_readme(outils) if not args.verifier else None
     if args.verifier:
         contenu = _lire_readme(readme)
         if contenu is None:
@@ -641,7 +640,6 @@ def main(argv: list[str]) -> int:
         return _verifier(outils, contenu)
 
     # Generation.
-    texte = _formater_readme(outils)
     readme.parent.mkdir(parents=True, exist_ok=True)
     readme.write_text(texte, encoding="utf-8")
     sys.stdout.write(
