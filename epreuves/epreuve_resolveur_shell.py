@@ -200,7 +200,7 @@ def test_store_fallback():
     if from_cmd:
         stable_candidates.append(from_cmd)
     system_pwsh = os.path.join(
-        os.environ.get("SystemRoot", r"C:\Windows"),
+        os.environ.get("SYSTEMROOT", r"C:\Windows"),
         "System32", "WindowsPowerShell", "v1.0", "powershell.exe",
     )
     if os.path.isfile(system_pwsh):
