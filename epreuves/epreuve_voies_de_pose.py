@@ -15,8 +15,9 @@ Un garde qui indique la mauvaise sortie coute plus cher qu'un garde muet,
 car l'agent honnete suit l'indication.
 
 Cette epreuve rougit si l'un des deux outils cesse de nommer la voie de pose
-qui convient. Quatre cas, dont une contre-epreuve qui prouve que le critere
-DETECTE un message appauvri.
+qui convient. Cinq cas, dont une contre-epreuve qui prouve que le critere
+DETECTE un message appauvri, et un cas qui distingue le refus de perimetre du
+refus de racine INTROUVABLE.
 """
 
 import contextlib
@@ -191,8 +192,56 @@ def cas4():
     )
 
 
+def cas5():
+    """nexus_appliquer sur une cible HORS de tout depot."""
+    dossier = tempfile.mkdtemp(prefix="epreuve_voies_hors_depot_")
+    cible = os.path.join(dossier, "cible_hors_depot.txt")
+    with io.open(cible, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("contenu initial\n")
+
+    jsonl = os.path.join(dossier, "taches.jsonl")
+    tache = "epreuve_voies_hors_depot"
+    bloc = (
+        "<<" + "<AVANT" + CHEVRONS + "\n"
+        "contenu initial\n"
+        "<<" + "<APRES" + CHEVRONS + "\n"
+        "contenu remplace\n"
+        "<<" + "<FIN" + CHEVRONS + "\n"
+    )
+    enregistrement = {"nom": tache, "texte": bloc}
+    with io.open(jsonl, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(enregistrement, ensure_ascii=False) + "\n")
+
+    proc = subprocess.run(
+        [sys.executable, APPLIQUER, jsonl, tache, cible],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=RACINE,
+    )
+    sortie = (proc.stdout or "") + (proc.stderr or "")
+    ok = "INTROUVABLE" in sortie and "hors racine du depot" not in sortie
+    obtenu = sortie.replace("\n", " | ")[:300] if sortie.strip() else "sortie vide"
+
+    with contextlib.suppress(OSError):
+        os.remove(cible)
+    with contextlib.suppress(OSError):
+        os.remove(jsonl)
+    with contextlib.suppress(OSError):
+        os.rmdir(dossier)
+
+    return _verdict(
+        5,
+        "nexus_appliquer sur une cible HORS de tout depot",
+        "la sortie porte INTROUVABLE et ne se reduit pas au refus de perimetre",
+        obtenu,
+        ok,
+    )
+
+
 def main():
-    resultats = [cas1(), cas2(), cas3(), cas4()]
+    resultats = [cas1(), cas2(), cas3(), cas4(), cas5()]
     reussis = sum(1 for r in resultats if r)
     print("CONCLUSION : %d cas reussis sur %d" % (reussis, len(resultats)))
     return 0 if reussis == len(resultats) else 1

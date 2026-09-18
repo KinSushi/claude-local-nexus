@@ -19,7 +19,7 @@ description: "Employer cette competence lorsqu'une session s'apprete a deleguer 
 | nexus_profile | Connaitre les limites reelles de la machine hote. | aucun |
 | nexus_savings | Mesurer le volume delegue et ce qu'il aurait coute sur Claude. | jours: integer |
 | nexus_charge | Rapporter qui occupe la machine et la memoire disponible. | aucun |
-| nexus_apply | Appliquer un patch ancre rendu par un modele. | texte: string, cible: string, nom: string |
+| nexus_apply | Appliquer un patch ancre rendu par un modele. | texte: string, cible: string (chemin ABSOLU vers un autre projet ACCEPTE : le perimetre est alors le depot qui contient la cible ; un chemin RELATIF est resolu depuis le repertoire du serveur, donc depuis la plateforme), nom: string |
 | nexus_livres | Chercher dans les 24 livres techniques par sens, en local. | question: string |
 | nexus_verrou | Constater l'etat des verrous de machine partages entre projets. | aucun |
 | nexus_models | Lister les modeles disponibles dans la passerelle. | aucun |
@@ -29,10 +29,18 @@ description: "Employer cette competence lorsqu'une session s'apprete a deleguer 
 - Les noms de parametres ne se devinent pas : il faut employer ceux du tableau ci-dessus, avec la casse exacte.
 - Quatre outils ne declarent aucun parametre : nexus_profile, nexus_charge, nexus_verrou et nexus_models. Tout argument passe a l'un d'eux est ignore en silence.
 - Un patch rendu par un modele s'ancre avec des marqueurs a trois chevrons de chaque cote, encadrant les blocs AVANT, APRES et FIN. Le texte du bloc AVANT doit figurer exactement une seule fois dans le fichier vise.
+- La portee de nexus_apply se derive de la CIBLE, pas du script : un chemin ABSOLU vers un autre projet est ACCEPTE, le perimetre etant alors le depot qui contient la cible (scripts/nexus_appliquer.py remonte de la cible jusqu'au premier .git ou CLAUDE.md). Un chemin RELATIF, lui, est resolu depuis le repertoire du serveur, donc depuis la plateforme : c'est ce cas-la, et non l'outil, qui ne convient pas a un projet tiers.
+- Le refus de nexus_apply sur une cible ABSENTE nomme desormais la voie de creation, et la garde anti-production prescrit la creation plutot que la modification lorsque la cible n'existe pas encore : une session qui rencontre l'un de ces deux refus y lit maintenant la sortie.
 
 ## Ce que le pont ne fait pas
 
-- Il ne cree pas de fichier sous un nom propre. La creation de fichier est obtenue via nexus_apply, quand le texte du patch porte les marqueurs de creation.
+- Il ne cree pas de fichier sous un nom propre. La creation de fichier est obtenue via nexus_apply, quand le texte du patch porte les marqueurs de creation, ecrits LITTERALEMENT :
+
+    <<<CREER>>>
+    ...contenu complet du fichier...
+    <<<FIN>>>
+
+  Chaque marqueur va SEUL sur sa ligne, et le contenu complet du fichier se place entre les deux.
 - Il ne remplace pas les outils de fichier natifs de Claude Code.
 
 En cas de desaccord, la source faisant foi est outillage/rituels/README_MCP.md, genere depuis le serveur.

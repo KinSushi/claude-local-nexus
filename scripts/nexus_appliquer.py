@@ -148,12 +148,18 @@ def main():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     start_dir = os.path.dirname(os.path.realpath(cible_path))
     racine_depot = start_dir
+    # Mesure du 2026-09-18 : quand la remontee n'a trouve AUCUN marqueur, le
+    # repli retient la racine de la plateforme -- une racine etrangere a
+    # l'appelant. Le refus doit alors dire que la racine est introuvable POUR
+    # CETTE CIBLE, et non que la cible est hors perimetre.
+    repli_utilise = False
     while True:
         if any(os.path.exists(os.path.join(racine_depot, marker)) for marker in (".git", "CLAUDE.md")):
             break
         parent = os.path.dirname(racine_depot)
         if parent == racine_depot:
             racine_depot = os.path.dirname(script_dir)
+            repli_utilise = True
             break
         racine_depot = parent
     cible_real = os.path.realpath(cible_path)
@@ -161,10 +167,18 @@ def main():
     try:
         chemin_commun = os.path.commonpath([cible_real, racine_real])
     except ValueError:
-        print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
+        if repli_utilise:
+            print(f"REFUS : racine de depot INTROUVABLE pour la cible '{cible_path}' -- ni .git ni CLAUDE.md en remontant depuis '{start_dir}' ; le repli sur la racine de l'outil a joue, la cible n'est donc PAS hors perimetre.")
+            print("Placer la copie de travail DANS un depot (par exemple un sous-dossier de livraison du projet appelant), et non dans un dossier temporaire hors depot.")
+        else:
+            print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
         return 1
     if chemin_commun != racine_real:
-        print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
+        if repli_utilise:
+            print(f"REFUS : racine de depot INTROUVABLE pour la cible '{cible_path}' -- ni .git ni CLAUDE.md en remontant depuis '{start_dir}' ; le repli sur la racine de l'outil a joue, la cible n'est donc PAS hors perimetre.")
+            print("Placer la copie de travail DANS un depot (par exemple un sous-dossier de livraison du projet appelant), et non dans un dossier temporaire hors depot.")
+        else:
+            print(f"REFUS : chemin refuse '{cible_path}' (hors racine du depot '{racine_depot}')")
         return 1
 
     # Lecture du fichier cible

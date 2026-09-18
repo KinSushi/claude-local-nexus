@@ -2507,7 +2507,7 @@ const TOOLS = [
       type: "object",
       properties: {
         texte: { type: "string", description: "Le patch : blocs AVANT / APRES / FIN" },
-        cible: { type: "string", description: "Chemin du fichier a modifier, relatif a la racine du depot" },
+        cible: { type: "string", description: "Chemin du fichier a modifier. Un chemin absolu est accepte, y compris vers un autre projet; le perimetre est le depot contenant la cible. Un chemin relatif est resolu depuis le repertoire du serveur (plateforme)." },
         nom: { type: "string", description: "Etiquette de la tache", default: "mcp" }
       },
       required: ["texte", "cible"]
