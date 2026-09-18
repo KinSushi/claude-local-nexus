@@ -29652,3 +29652,69 @@ Processus crus terminés, journaux crus figés, champ `rendu` au lieu de `texte`
 
 **Restent ouverts** (mesure `nexus_taches --deriver` du tour, plus les entrées neuves) : 032, 031, 025, 028, 026, 013, 002, 018, 019, 020, 022, 023 *haute* ; 027, 029, 030, 006, 010, 015, 024 *moyenne* ; 014, 021 *basse* ; 016 non mécanisable — chacun avec sa prochaine action au registre.
 
+
+---
+
+## Tour 2026-09-17 (21:20-23:30) — pile reconstruite, cp1252 mécanisé, et deux erreurs de l'orchestrateur
+
+Demande de l'opérateur en cours de tour : reconstruire Docker, ne pas inciter les
+pairs à contourner, ne pas contourner soi-même, éprouver **par le MCP réel**,
+écrire plutôt que promettre, ne pas se disperser.
+
+### Ce qui a été fait, et prouvé
+
+| Sujet | Preuve |
+| --- | --- |
+| Pile Docker reconstruite | 3 conteneurs healthy, appel réel au banc : 67 locaux, 20 cloud, 4 routeurs |
+| `nexus_taches --deriver` ne meurt plus | forward test console cp1252 : résumé affiché, code 0 |
+| Cliquet d'encodage posé | contre-épreuve verte, **audit tiers : 7/7 tenues** (minimax-m3, qui ne l'a pas écrit) |
+| 4 schémas MCP ferment le fail-open | `additionalProperties: false`, `node --check` OK, handlers vérifiés sans `args.` |
+| Verdict de charge corrigé | significativité mesurée sur l'activité, plus sur le CPU cumulé |
+| Skill `/nexus-mcp` | 16 outils avec leurs **vrais** noms de paramètres |
+| LOI 1 avant commit | `nexus_valide --base HEAD` : « Aucune régression détectée », coût zéro |
+
+Huit vagues au banc, 5 familles distinctes au maximum dans une vague, coût
+facturé **zéro**.
+
+### Deux erreurs de l'orchestrateur, dites plutôt que tues
+
+**T-006 était FAUX.** J'ai inscrit au registre que `nexus_apply` rendait un
+résultat malformé et que poser par le pont était impossible. La session ea-mt5 a
+re-mesuré et obtenu l'inverse. Elle avait raison : j'appelais l'outil avec
+`patch` et `fichier` au lieu de `texte` et `cible`. La fiche est rectifiée et
+porte désormais le vrai défaut — un paramètre inconnu n'est refusé par personne.
+J'avais transmis ce fait faux à deux sessions.
+
+**La passerelle a été coupée ~20 min par ma faute.** J'ai posé le correctif IPv6
+directement sur la pile qui sert trois sessions. `docker compose config` validait,
+mais le conteneur est resté en `Created` et le démon a bloqué sur lui. Retour
+arrière, redémarrage de Docker Desktop, suppression de deux fantômes. Le banc
+avait écrit la réserve en la marquant **NON VÉRIFIÉE** ; je l'ai posée quand même.
+
+### Ce qui reste OUVERT à la sortie de ce tour
+
+* **Le cliquet d'encodage n'est appelé par aucun dispatch.** Trois tentatives de
+  câblage ont échoué, dont une où le modèle a recopié le gabarit de la consigne.
+  Un fichier que rien n'appelle n'est pas un mécanisme (§0.2.1).
+* **Le correctif du résolveur rouvre le `0x80070002`** qu'il devait éviter : son
+  motif rate `_x64__8wekyb3d8bbwe` (double tiret bas), `-match` rend `False`,
+  zéro avertissement émis. T-20260916-020.
+* **Trois fichiers défectueux restent dans l'arbre**, non commités, et ils bloquent
+  le rituel (`travail commité` et `outillage tenu`, 3 régressions ruff) :
+  `outillage/nexus_mcp_readme.py` rend 0 outil et déclare le document conforme,
+  `outillage/rituels/README_MCP.md` est vide, `epreuves/epreuve_verdict_charge.py`
+  est un **faux vert** — elle réimplémente le verdict au lieu de l'appeler et passe
+  sur la version d'avant correctif, dommage exact annoncé par T-20260916-024.
+  Leur suppression appartient à l'opérateur ; l'ACL refuse `rm` et `mv`.
+* **`glm-5.3-cloud` est inutilisable pour produire du code** : trois troncatures
+  sur trois, dont 21 343 caractères passés à débattre de subtilités PowerShell
+  sans jamais rendre le patch. À ne plus employer pour une tâche à marqueurs.
+* **Le retrait Ollama du 25/09** (deepseek-v4-flash:0731, glm-5.1, qwen3.5:397b)
+  sera absorbé par la régénération — qui ne tourne pas tant que T-020 n'est pas
+  clos. `adaptive_router_default_model` vaut encore `qwen3.5-397b-cloud`.
+* **Le disque Docker est revenu sur C:** (backend Hyper-V). Décision de
+  l'opérateur ce tour : laisser en l'état, un `icacls` tourne sur D:.
+
+**Restent ouverts au registre** : 001, 002, 003, 004, 005, 006, 007 *neufs ce
+tour* ; 013, 018, 019, 020, 022, 023, 025, 026, 028, 031, 032 *haute* ; 006, 010,
+015, 024, 027, 029, 030 *moyenne* ; 014, 021 *basse* ; 016 non mécanisable.

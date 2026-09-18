@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-16 19:16.
+> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-17 22:50.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -8,14 +8,14 @@
 |---|---|---|---|---|---|
 | Contrat | `.claude/CLAUDE.md` | Contrat d'exploitation de la plateforme | 119 Ko | 2026-09-07 | `35a561d6fcfd630f` |
 | Contrat | `AGENTS.md` | Contrat d'agent universel | 3 Ko | 2026-08-28 | `e258b3cc90de2a14` |
-| Infrastructure | `docker-compose.yml` | Définition des services et volumes | 6 Ko | 2026-09-07 | `2bcf84ef8fb1486f` |
+| Infrastructure | `docker-compose.yml` | Définition des services et volumes | 6 Ko | 2026-09-17 | `2bcf84ef8fb1486f` |
 | Configuration | `.env.example` | Modèle de fichier d'environnement | 3 Ko | 2026-08-29 | `f70ad0c51a6d67ab` |
-| Configuration | `litellm_config.yaml` | Modèles, routeurs, fallbacks — mi-généré, mi-manuel | 71 Ko | 2026-09-16 | `edcd39d04ff6414d` |
+| Configuration | `litellm_config.yaml` | Modèles, routeurs, fallbacks — mi-généré, mi-manuel | 70 Ko | 2026-09-17 | `1402399a8578f4e8` |
 | Inventaire | `cloud_models.txt` | Catalogue Ollama Cloud, généré, droits annotés | 571 o | 2026-09-13 | `c63b19bf68140b38` |
 | Inventaire | `model_list.txt` | Modèles locaux à télécharger | 601 o | 2026-09-02 | `15c95c6f625eeeaa` |
 | Pont | `.mcp.json` | Déclaration du serveur MCP pour Claude Code | 246 o | 2026-08-29 | `2622bc6acf81e922` |
 | Pont | `Set-ClaudeModel.ps1` | Choix explicite du mode d'exécution de Claude Code | 12 Ko | 2026-09-02 | `cd68d2299da2ed40` |
-| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 166 Ko | 2026-09-16 | `a26b5aeecdc8406e` |
+| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 166 Ko | 2026-09-17 | `d00e4517d16f77a3` |
 | Génération | `scripts/Update-NexusModels.ps1` | Orchestrateur de mise à jour | 15 Ko | 2026-09-15 | `c531b94bf2e0afc4` |
 | Génération | `scripts/nexus_generate.py` | Régénère les zones AUTOGEN | 96 Ko | 2026-09-15 | `319f885206dad1da` |
 | Vérification | `outillage/nexus_mcp_probe.py` | Sonde les outils du pont MCP | 19 Ko | 2026-09-14 | `fe7e35328fc707d4` |
@@ -31,20 +31,20 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-09-02 | `3d7c3f18eff18380` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-09-15 | `2fd788da3e260ced` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-09-02 | `ea4e8f7b82abfa83` |
-| Rituel | `PROGRESS.MD` | Historique des décisions et des erreurs | 8 Ko | 2026-09-16 | `fff98c35cc0a2346` |
+| Rituel | `PROGRESS.MD` | Historique des décisions et des erreurs | 10 Ko | 2026-09-17 | `99388c557521938d` |
 | Rituel | `outillage/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-07 | `f4b942bab7a8e4cc` |
-| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1640 Ko | 2026-09-16 | `badf84d450919635` |
-| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1648 Ko | 2026-09-16 | `4708ea31da7121a1` |
+| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1640 Ko | 2026-09-16 | `b96a1fdd1f1fee08` |
+| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1659 Ko | 2026-09-16 | `3b9c3b3ced532675` |
 | Rituel | `outillage/rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-09-06 | `770e25b546079761` |
-| Rituel | `outillage/rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-16 | `bf27f019f6f2a1b5` |
+| Rituel | `outillage/rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-17 | `1735b5fa9d041413` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 25 Ko | 2026-09-14 | `b4b9edf848c3d340` |
-| Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-09-15 | `bbad889775b62e48` |
+| Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-09-16 | `c73c79237208997c` |
 | Documentation | `docs/pont-local-abonnement.md` | Associer modèles locaux et abonnement | 16 Ko | 2026-09-06 | `ee756cc3eb305c0c` |
 | Architecture | `.claude/agents/nexus-delegue.md` | — | 4 Ko | 2026-08-29 | `103b5dbd0d19550c` |
-| Architecture | `.claude/scheduled_tasks.lock` | — | 124 o | 2026-09-15 | `b59fbcb8eacb5acf` |
 | Architecture | `.claude/settings.json` | — | 6 Ko | 2026-09-07 | `b7136d3bb079bb1e` |
 | Architecture | `.claude/settings.json.avant_socle_20260901-190654` | — | 3 Ko | 2026-09-06 | `44f99227a7175251` |
 | Architecture | `.claude/settings.local.json` | — | 2 Ko | 2026-09-15 | `1466d72909c09fca` |
+| Architecture | `.claude/skills/nexus-mcp/SKILL.md` | — | 3 Ko | 2026-09-17 | `e1bd3c88646985f0` |
 | Architecture | `.gitattributes` | — | 2 Ko | 2026-09-06 | `7db83417e446929a` |
 | Architecture | `.github/workflows/verification.yml` | — | 4 Ko | 2026-09-02 | `e4f4ae182cdf7235` |
 | Architecture | `.gitignore` | — | 6 Ko | 2026-09-15 | `bdd0d4afcaabed1f` |
@@ -54,9 +54,9 @@
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-13 | `43c7dc08ae3aa7d4` |
 | Architecture | `.ruff_cache/0.16.5/10040030221802267965` | — | 8 Ko | 2026-09-14 | `40732100948b62d3` |
 | Architecture | `.ruff_cache/0.16.5/1009636002996594937` | — | 236 o | 2026-09-14 | `a6c13fa1dd4d6a74` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 9 Ko | 2026-09-16 | `9bc9092260169b7d` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 9 Ko | 2026-09-17 | `1fd0973962c40147` |
 | Architecture | `.ruff_cache/0.16.5/10124619652482519485` | — | 172 o | 2026-09-07 | `dbafe849e13d69ec` |
-| Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 156 o | 2026-09-01 | `3aa6f83eb4902b70` |
+| Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 204 o | 2026-09-17 | `5bd69080f3befcbf` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
 | Architecture | `.ruff_cache/0.16.5/10191284191876117274` | — | 260 o | 2026-09-14 | `0aa9ad428c12b2b5` |
 | Architecture | `.ruff_cache/0.16.5/1020179809107904912` | — | 252 o | 2026-09-14 | `6b27890efaae50f7` |
@@ -82,6 +82,7 @@
 | Architecture | `.ruff_cache/0.16.5/10824574568110138082` | — | 156 o | 2026-09-16 | `4f304ed43f50c4ef` |
 | Architecture | `.ruff_cache/0.16.5/10862018507492870359` | — | 204 o | 2026-09-15 | `dd160a303b088d51` |
 | Architecture | `.ruff_cache/0.16.5/1088654375599672469` | — | 196 o | 2026-09-14 | `dd45f75322b7adac` |
+| Architecture | `.ruff_cache/0.16.5/10907266288840291306` | — | 156 o | 2026-09-17 | `52cc319f61621cc2` |
 | Architecture | `.ruff_cache/0.16.5/1104178919888202127` | — | 180 o | 2026-09-15 | `aacd830298f3b842` |
 | Architecture | `.ruff_cache/0.16.5/11065312839828523931` | — | 156 o | 2026-09-15 | `1c53aafc17e5a902` |
 | Architecture | `.ruff_cache/0.16.5/11124074384767150768` | — | 236 o | 2026-09-14 | `3b8c3c5443092624` |
@@ -108,7 +109,7 @@
 | Architecture | `.ruff_cache/0.16.5/12283610345515842208` | — | 164 o | 2026-09-08 | `e7ec8b2cfbea0757` |
 | Architecture | `.ruff_cache/0.16.5/12305097964330132417` | — | 2 Ko | 2026-09-13 | `5adcddeae5c65e6c` |
 | Architecture | `.ruff_cache/0.16.5/12330413454252820957` | — | 252 o | 2026-09-15 | `c69965660f6032fc` |
-| Architecture | `.ruff_cache/0.16.5/12371781643915760102` | — | 10 Ko | 2026-09-16 | `5f433ba524595ab1` |
+| Architecture | `.ruff_cache/0.16.5/12371781643915760102` | — | 11 Ko | 2026-09-17 | `43ba837f4fcdc7eb` |
 | Architecture | `.ruff_cache/0.16.5/12443191087169482853` | — | 180 o | 2026-09-07 | `cfa7072b6beb7b04` |
 | Architecture | `.ruff_cache/0.16.5/12444162157776358107` | — | 4 Ko | 2026-09-08 | `d7cf87e4d68e6506` |
 | Architecture | `.ruff_cache/0.16.5/12494308228080905975` | — | 196 o | 2026-09-14 | `b7f4dab31c77e410` |
@@ -127,12 +128,12 @@
 | Architecture | `.ruff_cache/0.16.5/13175943276361695574` | — | 188 o | 2026-09-14 | `ffc12630170768c9` |
 | Architecture | `.ruff_cache/0.16.5/13195187389784286675` | — | 4 Ko | 2026-09-08 | `354e2fe98d5929be` |
 | Architecture | `.ruff_cache/0.16.5/13202743552362239487` | — | 164 o | 2026-09-14 | `ec7fa8e6189898b6` |
-| Architecture | `.ruff_cache/0.16.5/13260099532227286935` | — | 5 Ko | 2026-09-16 | `af4188be83952123` |
+| Architecture | `.ruff_cache/0.16.5/13260099532227286935` | — | 5 Ko | 2026-09-17 | `a3ebe995bda16f8a` |
 | Architecture | `.ruff_cache/0.16.5/13289934018927647403` | — | 2 Ko | 2026-08-31 | `0eba88d1b07379f6` |
 | Architecture | `.ruff_cache/0.16.5/13324294643101943425` | — | 164 o | 2026-09-14 | `98d159ba3838a5f6` |
 | Architecture | `.ruff_cache/0.16.5/13331253869860077648` | — | 156 o | 2026-09-16 | `4e24ff3d641ad6cb` |
 | Architecture | `.ruff_cache/0.16.5/13443779736450239840` | — | 228 o | 2026-09-13 | `8fd19d467eed5e22` |
-| Architecture | `.ruff_cache/0.16.5/13446392367267597956` | — | 2 Ko | 2026-09-16 | `29d333ae54f0dce8` |
+| Architecture | `.ruff_cache/0.16.5/13446392367267597956` | — | 2 Ko | 2026-09-17 | `c8d99801c06d1679` |
 | Architecture | `.ruff_cache/0.16.5/13454085944863612442` | — | 2 Ko | 2026-08-31 | `f702be4df2bddcc9` |
 | Architecture | `.ruff_cache/0.16.5/13477884501641270653` | — | 4 Ko | 2026-09-14 | `da242fb2d19be95f` |
 | Architecture | `.ruff_cache/0.16.5/13492977601724131657` | — | 180 o | 2026-09-14 | `79dadab56fd8c31d` |
@@ -141,7 +142,7 @@
 | Architecture | `.ruff_cache/0.16.5/13908348014171704397` | — | 156 o | 2026-09-16 | `ba64bafda95e52d8` |
 | Architecture | `.ruff_cache/0.16.5/13954307803360208894` | — | 8 Ko | 2026-09-02 | `dfea66ee31123b3c` |
 | Architecture | `.ruff_cache/0.16.5/13983300566680506313` | — | 188 o | 2026-09-14 | `4c44dfc5c8a24a7f` |
-| Architecture | `.ruff_cache/0.16.5/14059106395295115456` | — | 4 Ko | 2026-09-16 | `ba7f34c933f848f3` |
+| Architecture | `.ruff_cache/0.16.5/14059106395295115456` | — | 4 Ko | 2026-09-17 | `e51f5a4140910f94` |
 | Architecture | `.ruff_cache/0.16.5/14162723902183003760` | — | 188 o | 2026-09-14 | `7eaad6cb242786bd` |
 | Architecture | `.ruff_cache/0.16.5/14194984766851969492` | — | 2 Ko | 2026-08-31 | `759366fc70225fa5` |
 | Architecture | `.ruff_cache/0.16.5/14237619000490327463` | — | 5 Ko | 2026-09-09 | `11765596d2ca6268` |
@@ -229,7 +230,7 @@
 | Architecture | `.ruff_cache/0.16.5/17321816017736170431` | — | 172 o | 2026-09-07 | `63f6a530c7132a6f` |
 | Architecture | `.ruff_cache/0.16.5/17341765443534343973` | — | 4 Ko | 2026-09-07 | `6e992c2054f3f057` |
 | Architecture | `.ruff_cache/0.16.5/17378449226791531954` | — | 172 o | 2026-09-01 | `4dbf7e0d22f69d78` |
-| Architecture | `.ruff_cache/0.16.5/1737940014446486211` | — | 11 Ko | 2026-09-16 | `5af74dbfacb0d5d6` |
+| Architecture | `.ruff_cache/0.16.5/1737940014446486211` | — | 11 Ko | 2026-09-17 | `a6258d96f1ade849` |
 | Architecture | `.ruff_cache/0.16.5/17383864683153407835` | — | 364 o | 2026-09-08 | `f517f88342d3a390` |
 | Architecture | `.ruff_cache/0.16.5/17632243767547897970` | — | 196 o | 2026-09-13 | `d6520dc334a087ab` |
 | Architecture | `.ruff_cache/0.16.5/17632354879131024054` | — | 148 o | 2026-09-01 | `e0d05a01063a169a` |
@@ -261,6 +262,7 @@
 | Architecture | `.ruff_cache/0.16.5/1932184415216809975` | — | 204 o | 2026-09-14 | `4faf6bc76dcb833c` |
 | Architecture | `.ruff_cache/0.16.5/1947831033818117483` | — | 164 o | 2026-09-01 | `c5e23c2832476b0c` |
 | Architecture | `.ruff_cache/0.16.5/1948825395730465212` | — | 3 Ko | 2026-08-31 | `68925897b19fe0a6` |
+| Architecture | `.ruff_cache/0.16.5/198944025702048159` | — | 156 o | 2026-09-16 | `41d59e8dfa85c024` |
 | Architecture | `.ruff_cache/0.16.5/2069055596582012559` | — | 2 Ko | 2026-08-31 | `fe0a1dd9b4cb3a86` |
 | Architecture | `.ruff_cache/0.16.5/209790410915550976` | — | 252 o | 2026-09-15 | `81f7e83026380d3d` |
 | Architecture | `.ruff_cache/0.16.5/2127849565617617392` | — | 244 o | 2026-09-14 | `ea3c345f4d7d22a5` |
@@ -540,6 +542,7 @@
 | Architecture | `epreuves/epreuve_chemins_annonces.py` | — | 4 Ko | 2026-09-09 | `4f4d55e891557f54` |
 | Architecture | `epreuves/epreuve_cibles_shell.py` | — | 7 Ko | 2026-09-06 | `fdb3d02b57f548ba` |
 | Architecture | `epreuves/epreuve_cles_only.py` | — | 3 Ko | 2026-09-07 | `cda451f6ce62ed97` |
+| Architecture | `epreuves/epreuve_cliquet_encodage.py` | — | 8 Ko | 2026-09-17 | `1ae5c065bab0a64a` |
 | Architecture | `epreuves/epreuve_commande_nexus.py` | — | 4 Ko | 2026-09-06 | `ecee856433936229` |
 | Architecture | `epreuves/epreuve_concentration_routage.py` | — | 4 Ko | 2026-09-08 | `4823fad7cadef855` |
 | Architecture | `epreuves/epreuve_conformite_fenetres.py` | — | 3 Ko | 2026-09-16 | `e020e18ec6f14bc9` |
@@ -632,6 +635,7 @@
 | Architecture | `epreuves/epreuve_repli_adaptatif.py` | — | 5 Ko | 2026-09-09 | `a2ce4e6d304e1675` |
 | Architecture | `epreuves/epreuve_reprise_avant_repli.py` | — | 4 Ko | 2026-09-06 | `de1e3a7e6adc16a4` |
 | Architecture | `epreuves/epreuve_reprise_taches.py` | — | 3 Ko | 2026-09-13 | `58a912e4092c2188` |
+| Architecture | `epreuves/epreuve_resolveur_shell.py` | — | 7 Ko | 2026-09-17 | `eacee804033d12dd` |
 | Architecture | `epreuves/epreuve_resumer.py` | — | 6 Ko | 2026-09-06 | `c4f9b7439e18b0b9` |
 | Architecture | `epreuves/epreuve_ruche.py` | — | 4 Ko | 2026-09-14 | `0ff4cb93eecc5e77` |
 | Architecture | `epreuves/epreuve_sauf_tests.py` | — | 3 Ko | 2026-09-09 | `e9197b817c0bbb50` |
@@ -670,6 +674,7 @@
 | Architecture | `epreuves/epreuve_veille_orphelins.py` | — | 6 Ko | 2026-09-14 | `208f4ef3969767e3` |
 | Architecture | `epreuves/epreuve_veille_sonde_contexte.py` | — | 6 Ko | 2026-09-15 | `042af414f939f5b4` |
 | Architecture | `epreuves/epreuve_verbatim.py` | — | 959 o | 2026-09-09 | `bf8305379836f437` |
+| Architecture | `epreuves/epreuve_verdict_charge.py` | — | 4 Ko | 2026-09-17 | `520726b0da16531d` |
 | Architecture | `epreuves/epreuve_verdict_rassurant.py` | — | 4 Ko | 2026-09-15 | `6a879be37d372bcc` |
 | Architecture | `epreuves/epreuve_verdicts_rituel.py` | — | 5 Ko | 2026-09-09 | `2915b019ed8087fd` |
 | Architecture | `epreuves/epreuve_verifie_rendu.py` | — | 3 Ko | 2026-09-06 | `8217ab3dbef91bf5` |
@@ -685,7 +690,8 @@
 | Architecture | `outillage/Register-NexusBoucleLocale.ps1` | — | 5 Ko | 2026-09-13 | `ce1094b535996956` |
 | Architecture | `outillage/Register-NexusTraque.ps1` | — | 5 Ko | 2026-09-13 | `f9cae3b200a5ed6f` |
 | Architecture | `outillage/Register-NexusVitrine.ps1` | — | 6 Ko | 2026-09-13 | `a51ebcca3a3d2df2` |
-| Architecture | `outillage/Resolve-NexusShell.ps1` | — | 2 Ko | 2026-09-13 | `d8d0835f924645f3` |
+| Architecture | `outillage/Resolve-NexusShell.ps1` | — | 5 Ko | 2026-09-17 | `cadc3af55ad677f4` |
+| Architecture | `outillage/Resolve-NexusShell.ps1.avant-remplacement` | — | 2 Ko | 2026-09-13 | `d8d0835f924645f3` |
 | Architecture | `outillage/competences/arbitrer.txt` | Note d'architecture | 3 Ko | 2026-09-06 | `6c8203e5474367b2` |
 | Architecture | `outillage/competences/relire-code.txt` | Note d'architecture | 1 Ko | 2026-09-06 | `74ac48948ff2445d` |
 | Architecture | `outillage/competences/repondre-court.txt` | Note d'architecture | 614 o | 2026-09-06 | `65d3d5329a4babd3` |
@@ -723,6 +729,7 @@
 | Architecture | `outillage/nexus_libs.py` | — | 3 Ko | 2026-09-06 | `d2512ab99673d731` |
 | Architecture | `outillage/nexus_livres.py` | — | 11 Ko | 2026-09-14 | `41f34456215d3ef1` |
 | Architecture | `outillage/nexus_loi1.py` | — | 9 Ko | 2026-09-14 | `3c8447dca995275a` |
+| Architecture | `outillage/nexus_mcp_readme.py` | — | 22 Ko | 2026-09-17 | `161db8ffae8466ea` |
 | Architecture | `outillage/nexus_mesure_cache.py` | — | 8 Ko | 2026-09-14 | `b5b5ad404a88d362` |
 | Architecture | `outillage/nexus_ombre.py` | — | 5 Ko | 2026-09-09 | `82415fad1caae511` |
 | Architecture | `outillage/nexus_outillage.py` | — | 35 Ko | 2026-09-09 | `a037ca587d190645` |
@@ -748,7 +755,7 @@
 | Architecture | `outillage/nexus_sonde_aveugle.py` | — | 4 Ko | 2026-09-06 | `4610bca9b80adb96` |
 | Architecture | `outillage/nexus_sonde_schema.py` | — | 13 Ko | 2026-09-14 | `537c5740daa01b02` |
 | Architecture | `outillage/nexus_stats_jsonl.py` | — | 6 Ko | 2026-09-06 | `9bf65a3f349486af` |
-| Architecture | `outillage/nexus_taches.py` | — | 19 Ko | 2026-09-16 | `3abe86ee79574b2f` |
+| Architecture | `outillage/nexus_taches.py` | — | 19 Ko | 2026-09-17 | `0e37e0d851a369c7` |
 | Architecture | `outillage/nexus_test_outillage.py` | — | 25 Ko | 2026-09-06 | `52036273fe934bba` |
 | Architecture | `outillage/nexus_traque.py` | — | 20 Ko | 2026-09-14 | `442d6afeef4983be` |
 | Architecture | `outillage/nexus_veille_moteur.py` | — | 21 Ko | 2026-09-15 | `7246fda9f382edf6` |
@@ -760,7 +767,7 @@
 | Architecture | `outillage/rituels/ACHEVEMENT.md` | — | 5 Ko | 2026-09-07 | `2f5c4b7dbab00f84` |
 | Architecture | `outillage/rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-06 | `d33a9cd20d953d7d` |
 | Architecture | `outillage/rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-07 | `dc5e0c6fa0b788d2` |
-| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1434 Ko | 2026-09-16 | `aac296a186c74e18` |
+| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1434 Ko | 2026-09-16 | `bc8402c1710cdb93` |
 | Architecture | `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | — | 37 Ko | 2026-09-06 | `1f94b6bf8244d354` |
 | Architecture | `outillage/rituels/CORPUS_LIVRES.md` | — | 6 Ko | 2026-09-06 | `7a297119dcca2efd` |
 | Architecture | `outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md` | — | 7 Ko | 2026-09-06 | `8fb3057f414f2e54` |
@@ -780,6 +787,7 @@
 | Architecture | `outillage/rituels/QUARANTAINE/RECONCILIATION.md` | — | 7 Ko | 2026-09-06 | `78b8578ff364275d` |
 | Architecture | `outillage/rituels/QUARANTAINE/_POINTEUR_QUARANTAINE.md` | — | 2 Ko | 2026-09-06 | `31a71d8cf21f6046` |
 | Architecture | `outillage/rituels/README.md` | — | 2 Ko | 2026-09-06 | `60b2994065e0eef6` |
+| Architecture | `outillage/rituels/README_MCP.md` | — | 360 o | 2026-09-17 | `41c0b9764bc42675` |
 | Architecture | `outillage/rituels/RESTE-A-FAIRE.md` | — | 21 Ko | 2026-09-07 | `1dac0b01034a2c41` |
 | Architecture | `outillage/rituels/SAS_CHECKPOINT_ORPHELIN_2026-09-02.md` | — | 13 Ko | 2026-09-06 | `a2b9c9ae04e392d0` |
 | Architecture | `outillage/rituels/SAUVETAGE_2026-09-01/README.md` | — | 3 Ko | 2026-09-06 | `576579692f15d46a` |
@@ -802,7 +810,7 @@
 | Architecture | `outillage/rituels/frontiere_reference.json` | — | 2 Ko | 2026-09-07 | `d95c135ed811ed9b` |
 | Architecture | `outillage/rituels/orphelines_reference.json` | — | 17 o | 2026-09-06 | `19f6520b84322b8e` |
 | Architecture | `outillage/rituels/outillage_reference.json` | — | 367 o | 2026-09-16 | `cd4e2a267d9a0800` |
-| Architecture | `outillage/rituels/taches.jsonl` | — | 28 Ko | 2026-09-16 | `cad7d7c9b13cc786` |
+| Architecture | `outillage/rituels/taches.jsonl` | — | 60 Ko | 2026-09-17 | `c805b1797ef4564f` |
 | Architecture | `outillage/tarifs_ollama_cloud.json` | — | 2 Ko | 2026-09-14 | `c41e8087ce365472` |
 | Architecture | `references/CODE_ENZO/OS_Pipeline_MT5_forge/.dockerignore` | — | 96 o | 2026-08-22 | `7d249627df3cd118` |
 | Architecture | `references/CODE_ENZO/OS_Pipeline_MT5_forge/.gitattributes` | — | 93 o | 2026-08-22 | `59ac1b0bb6f8859b` |
@@ -10415,7 +10423,7 @@
 | Architecture | `scripts/nexus_agent.py.avant-patch` | — | 49 Ko | 2026-08-30 | `310e3bab9ab3d1fb` |
 | Architecture | `scripts/nexus_appliquer.py` | — | 16 Ko | 2026-09-16 | `7a3ec59577b3473b` |
 | Architecture | `scripts/nexus_boucle_locale.py` | — | 10 Ko | 2026-09-16 | `89cb00b262cebb97` |
-| Architecture | `scripts/nexus_charge.py` | — | 19 Ko | 2026-09-14 | `6b3eb415c7a104c0` |
+| Architecture | `scripts/nexus_charge.py` | — | 19 Ko | 2026-09-17 | `729e109d6f636b02` |
 | Architecture | `scripts/nexus_conformite.py` | — | 109 Ko | 2026-09-16 | `871afaf73fa29d41` |
 | Architecture | `scripts/nexus_conformite.py.avant-patch` | — | 35 Ko | 2026-08-30 | `1ccee0e7fa3cffd4` |
 | Architecture | `scripts/nexus_creer.py` | — | 10 Ko | 2026-09-15 | `c63fd051fd2e9167` |
@@ -10479,7 +10487,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 10420 |
+| Architecture | 10428 |
 | Obsolète | 2 |
 
 ---
