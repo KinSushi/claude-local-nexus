@@ -2987,6 +2987,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
       echoFichiers = fichiersJoints
         .map((f) => `\n${f.chemin} · ${f.taille} octets · ${f.empreinte}`)
         .join("");
+      echoFichiers += `\njoint : ${fichiersJoints.length} fichier(s), ${Buffer.byteLength(contenuFichiers)} octets transmis au modele`;
     }
     let noteEcartes = "";
     if (fichiersEcartes.length) {
