@@ -29787,3 +29787,23 @@ sa contre-épreuve.
   ambigu et mérite d'être regardé.
 * **T-20260917-007** : l'extraction du bloc `TOOLS` rend toujours zéro outil ; le
   générateur refuse d'écrire plutôt que de mentir, mais il ne produit rien.
+
+### Rectification, quelques minutes plus tard
+
+La section ci-dessus affirmait : « `SIM115 16 -> 1` a été signalé comme
+régression alors que c'est une **amélioration** de 16 à 1. Le message est
+ambigu. » **C'est faux.**
+
+Le relevé réel est `SIM115 16 -> 18` : une vraie régression de deux, causée par
+le cliquet que je venais de poser — deux `open()` sans gestionnaire de contexte
+dans sa contre-épreuve. Le contrôle d'outillage avait raison, et son message
+n'était pas ambigu : c'est ma lecture qui l'a tronqué à « 16 -> 1 » en coupant
+la ligne affichée.
+
+Corrigé : les deux `open()` passent en `with`, le compte revient à 16, et le
+cliquet a été ré-éprouvé après la pose — forward 0, contre-épreuve 0.
+
+La leçon n'est pas neuve dans ce dépôt et se répète : **un instrument exact, une
+conclusion fausse.** J'ai lu une sortie tronquée et accusé l'instrument. C'est
+la cinquième fois de ce tour qu'une hypothèse est réfutée par la mesure, et la
+seule où j'avais déjà écrit la conclusion fausse avant de la vérifier.

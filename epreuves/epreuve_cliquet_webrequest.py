@@ -95,15 +95,17 @@ def _contre_epreuve():
         # Étape 1 : sans -UseBasicParsing (devrait être fautif)
         with open(tmp_path, "w", encoding="utf-8") as f:
             f.write("Invoke-WebRequest http://example.com\n")
-        fautif1 = any(_is_faulty(cmd) for _, cmd in _assemble_commands(
-            open(tmp_path, "r", encoding="utf-8").readlines()))
+        with open(tmp_path, "r", encoding="utf-8") as f:
+            fautif1 = any(_is_faulty(cmd) for _, cmd in _assemble_commands(
+                f.readlines()))
         print("Etape 1 : attendu FAUTIF, obtenu %s" % ("FAUTIF" if fautif1 else "OK"))
 
         # Étape 2 : avec -UseBasicParsing (ne doit plus être fautif)
         with open(tmp_path, "w", encoding="utf-8") as f:
             f.write("Invoke-WebRequest -UseBasicParsing http://example.com\n")
-        fautif2 = any(_is_faulty(cmd) for _, cmd in _assemble_commands(
-            open(tmp_path, "r", encoding="utf-8").readlines()))
+        with open(tmp_path, "r", encoding="utf-8") as f:
+            fautif2 = any(_is_faulty(cmd) for _, cmd in _assemble_commands(
+                f.readlines()))
         print("Etape 2 : attendu OK, obtenu %s" % ("OK" if not fautif2 else "FAUTIF"))
 
         conclusion = "CONCLUSION : OK" if (fautif1 and not fautif2) else "CONCLUSION : ECHEC"
