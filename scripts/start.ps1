@@ -93,7 +93,7 @@ function Confirm-MoteurOllama {
     # On teste AVANT d'attendre : quand le moteur tourne deja, ce chemin
     # ne coute rien.
     try {
-        Invoke-WebRequest -Uri $sonde -TimeoutSec 3 -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri $sonde -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing | Out-Null
         Write-Host "  Moteur Ollama deja en service." -ForegroundColor Green
         return $true
     } catch { }
@@ -118,7 +118,7 @@ function Confirm-MoteurOllama {
     for ($i = 0; $i -lt 30; $i++) {
         Start-Sleep -Seconds 1
         try {
-            Invoke-WebRequest -Uri $sonde -TimeoutSec 2 -ErrorAction Stop | Out-Null
+            Invoke-WebRequest -Uri $sonde -TimeoutSec 2 -ErrorAction Stop -UseBasicParsing | Out-Null
             Write-Host "  Moteur Ollama pret apres $($i + 1) s." -ForegroundColor Green
             return $true
         } catch { }
@@ -259,7 +259,7 @@ for ($i = 0; $i -lt 60; $i++) {
     # quatre secondes a chaque reprise sans jamais rien verifier.
     if ($i -gt 0) { Start-Sleep -Seconds 4 }
     try {
-        $r = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop
+        $r = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop -UseBasicParsing
         if ($r.StatusCode -eq 200) { $pret = $true; break }
     } catch { Write-Host "." -NoNewline }
 }

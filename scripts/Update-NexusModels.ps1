@@ -83,22 +83,46 @@ function Save-FichiersGeneres {
         [Parameter(Mandatory)][string]$Message
     )
     try {
-        $status = git -C $Racine status --porcelain -- $Chemins 2>&1
+        $eap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $status = git -C $Racine status --porcelain -- $Chemins 2>&1
+        } finally {
+            $ErrorActionPreference = $eap
+        }
         if ($LASTEXITCODE -ne 0) {
             return "ECHEC : $status"
         }
         if (-not $status) {
             return 'RIEN'
         }
-        $add = git -C $Racine add -- $Chemins 2>&1
+        $eap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $add = git -C $Racine add -- $Chemins 2>&1
+        } finally {
+            $ErrorActionPreference = $eap
+        }
         if ($LASTEXITCODE -ne 0) {
             return "ECHEC : $add"
         }
-        $commit = git -C $Racine commit -m $Message -- $Chemins 2>&1
+        $eap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $commit = git -C $Racine commit -m $Message -- $Chemins 2>&1
+        } finally {
+            $ErrorActionPreference = $eap
+        }
         if ($LASTEXITCODE -ne 0) {
             return "ECHEC : $commit"
         }
-        $sha = git -C $Racine rev-parse --short HEAD 2>&1
+        $eap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $sha = git -C $Racine rev-parse --short HEAD 2>&1
+        } finally {
+            $ErrorActionPreference = $eap
+        }
         if ($LASTEXITCODE -ne 0) {
             return "ECHEC : $sha"
         }
@@ -152,7 +176,13 @@ if ($SyncLocal) {
     Write-Log "Rapatriement des modeles declares mais absents"
     $pullArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_pull_host.py"), "--manquants")
     if ($DryRun) { $pullArgs += "--dry-run" }
-    & $python @pullArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $python @pullArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    } finally {
+        $ErrorActionPreference = $eap
+    }
     if ($LASTEXITCODE -ne 0) {
         # Non bloquant : un modele de second rang manquant ne doit pas
         # empecher la mise a jour du reste. La conformite, elle, tranchera.
@@ -179,7 +209,13 @@ if ($SyncWeights) {
     Write-Log "Rafraichissement des poids des modeles installes"
     $majArgs = @((Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_maj_modeles.py"))
     if (-not $DryRun) { $majArgs += "--appliquer" }
-    & $python @majArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $python @majArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+    } finally {
+        $ErrorActionPreference = $eap
+    }
     if ($LASTEXITCODE -ne 0) {
         # Non bloquant, pour la meme raison que le rapatriement : un modele
         # qui refuse de se mettre a jour ne doit pas empecher la mise a jour
@@ -206,7 +242,13 @@ if ($DryRun)  { $genArgs += "--dry-run" }
 if ($NoValidate) { $genArgs += "--no-validate" }
 
 Write-Log "Generation de la configuration"
-& $python @genArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+$eap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $python @genArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+} finally {
+    $ErrorActionPreference = $eap
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Generation en echec : configuration inchangee" "ERROR"
     exit 1
@@ -227,8 +269,14 @@ if ($DryRun) {
 # parfaitement valide, et les dix modeles rendaient 404 un par un sans
 # que rien ne relie ces echecs entre eux.
 Write-Log "Controle de conformite"
-& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_conformite.py") --avant-demarrage 2>&1 |
-    Tee-Object -FilePath $LogPath -Append
+$eap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_conformite.py") --avant-demarrage 2>&1 |
+        Tee-Object -FilePath $LogPath -Append
+} finally {
+    $ErrorActionPreference = $eap
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Non conforme : LiteLLM n'a PAS ete redemarre" "ERROR"
     Write-Log "Restauration possible depuis $backup" "WARN"
@@ -248,7 +296,13 @@ if ($Restart) {
         # en cas d'échec on consigne l'erreur et on arrête le script avec
         # un code non nul, évitant ainsi que le processus continue comme si
         # le service était opérationnel.
-        $restartOutput = docker compose restart litellm 2>&1
+        $eap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $restartOutput = docker compose restart litellm 2>&1
+        } finally {
+            $ErrorActionPreference = $eap
+        }
         $restartExit   = $LASTEXITCODE
         $restartOutput | Tee-Object -FilePath $LogPath -Append
         if ($restartExit -ne 0) {
@@ -273,7 +327,7 @@ if ($Restart) {
     $pret = $false
     for ($essai = 1; $essai -le 60; $essai++) {
         try {
-            $reponse = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop
+            $reponse = Invoke-WebRequest -Uri $HealthUrl -TimeoutSec 5 -ErrorAction Stop -UseBasicParsing
             if ($reponse.StatusCode -eq 200) { $pret = $true; break }
         } catch {
             # Port ferme, delai depasse ou reponse non 200 : on retente.
@@ -286,8 +340,14 @@ if ($Restart) {
     }
 
     Write-Log "Smoke test"
-    & (Join-Path $PSScriptRoot "Test-NexusSmoke.ps1") -IncludeRouters 2>&1 |
-        Tee-Object -FilePath $LogPath -Append
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & (Join-Path $PSScriptRoot "Test-NexusSmoke.ps1") -IncludeRouters 2>&1 |
+            Tee-Object -FilePath $LogPath -Append
+    } finally {
+        $ErrorActionPreference = $eap
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Log "Smoke test en echec : verifier 'docker compose logs litellm'" "ERROR"
         exit 1
@@ -301,8 +361,14 @@ if ($Restart) {
     # qu'elle fonctionne est pire qu'une releve absente -- on ne s'apercoit
     # de rien jusqu'au jour ou l'abonnement s'arrete.
     Write-Log "Verification de la releve locale"
-    & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_releve.py") 2>&1 |
-        Tee-Object -FilePath $LogPath -Append
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_releve.py") 2>&1 |
+            Tee-Object -FilePath $LogPath -Append
+    } finally {
+        $ErrorActionPreference = $eap
+    }
     if ($LASTEXITCODE -ne 0) {
         # Avertissement et non arret : la passerelle reste utilisable, et
         # bloquer la mise a jour laisserait une configuration a moitie
@@ -327,8 +393,14 @@ if ($Restart) {
 # vraiment. Non bloquant : perdre une mise a jour reussie pour un rapport
 # serait un mauvais echange.
 Write-Log "Regeneration du cockpit"
-& $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_state.py") 2>&1 |
-    ForEach-Object { Write-Log "  $_" }
+$eap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $python (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts") "nexus_state.py") 2>&1 |
+        ForEach-Object { Write-Log "  $_" }
+} finally {
+    $ErrorActionPreference = $eap
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Log "Cockpit non regenere : outillage/rituels/STATE.md reste date" "WARN"
 }

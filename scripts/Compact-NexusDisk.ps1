@@ -178,7 +178,7 @@ try {
             for ($i = 0; $i -lt 25; $i++) {
                 Start-Sleep -Seconds 6
                 try {
-                    $r = Invoke-WebRequest -Uri $HealthCheckUrl -TimeoutSec 5 -ErrorAction Stop
+                    $r = Invoke-WebRequest -Uri $HealthCheckUrl -TimeoutSec 5 -ErrorAction Stop -UseBasicParsing
                     if ($r.StatusCode -eq 200) { $pileDebout = $true; break }
                 } catch {
                     Write-Error -ErrorAction SilentlyContinue $_

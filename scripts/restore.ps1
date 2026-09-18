@@ -127,7 +127,7 @@ try {
         $attempt++
         Start-Sleep -Seconds 2
         try {
-            Invoke-WebRequest -Uri "$ollamaEngineUrl/api/version" -TimeoutSec 3 -ErrorAction Stop | Out-Null
+            Invoke-WebRequest -Uri "$ollamaEngineUrl/api/version" -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing | Out-Null
             $ollamaReady = $true
         } catch {
             $ollamaReady = $false
