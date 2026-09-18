@@ -12,6 +12,19 @@ compte le plus.
 Un refus qui devient illisible au moment ou il compte coute plus cher que
 pas de refus du tout.
 
+Mesure du 2026-09-18, vecue par une session voisine : un appel a l'outil de
+recherche dans les livres portait les parametres query et k, qui appartiennent
+a un AUTRE outil. L'outil attend question. L'appel est donc parti avec deux
+parametres inconnus et aucun valide -- et l'outil les a IGNORES EN SILENCE,
+se contentant de dire que son parametre attendu manquait. La session en a
+conclu que l'outil etait casse, puis que le message lui mentait : deux
+conclusions fausses et un signalement errone chez le mainteneur.
+
+Le refus NOMME desormais les parametres recus qu'il ne reconnait pas. Ce
+mecanisme a echoue silencieusement a sa premiere pose, parce qu'il cherchait
+l'outil sous un nom invente : raison de plus pour qu'une epreuve le surveille,
+car son echec ne fait aucun bruit.
+
 L'epreuve parle au serveur par son protocole reel : node, JSON-RPC ligne par
 ligne sur stdin/stdout, sequence initialize puis tools/call.
 """
@@ -207,6 +220,50 @@ def cas_nominal():
     return True
 
 
+def cas_inconnus():
+    """Cas 5 : un refus doit NOMMER les parametres recus qu'il ne connait pas.
+
+    L'appel porte query et k, inconnus de nexus_livres, et aucun parametre
+    valide. Le critere exige les trois a la fois : text de type chaine, le
+    parametre attendu question nomme, et les DEUX inconnus nommes. Sans ce
+    dernier point, le cas ne mesurerait que ce que le cas 1 mesure deja.
+    """
+    nom_cas = "nexus_livres inconnus nommes"
+    try:
+        reponse = appeler_outil(
+            "nexus_livres", {"query": "tests", "k": 3}, DELAI_DEFAUT
+        )
+    except Exception as raison:  # noqa: BLE001
+        ligne_harness(False, nom_cas, "appel impossible : %s" % (raison,))
+        return False
+    texte, raison = extraire_text(reponse)
+    if texte is None:
+        ligne_harness(False, nom_cas, "type manquant : %s" % (raison,))
+        return False
+    if "question" not in texte:
+        ligne_harness(
+            False,
+            nom_cas,
+            "le refus ne nomme pas le parametre attendu question",
+        )
+        return False
+    inconnus_absents = [nom for nom in ("query", "k") if nom not in texte]
+    if inconnus_absents:
+        ligne_harness(
+            False,
+            nom_cas,
+            "le refus ne nomme pas les parametres inconnus recus : %s"
+            % (", ".join(inconnus_absents),),
+        )
+        return False
+    ligne_harness(
+        True,
+        nom_cas,
+        "refus nommant question et les deux inconnus recus (query, k)",
+    )
+    return True
+
+
 def cas_contre_epreuve():
     """Cas 4 : le critere doit REJETER un rendu fautif construit en memoire."""
     nom_cas = "contre-epreuve du critere"
@@ -231,22 +288,23 @@ def cas_contre_epreuve():
 
 
 def main():
-    """Execute les quatre cas et rend le code de sortie."""
+    """Execute les cinq cas et rend le code de sortie."""
     if shutil.which("node") is None:
         ligne_harness(False, "environnement", "node introuvable dans le PATH")
-        print("conclusion : 0 cas reussi sur 4 -- mesure impossible")
+        print("conclusion : 0 cas reussi sur 5 -- mesure impossible")
         return 1
     if not os.path.isfile(CHEMIN_SERVEUR):
         ligne_harness(
             False, "environnement", "serveur introuvable : %s" % (CHEMIN_SERVEUR,)
         )
-        print("conclusion : 0 cas reussi sur 4 -- mesure impossible")
+        print("conclusion : 0 cas reussi sur 5 -- mesure impossible")
         return 1
 
     resultats = [
         cas_refus("nexus_livres", {}, ["question"], "nexus_livres refus"),
         cas_refus("nexus_apply", {}, ["texte", "cible"], "nexus_apply refus"),
         cas_nominal(),
+        cas_inconnus(),
         cas_contre_epreuve(),
     ]
     reussis = sum(1 for r in resultats if r)

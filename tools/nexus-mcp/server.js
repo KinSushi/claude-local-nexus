@@ -2690,6 +2690,16 @@ function exigerEntierPositif(valeur, nom) {
   return valeur;
 }
 
+// Un paramètre inconnu accepté en silence fait conclure que l'outil est cassé :
+// rien ne distingue « paramètre oublié » de « nom de paramètre erroné ».
+function parametresInconnus(nomOutil, args) {
+  if (args === null || typeof args !== "object" || Array.isArray(args)) return [];
+  const outil = TOOLS.find((o) => o && o.name === nomOutil);
+  if (!outil || !outil.inputSchema || !outil.inputSchema.properties) return [];
+  const declarees = Object.keys(outil.inputSchema.properties);
+  return Object.keys(args).filter((cle) => !declarees.includes(cle)).sort();
+}
+
 function exigerTexte(valeur, nom) {
   if (typeof valeur !== "string" || !valeur.trim()) {
     throw new ErreurProtocole(
@@ -3521,7 +3531,13 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
   }
   if (name === "nexus_livres") {
     const q = String(args.question || "");
-    if (!q) return "Le paramètre attendu s'appelle question et doit être une chaîne non vide. La recherche porte sur les livres indexés en local.";
+    if (!q) {
+      const base = "Le paramètre attendu s'appelle question et doit être une chaîne non vide. La recherche porte sur les livres indexés en local.";
+      const inconnus = parametresInconnus(name, args);
+      return inconnus.length
+        ? base + " Paramètres reçus non reconnus par cet outil : " + inconnus.join(", ") + "."
+        : base;
+    }
     return await runPython(
       [path.join(INSTALL_ROOT, "scripts", "nexus_livres_semantique.py"), "search", q]);
   }
@@ -3535,7 +3551,11 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     const cible = String(args.cible || "");
     const nom = String(args.nom || "mcp");
     if (!texte || !cible) {
-      return "Les paramètres attendus sont texte et cible. texte contient le patch avec ses marqueurs et cible est le chemin du fichier visé.";
+      const base = "Les paramètres attendus sont texte et cible. texte contient le patch avec ses marqueurs et cible est le chemin du fichier visé.";
+      const inconnus = parametresInconnus(name, args);
+      return inconnus.length
+        ? base + " Paramètres reçus non reconnus par cet outil : " + inconnus.join(", ") + "."
+        : base;
     }
     const fs = require("node:fs");
     const os = require("node:os");
