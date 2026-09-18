@@ -1,6 +1,6 @@
 # Boussole
 
-> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-18 03:51.
+> Index du dépôt, généré par `python outillage/nexus_boussole.py` le 2026-09-18 04:31.
 > Localiser sans chercher, verifier sans commande jetable.
 > `.env` en est volontairement absent : ni indexé, ni empreinté.
 
@@ -15,7 +15,7 @@
 | Inventaire | `model_list.txt` | Modèles locaux à télécharger | 601 o | 2026-09-02 | `15c95c6f625eeeaa` |
 | Pont | `.mcp.json` | Déclaration du serveur MCP pour Claude Code | 246 o | 2026-08-29 | `2622bc6acf81e922` |
 | Pont | `Set-ClaudeModel.ps1` | Choix explicite du mode d'exécution de Claude Code | 12 Ko | 2026-09-02 | `cd68d2299da2ed40` |
-| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 166 Ko | 2026-09-17 | `d00e4517d16f77a3` |
+| Pont | `tools/nexus-mcp/server.js` | Serveur MCP : les modèles comme outils | 168 Ko | 2026-09-18 | `f2816287fb1adcd0` |
 | Génération | `scripts/Update-NexusModels.ps1` | Orchestrateur de mise à jour | 17 Ko | 2026-09-18 | `ae1075ff300a181a` |
 | Génération | `scripts/nexus_generate.py` | Régénère les zones AUTOGEN | 96 Ko | 2026-09-15 | `319f885206dad1da` |
 | Vérification | `outillage/nexus_mcp_probe.py` | Sonde les outils du pont MCP | 19 Ko | 2026-09-14 | `fe7e35328fc707d4` |
@@ -31,12 +31,12 @@
 | Exploitation | `scripts/restore.ps1` | Restauration | 8 Ko | 2026-09-18 | `de93ebad48f0a767` |
 | Exploitation | `scripts/start.ps1` | Démarrage de la pile | 13 Ko | 2026-09-18 | `920f3c69492f6b23` |
 | Exploitation | `scripts/stop.ps1` | Arrêt de la pile | 4 Ko | 2026-09-02 | `ea4e8f7b82abfa83` |
-| Rituel | `PROGRESS.MD` | Historique des décisions et des erreurs | 10 Ko | 2026-09-18 | `37ad5a67ee10eddd` |
+| Rituel | `PROGRESS.MD` | Historique des décisions et des erreurs | 11 Ko | 2026-09-18 | `a98bafe621c307a9` |
 | Rituel | `outillage/nexus_boussole.py` | Régénère cette boussole | 12 Ko | 2026-09-07 | `f4b942bab7a8e4cc` |
-| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1641 Ko | 2026-09-17 | `44a03e69f075a769` |
-| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1663 Ko | 2026-09-17 | `bca2a4e14c5d29a1` |
+| Rituel | `outillage/rituels/BOUSSOLE.md` | Cet index | 1644 Ko | 2026-09-18 | `79c84112f6409d6b` |
+| Rituel | `outillage/rituels/CHECKLIST_COCKPIT.MD` | Sujets ouverts | 1669 Ko | 2026-09-18 | `09f36bf7e9adfcd7` |
 | Rituel | `outillage/rituels/RESUME.ps1` | Reprise de session | 3 Ko | 2026-09-06 | `770e25b546079761` |
-| Rituel | `outillage/rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-18 | `c9f987b1b6b5d839` |
+| Rituel | `outillage/rituels/STATE.md` | État mesuré — généré, ne pas éditer | 3 Ko | 2026-09-18 | `9983e503a0218815` |
 | Rituel | `scripts/nexus_state.py` | Régénère STATE.md par mesure | 25 Ko | 2026-09-14 | `b4b9edf848c3d340` |
 | Documentation | `README.md` | Vue d'ensemble et installation | 15 Ko | 2026-09-16 | `c73c79237208997c` |
 | Documentation | `docs/pont-local-abonnement.md` | Associer modèles locaux et abonnement | 16 Ko | 2026-09-06 | `ee756cc3eb305c0c` |
@@ -53,9 +53,9 @@
 | Architecture | `.ruff_cache/0.16.5/10014598889515084454` | — | 244 o | 2026-09-14 | `f3b12a55d1fc3d8a` |
 | Architecture | `.ruff_cache/0.16.5/10020963307576928546` | — | 1 Ko | 2026-09-13 | `6a75659aa992c1bc` |
 | Architecture | `.ruff_cache/0.16.5/10030628807976243294` | — | 3 Ko | 2026-09-13 | `43c7dc08ae3aa7d4` |
-| Architecture | `.ruff_cache/0.16.5/10040030221802267965` | — | 8 Ko | 2026-09-14 | `40732100948b62d3` |
+| Architecture | `.ruff_cache/0.16.5/10040030221802267965` | — | 11 Ko | 2026-09-18 | `ddcfb0684952ff93` |
 | Architecture | `.ruff_cache/0.16.5/1009636002996594937` | — | 236 o | 2026-09-14 | `a6c13fa1dd4d6a74` |
-| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 9 Ko | 2026-09-17 | `1fd0973962c40147` |
+| Architecture | `.ruff_cache/0.16.5/10108054744112579873` | — | 9 Ko | 2026-09-18 | `34ee51833e799df2` |
 | Architecture | `.ruff_cache/0.16.5/10124619652482519485` | — | 172 o | 2026-09-07 | `dbafe849e13d69ec` |
 | Architecture | `.ruff_cache/0.16.5/10177341371865747424` | — | 204 o | 2026-09-17 | `5bd69080f3befcbf` |
 | Architecture | `.ruff_cache/0.16.5/10179678212708851550` | — | 4 Ko | 2026-09-01 | `799d8bfe9a949736` |
@@ -68,7 +68,7 @@
 | Architecture | `.ruff_cache/0.16.5/10340492881879944923` | — | 204 o | 2026-09-15 | `9a72f81d1878c3fe` |
 | Architecture | `.ruff_cache/0.16.5/10374995421127269463` | — | 292 o | 2026-09-14 | `15109ce324d7847d` |
 | Architecture | `.ruff_cache/0.16.5/1040640668841026300` | — | 172 o | 2026-09-01 | `1ef13d460ee43e10` |
-| Architecture | `.ruff_cache/0.16.5/1041863140390925504` | — | 4 Ko | 2026-09-14 | `e7b9b36f0efc90ce` |
+| Architecture | `.ruff_cache/0.16.5/1041863140390925504` | — | 4 Ko | 2026-09-18 | `3424b5ceec664236` |
 | Architecture | `.ruff_cache/0.16.5/10422906016820732272` | — | 156 o | 2026-09-16 | `973e7735812022e0` |
 | Architecture | `.ruff_cache/0.16.5/10474080524257626383` | — | 4 Ko | 2026-09-07 | `320c7e9e4eb51091` |
 | Architecture | `.ruff_cache/0.16.5/10475948851977677359` | — | 188 o | 2026-09-14 | `74882ce7a73c2893` |
@@ -107,11 +107,11 @@
 | Architecture | `.ruff_cache/0.16.5/11870650972443376488` | — | 268 o | 2026-08-31 | `7e65f846593f3f85` |
 | Architecture | `.ruff_cache/0.16.5/12086519440408152946` | — | 252 o | 2026-09-15 | `998a952c9fb09d29` |
 | Architecture | `.ruff_cache/0.16.5/12097943216486239122` | — | 476 o | 2026-09-02 | `6009f04d0f58f68c` |
-| Architecture | `.ruff_cache/0.16.5/12188456645946320487` | — | 4 Ko | 2026-09-14 | `c733f2ea6650a443` |
+| Architecture | `.ruff_cache/0.16.5/12188456645946320487` | — | 4 Ko | 2026-09-18 | `9892007933785d42` |
 | Architecture | `.ruff_cache/0.16.5/12283610345515842208` | — | 164 o | 2026-09-08 | `e7ec8b2cfbea0757` |
 | Architecture | `.ruff_cache/0.16.5/12305097964330132417` | — | 2 Ko | 2026-09-13 | `5adcddeae5c65e6c` |
 | Architecture | `.ruff_cache/0.16.5/12330413454252820957` | — | 252 o | 2026-09-15 | `c69965660f6032fc` |
-| Architecture | `.ruff_cache/0.16.5/12371781643915760102` | — | 11 Ko | 2026-09-18 | `63681c2aa005afcc` |
+| Architecture | `.ruff_cache/0.16.5/12371781643915760102` | — | 11 Ko | 2026-09-18 | `a73f3e8763f89d64` |
 | Architecture | `.ruff_cache/0.16.5/12443191087169482853` | — | 180 o | 2026-09-07 | `cfa7072b6beb7b04` |
 | Architecture | `.ruff_cache/0.16.5/12444162157776358107` | — | 4 Ko | 2026-09-08 | `d7cf87e4d68e6506` |
 | Architecture | `.ruff_cache/0.16.5/12494308228080905975` | — | 196 o | 2026-09-14 | `b7f4dab31c77e410` |
@@ -125,7 +125,7 @@
 | Architecture | `.ruff_cache/0.16.5/12928869064969548311` | — | 228 o | 2026-09-14 | `4e13bc962317e967` |
 | Architecture | `.ruff_cache/0.16.5/12955911775419094726` | — | 156 o | 2026-09-15 | `597e3f14fdff23cb` |
 | Architecture | `.ruff_cache/0.16.5/12960592870348287301` | — | 156 o | 2026-09-15 | `4cd7f88d2f756d72` |
-| Architecture | `.ruff_cache/0.16.5/13044583939176750697` | — | 6 Ko | 2026-09-14 | `a1db765985561f59` |
+| Architecture | `.ruff_cache/0.16.5/13044583939176750697` | — | 6 Ko | 2026-09-18 | `c6a41da839986db5` |
 | Architecture | `.ruff_cache/0.16.5/13106115938342738144` | — | 196 o | 2026-09-13 | `ca1b40e093bd0f31` |
 | Architecture | `.ruff_cache/0.16.5/13138782307495393148` | — | 164 o | 2026-09-08 | `d40c4c1a5baa9bff` |
 | Architecture | `.ruff_cache/0.16.5/13175943276361695574` | — | 188 o | 2026-09-14 | `ffc12630170768c9` |
@@ -137,7 +137,7 @@
 | Architecture | `.ruff_cache/0.16.5/13324294643101943425` | — | 164 o | 2026-09-14 | `98d159ba3838a5f6` |
 | Architecture | `.ruff_cache/0.16.5/13331253869860077648` | — | 156 o | 2026-09-16 | `4e24ff3d641ad6cb` |
 | Architecture | `.ruff_cache/0.16.5/13443779736450239840` | — | 228 o | 2026-09-13 | `8fd19d467eed5e22` |
-| Architecture | `.ruff_cache/0.16.5/13446392367267597956` | — | 2 Ko | 2026-09-18 | `46136de850fc50ba` |
+| Architecture | `.ruff_cache/0.16.5/13446392367267597956` | — | 2 Ko | 2026-09-18 | `9a08a202112eb3b9` |
 | Architecture | `.ruff_cache/0.16.5/13454085944863612442` | — | 2 Ko | 2026-08-31 | `f702be4df2bddcc9` |
 | Architecture | `.ruff_cache/0.16.5/13477884501641270653` | — | 4 Ko | 2026-09-14 | `da242fb2d19be95f` |
 | Architecture | `.ruff_cache/0.16.5/13492977601724131657` | — | 180 o | 2026-09-14 | `79dadab56fd8c31d` |
@@ -146,7 +146,7 @@
 | Architecture | `.ruff_cache/0.16.5/13908348014171704397` | — | 156 o | 2026-09-16 | `ba64bafda95e52d8` |
 | Architecture | `.ruff_cache/0.16.5/13954307803360208894` | — | 8 Ko | 2026-09-02 | `dfea66ee31123b3c` |
 | Architecture | `.ruff_cache/0.16.5/13983300566680506313` | — | 188 o | 2026-09-14 | `4c44dfc5c8a24a7f` |
-| Architecture | `.ruff_cache/0.16.5/14059106395295115456` | — | 4 Ko | 2026-09-18 | `961183868539524a` |
+| Architecture | `.ruff_cache/0.16.5/14059106395295115456` | — | 4 Ko | 2026-09-18 | `e226ddb1f5a35993` |
 | Architecture | `.ruff_cache/0.16.5/14162723902183003760` | — | 188 o | 2026-09-14 | `7eaad6cb242786bd` |
 | Architecture | `.ruff_cache/0.16.5/14194984766851969492` | — | 2 Ko | 2026-08-31 | `759366fc70225fa5` |
 | Architecture | `.ruff_cache/0.16.5/14237619000490327463` | — | 5 Ko | 2026-09-09 | `11765596d2ca6268` |
@@ -212,7 +212,7 @@
 | Architecture | `.ruff_cache/0.16.5/15898859826282287107` | — | 164 o | 2026-09-07 | `7843f40957be9dd7` |
 | Architecture | `.ruff_cache/0.16.5/15991078781346383157` | — | 244 o | 2026-09-01 | `c99d2a54d31c51fd` |
 | Architecture | `.ruff_cache/0.16.5/16002465631516078566` | — | 252 o | 2026-09-15 | `bcf152b5709f88fc` |
-| Architecture | `.ruff_cache/0.16.5/16057941055777274933` | — | 4 Ko | 2026-09-14 | `b80ee50779bfcaa4` |
+| Architecture | `.ruff_cache/0.16.5/16057941055777274933` | — | 4 Ko | 2026-09-18 | `701b5ff270173261` |
 | Architecture | `.ruff_cache/0.16.5/16130215954996115179` | — | 180 o | 2026-09-14 | `edfa91b4a11af448` |
 | Architecture | `.ruff_cache/0.16.5/16169287327535079027` | — | 156 o | 2026-09-16 | `ba2f0e19e6467a6d` |
 | Architecture | `.ruff_cache/0.16.5/16218083022222937193` | — | 8 Ko | 2026-09-14 | `e3b076f460aa7480` |
@@ -238,7 +238,7 @@
 | Architecture | `.ruff_cache/0.16.5/17321816017736170431` | — | 172 o | 2026-09-07 | `63f6a530c7132a6f` |
 | Architecture | `.ruff_cache/0.16.5/17341765443534343973` | — | 4 Ko | 2026-09-07 | `6e992c2054f3f057` |
 | Architecture | `.ruff_cache/0.16.5/17378449226791531954` | — | 172 o | 2026-09-01 | `4dbf7e0d22f69d78` |
-| Architecture | `.ruff_cache/0.16.5/1737940014446486211` | — | 11 Ko | 2026-09-18 | `8183f74582c26932` |
+| Architecture | `.ruff_cache/0.16.5/1737940014446486211` | — | 11 Ko | 2026-09-18 | `c3b709f3258a7334` |
 | Architecture | `.ruff_cache/0.16.5/17383864683153407835` | — | 364 o | 2026-09-08 | `f517f88342d3a390` |
 | Architecture | `.ruff_cache/0.16.5/17632243767547897970` | — | 196 o | 2026-09-13 | `d6520dc334a087ab` |
 | Architecture | `.ruff_cache/0.16.5/17632354879131024054` | — | 148 o | 2026-09-01 | `e0d05a01063a169a` |
@@ -348,7 +348,7 @@
 | Architecture | `.ruff_cache/0.16.5/5227205633219432526` | — | 204 o | 2026-09-09 | `f283bac49bebda9a` |
 | Architecture | `.ruff_cache/0.16.5/5228631008103488961` | — | 4 Ko | 2026-09-18 | `f7a739f26e86dc7c` |
 | Architecture | `.ruff_cache/0.16.5/5302484986518258830` | — | 204 o | 2026-09-09 | `87f7a86b1872d3eb` |
-| Architecture | `.ruff_cache/0.16.5/5316677615697581598` | — | 9 Ko | 2026-09-14 | `fef68618c1d9ab52` |
+| Architecture | `.ruff_cache/0.16.5/5316677615697581598` | — | 11 Ko | 2026-09-18 | `a722e5de65872fde` |
 | Architecture | `.ruff_cache/0.16.5/531949882072666125` | — | 4 Ko | 2026-09-08 | `bf44b59911643aa5` |
 | Architecture | `.ruff_cache/0.16.5/5341294849655593752` | — | 4 Ko | 2026-09-01 | `6c758aa00ae31604` |
 | Architecture | `.ruff_cache/0.16.5/5351516888629899221` | — | 164 o | 2026-09-13 | `f36dc4ae5e7a596f` |
@@ -416,6 +416,7 @@
 | Architecture | `.ruff_cache/0.16.5/7560987962123106106` | — | 212 o | 2026-09-01 | `8553ab6d0509a048` |
 | Architecture | `.ruff_cache/0.16.5/7606219367802137031` | — | 172 o | 2026-09-17 | `f141f68f80010ac1` |
 | Architecture | `.ruff_cache/0.16.5/7652897353638596374` | — | 3 Ko | 2026-09-07 | `054d4d5f11ad38df` |
+| Architecture | `.ruff_cache/0.16.5/7695002867068709131` | — | 156 o | 2026-09-18 | `a58d716b0f92f5a6` |
 | Architecture | `.ruff_cache/0.16.5/780373741907484047` | — | 7 Ko | 2026-09-02 | `a37e69c21e248f9a` |
 | Architecture | `.ruff_cache/0.16.5/7835122000426120804` | — | 2 Ko | 2026-09-14 | `7bc6272c79f02270` |
 | Architecture | `.ruff_cache/0.16.5/7890657028022083726` | — | 164 o | 2026-09-15 | `98fd37cf86dc98d8` |
@@ -562,7 +563,7 @@
 | Architecture | `epreuves/epreuve_cibles_shell.py` | — | 7 Ko | 2026-09-06 | `fdb3d02b57f548ba` |
 | Architecture | `epreuves/epreuve_cles_only.py` | — | 3 Ko | 2026-09-07 | `cda451f6ce62ed97` |
 | Architecture | `epreuves/epreuve_cliquet_encodage.py` | — | 8 Ko | 2026-09-17 | `e468ab7d93c73673` |
-| Architecture | `epreuves/epreuve_cliquet_webrequest.py` | — | 5 Ko | 2026-09-18 | `557cabf630f3e89b` |
+| Architecture | `epreuves/epreuve_cliquet_webrequest.py` | — | 5 Ko | 2026-09-18 | `ab3b0cc23df31912` |
 | Architecture | `epreuves/epreuve_commande_nexus.py` | — | 4 Ko | 2026-09-06 | `ecee856433936229` |
 | Architecture | `epreuves/epreuve_concentration_routage.py` | — | 4 Ko | 2026-09-08 | `4823fad7cadef855` |
 | Architecture | `epreuves/epreuve_conformite_fenetres.py` | — | 3 Ko | 2026-09-16 | `e020e18ec6f14bc9` |
@@ -790,7 +791,7 @@
 | Architecture | `outillage/rituels/ACHEVEMENT.md` | — | 5 Ko | 2026-09-07 | `2f5c4b7dbab00f84` |
 | Architecture | `outillage/rituels/A_POSER_global.json` | — | 8 Ko | 2026-09-06 | `d33a9cd20d953d7d` |
 | Architecture | `outillage/rituels/A_POSER_local.json` | — | 2 Ko | 2026-09-07 | `dc5e0c6fa0b788d2` |
-| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1435 Ko | 2026-09-17 | `09bcfff2869b9fe8` |
+| Architecture | `outillage/rituels/BOUSSOLE.csv` | — | 1437 Ko | 2026-09-18 | `d4d3ee973f67b195` |
 | Architecture | `outillage/rituels/CHECKLIST_LIVRE_VS_CODE.md` | — | 37 Ko | 2026-09-06 | `1f94b6bf8244d354` |
 | Architecture | `outillage/rituels/CORPUS_LIVRES.md` | — | 6 Ko | 2026-09-06 | `7a297119dcca2efd` |
 | Architecture | `outillage/rituels/DECHARGE_EA_MT5_2026-09-02.md` | — | 7 Ko | 2026-09-06 | `8fb3057f414f2e54` |
@@ -833,7 +834,7 @@
 | Architecture | `outillage/rituels/frontiere_reference.json` | — | 2 Ko | 2026-09-07 | `d95c135ed811ed9b` |
 | Architecture | `outillage/rituels/orphelines_reference.json` | — | 17 o | 2026-09-06 | `19f6520b84322b8e` |
 | Architecture | `outillage/rituels/outillage_reference.json` | — | 367 o | 2026-09-16 | `cd4e2a267d9a0800` |
-| Architecture | `outillage/rituels/taches.jsonl` | — | 69 Ko | 2026-09-18 | `eefdb45a599cc698` |
+| Architecture | `outillage/rituels/taches.jsonl` | — | 73 Ko | 2026-09-18 | `c9fbccca125e15c8` |
 | Architecture | `outillage/tarifs_ollama_cloud.json` | — | 2 Ko | 2026-09-14 | `c41e8087ce365472` |
 | Architecture | `references/CODE_ENZO/OS_Pipeline_MT5_forge/.dockerignore` | — | 96 o | 2026-08-22 | `7d249627df3cd118` |
 | Architecture | `references/CODE_ENZO/OS_Pipeline_MT5_forge/.gitattributes` | — | 93 o | 2026-08-22 | `59ac1b0bb6f8859b` |
@@ -10446,7 +10447,7 @@
 | Architecture | `scripts/nexus_agent.py.avant-patch` | — | 49 Ko | 2026-08-30 | `310e3bab9ab3d1fb` |
 | Architecture | `scripts/nexus_appliquer.py` | — | 16 Ko | 2026-09-16 | `7a3ec59577b3473b` |
 | Architecture | `scripts/nexus_boucle_locale.py` | — | 10 Ko | 2026-09-16 | `89cb00b262cebb97` |
-| Architecture | `scripts/nexus_charge.py` | — | 19 Ko | 2026-09-17 | `729e109d6f636b02` |
+| Architecture | `scripts/nexus_charge.py` | — | 20 Ko | 2026-09-18 | `ea88e9036a63789c` |
 | Architecture | `scripts/nexus_conformite.py` | — | 109 Ko | 2026-09-16 | `871afaf73fa29d41` |
 | Architecture | `scripts/nexus_conformite.py.avant-patch` | — | 35 Ko | 2026-08-30 | `1ccee0e7fa3cffd4` |
 | Architecture | `scripts/nexus_creer.py` | — | 10 Ko | 2026-09-15 | `c63fd051fd2e9167` |
@@ -10510,7 +10511,7 @@
 | Exploitation | 4 |
 | Rituel | 7 |
 | Documentation | 2 |
-| Architecture | 10451 |
+| Architecture | 10452 |
 | Obsolète | 2 |
 
 ---
