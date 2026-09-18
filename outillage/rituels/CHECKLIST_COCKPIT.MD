@@ -30138,3 +30138,82 @@ répond normalement avec les mêmes paramètres, donc ni le pont ni la passerell
 Un résultat **vide** doit rester un résultat **valide**, faute de quoi l'appelant
 ne peut pas distinguer « rien trouvé » de « l'outil est cassé » : exactement la
 distinction que les correctifs de la veille ont rendue explicite ailleurs.
+
+## Tour 2026-09-18 (14:30-16:00) — le refus qui casse le protocole, et une régression que mon propre test n'aurait pas vue
+
+Signalé par `ea-mt5`, qui a reporté plutôt que de contourner. Son appel à
+`nexus_livres` revenait `malformed result that failed schema validation`, avec un
+`invalid_union` sur `content[0]` dont il avait su isoler la branche utile :
+`expected: "string"` au chemin `text`.
+
+### La cause, lue et non supposée
+
+La boucle qui répond aux appels fait :
+
+```js
+reply(id, { content: [{ type: "text", text }], isError: false });
+```
+
+où `text` est ce que rend le handler. Presque tous rendent une **chaîne** — c'est
+la forme attendue. **Deux** rendaient un **objet** `{ content: [...] }`, qui se
+retrouvait placé *dans* le champ `text`. Recensement : exactement deux, et toutes
+deux sur des chemins de **refus**.
+
+C'est ce qui aggrave le défaut, et c'est la même classe que les trois refus
+corrigés la veille : **ceux qu'on emprunte quand on s'est trompé de paramètre**.
+Au moment où un message lisible compte le plus, l'appelant reçoit une erreur de
+schéma illisible.
+
+### L'hypothèse du pair était fausse, et la mesure le dit
+
+Il soupçonnait un corpus non indexé. En réalité il avait appelé sans `question` —
+le schéma ne déclare ni `query` ni `k` — ce qui emprunte le chemin de refus, et
+c'est *ce chemin-là* qui était malformé. Le nominal répond parfaitement : vérifié
+à travers le pont réel, 1027 caractères de résultats.
+
+Son diagnostic sur la **forme** était néanmoins exact, et c'est lui qui a compté :
+*un résultat vide doit rester un résultat valide.*
+
+### La régression que j'ai introduite, et ce qu'elle a révélé
+
+Le premier patch devait seulement changer la forme d'un message. Il a **supprimé
+le `if (!q)` qui gardait le refus** : le `return` est devenu inconditionnel,
+`nexus_livres` ne cherchait plus jamais. La syntaxe restait valide, donc
+`node --check` ne voyait rien. L'avertissement `RETIRE` de l'applicateur le disait
+en toutes lettres — je l'ai lu comme routinier.
+
+**Et le cas nominal de ma propre épreuve ne l'aurait pas vue** : il exigeait « une
+chaîne non vide », or un message de refus est une chaîne non vide. Il aurait été
+vert sur un outil entièrement cassé.
+
+Renforcé : le rendu nominal doit désormais **ne pas porter la marque du refus**,
+si bien que les deux cas sont complémentaires — l'un exige la marque, l'autre la
+refuse, et un outil bloqué sur son refus en fait rougir un. Détection prouvée en
+rejouant la régression dans un worktree : *« le rendu nominal ressemble au message
+de refus, l'outil ne fait plus son travail »*.
+
+### Le test qui compte interroge le vrai serveur
+
+`epreuves/epreuve_forme_rendu_mcp.py` lance `server.js` et lui parle en JSON-RPC
+sur stdin/stdout. Contre le code d'avant, les deux cas de refus rougissent avec
+le diagnostic exact du pair : `content[0].text n'est pas une chaine (type dict)`.
+
+Une analyse statique aurait suffi à détecter les deux `return { content:`. Elle
+n'aurait rien dit de ce que le client reçoit réellement — ni attrapé ma régression.
+
+### Un refus honnête du banc, à porter à son crédit
+
+Une consigne de câblage se contredisait : je demandais de recopier depuis un
+fichier que je ne joignais pas. Le modèle a répondu `NON VÉRIFIÉ` et a refusé de
+produire le patch, plutôt que d'inventer l'ancre. C'est exactement le comportement
+attendu, et il a évité une pose fausse.
+
+### État
+
+Commit `c461cbb`. Famille `forme-mcp`, quatre cas. Non-régression :
+`valide-mesure` 5, `shell` 24, zéro échec. T-20260918-009 fermée sur preuve
+`famille`.
+
+**À savoir, et dit plutôt que taise** : le serveur MCP en cours d'exécution porte
+encore l'ancienne version. Les sessions voisines ne bénéficient du correctif
+qu'après un redémarrage de leur pont.
