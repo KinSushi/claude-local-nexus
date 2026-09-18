@@ -29718,3 +29718,72 @@ avait écrit la réserve en la marquant **NON VÉRIFIÉE** ; je l'ai posée quan
 **Restent ouverts au registre** : 001, 002, 003, 004, 005, 006, 007 *neufs ce
 tour* ; 013, 018, 019, 020, 022, 023, 025, 026, 028, 031, 032 *haute* ; 006, 010,
 015, 024, 027, 029, 030 *moyenne* ; 014, 021 *basse* ; 016 non mécanisable.
+
+---
+
+## Tour 2026-09-18 (03:01-04:00) — la mise à jour automatique va enfin jusqu'au bout
+
+### Le fil, et il part d'une erreur à moi
+
+Hier, en fermant le `0x80070005`, j'ai fait passer les tâches planifiées de
+`pwsh` 7 à `powershell.exe` 5.1. Le banc avait écrit « le script reste compatible
+Windows PowerShell 5.1 » — **sans le mesurer**, et je ne l'ai pas vérifié. Deux
+défauts latents ont suivi, chacun produisant un **faux rouge** : la tâche
+rapportait un échec en ayant réussi.
+
+| Défaut | Mesure qui l'a prouvé |
+| --- | --- |
+| Le **message de succès de docker** tuait le script | même script, deux interpréteurs : 5.1 lève une exception terminante dont le message est « Container … Restarting » ; 7.x rend `LASTEXITCODE=0` |
+| `Invoke-WebRequest` sans `-UseBasicParsing` | même URL : 200 par curl, `NullReferenceException` par IWR sous 5.1 — sur `127.0.0.1` **comme** sur `localhost` |
+
+Le second point a réfuté ma propre hypothèse IPv6 : ce n'était pas l'adresse,
+c'était le moteur d'analyse Internet Explorer que PS 5.1 emploie par défaut.
+
+### Quatre hypothèses réfutées avant la bonne
+
+`NativeCommandError`, réémission des `ErrorRecord` dans le pipeline,
+`Push-Location`, IPv6. **Deux paraissaient évidentes.** Chacune aurait produit un
+correctif inutile, et deux d'entre elles auraient été posées si je m'étais fié au
+raisonnement plutôt qu'à la mesure.
+
+### Forward test final, sous l'interpréteur réel de la tâche
+
+```
+03:46:00  Redemarrage de LiteLLM      <- le point ou il mourait
+03:46:23  Smoke test
+03:47:09  Smoke test reussi
+03:48:29  Releve operationnelle
+03:48:50  STATE.md regenere : 95 modeles exposes, configuration valide
+03:48:50  Mise a jour terminee
+```
+
+### Le cliquet, et ce qu'il a corrigé chez moi
+
+`epreuves/epreuve_cliquet_webrequest.py`, neuf, avec sa contre-épreuve, câblé
+dans la famille `shell`. Deux choses valent d'être notées :
+
+* il a d'abord été posé avec `--contre-epreuve` déclaré `required`, ce qui
+  rendait son **mode principal inaccessible** — un cliquet qu'on ne peut pas
+  lancer comme cliquet ne garde rien ;
+* il a **corrigé ma mesure** : mon `grep` ligne-par-ligne comptait `stop.ps1`
+  comme fautif, alors que son `-UseBasicParsing` est sur une ligne de
+  continuation. Le cliquet, qui rassemble l'appel entier, ne s'y trompe pas.
+
+### État des mécanismes de la famille shell
+
+Sept épreuves appelées, 22 réussis, 0 échec : gardes heredoc et encodage,
+cliquet d'encodage et sa contre-épreuve, résolveur shell, cliquet webrequest et
+sa contre-épreuve.
+
+### Ce qui reste OUVERT
+
+* **Le tir automatique de 04:00 n'a pas encore eu lieu** avec ces correctifs. Le
+  forward test a été lancé à la main ; le critère de fin exige le tir planifié.
+* **Deux mesures d'encodage coexistent et ne comptent pas la même chose** :
+  `nexus_conformite` annonce « 2 script(s) exposés », le cliquet posé hier en
+  tolère sept. Il faut savoir laquelle répond à quoi avant d'en croire une.
+* `SIM115 16 -> 1` a été signalé comme « régression » par le contrôle
+  d'outillage alors que c'est une **amélioration** de 16 à 1. Le message est
+  ambigu et mérite d'être regardé.
+* **T-20260917-007** : l'extraction du bloc `TOOLS` rend toujours zéro outil ; le
+  générateur refuse d'écrire plutôt que de mentir, mais il ne produit rien.

@@ -6,6 +6,7 @@ Le script se place dans epreuves/ ; la racine du dépôt est le répertoire
 parent de ce répertoire. Cette information est calculée à partir de __file__.
 """
 
+import contextlib
 import os
 import sys
 import argparse
@@ -109,10 +110,8 @@ def _contre_epreuve():
         print(conclusion)
         return 0 if (fautif1 and not fautif2) else 1
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.remove(tmp_path)
-        except OSError:
-            pass
 
 def main():
     parser = argparse.ArgumentParser(description="Détecte les appels Invoke-WebRequest sans -UseBasicParsing.")
