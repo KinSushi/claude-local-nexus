@@ -28,6 +28,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Any
 
+# Garde d'encodage : protège l'affichage contre les consoles cp1252.
+_dossier_outillage = Path(__file__).resolve().parent
+if str(_dossier_outillage) not in sys.path:
+    sys.path.insert(0, str(_dossier_outillage))
+try:
+    from console_tools import forcer_utf8
+    forcer_utf8()
+except Exception as exc:
+    print(f"Impossible de forcer l'encodage UTF-8 : {exc}", file=sys.stderr)
+
 # --------------------------------------------------------------------------- #
 # Constantes
 # --------------------------------------------------------------------------- #
@@ -462,7 +472,7 @@ def etats_pour_rendu(
 
 def _afficher_resume(resume: dict) -> None:
     """Affiche un petit résumé après une mesure."""
-    print("Résumé de la mesure :")
+    print("Résumé de la mesure :")
     for etat in ETATS:
         nb = sum(1 for v in resume["verdicts"].values() if v["etat"] == etat)
         if nb:
@@ -494,7 +504,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             resume = mesurer(REGISTRE, CACHE)
         except RegistreInvalide as exc:
-            print(f"Erreur de registre : {exc}", file=sys.stderr)
+            print(f"Erreur de registre : {exc}", file=sys.stderr)
             return 2
         _afficher_resume(resume)
         return 0
@@ -503,7 +513,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             _ = lire_registre(REGISTRE)
         except RegistreInvalide as exc:
-            print(f"Erreur de registre : {exc}", file=sys.stderr)
+            print(f"Erreur de registre : {exc}", file=sys.stderr)
             return 2
         print("Registre valide.")
         return 0

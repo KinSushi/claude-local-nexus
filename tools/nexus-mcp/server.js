@@ -2476,7 +2476,7 @@ const TOOLS = [
       "A consulter avant de choisir un gros modele : sur cette machine, un " +
       "modele plus lourd que la memoire du moteur ne renvoie pas d'erreur, " +
       "il pagine et ne repond jamais utilement.",
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "nexus_savings",
@@ -2497,7 +2497,7 @@ const TOOLS = [
     name: "nexus_charge",
     title: "Rapporter qui occupe la machine",
     description: "Liste les processus significatifs AVEC LE PROJET auquel ils appartiennent, la memoire libre et la memoire disponible pour l inference, et qu elle sert a savoir si la machine peut accueillir un travail local avant de le lancer.",
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "nexus_apply",
@@ -2534,7 +2534,7 @@ const TOOLS = [
     name: "nexus_verrou",
     title: "Rapporter l etat des verrous de machine partages entre projets",
     description: "Ces verrous sont des mutex nommes, ils servent a eviter que deux projets lancent en meme temps une inference locale ou une copie massive, et cet outil CONSTATE l etat sans prendre ni liberer aucun verrou.",
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "nexus_models",
@@ -2543,7 +2543,7 @@ const TOOLS = [
       "Liste les modeles exposes par la passerelle LiteLLM, classes par domaine " +
       "(local / Ollama Cloud / Anthropic) afin de choisir en connaissance de cause " +
       "ou quitte la machine.",
-    inputSchema: { type: "object", properties: {} },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
 ];
 

@@ -311,9 +311,14 @@ def main():
             if pid == pid_courant:
                 continue
 
-            # CPU en minutes
+            # CPU en minutes (taux instantané sur l'intervalle d'une seconde)
             cpu_total_ticks = _nombre(p.get("UserModeTime")) + _nombre(p.get("KernelModeTime"))
-            cpu_min = (cpu_total_ticks / 10_000_000) / 60
+            second = second_snapshot.get(pid, {})
+            cpu_total_ticks_2 = _nombre(second.get("UserModeTime")) + _nombre(second.get("KernelModeTime"))
+            cpu_delta_ticks = cpu_total_ticks_2 - cpu_total_ticks
+            # Si le processus n'existe plus au second relevé ou que le delta est négatif,
+            # on considère qu'il n'a pas consommé de CPU pendant l'intervalle.
+            cpu_min = (cpu_delta_ticks / 10_000_000) / 60 if cpu_delta_ticks > 0 else 0.0
 
             # Mémoire physique (Mo)
             mem_mo = _nombre(p.get("WorkingSetSize")) / (1024 * 1024)
@@ -374,7 +379,9 @@ def main():
         # Verdict global
         raisons = []
         if significatifs:
-            raisons.append("processus significatifs")
+            raisons.append(
+                f"processus actifs (CPU > {cpu_seuil_min:.1f} min ou privé > {prive_seuil_mo:.0f} Mo ou I/O > 0)"
+            )
         etiquette_ram, message_ram = verdict_charge(ram_disponible_inference_go, ram_seuil_go)
         if etiquette_ram == "CHARGEE":
             raisons.append("RAM insuffisante pour l'inférence : " + message_ram)
