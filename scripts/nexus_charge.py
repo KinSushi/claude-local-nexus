@@ -304,12 +304,17 @@ def main():
         parent_map = {p.get("ProcessId"): p.get("ParentProcessId") for p in procs_data_1}
 
         significatifs = []
+        processus_examines = 0
         for p in procs_data_1:
             if p.get("Name") not in processus_surveilles:
                 continue
             pid = p.get("ProcessId")
             if pid == pid_courant:
                 continue
+            # Compte APRÈS le filtre de noms et l'exclusion de soi-même : c'est le
+            # nombre de processus réellement examinés, AVANT le filtre cpu/privé.
+            # Il distingue « aucun processus vu » de « N vus, tous filtrés ».
+            processus_examines += 1
 
             # CPU en minutes (taux instantané sur l'intervalle d'une seconde)
             cpu_total_ticks = _nombre(p.get("UserModeTime")) + _nombre(p.get("KernelModeTime"))
@@ -420,11 +425,13 @@ def main():
                 "engagement_go": _ram.get("engagement_go"),
                 "engagement_total_go": _ram.get("total_vm"),
                 "engagement_pct": _ram.get("engagement_pct"),
-                "etat_moteur": etat_moteur
+                "etat_moteur": etat_moteur,
+                "processus_examines": processus_examines
             }))
         else:
-            print("# processus retenus : noms=%s, cpu>=%.1f min ou prive>=%.0f Mo" %
-                  (",".join(processus_surveilles), cpu_seuil_min, prive_seuil_mo))
+            print("# processus examines : %d / processus retenus : %d (noms=%s, cpu>=%.1f min ou prive>=%.0f Mo)" %
+                  (processus_examines, len(significatifs),
+                   ",".join(processus_surveilles), cpu_seuil_min, prive_seuil_mo))
             header = ("%-10s %-15s %-15s %-10s %-10s %-6s %-6s %-6s %-15s %-60s" %
                       ("PID", "AGE (min)", "CPU (min)", "RAM (Mo)", "PRIVE (Mo)",
                        "LECT", "ECR", "PARENT", "PROJET", "COMMAND LINE"))
@@ -441,6 +448,14 @@ def main():
                        s["parent"],
                        s["projet"],
                        s["command_line"]))
+
+            if not significatifs and processus_examines > 0:
+                print("\nATTENTION : %d processus examines, AUCUN retenu par le filtre "
+                      "(cpu>=%.1f min ou prive>=%.0f Mo). Un processus bloque en attente "
+                      "d'E/S consomme peu de CPU et peu de memoire : il est donc invisible "
+                      "ici tout en pouvant tenir un verrou machine. Ce zero ne signifie PAS "
+                      "que la machine est libre." %
+                      (processus_examines, cpu_seuil_min, prive_seuil_mo))
 
             if etat_moteur == "injoignable":
                 print("\nRAM Libre: %.2f Go / Modèles résidents: inconnu / Disponible pour inference: %.2f Go / Totale: %.2f Go" %

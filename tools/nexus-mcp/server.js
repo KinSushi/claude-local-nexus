@@ -2906,15 +2906,36 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     // Consommation du parametre optionnel paths : joindre le contenu des
     // fichiers au prompt, avec leur nom en tete. Le filtre de confidentialite
     // est le meme que celui de nexus_summarize et nexus_context.
+    // Ce qui a ete joint est ECHOUE dans la reponse : sans cet echo, un appel
+    // parti sans sa matiere ne se distingue pas d'un appel complet, et le
+    // modele comble le vide par une invention plausible.
     let contenuFichiers = "";
+    let fichiersJoints = [];
+    let fichiersEcartes = [];
     if (args.paths !== undefined) {
       exigerTableau(args.paths, "paths");
       for (const raw of args.paths) {
         const full = requireInsideRepo(resolvePath(raw), "fichier", true);
-        if (isSecretFile(path.basename(full))) continue;
+        if (isSecretFile(path.basename(full))) {
+          fichiersEcartes.push(raw);
+          continue;
+        }
         if (!fs.existsSync(full)) throw new Error("fichier introuvable : " + raw);
         const content = fs.readFileSync(full, "utf8");
+        fichiersJoints.push({
+          chemin: raw,
+          taille: Buffer.byteLength(content, "utf8"),
+          empreinte: require("crypto").createHash("sha256").update(content, "utf8").digest("hex").slice(0, 8),
+        });
         contenuFichiers += `\n\n===== ${raw} =====\n${content}`;
+      }
+      // Un appel qui part sans sa matiere produit une invention plausible :
+      // c'est le mode d'echec le plus couteux, donc il est rendu impossible.
+      if (fichiersJoints.length === 0) {
+        const detail = fichiersEcartes.length
+          ? "tous ecartes par le filtre de confidentialite : " + fichiersEcartes.join(", ")
+          : "tableau paths vide";
+        throw new Error("matiere demandee non arrivee (" + detail + ") : aucun fichier joint, l'appel n'a pas ete depeche");
       }
     }
 
@@ -2958,7 +2979,20 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     // seul argument serieux contre l'adaptation automatique.
     const tAff = temperature === undefined ? TEMPERATURE_DEFAUT : temperature;
     deposerTrace(result, messages, planOf(result.model));
-    return `[${result.model} · ${planOf(result.model)}${note} · T=${tAff} · ${result.tokens} tokens${coupe}]\n\n${result.text}`;
+    // L'echo des fichiers joints : un fichier par ligne, apres l'en-tete et
+    // avant le texte. Aucun path demande, aucun echo -- la reponse reste
+    // inchangee pour les appels sans fichiers.
+    let echoFichiers = "";
+    if (fichiersJoints.length) {
+      echoFichiers = fichiersJoints
+        .map((f) => `\n${f.chemin} · ${f.taille} octets · ${f.empreinte}`)
+        .join("");
+    }
+    let noteEcartes = "";
+    if (fichiersEcartes.length) {
+      noteEcartes = ` · ${fichiersEcartes.length} ecarte(s) : ${fichiersEcartes.join(", ")}`;
+    }
+    return `[${result.model} · ${planOf(result.model)}${note} · T=${tAff} · ${result.tokens} tokens${coupe}${noteEcartes}]${echoFichiers}\n\n${result.text}`;
   }
 
   if (name === "nexus_route") {

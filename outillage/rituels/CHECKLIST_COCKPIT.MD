@@ -29807,3 +29807,23 @@ La leçon n'est pas neuve dans ce dépôt et se répète : **un instrument exact
 conclusion fausse.** J'ai lu une sortie tronquée et accusé l'instrument. C'est
 la cinquième fois de ce tour qu'une hypothèse est réfutée par la mesure, et la
 seule où j'avais déjà écrit la conclusion fausse avant de la vérifier.
+
+### Familles du banc : ce qui est mesuré, et ce qu'il faut en faire
+
+Deux sessions ont mesuré la même chose séparément, le 2026-09-18.
+
+| Famille | Mesure | À en faire |
+| --- | --- | --- |
+| `glm-5.3-cloud` | **3 troncatures sur 3** ici ; chez le voisin, 7 000 jetons demandés, 22 936 consommés, 16 000 partis en raisonnement, réponse vide | **éviter au-delà de ~2 000 jetons de sortie**, et jamais pour une tâche à marqueurs |
+| `deepseek-v4.1-flash-cloud` | juste du premier coup sur des patchs ancrés, 9 s, 1 984 jetons ; a débloqué un câblage raté 4 fois | le choix par défaut pour un patch ancré |
+| `gpt-oss-120b-cloud` | 8 appels du voisin sans une substitution muette | le cheval de trait, fichiers complets |
+| `kimi-k2.7-code-cloud` | vide sur 6 blocs, juste en deux fois trois | **découper** plutôt que baisser le budget |
+| `mistral-large-3-675b-cloud`, `deepseek-v4-pro-0813-cloud` | audits complets et structurés | l'audit tiers de la LOI 1 |
+
+**Ce que la passerelle fait déjà bien, et qu'il faut garder** : elle DIT
+« RÉPONSE TRONQUÉE à max_tokens · RÉPONSE VIDE après retrait du raisonnement ».
+Sans cette ligne, le voisin aurait lu un silence. Un rendu vide annoncé se
+corrige ; un rendu vide muet se croit.
+
+Le remède mesuré contre un rendu vide n'est pas d'augmenter `max_tokens` — le
+voisin en avait demandé 7 000 — mais de **découper la demande**.
