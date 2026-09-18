@@ -30359,3 +30359,62 @@ Aucun commit de code. Registre seul : `T-20260918-008` porte sa cause,
 `T-20260917-006` porte l'état exact de l'échec et la prochaine action — un patch
 **minimal**, sans toucher à `parametresInconnus` qui fonctionne, suivi d'un appel
 réel immédiat sur les deux cas avant toute autre pose.
+
+## Tour 2026-09-18 (18:30-19:45) — la quatrième tentative tient, et c'est la méthode qui a changé, pas le code
+
+`T-20260917-006` : un paramètre inconnu est désormais **refusé**, par une erreur de
+protocole `-32602` qui nomme les inconnus reçus, l'outil, et ce qu'il attend
+vraiment.
+
+```
+Parametres inconnus recus: k, query ; outil: nexus_livres ; parametres attendus: question
+```
+
+La forme suit la doctrine déjà écrite dans le fichier : une faute de protocole ne
+se corrige pas en relisant le message, elle se corrige en **changeant l'appel**.
+
+### Ce qui a changé par rapport aux trois échecs de la veille
+
+Rien dans l'intention, tout dans la méthode :
+
+| Hier | Aujourd'hui |
+|---|---|
+| deux patchs enchaînés avant le premier test | **un** patch minimal, puis appel réel **immédiat** |
+| `parametresInconnus` réécrite « pour bien faire » | pas touchée — elle marchait |
+| noms de fonctions laissés au banc | consigne nommant les seules fonctions autorisées |
+
+Les trois échecs d'hier — nom d'outil inventé, fonction inexistante, `return`
+inséré avant le corps — passaient tous `node --check`. Aucun n'était visible à la
+lecture.
+
+### L'anti-contrôle était indispensable, et pour une raison neuve
+
+La garde est **globale** : elle s'applique à tous les outils. Une garde qui
+refuserait tout aurait passé les cinq autres cas au vert. Le sixième cas appelle
+donc un **autre** outil avec un paramètre juste — `nexus_search`, 393 caractères —
+et vérifie qu'il passe. Une garde qui refuse le travail normal se fait désarmer
+dès le lendemain ; c'est mesuré ici.
+
+Contre le code d'avant : **seul** le cas des inconnus rougit, les cinq autres
+restent verts. La détection est donc chirurgicale, pas globale.
+
+### Un rendu tronqué, et ce qu'il enseigne sur les budgets
+
+La première adaptation de l'épreuve est revenue avec un marqueur d'ouverture, un
+de milieu, et **aucun de fin** — budget de sortie trop serré à 4000 jetons. Rien
+n'a été appliqué : la garde de l'applicateur a compté les marqueurs et tout
+refusé. Relancé à 9000, avec la consigne d'ancrer court et de multiplier les
+petits blocs plutôt qu'un gros, il est passé en neuf blocs.
+
+Le dépôt connaissait « un `max_tokens` trop serré rend VIDE » ; ici il a rendu
+**tronqué**, ce qui est plus insidieux — un rendu tronqué ressemble à un rendu.
+
+### État
+
+Commit `5e88cc2`. `forme-mcp` à six cas. Non-régression : `valide-mesure` 5,
+`shell` 24, zéro échec.
+
+Reste, dit plutôt que tu : `additionalProperties: false` n'est posé que sur une
+partie des seize schémas. Le **comportement** est correct sans lui, la garde étant
+active côté serveur ; la déclaration ne ferait que refuser plus tôt les clients
+qui valident avant d'appeler. À poser un outil à la fois, budget large.
