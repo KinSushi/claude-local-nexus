@@ -3521,7 +3521,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
   }
   if (name === "nexus_livres") {
     const q = String(args.question || "");
-    if (!q) return { content: [{ type: "text", text: "question requise" }] };
+    if (!q) return "Le paramètre attendu s'appelle question et doit être une chaîne non vide. La recherche porte sur les livres indexés en local.";
     return await runPython(
       [path.join(INSTALL_ROOT, "scripts", "nexus_livres_semantique.py"), "search", q]);
   }
@@ -3535,7 +3535,7 @@ function runPython(args, timeoutMs = 300000, codesToleres = [0]) {
     const cible = String(args.cible || "");
     const nom = String(args.nom || "mcp");
     if (!texte || !cible) {
-      return { content: [{ type: "text", text: "texte et cible requis" }] };
+      return "Les paramètres attendus sont texte et cible. texte contient le patch avec ses marqueurs et cible est le chemin du fichier visé.";
     }
     const fs = require("node:fs");
     const os = require("node:os");

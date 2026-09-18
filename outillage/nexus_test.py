@@ -1646,6 +1646,8 @@ def main() -> int:
         jouer_epreuve_python("epreuve_succession.py", "succession orchestrateur : opus>fable>cloud>local selon disponibilite et sensibilite")
     if args.only in (None, "valide-verrou"):
         jouer_epreuve_python("epreuve_valide_verrou.py", "nexus_valide : une seule instance a la fois, verrou par PID vivant")
+    if args.only in (None, "forme-mcp"):
+        jouer_epreuve_python("epreuve_forme_rendu_mcp.py", "le pont MCP rend toujours un champ texte de type CHAINE, y compris sur ses chemins de refus, et que le rendu nominal ne se confond pas avec un message de refus.")
     if args.only in (None, "valide-mesure"):
         jouer_epreuve_python("epreuve_valide_mesure.py", "nexus_valide : MESURE desormais les epreuves de son perimetre au lieu de seulement les juger, et que le verrou se prend meme si son dossier manque")
     if args.only in (None, "sommeil"):
