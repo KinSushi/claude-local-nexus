@@ -4076,6 +4076,7 @@ def test_garde_shell() -> None:
         ("resolveur shell", "epreuve_resolveur_shell.py", "epreuves", []),
         ("cliquet webrequest", "epreuve_cliquet_webrequest.py", "epreuves", []),
         ("cliquet webrequest detecte", "epreuve_cliquet_webrequest.py", "epreuves", ["--contre-epreuve"]),
+        ("voies de pose", "epreuve_voies_de_pose.py", "epreuves", []),
         ("veille db detecte", "nexus_veille_db.py", "outillage", ["--contre-epreuve"]),
     ):
         chemin = os.path.join(ROOT, dossier, script)

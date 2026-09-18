@@ -171,7 +171,16 @@ def main():
     try:
         with io.open(cible_path, encoding="utf-8") as f:
             src = f.read()
-    except (FileNotFoundError, PermissionError, OSError) as e:
+    except FileNotFoundError:
+        print(f"ERREUR : le fichier cible '{cible_path}' n'existe pas.")
+        print("Cet outil MODIFIE un fichier existant ; il ne le cree pas.")
+        print("Pour un fichier neuf : scripts/nexus_creer.py, ou l'outil MCP nexus_apply des que le texte porte les marqueurs de creation, chacun SEUL sur sa ligne :")
+        print("    <<<CREER>>>")
+        print("    ... contenu complet du fichier ...")
+        print("    <<<FIN>>>")
+        print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
+        sys.exit(1)
+    except (PermissionError, OSError) as e:
         print(f"ERREUR : impossible d'ouvrir le fichier cible '{cible_path}' : {e}")
         print("Usage: python nexus_appliquer.py <fichier_jsonl> <nom_tache> <fichier_cible>")
         sys.exit(1)

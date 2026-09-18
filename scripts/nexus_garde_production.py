@@ -81,18 +81,51 @@ def _handle_tool(charge: dict) -> int:
                 appliquer_path = p
                 break
 
+        # Recherche du script nexus_creer.py dans scripts/ puis outillage/
+        possible_paths_creer = [
+            os.path.join(os.path.dirname(__file__), "nexus_creer.py"),          # scripts/
+            os.path.join(repo_root, "scripts", "nexus_creer.py"),           # outillage/
+        ]
+        creer_path = None
+        for p in possible_paths_creer:
+            if os.path.isfile(p):
+                creer_path = p
+                break
+
+        agent_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "nexus_agent.py"))
+
         # Construction du message avec le chemin trouvé ou un avis d'absence
         appliquer_msg = (
             f"Appliquer le patch avec {appliquer_path}\n"
             if appliquer_path
             else "Appliquer le patch : fichier nexus_appliquer.py introuvable.\n"
         )
+        creer_msg = (
+            f"Poser le fichier avec {creer_path}\n"
+            if creer_path
+            else "Poser le fichier : fichier nexus_creer.py introuvable.\n"
+        )
+
+        # La prescription depend de l'existence prealable de la cible :
+        # cible existante -> patch a appliquer ; cible absente -> fichier complet a poser.
+        if os.path.isfile(chemin):
+            prescription = (
+                f"Faire produire le patch avec {agent_path} --tache <tache> --fichiers <fichiers>\n"
+                f"{appliquer_msg}"
+            )
+        else:
+            prescription = (
+                f"Faire produire le fichier complet avec {agent_path} --tache <tache> --fichiers <fichiers>\n"
+                f"{creer_msg}"
+                "Le rendu doit etre encadre par les marqueurs suivants, chacun SEUL sur sa ligne :\n"
+                "<<<CREER>>>\n"
+                "<<<FIN>>>\n"
+            )
 
         raison = (
             f"Le chemin '{chemin}' est refuse car il s'agit d'un fichier code source en production. "
             "Regle: tu ne produis pas, tu orchestres et tu audites.\n"
-            f"Faire produire le patch avec {os.path.abspath(os.path.join(os.path.dirname(__file__), 'nexus_agent.py'))} --tache <tache> --fichiers <fichiers>\n"
-            f"{appliquer_msg}"
+            f"{prescription}"
             "Si la production directe est vraiment voulue, definir NEXUS_PRODUCTION_LIBRE=1 avant l'appel."
         )
         sortie = {
