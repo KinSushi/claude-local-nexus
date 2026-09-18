@@ -30418,3 +30418,77 @@ Reste, dit plutôt que tu : `additionalProperties: false` n'est posé que sur un
 partie des seize schémas. Le **comportement** est correct sans lui, la garde étant
 active côté serveur ; la déclaration ne ferait que refuser plus tôt les clients
 qui valident avant d'appeler. À poser un outil à la fois, budget large.
+
+## Tour 2026-09-18 (19:45-21:00) — la mesure qui annule le travail qu'on allait faire
+
+Tour sans code posé, et le meilleur résultat du jour : **un volet de tâche a été
+abandonné sur mesure**, pas reporté.
+
+### Ce que j'allais faire, et pourquoi c'était faux
+
+Le critère écrit de `T-20260917-006` exigeait `additionalProperties: false` sur
+les seize schémas. J'avais la liste exacte des douze manquants, relevée par
+`tools/list`, et j'allais les poser.
+
+Deux mesures par **voies décorrélées** l'ont arrêté :
+
+| Voie | Appel `nexus_charge` + paramètre bidon | Verdict |
+|---|---|---|
+| client MCP | **passe** | le client a retiré la clé |
+| JSON-RPC direct | **refusé `-32602`** | le serveur, lui, garde |
+
+L'écart *est* le résultat : **le client filtre silencieusement** les clés
+inconnues quand le schéma déclare `additionalProperties: false`. Le serveur ne
+les voit jamais.
+
+⇒ Poser la déclaration partout aurait fait **filtrer en silence** au lieu de
+**refuser en nommant**. Le message `-32602` — celui qui dit quoi est faux, sur
+quel outil, et ce qu'il fallait — n'aurait plus jamais été vu. J'aurais remplacé
+un refus qui explique par un silence qui corrige : exactement le défaut corrigé
+toute la journée.
+
+**Ce que ça apprend, et qui dépasse ce sujet** : une déclaration de schéma et une
+garde d'exécution ne se cumulent pas, elles se **concurrencent**. La première
+s'applique d'abord et prive la seconde de son objet. Le choix se fait, il ne
+s'additionne pas.
+
+Le critère a été corrigé au registre plutôt qu'exécuté. Un critère écrit avant le
+mécanisme qu'il juge peut reposer sur une hypothèse que le mécanisme a rendue
+fausse.
+
+### Le relevé par regex était faux, pour la troisième fois de la journée
+
+ea-mt5 affirmait que `nexus_search` déclare `k` et `model` ; mon relevé n'y voyait
+qu'une propriété. **Il avait raison** : mon extraction par expression régulière
+débordait sur l'outil suivant. Refait par `tools/list`, c'est-à-dire en demandant
+au serveur ce qu'il expose, au lieu de deviner depuis le texte.
+
+Troisième instrument approximatif en un jour — après le cache lu à la mauvaise clé
+et le `grep` qui exigeait un chevron fermant. Les trois ont produit un chiffre
+plausible et faux.
+
+### Sa nuance, qui vaut d'être gardée
+
+Il avait transporté **deux** paramètres, `query` et `k`. `k` est **légitime** sur
+`nexus_search` et inexistant sur `nexus_livres`. Sa formule : *un appel qui
+contient un paramètre valide n'est pas un appel valide.* La moitié juste nourrit
+la confiance dans l'autre.
+
+### Le pont, mesuré parce qu'on me l'a demandé
+
+Trois processus `node`, trois parents `claude.exe` **différents** : un pont **par
+session**, jamais partagé. Redémarrer le sien n'affecte personne.
+
+Mais les trois datent de **04:38** — donc **aucune** session ne porte les
+correctifs du jour, la mienne comprise, alors qu'un `/mcp` a eu lieu depuis. Je ne
+sais pas si `/mcp` relance le processus ou rattache seulement le canal : **non
+mesuré, et dit comme tel** à celui qui posait la question. `T-20260918-011`.
+
+La leçon de la journée s'y applique encore : trois processus portent le même nom
+et la même ligne de commande. **La parenté discrimine, le nom non.**
+
+### État
+
+Aucun commit de code. Registre seul : critère de `T-20260917-006` corrigé et son
+volet déclaratif abandonné sur mesure ; `T-20260918-011` ouverte sur le
+rechargement.
