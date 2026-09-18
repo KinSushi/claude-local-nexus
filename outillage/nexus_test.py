@@ -4068,15 +4068,17 @@ def test_garde_shell() -> None:
     # returncode nul exige donc qu'AUCUN cas n'ait échoué, pas seulement
     # que le script a tourné -- sinon ce serait un faux vert. cwd=ROOT :
     # leurs chemins internes sont relatifs à la racine du dépôt.
-    for nom, script in (
-        ("epreuve garde heredoc", "epreuve_garde_heredoc.py"),
-        ("epreuve garde encodage", "epreuve_garde_encodage.py"),
+    for nom, script, arguments in (
+        ("epreuve garde heredoc", "epreuve_garde_heredoc.py", []),
+        ("epreuve garde encodage", "epreuve_garde_encodage.py", []),
+        ("cliquet encodage", "epreuve_cliquet_encodage.py", []),
+        ("cliquet encodage detecte", "epreuve_cliquet_encodage.py", ["--contre-epreuve"]),
     ):
         chemin = os.path.join(ROOT, "epreuves", script)
         if not os.path.isfile(chemin):
             check(nom, False, "%s introuvable : dispatch sans fichier" % script)
             continue
-        r = subprocess.run([sys.executable, chemin], cwd=ROOT,
+        r = subprocess.run([sys.executable, chemin] + arguments, cwd=ROOT,
                            capture_output=True, text=True, timeout=60,
                            encoding="utf-8", errors="replace",
                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
