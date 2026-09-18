@@ -90,7 +90,9 @@ function Resolve-NexusShell {
     #    whose size is zero. Those two properties identify Store execution
     #    aliases and empty stubs, which do not work under S4U.
     # --------------------------------------------------------------------
-    $storePattern = '\\WindowsApps\\Microsoft\.PowerShell_[0-9\.]+_[A-Za-z0-9]+\\pwsh\.exe$'
+    $storePattern = '\\WindowsApps\\Microsoft\.PowerShell_[0-9]+(\.[0-9]+)+_[^\\]+\\pwsh\.exe$'
+
+    $versionedFallback = $null
 
     foreach ($path in $candidates) {
         if ([string]::IsNullOrWhiteSpace($path)) { continue }
@@ -111,12 +113,18 @@ function Resolve-NexusShell {
         #    resort, and the caller must be warned.
         # ----------------------------------------------------------------
         if ($path -match $storePattern) {
-            Write-Warning ("Resolve-NexusShell: retaining version-specific Store path '{0}'. " -f $path) +
-                          "This path is tied to the installed Store version and will break on the next PowerShell 7 update."
-            return $path
+            if ($null -eq $versionedFallback) { $versionedFallback = $path }
+            continue
         }
 
         return $path
+    }
+
+    if ($null -ne $versionedFallback) {
+        $warningMessage = ("Resolve-NexusShell: retaining version-specific Store path '{0}'. " -f $versionedFallback) +
+                          "This path is tied to the installed Store version and will break on the next PowerShell 7 update."
+        Write-Warning $warningMessage
+        return $versionedFallback
     }
 
     # --------------------------------------------------------------------

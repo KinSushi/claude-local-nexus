@@ -4073,6 +4073,7 @@ def test_garde_shell() -> None:
         ("epreuve garde encodage", "epreuve_garde_encodage.py", []),
         ("cliquet encodage", "epreuve_cliquet_encodage.py", []),
         ("cliquet encodage detecte", "epreuve_cliquet_encodage.py", ["--contre-epreuve"]),
+        ("resolveur shell", "epreuve_resolveur_shell.py", []),
     ):
         chemin = os.path.join(ROOT, "epreuves", script)
         if not os.path.isfile(chemin):
