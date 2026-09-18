@@ -30217,3 +30217,68 @@ Commit `c461cbb`. Famille `forme-mcp`, quatre cas. Non-régression :
 **À savoir, et dit plutôt que taise** : le serveur MCP en cours d'exécution porte
 encore l'ancienne version. Les sessions voisines ne bénéficient du correctif
 qu'après un redémarrage de leur pont.
+
+## Tour 2026-09-18 (16:00-17:15) — le silence sur un paramètre inconnu, et le banc pris en flagrant délit de nom inventé
+
+Suite du signalement `ea-mt5`. Il revient corriger son propre récit : sa faute
+était en deux temps, et il n'avait vu que le premier.
+
+### Le récit reconstitué, et pourquoi sa conclusion était fausse
+
+Il appelle `nexus_search` avec un nom erroné. Le refus nomme correctement le
+paramètre attendu de **cet** outil : `query`. Il corrige. Puis il appelle
+`nexus_livres` en **réutilisant** `query`, plus un `k` — or celui-ci attend
+`question`. Son appel part avec deux paramètres inconnus et aucun valide.
+
+Il en a conclu que le message « nommait le paramètre qu'il avait CHERCHÉ, pas
+celui qu'il ATTEND ». **Vérifié dans le code : faux.** Les six appels de
+validation passent des littéraux, jamais une clé reçue ; `query` venait du
+contrat de `nexus_search`. Le message était juste — il portait sur un autre outil.
+
+Sa règle générale reste bonne (*un message d'erreur qui cite un nom de champ doit
+citer celui du contrat*), et le pont la respectait déjà. Mais son vécu désignait
+un manque réel, ailleurs.
+
+### Le vrai manque : rien ne distinguait deux erreurs très différentes
+
+`nexus_livres` a **ignoré `query` et `k` en silence** et s'est contenté de dire
+que son paramètre manquait. Rien ne séparait « tu as oublié le paramètre » de
+« tu t'es trompé de nom » — alors que le second est le plus fréquent et le plus
+facile à dire.
+
+Sa leçon, gardée telle quelle : **une erreur différente n'est pas une erreur
+résolue.** Il avait cru avoir trouvé le bon paramètre parce que l'erreur avait
+changé de forme.
+
+### Le banc a inventé deux noms d'outils, et l'échec était muet
+
+Le premier jet appelait la fonction avec `"recherche_livres"` et `"poser_patch"`
+— qui n'existent dans aucun schéma. `TOOLS.find` ne trouvait rien, la liste
+revenait vide, **le mécanisme ne se déclenchait jamais, sans la moindre erreur**.
+
+Et c'est la prudence que j'avais moi-même exigée — *rendre une liste vide plutôt
+que d'accuser quand le contrat est inconnu* — qui masquait exactement la faute.
+Une garde raisonnable, retournée en couverture d'un défaut.
+
+Corrigé en passant la variable qui porte le nom réel : **un littéral peut mentir,
+la variable non.**
+
+Trouvé en appelant le serveur pour de vrai après la pose, pas en relisant le
+patch : le message revenait inchangé alors que le code semblait juste. Le patch
+était syntaxiquement irréprochable et fonctionnellement mort.
+
+### Ce que ce tour ajoute aux deux précédents
+
+Trois fois de suite, un correctif du pont a produit un second défaut que seul un
+**appel réel** a révélé : la garde `if (!q)` supprimée, le cas nominal qui validait
+un refus, et maintenant le nom d'outil inventé. Aucun des trois n'était visible à
+la lecture, et deux passaient `node --check`.
+
+### État
+
+Commit `0698c00`. `forme-mcp` passe à cinq cas. Non-régression : `valide-mesure` 5,
+`shell` 24, zéro échec. T-20260918-010 consignée et fermée sur preuve `famille`.
+
+Le pair dit explicitement n'avoir **pas** redémarré son pont, plutôt que de me
+laisser le supposer — ses refus resteront donc illisibles jusque-là, ce qui ne le
+bloque plus puisqu'il connaît le bon nom de paramètre.
