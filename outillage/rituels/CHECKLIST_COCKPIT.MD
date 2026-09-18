@@ -30056,3 +30056,85 @@ Commits `09fbc78` et `822e36f`, plus celui de ce tour. `epreuves/epreuve_voies_d
 T-20260918-003 fermée sur preuve `famille`. Les trois sessions voisines ont été
 prévenues ; `ea-mt5` a versé les quatre points dans son skill (`ecab0702`), le mien
 est corrigé — il mentionnait « les marqueurs de création » sans les écrire.
+
+## Tour 2026-09-18 (12:30-14:30) — le validateur jugeait sans mesurer, et le faux négatif était le vrai danger
+
+Suite directe du tour précédent : `nexus_valide` y avait crié `REGRESSION` sur
+trois allégations toutes fausses. La cause était qu'il **juge le diff et ne
+mesure rien**, alors que l'épreuve concernée figurait dedans et passait.
+
+### Ce que l'épreuve inverse a révélé, et que je n'avais pas anticipé
+
+Le faux positif était connu. En construisant le reverse test — worktree isolé,
+épreuve volontairement sabotée — le verdict est tombé :
+
+```
+REGRESSION MESUREE
+  epreuves/epreuve_voies_de_pose.py : code 1
+Le banc ne voyait rien ; la mesure tranche.
+```
+
+**Le banc ne voyait rien.** Le trou allait donc dans les deux sens, et le faux
+négatif est le plus grave : un faux positif se réfute en dix minutes, un faux
+négatif laisse passer le défaut et personne ne le sait. La correction visait une
+moitié du problème ; l'épreuve a trouvé l'autre.
+
+### Le piège évité, et il était nommé d'avance
+
+Étouffer le jugement du banc dès que les épreuves sont vertes aurait été pire
+que le défaut corrigé — c'est la faute déjà payée ici, une règle resserrée
+contre la fabrication ayant supprimé l'objet de l'étape qu'elle protégeait. Les
+trois cas sont donc :
+
+| Situation | Verdict |
+|---|---|
+| une épreuve rouge | `REGRESSION MESUREE`, l'emporte sur le banc même muet |
+| épreuves vertes, banc alarmiste | verdict **maintenu**, annoncé JUGÉ ET NON MESURÉ |
+| aucune épreuve au périmètre | **dit**, y compris sur le verdict rassurant |
+
+Le troisième cas n'était pas dans la première pose : `epreuves_vertes` était
+calculé et n'apparaissait qu'en JSON. Le mode texte — celui qu'on lit — restait
+muet. Un mécanisme à moitié câblé se lit comme une protection.
+
+### Deux défauts du verrou, trouvés en éprouvant le premier
+
+Aucun des deux ne vient d'une relecture.
+
+**Le refus nommait le mauvais PID.** `print(f"... (PID {my_pid})")` affichait le
+PID de l'instance *courante*, pas du détenteur. J'ai cherché le processus 8396,
+constaté qu'il n'existait pas, et conclu que le verrou ne se libérait pas sur PID
+mort. La détection était juste ; le message m'avait envoyé ailleurs. C'est la
+quatrième occurrence en deux tours de la même classe : **un refus qui nomme la
+mauvaise chose coûte plus cher qu'un refus muet.**
+
+**Le verrou ne se prenait pas si son dossier manquait.** `mkstemp` lève,
+l'exception est avalée, `prendre_verrou` rend `False`, et l'appelant conclut
+qu'un verrou est détenu — alors que rien ne l'est. Comme `.nexus/` est gitignoré,
+il est absent de tout worktree neuf : **`nexus_valide` était inutilisable depuis
+un arbre détaché**, alors qu'il porte lui-même une option `--copie-detachee`.
+
+### Le harnais a son propre contrat, et on s'y plie
+
+La première pose de `epreuve_valide_mesure.py` passait seule (5/5) et comptait
+pour un **échec** une fois câblée : `jouer_epreuve_python` moissonne les cas et
+exige `[OK  ] nom : detail` ou `[RATE] ...`, une épreuve muette étant un échec.
+L'épreuve a été adaptée au contrat plutôt que le câblage détourné.
+
+Elle échoue aussi **proprement** sur un code dépourvu du correctif — elle nomme
+les fonctions manquantes au lieu de rendre une `AttributeError` brute. Une trace
+n'est ni un code de retour lisible ni un message qui nomme la voie.
+
+### État
+
+Commit `9434f77`. `epreuves/epreuve_valide_mesure.py`, cinq cas, câblée en
+famille `valide-mesure`. Non-régression : `valide-verrou` 7, `valide-perimetre` 6,
+`valide-decoupe` 4, `valide-copie` 2, `shell` 24 — zéro échec. T-20260918-005
+fermée sur preuve `famille`.
+
+Ouvert et versé : **T-20260918-009**, `nexus_livres` rend un bloc dont le champ
+`text` n'est pas une chaîne, et le client MCP refuse le résultat comme malformé.
+Signalé par `ea-mt5`, qui l'a reporté plutôt que de le taire — `nexus_search`
+répond normalement avec les mêmes paramètres, donc ni le pont ni la passerelle.
+Un résultat **vide** doit rester un résultat **valide**, faute de quoi l'appelant
+ne peut pas distinguer « rien trouvé » de « l'outil est cassé » : exactement la
+distinction que les correctifs de la veille ont rendue explicite ailleurs.
