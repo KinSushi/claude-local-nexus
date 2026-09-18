@@ -13,6 +13,7 @@ from __future__ import annotations
 import ast
 import argparse
 import sys
+import contextlib
 from pathlib import Path
 
 
@@ -103,8 +104,7 @@ def _qualifier(source: str):
     # 4. Detection d'emission : appel a print contenant une chaine hors cp1252.
     emet = False
     for noeud in ast.walk(arbre):
-        if isinstance(noeud, ast.Call) and isinstance(noeud.func, ast.Name):
-            if noeud.func.id == "print":
+        if isinstance(noeud, ast.Call) and isinstance(noeud.func, ast.Name) and noeud.func.id == "print":
                 for descendant in ast.walk(noeud):
                     if (
                         isinstance(descendant, ast.Constant)
@@ -228,10 +228,8 @@ print("contre-epreuve hors cp1252: \\u2605")
         else:
             print("Conclusion : au moins une etape est fausse")
     finally:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             chemin.unlink()
-        except FileNotFoundError:
-            pass
 
     return 0 if ok_global else 1
 
