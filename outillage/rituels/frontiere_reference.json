@@ -1,38 +1,44 @@
 [
   {
+    "file": "scripts\\start.ps1",
+    "line": 273,
+    "tool": "nexus_veille_db.py",
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
+  },
+  {
     "file": "scripts\\nexus_conformite.py",
-    "line": 529,
+    "line": 783,
     "tool": "nexus_verrou_machine.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   },
   {
     "file": "scripts\\nexus_conformite.py",
-    "line": 630,
+    "line": 886,
     "tool": "nexus_import.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   },
   {
     "file": "scripts\\nexus_conformite.py",
-    "line": 667,
+    "line": 924,
     "tool": "nexus_cablage.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   },
   {
     "file": "scripts\\nexus_conformite.py",
-    "line": 1306,
+    "line": 1714,
     "tool": "nexus_portee_import.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   },
   {
     "file": "scripts\\nexus_garde_production.py",
-    "line": 73,
+    "line": 76,
     "tool": "nexus_appliquer.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   },
   {
     "file": "scripts\\nexus_state.py",
-    "line": 506,
+    "line": 507,
     "tool": "nexus_traque.py",
-    "motif": "reparation des chemins morts laisses par le deplacement c7de0b9 : conformite/generate/state pointaient outillage/ vers validate, releve, savings desormais sous scripts/ ; reference remise aux dependances produit -> outillage reellement subsistantes (outils qui vivent encore a outillage/)"
+    "motif": "start.ps1 appelle desormais outillage/nexus_veille_db.py quand la passerelle ne repond pas apres 240 s : le diagnostic envoyait regarder les journaux de LiteLLM alors que la cause mesuree le 2026-09-18 etait la base Postgres, dont l initdb avait ete interrompu. Cette execution est un DIAGNOSTIC, non une dependance du produit : elle ne s execute que sur le chemin d echec et degrade proprement si l outil est absent."
   }
 ]
