@@ -30282,3 +30282,80 @@ Commit `0698c00`. `forme-mcp` passe à cinq cas. Non-régression : `valide-mesur
 Le pair dit explicitement n'avoir **pas** redémarré son pont, plutôt que de me
 laisser le supposer — ses refus resteront donc illisibles jusque-là, ce qui ne le
 bloque plus puisqu'il connaît le bon nom de paramètre.
+
+## Tour 2026-09-18 (17:15-18:30) — trois fabrications du banc sur un seul fichier, et un audit partiel qui masquait un doublon
+
+Tour sans livraison de code, et c'est le bon résultat : ce qui a été tenté cassait
+le pont, a été mesuré comme tel, et retiré.
+
+### L'audit complet du registre, enfin fait — et ce qu'il révèle
+
+Le rituel demande d'auditer **tous** les sujets ouverts. Je ne le faisais qu'en
+surface. Fait correctement : **30 ouverts**, dont `T-20260917-006` qui porte
+**déjà** le sujet des paramètres inconnus traité au tour précédent sous l'ID neuf
+`T-20260918-010`. J'avais créé un doublon faute d'avoir regardé le registre entier.
+
+Et son critère est plus exigeant que ce que j'avais livré : il veut que l'appel
+soit **refusé**, pas seulement que le refus soit lisible. Ma correction n'en
+couvrait qu'une moitié — ce que l'audit partiel ne pouvait pas dire.
+
+**Premier instrument faux** : mon script d'audit lisait la racine du cache au lieu
+de sa clé `verdicts`, et rendait 65 ouverts avec `?` partout, dont des sujets que
+je venais de fermer. Corrigé avant de m'y fier.
+
+### Trois fabrications successives, toutes vertes au contrôle de syntaxe
+
+| Tentative | Ce que le banc a produit | Effet réel |
+|---|---|---|
+| 1 | noms d'outils **inventés** (`recherche_livres`) | mécanisme muet, jamais déclenché |
+| 2 | appel à `parametresDeclares`, **fonction inexistante** | `ReferenceError` à chaque appel : pont mort |
+| 3 | `return` inséré **avant** le corps de `parametresInconnus` | sémantique inversée, vrai code mort |
+
+La troisième est la plus instructive. La fonction rendait les paramètres
+**déclarés** au lieu des **inconnus**, si bien que la garde refusait un appel juste
+en affirmant que le paramètre attendu était inconnu :
+
+```
+Parametre(s) inconnu(s) ... : question. Parametre(s) attendu(s) : question.
+```
+
+Une contradiction dans sa propre phrase. `node --check` passait sur les trois.
+
+### Ce que j'ai mal fait, et la règle qui en sort
+
+**J'ai enchaîné deux patchs avant de tester.** Un appel réel après le premier
+aurait montré l'inversion immédiatement. La règle, pour ce fichier : *tout patch
+est suivi d'un appel réel avant le patch suivant*.
+
+L'état commité a été restauré (`git checkout`), puis le pont **vérifié sain par un
+appel réel** — 969 caractères sur un appel juste. La vérification après
+restauration compte autant que la restauration.
+
+### Le signalement de Jedha : cause trouvée, et elle n'est pas dans le banc
+
+Il rapporte une récidive de marqueur tronqué, artefact **et son lot** conservés
+côte à côte — exactement ce que j'avais demandé.
+
+Mesure sur le rendu : trois `AVANT` dont **deux tronqués**, et **deux `FIN`
+tronqués sur trois**. Sa règle « seul le marqueur d'ouverture est visé » ne tient
+pas.
+
+Mesure sur le lot envoyé : **aucun marqueur littéral**. La consigne les décrit —
+« AVANT / APRES / FIN », « marqueurs à trois chevrons » — pour les trois tâches.
+C'est le défaut déjà inscrit ici : *un marqueur décrit est reconstruit de mémoire,
+et le modèle se trompe*. Il m'avait pourtant affirmé deux fois que sa consigne les
+écrivait littéralement.
+
+**Second instrument faux du tour** : mon premier `grep` exigeait au moins un
+chevron fermant, donc ratait précisément `<<<AVANT` sans fermeture — le cas
+cherché. Remesuré avec `>{0,4}`.
+
+Reste non tranché, et dit plutôt que supposé : son **premier** artefact portait
+bien `<<<CREER>>` amputé, et je n'ai pas le lot de cette fois-là.
+
+### État
+
+Aucun commit de code. Registre seul : `T-20260918-008` porte sa cause,
+`T-20260917-006` porte l'état exact de l'échec et la prochaine action — un patch
+**minimal**, sans toucher à `parametresInconnus` qui fonctionne, suivi d'un appel
+réel immédiat sur les deux cas avant toute autre pose.
