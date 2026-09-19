@@ -30492,3 +30492,77 @@ et la même ligne de commande. **La parenté discrimine, le nom non.**
 Aucun commit de code. Registre seul : critère de `T-20260917-006` corrigé et son
 volet déclaratif abandonné sur mesure ; `T-20260918-011` ouverte sur le
 rechargement.
+
+## Tour 2026-09-19 (08:00-09:15) — deux fois j'ai failli reconstruire l'existant, et un repli vers un plan éteint
+
+### Le mécanisme que j'allais construire existait depuis le 30 août
+
+`T-20260918-011` demandait que le serveur annonce l'empreinte de son code. Avant
+d'écrire quoi que ce soit, j'ai interrogé `initialize` : le serveur **répond déjà**
+`serverInfo.empreinte = 153a425ffbf1`, calculée au démarrage sur le sha256 du
+fichier chargé. Son commentaire décrit le cas mesuré le 2026-08-30 — une session
+servant l'ancien code pendant des heures.
+
+Mieux : un contrôle existe dans `nexus_conformite.py`, et il est **honnête** — il se
+déclare lui-même `IGNORE`, parce qu'il ne peut pas interroger la session en cours.
+
+⇒ Le manque réel n'était pas celui que j'avais écrit. `serverInfo` est lu par le
+**client**, jamais rendu au modèle : aucune session ne peut comparer. Critère
+resserré au registre, sur la remarque d'`ea-mt5` — ajouter une machinerie de
+rechargement pour éviter un geste de dix secondes serait disproportionné, et lire
+son code au démarrage est une propriété **normale**.
+
+### Le patch qui aurait cassé le pont pour tout le monde
+
+Le correctif devait préfixer le rendu de `nexus_profile`. Le banc a inséré le code
+**avant** le test du nom d'outil — donc exécuté à chaque appel de n'importe quel
+outil — et l'a fait écrire par `console.log`, c'est-à-dire **sur stdout, le canal
+même du protocole JSON-RPC**. Il aurait injecté du texte non-JSON dans chaque
+réponse.
+
+`node --check` passait. Vu en **lisant le diff** avant même l'appel réel ; restauré,
+pont vérifié sain par un appel (913 caractères).
+
+Quatrième fabrication du banc sur ce fichier en deux jours, et la première qui
+aurait frappé les trois sessions à la fois.
+
+### Le `socket hang up` de SAS : cause trouvée et reliée
+
+Il donne le fait, pas la cause — et il a bien fait. Décalage établi par sonde :
+logs en UTC, local = UTC − 5 h. Ses appels « ~16h50 » sont les **trois seules
+erreurs 500** de la fenêtre (21:28:53 / 21:29:05 / 21:29:19 UTC).
+
+```
+litellm.APIConnectionError: Cannot connect to host host.docker.internal:11434
+Received Model Group=glm-4.7-flash-local
+```
+
+Ses deux familles échouées, `nemotron-3-super-cloud` et `minimax-m3-cloud`, ont le
+**même repli** vers `glm-4.7-flash-local` — local, et injoignable à cet instant.
+Deux retries, puis coupure : côté node, `socket hang up`, sans rien de la cause.
+Ses deux appels précédents avaient réussi du premier coup, donc jamais touché leur
+repli.
+
+**Un repli vers un plan éteint est pire que pas de repli** : il est légitime par sa
+direction — `cloud → local` ne coûte que de la capacité — mais il s'engage sans
+constater que sa cible répond, et transforme un échec lisible en panne illisible.
+`T-20260919-001`.
+
+### Cinq instruments approximatifs en deux jours
+
+Ce tour en a produit deux de plus, tous deux corrigés avant conclusion :
+
+| Instrument | Ce qu'il donnait | Ce qui était vrai |
+|---|---|---|
+| `grep ...\|429\|...` sur le journal | des « erreurs » | `429` matché **dans des numéros de port** |
+| `--tail 500` | « zéro appel » | 500 lignes ne couvraient que des contrôles de santé |
+| hypothèse IPv6 sur le moteur | « le conteneur ne peut pas l'atteindre » | il l'atteint sur les deux adresses — réfutée |
+
+La troisième mérite d'être notée : j'avais une explication cohérente — moteur en
+écoute `::`, conteneur en IPv4 — et le test l'a **réfutée en une commande**.
+L'explication plausible était fausse, et seule la mesure décorrélée l'a dit.
+
+### État
+
+Aucun commit de code. Registre : `T-20260918-011` resserré avec l'existant et
+l'échec du patch ; `T-20260919-001` ouverte sur le repli vers un plan éteint.
